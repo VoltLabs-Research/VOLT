@@ -1,9 +1,6 @@
-/* The @font-face declarations stay their own file: their `url()`s resolve
-   relative to this file, so folding them into a sheet that Tailwind inlines
-   would move the base they resolve against. */
+
 import '@/shared/ui/assets/stylesheets/fonts.css';
-/* Everything else — HeroUI, Tailwind, VOLT's tokens and the little chrome a
-   utility cannot express. One file; see its header for what may go in it. */
+
 import '@/shared/ui/assets/stylesheets/index.css';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import App from './App';

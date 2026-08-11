@@ -11,7 +11,7 @@ import {
     resolveComposeDefaultNetworkName
 } from '@shared/contracts/types/runtime-container';
 import { createHash } from 'node:crypto';
-import type { CreateNotebookSessionRequest, CreateNotebookSessionResponse, NotebookContainerResources, NotebookSessionSnapshot } from '@shared/contracts';
+import type { CreateNotebookSessionRequest, CreateNotebookSessionResponse, NotebookContainerResources, NotebookSessionSnapshot } from '@shared/contracts/types/http-notebook';
 import type { DaemonConfig } from '@core/config/daemon';
 import path from 'node:path';
 import os from 'node:os';

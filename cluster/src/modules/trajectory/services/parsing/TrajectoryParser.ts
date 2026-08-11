@@ -13,9 +13,9 @@ import { toTrajectoryFrameError } from '@modules/trajectory/services/storage/tra
 import type {
     ColumnDType,
     TypedColumn,
-    ElementTableEntry,
-    LammpsUnits
-} from '@shared/domain/catalog';
+    ElementTableEntry
+} from '@shared/domain/catalog/element-table';
+import type { LammpsUnits } from '@shared/domain/catalog/units';
 
 interface ParsedTrajectoryMetadata {
     headers: string[];

@@ -2,51 +2,19 @@ import { Button, Disclosure, cn } from '@heroui/react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-/**
- * bravais's `CollapsibleSection`, rebuilt on HeroUI's `Disclosure`.
- *
- * Four call sites in this module use it (ArgumentFieldsRenderer, PluginConfigField,
- * ConnectorLayoutEditor, IfStatementEditor) and only ever pass this subset of
- * bravais's 22 props, so the surface below is exactly that subset — `title`,
- * expansion (controlled or not), an optional delete action, `noSpacing`, and the
- * two classNames. Everything else bravais accepted was unused here and is gone.
- *
- * Three deliberate differences from bravais, all visible:
- *
- *   1. **The chevron and the delete button swap places.** bravais rendered the
- *      chevron as a *second* trigger button after the actions row; HeroUI requires
- *      `Disclosure.Indicator` inside `Disclosure.Trigger` (it is what carries
- *      `data-expanded`, and a second `slot="trigger"` button would fight RAC's own
- *      aria wiring). So the order is title → chevron → delete rather than
- *      title → delete → chevron, and the chevron is no longer separately clickable
- *      — the whole title row is the trigger, which it already was.
- *   2. **The panel animates.** bravais set `height: auto | 0` with
- *      `transition: none`, so it snapped. `.disclosure__content` animates height and
- *      opacity over 200ms, and honours `prefers-reduced-motion`.
- *   3. **No `title` attribute on the delete button.** HeroUI's `ButtonProps` is
- *      closed and declares none (spec §5b note 8). `aria-label` carries the same
- *      string, so the accessible name is unchanged; only the native tooltip is lost.
- *
- * The delete button's reveal is bravais's, faithfully: `opacity-0` plus
- * `pointer-events-none`, lifted only by `:focus-within` on the header — bravais had
- * no hover rule, so this stays keyboard-first rather than quietly gaining one.
- */
 interface CollapsibleSectionProps {
     title: string;
     children: ReactNode;
-    /** Uncontrolled initial state. Ignored when `expanded` is supplied. */
+
     defaultExpanded?: boolean;
-    /** Controlled expansion. */
+
     expanded?: boolean;
     onExpandedChange?: (next: boolean) => void;
     onDelete?: () => void;
     deleteActionLabel?: string;
-    /** Drops the `mb-6` bravais applied below every section by default. */
+
     noSpacing?: boolean;
-    /**
-     * The dense variant `ArgumentFieldsRenderer.css` used to reach in and produce
-     * for `.canvas-argument-list-item`: a 24px header row and an 11px title.
-     */
+
     isCompact?: boolean;
     className?: string;
     bodyClassName?: string;
@@ -92,7 +60,6 @@ const CollapsibleSection = ({
                     >
                         {title}
                     </span>
-
                     <Disclosure.Indicator className={cn('shrink-0 text-muted', isCompact ? 'size-4' : 'size-5')} />
                 </Disclosure.Trigger>
 
@@ -112,7 +79,6 @@ const CollapsibleSection = ({
                     </Button>
                 )}
             </Disclosure.Heading>
-
             <Disclosure.Content>
                 <div className={cn('flex flex-col pl-2', bodyClassName)}>
                     {children}

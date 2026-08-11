@@ -17,6 +17,8 @@ const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
     const type = camera.type;
     const position = camera.position;
     const up = camera.up;
+    const [posX, posY, posZ] = position;
+    const [upX, upY, upZ] = up;
     const pFov = camera.perspective.fov;
     const pNear = camera.perspective.near;
     const pFar = camera.perspective.far;
@@ -38,8 +40,8 @@ const CameraRig: FC<CameraRigProps> = ({ orbitRef, camera }) => {
     }, [
         orbitRef,
         type,
-        position[0], position[1], position[2],
-        up[0], up[1], up[2],
+        posX, posY, posZ,
+        upX, upY, upZ,
         pFov, pNear, pFar, pZoom, pFocus, pFilmGauge, pFilmOffset,
         oNear, oFar, oZoom
     ]);

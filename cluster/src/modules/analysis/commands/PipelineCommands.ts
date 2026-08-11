@@ -6,7 +6,7 @@ import type {
     PipelineStartResolvedStage,
     PipelineStartTransportPayload,
     PipelineStageTransport
-} from '@shared/contracts';
+} from '@shared/contracts/types/http-analysis';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { extractDaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
 import { inflateBase64GzipJson } from '@shared/application/utilities/gzip-base64-json';

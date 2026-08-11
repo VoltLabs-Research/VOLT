@@ -1,7 +1,8 @@
-import { createService, paginated, get, post, patch, del, download, request, custom } from '@/app/core/http/utils/create-service';
+import { createService, paginated, get, patch, del, download, custom, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { buildFileFormData } from '@/shared/utils/file';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/plugin';
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
@@ -103,14 +104,16 @@ interface NodeTypesSchemaResponse {
     nodeTypes: Record<string, string[]>;
 }
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
-    getAll: paginated<GetPluginsInput, PaginatedResponse<Plugin>>('/plugins'),
+    getAll: paginated<GetPluginsInput, PaginatedResponse<Plugin>>(routes.path(pluginRoutes.list)),
     getById: get<GetPluginInput, Plugin>('/plugins/:_id'),
-    create: post<CreatePluginInput, Plugin>('/plugins', {
+    create: routes.route<CreatePluginInput, Plugin>(pluginRoutes.create, {
         unwrap: { field: 'plugin' }
     }),
     update: patch<UpdatePluginParams, Plugin>('/plugins/:_id'),
-    clone: post<ClonePluginInput, Plugin>('/plugins/:pluginId/clones', {
+    clone: routes.route<ClonePluginInput, Plugin>(pluginRoutes.clone, {
         unwrap: { field: 'plugin' }
     }),
     delete: del<DeletePluginInput>('/plugins/:_id'),
@@ -157,29 +160,29 @@ const endpoints = {
 
         return commitResponse.data;
     }),
-    deleteBinary: del<DeleteBinaryInput>('/plugins/:pluginId/binary'),
+    deleteBinary: routes.route<DeleteBinaryInput, void>(pluginRoutes.removeBinary, { unwrap: 'void' }),
     exportPlugin: download<ExportPluginInput>('GET', '/plugins/:_id/export'),
-    exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', '/plugins/listings/analyses/:analysisId/export'),
-    importPlugin: request<ImportPluginInput, Plugin>('POST', '/plugins/imports', {
+    exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', routes.path(pluginRoutes.exportListingRowsByAnalysisId)),
+    importPlugin: routes.route<ImportPluginInput, Plugin>(pluginRoutes.importPlugin, {
         body: ({ file }) => buildFileFormData([{
             name: 'file',
             file
         }]),
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    searchRegistry: get<SearchRegistryInput, SearchRegistryResponse>('/plugins/registry/search', {
+    searchRegistry: routes.route<SearchRegistryInput, SearchRegistryResponse>(pluginRoutes.searchRegistry, {
         query: ({ q, page, limit }) => ({
             ...(q?.trim() ? { q: q.trim() } : {}),
             ...(page ? { page } : {}),
             ...(limit ? { limit } : {})
         })
     }),
-    installRegistryPlugin: post<InstallRegistryPluginInput, Plugin>('/plugins/registry/installations'),
-    executePipeline: post<ExecutePipelineParams, ExecutePipelineResponse>('/plugins/trajectories/:trajectoryId/pipeline-executions'),
+    installRegistryPlugin: routes.route<InstallRegistryPluginInput, Plugin>(pluginRoutes.installRegistry),
+    executePipeline: routes.route<ExecutePipelineParams, ExecutePipelineResponse>(pluginRoutes.executePipeline),
     listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),
-    getNodeTypesSchema: get<void, NodeTypesSchemaResponse>('/plugins/node-types/schema')
+    getNodeTypesSchema: routes.route<void, NodeTypesSchemaResponse>(pluginRoutes.getNodeTypesSchema)
 };
 
 export default createService({

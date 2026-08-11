@@ -10,11 +10,6 @@ export const isUp = async (url: string): Promise<boolean> => {
     }
 };
 
-/*
- * There is no dedicated health endpoint, so readiness is probed with a cheap
- * unauthenticated GET: a 404 still proves the app is serving (see `isUp`). The
- * path comes from the shared contract rather than being spelled out again.
- */
 export const PROBE_PATH = buildPath(authRoutes.checkEmail, { email: 'probe@volt.local' });
 
 export const webProbeUrl = (env: Record<string, string>): string =>

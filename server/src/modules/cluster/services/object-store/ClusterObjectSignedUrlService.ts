@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { Secret, SignOptions } from 'jsonwebtoken';
-import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports';
+import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports/IClusterObjectSignedUrlService';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectSignedUrl

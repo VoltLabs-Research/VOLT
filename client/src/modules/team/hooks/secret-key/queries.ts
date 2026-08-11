@@ -1,5 +1,7 @@
 import secretKeyService from '../../api/services/secret-key-service';
-import { buildKeys, createInvalidatingMutation, createQuery } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createInvalidatingMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
 import type {
     CreateSecretKeyParams,
     DeleteSecretKeyInput,

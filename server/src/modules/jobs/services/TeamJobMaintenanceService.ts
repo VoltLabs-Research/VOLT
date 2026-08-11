@@ -1,5 +1,5 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { JobStatus } from '@shared/contracts/types/JobStatus';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type {
     ITeamJobMaintenanceService,
     RemoveTeamJobsResult,
@@ -7,11 +7,9 @@ import type {
     TeamClusterFailureDetail
 } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import type {
-    AnalysisDeletedEventPayload,
-    TrajectoryDeletedEventPayload
-} from '@shared/contracts/events';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import type { AnalysisDeletedEventPayload } from '@shared/contracts/events/AnalysisDeletedPayload';
+import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events/TrajectoryDeletedPayload';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 import {
     collectCleanupClusterIds,

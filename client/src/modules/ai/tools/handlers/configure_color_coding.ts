@@ -3,7 +3,6 @@ import type { ConfigureColorCodingInput } from '@volt/contracts/modules/ai/ai-to
 import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 import { COLORMAP_NAMES, type ColormapName } from '@/modules/fractal/services/colormaps';
 
-/** The contract spells colormaps in lowercase; `COLORMAP_NAMES` is capitalized. */
 const resolveGradient = (raw?: string): ColormapName => {
     if (!raw) return 'Viridis';
     const match = COLORMAP_NAMES.find((name) => name.toLowerCase() === raw.toLowerCase());

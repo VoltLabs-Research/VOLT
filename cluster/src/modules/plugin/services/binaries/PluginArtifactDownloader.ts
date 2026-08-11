@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 import { logger } from '@shared/infrastructure/logger';
 import { DAEMON_PATHS } from '@core/config/paths';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { buildArtifactCacheKey } from '@modules/plugin/services/binaries/runtime-cache-keys';
 

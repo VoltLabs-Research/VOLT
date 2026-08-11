@@ -4,18 +4,11 @@ import { formatUnknownValue } from '@/shared/utils/format';
 import { getColumnKey } from '@/shared/ui/components/DocumentListingTable';
 import { renderInferredCell } from '@/modules/plugin/components/listing/PluginCompactTable/cellRenderers';
 import { resolveColumnStyle } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
-import {
-    TABLE_CELL_CLASS,
-    TABLE_ROW_CLASS,
-    TABLE_ROW_INTERACTIVE_CLASS,
-    TABLE_ROW_SELECTED_CLASS
-} from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 import type { InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
-/** The `rowProps` bag `react-window` forwards to every row it renders. */
 export interface CompactTableRowProps {
     data: Record<string, unknown>[];
     columns: PluginTableColumnConfig[];
@@ -72,9 +65,9 @@ const CompactTableRow = ({
         <div
             style={style}
             className={cn(
-                TABLE_ROW_CLASS,
-                isClickable ? TABLE_ROW_INTERACTIVE_CLASS : null,
-                isSelected ? TABLE_ROW_SELECTED_CLASS : null
+                'flex flex-row justify-between hover:bg-surface-hover',
+                isClickable ? 'cursor-pointer transition-colors duration-[120ms] ease-out focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--accent)]' : null,
+                isSelected ? 'bg-accent/12 hover:bg-accent/18' : null
             )}
             onClick={handleClick}
             onKeyDown={handleKeyDown}
@@ -95,8 +88,6 @@ const CompactTableRow = ({
                 }else if(inferred){
                     cellContent = renderInferredCell(rawValue, inferred);
                 }else{
-                    // Nothing is known about this column, so fall back to a
-                    // stringified cell that also carries the full value.
                     titleAttribute = formatUnknownValue(rawValue);
                     cellContent = titleAttribute;
                 }
@@ -104,7 +95,7 @@ const CompactTableRow = ({
                 return (
                     <div
                         key={columnKey}
-                        className={TABLE_CELL_CLASS}
+                        className='flex flex-row items-center overflow-hidden whitespace-nowrap text-ellipsis px-2 py-[0.1875rem] text-xs text-muted max-[768px]:px-1 max-[768px]:text-[0.625rem]'
                         style={resolveColumnStyle(col, columnWidthScale)}
                         title={titleAttribute}
                     >

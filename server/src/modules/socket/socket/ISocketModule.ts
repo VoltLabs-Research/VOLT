@@ -18,8 +18,6 @@ export interface ISocketAuthenticationResult {
 
 export interface ISocketConnectionData {
     currentTeamId?: string;
-    currentChatId?: string;
-    currentChatTeamId?: string;
     auth?: ISocketAuthenticationResult;
     [key: string]: unknown;
 }

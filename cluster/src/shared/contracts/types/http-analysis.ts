@@ -4,7 +4,7 @@ import type { WorkflowValueMap } from '@shared/contracts/types/workflow.types';
 import type { DaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
 import type { JobIdentity } from '@shared/contracts/types/job-identity';
 
-export type WithTrace<T> = T & { traceContext?: DaemonTraceContext };
+type WithTrace<T> = T & { traceContext?: DaemonTraceContext };
 
 export interface AnalysisValueMap {
     [key: string]: AnalysisValue;
@@ -83,7 +83,7 @@ export interface AnalysisExecutionDataReference {
     ttlSeconds: number;
 }
 
-export interface AnalysisEntrypointSnapshot {
+interface AnalysisEntrypointSnapshot {
     binaryObjectPath: string;
     ownerClusterId?: string;
     arguments: string;
@@ -100,7 +100,7 @@ export interface AnalysisExecutionIdentity extends Omit<JobIdentity, 'jobId'> {
     storageClusterId?: string;
 }
 
-export interface AnalysisWorkflowSnapshot {
+interface AnalysisWorkflowSnapshot {
     definition: WorkflowDefinition;
     nestedPlugins: NestedPluginDefinition[];
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
@@ -234,7 +234,7 @@ export interface PipelineStageTransport {
     config?: AnalysisValueMap;
 }
 
-export interface PipelineStartTransportRequest {
+interface PipelineStartTransportRequest {
     teamId: string;
     teamClusterId: string;
     trajectoryId: string;
@@ -253,7 +253,7 @@ export interface PipelineStartResolvedStage {
     config?: AnalysisValueMap;
 }
 
-export interface PipelineStartRequest extends Omit<PipelineStartTransportRequest, 'stages'> {
+interface PipelineStartRequest extends Omit<PipelineStartTransportRequest, 'stages'> {
     stages: PipelineStartResolvedStage[];
 }
 

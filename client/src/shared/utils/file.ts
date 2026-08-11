@@ -56,11 +56,7 @@ export interface FileWithPath {
 interface ProcessedFileSystemEntry {
     files: FileWithPath[];
     folderName: string | null;
-    /**
-     * Entries the browser refused to hand over. A dropped folder can partially
-     * fail, so callers must surface this instead of silently uploading less than
-     * the user selected.
-     */
+
     skippedPaths: string[];
 };
 

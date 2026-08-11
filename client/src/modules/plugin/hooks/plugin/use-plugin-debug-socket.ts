@@ -68,10 +68,6 @@ interface UsePluginDebugSocketOptions {
     subscribe?: boolean;
 }
 
-/**
- * Subscribes to a debug socket event and drops payloads that belong to a
- * session other than the one currently active in the store.
- */
 const useActiveSessionEvent = <TEvent extends DebugSessionEvent>(
     event: string,
     handler: (event: TEvent) => void,

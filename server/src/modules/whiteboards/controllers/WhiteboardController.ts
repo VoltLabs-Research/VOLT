@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -38,7 +39,7 @@ export default class WhiteboardController extends Controller {
     createWhiteboard(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateWhiteboardInput
+        @Body(schemaBody(typia.createValidate<CreateWhiteboardInput>())) body: CreateWhiteboardInput
     ){
         return this.#service.createWhiteboard(teamId, userId, body);
     }
@@ -78,7 +79,7 @@ export default class WhiteboardController extends Controller {
     createFolder(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateWhiteboardFolderInput
+        @Body(schemaBody(typia.createValidate<CreateWhiteboardFolderInput>())) body: CreateWhiteboardFolderInput
     ){
         return this.#folders.createFolder(teamId, userId, body);
     }
@@ -87,7 +88,7 @@ export default class WhiteboardController extends Controller {
     updateFolder(
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string,
-        @Body() body: UpdateWhiteboardFolderInput
+        @Body(schemaBody(typia.createValidate<UpdateWhiteboardFolderInput>())) body: UpdateWhiteboardFolderInput
     ){
         return this.#folders.updateFolder(teamId, folderId, body);
     }
@@ -114,7 +115,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
         @CurrentUser() userId: string,
-        @Body() body: UpdateWhiteboardInput
+        @Body(schemaBody(typia.createValidate<UpdateWhiteboardInput>())) body: UpdateWhiteboardInput
     ) {
         return this.#service.updateWhiteboard(teamId, whiteboardId, userId, body);
     }
@@ -133,7 +134,7 @@ export default class WhiteboardController extends Controller {
     moveWhiteboard(
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
-        @Body() body: MoveWhiteboardInput
+        @Body(schemaBody(typia.createValidate<MoveWhiteboardInput>())) body: MoveWhiteboardInput
     ){
         return this.#service.moveWhiteboard(teamId, whiteboardId, body.folderId);
     }
@@ -157,7 +158,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
         @CurrentUser() userId: string,
-        @Body() body: SaveWhiteboardStateInput
+        @Body(schemaBody(typia.createValidate<SaveWhiteboardStateInput>())) body: SaveWhiteboardStateInput
     ) {
         return this.#service.saveWhiteboardState(teamId, whiteboardId, userId, Buffer.from(JSON.stringify(body)));
     }
@@ -168,7 +169,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string,
         @CurrentUser() userId: string,
-        @Body() body: UploadWhiteboardAssetInput
+        @Body(schemaBody(typia.createValidate<UploadWhiteboardAssetInput>())) body: UploadWhiteboardAssetInput
     ) {
         return this.#service.uploadWhiteboardAsset(teamId, whiteboardId, userId, body);
     }

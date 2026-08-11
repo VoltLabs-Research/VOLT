@@ -1,45 +1,10 @@
-/**
- * VOLT's entire stylesheet.
- *
- * This one file replaces bravais (`styles.css` + `components.css` + `tailwind.css`),
- * the app's own `identity.css` / `base.css` / `tailwind.css`, and the 196
- * per-component sheets that had grown up beside them. Everything visual now comes
- * from HeroUI's components plus Tailwind utilities written at the call site; what
- * remains here is only what a utility class cannot express:
- *
- *   1. token rebasing — HeroUI's tokens redefined into VOLT's identity
- *   2. chrome that is genuinely bespoke — frameless desktop window, autofill,
- *      focus ring, third-party library surfaces
- *
- * The rule that keeps it this size: a rule may live here only if it has no
- * selector of its own (a token redefinition) or if no combination of utilities
- * can produce it. "It would be tidier in CSS" is not a reason — that is exactly
- * how the 196 sheets accumulated.
- */
-
 @import '@heroui/styles';
 
-/**
- * HeroUI does not own the type stack, so these are plain `@theme` (not `inline`):
- * we want the literal value emitted into `:root`, not a pass-through to a token
- * that nothing declares.
- */
 @theme {
     --font-sans: 'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;
 }
 
-/**
- * `info` is the one status HeroUI has no token for — it ships success, warning and
- * danger only. VOLT distinguishes it (a cluster that is syncing is not a cluster
- * that is healthy), so it is declared here in Tailwind's `--color-*` namespace to
- * make `text-info` / `bg-info` / `border-info` / `bg-info-soft` exist alongside
- * the three HeroUI generates.
- *
- * `inline` is required, exactly as in HeroUI's own theme: without it Tailwind
- * emits its own `--color-info` into `:root`, which would shadow the per-theme
- * value below and freeze it at whichever theme was active at build time.
- */
 @theme inline {
     --color-info: var(--info);
     --color-info-foreground: var(--info-foreground);
@@ -47,20 +12,6 @@
     --color-info-soft-foreground: var(--info-soft-foreground);
 }
 
-/**
- * The accent is monochrome: it IS the foreground, inverted.
- *
- * HeroUI drives every accent surface off these tokens — `.button--primary` sets
- * `--button-bg: var(--accent)`, `--focus: var(--accent)`, and so on — so
- * redefining them here is what makes every primary action black-on-light /
- * white-on-dark without a single call site restating it.
- *
- * This is not a new decision: the app had already collapsed bravais's blue onto
- * `--color-text-primary`, after finding 112 call sites using `--accent-blue`
- * directly as if it were the brand against 6 for the brand token itself. Hue that
- * carries meaning is untouched — `--success`, `--warning`, `--danger` and
- * `--info` still mean what they meant.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -72,16 +23,6 @@
     --link: var(--foreground);
 }
 
-/**
- * A field is defined by its edge, not by elevation. HeroUI lifts a field with a
- * drop shadow and gives it no border; VOLT does the opposite in both themes.
- *
- * The shadow is emptied to a transparent inset rather than to `none`, which is
- * HeroUI's own trick: `.input` feeds `--field-shadow` into Tailwind's
- * `--tw-shadow`, and a `none` inside a box-shadow list would take the focus ring
- * down with it. `--field-border-hover` and `--field-border-focus` derive from
- * `--field-border` upstream, so they follow for free.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -90,24 +31,9 @@
     --field-shadow: 0 0 0 0 transparent inset;
     --field-border-width: 1px;
     --field-border: var(--border);
+    --field-background: transparent;
 }
 
-/**
- * Overflow is signalled by ScrollShadow's fade, never by browser chrome, so the
- * scrollbar is hidden everywhere.
- *
- * HeroUI's own scroll surfaces (popovers, listboxes, modals, tables) apply its
- * `scrollbar` utility, which reads `scrollbar-width: var(--scrollbar-width)` — so
- * rebasing that one token reaches inside components this app never renders
- * directly, with no specificity fight. The universal rule below covers plain
- * `overflow-*` nodes, which read no token at all.
- *
- * This replaces the JS-driven overlay scrollbar the app used to paint itself
- * (`initializeCustomScrollbars` plus a `.volt-custom-scrollbar` element per
- * scrollport): a fixed-position div tracking scroll offsets is a lot of moving
- * parts to reimplement what the platform already does, and it could not follow
- * scroll regions inside a portal.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -125,18 +51,10 @@
     display: none;
 }
 
-/**
- * Light theme.
- *
- * Deliberately thin: HeroUI's light defaults are already the arrangement VOLT
- * wants — a faintly grey page with white surfaces above it, which is what gives a
- * card an edge without a border. Only the ink and the status hues are VOLT's, and
- * the greys are the system ones the app has always used.
- */
 :root,
 .light,
 [data-theme='light'] {
-    --foreground: #1d1d1f;
+    --foreground: #28282b;
     --muted: #8e8e93;
 
     --success: #34c759;
@@ -147,24 +65,10 @@
     --info-foreground: var(--snow);
 }
 
-/**
- * Dark theme.
- *
- * The ladder is the app's own and matches the reference app it is aligning with
- * step for step: page → surface → raised surface → sunken edge → neutral fill.
- * Four values carry the whole hierarchy, and every `bg-*` utility resolves
- * through one of them.
- *
- *   --background          #070708   the page
- *   --surface             #101011   a panel on the page
- *   --surface-secondary   #171719   a card on a panel; also a field, also a popover
- *   --surface-tertiary    #1d1d20   a sunken well
- *   --default             #2b2b2e   a neutral control fill
- */
 .dark,
 [data-theme='dark'] {
-    --background: #070708;
-    --foreground: #f0f0f0;
+    --background: #0c0c0e;
+    --foreground: #e9e9ec;
 
     --surface: #101011;
     --surface-secondary: #171719;
@@ -181,8 +85,6 @@
     --separator: #1d1d20;
     --border-secondary: #2b2b2e;
 
-    --field-background: #171719;
-
     --success: #2dcc70;
     --warning: #ffd60a;
     --danger: #ff453a;
@@ -191,10 +93,6 @@
     --info-foreground: var(--snow);
 }
 
-/**
- * `info`'s soft pair, derived the same way HeroUI derives the other three, so a
- * soft info chip sits at the same weight as a soft success or danger one.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -204,11 +102,6 @@
     --info-soft-foreground: color-mix(in oklab, var(--info) 70%, var(--foreground) 30%);
 }
 
-/**
- * The focus ring. HeroUI rings with `--focus`, which the monochrome accent above
- * already points at the foreground; this covers the plain interactive elements
- * that are not HeroUI components and therefore ring through the UA instead.
- */
 :where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus {
     outline: none;
 }
@@ -218,23 +111,14 @@
     outline-offset: 2px;
 }
 
-/**
- * Autofill. Chrome paints its own background on an autofilled field and ignores
- * `background-color`; an enormous inset shadow is the only way to cover it, and
- * `-webkit-text-fill-color` the only way to reach the text.
- */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 1000px var(--field-background, var(--surface-secondary)) inset !important;
-    box-shadow: 0 0 0 1000px var(--field-background, var(--surface-secondary)) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--surface-secondary) inset !important;
+    box-shadow: 0 0 0 1000px var(--surface-secondary) inset !important;
     -webkit-text-fill-color: var(--field-foreground, var(--foreground)) !important;
 }
 
-/**
- * A number field carries its own stepper; the UA's spinners would be a second
- * one.
- */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -246,13 +130,6 @@ input[type='number'] {
     -moz-appearance: textfield;
 }
 
-/**
- * The app shell.
- *
- * `--volt-root-font-size` and `--volt-app-max-width` are set from JS to scale a
- * dense dashboard down on small desktops and to stop the layout stretching on
- * ultrawides, so they stay tokens rather than utilities.
- */
 html {
     font-size: var(--volt-root-font-size, 16px);
     max-width: var(--volt-app-max-width, 2560px);
@@ -286,22 +163,13 @@ body {
     scroll-padding-left: env(safe-area-inset-left, 0px);
 }
 
-/**
- * Frameless desktop chrome.
- *
- * Electron gives the window no frame, so the app draws its own rounded corner and
- * has to let the desktop show through behind it — which is why `html` and `body`
- * go transparent and `#root` takes the background instead. `data-volt-desktop`
- * and `data-volt-maximized` are set on `documentElement` by the preload bridge;
- * a maximized window has no corner to round.
- */
 html[data-volt-desktop],
 html[data-volt-desktop] body {
     background-color: transparent;
 }
 
 html[data-volt-desktop] #root {
-    border-radius: var(--radius-xl);
+    border-radius: 20px;
     overflow: hidden;
     background-color: var(--background);
 }
@@ -310,11 +178,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     border-radius: 0;
 }
 
-/**
- * A resize handle's grip. The dots are drawn with a pseudo-element because the
- * handle itself must stay a zero-width hit target that does not affect layout,
- * and a pseudo-element cannot be produced by a utility class.
- */
 .volt-resize-handle__grip {
     position: absolute;
     inset: 0;
@@ -326,7 +189,7 @@ html[data-volt-desktop][data-volt-maximized] #root {
     position: absolute;
     inset: 50% auto auto 50%;
     transform: translate(-50%, -50%);
-    border-radius: var(--radius-full, 999px);
+    border-radius: 9999px;
     background: color-mix(in srgb, var(--muted) 75%, transparent);
 }
 
@@ -340,46 +203,83 @@ html[data-volt-desktop][data-volt-maximized] #root {
     height: 3px;
 }
 
-/**
- * Third-party surfaces. Each of these is a library that renders its own DOM out
- * of reach of a `className`, so its theming has to be reached by selector.
- */
+.app-sidebar > * {
+    transition:
+        opacity 240ms var(--ease-out-fluid),
+        transform 420ms var(--ease-out-fluid);
+}
+
+@media (width >= 1024.05px) {
+    .app-sidebar[data-rail='hidden'] > * {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+}
+
+.sidebar-panel {
+    grid-area: 1 / 1;
+    transition:
+        opacity 420ms var(--ease-out-fluid),
+        transform 420ms var(--ease-out-fluid),
+        filter 420ms var(--ease-out-fluid);
+}
+
+.sidebar-panel > * {
+    transition:
+        color 150ms var(--ease-out-fluid),
+        opacity 420ms var(--ease-out-fluid) var(--sidebar-item-delay, 0ms);
+}
+
+.sidebar-panel > *:nth-child(2) {
+    --sidebar-item-delay: 40ms;
+}
+
+.sidebar-panel > *:nth-child(3) {
+    --sidebar-item-delay: 80ms;
+}
+
+.sidebar-panel > *:nth-child(4) {
+    --sidebar-item-delay: 120ms;
+}
+
+.sidebar-panel > *:nth-child(5) {
+    --sidebar-item-delay: 160ms;
+}
+
+.sidebar-panel > *:nth-child(6) {
+    --sidebar-item-delay: 200ms;
+}
+
+.sidebar-panel[data-state='idle'] {
+    opacity: 0;
+    transform: translateX(8px);
+    filter: blur(4px);
+    pointer-events: none;
+}
+
+.sidebar-panel--app[data-state='idle'] {
+    transform: translateX(-8px);
+}
+
+.sidebar-panel[data-state='idle'] > * {
+    opacity: 0;
+    transition-delay: 0ms;
+}
+
 .react-flow__attribution {
     display: none;
 }
 
-/**
- * ─── Canvas chrome that has no utility form ──────────────────────────────────
- *
- * Four rules survived the canvas module's 32 deleted stylesheets. Each is here
- * because of a specific mechanical limit, not because it was inconvenient to
- * convert. The `animation` and marker classes stay at their call sites.
- */
-
-/* A `@keyframes` block has no utility form. The shorthand that uses it does, and
-   stayed at the call site as `animate-[canvas-drawer-backdrop-in_180ms_ease-out]`.
-   No reduced-motion pair is needed: the global block above already forces
-   `animation-duration: 0.01ms` on everything. */
 @keyframes canvas-drawer-backdrop-in {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-/* Same, and this one cannot be decomposed into utilities at all: the badge is
-   centred with `translateX(-50%)`, so that translate has to be restated in both
-   steps or the element jumps to the left edge for the animation's duration. */
 @keyframes ai-viewer-badge-in {
     from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/*
- * On the desktop shell the canvas toolbar *is* the OS titlebar for /canvas/*.
- * The second rule is an ancestor attribute plus a descendant `:is()` over four
- * element types and a class — a selector no utility on a single element can
- * produce, because the no-drag has to reach HeroUI internals (Button roots, Input,
- * the WindowControls subtree) that the module never renders directly.
- */
 [data-volt-desktop] .canvas-top-toolbar {
     -webkit-app-region: drag;
 }
@@ -388,14 +288,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     -webkit-app-region: no-drag;
 }
 
-/*
- * Two separate limits here. `backdrop-filter` with three functions in one value
- * cannot be composed from Tailwind's `backdrop-*` utilities — they each write the
- * same declaration through their own variables, so one wins and the rest are lost.
- * And the completed state transitions `mask-image`, which must carry its
- * `-webkit-` twin *inside* the transition list; a utility cannot write the same
- * property name twice, and the hover reset then needs the pair again.
- */
 .canvas-analysis-execution-overlay {
     backdrop-filter: blur(8px) brightness(1.3) saturate(0.6);
 }
@@ -412,157 +304,12 @@ html[data-volt-desktop][data-volt-maximized] #root {
     mask-image: none;
 }
 
-/**
- * ─── TEMPORARY: bravais token compatibility shim ─────────────────────────────
- *
- * DELETE THIS BLOCK once `find src -name '*.css'` returns only this file and
- * `fonts.css`. It exists solely to keep the not-yet-migrated component
- * stylesheets rendering correctly while the migration is in flight.
- *
- * Why it is necessary rather than tidy: deleting `identity.css` and bravais's
- * `theme.css` removed ~70 custom properties that 129 of the remaining
- * stylesheets still read — 837 references in total. An undefined `var()` is not
- * merely ignored: the declaration becomes invalid at computed-value time. For a
- * longhand that means the inherited or initial value, but for a **shorthand** it
- * resets the whole property. 294 of those references sit in `border:`,
- * `background:`, `box-shadow:`, `outline:` and `transition:` shorthands, so
- * without this shim those rules actively *remove* a border or background rather
- * than falling through to a base utility — a silent, widespread visual
- * regression that would also make any mid-migration visual QA meaningless.
- *
- * Every entry maps an old bravais/identity name onto its HeroUI successor, so
- * these follow the theme exactly as before. The mapping is the same one the
- * migration spec applies to class names.
- */
-:root,
-.light,
-[data-theme='light'],
-.dark,
-[data-theme='dark'] {
-    /* text */
-    --color-text-primary: var(--foreground);
-    --color-text-secondary: var(--muted);
-    --color-text-tertiary: var(--muted);
-    --color-text-muted: var(--muted);
-
-    /* surfaces */
-    --color-bg: var(--background);
-    --color-content-bg: var(--surface);
-    --color-surface-0: var(--surface);
-    --color-surface-1: var(--surface-secondary);
-    --color-surface-2: var(--surface-tertiary);
-    --color-surface-3: var(--default);
-    --color-overlay: var(--overlay);
-
-    /* borders */
-    --color-border: var(--border);
-    --color-border-soft: var(--border);
-    --color-border-strong: var(--border-secondary);
-
-    /* interaction */
-    --hover-bg: var(--surface-hover);
-    --active-bg: var(--surface-hover);
-    --focus-ring: var(--focus);
-    --focus-ring-shadow: 0 0 0 1px var(--border), 0 0 0 4px color-mix(in srgb, var(--focus) 30%, transparent);
-    --selected-indicator: var(--accent);
-
-    /* the accent, already monochrome before this migration */
-    --color-brand-primary: var(--accent);
-    --accent-blue: var(--accent);
-    --color-on-accent: var(--accent-foreground);
-
-    /* glass was already flattened to a solid surface with a real border */
-    --glass-bg: var(--surface);
-    --glass-bg-secondary: var(--surface-secondary);
-    --glass-border: var(--border);
-    --glass-blur: none;
-    --material-regular: var(--surface-secondary);
-    --material-regular-border: var(--border);
-    --shadow-glass: 0 0 0 1px var(--border);
-    --shadow-card: 0 0 0 1px var(--border);
-    --shadow-elevated: var(--overlay-shadow);
-
-    /* status */
-    --status-success: var(--success);
-    --status-error: var(--danger);
-    --status-warning: var(--warning);
-    --status-info: var(--info);
-    --status-success-bg: var(--success-soft);
-    --status-error-bg: var(--danger-soft);
-    --status-warning-bg: var(--warning-soft);
-    --status-info-bg: var(--info-soft);
-    --status-success-border: color-mix(in oklab, var(--success) 24%, transparent);
-    --status-error-border: color-mix(in oklab, var(--danger) 24%, transparent);
-    --status-warning-border: color-mix(in oklab, var(--warning) 30%, transparent);
-    --status-info-border: color-mix(in oklab, var(--info) 28%, transparent);
-
-    /* semantic hues kept as hues: these read as data, not as accent */
-    --accent-green: var(--success);
-    --accent-red: var(--danger);
-    --accent-yellow: var(--warning);
-    --accent-orange: var(--warning);
-
-    /* controls */
-    --button-bg: var(--default);
-    --button-bg-smooth: var(--surface);
-    --button-border: var(--border);
-    --input-bg: var(--field-background, var(--surface-secondary));
-    --input-fg: var(--field-foreground, var(--foreground));
-    --color-autofill-bg: var(--field-background, var(--surface-secondary));
-    --color-autofill-text: var(--foreground);
-
-    /*
-     * Radii, at bravais's ORIGINAL pixel values — not HeroUI's.
-     *
-     * Two independent reasons these must be restated. First, HeroUI declares its
-     * scale inside `@theme inline`, and `inline` means Tailwind folds the value
-     * into each `rounded-*` utility and never emits the custom property, so a
-     * plain stylesheet reading `var(--radius-sm)` resolves to nothing. Second,
-     * the values differ: bravais's `--radius-sm` was 8px, HeroUI's is 4px. The
-     * remaining stylesheets were written against bravais's numbers, so the shim
-     * has to reproduce those and not the successor's — the by-pixel-value
-     * conversion only happens when a sheet is migrated to `rounded-*` classes.
-     */
-    --radius-xs: 6px;
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
-    --radius-2xl: 24px;
-
-    /*
-     * bravais's Tailwind bridge exposed these as `--color-*` aliases; same
-     * `@theme inline` situation, so a stylesheet reading them got nothing.
-     */
-    --color-primary: var(--foreground);
-    --color-accent: var(--accent);
-    --color-danger: var(--danger);
-    --color-bg-subtle: var(--surface-secondary);
-    --color-bg-hover: var(--surface-hover);
-
-    /* One canvas token that was only ever declared by a deleted sheet. */
-    --canvas-right-overlay-size: 320px;
-
-    /* scrollbar, motion, stacking */
-    --color-scrollbar: var(--scrollbar-thumb);
-    --color-scrollbar-hover: var(--scrollbar-thumb);
-    --radius-full: 9999px;
-    --z-floating: 99999;
-    --duration-fast: 150ms;
-    --duration-normal: 200ms;
-    --duration-base: 250ms;
-    --ease-standard: var(--ease-out-fluid);
-}
-
-/* The few that were genuine per-theme literals rather than aliases. */
 :root,
 .light,
 [data-theme='light'] {
     --accent-indigo: #5856d6;
     --accent-purple: #af52de;
     --accent-teal: #5ac8fa;
-    --color-contrast-high: #1d1d1f;
-    --color-contrast-low: #d1d1d6;
     --syntax-key: #2563eb;
     --syntax-string: #16a34a;
     --syntax-primitive: #d97706;
@@ -575,8 +322,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     --accent-indigo: #5e5ce6;
     --accent-purple: #bf5af2;
     --accent-teal: #64d2ff;
-    --color-contrast-high: #ffffff;
-    --color-contrast-low: #1d1d20;
     --syntax-key: #93c5fd;
     --syntax-string: #86efac;
     --syntax-primitive: #fbbf24;
@@ -618,20 +363,17 @@ html[data-volt-desktop][data-volt-maximized] #root {
     }
 }
 
-/**
- * Reduced motion, declared once for the whole app.
- *
- * This is load-bearing, not a nicety. bravais expressed motion through two
- * composite classes (`transition-fast` / `transition-normal`) and paired them
- * with their own `prefers-reduced-motion` opt-out. Those composites are gone —
- * every call site now names a Tailwind duration and easing directly — so without
- * this block the opt-out would have disappeared along with them, silently, at
- * every animated site in the app.
- *
- * Declaring it globally rather than as a `motion-reduce:` utility per call site
- * is deliberate: an accessibility guarantee that depends on each author
- * remembering a modifier is not a guarantee.
+/*
+ * HeroUI portals modal/drawer backdrops to <body> with no z-index, so app chrome
+ * that creates its own stacking context (sidebar z-100, mobile drawers z-120+,
+ * canvas panels z-140) paints above the blur. Lift portaled overlays above all
+ * app chrome but below the floating layer.
  */
+.modal-backdrop,
+.drawer-backdrop {
+    z-index: 200;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

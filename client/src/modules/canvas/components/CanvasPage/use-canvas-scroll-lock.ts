@@ -14,10 +14,6 @@ const lockStyles = (element: HTMLElement, styles: Record<string, string>): (() =
     };
 };
 
-/**
- * Pins the document while the canvas takes over a narrow viewport, so touch
- * gestures pan the scene instead of the page, and restores the scroll offset.
- */
 const useCanvasScrollLock = (enabled: boolean) => {
     useEffect(() => {
         if (!enabled) {

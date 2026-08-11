@@ -221,6 +221,7 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
         };
     }, [
         camera,
+        controls,
         invalidate,
         onContentTypeDetected,
         setLocalAutoSimulationCellWorldBounds,

@@ -1,4 +1,4 @@
-import { Button, Separator, Spinner, Tooltip, cn } from '@heroui/react';
+import { Button, Separator, Spinner, Tooltip } from '@heroui/react';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
@@ -10,34 +10,6 @@ import { isUserConfigurableArgument } from '@/modules/plugin/utils/plugin/argume
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
 import type { ReactNode } from 'react';
-
-/**
- * `DebugToolbar.css`, as utilities.
- *
- * Two of its rules reached into bravais's Select trigger by state class
- * (`.select-trigger:disabled`, `.select-trigger.open`); HeroUI publishes both as
- * attributes on its own trigger, so they move to the call site as `disabled:` and
- * `data-[open]:` variants. The open-state border was `--accent-blue`, which is
- * `--accent` (spec §3a).
- *
- * `panel-floating` is dropped rather than translated: it is one of the bravais
- * utility classes whose stylesheet is gone, and nothing in the app has ever defined
- * it — the surface it implied is already spelled out here as
- * `border border-border bg-surface`.
- */
-const TOOLBAR_WRAPPER_CLASS = 'absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-[0.375rem]';
-const TOOLBAR_CLASS = 'flex flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-4';
-const TOOLBAR_DIVIDER_CLASS = 'mx-1 h-5 bg-border-secondary';
-const TOOLBAR_STATUS_CLASS = 'flex flex-row items-center gap-2 whitespace-nowrap';
-const TOOLBAR_SELECT_TRIGGER_CLASS = 'disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent data-[open]:border-accent';
-
-/**
- * bravais's `StatusDot` at its default `size='sm'` — an 8px dot ringed against the
- * raised surface it sits on. `tone='info'` had *no* rule in bravais's stylesheet, so
- * the "running" dot has been rendering with no fill at all; §3a keeps a meaningful
- * hue as itself, so it becomes `bg-info` rather than inheriting that omission.
- */
-const STATUS_DOT_CLASS = 'inline-block size-2 shrink-0 animate-pulse rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]';
 
 interface DebugControlButtonProps {
     tooltip: string;
@@ -125,15 +97,13 @@ const DebugToolbar = () => {
     }
 
     return (
-        <div className={TOOLBAR_WRAPPER_CLASS}>
-            <div className={TOOLBAR_CLASS}>
+        <div className='absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-[0.375rem]'>
+            <div className='flex flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-4'>
                 <div className='flex flex-row items-center gap-2'>
                     <Bug size={14} className='text-muted' aria-hidden='true' />
                     <p className='text-xs font-semibold text-muted'>Debug</p>
                 </div>
-
-                <Separator orientation='vertical' className={TOOLBAR_DIVIDER_CLASS} />
-
+                <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
                 <PluginSelect
                     options={trajectories.map((trajectory) => ({
                         value: trajectory._id,
@@ -145,9 +115,8 @@ const DebugToolbar = () => {
                     ariaLabel='Trajectory'
                     isDisabled={isDebugging || isStarting}
                     isPending={trajLoading}
-                    triggerClassName={TOOLBAR_SELECT_TRIGGER_CLASS}
+                    triggerClassName='disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent data-[open]:border-accent'
                 />
-
                 <PluginSelect
                     options={frames.map((frame) => ({
                         value: String(frame.timestep),
@@ -158,24 +127,19 @@ const DebugToolbar = () => {
                     placeholder='Frame'
                     ariaLabel='Frame'
                     isDisabled={!selectedTrajectoryId || isDebugging || isStarting}
-                    triggerClassName={TOOLBAR_SELECT_TRIGGER_CLASS}
+                    triggerClassName='disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent data-[open]:border-accent'
                 />
-
-                <Separator orientation='vertical' className={TOOLBAR_DIVIDER_CLASS} />
-
+                <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
                 <div className='flex flex-row items-center gap-1'>
                     <DebugControlButton tooltip={startTooltip} onPress={handlePlayClick} isDisabled={!canStart}>
                         {isStarting ? <Spinner size='sm' color='current' /> : <Play size={14} aria-hidden='true' />}
                     </DebugControlButton>
-
                     <DebugControlButton tooltip='Step to next node' onPress={step} isDisabled={!canAdvance}>
                         <StepForward size={14} aria-hidden='true' />
                     </DebugControlButton>
-
                     <DebugControlButton tooltip='Continue (run all remaining)' onPress={continueAll} isDisabled={!canAdvance}>
                         <FastForward size={14} aria-hidden='true' />
                     </DebugControlButton>
-
                     <DebugControlButton tooltip='Stop debug session' onPress={stop} isDisabled={!canStop}>
                         <Square size={14} aria-hidden='true' />
                     </DebugControlButton>
@@ -184,11 +148,11 @@ const DebugToolbar = () => {
 
             {isDebugging && (
                 <>
-                    <Separator orientation='vertical' className={TOOLBAR_DIVIDER_CLASS} />
-                    <div className={TOOLBAR_STATUS_CLASS}>
+                    <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
+                    <div className='flex flex-row items-center gap-2 whitespace-nowrap'>
                         {isPaused && currentNodeLabel && (
                             <>
-                                <span role='status' aria-label='warning status' className={cn(STATUS_DOT_CLASS, 'bg-warning')} />
+                                <span role='status' aria-label='warning status' className='inline-block size-2 shrink-0 animate-pulse rounded-full shadow-[0_0_0_2px_var(--surface-secondary)] bg-warning' />
                                 <p className='text-xs'>
                                     Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
                                 </p>
@@ -196,7 +160,7 @@ const DebugToolbar = () => {
                         )}
                         {!isPaused && (
                             <>
-                                <span role='status' aria-label='info status' className={cn(STATUS_DOT_CLASS, 'bg-info')} />
+                                <span role='status' aria-label='info status' className='inline-block size-2 shrink-0 animate-pulse rounded-full shadow-[0_0_0_2px_var(--surface-secondary)] bg-info' />
                                 <p className='text-xs text-muted'>
                                     Running... {completedCount}/{totalNodes}
                                 </p>

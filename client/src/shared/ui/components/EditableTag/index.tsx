@@ -13,8 +13,6 @@ interface EditableTagProps {
     onEditingChange?: (isEditing: boolean) => void;
 };
 
-const INTERACTIVE_CLASSES = 'cursor-text transition-[background-color,box-shadow] duration-200 hover:bg-surface-hover/[0.92] focus-visible:bg-surface-hover/[0.92] focus-visible:ring-2 focus-visible:ring-focus';
-const EDITING_CLASSES = 'cursor-text w-fit min-w-[2ch] bg-surface-secondary ring-2 ring-focus';
 
 const getTextValue = (children: React.ReactNode): string => {
     if (typeof children === 'string' || typeof children === 'number') {
@@ -130,7 +128,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         Tag,
         {
             ref: combinedRef,
-            className: cn('rounded-md', isEditing ? EDITING_CLASSES : INTERACTIVE_CLASSES, className),
+            className: cn('rounded-md', isEditing ? 'cursor-text w-fit min-w-[2ch] bg-surface-secondary ring-2 ring-focus' : 'cursor-text transition-[background-color,box-shadow] duration-200 hover:bg-surface-hover/[0.92] focus-visible:bg-surface-hover/[0.92] focus-visible:ring-2 focus-visible:ring-focus', className),
             contentEditable: isEditing,
             tabIndex: isEditing ? -1 : 0,
             onClick: handleClick,

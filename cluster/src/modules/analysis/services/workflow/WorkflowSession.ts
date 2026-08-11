@@ -1,12 +1,14 @@
 import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import type {
     AnalysisExposureDefinition,
-    DaemonAnalysisDocument,
+    DaemonAnalysisDocument
+} from '@shared/contracts/types/http-analysis';
+import type {
     NestedPluginDefinition,
     TrajectoryDumpDescriptor,
     TrajectoryFrame,
     WorkflowDefinition
-} from '@shared/contracts';
+} from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowExecutionOptions,
     WorkflowExecutionContext,

@@ -19,7 +19,7 @@ import {
     parseListEntry
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER } from '@shared/infrastructure/contracts/team-cluster';
+import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER } from '@shared/contracts/types/TeamClusterObjectGateway';
 import { buffer } from 'node:stream/consumers';
 import type {
     ObjectGatewayOperationName,
@@ -31,7 +31,7 @@ import type {
     ObjectGatewayJsonListResponse,
     RawHttpResponse
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     TeamClusterObjectGatewayListRequest,
     TeamClusterObjectGatewayListEntry,

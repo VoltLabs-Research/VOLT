@@ -3,7 +3,7 @@ import { cn } from '@heroui/react';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { FitAddon } from 'xterm-addon-fit';
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import type { IDisposable } from 'xterm';
 
@@ -37,26 +37,6 @@ type PendingTerminalOperation =
     | { type: 'write'; data: string }
     | { type: 'clear' };
 
-/**
- * `terminal-container` carries no rules of its own — everything below it is a
- * utility. It stays as a selector hook because xterm.js builds `.xterm`,
- * `.xterm-viewport`, `.xterm-screen` and `.xterm-helper-textarea` itself, out of
- * reach of any className, so those four surfaces can only be reached from an
- * ancestor selector in the global sheet.
- *
- * The focus affordance is a box-shadow rather than a ring because the element
- * that actually takes focus is xterm's offscreen helper textarea, so the visible
- * state has to be painted by the container on `:focus-within`.
- */
-const CONTAINER_CLASS_NAMES = 'terminal-container h-full w-full rounded-lg bg-surface-secondary focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]';
-
-/**
- * xterm.js parses colour strings itself and throws on anything it cannot read.
- * VOLT's tokens are now `oklch()` and `color-mix()` values, so every token is
- * round-tripped through a canvas context — which normalises whatever the theme
- * declared into the `#rrggbb` / `rgba()` form xterm understands, and silently
- * keeps the fallback when the token is missing or unparseable.
- */
 const normalizeTerminalColor = (value: string, fallback: string): string => {
     const declaredValue = value.trim();
 
@@ -113,7 +93,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     const pendingOperationsRef = useRef<PendingTerminalOperation[]>([]);
     const prefersReducedMotion = usePrefersReducedMotion();
 
-    const syncControlledValue = (nextValue: string) => {
+    const syncControlledValue = useCallback((nextValue: string) => {
         const terminal = xtermRef.current;
         if (!terminal || !isReadyRef.current) {
             pendingControlledValueRef.current = nextValue;
@@ -140,9 +120,9 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
 
         lastRenderedValueRef.current = nextValue;
         pendingControlledValueRef.current = nextValue;
-    };
+    }, []);
 
-    const flushPendingOutput = () => {
+    const flushPendingOutput = useCallback(() => {
         const terminal = xtermRef.current;
         if (!terminal || !isReadyRef.current) {
             return;
@@ -171,7 +151,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             terminal.write(operation.data);
             lastRenderedValueRef.current = `${lastRenderedValueRef.current}${operation.data}`;
         }
-    };
+    }, [syncControlledValue]);
 
     useEffect(() => {
         onDataRef.current = onData;
@@ -189,7 +169,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
         }
 
         syncControlledValue(value);
-    }, [value]);
+    }, [value, syncControlledValue]);
 
     useEffect(() => {
         onDataDisposableRef.current?.dispose();
@@ -363,7 +343,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
             xtermRef.current = null;
             fitAddonRef.current = null;
         };
-    }, [fontFamily, fontSize]);
+    }, [fontFamily, fontSize, flushPendingOutput, prefersReducedMotion]);
 
     useEffect(() => {
         if (!xtermRef.current) {
@@ -376,7 +356,7 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     return (
         <div
             ref={containerRef}
-            className={cn(CONTAINER_CLASS_NAMES, className)}
+            className={cn('terminal-container h-full w-full rounded-lg bg-surface-secondary focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]', className)}
             role='region'
             aria-label={ariaLabel}
         />

@@ -76,8 +76,6 @@ export default function useTeamRoleListingActions({
         if (!isConfirmed) return;
 
         for (const role of eligibleRoles) {
-            // Each deletion reports its own outcome; one failure must not stop
-            // the remaining roles in the batch.
             await runAction({
                 action: () => deleteRoleMutation.mutateAsync({
                     teamId,

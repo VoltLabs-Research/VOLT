@@ -1,4 +1,4 @@
-import { row, PRESETS, positionRows, vec3Rows, colorExtras, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
@@ -155,7 +155,7 @@ const useLightsGroup = (): RenderGroup => {
                     ...positionRows(() => st.hemisphere.position, (i: number, v: number) => setVec3<HemiLight>(setHemisphere, st.hemisphere.position, i, v))
                 ],
                 extras: (
-                    <div className={RENDER_GRID_CLASS}>
+                    <div className='flex flex-col items-stretch gap-2'>
                         {colorExtras(
                             {
                                 key: 'hSky',
@@ -240,7 +240,7 @@ const useLightsGroup = (): RenderGroup => {
                 }
             ]
         };
-    }, [st.global, st.directional, st.point, st.spot, st.hemisphere, st.rectArea, isPointCloudScene]);
+    }, [st.global, st.directional, st.point, st.spot, st.hemisphere, st.rectArea, isPointCloudScene, setGlobal, setDirectional, setPoint, setSpot, setHemisphere, setRectArea]);
 };
 
 export default useLightsGroup;

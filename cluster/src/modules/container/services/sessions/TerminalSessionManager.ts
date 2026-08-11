@@ -5,8 +5,8 @@ import { withTimeout } from '@shared/infrastructure/observability/daemon-instrum
 import { SESSION_ATTACH_TIMEOUT_MS } from '@core/constants/reverse-channel';
 import { decodeStreamChunk, encodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
 import { createSessionAttachFailureResult, failSessionAttach } from '@modules/container/services/sessions/session-transitions';
-import type { RuntimeTerminalAttachment } from '@shared/infrastructure/runtime/DockerRuntime';
-import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionResizePayload } from '@shared/contracts';
+import type { RuntimeTerminalAttachment } from '@shared/infrastructure/runtime/docker-terminal-exec';
+import type { TeamClusterDaemonSessionAttachPayload, TeamClusterDaemonSessionResizePayload } from '@voltstack/daemon-cluster-client';
 import type { BinarySessionInputPayload } from '@shared/contracts/channel/binary-messages';
 import type { SessionCommandResult, SessionTransitionCoordinator } from '@modules/container/services/sessions/session-transitions';
 

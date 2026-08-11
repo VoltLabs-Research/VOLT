@@ -1,7 +1,8 @@
 import { Switch } from '@heroui/react';
 import { CANVAS_QUERY_KEYS } from '@/modules/canvas/hooks/queries';
 import { TRAJECTORY_QUERY_KEYS, trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import queryClient from '@/shared/query/query-client';
 import { sileo } from 'sileo';
 import { useCallback, useState } from 'react';

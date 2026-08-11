@@ -31,25 +31,8 @@ const ClusterInstallCommandPicker = ({
     }, [activePlatform, clusterId, enrollmentToken]);
 
     return (
-        /*
-         * `w-full min-w-0` was `.cluster-install-command-picker` — the whole of the
-         * deleted sheet apart from its reach into CopyableField below.
-         */
+
         <div className={cn('flex w-full min-w-0 flex-col gap-3', className)}>
-            {/*
-              * bravais's `SegmentedTabs` was a `role='tablist'` wired to no panel: it
-              * picked a platform, it did not switch a view. Spec §4c therefore sends
-              * it to `ToggleButtonGroup` rather than `Tabs`. `disallowEmptySelection`
-              * reproduces the fully-controlled single-active behaviour — there was no
-              * way to deselect a segment — and `ariaLabel` becomes the DOM-cased
-              * `aria-label`.
-              *
-              * Two knock-on changes worth knowing: the control is now a `role='group'`
-              * of `aria-pressed` buttons instead of tabs wired to nothing, and arrow
-              * keys move between segments, which `SegmentedTabs` never implemented.
-              * The framer-motion sliding pill goes with it; HeroUI paints the selected
-              * segment itself.
-              */}
             <ToggleButtonGroup
                 aria-label='Cluster host operating system'
                 selectionMode='single'
@@ -73,12 +56,6 @@ const ClusterInstallCommandPicker = ({
                     </ToggleButton>
                 ))}
             </ToggleButtonGroup>
-
-            {/*
-              * `.cluster-install-command-picker .copyable-field { min-width: 0 }`,
-              * expressed through the `className` CopyableField already merges with
-              * `cn` instead of reaching into shared/ui by class name.
-              */}
             <CopyableField
                 className='min-w-0'
                 value={installCommand}

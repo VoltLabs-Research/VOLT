@@ -1,5 +1,5 @@
 import { showPromise } from '@/shared/ui/hooks/toast';
-import { closeModal, openModal } from '@/shared/ui/modal';
+import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useCallback, useState } from 'react';
 

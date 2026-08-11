@@ -1,5 +1,6 @@
 import { guestRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import { DashboardNavigationSection } from '@/app/routes/types';
+import { registerRouteLoader } from '@/shared/utils/route-prefetch';
 import { matchPath } from 'react-router-dom';
 import type { RouteConfig, RouteNavigationConfig } from '@/app/routes/types';
 
@@ -89,6 +90,15 @@ const dashboardNavigationItemsBySection: Record<DashboardNavigationSection, Dash
     [DashboardNavigationSection.Secondary]: [],
     [DashboardNavigationSection.Settings]: []
 };
+
+routeManifestEntries.forEach((entry) => {
+    if (!entry.route.loader) {
+        return;
+    }
+
+    registerRouteLoader(entry.path, entry.route.loader);
+    registerRouteLoader(resolveDashboardNavigationPath(entry.path), entry.route.loader);
+});
 
 routeManifestEntries.forEach((entry) => {
     if (!entry.route.navigation) {

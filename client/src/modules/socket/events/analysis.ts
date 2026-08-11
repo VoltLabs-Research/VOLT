@@ -10,14 +10,6 @@ export const SOCKET_ANALYSIS_EVENTS = {
     LOG_CHUNK: 'analysis-log:chunk'
 } as const;
 
-/*
- * The VOLT server re-broadcasts its analysis domain events verbatim to the `team:{teamId}` room
- * (see `server/src/modules/socket/socket/EventBroadcastSocketModule.ts`), so these mirror
- * `server/src/shared/contracts/events/Analysis*Payload.ts`, narrowed to the fields the client
- * consumes. `teamId` is the server's routing key and is not modelled here. Server `Date` fields
- * arrive as ISO strings over the socket transport.
- */
-
 export interface AnalysisCreatedSocketPayload {
     analysisId: string;
     trajectoryId: string;

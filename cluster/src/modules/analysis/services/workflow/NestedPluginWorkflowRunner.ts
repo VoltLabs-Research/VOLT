@@ -16,14 +16,14 @@ import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
+import type { DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
 import type {
-    DaemonAnalysisDocument,
     NestedPluginDefinition,
     TrajectoryDumpDescriptor,
     TrajectoryFrame,
     WorkflowDefinition,
     WorkflowNodeDefinition
-} from '@shared/contracts';
+} from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowDumpTarget,
     WorkflowLogSinkFactory,
@@ -34,7 +34,7 @@ import type {
 import type { BinaryExecutor, PluginRuntimeProvider } from '@shared/contracts/types/plugin-execution';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 import type { AnalysisStageStatus } from '@shared/contracts/channel/reverse-channel-analysis';
-import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 
 /** Everything a nested plugin workflow inherits from the workflow that invoked it. */
 interface NestedPluginWorkflowInput {

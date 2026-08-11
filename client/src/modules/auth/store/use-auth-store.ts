@@ -78,7 +78,6 @@ export const useAuthStore = create<AuthStore>((set) => {
                 await fetchCurrentUser();
                 markSignedIn();
             }catch{
-                // The stored token was rejected: drop it and retry local auto-login once.
                 tokenStorage.removeToken();
                 const localToken = await tryLocalAutoLogin();
                 if(localToken){

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import Controller from '@shared/http/Controller';
 import { createUserFilesRouter } from '@shared/infrastructure/http/user-files-router';
 import logger from '@shared/infrastructure/logger';
 
@@ -26,7 +25,6 @@ import ScriptingController from '@modules/scripting/controllers/ScriptingControl
 import JobsController from '@modules/jobs/controllers/JobsController';
 import RasterController from '@modules/raster/controllers/RasterController';
 import SimulationCellController from '@modules/simulation-cell/controllers/SimulationCellController';
-import ChatController from '@modules/chat/controllers/ChatController';
 import WhiteboardController from '@modules/whiteboards/controllers/WhiteboardController';
 import AiController from '@modules/ai/controllers/AiController';
 import AnalysisController from '@modules/analysis/controllers/AnalysisController';
@@ -34,11 +32,9 @@ import ProvenanceController from '@modules/analysis/controllers/ProvenanceContro
 import DashboardController from '@modules/dashboard/controllers/DashboardController';
 import DailyActivityController from '@modules/daily-activity/controllers/DailyActivityController';
 
-type ControllerClass = new () => Controller;
-
 type RouterProviderClass = new () => { buildRouter(): Router };
 
-const CONTROLLERS: Readonly<Record<string, readonly ControllerClass[]>> = {
+const CONTROLLERS: Readonly<Record<string, readonly RouterProviderClass[]>> = {
     system: [SystemController],
     auth: [AuthController],
     session: [SessionController],
@@ -51,7 +47,7 @@ const CONTROLLERS: Readonly<Record<string, readonly ControllerClass[]>> = {
         SecretKeyController,
         TeamAIIntegrationController
     ],
-    cluster: [ClusterController, ClusterLifecycleController, ClusterObjectController],
+    cluster: [ClusterController, ClusterLifecycleController, ClusterObjectController, ClusterObjectStoreProxyController],
     container: [ContainerController],
     trajectory: [TrajectoryController, CanvasController, DiscoverController],
     plugin: [PluginController],
@@ -59,7 +55,6 @@ const CONTROLLERS: Readonly<Record<string, readonly ControllerClass[]>> = {
     jobs: [JobsController],
     raster: [RasterController],
     'simulation-cell': [SimulationCellController],
-    chat: [ChatController],
     whiteboards: [WhiteboardController],
     ai: [AiController],
     analysis: [AnalysisController, ProvenanceController],
@@ -67,20 +62,13 @@ const CONTROLLERS: Readonly<Record<string, readonly ControllerClass[]>> = {
     'daily-activity': [DailyActivityController]
 };
 
-const LEGACY_ROUTER_PROVIDERS: Readonly<Record<string, readonly RouterProviderClass[]>> = {
-    cluster: [ClusterObjectStoreProxyController]
-};
-
-const collectMountable = (): RouterProviderClass[] => [
-    ...Object.values(CONTROLLERS),
-    ...Object.values(LEGACY_ROUTER_PROVIDERS)
-].flatMap((classes) => classes as readonly RouterProviderClass[]);
+const collectMountable = (): RouterProviderClass[] => Object.values(CONTROLLERS).flat();
 
 const mountHttpRoutes = (): Router => {
     const startedAt = Date.now();
     const router = Router();
 
-    /* Avatars and chat attachments, which the browser fetches by plain URL. */
+    /* Avatars, which the browser fetches by plain URL. */
     router.use(createUserFilesRouter());
 
     const mountable = collectMountable();

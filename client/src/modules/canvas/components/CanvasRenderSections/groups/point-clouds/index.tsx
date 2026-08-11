@@ -1,4 +1,4 @@
-import { valueRow, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
+import { valueRow } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
@@ -96,7 +96,7 @@ const usePointCloudGroup = (): RenderGroup => {
                     rows: [],
                     extras: (
                         <div className='flex flex-col gap-2'>
-                            <div className={RENDER_GRID_CLASS}>
+                            <div className='flex flex-col items-stretch gap-2'>
                                 <CanvasOptionSelect
                                     ariaLabel='Detail level'
                                     size='compact'

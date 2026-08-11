@@ -3,10 +3,6 @@ interface NotebookStartupTabContent {
     description: string;
 };
 
-/**
- * Paints a standalone status page into the blank tab opened for a notebook, so the user
- * sees why it is waiting before Jupyter takes the tab over.
- */
 export const renderNotebookStartupTab = (notebookTab: Window, content: NotebookStartupTabContent): void => {
     if (notebookTab.closed) {
         return;

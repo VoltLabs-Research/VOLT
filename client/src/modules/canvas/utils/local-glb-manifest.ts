@@ -10,10 +10,6 @@ export interface ResolvedLocalGlbManifest {
     frames: ResolvedLocalGlbManifestFrame[];
 }
 
-/**
- * Shape written by our own ClusterDaemon (and by the manifests we hand-author
- * for local previews). Declared once here; downstream code trusts it.
- */
 interface LocalGlbManifestDocument {
     title?: string;
     initialFrame?: number;
@@ -32,10 +28,6 @@ export const resolveLocalGlbUrl = (value: string): string => {
     return new URL(value, window.location.href).toString();
 };
 
-/**
- * Frame urls are stored relative to the manifest, so they are rebased onto it;
- * everything else is passed through as declared.
- */
 export const fetchLocalGlbManifest = async (
     manifestUrl: string,
     signal?: AbortSignal

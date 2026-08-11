@@ -24,29 +24,7 @@ const FULL_WIDTH_KINDS: ReadonlySet<InferredCellKind> = new Set<InferredCellKind
 
 const COPY_FEEDBACK_MS = 1400;
 
-// No column key can hold a NUL byte, so the whole record gets its own slot.
 const RECORD_COPY_KEY = '\u0000record';
-
-/*
- * `--glass-bg` / `--glass-border` were already flattened onto a solid surface with a
- * real border before this migration (spec §3a), and the shim resolves `--glass-blur`
- * to `none` — so this panel's `backdrop-filter` was already inert and is dropped
- * rather than translated. The one *live* blur in this component is the points
- * table's own literal `blur(12px)`, which survives as `backdrop-blur-md` in
- * `expandedRenderers`.
- */
-const PANEL_CLASS = 'flex h-full min-h-0 flex-col bg-surface';
-const HEADER_CLASS = 'flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border px-3.5 py-2.5';
-const BODY_CLASS = 'grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-[1.1rem] overflow-y-auto overflow-x-hidden p-3.5';
-
-/**
- * `group` is what replaces `.plugin-sub-listing-detail__field:hover
- * .plugin-sub-listing-detail__field-copy`: the reveal was a descendant selector off
- * the section, so it becomes a `group-hover:` on the button itself.
- */
-const FIELD_CLASS = 'group flex min-w-0 flex-col gap-1';
-const FIELD_COPY_CLASS = 'inline-flex size-4 shrink-0 cursor-pointer flex-row items-center justify-center rounded-[3px] border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-[120ms] ease-out hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100';
-const FIELD_VALUE_CLASS = 'min-w-0 text-sm leading-[1.4] text-foreground [overflow-wrap:anywhere]';
 
 const resolveRowIdentifier = (row: Record<string, unknown>): string | null => {
     const candidate = row._id ?? row.id;
@@ -104,8 +82,8 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
     const recordCopied = copiedKey === RECORD_COPY_KEY;
 
     return (
-        <aside className={PANEL_CLASS} aria-label='Row detail'>
-            <header className={HEADER_CLASS}>
+        <aside className='flex h-full min-h-0 flex-col bg-surface' aria-label='Row detail'>
+            <header className='flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border px-3.5 py-2.5'>
                 {shortId ? (
                     <span
                         className='min-w-0 overflow-hidden whitespace-nowrap text-ellipsis text-xs font-medium text-foreground'
@@ -137,14 +115,14 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                     </Button>
                 </div>
             </header>
-            <div className={BODY_CLASS}>
+            <div className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-[1.1rem] overflow-y-auto overflow-x-hidden p-3.5'>
                 {fields.map((field) => {
                     const copiedThisField = copiedKey === field.key;
 
                     return (
                         <section
                             key={field.key}
-                            className={cn(FIELD_CLASS, field.isFullWidth ? 'col-span-full' : null)}
+                            className={cn('group flex min-w-0 flex-col gap-1', field.isFullWidth ? 'col-span-full' : null)}
                         >
                             <div className='flex min-w-0 flex-row items-center justify-between gap-[0.35rem]'>
                                 <div
@@ -155,7 +133,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                                 </div>
                                 <button
                                     type='button'
-                                    className={FIELD_COPY_CLASS}
+                                    className='inline-flex size-4 shrink-0 cursor-pointer flex-row items-center justify-center rounded-[3px] border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-[120ms] ease-out hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
                                     onClick={() => handleCopy(field.key, field.value)}
                                     aria-label={copiedThisField ? 'Copied' : `Copy ${field.title}`}
                                     title={copiedThisField ? 'Copied' : 'Copy value'}
@@ -163,8 +141,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                                     {copiedThisField ? <Check size={11} aria-hidden='true' /> : <Copy size={11} aria-hidden='true' />}
                                 </button>
                             </div>
-                            {/* `--compact` was the *non*-full-width branch: it added weight and a word break. */}
-                            <div className={cn(FIELD_VALUE_CLASS, field.isFullWidth ? null : 'font-medium break-words')}>
+                            <div className={cn('min-w-0 text-sm leading-[1.4] text-foreground [overflow-wrap:anywhere]', field.isFullWidth ? null : 'font-medium break-words')}>
                                 {renderExpandedValue(field.value)}
                             </div>
                         </section>

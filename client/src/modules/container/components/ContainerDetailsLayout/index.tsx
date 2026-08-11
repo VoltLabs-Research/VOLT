@@ -1,7 +1,8 @@
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import ContainerDetailsSkeleton from './ContainerDetailsSkeleton';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { runAction } from '@/shared/ui/actions/run-action';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import useContainerPageTitle from '../../hooks/use-container-page-title';

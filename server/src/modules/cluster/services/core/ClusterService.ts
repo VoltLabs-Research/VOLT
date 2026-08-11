@@ -42,8 +42,8 @@ import type { StoragePlacement } from '@modules/cluster/contracts/storage-placem
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import logger from '@shared/infrastructure/logger';
 import { ILike, In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';

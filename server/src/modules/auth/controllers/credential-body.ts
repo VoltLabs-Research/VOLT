@@ -8,13 +8,11 @@ import type {
 } from '@volt/contracts/modules/auth/http';
 
 /**
- * `@Body()` validators for the credential endpoints — the only bodies in this
- * server that are genuinely untrusted. Every other route sits behind `protect`,
- * so its payload comes from the VOLT client or the cluster daemon and is
- * guaranteed by `@volt/contracts`, whereas `/auth/sessions`, `/auth/users` and
- * `/auth/me/password` are reachable by anyone on the internet. A posted
- * `{"password": {"$ne": null}}` has to be rejected here, before it reaches
- * bcrypt or the query builder.
+ * `@Body()` validators for the credential endpoints. Every other route validates
+ * its body against the contracts type with typia and answers 400; these are
+ * reachable by anyone on the internet and fail with the auth-specific 401 codes
+ * below. A posted `{"password": {"$ne": null}}` has to be rejected here, before
+ * it reaches bcrypt or the query builder.
  */
 
 const PASSWORD_MIN_LENGTH = 8;

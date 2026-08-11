@@ -7,16 +7,9 @@ interface RunOptions{
     env?: Record<string, string>;
     onStdout?: (line: string) => void;
     onStderr?: (line: string) => void;
-    /** Hard ceiling on total runtime. The child is killed, not just abandoned. */
+
     timeoutMs?: number;
-    /**
-     * Give up when the child produces no output for this long.
-     *
-     * A package manager that has stopped making progress usually stops *talking*
-     * long before any sensible hard ceiling expires — a winget install waiting on
-     * a prompt that will never arrive is silent, not slow. Bounding silence is
-     * what turns a half-hour hang into a reportable failure.
-     */
+
     idleTimeoutMs?: number;
 }
 
@@ -29,25 +22,11 @@ class ProcessTimeoutError extends Error{
 
 const KILL_GRACE = 3_000;
 
-/**
- * Terminates a child *and everything it started*.
- *
- * `child.kill()` signals only the process it spawned. That is not enough for the
- * commands here: killing `winget` leaves the MSIX installer it launched running,
- * and killing a shell leaves its children reparented and alive. A timeout that
- * leaves the real work running is worse than no timeout, because the app reports
- * failure while the machine is still being modified underneath it.
- *
- * POSIX gets a process-group signal, which is why children are spawned detached —
- * that is what gives them their own group to signal. Windows has no process
- * groups to speak of, so it gets `taskkill /T`.
- */
 const killTree = (child: ChildProcess, signal: NodeJS.Signals): void => {
     const pid = child.pid;
     if(pid === undefined) return;
 
     if(process.platform === 'win32'){
-        /* /T = tree, /F = force. Only meaningful as a force kill, so SIGTERM is a no-op. */
         if(signal !== 'SIGKILL') return;
         spawn('taskkill', ['/PID', String(pid), '/T', '/F'], {
             shell: false,
@@ -60,7 +39,6 @@ const killTree = (child: ChildProcess, signal: NodeJS.Signals): void => {
     try{
         process.kill(-pid, signal);
     }catch{
-        /* The group is already gone, or was never created; fall back to the child. */
         try{ child.kill(signal); }catch{ /* already dead */ }
     }
 };
@@ -81,14 +59,6 @@ const readLines = (stream: Readable, onLine?: (line: string) => void, onActivity
     };
 };
 
-/**
- * Spawns a command and resolves when it exits zero.
- *
- * Both timeouts terminate the child. The previous implementation raced the run
- * against a bare timer in the caller, which rejected the promise but left the
- * process alive — a hung installer kept running for the rest of the session
- * while the UI waited out the full ceiling.
- */
 export const run = (bin: string, args: string[], options: RunOptions = {}) =>
     new Promise<void>((resolve, reject) => {
         const child = spawn(bin, args, {
@@ -98,11 +68,7 @@ export const run = (bin: string, args: string[], options: RunOptions = {}) =>
                 ...options.env
             } : process.env,
             shell: false,
-            /*
-             * Own process group on POSIX, so a timeout can signal the whole tree
-             * rather than just this pid. Windows gets `taskkill /T` instead —
-             * `detached` there would open a console window.
-             */
+
             detached: process.platform !== 'win32',
             windowsHide: true
         });
@@ -123,7 +89,6 @@ export const run = (bin: string, args: string[], options: RunOptions = {}) =>
             fn();
         };
 
-        /* Ask the tree to stop, then insist. */
         const terminate = (): void => {
             killTree(child, 'SIGTERM');
             setTimeout(() => killTree(child, 'SIGKILL'), KILL_GRACE).unref();

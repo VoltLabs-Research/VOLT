@@ -16,10 +16,6 @@ interface UseCreateContainerDraftInput {
     onRestore: (draft: CreateContainerDraft) => void;
 }
 
-/**
- * Mirrors the in-progress create-container form to local storage so a reload does
- * not lose it, and restores it once on mount.
- */
 const useCreateContainerDraft = ({ draft, onRestore }: UseCreateContainerDraftInput) => {
     const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
     const onRestoreRef = useRef(onRestore);
@@ -38,7 +34,6 @@ const useCreateContainerDraft = ({ draft, onRestore }: UseCreateContainerDraftIn
             onRestoreRef.current(restoredDraft);
             setLastSavedAt(savedAt);
         } catch {
-            // A draft written by an older build can no longer be parsed - drop it.
             window.localStorage.removeItem(STORAGE_KEY);
         }
     }, []);

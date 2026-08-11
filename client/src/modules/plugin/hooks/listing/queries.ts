@@ -4,15 +4,12 @@ import {
     type UseQueryOptions
 } from '@tanstack/react-query';
 import queryClient from '@/shared/query/query-client';
-import { createMutation, createQuery, buildKeys } from '@/shared/query';
-import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessMode,
-    useCanvasAccessStore,
-    useCanvasDataAccess,
-    withAccessMode
-} from '@/modules/canvas/api/access';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { buildCanvasDataAccess } from '@/modules/canvas/api/access/build-canvas-data-access';
+import { DEFAULT_CANVAS_ACCESS_STATE } from '@/modules/canvas/contracts/data-access';
+import { useCanvasAccessMode, useCanvasAccessStore, useCanvasDataAccess, withAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
 import listingService from '../../api/services/listing-service';
 import type {
     ExportListingByAnalysisInput,
@@ -52,8 +49,6 @@ export const LISTING_QUERY_KEYS = {
     analysisExportOptionsDetail: analysisExportOptionsKeys.detail
 };
 
-// Listing reads go through the canvas data access layer (public canvases hit
-// different endpoints) and fall back to the canvas' current trajectory.
 const useListingAccess = (trajectoryId?: string) => {
     const mode = useCanvasAccessMode();
     const dataAccess = useCanvasDataAccess();

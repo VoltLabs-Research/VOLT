@@ -2,14 +2,6 @@ import CopyableField from '@/shared/ui/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
 import { CloseButton, Separator } from '@heroui/react';
 
-/**
- * `.trajectory-share-link-field .copyable-field-value { font-size: 0.7rem }` reached into
- * `CopyableField`, which is a shared component, so it stays a descendant rule — written
- * as a variant on this element so it still outranks the base utilities that component now
- * carries (spec §5b.3).
- */
-const LINK_FIELD_CLASS = 'px-2.5 py-2 [&_.copyable-field-value]:text-[0.7rem]';
-
 interface TrajectorySharePanelProps {
     trajectoryId: string;
     isPublic: boolean;
@@ -37,7 +29,6 @@ const TrajectorySharePanel = ({
                 </h4>
                 {onClose && <CloseButton onPress={onClose} aria-label='Close share panel' />}
             </div>
-
             <div className='flex flex-col gap-3 p-3'>
                 {canManageVisibility ? (
                     <TrajectoryVisibilityToggle
@@ -58,12 +49,11 @@ const TrajectorySharePanel = ({
                 )}
 
                 <Separator />
-
                 <div className='flex flex-col gap-2'>
                     <CopyableField
                         value={shareUrl}
                         successMessage='Canvas link copied'
-                        className={LINK_FIELD_CLASS}
+                        className='px-2.5 py-2 [&_.copyable-field-value]:text-[0.7rem]'
                     />
                 </div>
             </div>

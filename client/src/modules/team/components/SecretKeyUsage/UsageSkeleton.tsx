@@ -1,31 +1,24 @@
 import { Skeleton } from '@heroui/react';
-import {
-    SECRET_KEY_PAGE_CARDS_CLASS,
-    SECRET_KEY_PAGE_CARD_CLASS,
-    SECRET_KEY_PAGE_CHARTS_CLASS,
-    SECRET_KEY_PAGE_CLASS,
-    SECRET_KEY_PAGE_MAIN_CLASS
-} from '@/modules/team/components/secret-key/shared/secret-key-page-styles';
 
 const CHART_SKELETON_KEYS = ['hourly', 'endpoints', 'status-codes', 'recent'];
 const CARD_SKELETON_KEYS = ['requests', 'response-time', 'success-rate', 'last-used'];
 
 const UsageSkeleton = () => (
-    <div className={SECRET_KEY_PAGE_CLASS}>
-        <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
+    <div className='h-full overflow-scroll text-foreground'>
+        <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
             <div className='flex flex-row items-center gap-4'>
                 <Skeleton className='size-6 rounded-full' />
                 <Skeleton className='h-8 w-[300px] rounded-md' />
             </div>
-            <div className={SECRET_KEY_PAGE_CARDS_CLASS}>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
                 {CARD_SKELETON_KEYS.map((key) => (
-                    <div className={SECRET_KEY_PAGE_CARD_CLASS} key={key}>
+                    <div className='border border-border p-5 rounded-2xl transition-[all] duration-200 ease-out-fluid hover:bg-surface-hover hover:shadow-overlay' key={key}>
                         <Skeleton className='h-4 w-[100px] rounded-md' />
                         <Skeleton className='mt-2 h-10 w-20 rounded-sm' />
                     </div>
                 ))}
             </div>
-            <div className={SECRET_KEY_PAGE_CHARTS_CLASS}>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 min-[1440px]:gap-8'>
                 {CHART_SKELETON_KEYS.map((key) => (
                     <Skeleton key={key} className='h-[300px] w-full rounded-lg' />
                 ))}

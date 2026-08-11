@@ -108,10 +108,6 @@ const cropCanvasToRect = (sourceCanvas: HTMLCanvasElement, cropRect: PixelCropRe
     return outputCanvas;
 };
 
-/**
- * Encodes the rendered canvas as a PNG blob, cropped to the screen projection
- * of `cropBoundsWorld` when those bounds project to a usable pixel rectangle.
- */
 export const encodeCanvasToPngBlob = (
     canvas: HTMLCanvasElement,
     camera: PerspectiveCamera | OrthographicCamera,

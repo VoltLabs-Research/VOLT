@@ -1,9 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type {
-    Analysis,
-    TrajectoryLike,
-    TrajectoryStatus
-} from '@shared/contracts/types';
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
+import type { TrajectoryLike, TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import type {
     DaemonJobCompletionInput,
     DaemonRasterJobStatusInput

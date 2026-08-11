@@ -9,12 +9,6 @@ interface ThemeToggleButtonProps {
     variant?: 'default' | 'ghost';
 };
 
-/**
- * bravais's `IconButton` had two variants that painted identically —
- * `--ghost` only restated the transparent background and the hover fill the base
- * rule already declared — so both resolve to HeroUI's `ghost`. The prop stays in
- * the public shape because callers pass it; dropping it would be a rename.
- */
 const BUTTON_VARIANTS: Record<'default' | 'ghost', NonNullable<ButtonVariants['variant']>> = {
     default: 'ghost',
     ghost: 'ghost'

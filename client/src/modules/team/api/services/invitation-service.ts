@@ -1,5 +1,7 @@
-import { createService, get, post, patch, del } from '@/app/core/http/utils/create-service';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { createService, get, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { teamInvitationRoutes } from '@volt/contracts/modules/team/routes';
+
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 
 export interface InvitationStatusInput {
@@ -26,9 +28,14 @@ export interface SendInvitationInput {
     roleId?: string;
 }
 
+const routes = {
+    team: serviceRoutes('/teams'),
+    invitations: serviceRoutes('/teams/invitations')
+};
+
 const endpoints = {
-    getDetails: get<GetInvitationDetailsInput, TeamInvitation>(
-        '/:invitationId', { client: 'invitations' }
+    getDetails: routes.invitations.route<GetInvitationDetailsInput, TeamInvitation>(
+        teamInvitationRoutes.getByIdPublic, { client: 'invitations' }
     ),
     getPending: get<GetPendingInvitationsInput, TeamInvitation[], PaginatedResponse<TeamInvitation>>(
         '/:teamId/invitations?status=pending', {
@@ -36,23 +43,23 @@ const endpoints = {
             map: (result) => result.data
         }
     ),
-    send: post<SendInvitationInput, void>(
-        '/:teamId/invitations', {
+    send: routes.team.route<SendInvitationInput, void>(
+        teamInvitationRoutes.send, {
             client: 'team',
             unwrap: 'void'
         }
     ),
-    cancel: del<CancelInvitationInput>(
-        '/:teamId/invitations/:invitationId', { client: 'team' }
+    cancel: routes.team.route<CancelInvitationInput, void>(
+        teamInvitationRoutes.remove, { client: 'team', unwrap: 'void' }
     ),
-    accept: patch<InvitationStatusInput, void>(
-        '/:invitationId/status', {
+    accept: routes.invitations.route<InvitationStatusInput, void>(
+        teamInvitationRoutes.updateStatusPublic, {
             client: 'invitations',
             unwrap: 'void'
         }
     ),
-    reject: patch<InvitationStatusInput, void>(
-        '/:invitationId/status', {
+    reject: routes.invitations.route<InvitationStatusInput, void>(
+        teamInvitationRoutes.updateStatusPublic, {
             client: 'invitations',
             unwrap: 'void'
         }

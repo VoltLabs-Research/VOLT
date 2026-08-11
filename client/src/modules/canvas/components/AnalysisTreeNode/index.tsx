@@ -6,21 +6,6 @@ import {
     MaybeContextMenu
 } from '../CanvasTree';
 import { Tooltip, cn } from '@heroui/react';
-import {
-    CONFIG_TOOLTIP_BODY_CLASS,
-    CONFIG_TOOLTIP_CLASS,
-    CONFIG_TOOLTIP_EMPTY_CLASS,
-    CONFIG_TOOLTIP_WARNING_CLASS,
-    TREE_ANALYSIS_CONFIG_HINT_CLASS,
-    TREE_ANALYSIS_LABEL_GROUP_CLASS,
-    TREE_ANALYSIS_NAME_CLASS,
-    TREE_ANALYSIS_NAME_TONE_CLASS,
-    TREE_ITEM_CLASS,
-    TREE_ITEM_HOVER_CLASS,
-    TREE_ITEM_INDENT_CLASS,
-    TREE_ITEM_SELECTED_CLASS,
-    TREE_TOGGLE_CLASS
-} from '../ObjectsPanel/tree-classes';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
@@ -32,7 +17,7 @@ import PendingArtifactRow from './PendingArtifactRow';
 import useRecentlyReadyArtifacts from './use-recently-ready-artifacts';
 
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
-import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
+import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
@@ -100,11 +85,11 @@ const AnalysisTreeNode = ({
     const tooltipContent = isAnalysisInProgress || hasConfig || hasWorkflowPluginNodes ? (
         <div className='flex flex-col'>
             {isAnalysisInProgress && (
-                <div className={CONFIG_TOOLTIP_WARNING_CLASS}>
+                <div className='border-b border-border px-3 py-2 text-xs text-warning'>
                     Analysis still running. Some options will be disabled until it finishes.
                 </div>
             )}
-            <div className={CONFIG_TOOLTIP_BODY_CLASS}>
+            <div className='max-h-[min(22rem,calc(100dvh-6rem))] overflow-auto overscroll-contain'>
                 {hasConfig || hasWorkflowPluginNodes ? (
                     <ExecutionConfigSummary
                         config={analysis.config}
@@ -112,7 +97,7 @@ const AnalysisTreeNode = ({
                         pluginsById={pluginsById}
                     />
                 ) : (
-                    <div className={CONFIG_TOOLTIP_EMPTY_CLASS}>No execution config captured for this analysis.</div>
+                    <div className='p-3 text-xs text-muted'>No execution config captured for this analysis.</div>
                 )}
             </div>
         </div>
@@ -154,11 +139,18 @@ const AnalysisTreeNode = ({
         }
     ];
 
+    const nameToneClass = {
+        queued: 'text-warning [[data-theme=light]_&]:text-[#8a5300]',
+        running: 'text-accent [[data-theme=light]_&]:text-[#0a5fbf]',
+        completed: 'text-success [text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)] [[data-theme=light]_&]:text-[#0f7a34] [[data-theme=light]_&]:[text-shadow:0_0_10px_color-mix(in_srgb,#0f7a34_25%,transparent)]',
+        failed: 'text-danger [[data-theme=light]_&]:text-[#c41e1e]'
+    } as const;
+
     const nameClassName = cn(
-        TREE_ANALYSIS_NAME_CLASS,
+        'min-w-0 flex-[0_1_auto] transition-[color,text-shadow] duration-[180ms]',
         'truncate',
         isSelectedAnalysis ? 'text-foreground' : 'text-muted',
-        tone && TREE_ANALYSIS_NAME_TONE_CLASS[tone]
+        tone && nameToneClass[tone]
     );
 
     return (
@@ -168,21 +160,14 @@ const AnalysisTreeNode = ({
                 id={`canvas-ctx-analysis-${analysis._id}`}
                 options={analysisMenuOptions}
             >
-                {/*
-                  * `Tooltip.Trigger` IS the tree row rather than a wrapper around it: HeroUI
-                  * hard-codes `role='button'` on that part but spreads the caller's props
-                  * after it, so `role='treeitem'` wins and the `role='tree'` container keeps
-                  * a valid child. Wrapping instead would insert a `role='button'` element
-                  * between the two.
-                  */}
                 <Tooltip isDisabled={!tooltipContent}>
                     <Tooltip.Trigger
                         className={cn(
                             'flex cursor-pointer select-none items-center gap-2 text-xs text-muted',
-                            TREE_ITEM_CLASS,
-                            TREE_ITEM_HOVER_CLASS,
-                            TREE_ITEM_INDENT_CLASS.base,
-                            isSelectedAnalysis && TREE_ITEM_SELECTED_CLASS
+                            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+                            'hover:rounded-md hover:bg-surface-hover',
+                            'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
+                            isSelectedAnalysis && 'text-accent'
                         )}
                         onClick={handleSelectAnalysis}
                         role='treeitem'
@@ -190,29 +175,24 @@ const AnalysisTreeNode = ({
                         tabIndex={0}
                         data-tour-id={tourTargetId}
                     >
-                        <span className={TREE_ANALYSIS_LABEL_GROUP_CLASS}>
+                        <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
                             <span className={nameClassName} title={analysis.pluginDisplayName}>
                                 {analysis.pluginDisplayName}
                             </span>
                             {inlineSummary && (
-                                <span className={TREE_ANALYSIS_CONFIG_HINT_CLASS} title={inlineSummary}>
+                                <span className='truncate text-[0.7rem] leading-[1.2] text-muted opacity-90' title={inlineSummary}>
                                     {inlineSummary}
                                 </span>
                             )}
                         </span>
                         <span className='flex-1' />
-                        {/*
-                          * A plain button: the handler's `stopPropagation()` is what stops the
-                          * chevron from also selecting the analysis, and `onPress` receives a
-                          * React Aria PressEvent with no such method (spec §4b).
-                          */}
                         <button
                             type='button'
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onToggle(analysis._id);
                             }}
-                            className={cn('flex cursor-pointer items-center justify-center', TREE_TOGGLE_CLASS)}
+                            className={cn('flex cursor-pointer items-center justify-center', 'size-auto min-h-0 min-w-0 border-0 bg-transparent p-0 text-muted')}
                             aria-label={isExpanded ? 'Collapse' : 'Expand'}
                         >
                             {isExpanded
@@ -222,7 +202,7 @@ const AnalysisTreeNode = ({
                         </button>
                     </Tooltip.Trigger>
                     {tooltipContent && (
-                        <Tooltip.Content placement='right' className={CONFIG_TOOLTIP_CLASS}>
+                        <Tooltip.Content placement='right' className='pointer-events-auto w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] whitespace-normal border border-border bg-surface p-0 shadow-[0_0_0_1px_var(--border)]'>
                             {tooltipContent}
                         </Tooltip.Content>
                     )}

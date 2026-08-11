@@ -1,4 +1,4 @@
-import type { WorkflowIfCondition } from '@shared/contracts';
+import type { WorkflowIfCondition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';

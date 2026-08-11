@@ -1,4 +1,4 @@
-import { createService, custom, paginated, get, patch, del, download } from '@/app/core/http/utils/create-service';
+import { createService, custom, paginated, download, serviceRoutes } from '@/app/core/http/utils/create-service';
 
 import {
     createFolderCrudEndpoints,
@@ -10,8 +10,9 @@ import {
 } from '@/shared/api/folder-endpoints';
 import { base64ToBlob } from '@/shared/utils/file';
 import { createGetAtomsBinary } from './atoms-binary-request';
+import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 import type { EmptyParams } from '@voltstack/voltclient';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { VoltClient } from '@voltstack/voltclient';
 import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -135,9 +136,11 @@ const folderEndpoints = createFolderCrudEndpoints<
     TrajectoryFolder
 >('/trajectory-folders');
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
-    getAll: paginated<GetTrajectoriesInput, PaginatedResponse<Trajectory>>('/trajectories'),
-    getById: get<GetTrajectoryByIdParams, Trajectory>('/trajectories/:trajectoryId'),
+    getAll: paginated<GetTrajectoriesInput, PaginatedResponse<Trajectory>>(routes.path(trajectoryRoutes.list)),
+    getById: routes.route<GetTrajectoryByIdParams, Trajectory>(trajectoryRoutes.get),
     createUploadSession: custom<CreateTrajectoryInput, CreateTrajectoryUploadSessionResponse>(async ({ getClient }, params) => {
         const response = await getClient().request<CreateTrajectoryUploadSessionApiResponse>('POST', '/trajectories/upload-sessions', {
             body: params
@@ -159,12 +162,14 @@ const endpoints = {
 
         return getClient().request('DELETE', `/trajectories/upload-sessions/${params.uploadSessionId}`, requestArgs);
     }),
-    update: patch<UpdateTrajectoryParams, Trajectory>('/trajectories/:trajectoryId'),
-    delete: del<DeleteTrajectoryInput>('/trajectories/:trajectoryId'),
-    move: patch<MoveTrajectoryParams, void>('/trajectories/:trajectoryId/folder', {
+    update: routes.route<UpdateTrajectoryParams, Trajectory>(trajectoryRoutes.update),
+    delete: routes.route<DeleteTrajectoryInput, void>(trajectoryRoutes.remove, {
+        unwrap: 'void'
+    }),
+    move: routes.route<MoveTrajectoryParams, void>(trajectoryRoutes.move, {
         body: ({ folderId }) => ({ folderId })
     }),
-    getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/trajectories/:trajectoryId/preview', {
+    getPreview: routes.route<GetPreviewInput, GetPreviewResponse, string>(trajectoryRoutes.getPreview, {
         query: ({ frame, quality }) => ({
             ...(frame !== undefined ? { frame } : {}),
             ...(quality ? { quality } : {})
@@ -196,9 +201,9 @@ const endpoints = {
     }),
     getAtoms: custom<GetAtomsInput, GetAtomsResponse>(createGetAtomsBinary('/trajectories')),
     ...folderEndpoints,
-    getMetrics: get<EmptyParams, DashboardMetrics>('/trajectory-metrics'),
-    listSamples: get<EmptyParams, string[]>('/sample-simulations'),
-    downloadSample: download<DownloadSampleInput>('GET', '/sample-simulations/:filename')
+    getMetrics: routes.route<EmptyParams, DashboardMetrics>(trajectoryRoutes.getMetrics),
+    listSamples: routes.route<EmptyParams, string[]>(trajectoryRoutes.listSamples),
+    downloadSample: download<DownloadSampleInput>('GET', routes.path(trajectoryRoutes.downloadSamples))
 };
 
 export default createService({

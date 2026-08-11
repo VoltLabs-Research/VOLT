@@ -5,10 +5,6 @@ import type { Node } from '@xyflow/react';
 import { useForm } from 'react-hook-form';
 import type { DefaultValues, FieldValues, UseFormReturn } from 'react-hook-form';
 
-/**
- * Binds a react-hook-form instance to one slice of a builder node's data,
- * writing every change back to the builder store.
- */
 const useNodeEditorForm = <TFormValues extends FieldValues>(
     node: Node<INodeData>,
     dataKey: keyof INodeData,

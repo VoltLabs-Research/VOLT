@@ -12,8 +12,6 @@ import type {
     ScopedClusterObjectStore
 } from '@shared/contracts/types/cluster-object-store';
 
-export type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-
 const S3_METADATA_PREFIX = 'x-amz-meta-';
 
 const toHeadResponse = (stat: LocalClusterObjectStat): ClusterObjectHeadResponse => {

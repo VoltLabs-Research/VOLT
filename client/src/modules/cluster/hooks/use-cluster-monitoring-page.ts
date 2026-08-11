@@ -22,6 +22,9 @@ const useClusterMonitoringPage = () => {
         requestHistory(5, resolvedRouteClusterId);
     }, [metricsState.isConnected, requestHistory, resolvedRouteClusterId]);
 
+    const selectedClusterId = state.selectedClusterId;
+    const setSelectedClusterId = state.setSelectedClusterId;
+
     useEffect(() => {
         if (!resolvedRouteClusterId) {
             return;
@@ -34,10 +37,10 @@ const useClusterMonitoringPage = () => {
             return;
         }
 
-        if (state.selectedClusterId !== resolvedRouteClusterId) {
-            state.setSelectedClusterId(resolvedRouteClusterId);
+        if (selectedClusterId !== resolvedRouteClusterId) {
+            setSelectedClusterId(resolvedRouteClusterId);
         }
-    }, [navigate, params.clusterId, resolvedRouteClusterId, state.selectedClusterId, state.setSelectedClusterId]);
+    }, [navigate, params.clusterId, resolvedRouteClusterId, selectedClusterId, setSelectedClusterId]);
 
     const selectedCluster = useMemo(() => {
         if (!resolvedRouteClusterId) {

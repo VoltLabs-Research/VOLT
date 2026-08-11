@@ -1,4 +1,4 @@
-import type { RemoteExplorerDocument } from '@shared/contracts';
+import type { RemoteExplorerDocument } from '@shared/contracts/types/remote-explorer';
 import { Readable } from 'node:stream';
 
 interface ParsedObjectStorePath {

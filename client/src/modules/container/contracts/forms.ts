@@ -10,7 +10,6 @@ export interface PortMappingFormItem extends Record<string, unknown> {
     public?: number;
 }
 
-/** Everything the create-container form collects before it becomes a create request. */
 export interface ContainerConfig {
     name: string;
     memory: number;

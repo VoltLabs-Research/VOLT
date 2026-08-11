@@ -1,12 +1,9 @@
 import teamService from '../../api/services/team-service';
-import {
-    buildKeys,
-    createMutation,
-    createInvalidatingMutation,
-    createQuery,
-    queryClient
-} from '@/shared/query';
-import type { QueryOptions } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createMutation, createInvalidatingMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
+import type { QueryOptions } from '@/shared/query/create-query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import { useMutation } from '@tanstack/react-query';
 import type { Team } from '@volt/contracts/modules/team/domain';

@@ -133,8 +133,6 @@ export const createInstrumentedHttpClient = ({
 
                 return response.data;
             } catch (error) {
-                // Transport-level failures are not typed responses: the body may be
-                // absent or non-JSON, so every branch here stays classified by hand.
                 if (error instanceof ApiError) {
                     throw error;
                 }

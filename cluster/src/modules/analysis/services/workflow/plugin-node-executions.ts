@@ -4,7 +4,7 @@ import type {
     WorkflowDefinition,
     WorkflowPluginNodeData,
     WorkflowPluginReferenceSelection
-} from '@shared/contracts';
+} from '@shared/contracts/types/http-workflow';
 import type { WorkflowNodeOutput, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
 
 interface WorkflowPluginReferenceSelectionWithConfig {

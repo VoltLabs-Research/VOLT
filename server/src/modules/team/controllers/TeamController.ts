@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, CurrentUser } from '@shared/http/params';
+import { Body, schemaBody, Param, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
@@ -42,7 +43,7 @@ export default class TeamController extends Controller {
     @Status(201)
     create(
         @CurrentUser() userId: string,
-        @Body() body: CreateTeamInput
+        @Body(schemaBody(typia.createValidate<CreateTeamInput>())) body: CreateTeamInput
     ){
         return this.#service.create(userId, body);
     }
@@ -57,7 +58,7 @@ export default class TeamController extends Controller {
     @Middleware(teamScoped(Resource.TEAM))
     updateById(
         @Param('teamId') teamId: string,
-        @Body() body: UpdateTeamInput
+        @Body(schemaBody(typia.createValidate<UpdateTeamInput>())) body: UpdateTeamInput
     ){
         return this.#service.updateById(teamId, body);
     }
@@ -75,7 +76,7 @@ export default class TeamController extends Controller {
     @Middleware(teamScoped(Resource.TEAM))
     setDefaultForNewUsers(
         @Param('teamId') teamId: string,
-        @Body() body: SetDefaultTeamInput
+        @Body(schemaBody(typia.createValidate<SetDefaultTeamInput>())) body: SetDefaultTeamInput
     ){
         return this.#service.setDefaultForNewUsers(teamId, body.enabled);
     }

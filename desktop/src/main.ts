@@ -15,12 +15,6 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL'];
 
-/*
- * Nothing in the main process is behind a request handler, so an unhandled
- * rejection here has no natural place to surface: Electron would take the app
- * down and the window would simply vanish with no diagnostic. Log and keep the
- * shell alive instead.
- */
 process.on('unhandledRejection', (reason: unknown) => {
     console.error('[main] unhandled rejection:', reason instanceof Error ? reason.stack ?? reason.message : reason);
 });
@@ -60,11 +54,6 @@ const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     };
 };
 
-/*
- * A rejected navigation is expected whenever a newer one supersedes it, and the
- * real failures are already reported through `did-fail-load`, so the promise only
- * needs to be kept from escaping as an unhandled rejection.
- */
 const loadShell = (win: BrowserWindow, hash?: string): void => {
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
     const navigation = devUrl
@@ -114,17 +103,12 @@ const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
     if(initialBounds?.maximized) win.maximize();
     if(isDev) win.webContents.openDevTools({ mode: 'detach' });
 
-    
-    
-    
     const emitWindowState = (): void => {
         if(!win.isDestroyed()) bus.emit('window:state', { maximized: win.isMaximized() });
     };
     win.on('maximize', emitWindowState);
     win.on('unmaximize', emitWindowState);
 
-    
-    
     let recovering = false;
     win.webContents.on('did-fail-load', (_event, errorCode, _description, _url, isMainFrame) => {
         if(!isMainFrame || errorCode === -3 || recovering) return; 
@@ -159,11 +143,6 @@ app.whenReady().then(async () => {
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());
     const win = createWindow(initialBounds);
 
-    /*
-     * The window navigates to the VOLT client, which may be a remote endpoint the
-     * user named, so it needs an explicit allowlist rather than following whatever
-     * the loaded page links to.
-     */
     applyWindowSecurity(win, {
         allowedOrigins: async () => {
             const deployment = await appConfig.getDeployment();
@@ -178,7 +157,6 @@ app.whenReady().then(async () => {
         }
     });
 
-    
     let persistTimer: NodeJS.Timeout | null = null;
     const persistBounds = (): void => {
         if(win.isDestroyed()) return;

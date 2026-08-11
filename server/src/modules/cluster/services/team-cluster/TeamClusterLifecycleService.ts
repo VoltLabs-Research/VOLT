@@ -4,10 +4,10 @@ import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/T
 import { toTeamClusterView, type TeamClusterView } from '@modules/cluster/services/team-cluster/TeamClusterView';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
-import {
-    TeamClusterStatus,
-    type TeamClusterHostCapabilitiesProps,
-    type TeamClusterRuntimeRoleConfigProps
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import type {
+    TeamClusterHostCapabilitiesProps,
+    TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
 import {
     HEARTBEAT_LOCKED_STATUSES,

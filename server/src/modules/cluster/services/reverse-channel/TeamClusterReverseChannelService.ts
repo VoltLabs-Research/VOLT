@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import bytePlaneResolver from '@modules/cluster/services/object-gateway/BytePlaneResolver';
-import type { ContainerTerminalAttachment } from '@shared/contracts/ports';
+import type { ContainerTerminalAttachment } from '@shared/contracts/ports/ContainerRuntime';
 import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';

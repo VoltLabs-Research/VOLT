@@ -1,5 +1,5 @@
-import { buildKeys } from '@/shared/query';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { buildKeys } from '@/shared/query/query-keys';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { QueryKey } from '@tanstack/react-query';
 
 interface TeamScopedPaginatedParams {

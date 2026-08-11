@@ -9,10 +9,6 @@ interface QueryBuildOptions<TData> {
     queryFn: () => Promise<TData>;
 };
 
-/**
- * A query hook plus the cache accessors that belong to the same key, so a caller
- * never has to rebuild the key by hand to read or invalidate what the hook wrote.
- */
 export const createQuery = <TParams, TData>(
     keyFn: (params: TParams) => QueryKey,
     queryFn: (params: TParams) => Promise<TData>
@@ -53,10 +49,6 @@ export const createQuery = <TParams, TData>(
     );
 };
 
-/**
- * A cache entry with no fetcher: the data arrives over a socket, so the query never
- * goes stale on its own and is only ever written through the returned accessors.
- */
 export const createSocketQuery = <TParams, TData>(
     keyFn: (params: TParams) => QueryKey,
     config?: { initialData?: TData }

@@ -5,10 +5,6 @@ const DOUBLE_TAP_MAX_DELAY_MS = 320;
 const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
 const TOUCH_DRAG_ARM_TIMEOUT_MS = 800;
 
-/**
- * On touch viewports a drag only counts once a double tap has armed it, so that
- * a single-finger gesture still orbits the camera. The arming expires on its own.
- */
 export const useTouchDragArming = (isMobileViewport: boolean) => {
     const lastPointerTypeRef = useRef<string | null>(null);
     const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);

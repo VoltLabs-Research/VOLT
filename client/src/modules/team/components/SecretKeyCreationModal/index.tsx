@@ -1,5 +1,6 @@
 import { Alert } from '@heroui/react';
-import { Modal, resetModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { resetModal } from '@/shared/ui/modal/use-modal-store';
 import { runAction } from '@/shared/ui/actions/run-action';
 import CopyableField from '@/shared/ui/components/CopyableField';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -131,14 +132,6 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                     <div className='flex flex-col gap-6'>
                     {generatedKey ? (
                         <>
-                            {/*
-                              * bravais's stacked `Callout` (the layout a `title`
-                              * selected) silently IGNORED `message`, so this warning
-                              * rendered as a bare heading. HeroUI's `Alert` has one
-                              * layout, so the sentence the author wrote is now visible;
-                              * `role`/`aria-live` were explicit on the Callout and are
-                              * restated because `Alert` sets neither.
-                              */}
                             <Alert status='warning' role='alert' aria-live='polite'>
                                 <Alert.Content>
                                     <Alert.Title>Copy this key now</Alert.Title>
@@ -175,7 +168,6 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
                                     });
                                 }}
                             />
-
                             <FormFieldRHF
                                 fieldType='select'
                                 variant='inline'

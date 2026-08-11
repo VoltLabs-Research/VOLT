@@ -14,12 +14,11 @@ import {
     type TeamClusterDaemonQueueConcurrencyApplyPayload,
     type TeamClusterDaemonRoleApplyPayload,
     type TeamClusterDaemonRoleApplyResult
-} from '@shared/infrastructure/contracts/team-cluster';
-import {
-    TeamClusterStatus,
-    type TeamClusterQueueConcurrencyProps,
-    type TeamClusterQueueScopeLimitsProps,
-    type TeamClusterRole
+} from '@shared/contracts/types/team-cluster-daemon-channel';
+import { TeamClusterStatus, type TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type {
+    TeamClusterQueueConcurrencyProps,
+    TeamClusterQueueScopeLimitsProps
 } from '@shared/contracts/types/TeamCluster';
 import logger from '@shared/infrastructure/logger';
 

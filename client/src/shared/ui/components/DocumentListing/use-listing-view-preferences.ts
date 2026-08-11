@@ -6,10 +6,6 @@ import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { SortConfig } from '@/shared/utils/sort';
 import type { QueryKey } from '@tanstack/react-query';
 
-/**
- * Marks "the user explicitly hid nothing", which cannot be expressed by an absent
- * param because absence means "fall back to the flex-col defaults".
- */
 const NONE_HIDDEN = '-';
 
 const hashString = (value: string): string => {
@@ -78,10 +74,6 @@ export interface ListingViewPreferences<TRow> {
     visibleColumns: ColumnConfig<TRow>[];
 };
 
-/**
- * Keeps the active tab, sort and hidden columns of a listing in the URL, which is
- * the single source of truth so the view survives reloads and shared links.
- */
 const useListingViewPreferences = <TRow,>({
     queryKey,
     columns,

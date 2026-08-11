@@ -4,29 +4,18 @@ export interface Endpoint<Input = never, Output = void>{
     readonly method: HttpMethod;
     readonly path: string;
     /**
-     * Never assigned. It exists so `Input` and `Output` reach the structural type.
-     *
-     * Without it TypeScript ignores both parameters and every `Endpoint<A, B>`
-     * becomes assignable to every `Endpoint<C, D>` — measured: passing an
-     * `Endpoint<A, string>` where an `Endpoint<B, number>` is expected compiles
-     * clean without this line and fails with TS2345 with it. Deleting it would turn
-     * the type arguments on every route declaration into decoration.
+     * Never assigned. Exists so `Input` and `Output` reach the structural type;
+     * without it every `Endpoint<A, B>` is assignable to every `Endpoint<C, D>`.
      */
     readonly __io?: (input: Input) => Output;
 }
 
-export type InputOf<E> = E extends Endpoint<infer I, unknown> ? I : never;
-export type OutputOf<E> = E extends Endpoint<never, infer O> ? O : E extends Endpoint<infer _I, infer O> ? O : never;
-
 /**
- * Fills the `:param` placeholders of an endpoint path.
+ * Fills the `:param` placeholders of an endpoint path. Route objects are the
+ * single source of truth for paths; every caller that needs a concrete URL
+ * goes through this instead of writing the path again.
  *
- * Every caller that needs a concrete URL should go through this instead of
- * writing the path again: a client that hardcodes `/api/teams/${id}/clusters`
- * silently breaks when the route moves, because nothing connects the two.
- *
- * Throws when a placeholder is left unfilled, so a missing parameter fails at the
- * call rather than producing a URL containing a literal `:teamId`.
+ * Throws when a placeholder is left unfilled.
  */
 export const buildPath = (endpoint: Endpoint<never, unknown> | Endpoint<unknown, unknown>, params: Record<string, string> = {}): string => {
     const path = endpoint.path.replace(/:([A-Za-z0-9_]+)/g, (_match, name: string) => {

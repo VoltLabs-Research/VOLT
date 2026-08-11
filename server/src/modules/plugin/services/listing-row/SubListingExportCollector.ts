@@ -10,7 +10,7 @@ import {
     type RowAggregation
 } from '@modules/plugin/services/listing-row/ExportRowAggregation';
 import type { AnalysisSubListingExportData } from '@modules/plugin/services/listing-row/ListingRowTypes';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 
 const SUB_LISTING_COLUMNS = [

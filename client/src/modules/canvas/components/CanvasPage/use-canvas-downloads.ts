@@ -4,7 +4,7 @@ import { CanvasAnalysisStatusEnum, normalizeCanvasAnalysisStatus } from '../../u
 import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
 import useDownloadPluginListing from '../../hooks/use-download-plugin-listing';
 import useDownloadTrajectoryAnalyses from '@/modules/trajectory/hooks/trajectory/use-download-trajectory-analyses';
-import { openModal } from '@/shared/ui/modal';
+import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -14,10 +14,6 @@ interface CanvasDownloadsParams {
     analysisId?: string;
 }
 
-/**
- * Exposure listings, per-analysis listings (through the selection modal) and the
- * full trajectory bundle, plus whether each download is currently available.
- */
 const useCanvasDownloads = ({ trajectory, analysisId }: CanvasDownloadsParams) => {
     const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
     const {

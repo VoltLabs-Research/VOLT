@@ -18,12 +18,6 @@ const resolveColumnWidth = (col: PluginTableColumnConfig, widthScale: number): n
     return Math.max(MIN_MOBILE_COLUMN_WIDTH, Math.round(width * widthScale));
 };
 
-/**
- * Header and body cells must agree on width down to the pixel, so both read
- * their style from here. On mobile the columns are shrunk *and* pinned to a
- * fixed width, keeping the row horizontally scrollable instead of squeezing
- * every column past readability.
- */
 export const resolveColumnStyle = (col: PluginTableColumnConfig, widthScale: number): CSSProperties => {
     const width = resolveColumnWidth(col, widthScale);
 

@@ -14,28 +14,6 @@ import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
 
-/**
- * `EntrypointEditor.css`, as utilities.
- *
- * `--status-success-bg` / `--status-success-border` are `--success-soft` and
- * `color-mix(… success 24% …)`; `--accent-green` is `--success`; `--radius-sm` is 8px,
- * which is `rounded-lg` (spec §3b). `--accent-indigo` stays a literal token — it is a
- * per-theme colour the global sheet declares, and the progress bar's gradient is the
- * one place in this module that names it.
- *
- * One repair rather than a translation: the requirements editor's border read
- * `var(--color-border-subtle)`, a token nothing has ever declared. An undefined
- * `var()` inside the `border:` shorthand invalidates the whole declaration, so that
- * frame has been rendering with no border at all — it becomes `border border-border`,
- * which is what every other framed block here uses.
- */
-const BINARY_UPLOADED_CLASS = 'flex flex-row items-center justify-between rounded-lg border border-success/24 bg-success-soft px-3 py-2.5';
-const BINARY_FILE_INFO_CLASS = 'flex flex-row items-center gap-2 text-success';
-const BINARY_FILENAME_CLASS = 'max-w-[180px] overflow-hidden whitespace-nowrap text-ellipsis text-sm font-medium';
-const BINARY_PROGRESS_CLASS = 'h-1 w-full overflow-hidden rounded-[2px] bg-[color-mix(in_srgb,var(--accent-indigo)_10%,transparent)]';
-const BINARY_PROGRESS_BAR_CLASS = 'h-full rounded-[2px] bg-[linear-gradient(90deg,var(--accent-indigo),color-mix(in_srgb,var(--accent-indigo)_70%,white))] transition-[width] duration-200 ease-out';
-const REQUIREMENTS_EDITOR_CLASS = 'overflow-hidden rounded-lg border border-border';
-
 const ENTRYPOINT_TYPE_OPTIONS = [{
     value: EntrypointType.EXECUTABLE,
     title: 'Executable'
@@ -123,15 +101,14 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <div className={BINARY_UPLOADED_CLASS}>
-                            <div className={BINARY_FILE_INFO_CLASS}>
+                        <div className='flex flex-row items-center justify-between rounded-lg border border-success/24 bg-success-soft px-3 py-2.5'>
+                            <div className='flex flex-row items-center gap-2 text-success'>
                                 <File size={20} aria-hidden='true' />
-                                <span className={BINARY_FILENAME_CLASS}>
+                                <span className='max-w-[180px] overflow-hidden whitespace-nowrap text-ellipsis text-sm font-medium'>
                                     {watchedBinaryFileName || watchedBinary}
                                 </span>
                                 <Check size={16} className='text-success' aria-hidden='true' />
                             </div>
-                            {/* bravais `ghost` + `danger` is `ghost` plus `text-danger` (spec §4d). */}
                             <Button
                                 variant='ghost'
                                 size='sm'
@@ -165,16 +142,15 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     )}
 
                     {isUploading && (
-                        <div className={BINARY_PROGRESS_CLASS}>
+                        <div className='h-1 w-full overflow-hidden rounded-[2px] bg-[color-mix(in_srgb,var(--accent-indigo)_10%,transparent)]'>
                             <div
-                                className={BINARY_PROGRESS_BAR_CLASS}
+                                className='h-full rounded-[2px] bg-[linear-gradient(90deg,var(--accent-indigo),color-mix(in_srgb,var(--accent-indigo)_70%,white))] transition-[width] duration-200 ease-out'
                                 style={{ width: `${uploadProgress}%` }}
                             />
                         </div>
                     )}
                 </div>
             </FormSection>
-
             <FormSection title='Execution'>
                 <FormFieldRHF<EntrypointEditorFormValues>
                     variant='inline'
@@ -212,7 +188,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                         <p className='m-0 text-xs text-muted'>
                             Define the Python dependencies to install into the cached virtual environment.
                         </p>
-                        <div className={REQUIREMENTS_EDITOR_CLASS}>
+                        <div className='overflow-hidden rounded-lg border border-border'>
                             <Editor
                                 height='180px'
                                 language='plaintext'

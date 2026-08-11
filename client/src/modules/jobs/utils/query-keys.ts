@@ -1,4 +1,4 @@
-import { buildKeys } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 
 type TeamJobsQueryKeys = Record<'groups', void>;

@@ -3,7 +3,8 @@ import {
     sceneArtifactsQuery
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { toSceneObjectFromArtifact } from '@/modules/canvas/utils/scene-identity';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import { useEffect, useMemo } from 'react';
 
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';

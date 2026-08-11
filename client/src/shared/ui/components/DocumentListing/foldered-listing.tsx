@@ -10,7 +10,7 @@ import { useMemo } from 'react';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type {
     FolderBreadcrumbEntity,
     FolderBreadcrumbItem

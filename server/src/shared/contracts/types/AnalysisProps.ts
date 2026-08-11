@@ -15,8 +15,6 @@ import type {
  * three definitions of one status ended up in the repo. `AnalysisStageType` is
  * kept as an alias because it is the name the server's ports already use.
  */
-export type { AnalysisArtifactStatus, AnalysisStageStatus };
-
 export type AnalysisStageType = AnalysisStageKind;
 
 export type AnalysisConfig = Record<string, unknown>;

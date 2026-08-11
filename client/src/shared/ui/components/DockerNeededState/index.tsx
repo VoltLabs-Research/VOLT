@@ -3,19 +3,9 @@ import { Container } from 'lucide-react';
 import { useId } from 'react';
 
 interface DockerNeededStateProps {
-    /** What the user came here to do, named as the feature they clicked. */
     feature: string;
 };
 
-/**
- * Stands in for a feature that needs a container runtime the cluster does not have.
- *
- * Shown in place of the feature rather than hiding it from navigation, because a
- * missing menu entry reads as "Volt cannot do this" while an explanation reads as
- * "this machine cannot do this yet". Everything else in the product works without
- * a container runtime — trajectories, analyses and plugins all run as local
- * processes — so this is one screen out of order, not a degraded install.
- */
 const DockerNeededState = ({ feature }: DockerNeededStateProps) => {
     const headingId = useId();
 
@@ -29,7 +19,6 @@ const DockerNeededState = ({ feature }: DockerNeededStateProps) => {
                 <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-2xl bg-surface-tertiary text-muted'>
                     <Container size={24} />
                 </div>
-
                 <div className='flex flex-col gap-2 text-center'>
                     <h2 className='text-base font-medium text-foreground' id={headingId}>
                         {`${feature} needs a container runtime`}

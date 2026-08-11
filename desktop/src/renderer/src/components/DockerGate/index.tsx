@@ -11,20 +11,14 @@ interface DockerGateProps{
     result: PreflightResult;
     onRecheck: () => Promise<void>;
     onOpenUrl: (url: string) => void;
-    /**
-     * Provisioning output. The gate used to replace the log panel entirely, so
-     * while the app installed Docker there was nothing on screen but a spinner —
-     * a step that can legitimately take minutes, and that can fail in ways only
-     * its output explains, was completely opaque.
-     */
+
     logs?: DockerGateLogLine[];
-    /** Escape hatch out of a local setup that is not going to finish. */
+
     onSwitchDeployment?: () => void;
 }
 
 const LOG_TAIL = 8;
 
-/* Fixed 44px box so the glyph and the spinner occupy the same space in both states. */
 const GLYPH_BOX = 'mb-1 flex size-11 items-center justify-center';
 
 const CrossGlyph = () => (
@@ -34,10 +28,6 @@ const CrossGlyph = () => (
     </svg>
 );
 
-/*
- * States the app is resolving by itself. They are progress, not failures: no
- * actions are offered because there is nothing for the user to do.
- */
 const WORKING_REASONS = new Set(['daemon-starting', 'daemon-down', 'auto-starting', 'auto-installing']);
 
 const DockerGate = ({ result, onRecheck, onOpenUrl, logs, onSwitchDeployment }: DockerGateProps) => {
@@ -63,13 +53,6 @@ const DockerGate = ({ result, onRecheck, onOpenUrl, logs, onSwitchDeployment }: 
         onRecheck().finally(() => setChecking(false));
     };
 
-    /*
-     * No background of its own. The panel used to paint `--color-bg` and then undo
-     * it on macOS and Windows so their vibrancy could show through; `#root` already
-     * makes exactly that decision for the whole window, and this sits directly on
-     * top of it with nothing in between, so inheriting is both shorter and correct
-     * on every platform.
-     */
     return (
         <main
             className='absolute inset-0 z-10 flex items-center justify-center p-[clamp(32px,6vw,80px)]'
@@ -80,7 +63,6 @@ const DockerGate = ({ result, onRecheck, onOpenUrl, logs, onSwitchDeployment }: 
                 <span className={working ? `${GLYPH_BOX} text-muted` : `${GLYPH_BOX} text-danger`} aria-hidden='true'>
                     {working ? <Spinner color='current' className='size-7 text-foreground' /> : <CrossGlyph />}
                 </span>
-
                 <h1 className='text-xl font-[550] text-foreground'>{result.message}</h1>
                 <p className='text-xs text-muted'>{result.remediation}</p>
 
@@ -129,8 +111,6 @@ const DockerGate = ({ result, onRecheck, onOpenUrl, logs, onSwitchDeployment }: 
                     </div>
                 )}
 
-                {/* Reachable during the automatic states too: a local setup that
-                    cannot finish should not be a dead end. */}
                 {onSwitchDeployment && (
                     <button type='button' className='mt-4 cursor-pointer text-xs text-muted/75 underline' onClick={onSwitchDeployment}>
                         Connect to a server instead

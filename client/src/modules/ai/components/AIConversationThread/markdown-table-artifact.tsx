@@ -1,11 +1,5 @@
 import { AIMessageArtifactKind } from '@volt/contracts/modules/ai/domain';
 import { parseTableFromChildren } from '@/modules/ai/utils/message-content';
-import {
-    MD_TABLE,
-    MD_TABLE_OPEN_BUTTON,
-    MD_TABLE_SCROLL,
-    MD_TABLE_WRAPPER
-} from '@/modules/ai/components/AIConversationThread/thread-styles';
 import { Button, cn } from '@heroui/react';
 import { Expand } from 'lucide-react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
@@ -13,10 +7,6 @@ import type { ComponentPropsWithoutRef } from 'react';
 
 type MarkdownTableProps = ComponentPropsWithoutRef<'table'>;
 
-/**
- * ReactMarkdown component overrides that turn every rendered markdown table into an
- * openable spreadsheet artifact. Table indices are per message, so a factory is needed.
- */
 export const createTableArtifactComponents = (
     messageId: string,
     onOpenTableArtifact: (artifact: AIMessageArtifact) => void
@@ -45,9 +35,9 @@ export const createTableArtifactComponents = (
             };
 
             return (
-                <div className={MD_TABLE_WRAPPER}>
-                    <div className={MD_TABLE_SCROLL}>
-                        <table {...props} className={cn(MD_TABLE, className)}>{children}</table>
+                <div className='my-[0.4rem] overflow-hidden rounded-lg border border-border'>
+                    <div className='overflow-x-auto'>
+                        <table {...props} className={cn('m-0! rounded-none! border-0!', className)}>{children}</table>
                     </div>
                     {parsed && parsed.rows.length > 0 && (
                         <Button
@@ -55,7 +45,7 @@ export const createTableArtifactComponents = (
                             size='sm'
                             variant='secondary'
                             fullWidth
-                            className={MD_TABLE_OPEN_BUTTON}
+                            className='w-full justify-start rounded-none border-0 border-t border-border'
                             onPress={handleOpen}
                         >
                             <Expand size={13} />

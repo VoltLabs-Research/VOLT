@@ -1,7 +1,5 @@
 import { AIProvider, AI_PROVIDERS } from '@volt/contracts/modules/ai/domain';
 
-export { AIProvider, AI_PROVIDERS };
-
 export const AI_PROVIDER_NAMES: Record<AIProvider, string> = {
     [AIProvider.OpenAI]: 'OpenAI',
     [AIProvider.Anthropic]: 'Anthropic',

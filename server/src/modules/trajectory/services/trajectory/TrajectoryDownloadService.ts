@@ -20,8 +20,11 @@ import {
 } from '@shared/infrastructure/http/responses/download-response';
 import { readFilenameFromContentDisposition } from '@shared/infrastructure/http/responses/content-disposition';
 
-import type { ClusterArchiveObjectEntry, ClusterArchiveReference } from '@shared/contracts/ports';
-import type { DownloadStreamOutput } from '@shared/contracts/types';
+import type {
+    ClusterArchiveObjectEntry,
+    ClusterArchiveReference
+} from '@shared/contracts/ports/IClusterObjectArchiveService';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type {
     DownloadSampleSimulationsOutput,
     DownloadTrajectoryAnalysesInput,

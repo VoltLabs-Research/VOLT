@@ -44,7 +44,6 @@ const ExportEditor = ({ node }: EditorProps) => {
     const isChartExporter = form.watch('exporter') === Exporter.CHART;
     const options = form.watch('options') ?? {};
 
-    // String() is required: `options` holds hand-authored JSON typed as unknown.
     const chartOptions = {
         xAxisKey: String(options.xAxisKey ?? ''),
         yAxisKey: String(options.yAxisKey ?? ''),
@@ -130,7 +129,6 @@ const ExportEditor = ({ node }: EditorProps) => {
                             options={CHART_TYPE_OPTIONS}
                         />
                     </FormSection>
-
                     <FormSection title='Chart Labels'>
                         <FormFieldRHF
                             variant='inline'

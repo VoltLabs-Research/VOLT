@@ -11,7 +11,6 @@ interface UpdateOptions {
     replace?: boolean;
 }
 
-/* An unknown value — including the retired `scripting` — falls back to Scene. */
 const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
     if (workspace === CanvasWorkspace.Raster) {
         return CanvasWorkspace.Raster;

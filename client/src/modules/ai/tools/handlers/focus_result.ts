@@ -8,8 +8,7 @@ const focusResult: ClientToolHandler<FocusResultInput> = {
 
     run(input): ClientToolResult {
         const focus = useCanvasFocusStore.getState();
-        // `modifierId` is a declared `string | null` union: null is the documented
-        // way to clear the focus, so this narrowing is load-bearing.
+
         const modifierId = input.modifierId?.trim();
 
         if (!modifierId) {

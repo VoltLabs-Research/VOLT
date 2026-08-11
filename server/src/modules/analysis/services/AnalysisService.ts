@@ -14,15 +14,13 @@ import analysisExecutionLogService from '@modules/analysis/services/AnalysisExec
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamJobMaintenanceService } from '@shared/contracts/ports';
+import type { ITeamJobMaintenanceService } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { ILike } from 'typeorm';
 import type { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type {
-    GetAnalysesByTeamIdItemView,
-    GetAnalysesByTrajectoryIdOutput
-} from '@shared/contracts/operations';
+import type { GetAnalysesByTeamIdItemView } from '@shared/contracts/operations/GetAnalysesByTeamId';
+import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operations/GetAnalysesByTrajectoryId';
 import type {
     GetAnalysisFrameLogInput,
     GetAnalysisFrameLogOutput

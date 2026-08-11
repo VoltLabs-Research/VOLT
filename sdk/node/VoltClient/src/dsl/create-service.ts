@@ -189,7 +189,7 @@ const execute = async <P, R, TRaw>(
     const hasRemaining = Object.keys(remaining).length > 0;
 
     const isBodyOp = op === 'post' || op === 'patch'
-        || (op === 'request' && (desc.httpMethod === 'POST' || desc.httpMethod === 'PATCH'));
+        || (op === 'request' && (desc.httpMethod === 'POST' || desc.httpMethod === 'PATCH' || desc.httpMethod === 'PUT'));
     const body = opts.body ? opts.body(params) : (isBodyOp && hasRemaining ? remaining : undefined);
     const query = opts.query ? opts.query(params) : (!isBodyOp && hasRemaining ? remaining : undefined);
     const headers = typeof opts.headers === 'function' ? opts.headers(params) : opts.headers;

@@ -1,7 +1,7 @@
 import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
-import type { JobStatusChangedEventPayload } from '@shared/contracts/events';
+import type { JobStatusChangedEventPayload } from '@shared/contracts/events/JobStatusChangedPayload';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
-import { JobStatus } from '@shared/contracts/types/JobStatus';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import {
     jobStatusKey as buildJobStatusKey,
     jobTombstoneKey,

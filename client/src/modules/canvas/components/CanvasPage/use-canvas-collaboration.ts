@@ -13,7 +13,6 @@ interface CanvasCollaborationParams {
     containerRef: RefObject<HTMLElement | null>;
 }
 
-/** Lobby/workspace presence, remote cursors and live model drags for the open canvas. */
 const useCanvasCollaboration = ({
     trajectoryId,
     ownerId,

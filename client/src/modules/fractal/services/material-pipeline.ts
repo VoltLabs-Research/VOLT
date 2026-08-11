@@ -143,21 +143,6 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
 const raycastSphere = new THREE.Sphere();
 const raycastHitPoint = new THREE.Vector3();
 
-/**
- * Replaces per-vertex picking with a bounding-sphere hit.
- *
- * `THREE.Points.raycast` walks every vertex, and R3F raycasts handler-bearing
- * ancestors recursively — `SimulationCellBox` puts an unconditional `onClick` and
- * `onPointerDown` on the group the model is added to. So each pointer event ran one
- * distance test per atom on the main thread, which at millions of atoms is the whole
- * interaction budget spent before anything is drawn.
- *
- * Nothing consumes the per-atom hit: the line picker bails unless the hit carries a
- * `faceIndex`, which a point cloud never produces, and the cell selector only needs
- * to know that something under the cursor was hit — it passes its own container on.
- * Reporting one hit where the ray enters the bounds preserves both behaviours at
- * O(1). Atom-level selection is driven by masks, not by picking.
- */
 const attachBoundedRaycast = (points: THREE.Points): void => {
     points.raycast = (raycaster, intersects): void => {
         const geometry = points.geometry;
@@ -216,13 +201,7 @@ export class MaterialPipeline {
             fragmentShader: program.fragment,
             uniforms: createPointCloudUniforms(dynamicPointScale),
             vertexColors: true,
-            /*
-             * The default uniforms (`edgeSoftness` 0, `opacity` 1) make the fragment
-             * alpha exactly 1, so this starts in the opaque render list and only moves
-             * to the transparent one when a style or opacity change actually needs it
-             * (see `syncBlendingMode`). Declaring it transparent up front cost every
-             * occluded sprite a full lighting evaluation.
-             */
+
             transparent: false,
             opacity: 1.0,
             depthTest: true,

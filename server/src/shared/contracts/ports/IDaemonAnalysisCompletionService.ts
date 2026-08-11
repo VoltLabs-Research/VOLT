@@ -1,6 +1,7 @@
 
-import type { JobStatus } from '@shared/contracts/types/JobStatus';
-import type { AnalysisStageStatus, AnalysisStageType } from '@shared/contracts/types';
+import type { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import type { AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
+import type { AnalysisStageType } from '@shared/contracts/types/AnalysisProps';
 
 export interface DaemonJobCompletionInput {
     teamClusterId: string;

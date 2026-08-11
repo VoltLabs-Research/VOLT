@@ -5,22 +5,6 @@ import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
 import { cn } from '@heroui/react';
 import { useState } from 'react';
 
-/**
- * `DebugContextPanel.css`, as utilities. `panel-floating` is dropped — it is a bravais
- * utility class whose stylesheet is gone and which nothing in the app ever defined;
- * the surface it implied is spelled out here as `border border-border bg-surface`.
- * `--accent-blue` is `--accent` (spec §3a), which is what tints the count pill.
- */
-const PANEL_CLASS = 'absolute top-4 right-4 z-10 flex w-[280px] max-h-[320px] max-w-[calc(100vw-1rem)] flex-col border border-border bg-surface max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[55dvh]';
-const PANEL_HEADER_CLASS = 'border-b border-border px-2.5 py-2';
-const PANEL_COUNT_CLASS = 'rounded-full bg-accent/15 px-[0.3rem] text-[0.6rem] font-semibold leading-[1.4] text-accent';
-const ROW_CLASS = 'flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-[0.35rem] transition-colors duration-100 hover:bg-surface-tertiary/50';
-const ENTRY_CLASS = 'border-b border-border/50 last:border-b-0';
-const LABEL_CLASS = 'text-[0.65rem] font-semibold text-muted';
-const ID_CLASS = 'max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis font-mono text-[0.55rem] text-muted';
-const TREE_CLASS = 'px-2.5 pb-[0.375rem] font-mono text-[0.65rem] leading-normal';
-const NESTED_CLASS = 'ml-2.5 border-l border-border';
-
 type DebugContextOutput = Record<string, unknown>;
 type DebugContextEntry = [string, DebugContextOutput];
 
@@ -32,10 +16,6 @@ interface ChevronProps {
 const Chevron = ({ expanded, size = 11 }: ChevronProps) =>
     expanded ? <ChevronDown size={size} /> : <ChevronRight size={size} />;
 
-/**
- * Groups context entries around the forEach node so the iteration body can be
- * rendered as a nested, collapsible group.
- */
 const splitContextEntries = (
     entries: DebugContextEntry[],
     forEachNodeId: string | null,
@@ -117,16 +97,16 @@ const DebugContextPanel = () => {
     const renderEntry = (nodeId: string, output: DebugContextOutput) => {
         const isExpanded = expandedKeys.has(nodeId);
         return (
-            <div key={nodeId} className={ENTRY_CLASS}>
-                <div className={ROW_CLASS} onClick={() => toggleKey(nodeId)}>
+            <div key={nodeId} className='border-b border-border/50 last:border-b-0'>
+                <div className='flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-[0.35rem] transition-colors duration-100 hover:bg-surface-tertiary/50' onClick={() => toggleKey(nodeId)}>
                     <div className='flex flex-col'>
-                        <p className={LABEL_CLASS}>{getNodeLabel(nodeId)}</p>
-                        <p className={ID_CLASS}>{nodeId}</p>
+                        <p className='text-[0.65rem] font-semibold text-muted'>{getNodeLabel(nodeId)}</p>
+                        <p className='max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis font-mono text-[0.55rem] text-muted'>{nodeId}</p>
                     </div>
                     <Chevron expanded={isExpanded} />
                 </div>
                 {isExpanded && (
-                    <div className={TREE_CLASS}>
+                    <div className='px-2.5 pb-[0.375rem] font-mono text-[0.65rem] leading-normal'>
                         <JsonTree data={output} defaultExpanded={true} />
                     </div>
                 )}
@@ -139,12 +119,12 @@ const DebugContextPanel = () => {
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
 
     return (
-        <div className={PANEL_CLASS}>
-            <div className={cn(ROW_CLASS, PANEL_HEADER_CLASS, 'select-none')} onClick={() => setIsOpen((v) => !v)}>
+        <div className='absolute top-4 right-4 z-10 flex w-[280px] max-h-[320px] max-w-[calc(100vw-1rem)] flex-col border border-border bg-surface max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[55dvh]'>
+            <div className={cn('flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-[0.35rem] transition-colors duration-100 hover:bg-surface-tertiary/50', 'border-b border-border px-2.5 py-2 select-none')} onClick={() => setIsOpen((v) => !v)}>
                 <Braces size={12} aria-hidden='true' />
                 <p className='flex flex-1 flex-row items-center gap-[0.35rem] text-xs font-semibold'>
                     Context
-                    <span className={PANEL_COUNT_CLASS}>{entries.length}</span>
+                    <span className='rounded-full bg-accent/15 px-[0.3rem] text-[0.6rem] font-semibold leading-[1.4] text-accent'>{entries.length}</span>
                 </p>
                 {isOpen ? <X size={12} className='text-muted' aria-hidden='true' /> : <ChevronRight size={12} aria-hidden='true' />}
             </div>
@@ -154,13 +134,13 @@ const DebugContextPanel = () => {
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
-                        <div className={ENTRY_CLASS}>
-                            <div className={ROW_CLASS} onClick={() => toggleKey(forEachGroupKey)}>
+                        <div className='border-b border-border/50 last:border-b-0'>
+                            <div className='flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-[0.35rem] transition-colors duration-100 hover:bg-surface-tertiary/50' onClick={() => toggleKey(forEachGroupKey)}>
                                 <div className='flex flex-row items-center gap-2'>
                                     <Repeat size={10} className='text-muted' aria-hidden='true' />
                                     <div className='flex flex-col'>
-                                        <p className={LABEL_CLASS}>{getNodeLabel(forEachEntry[0])}</p>
-                                        <p className={ID_CLASS}>
+                                        <p className='text-[0.65rem] font-semibold text-muted'>{getNodeLabel(forEachEntry[0])}</p>
+                                        <p className='max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis font-mono text-[0.55rem] text-muted'>
                                             {iterationCount} iteration{iterationCount !== 1 ? 's' : ''}
                                         </p>
                                     </div>
@@ -169,15 +149,15 @@ const DebugContextPanel = () => {
                             </div>
 
                             {expandedKeys.has(forEachGroupKey) && (
-                                <div className={NESTED_CLASS}>
-                                    <div className={ENTRY_CLASS}>
-                                        <div className={ROW_CLASS} onClick={() => toggleKey(iterationKey)}>
-                                            <p className={LABEL_CLASS}>Iteration {currentIndex}</p>
+                                <div className='ml-2.5 border-l border-border'>
+                                    <div className='border-b border-border/50 last:border-b-0'>
+                                        <div className='flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-[0.35rem] transition-colors duration-100 hover:bg-surface-tertiary/50' onClick={() => toggleKey(iterationKey)}>
+                                            <p className='text-[0.65rem] font-semibold text-muted'>Iteration {currentIndex}</p>
                                             <Chevron expanded={expandedKeys.has(iterationKey)} size={10} />
                                         </div>
 
                                         {expandedKeys.has(iterationKey) && (
-                                            <div className={NESTED_CLASS}>
+                                            <div className='ml-2.5 border-l border-border'>
                                                 {postForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
                                             </div>
                                         )}

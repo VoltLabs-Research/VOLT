@@ -7,7 +7,7 @@ import type {
     GetRasterMetadataInput,
     GetRasterMetadataOutput
 } from '@shared/contracts/operations/GetRasterMetadata';
-import type { DownloadStreamOutput } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 
 interface TriggerRasterizationInput {

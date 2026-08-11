@@ -1,7 +1,6 @@
 import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
 
-/** `trajectory` is a Ref: a bare id unless the server populated the document. */
 export const getNotebookTrajectoryId = (notebook: ScriptingNotebook): string | undefined => {
     const trajectory = notebook.trajectory;
     if (!trajectory) {
@@ -11,7 +10,6 @@ export const getNotebookTrajectoryId = (notebook: ScriptingNotebook): string | u
     return typeof trajectory === 'string' ? trajectory : trajectory._id;
 };
 
-/** `teamCluster` is a Ref: a bare id unless the server populated the document. */
 export const getNotebookTeamClusterId = (notebook?: ScriptingNotebook | null): string | undefined => {
     const teamCluster = notebook?.teamCluster;
     if (!teamCluster) {

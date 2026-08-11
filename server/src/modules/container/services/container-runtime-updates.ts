@@ -8,7 +8,7 @@ import type { ContainerPortRelayTarget } from '@modules/container/services/Conta
 import { requireContainerRuntimeTarget } from '@modules/container/services/container-lookup';
 import { resolveInternalIp, toRelayTargets } from '@modules/container/services/container-network';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
+import type { ContainerPortMapping } from '@shared/contracts/ports/ContainerRuntime';
 import type { UpdateContainerInput } from '@volt/contracts/modules/container/http';
 
 /* Mutating a live container. Two disjoint shapes of request arrive here: a

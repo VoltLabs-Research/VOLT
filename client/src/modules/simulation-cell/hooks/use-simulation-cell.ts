@@ -1,6 +1,7 @@
 import { simulationCellByTrajectoryQuery } from './queries';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 
 interface UseSimulationCellParams {
     trajectoryId?: string;

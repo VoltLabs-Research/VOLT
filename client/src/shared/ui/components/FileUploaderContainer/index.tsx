@@ -22,13 +22,6 @@ interface ProcessedDropEntry {
     isDirectory: boolean;
 };
 
-/**
- * A full-window overlay that is invisible and inert until a drag carrying files
- * enters the window, then fades in a tinted, blurred sheet with an accent edge.
- */
-const DROP_ZONE_CLASSES = 'absolute w-full h-full top-0 left-0 z-[100] border border-transparent bg-transparent backdrop-blur-[0px] opacity-0 pointer-events-none transition-[opacity,background-color,backdrop-filter,border-color] duration-300 ease-out';
-const DROP_ZONE_ACTIVE_CLASSES = 'opacity-100 pointer-events-auto border-accent bg-accent/10 backdrop-blur-[3px]';
-
 const createFallbackUploadName = (timestamp: number, index: number): string => {
     return index === 0 ? `upload_${timestamp}` : `upload_${timestamp}_${index}`;
 };
@@ -162,7 +155,7 @@ const FileUploaderContainer = ({
     }, [handleWindowDragEnter]);
 
     const containerClasses = useMemo(() => {
-        return cn(DROP_ZONE_CLASSES, isDraggingOver && DROP_ZONE_ACTIVE_CLASSES);
+        return cn('absolute w-full h-full top-0 left-0 z-[100] border border-transparent bg-transparent backdrop-blur-[0px] opacity-0 pointer-events-none transition-[opacity,background-color,backdrop-filter,border-color] duration-300 ease-out', isDraggingOver && 'opacity-100 pointer-events-auto border-accent bg-accent/10 backdrop-blur-[3px]');
     }, [isDraggingOver]);
 
     const dragMessage = isDraggingOver ? 'Drop files to upload them.' : '';

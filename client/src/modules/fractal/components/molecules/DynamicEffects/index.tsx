@@ -43,13 +43,9 @@ const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsPr
         sepia.enabled ||
         noise.enabled
     );
-    const caOffsetVec = useMemo(() => new Vector2(
-        chromaticAberration.offset[0],
-        chromaticAberration.offset[1]
-    ), [chromaticAberration.offset[0], chromaticAberration.offset[1]]);
-    // @react-three/postprocessing 3.0.5 types ChromaticAberration's props as
-    // Omit<Partial<CtorOptions | undefined>, 'offset'>, which collapses to {} and hides every
-    // constructor option. They are still forwarded to the effect at runtime, so pass them by spread.
+    const [caOffsetX, caOffsetY] = chromaticAberration.offset;
+    const caOffsetVec = useMemo(() => new Vector2(caOffsetX, caOffsetY), [caOffsetX, caOffsetY]);
+
     const caEffectOptions = {
         blendFunction: chromaticAberration.blendFunction,
         radialModulation: false,

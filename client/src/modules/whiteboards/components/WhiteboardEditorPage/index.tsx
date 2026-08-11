@@ -16,17 +16,6 @@ import '@excalidraw/excalidraw/index.css';
 
 const AI_ASSISTANT_IDLE_FALLBACK_DELAY_MS = 250;
 
-/**
- * The Suspense fallback for the AI panel, which mounts inside Excalidraw's own
- * toolbar and so has to look like part of it rather than like a HeroUI control.
- *
- * `border` and `bg-surface-secondary` are restored deliberately: the stylesheet asked
- * for `var(--color-border-primary)` and `var(--color-surface-secondary)`, neither of
- * which was ever defined, and an invalid `border:` shorthand removes the border
- * outright — so this button has been rendering edgeless and transparent.
- */
-const AI_LOADING_BUTTON_CLASS_NAMES = 'rounded-full border border-border bg-surface-secondary px-3.5 py-2 text-foreground [font:inherit] cursor-pointer';
-
 const WhiteboardCanvas = lazy(
     () => import('./WhiteboardCanvas')
 );
@@ -95,7 +84,7 @@ const WhiteboardEditorPage = () => {
                 <button
                     type='button'
                     disabled
-                    className={AI_LOADING_BUTTON_CLASS_NAMES}
+                    className='rounded-full border border-border bg-surface-secondary px-3.5 py-2 text-foreground [font:inherit] cursor-pointer'
                     aria-label='Loading the Volt AI assistant'
                 >
                     Loading AI...

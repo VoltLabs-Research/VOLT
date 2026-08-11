@@ -1,4 +1,4 @@
-import { Modal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
@@ -22,7 +22,6 @@ const JobsDrawer = () => {
             lazyMount
         >
             <div className='flex h-full min-h-0 flex-col'>
-                {/* `--glass-border` was already aliased to `--border` before this migration. */}
                 <div className='flex items-center gap-3 border-b border-border px-6 py-4'>
                     <StatusCounts
                         queued={counts.queued}
@@ -34,7 +33,6 @@ const JobsDrawer = () => {
                         <span className='text-xs text-muted'>No compute jobs yet.</span>
                     )}
                 </div>
-
                 <div className='min-h-0 flex-1 overflow-y-auto px-6 pt-2 pb-6'>
                     <JobsHistoryViewer
                         trajectoryId={trajectoryId ?? undefined}

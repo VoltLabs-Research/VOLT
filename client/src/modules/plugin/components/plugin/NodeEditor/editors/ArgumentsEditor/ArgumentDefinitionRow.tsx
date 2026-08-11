@@ -28,20 +28,6 @@ import { Chip, cn } from '@heroui/react';
 import { PluginMultiSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
-import {
-    ARGUMENT_ROW_BODY_CLASS,
-    ARGUMENT_ROW_CHEVRON_CLASS,
-    ARGUMENT_ROW_CHEVRON_EXPANDED_CLASS,
-    ARGUMENT_ROW_CLASS,
-    ARGUMENT_ROW_DELETE_CLASS,
-    ARGUMENT_ROW_HEADER_CLASS,
-    ARGUMENT_ROW_NESTED_CLASS,
-    ARGUMENT_ROW_SUBBLOCK_CLASS,
-    ARGUMENT_ROW_SUBHEADING_CLASS,
-    ARGUMENT_ROW_TITLE_CLASS,
-    ARGUMENT_ROW_TITLE_PLACEHOLDER_CLASS,
-    ARGUMENT_ROW_TOGGLE_CLASS
-} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
 import { ChevronRight, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
@@ -129,35 +115,30 @@ const ArgumentDefinitionRow = ({
     const scalarFieldType: 'input' | 'select' = scalarOptions ? 'select' : 'input';
 
     return (
-        <div className={ARGUMENT_ROW_CLASS}>
-            <div className={ARGUMENT_ROW_HEADER_CLASS}>
+        <div className='group'>
+            <div className='flex flex-row items-center gap-1.5 rounded-xl py-1 pl-1.5 pr-2'>
                 <button
                     type='button'
-                    className={ARGUMENT_ROW_TOGGLE_CLASS}
+                    className='inline-flex min-w-0 flex-1 cursor-pointer flex-row items-center gap-2 rounded-md border-none bg-transparent px-1 py-1.5 text-left text-foreground hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--focus)]'
                     onClick={onToggle}
                     aria-expanded={isExpanded}
                     aria-controls={`argument-row-body-${fieldPrefix}`}
                 >
                     <ChevronRight
                         size={14}
-                        className={cn(ARGUMENT_ROW_CHEVRON_CLASS, isExpanded ? ARGUMENT_ROW_CHEVRON_EXPANDED_CLASS : null)}
+                        className={cn('shrink-0 text-muted transition-transform duration-150 ease-out', isExpanded ? 'rotate-90' : null)}
                         aria-hidden='true'
                     />
-                    <span className={cn(ARGUMENT_ROW_TITLE_CLASS, argumentLabel ? null : ARGUMENT_ROW_TITLE_PLACEHOLDER_CLASS)}>
+                    <span className={cn('min-w-0 flex-1 overflow-hidden whitespace-nowrap text-ellipsis text-[0.8125rem] font-medium', argumentLabel ? null : 'italic text-muted')}>
                         {displayLabel}
                     </span>
-                    {/*
-                      * bravais `Tag` at `size='xs'` with the default soft neutral tone.
-                      * `.argument-row-type-badge` was declared in no stylesheet, so the
-                      * badge's own metrics are all there ever was.
-                      */}
                     <Chip size='sm' variant='soft' className='shrink-0 rounded-full px-1.5 py-[0.05rem] text-[0.65rem] font-medium'>
                         {ARGUMENT_TYPE_SELECT_OPTIONS.find((option) => option.value === argument.type)?.title ?? argument.type}
                     </Chip>
                 </button>
                 <button
                     type='button'
-                    className={ARGUMENT_ROW_DELETE_CLASS}
+                    className='inline-flex size-7 shrink-0 cursor-pointer flex-row items-center justify-center rounded-md border-none bg-transparent p-0 text-muted opacity-0 transition-[opacity,color,background-color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-danger focus-visible:opacity-100 focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--focus)] group-hover:opacity-100 group-focus-within:opacity-100'
                     onClick={onRemove}
                     aria-label={`Delete ${displayLabel}`}
                     title='Delete argument'
@@ -167,7 +148,7 @@ const ArgumentDefinitionRow = ({
             </div>
 
             {isExpanded && (
-                <div className={ARGUMENT_ROW_BODY_CLASS} id={`argument-row-body-${fieldPrefix}`}>
+                <div className='flex flex-col border-t border-border py-3' id={`argument-row-body-${fieldPrefix}`}>
                     <FormSection title='General'>
                         <ArgumentField
                             label='Key'
@@ -324,8 +305,8 @@ const ArgumentDefinitionRow = ({
 
                     {argument.type === ArgumentType.SELECT && (
                         <>
-                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>Options</h4>
-                            <div className={ARGUMENT_ROW_SUBBLOCK_CLASS}>
+                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>Options</h4>
+                            <div className='p-1'>
                                 <ArgumentOptionsEditor
                                     options={argument.options ?? []}
                                     onOptionsChange={(nextOptions) => onUpdate(applyArgumentOptionsEdit(argument, nextOptions))}
@@ -336,10 +317,10 @@ const ArgumentDefinitionRow = ({
 
                     {isListLike && (
                         <>
-                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>
+                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>
                                 {argument.type === ArgumentType.TUPLE ? 'Tuple Components' : 'Nested Arguments'}
                             </h4>
-                            <div className={cn(ARGUMENT_ROW_SUBBLOCK_CLASS, ARGUMENT_ROW_NESTED_CLASS)}>
+                            <div className='p-1 mt-2'>
                                 {nestedArgumentsSection}
                             </div>
                         </>
@@ -347,8 +328,8 @@ const ArgumentDefinitionRow = ({
 
                     {isPluginReference && (
                         <>
-                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>Allowed Plugins</h4>
-                            <div className={ARGUMENT_ROW_SUBBLOCK_CLASS}>
+                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>Allowed Plugins</h4>
+                            <div className='p-1'>
                                 <div className='flex flex-col gap-2'>
                                     <PluginMultiSelect
                                         id={`plugin-reference-filter-${fieldPrefix}`}
@@ -402,8 +383,8 @@ const ArgumentDefinitionRow = ({
                                     onChange={(event) => editField('showPluginConfiguration', event.target.value)}
                                 />
                             </FormSection>
-                            <h4 className={ARGUMENT_ROW_SUBHEADING_CLASS}>Argument Mappings</h4>
-                            <div className={ARGUMENT_ROW_SUBBLOCK_CLASS}>
+                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>Argument Mappings</h4>
+                            <div className='p-1'>
                                 <PluginReferenceMappingsEditor
                                     mappings={argument.pluginReferenceMappings ?? []}
                                     fieldPrefix={fieldPrefix}

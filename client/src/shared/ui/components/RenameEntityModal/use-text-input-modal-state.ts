@@ -1,4 +1,5 @@
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { useCallback, useState } from 'react';
 
 interface UseTextInputModalStateOptions {

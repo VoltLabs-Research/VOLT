@@ -2,11 +2,12 @@
 /**
  * Dependency-boundary ratchet.
  *
- * The dependency-cruiser rules are all `warn`, so nothing fails when a new
- * cross-module import or cycle lands — which is how the count grew to hundreds
- * with no one noticing. This pins the current total in `depcruise-baseline.json`
- * (same pattern as the client's CSS baseline): the number may shrink, never grow.
- * When you remove violations, re-run with `--update` to lower the ceiling.
+ * The cross-module and circular-import rules run at `warn`, so nothing fails
+ * when a new cross-module import or cycle lands — which is how the count grew
+ * to hundreds with no one noticing. This ratchet pins those warn-level
+ * boundary violations in `depcruise-baseline.json` (same pattern as the
+ * client's CSS baseline): the number may shrink, never grow. When you remove
+ * violations, re-run with `--update` to lower the ceiling.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -35,19 +36,19 @@ const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
 
 if (process.argv.includes('--update')) {
     writeFileSync(baselinePath, `${JSON.stringify({ total, counts }, null, 4)}\n`);
-    console.log(`baseline actualizado: total=${total} ${JSON.stringify(counts)}`);
+    console.log(`baseline updated: total=${total} ${JSON.stringify(counts)}`);
     process.exit(0);
 }
 
 const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
-console.log(`violaciones: ${total} (baseline ${baseline.total}) ${JSON.stringify(counts)}`);
+console.log(`violations: ${total} (baseline ${baseline.total}) ${JSON.stringify(counts)}`);
 
 if (total > baseline.total) {
-    console.error(`\nRATCHET: las violaciones de frontera subieron de ${baseline.total} a ${total}.`);
-    console.error('No agregues imports cross-module nuevos; si eliminaste otros, corre con --update.');
+    console.error(`\nRATCHET: boundary violations rose from ${baseline.total} to ${total}.`);
+    console.error('Do not add new cross-module imports; if you removed others, run with --update.');
     process.exit(1);
 }
 
 if (total < baseline.total) {
-    console.log('Bajaron — corre `node scripts/check-depcruise-ratchet.mjs --update` para fijar el nuevo techo.');
+    console.log('Violations dropped — run `node scripts/check-depcruise-ratchet.mjs --update` to pin the new ceiling.');
 }

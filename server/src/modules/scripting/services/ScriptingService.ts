@@ -10,7 +10,7 @@ import type { NotebookIdentityInput, ScriptingNotebookView } from '@modules/scri
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type { ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';

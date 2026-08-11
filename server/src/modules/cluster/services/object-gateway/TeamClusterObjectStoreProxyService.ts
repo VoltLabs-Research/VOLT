@@ -5,7 +5,7 @@ import defaultObjectGatewayClient from '@modules/cluster/services/object-gateway
 import DaemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayListRequest,

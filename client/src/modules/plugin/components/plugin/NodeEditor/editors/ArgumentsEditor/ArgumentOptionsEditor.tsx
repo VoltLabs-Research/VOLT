@@ -1,23 +1,6 @@
 import { Button, EmptyStateRoot, cn } from '@heroui/react';
 import { Plus, Trash2 } from 'lucide-react';
 
-import {
-    OPTIONS_EDITOR_CLASS,
-    OPTIONS_ERROR_HINT_CLASS,
-    OPTIONS_FOOTER_CLASS,
-    OPTIONS_GRID_ACTION_SPACER_CLASS,
-    OPTIONS_GRID_CLASS,
-    OPTIONS_GRID_GAP_CLASS,
-    OPTIONS_GRID_HEADER_CLASS,
-    OPTIONS_INPUT_CLASS,
-    OPTIONS_INPUT_ERROR_CLASS,
-    OPTIONS_INPUT_LABEL_OFFSET_CLASS,
-    OPTIONS_LIST_CLASS,
-    OPTIONS_REMOVE_CLASS,
-    OPTIONS_ROW_CLASS,
-    OPTIONS_ROW_ERROR_CLASS
-} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
-
 import type { IArgumentOption } from '@volt/contracts/modules/plugin/workflow';
 import type { KeyboardEvent } from 'react';
 
@@ -58,39 +41,32 @@ const OptionRow = ({
     const hasError = Boolean(errorTitle);
 
     return (
-        <li className={cn(OPTIONS_ROW_CLASS, hasError ? OPTIONS_ROW_ERROR_CLASS : null)}>
+        <li className={cn('group flex flex-row items-center gap-0 rounded-md border border-transparent px-1.5 py-1 transition-[background-color,border-color] duration-[120ms] ease-out hover:bg-surface-hover', hasError ? 'border-danger bg-danger/6' : null)}>
             <input
                 type='text'
                 value={option.key}
                 onChange={(event) => onOptionChange({ key: event.currentTarget.value })}
                 placeholder={KEY_PLACEHOLDER}
-                className={cn(OPTIONS_INPUT_CLASS, 'font-mono', hasError ? OPTIONS_INPUT_ERROR_CLASS : null)}
+                className={cn('min-w-0 flex-1 rounded-md border border-border bg-surface-secondary px-2.5 py-1.5 text-sm text-foreground outline-none transition-[border-color,background-color] duration-[120ms] ease-out focus:border-accent focus:bg-background font-mono', hasError ? 'border-danger' : null)}
                 aria-label={`Option ${index + 1} key`}
                 aria-invalid={hasError}
                 title={errorTitle}
                 spellCheck={false}
             />
-
             <input
                 type='text'
                 value={option.label}
                 onChange={(event) => onOptionChange({ label: event.currentTarget.value })}
                 placeholder={LABEL_PLACEHOLDER}
-                className={cn(OPTIONS_INPUT_CLASS, OPTIONS_INPUT_LABEL_OFFSET_CLASS)}
+                className='min-w-0 flex-1 rounded-md border border-border bg-surface-secondary px-2.5 py-1.5 text-sm text-foreground outline-none transition-[border-color,background-color] duration-[120ms] ease-out focus:border-accent focus:bg-background ml-4'
                 aria-label={`Option ${index + 1} label`}
                 onKeyDown={handleLabelKeyDown}
             />
-
-            {/*
-              * HeroUI's `ButtonProps` is closed and declares no `title` (spec §5b note
-              * 8); the `aria-label` already carries the same string, so only the native
-              * tooltip goes.
-              */}
             <Button
                 isIconOnly
                 variant='ghost'
                 size='sm'
-                className={OPTIONS_REMOVE_CLASS}
+                className='ml-2 shrink-0 text-muted opacity-0 transition-[opacity,color] duration-[140ms] ease-out hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100'
                 aria-label={`Remove option ${index + 1}`}
                 onPress={onRemove}
             >
@@ -143,13 +119,12 @@ const ArgumentOptionsEditor = ({
 
     if (options.length === 0) {
         return (
-            <div className={OPTIONS_EDITOR_CLASS}>
+            <div className='flex flex-col gap-3'>
                 <EmptyStateRoot className='flex flex-col items-center justify-center gap-2 p-4 text-center'>
                     <h3 className='text-base font-medium text-foreground'>No options defined</h3>
                     <span className='text-sm leading-normal text-muted'>Add options to populate the select.</span>
                 </EmptyStateRoot>
                 <div className='flex flex-row items-center justify-center gap-2'>
-                    {/* bravais `variant='solid' intent='brand'` — the accent fill — is `primary` (§4d). */}
                     <Button
                         variant='primary'
                         size='sm'
@@ -164,15 +139,14 @@ const ArgumentOptionsEditor = ({
     }
 
     return (
-        <div className={OPTIONS_EDITOR_CLASS}>
-            <div className={OPTIONS_GRID_CLASS} aria-hidden='true'>
-                <span className={OPTIONS_GRID_HEADER_CLASS}>Key</span>
-                <span className={OPTIONS_GRID_GAP_CLASS} />
-                <span className={OPTIONS_GRID_HEADER_CLASS}>Label</span>
-                <span className={OPTIONS_GRID_ACTION_SPACER_CLASS} />
+        <div className='flex flex-col gap-3'>
+            <div className='flex flex-row items-center gap-0 px-1' aria-hidden='true'>
+                <span className='min-w-0 flex-1 pl-2 text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Key</span>
+                <span className='inline-block w-4 shrink-0' />
+                <span className='min-w-0 flex-1 pl-2 text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Label</span>
+                <span className='inline-block w-7 shrink-0' />
             </div>
-
-            <ul className={OPTIONS_LIST_CLASS} role='list'>
+            <ul className='m-0 flex list-none flex-col gap-1 p-0' role='list'>
                 {options.map((option, index) => {
                     const trimmedKey = option.key.trim();
 
@@ -194,8 +168,7 @@ const ArgumentOptionsEditor = ({
                     );
                 })}
             </ul>
-
-            <div className={OPTIONS_FOOTER_CLASS}>
+            <div className='flex flex-col gap-2 pt-1'>
                 <Button
                     variant='outline'
                     size='sm'
@@ -206,7 +179,7 @@ const ArgumentOptionsEditor = ({
                     Add option
                 </Button>
                 {duplicateKeys.size > 0 && (
-                    <span className={OPTIONS_ERROR_HINT_CLASS} role='status'>
+                    <span className='text-xs text-danger' role='status'>
                         Duplicate keys must be unique
                     </span>
                 )}

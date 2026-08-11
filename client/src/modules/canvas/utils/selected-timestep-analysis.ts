@@ -11,11 +11,6 @@ type AnalysisConfigWithExecutionMetadata = Analysis['config'] & {
     [ANALYSIS_EXECUTION_METADATA_KEY]?: AnalysisExecutionMetadata;
 };
 
-/**
- * Our own execution metadata, stashed on the analysis config by the canvas when
- * a run is scoped to a subset of frames. Written and read only by us, so the
- * declared shape is taken at face value.
- */
 export const readAnalysisExecutionMetadata = (
     config: Analysis['config'] | undefined
 ): AnalysisExecutionMetadata | undefined => {
@@ -57,10 +52,6 @@ export const getNearestTimestep = (
     }, availableTimesteps[0]);
 };
 
-/**
- * A scope that covers every available frame is the same as no scope at all, so
- * it collapses to `undefined` and callers stop special-casing it.
- */
 export const normalizeSelectedTimesteps = (
     selectedTimesteps: number[] | undefined,
     availableTimesteps: number[]

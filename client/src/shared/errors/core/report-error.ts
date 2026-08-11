@@ -14,11 +14,6 @@ export const isApiError = (error: unknown): error is ApiError => {
     return error instanceof ApiError;
 };
 
-/**
- * An aborted request is a cancellation, never a failure: it must never reach the
- * user. `DOMException` extends `Error`, so this covers both `AbortController`
- * signals and manually constructed abort errors.
- */
 export const isAbortError = (error: unknown): boolean => {
     return error instanceof Error && error.name === 'AbortError';
 };

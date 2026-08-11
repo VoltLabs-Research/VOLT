@@ -19,8 +19,8 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';

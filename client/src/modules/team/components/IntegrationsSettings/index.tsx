@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react';
-import { openModal } from '@/shared/ui/modal';
+import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { invalidateTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
 import useTeamAIIntegrationsSettings, { TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import IntegrationFormModal from './IntegrationFormModal';

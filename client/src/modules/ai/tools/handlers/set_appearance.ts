@@ -29,8 +29,6 @@ const setAppearance: ClientToolHandler<SetAppearanceInput> = {
         }
 
         if (input.quality !== undefined) {
-            // The contract declares this as the literal union the LLM may send; it is
-            // value-identical to PerformancePreset, which TS keeps nominal for enums.
             store.performanceSettings.setPreset(input.quality as PerformancePreset);
             applied.quality = input.quality;
             changes.push(`quality ${input.quality}`);

@@ -1,7 +1,7 @@
 import { createService, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 import { emitWithReport } from '@/modules/socket/services/socket-emit-helpers';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { PageParams, SearchParams, TeamScopedParams } from '@/shared/api/request-params';
 import type {
     ClusterTransferJob,

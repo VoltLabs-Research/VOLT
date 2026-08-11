@@ -45,7 +45,7 @@ export interface WorkflowValueMap {
 
 export type WorkflowNodeOutput = WorkflowValueMap;
 
-export interface WorkflowEntrypointConfigDefaults {
+interface WorkflowEntrypointConfigDefaults {
     binaryObjectPath?: string;
     ownerClusterId?: string;
     argumentsTemplate?: string;
@@ -328,7 +328,7 @@ export interface WorkflowDumpTarget {
     simulationCell: string;
 }
 
-export interface WorkflowProcessLogContext {
+interface WorkflowProcessLogContext {
     rootNodeId: string;
     nodeId: string;
     nodeType: string;

@@ -1,5 +1,6 @@
 import { Button, Label, ListBox, Select, Spinner, Switch } from '@heroui/react';
-import { Modal, closeModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import IntegrationModelList from './IntegrationModelList';
 import { OLLAMA_DEFAULT_BASE_URL, TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
@@ -12,10 +13,6 @@ import type { TeamAIIntegration, TeamAIModelMetadata, TeamAIProviderCatalogItem 
 
 const TEAM_AI_INTEGRATION_FORM_ID = 'team-ai-integration-form';
 
-/**
- * bravais's `SelectOption`, kept locally now that the design system is gone. The
- * shape is unchanged, so the two lists below still read the same.
- */
 interface IntegrationSelectOption {
     value: string;
     title: string;
@@ -77,11 +74,6 @@ const IntegrationFormModal = ({
         }));
     };
 
-    /*
-     * bravais's `Select.onChange` only ever fired with a value; React Aria's
-     * `onSelectionChange` is typed `Key | null` because a clearable select can
-     * deselect. Neither of these can, so `null` is ignored rather than written back.
-     */
     const handleProviderSelectionChange = (key: Key | null) => {
         if (key === null) return;
 
@@ -126,9 +118,6 @@ const IntegrationFormModal = ({
                 </>
             )}
         >
-            {/* No padding here: HeroUI's modal body already pads the dialog, and the two
-                stacked. Every other modal in the app relies on that same body padding, so
-                the duplicate is dropped here rather than making this one dialog special. */}
             <form id={TEAM_AI_INTEGRATION_FORM_ID} onSubmit={handleSubmit}>
                 <div className='flex flex-col gap-4'>
                     {!editingProvider ? (
@@ -143,11 +132,6 @@ const IntegrationFormModal = ({
                                 aria-labelledby={providerLabelId}
                             >
                                 <Select.Trigger>
-                                    {/*
-                                      * bravais's trigger showed the selected option's
-                                      * `title` only; RAC's default children render the
-                                      * whole item, so a `description` would leak in.
-                                      */}
                                     <Select.Value>
                                         {({ isPlaceholder, selectedText, defaultChildren }) => (
                                             isPlaceholder ? defaultChildren : selectedText
@@ -203,7 +187,6 @@ const IntegrationFormModal = ({
                             ? OLLAMA_DEFAULT_BASE_URL
                             : 'Use a self-hosted gateway, e.g. https://my-gateway.example.com/v1'}
                     />
-
                     <IntegrationModelList
                         key={provider}
                         models={draft.enabledModels}
@@ -211,7 +194,6 @@ const IntegrationFormModal = ({
                         onAddModel={handleAddModel}
                         onRemoveModel={handleRemoveModel}
                     />
-
                     <div className='flex flex-col gap-2'>
                         <label className='text-sm font-medium text-muted' id={defaultModelLabelId}>Default model</label>
                         <Select
@@ -242,8 +224,6 @@ const IntegrationFormModal = ({
                             </Select.Popover>
                         </Select>
                     </div>
-
-                    {/* `.integrations-modal-toggle` */}
                     <div className='flex flex-row items-center justify-between gap-2 border-t border-border pt-3 mt-1'>
                         <p className='text-sm text-muted' id={enabledLabelId}>Enabled</p>
                         <Switch

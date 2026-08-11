@@ -1,11 +1,6 @@
-import {
-    buildKeys,
-    createQuery
-} from '@/shared/query';
-import {
-    currentCanvasDataAccess,
-    currentAccessKey
-} from '@/modules/canvas/api/access';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createQuery } from '@/shared/query/create-query';
+import { currentCanvasDataAccess, currentAccessKey } from '@/modules/canvas/api/access/use-canvas-access-store';
 import type {
     ColorCodingProperties,
     ColorCodingStats,

@@ -2,7 +2,6 @@ import type AIToolController from '@shared/ai/AIToolController';
 import AiAIToolController from '@modules/ai/ai-tools/AiAIToolController';
 import AnalysisAIToolController from '@modules/analysis/ai-tools/AnalysisAIToolController';
 import AuthAIToolController from '@modules/auth/ai-tools/AuthAIToolController';
-import ChatAIToolController from '@modules/chat/ai-tools/ChatAIToolController';
 import ClusterAIToolController from '@modules/cluster/ai-tools/ClusterAIToolController';
 import ContainerAIToolController from '@modules/container/ai-tools/ContainerAIToolController';
 import DailyActivityAIToolController from '@modules/daily-activity/ai-tools/DailyActivityAIToolController';
@@ -39,7 +38,6 @@ export const AI_TOOL_CONTROLLERS: readonly (new () => AIToolController)[] = [
     AiAIToolController,
     AnalysisAIToolController,
     AuthAIToolController,
-    ChatAIToolController,
     ClusterAIToolController,
     ContainerAIToolController,
     DailyActivityAIToolController,

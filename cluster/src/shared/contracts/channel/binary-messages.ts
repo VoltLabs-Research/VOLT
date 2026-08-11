@@ -1,6 +1,5 @@
 import type {
     TeamClusterDaemonMessage,
-    TeamClusterDaemonSessionDataPayload,
     TeamClusterDaemonSessionInputPayload,
     TeamClusterDaemonSocketStreamPayload,
     TeamClusterDaemonTunnelDataPayload,
@@ -18,7 +17,6 @@ import type { InboundChunk } from '@shared/contracts/channel/binary-envelope';
 type WithInboundChunk<T extends { chunk: Uint8Array }> = Omit<T, 'chunk'> & { chunk: InboundChunk };
 
 export type BinarySessionInputPayload = WithInboundChunk<TeamClusterDaemonSessionInputPayload>;
-export type BinarySessionDataPayload = TeamClusterDaemonSessionDataPayload;
 export type BinaryStreamPayload = TeamClusterDaemonSocketStreamPayload;
 export type BinaryTunnelDataPayload = WithInboundChunk<TeamClusterDaemonTunnelDataPayload>;
 export type BinaryTunnelDrainPayload = TeamClusterDaemonTunnelDrainPayload;

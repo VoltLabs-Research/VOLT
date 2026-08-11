@@ -2,17 +2,6 @@ import { Chip, cn } from '@heroui/react';
 import NodeDebugOutput from '@/modules/plugin/components/plugin/BaseNode/NodeDebugOutput';
 import NodeExecutionLog from '@/modules/plugin/components/plugin/BaseNode/NodeExecutionLog';
 import useNodeDebugView from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
-import {
-    NODE_BADGE_CLASS,
-    NODE_BTN_GROUP_CLASS,
-    NODE_CLASS,
-    NODE_DATA_BTN_ACTIVE_CLASS,
-    NODE_DATA_BTN_CLASS,
-    NODE_DESCRIPTION_CLASS,
-    NODE_SELECTED_CLASS,
-    NODE_WRAPPER_BADGE_CLASS,
-    NODE_WRAPPER_CLASS
-} from '@/modules/plugin/components/plugin/BaseNode/node-styles';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import {
     createReactFlowHandleStyle,
@@ -37,11 +26,6 @@ interface BaseNodeProps extends NodeProps {
     children?: ReactNode;
 }
 
-/**
- * bravais's `Tag` defaulted to `variant='soft'`, so each tone was a tinted fill with
- * the hue as the text colour — which is exactly HeroUI's `Chip variant='soft'`. Its
- * `neutral` becomes `default`; there is no `brand` tone in play here.
- */
 const BADGE_COLOR: Record<NodeOverheadBadgeTone, ChipProps['color']> = {
     success: 'success',
     danger: 'danger',
@@ -55,20 +39,10 @@ interface DebugActionButtonProps {
     children: ReactNode;
 }
 
-/**
- * A plain `<button>`, deliberately.
- *
- * The handler calls `event.stopPropagation()` so opening the data or log overlay does
- * not also select the node underneath — and React Aria's `onPress` receives a
- * `PressEvent`, which has no `stopPropagation` (spec §4b). Nothing is lost by staying
- * native: `.workflow-node-data-btn` re-painted every part of bravais's Button anyway
- * (fill, border, padding, font size, colour), so those declarations are the whole
- * look and they are utilities now.
- */
 const DebugActionButton = ({ icon, isActive, onClick, children }: DebugActionButtonProps) => (
     <button
         type='button'
-        className={cn(NODE_DATA_BTN_CLASS, isActive ? NODE_DATA_BTN_ACTIVE_CLASS : null)}
+        className={cn('inline-flex cursor-pointer flex-row items-center gap-1 whitespace-nowrap rounded-full border border-border bg-surface-secondary/80 px-2 py-[0.15rem] font-[inherit] text-[0.6rem] text-muted transition-[color,border-color,background-color] duration-150 hover:border-border-secondary hover:text-inherit', isActive ? 'border-accent bg-accent/8 text-accent' : null)}
         onClick={(event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             onClick();
@@ -105,9 +79,8 @@ const BaseNode = ({
         toggleTraceNode
     } = useNodeDebugView(id, nodeType);
 
-    // `data` is `Record<string, unknown>` on xyflow's `NodeProps`.
     const nodeData = data as INodeData | undefined;
-    // Handles only move when the layout changes, and xyflow needs to be told.
+
     const connectorLayoutSignature = JSON.stringify(nodeData?.connectorLayout ?? {});
 
     useEffect(() => {
@@ -115,19 +88,19 @@ const BaseNode = ({
     }, [connectorLayoutSignature, id, updateNodeInternals]);
 
     return (
-        <div className={cn(NODE_WRAPPER_CLASS, overheadBadge ? NODE_WRAPPER_BADGE_CLASS : null)}>
+        <div className={cn('relative inline-flex flex-col items-center', overheadBadge ? 'pt-5' : null)}>
             {overheadBadge && (
                 <Chip
                     size='sm'
                     variant='soft'
                     color={BADGE_COLOR[overheadBadge.tone]}
-                    className={NODE_BADGE_CLASS}
+                    className='absolute top-0 left-1/2 -translate-x-1/2 z-[1] pointer-events-none whitespace-nowrap rounded-full px-[0.4rem] py-[0.05rem] text-[0.6rem] font-semibold'
                 >
                     {overheadBadge.label}
                 </Chip>
             )}
 
-            <div className={cn(NODE_CLASS, selected ? NODE_SELECTED_CLASS : null, debugClass)}>
+            <div className={cn('relative max-w-[300px] rounded-lg border border-border bg-surface px-6 py-4 transition-[border-color,opacity,box-shadow] duration-200 ease-out', selected ? 'border-accent' : null, debugClass)}>
                 {getNodeHandleDefinitions(nodeType).map((handleDefinition) => {
                     const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
@@ -147,7 +120,7 @@ const BaseNode = ({
                     <div className='flex flex-1 flex-col gap-[0.2rem]'>
                         <h3 className='text-base font-medium text-foreground'>{nodeTitle ?? config.label}</h3>
                         {description && (
-                            <p className={NODE_DESCRIPTION_CLASS}>
+                            <p className='line-clamp-2 overflow-hidden text-[0.8rem] text-muted'>
                                 {description}
                             </p>
                         )}
@@ -158,7 +131,7 @@ const BaseNode = ({
             </div>
 
             {(hasInspectableOutput || hasLog) && (
-                <div className={NODE_BTN_GROUP_CLASS}>
+                <div className='absolute top-full left-1/2 z-[2] mt-[0.35rem] -translate-x-1/2 inline-flex flex-row items-center gap-[0.3rem]'>
                     {hasInspectableOutput && (
                         <DebugActionButton
                             icon={<Database size={11} aria-hidden='true' />}

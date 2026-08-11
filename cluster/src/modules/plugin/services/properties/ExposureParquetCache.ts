@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 import { DAEMON_PATHS } from '@core/config/paths';
 import { logger } from '@shared/infrastructure/logger';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { toPluginExposureParquetObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import type {

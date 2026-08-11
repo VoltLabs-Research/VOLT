@@ -10,7 +10,7 @@ import analysisService from '@/modules/analysis/api/service';
 import rasterService from '@/modules/raster/api/service';
 import type { CanvasAccessState } from '@/modules/canvas/contracts/data-access';
 import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';

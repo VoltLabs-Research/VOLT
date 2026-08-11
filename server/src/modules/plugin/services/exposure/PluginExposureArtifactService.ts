@@ -7,15 +7,15 @@ import SceneArtifactEntity from '@modules/trajectory/models/SceneArtifact';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type {
     GetPluginExposureGLBInput,
     GetPluginExposureGLBOutput
 } from '@shared/contracts/operations/GetPluginExposureGLB';
-import { SceneArtifactSourceType } from '@shared/contracts/types';
-import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
+import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
+import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import logger from '@shared/infrastructure/logger';

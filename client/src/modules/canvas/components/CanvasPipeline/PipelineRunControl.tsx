@@ -53,7 +53,7 @@ const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
     if (stage.type === 'expression-select') {
         const config = stage.config as ExpressionSelectStageConfig;
         const expression = config.expression.trim();
-        // Only the destructive variant runs on the cluster; colouring stays client-side.
+
         if (!expression || config.action !== 'delete') return null;
 
         return {
@@ -95,7 +95,6 @@ const PipelineRunControl = ({
     const { executionTeamClusters, teamClusterOptions, hasTeamClusterOptions } =
         usePluginExecutionClusterOptions(teamClustersResponse?.data);
 
-    // Memoised because a trajectory can carry thousands of timesteps.
     const availableTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const pluginNameById = new Map(modifiers.map((m) => [m.pluginId, m.name]));
     const pluginNameByKey = new Map(modifiers
@@ -226,7 +225,6 @@ const PipelineRunControl = ({
                 selectedTimesteps={selectedTimesteps}
                 onChange={(next) => setSelectedTimesteps(normalizeSelectedTimesteps(next, availableTimesteps))}
             />
-
             <Button
                 variant='primary'
                 size='sm'

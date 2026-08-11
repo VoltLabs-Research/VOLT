@@ -37,13 +37,6 @@ export const augmentedPath = (): string => {
 
 let resolved: string | null | undefined;
 
-/**
- * Clears the memoized lookup.
- *
- * The path is cached because resolving it spawns a subprocess, but after the app
- * installs the runtime itself the cached `null` would outlive the thing it
- * describes, so provisioning must invalidate it.
- */
 export const resetDockerPath = (): void => {
     resolved = undefined;
 };

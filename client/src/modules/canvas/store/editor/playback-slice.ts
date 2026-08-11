@@ -1,6 +1,6 @@
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
-import { isAbortError, reportError } from '@/shared/errors/core';
+import { isAbortError, reportError } from '@/shared/errors/core/report-error';
 
 import type { EditorStore } from './types';
 import type { PlaybackState, PlaybackStore, PlaybackTimelineParams } from '@/modules/fractal/contracts/editor/scene-types';
@@ -152,8 +152,6 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                     }
                 }
 
-                // Deliberately not a `finally`: a `return` inside `finally`
-                // discards any in-flight exception.
                 if (_preloadAbortController === preloadAbortController) {
                     _preloadAbortController = null;
                 }
@@ -188,7 +186,6 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         })();
     },
 
-    
     tick(now: number) {
         const state = get();
         if (!state.isPlaying) {
@@ -261,7 +258,6 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         updateCurrentTimestep(timestep, set, get);
     },
 
-    
     setRangeStart(value: number | undefined) {
         const { rangeEnd, currentTimestep } = get();
         let clamped = value;
@@ -286,7 +282,6 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         set(updates);
     },
 
-    
     setRangeEnd(value: number | undefined) {
         const { rangeStart, currentTimestep } = get();
         let clamped = value;

@@ -17,8 +17,6 @@ import type { RuntimeTerminalAttachment } from '@shared/infrastructure/runtime/d
 import type { CreateContainerRequest } from '@shared/contracts/types/http-container';
 import Docker from 'dockerode';
 
-export type { RuntimeTerminalAttachment };
-
 interface DockerContainerFilter {
     label?: string[];
 }

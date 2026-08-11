@@ -5,11 +5,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ResolvedLocalGlbManifest } from '@/modules/canvas/utils/local-glb-manifest';
 
-/**
- * Resolves what the local GLB viewer (`/canvas/glb`) renders: an optional frame
- * manifest, the frame selected through the URL, and the winning GLB URL between
- * manifest frame, `?url=` and a dropped file.
- */
 const useLocalGlbViewer = (enabled: boolean) => {
     const { searchParams, updateSearchParams } = useCanvasUrlState();
     const localGlbUrl = useLocalGlbStore((state) => state.localGlbUrl);

@@ -7,7 +7,7 @@ import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/Sc
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 export interface ScriptingSessionNotebookInput {
     notebookPath: string;

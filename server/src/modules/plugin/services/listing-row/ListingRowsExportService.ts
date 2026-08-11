@@ -1,7 +1,7 @@
 import type {
     IClusterObjectArchiveService,
     ClusterArchiveInlineEntry
-} from '@shared/contracts/ports';
+} from '@shared/contracts/ports/IClusterObjectArchiveService';
 import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
 import {
     createDownloadStreamResponse,

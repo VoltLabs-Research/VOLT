@@ -1,5 +1,5 @@
 import { ErrorCodes, toErrorCode } from '@core/constants/error-codes';
-import type { ContainerTerminalAttachment } from '@shared/contracts/ports/IContainerService';
+import type { ContainerTerminalAttachment } from '@shared/contracts/ports/ContainerRuntime';
 import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
@@ -18,7 +18,7 @@ import type {
     TeamClusterDaemonSemanticCommandResult
 } from '@shared/domain/port/ITeamClusterDaemonClient';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
 import logger from '@shared/infrastructure/logger';
 import type { Readable } from 'node:stream';

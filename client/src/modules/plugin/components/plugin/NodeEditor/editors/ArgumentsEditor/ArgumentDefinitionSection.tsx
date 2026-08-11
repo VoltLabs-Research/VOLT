@@ -4,11 +4,6 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import ArgumentDefinitionRow from './ArgumentDefinitionRow';
 import DashedActionBox from '@/modules/plugin/components/plugin/DashedActionBox';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
-import {
-    ARGUMENT_ADD_BUTTON_CLASS,
-    ARGUMENT_EMPTY_CLASS,
-    ARGUMENT_LIST_CLASS
-} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
@@ -101,9 +96,9 @@ const ArgumentDefinitionSection = ({
     };
 
     return (
-        <div className={ARGUMENT_LIST_CLASS}>
+        <div className='flex flex-col gap-1.5'>
             {argumentDefinitions.length === 0 && (
-                <div className={ARGUMENT_EMPTY_CLASS}>
+                <div className='rounded-xl border border-dashed border-border px-4 py-5 text-center text-[0.8125rem] text-muted'>
                     No arguments yet. Add one to define user input.
                 </div>
             )}
@@ -129,7 +124,7 @@ const ArgumentDefinitionSection = ({
                 icon={<Plus size={14} aria-hidden='true' />}
                 label='Add Argument'
                 isBlock
-                className={ARGUMENT_ADD_BUTTON_CLASS}
+                className='mt-2'
                 onPress={handleAddArgument}
             />
         </div>

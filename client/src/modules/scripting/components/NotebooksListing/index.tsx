@@ -6,7 +6,8 @@ import DockerNeededState from '@/shared/ui/components/DockerNeededState';
 import { useContainerRuntimeAvailability } from '@/modules/cluster/hooks/use-container-runtime-availability';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
-import DocumentListing, { type DocumentListingTab } from '@/shared/ui/components/DocumentListing';
+import DocumentListing from '@/shared/ui/components/DocumentListing';
+import type { DocumentListingTab } from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { useCallback, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
@@ -37,7 +38,6 @@ const NOTEBOOK_TABS: DocumentListingTab[] = [
     }
 ];
 
-/** `trajectory` is only a popover-able document when the server populated it. */
 const renderTrajectoryDetails: NonNullable<ColumnConfig<ScriptingNotebook>['render']> = (_value, row) => {
     const trajectory = typeof row.trajectory === 'string' ? null : row.trajectory ?? null;
 

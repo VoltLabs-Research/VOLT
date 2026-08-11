@@ -1,6 +1,7 @@
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import type { AnalysisStatusChangedEventPayload } from '@shared/contracts/events';
-import type { Analysis, JobStatus } from '@shared/contracts/types';
+import type { AnalysisStatusChangedEventPayload } from '@shared/contracts/events/AnalysisStatusChangedPayload';
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
+import type { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import logger from '@shared/infrastructure/logger';
 import type { JobTrajectoryContext } from '@modules/cluster/services/daemon/DaemonJobOwnershipResolver';
 

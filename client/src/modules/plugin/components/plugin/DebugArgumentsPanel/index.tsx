@@ -11,16 +11,6 @@ import {
 import { X, Play, Settings2 } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 
-/**
- * `DebugArgumentsPanel.css`, as utilities. `center-x` and `panel-floating` were bravais
- * utility classes; the first is `left-1/2 -translate-x-1/2` and the second was never
- * defined anywhere in this app, so it is dropped rather than guessed at.
- */
-const PANEL_CLASS = 'absolute top-14 left-1/2 z-10 flex w-[320px] max-h-[400px] max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[60dvh]';
-const PANEL_HEADER_CLASS = 'flex shrink-0 flex-row items-center justify-between border-b border-border px-3 py-2.5';
-const PANEL_BODY_CLASS = 'flex min-h-0 max-h-[280px] flex-1 flex-col gap-2 overflow-y-auto p-3 max-[768px]:max-h-[40dvh]';
-const PANEL_FOOTER_CLASS = 'shrink-0 border-t border-border px-3 py-2.5';
-
 interface DebugArgumentsPanelProps {
     onStart: () => void;
     canStart: boolean;
@@ -40,7 +30,6 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
 
     const { selectedTrajectory } = useDebugTrajectorySelector();
 
-    // Memoised: identity is load-bearing as a dependency of the defaults effect below.
     const configurableArgs = useMemo(() => {
         const argsDefinitions = nodes.find((n) => n.type === NodeType.ARGUMENTS)?.data.arguments?.arguments;
         return argsDefinitions ? getUserConfigurableArguments(argsDefinitions) : [];
@@ -73,8 +62,8 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (configurableArgs.length === 0 || !showArgumentsPanel) return null;
 
     return (
-        <div className={PANEL_CLASS}>
-            <div className={PANEL_HEADER_CLASS}>
+        <div className='absolute top-14 left-1/2 z-10 flex w-[320px] max-h-[400px] max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[60dvh]'>
+            <div className='flex shrink-0 flex-row items-center justify-between border-b border-border px-3 py-2.5'>
                 <div className='flex flex-row items-center gap-2'>
                     <Settings2 size={14} aria-hidden='true' />
                     <p className='text-sm font-semibold'>
@@ -91,8 +80,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     <X size={14} aria-hidden='true' />
                 </Button>
             </div>
-
-            <div className={PANEL_BODY_CLASS}>
+            <div className='flex min-h-0 max-h-[280px] flex-1 flex-col gap-2 overflow-y-auto p-3 max-[768px]:max-h-[40dvh]'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
@@ -103,9 +91,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     }))}
                 />
             </div>
-
-            <div className={PANEL_FOOTER_CLASS}>
-                {/* bravais `intent='white'` was the inverted fill, which is HeroUI's `primary` (spec §4d). */}
+            <div className='shrink-0 border-t border-border px-3 py-2.5'>
                 <Button
                     variant='primary'
                     size='sm'

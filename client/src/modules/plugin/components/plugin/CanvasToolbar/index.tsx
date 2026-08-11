@@ -1,14 +1,4 @@
 import { Alert, Button, Separator, Spinner, Tooltip, cn } from '@heroui/react';
-import {
-    CALLOUT_DANGER_CLASS,
-    CANVAS_TOOLBAR_CLASS,
-    CANVAS_TOOLBAR_DIVIDER_CLASS,
-    CANVAS_TOOLBAR_STATUS_CLASS,
-    CANVAS_TOOLBAR_STATUS_ERROR_CLASS,
-    CANVAS_TOOLBAR_VALIDATION_CLASS,
-    CANVAS_TOOLBAR_VALIDATION_LIST_CLASS,
-    CANVAS_TOOLBAR_ZOOM_LABEL_CLASS
-} from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import type { SaveStatus } from '@/modules/plugin/hooks/plugin/use-workflow-save-status';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
@@ -20,15 +10,6 @@ interface CanvasToolbarProps {
     zoom: number;
 }
 
-/**
- * bravais's `SaveStatusIndicator`, which had no stylesheet of its own — it was a
- * `Row` of an icon and a `Text`, so it converts entirely to utilities. `hideIdle`
- * defaulted to `true` and this call site never overrode it, so `idle` still renders
- * nothing at all.
- *
- * Both of its greys (`tone='muted'` for saved, `tone='secondary'` for saving) land on
- * `text-muted` under §3a, so the distinction goes away — it was ~2% lightness.
- */
 const SaveStatusIndicator = ({ status, className }: { status: SaveStatus; className?: string }) => {
     if (status === 'idle') {
         return null;
@@ -68,25 +49,19 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
     return (
         <>
             {errors.length > 0 && (
-                /*
-                 * `role='alert'` / `aria-live` / `aria-label` are the three bravais
-                 * derived for a Callout that has a title. Its `icon` prop is NOT
-                 * rendered here, and was not before either: bravais only drew the icon
-                 * in its *inline* layout, and a `title` switched it to `stacked`.
-                 */
+
                 <Alert
                     status='danger'
                     role='alert'
                     aria-live='polite'
                     aria-label={validationTitle}
-                    className={cn(CANVAS_TOOLBAR_VALIDATION_CLASS, CALLOUT_DANGER_CLASS, 'items-start')}
+                    className={cn('absolute bottom-18 left-1/2 z-10 w-max max-w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 flex-row items-center justify-between rounded-xl border border-danger/24 bg-danger-soft p-4 shadow-none', 'items-start')}
                 >
                     <Alert.Content className='gap-1'>
                         <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-sm font-semibold'>
                             {validationTitle}
                         </Alert.Title>
-
-                        <ul className={CANVAS_TOOLBAR_VALIDATION_LIST_CLASS}>
+                        <ul className='m-0 flex flex-col gap-1 list-disc pl-4'>
                             {errors.map((error, index) => (
                                 <li className='text-xs' key={index}>
                                     {error}
@@ -97,17 +72,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                 </Alert>
             )}
 
-            <div role='toolbar' aria-label='Canvas' className={CANVAS_TOOLBAR_CLASS}>
-                <SaveStatusIndicator status={saveStatus} className={CANVAS_TOOLBAR_STATUS_CLASS} />
+            <div role='toolbar' aria-label='Canvas' className='absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1.5 max-[768px]:bottom-3 max-[768px]:left-2 max-[768px]:right-2 max-[768px]:max-w-[calc(100vw-1rem)] max-[768px]:translate-x-0 max-[768px]:flex-wrap max-[768px]:justify-center'>
+                <SaveStatusIndicator status={saveStatus} className='whitespace-nowrap px-2' />
 
                 {errors.length > 0 && (
                     <Tooltip>
                         <Tooltip.Trigger
-                            className={cn(
-                                'flex cursor-pointer flex-row items-center gap-2',
-                                CANVAS_TOOLBAR_STATUS_CLASS,
-                                CANVAS_TOOLBAR_STATUS_ERROR_CLASS
-                            )}
+                            className='flex cursor-pointer flex-row items-center gap-2 whitespace-nowrap px-2 text-danger'
                         >
                             <AlertTriangle size={14} aria-hidden='true' />
                             <p className='text-xs'>
@@ -125,7 +96,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                         </Button>
                         <Tooltip.Content placement='top'>Zoom out</Tooltip.Content>
                     </Tooltip>
-                    <p className={CANVAS_TOOLBAR_ZOOM_LABEL_CLASS}>
+                    <p className='min-w-[42px] select-none text-center text-xs tabular-nums text-muted'>
                         {Math.round(zoom * 100)}%
                     </p>
                     <Tooltip>
@@ -134,7 +105,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                         </Button>
                         <Tooltip.Content placement='top'>Zoom in</Tooltip.Content>
                     </Tooltip>
-                    <Separator orientation='vertical' className={CANVAS_TOOLBAR_DIVIDER_CLASS} />
+                    <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary max-[768px]:hidden' />
                     <Tooltip>
                         <Button variant='ghost' isIconOnly size='sm' aria-label='Fit to view' onPress={() => fitView({ padding: 0.2 })}>
                             <Maximize size={16} aria-hidden='true' />
@@ -142,7 +113,6 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                         <Tooltip.Content placement='top'>Fit to view</Tooltip.Content>
                     </Tooltip>
                 </div>
-
                 <Tooltip>
                     <Button
                         variant='ghost'

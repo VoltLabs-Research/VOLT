@@ -13,23 +13,6 @@ interface TeamSelectorProps {
     className?: string;
 }
 
-/**
- * `pe-9` clears the selection indicator, which HeroUI positions `absolute end-2 size-4`
- * against the item — the base `:has(.list-box-item__indicator)` rule only reserves
- * `pe-7`, which the trailing leave button would sit underneath. `group` replaces the
- * `.select-option:hover .team-selector-leave` descendant selector with React Aria's own
- * `data-hovered` on the item.
- */
-const TEAM_OPTION_CLASS = 'group pe-9';
-
-/**
- * `.team-selector-leave` — hidden until the row is hovered, and `--accent-red`
- * (HeroUI's `--danger`) on its own hover. The box is `size-8`, HeroUI's small icon-button
- * width, rather than bravais's `.volt-icon-button` floor of 2.75rem, which would have
- * made every option 44px tall.
- */
-const LEAVE_BUTTON_CLASS = 'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-150 ease-out group-data-[hovered=true]:opacity-100 hover:text-danger';
-
 export default function TeamSelector({ className = '' }: TeamSelectorProps) {
     const { teams } = useTeamData();
     const selectedTeamId = useSelectedTeamId();
@@ -41,11 +24,6 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
         triggerKey: tipTrigger
     });
 
-    /*
-     * bravais's `onChange` only ever fired with a value; React Aria types
-     * `onSelectionChange` as `Key | null` because a clearable select can deselect. This
-     * one cannot, so `null` is ignored rather than treated as a team id.
-     */
     const handleTeamChange = useCallback((key: Key | null) => {
         if (key === null) return;
 
@@ -62,13 +40,6 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
         await leaveTeam(teamId, teams.find((entry) => entry._id === teamId)?.name);
     }, [leaveTeam, teams]);
 
-    /*
-     * React Aria begins an item press on `pointerdown`, so a click-phase
-     * `stopPropagation` in `handleLeaveTeam` cannot stop the option being selected as
-     * well. Stopping the pointer event on the wrapper is what keeps "leave this team"
-     * from also switching to it. The control itself stays a plain `<button>` because its
-     * handler needs `MouseEvent` semantics, which `onPress` does not provide.
-     */
     const handleLeavePointerDown = useCallback((event: PointerEvent) => {
         event.stopPropagation();
     }, []);
@@ -89,7 +60,6 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
             aria-label='Switch team'
         >
             <Select.Trigger onFocus={() => setTipTrigger((current) => current + 1)}>
-                {/* React Aria's Button drops `title`, so the native tooltip hangs off the value. */}
                 <span className='flex min-w-0 flex-1 items-center' title='Switch team'>
                     <Select.Value>
                         {({ isPlaceholder, selectedText, defaultChildren }) => (
@@ -106,7 +76,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
                             key={option.value}
                             id={option.value}
                             textValue={option.title}
-                            className={TEAM_OPTION_CLASS}
+                            className='group pe-9'
                         >
                             <ListBox.ItemIndicator />
                             <div className='flex flex-col min-w-0 flex-1'>
@@ -120,7 +90,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
                             >
                                 <button
                                     type='button'
-                                    className={LEAVE_BUTTON_CLASS}
+                                    className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-150 ease-out group-data-[hovered=true]:opacity-100 hover:text-danger'
                                     onClick={(event) => handleLeaveTeam(event, option.value)}
                                     aria-label={`Leave ${option.title}`}
                                 >

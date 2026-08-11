@@ -7,24 +7,6 @@ import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useF
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
-/**
- * The five `.canvas-plugin-search-wrapper .search-input-*` rules reached into bravais's
- * SearchInput internals to resize it; that vocabulary died with the library, so the size
- * is asked for at the call site instead (spec §4f).
- *
- * `Surface variant='glass' radius='md'` is `bg-surface border border-border rounded-xl`:
- * glass was flattened onto the solid surface before this migration.
- */
-const WRAPPER_CLASS = 'w-[clamp(240px,32vw,440px)] min-w-0';
-
-const SEARCH_CONTAINER_CLASS = 'flex w-full min-h-9 items-center gap-2 rounded-xl px-3 py-1.5';
-
-const SEARCH_INPUT_CLASS = 'text-[0.8125rem] leading-[1.25] m-0 h-auto p-0';
-
-const RESULTS_CLASS = 'max-h-[60vh] min-h-36 overflow-y-auto rounded-xl border border-border bg-surface z-[99999]';
-
-const ITEM_CLASS = 'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left hover:bg-surface-hover';
-
 const MAX_RESULTS = 12;
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
@@ -151,15 +133,15 @@ const CanvasPluginSearch = () => {
         : undefined;
 
     return (
-        <div className={WRAPPER_CLASS} ref={refs.setReference} {...getReferenceProps()}>
+        <div className='w-[clamp(240px,32vw,440px)] min-w-0' ref={refs.setReference} {...getReferenceProps()}>
             <CanvasSearchInput
                 ref={inputRef}
                 id={searchInputId}
                 placeholder='Search plugins…'
                 value={query}
                 variant='small'
-                containerClassName={SEARCH_CONTAINER_CLASS}
-                className={SEARCH_INPUT_CLASS}
+                containerClassName='flex w-full min-h-9 items-center gap-2 rounded-xl px-3 py-1.5'
+                className='text-[0.8125rem] leading-[1.25] m-0 h-auto p-0'
                 aria-label='Search plugins'
                 role='combobox'
                 aria-autocomplete='list'
@@ -175,7 +157,7 @@ const CanvasPluginSearch = () => {
                 <FloatingPortal root={floatingRoot}>
                     <div
                         ref={refs.setFloating}
-                        className={RESULTS_CLASS}
+                        className='max-h-[60vh] min-h-36 overflow-y-auto rounded-xl border border-border bg-surface z-[99999]'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >
@@ -208,7 +190,7 @@ const CanvasPluginSearch = () => {
                                             type='button'
                                             role='option'
                                             aria-selected={isActive}
-                                            className={isActive ? `${ITEM_CLASS} bg-surface-hover` : ITEM_CLASS}
+                                            className={isActive ? 'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left hover:bg-surface-hover bg-surface-hover' : 'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left hover:bg-surface-hover'}
                                             onMouseEnter={() => setActiveIndex(index)}
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}

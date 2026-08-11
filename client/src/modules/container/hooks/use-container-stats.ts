@@ -8,15 +8,11 @@ interface UseContainerStatsProps {
     isRunning: boolean;
 }
 
-/**
- * Latches each polled sample into state: consumers accumulate history from the
- * identity of these objects, so one new object per sample is the contract.
- */
 const useContainerStats = ({ containerId, isRunning }: UseContainerStatsProps): ContainerStatsViewData => {
     const [cpu, setCpu] = useState<CpuData | null>(null);
     const [memory, setMemory] = useState<MemoryData | null>(null);
     const [network, setNetwork] = useState<NetworkData | null>(null);
-    // CPU percentage is a delta between two samples, so the previous one is kept around.
+
     const prevCpuRef = useRef<{ total: number; system: number } | null>(null);
 
     const { data: statsResponse } = useContainerStatsQuery(containerId!, {

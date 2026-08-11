@@ -3,7 +3,7 @@ import defaultObjectGatewayClient from '@modules/cluster/services/object-gateway
 import ClusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectOperation

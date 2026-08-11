@@ -55,12 +55,6 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
                         </Button>
                     ))}
                 </div>
-
-                {/*
-                  * The two flexible hairlines either side of the label were
-                  * `.sign-in-divider::before/::after`. Generated content cannot be a
-                  * utility, so they are real spans now — same DOM effect, no stylesheet.
-                  */}
                 <div className='mt-5 mb-1 flex flex-row items-center text-xs font-semibold tracking-[0.05em] text-muted uppercase'>
                     <span className='h-px flex-1 bg-border' aria-hidden='true' />
                     <span className='px-4'>Or continue with email</span>
@@ -87,7 +81,6 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
                     autoCorrect: 'off'
                 }}
             />
-
             <Button
                 type='submit'
                 isPending={isLoading}

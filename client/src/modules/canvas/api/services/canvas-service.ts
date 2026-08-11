@@ -1,11 +1,12 @@
-import { createService, custom, download, get, paginated } from '@/app/core/http/utils/create-service';
+import { createService, custom, download, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-request';
 import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import { base64ToBlob } from '@/shared/utils/file';
+import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import type { GetSimulationCellByTrajectoryParams } from '@/modules/simulation-cell/api/service';
@@ -125,42 +126,44 @@ interface PublicCanvasFrameLogParams extends GetAnalysisFrameLogParams {
     trajectoryId: string;
 }
 
+const routes = serviceRoutes('/public/trajectories');
+
 const endpoints = {
-    getBootstrap: get<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>('/:trajectoryId/bootstrap'),
-    getTrajectory: get<GetCanvasTrajectoryParams, Trajectory>('/:trajectoryId'),
-    getPreview: get<GetPreviewInput, GetPreviewResponse, string>('/:trajectoryId/preview', {
+    getBootstrap: routes.route<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>(trajectoryRoutes.canvasBootstrap),
+    getTrajectory: routes.route<GetCanvasTrajectoryParams, Trajectory>(trajectoryRoutes.canvasTrajectory),
+    getPreview: routes.route<GetPreviewInput, GetPreviewResponse, string>(trajectoryRoutes.canvasPreview, {
         query: ({ frame, quality }) => ({
             ...(frame !== undefined ? { frame } : {}),
             ...(quality ? { quality } : {})
         }),
         map: (result) => ({ blob: base64ToBlob(result) })
     }),
-    listAnalyses: paginated<ListCanvasAnalysesParams, PaginatedResponse<Analysis>>('/:trajectoryId/analyses', {
+    listAnalyses: paginated<ListCanvasAnalysesParams, PaginatedResponse<Analysis>>(routes.path(trajectoryRoutes.canvasAnalyses), {
         omit: ['trajectoryId'],
         query: ({ page, limit }) => ({
             ...(page !== undefined ? { page } : {}),
             ...(limit !== undefined ? { limit } : {})
         })
     }),
-    getRasterFrame: download<GetCanvasRasterFrameParams>('GET', '/:trajectoryId/frames/:timestep/raster'),
-    getDump: download<GetCanvasDumpParams>('GET', '/:trajectoryId/dumps/:timestep'),
+    getRasterFrame: download<GetCanvasRasterFrameParams>('GET', routes.path(trajectoryRoutes.canvasRasterFrame)),
+    getDump: download<GetCanvasDumpParams>('GET', routes.path(trajectoryRoutes.canvasDump)),
     getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
-    getSimulationCell: get<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
-        '/:trajectoryId/simulation-cell',
+    getSimulationCell: routes.route<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
+        trajectoryRoutes.canvasSimulationCell,
         {
             omit: ['trajectoryId'],
             query: ({ timestep }) => timestep === undefined ? undefined : { timestep }
         }
     ),
-    listSceneArtifacts: get<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
-        '/:trajectoryId/scene-artifacts',
+    listSceneArtifacts: routes.route<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
+        trajectoryRoutes.canvasSceneArtifacts,
         {
             unwrap: 'raw',
             query: buildSceneArtifactQuery
         }
     ),
-    getColorCodingProperties: get<GetColorCodingPropertiesInput, ColorCodingProperties>(
-        '/:trajectoryId/color-codings/properties',
+    getColorCodingProperties: routes.route<GetColorCodingPropertiesInput, ColorCodingProperties>(
+        trajectoryRoutes.canvasColorCodingProperties,
         {
             query: ({ timestep, analysisId }) => ({
                 timestep,
@@ -168,11 +171,11 @@ const endpoints = {
             })
         }
     ),
-    getColorCodingStats: get<GetColorCodingStatsInput, ColorCodingStats>(
-        '/:trajectoryId/color-codings/stats'
+    getColorCodingStats: routes.route<GetColorCodingStatsInput, ColorCodingStats>(
+        trajectoryRoutes.canvasColorCodingStats
     ),
-    getParticleFilterProperties: get<GetFilterPropertiesInput, FilterPropertiesData>(
-        '/:trajectoryId/particle-filters/properties',
+    getParticleFilterProperties: routes.route<GetFilterPropertiesInput, FilterPropertiesData>(
+        trajectoryRoutes.canvasParticleFilterProperties,
         {
             query: ({ timestep, analysisId }) => ({
                 timestep,
@@ -180,18 +183,18 @@ const endpoints = {
             })
         }
     ),
-    getParticleFilterUniqueValues: get<GetUniqueValuesInput, GetUniqueValuesResponse>(
-        '/:trajectoryId/particle-filters/unique-values'
+    getParticleFilterUniqueValues: routes.route<GetUniqueValuesInput, GetUniqueValuesResponse>(
+        trajectoryRoutes.canvasParticleFilterUniqueValues
     ),
-    getParticleFilterPreview: get<PreviewFilterInput, PreviewFilterResponse>(
-        '/:trajectoryId/particle-filters/preview',
+    getParticleFilterPreview: routes.route<PreviewFilterInput, PreviewFilterResponse>(
+        trajectoryRoutes.canvasParticleFilterPreview,
         {
             query: buildPreviewQuery
         }
     ),
-    getPlugin: get<PublicCanvasPluginInput, Plugin>('/:trajectoryId/plugins/:pluginId'),
-    getPluginListing: get<PublicCanvasListingInput, GetPluginListingResponse, RawListingResponse>(
-        '/:trajectoryId/plugins/:pluginId/listings',
+    getPlugin: routes.route<PublicCanvasPluginInput, Plugin>(trajectoryRoutes.canvasPlugin),
+    getPluginListing: routes.route<PublicCanvasListingInput, GetPluginListingResponse, RawListingResponse>(
+        trajectoryRoutes.canvasPluginListing,
         {
             unwrap: 'raw',
             omit: ['trajectoryId', 'pluginId'],
@@ -205,17 +208,17 @@ const endpoints = {
             map: mapRawListingResponse
         }
     ),
-    getSubListing: get<PublicCanvasSubListingInput, GetSubListingResponse>(
-        '/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
+    getSubListing: routes.route<PublicCanvasSubListingInput, GetSubListingResponse>(
+        trajectoryRoutes.canvasSubListing
     ),
-    getFrameLog: get<PublicCanvasFrameLogParams, GetAnalysisFrameLogResponse>(
-        '/:trajectoryId/analyses/:analysisId/logs/:timestep',
+    getFrameLog: routes.route<PublicCanvasFrameLogParams, GetAnalysisFrameLogResponse>(
+        trajectoryRoutes.canvasFrameLog,
         {
             omit: ['trajectoryId', 'analysisId', 'timestep'],
             query: ({ afterCursor }) => afterCursor === undefined ? undefined : { afterCursor }
         }
     ),
-    getRasterMetadata: get<GetRasterMetadataParams, GetRasterMetadataResponse>('/:trajectoryId/raster-metadata')
+    getRasterMetadata: routes.route<GetRasterMetadataParams, GetRasterMetadataResponse>(trajectoryRoutes.canvasRasterMetadata)
 };
 
 export default createService({

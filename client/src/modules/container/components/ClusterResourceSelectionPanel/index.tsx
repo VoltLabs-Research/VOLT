@@ -7,18 +7,6 @@ import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/container/util
 import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
 import type { TeamClusterOption } from '@volt/contracts/modules/container/domain';
 
-/**
- * `ClusterResourceSelectionPanel.css`, converted. The 768px arm only set the grid
- * to one column, which is already the base, so a single `md:` step covers both.
- *
- * `.cluster-resource-selection-value`'s `background: var(--color-surface-2)` is
- * HeroUI's `--surface-tertiary`; its padding and font size are off-scale literals
- * and stay literal.
- */
-const PANEL_GRID_CLASS_NAMES = 'grid grid-cols-1 gap-4';
-const PANEL_CARD_CLASS_NAMES = 'flex flex-col gap-4 rounded-xl border border-border p-6';
-const RESOURCE_VALUE_CLASS_NAMES = 'rounded-full bg-surface-tertiary px-[0.6rem] py-[0.2rem] text-[0.8rem] font-semibold text-foreground';
-
 interface ClusterResourceSelectionPanelProps {
     teamClusters: TeamClusterOption[];
     isTeamSelected: boolean;
@@ -75,9 +63,6 @@ const getResourceStatusMessage = (resourceLimits: ClusterResourceLimits | null |
     return 'Cluster health is good. Resource limits reflect the latest heartbeat metrics.';
 };
 
-/**
- * Why the resource sliders cannot be shown yet, or `null` when they can.
- */
 const getResourceBlocker = (
     selectedTeamClusterId: string | null,
     clusterResourceLimits: ClusterResourceLimits | null | undefined,
@@ -129,14 +114,7 @@ const ClusterResourceSelectionPanel = ({
     const clusterFieldError = getClusterFieldError(isTeamSelected, selectedTeamClusterId, teamClusters);
     const resourceStatusMessage = getResourceStatusMessage(clusterResourceLimits);
     const resourceBlocker = getResourceBlocker(selectedTeamClusterId, clusterResourceLimits, isLoadingResourceLimits);
-    /*
-     * The annotation was `SelectOption[]`, a bravais type. The shape is inferred
-     * from the literal and still satisfies `FormFieldRHF`'s `options`, so nothing
-     * needs to name the type — which is the only reason this file no longer imports
-     * from the design system at all. (`@/shared/contracts/form-field` still types
-     * `options` through bravais's `SelectOption`; that is a handoff, not something
-     * this call site can fix.)
-     */
+
     const teamClusterOptions = teamClusters.map((teamCluster) => ({
         title: teamCluster.name,
         value: teamCluster._id
@@ -147,8 +125,8 @@ const ClusterResourceSelectionPanel = ({
     const selectedMemoryValue = memoryMB ?? MIN_CLUSTER_MEMORY_MB;
 
     return (
-        <div className={PANEL_GRID_CLASS_NAMES}>
-            <div className={PANEL_CARD_CLASS_NAMES}>
+        <div className='grid grid-cols-1 gap-4'>
+            <div className='flex flex-col gap-4 rounded-xl border border-border p-6'>
                 <SettingsSectionHeader
                     title={clusterTitle}
                     description={clusterDescription}
@@ -168,7 +146,7 @@ const ClusterResourceSelectionPanel = ({
             </div>
 
             {showResourceSelection && (
-                <div className={PANEL_CARD_CLASS_NAMES}>
+                <div className='flex flex-col gap-4 rounded-xl border border-border p-6'>
                     <SettingsSectionHeader
                         title={resourcesTitle}
                         description={resourcesDescription}
@@ -194,15 +172,8 @@ const ClusterResourceSelectionPanel = ({
                                             <Cpu size={16} /> CPU
                                         </span>
                                     </div>
-                                    <span className={RESOURCE_VALUE_CLASS_NAMES}>{selectedCpuValue} vCPU</span>
+                                    <span className='rounded-full bg-surface-tertiary px-[0.6rem] py-[0.2rem] text-[0.8rem] font-semibold text-foreground'>{selectedCpuValue} vCPU</span>
                                 </div>
-                                {/*
-                                  * bravais's Slider exposed no labelling channel at all —
-                                  * `role='slider'` with no `aria-label`, `aria-labelledby`
-                                  * or `id` — so the control was anonymous to assistive
-                                  * technology. HeroUI's needs a name, and the visible
-                                  * heading beside it is the one to use.
-                                  */}
                                 <Slider
                                     aria-label='CPU'
                                     minValue={MIN_CLUSTER_CPU}
@@ -231,7 +202,7 @@ const ClusterResourceSelectionPanel = ({
                                             <HardDrive size={16} /> Memory
                                         </span>
                                     </div>
-                                    <span className={RESOURCE_VALUE_CLASS_NAMES}>{selectedMemoryValue} MB</span>
+                                    <span className='rounded-full bg-surface-tertiary px-[0.6rem] py-[0.2rem] text-[0.8rem] font-semibold text-foreground'>{selectedMemoryValue} MB</span>
                                 </div>
                                 <Slider
                                     aria-label='Memory'

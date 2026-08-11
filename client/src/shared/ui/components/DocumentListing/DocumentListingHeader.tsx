@@ -46,22 +46,6 @@ interface DocumentListingHeaderProps<TRow> {
     preferences: ListingViewPreferences<TRow>;
 };
 
-/**
- * The circular ghost icon button bravais painted for `variant='ghost' intent='neutral'
- * size='sm' shape='circle'`. It stays a plain `<button>`/`DropdownTrigger` rather than
- * a HeroUI `Button` because both overlays clone press handlers onto their trigger:
- * `ContextMenuPopover` needs floating-ui's reference props to reach the DOM node, and
- * `DropdownTrigger` already *is* the React Aria button.
- */
-const HEADER_ICON_BUTTON = 'flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground';
-
-/**
- * bravais's `variant='text'` skeleton painted at `scale(1, 0.6)` from `0 55%` while
- * reserving its full declared height. Kept so the header does not jump taller while a
- * listing loads.
- */
-const TEXT_SKELETON = 'origin-[0_55%] scale-y-[0.6] rounded-md';
-
 const DocumentListingHeader = <TRow,>({
     title,
     description,
@@ -79,12 +63,6 @@ const DocumentListingHeader = <TRow,>({
         .map(getColumnKey)
         .filter((columnKey) => !preferences.hiddenColumnKeys.has(columnKey));
 
-    /**
-     * React Aria hands back the whole next selection, while the preference store
-     * toggles one column at a time, so the changed key is derived rather than
-     * assumed — a press only ever flips one, and `'all'` cannot happen without
-     * `allowsSelectAll`.
-     */
     const handleColumnSelectionChange = (selection: Selection) => {
         if(selection === 'all') return;
 
@@ -107,8 +85,8 @@ const DocumentListingHeader = <TRow,>({
                     <div className='flex flex-row items-center gap-4 min-w-0 max-md:justify-between max-md:gap-2'>
                         {showTitleSkeleton ? (
                             <div className='flex flex-col gap-1'>
-                                <Skeleton className={`h-8 w-[220px] ${TEXT_SKELETON}`} aria-hidden='true' />
-                                {description ? <Skeleton className={`h-[18px] w-[224px] ${TEXT_SKELETON}`} aria-hidden='true' /> : null}
+                                <Skeleton className='h-8 w-[220px] origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' />
+                                {description ? <Skeleton className='h-[18px] w-[224px] origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' /> : null}
                             </div>
                         ) : (
                             <div className='flex flex-col gap-1 min-w-0'>
@@ -129,10 +107,9 @@ const DocumentListingHeader = <TRow,>({
                                 {showColumnPicker && (
                                     <DropdownRoot>
                                         <DropdownTrigger
-                                            className={HEADER_ICON_BUTTON}
+                                            className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
                                             aria-label='Toggle columns'
                                         >
-                                            {/* React Aria's Button drops `title`, so the native tooltip hangs off the glyph. */}
                                             <span className='flex items-center justify-center' title='Toggle columns'>
                                                 <Columns3 size={16} aria-hidden='true' />
                                             </span>
@@ -174,7 +151,7 @@ const DocumentListingHeader = <TRow,>({
                                         trigger={(
                                             <button
                                                 type='button'
-                                                className={HEADER_ICON_BUTTON}
+                                                className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
                                                 title='Open listing actions'
                                                 aria-label='Open listing actions'
                                             >
@@ -202,6 +179,7 @@ const DocumentListingHeader = <TRow,>({
                 <div>
                     <div className='px-8 max-md:px-4'>
                         <TabsRoot
+                            className='w-fit'
                             selectedKey={preferences.activeTabId}
                             onSelectionChange={(tabId) => preferences.selectTab(String(tabId))}
                         >

@@ -26,10 +26,6 @@ const toSeries = (values: number[]): MetricSeries => {
     };
 };
 
-/**
- * Accumulates a rolling sparkline history from the live stats samples. Network is
- * reported as cumulative counters, so it is charted as the delta between samples.
- */
 const useContainerMetricsHistory = (stats: ContainerStatsViewData) => {
     const cpuBuffer = useTimeSeriesBuffer(HISTORY_POINTS);
     const memoryBuffer = useTimeSeriesBuffer(HISTORY_POINTS);

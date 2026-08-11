@@ -2,13 +2,12 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { encrypt } from '@shared/infrastructure/utilities/crypto';
-import {
-    TeamClusterStatus,
-    type TeamClusterProps,
-    type TeamClusterQueueConcurrencyProps,
-    type TeamClusterQueueScopeLimitsProps,
-    type TeamClusterRole,
-    type TeamClusterRuntimeRoleConfigProps
+import { TeamClusterStatus, type TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type {
+    TeamClusterProps,
+    TeamClusterQueueConcurrencyProps,
+    TeamClusterQueueScopeLimitsProps,
+    TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
 import { isUniqueViolation } from '@shared/infrastructure/persistence/unique-violation';

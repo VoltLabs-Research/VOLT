@@ -1,7 +1,7 @@
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
-import { useCanvasAccessStore, useCanvasCanCollaborate, useCanvasDataAccess } from '@/modules/canvas/api/access';
+import { useCanvasAccessStore, useCanvasCanCollaborate, useCanvasDataAccess } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type {

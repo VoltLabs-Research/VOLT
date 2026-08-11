@@ -7,7 +7,7 @@ import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { openModal } from '@/shared/ui/modal';
+import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { Spinner } from '@heroui/react';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -20,25 +20,6 @@ import { useCallback, useMemo, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 import { useNavigate } from 'react-router-dom';
-
-const FOOTER = 'simulation-card-footer absolute bottom-0 left-0 right-0 z-10 flex w-full flex-row items-center gap-2 p-4';
-
-/**
- * The scrim `.simulation-card-footer::before` painted: a gradient that deliberately extends
- * 3rem ABOVE the footer's own box and sits behind the content on a negative z-index, so the
- * title stays readable over any preview image. Expressed with `before:` utilities — the
- * negative inset is `-top-12` and `rounded-[inherit]` keeps it inside the card's corner.
- */
-const FOOTER_SCRIM = "before:pointer-events-none before:absolute before:-top-12 before:right-0 before:bottom-0 before:left-0 before:-z-[1] before:rounded-[inherit] before:content-[''] before:bg-[linear-gradient(to_top,color-mix(in_srgb,var(--background)_100%,transparent)_0%,color-mix(in_srgb,var(--background)_72%,transparent)_40%,transparent_100%)]";
-
-/**
- * `.footer-options-btn` MUST keep its class name: `SimulationCard`'s
- * `NON_NAVIGABLE_CARD_TARGET_SELECTOR` uses it (with `data-popover-trigger`) to decide that
- * a click on the actions button is not a click on the card. It stays a plain `<button>`
- * because `ContextMenuPopover` clones its trigger to attach the floating-ui ref and because
- * HeroUI's `Button` has a closed prop interface with no `title`.
- */
-const OPTIONS_BUTTON = 'footer-options-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground';
 
 interface SimulationCardFooterProps {
     trajectoryId: string;
@@ -250,12 +231,6 @@ export default function SimulationCardFooter({
         );
     }, [hasPendingRasterization, hasRequestedRasterization, isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
 
-    /**
-     * `MenuOption.icon` is the icon *component*, not an element, and `MenuOption` has no
-     * `isLoading`: `ContextMenuPopover`'s items await an async `onClick` and show their own
-     * spinner for its duration, which is what the per-item flags used to do. `isDeleting`
-     * still gates the Delete row so a second click cannot start a second confirm.
-     */
     const popoverItems: MenuOption[] = readOnly ? [] : [{
         onClick: handleViewScene,
         label: 'View scene',
@@ -295,7 +270,7 @@ export default function SimulationCardFooter({
     const popoverTrigger = (
         <button
             type='button'
-            className={OPTIONS_BUTTON}
+            className='footer-options-btn flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground'
             title={`Open actions for ${name}`}
             aria-label={`Open actions for ${name}`}
         >
@@ -304,7 +279,7 @@ export default function SimulationCardFooter({
     );
 
     return (
-        <div className={`${FOOTER} ${FOOTER_SCRIM}`}>
+        <div className="simulation-card-footer absolute bottom-0 left-0 right-0 z-10 flex w-full flex-row items-center gap-2 p-4 before:pointer-events-none before:absolute before:-top-12 before:right-0 before:bottom-0 before:left-0 before:-z-[1] before:rounded-[inherit] before:content-[''] before:bg-[linear-gradient(to_top,color-mix(in_srgb,var(--background)_100%,transparent)_0%,color-mix(in_srgb,var(--background)_72%,transparent)_40%,transparent_100%)]">
             <div className='flex flex-col gap-2 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}

@@ -1,7 +1,5 @@
-import type {
-    IClusterObjectArchiveService,
-    ITeamClusterObjectGatewayClient
-} from '@shared/contracts/ports';
+import type { IClusterObjectArchiveService } from '@shared/contracts/ports/IClusterObjectArchiveService';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';

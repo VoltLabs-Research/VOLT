@@ -1,19 +1,11 @@
 import { Button, Skeleton, cn } from '@heroui/react';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { RefreshCw } from 'lucide-react';
-import {
-    TREE_ITEM_CLASS,
-    TREE_ITEM_DISABLED_CLASS,
-    TREE_ITEM_HOVER_CLASS,
-    TREE_ITEM_INDENT_CLASS,
-    TREE_ITEM_SELECTED_CLASS,
-    TREE_SPACER_CLASS
-} from '../ObjectsPanel/tree-classes';
 
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
-type CanvasTreeIndent = keyof typeof TREE_ITEM_INDENT_CLASS;
+type CanvasTreeIndent = 'base' | 'lg';
 
 interface CanvasTreeRowProps {
     icon?: ReactNode;
@@ -51,15 +43,17 @@ export const CanvasTreeRow = ({
         data-tour-id={tourTargetId}
         className={cn(
             'flex select-none items-center gap-2 text-xs text-muted',
-            TREE_ITEM_CLASS,
-            TREE_ITEM_INDENT_CLASS[indent],
-            isActive && TREE_ITEM_SELECTED_CLASS,
-            disabled ? TREE_ITEM_DISABLED_CLASS : TREE_ITEM_HOVER_CLASS,
+            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+            indent === 'lg'
+                ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+                : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
+            isActive && 'text-accent',
+            disabled ? 'cursor-not-allowed opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
             !disabled && onClick && 'cursor-pointer',
             className
         )}
     >
-        {icon ?? <span className={TREE_SPACER_CLASS} />}
+        {icon ?? <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />}
         <span className={isActive ? 'text-foreground' : 'text-muted'}>{label}</span>
         {trailing !== undefined && <span className='flex-1' />}
         {trailing}
@@ -84,20 +78,19 @@ interface CanvasTreeSkeletonRowsProps {
     indent?: CanvasTreeIndent;
 }
 
-const STATIC_ROW_CLASS = 'flex items-center gap-8 text-muted';
-
 export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: CanvasTreeSkeletonRowsProps) => {
     if (count <= 0) return null;
     return (
         <>
             {Array.from({ length: count }).map((_, i) => (
-                <div key={`canvas-tree-skel-${i}`} className={cn(STATIC_ROW_CLASS, TREE_ITEM_CLASS, TREE_ITEM_INDENT_CLASS[indent])}>
-                    <span className={TREE_SPACER_CLASS} />
-                    {/*
-                      * bravais's `Skeleton variant='text'` sized itself from `width`/`height`
-                      * props; HeroUI's is a bare polymorphic box you size with a class, so the
-                      * two widths become two complete literals.
-                      */}
+                <div key={`canvas-tree-skel-${i}`} className={cn(
+                    'flex items-center gap-8 text-muted',
+                    'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+                    indent === 'lg'
+                        ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+                        : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
+                )}>
+                    <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />
                     <Skeleton className={compact ? 'h-2.5 w-20 rounded-md' : 'h-2.5 w-30 rounded-md'} />
                 </div>
             ))}
@@ -111,7 +104,13 @@ interface CanvasTreeEmptyRowProps {
 }
 
 export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRowProps) => (
-    <div className={cn(STATIC_ROW_CLASS, TREE_ITEM_CLASS, TREE_ITEM_INDENT_CLASS[indent])}>
+    <div className={cn(
+        'flex items-center gap-8 text-muted',
+        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+        indent === 'lg'
+            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+            : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
+    )}>
         <span className='text-xs text-muted'>{label}</span>
     </div>
 );
@@ -122,7 +121,13 @@ interface AnalysisTreeRetryRowProps {
 }
 
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
-    <div className={cn(STATIC_ROW_CLASS, TREE_ITEM_CLASS, TREE_ITEM_INDENT_CLASS[indent])}>
+    <div className={cn(
+        'flex items-center gap-8 text-muted',
+        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+        indent === 'lg'
+            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+            : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
+    )}>
         <span className='text-xs text-muted'>Failed to load models</span>
         <span className='flex-1' />
         <Button variant='ghost' size='sm' isIconOnly onPress={onRetry} aria-label='Retry loading models'>

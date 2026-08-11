@@ -1,12 +1,12 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import { ObjectBucketName } from '@shared/contracts';
+import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { createZstdDecompressionStream, isZstdObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import headlessRasterizer from '@voltstack/headless-rasterizer';
 

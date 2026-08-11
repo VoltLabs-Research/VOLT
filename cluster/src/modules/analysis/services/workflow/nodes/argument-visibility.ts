@@ -1,4 +1,4 @@
-import type { WorkflowArgumentDefinition, WorkflowArgumentVisibilityCondition } from '@shared/contracts';
+import type { WorkflowArgumentDefinition, WorkflowArgumentVisibilityCondition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowNodeOutput, WorkflowValue } from '@shared/contracts/types/workflow.types';
 
 const matchesVisibilityCondition = (

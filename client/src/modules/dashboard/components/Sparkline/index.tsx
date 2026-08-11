@@ -2,32 +2,7 @@ import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-m
 import { useId } from 'react';
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 
-/**
- * The trend line behind a dashboard stat tile.
- *
- * bravais's `Sparkline` had no CSS of its own — it was recharts all the way down —
- * so the migration keeps the chart verbatim and only relocates it. The four
- * behaviours below are the ones that look like bugs and are not, and each one is
- * relied on by a live call site:
- *
- *   • **Empty is not blank.** `values=[]` renders two zero points, i.e. a flat
- *     line on the baseline, and a single value is duplicated into two points so
- *     there is a segment to draw. A tile with no history therefore shows a flat
- *     line, never an empty box.
- *   • **Non-finite values become 0.** `NaN`/`Infinity` are coerced rather than
- *     dropped, so the line stays continuous.
- *   • **The point count is `max(labels.length, values.length)`.** `labels` is
- *     otherwise unused — there is no axis, tooltip or legend — but a `labels`
- *     array longer than `values` fabricates zero points, which is visible.
- *   • **The gradient id is per-instance.** Two sparklines sharing one
- *     `<linearGradient>` id would both take the first one's colour, so the id
- *     comes from `useId()` and must stay inside the component.
- *
- * `animate` left undefined follows `prefers-reduced-motion`; passing it
- * explicitly overrides the preference, which is why no call site does.
- */
 interface SparklineProps {
-    /** A raw CSS colour string, not a token name — e.g. `var(--success)`. */
     color: string;
     values: number[];
     labels?: string[];
@@ -114,7 +89,6 @@ const Sparkline = ({
 
     return (
         <ResponsiveContainer width={width} height={height}>
-            {/* `top: 2` keeps a 2px stroke from being clipped at the top edge. */}
             <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                     <linearGradient id={fillId} x1='0' y1='0' x2='0' y2='1'>

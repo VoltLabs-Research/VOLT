@@ -4,7 +4,7 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import containerPortProxyAccessTokenService from '@modules/container/services/ContainerPortProxyAccessTokenService';
 import type { ContainerPortRelayTarget } from '@modules/container/services/ContainerPortProxyRelayService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types';
+import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
 import type { IncomingMessage, ServerResponse } from 'node:http';

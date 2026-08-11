@@ -8,25 +8,23 @@ import type {
     ProcessDaemonGlbJobStatusInput,
     ProcessDaemonRasterJobStatusInput
 } from '@modules/cluster/contracts/daemon-job-completion';
+import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import type {
-    SceneArtifactParams,
     SceneArtifactSourceType,
     SceneArtifactStatus
-} from '@shared/contracts/types';
+} from '@shared/contracts/types/SceneArtifact';
 import {
     TeamClusterServiceExposureAccessMode,
     type TeamClusterDaemonExecutionLogSegment,
     type TeamClusterServiceExposure
 } from '@shared/contracts/types/TeamClusterExposure';
-import type {
-    TeamClusterRuntimeRoleConfigProps,
-    TeamClusterStatus
-} from '@shared/contracts/types/TeamCluster';
+import type { TeamClusterRuntimeRoleConfigProps } from '@shared/contracts/types/TeamCluster';
+import type { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import {
     ChannelCommands,
     TEAM_CLUSTER_DAEMON_EVENT,
     TEAM_CLUSTER_EVENT
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster-daemon-channel';
 import {
     REVERSE_CHANNEL,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,

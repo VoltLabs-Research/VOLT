@@ -4,8 +4,8 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 

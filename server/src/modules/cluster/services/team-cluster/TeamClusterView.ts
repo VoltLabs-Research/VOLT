@@ -1,11 +1,11 @@
+import type { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type {
     TeamClusterEffectiveCapabilitiesProps,
     TeamClusterHostCapabilitiesProps,
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps,
     TeamClusterRuntimeRoleConfigProps,
-    TeamClusterServiceProps,
-    TeamClusterStatus
+    TeamClusterServiceProps
 } from '@shared/contracts/types/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {

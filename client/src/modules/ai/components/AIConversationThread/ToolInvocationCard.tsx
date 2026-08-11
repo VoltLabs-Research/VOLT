@@ -1,13 +1,6 @@
 import { presentToolCall, resolveToolActionPhase } from '@/modules/ai/utils/tool-presentation';
 import { resolveImagePayload } from '@/modules/ai/utils/message-artifacts';
-import {
-    ACTION_REQUEST_CARD,
-    ACTION_REQUEST_CONTROLS,
-    ACTION_REQUEST_HEADER,
-    TOOL_IMAGE,
-    TOOL_IMAGE_LINK
-} from '@/modules/ai/components/AIConversationThread/thread-styles';
-import { Button } from '@heroui/react';
+import { Button, cn } from '@heroui/react';
 import type { ToolActionPhase } from '@/modules/ai/utils/tool-presentation';
 import type { ToolInvocation } from '@/modules/ai/utils/message-segments';
 import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
@@ -19,20 +12,6 @@ const PHASE_TONE: Record<ToolActionPhase, PhaseTone> = {
     running: 'warning',
     done: 'success',
     failed: 'danger'
-};
-
-/**
- * bravais's `StatusDot` at `size='sm'` (8×8) rebuilt as a span, keeping its
- * `role='status'` and its interpolated default accessible name — a naive swap would
- * change what assistive tech announces for every dot. The 2px punch-out ring is part of
- * every tone in the original and is load-bearing wherever a dot overlaps artwork.
- */
-const STATUS_DOT = 'size-2 shrink-0 rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]';
-
-const STATUS_DOT_TONE: Record<PhaseTone, string> = {
-    warning: 'bg-warning',
-    success: 'bg-success',
-    danger: 'bg-danger'
 };
 
 const REJECTION_REASON = 'User rejected the action.';
@@ -69,10 +48,14 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
     };
 
     return (
-        <div className={ACTION_REQUEST_CARD}>
-            <div className={ACTION_REQUEST_HEADER}>
+        <div className='flex flex-col gap-[0.35rem] border-l-2 border-border py-2 pr-0 pl-[0.7rem] transition-colors duration-200 [.ai-floating-assistant_&]:p-2'>
+            <div className='flex flex-row items-center gap-2 leading-[1.35]'>
                 <span
-                    className={`${STATUS_DOT} ${STATUS_DOT_TONE[tone]}`}
+                    className={cn('size-2 shrink-0 rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]', {
+                        warning: 'bg-warning',
+                        success: 'bg-success',
+                        danger: 'bg-danger'
+                    }[tone])}
                     role='status'
                     aria-label={`${tone} status`}
                 />
@@ -82,12 +65,7 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
             </div>
 
             {phase === 'requested' && addToolApprovalResponse && (
-                <div className={ACTION_REQUEST_CONTROLS}>
-                    {/*
-                      * bravais crossed `variant` with `intent`; `solid` + `success` had no
-                      * HeroUI equivalent, so it resolves to `secondary` plus the hue, and
-                      * `outline` + `danger` to `ghost` plus the hue (spec §4d).
-                      */}
+                <div className='mt-[0.1rem] flex flex-row items-center gap-1 [.ai-floating-assistant_&]:flex-wrap'>
                     <Button
                         variant='secondary'
                         size='sm'
@@ -108,7 +86,7 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
             )}
 
             {phase === 'running' && (
-                <div className={ACTION_REQUEST_CONTROLS}>
+                <div className='mt-[0.1rem] flex flex-row items-center gap-1 [.ai-floating-assistant_&]:flex-wrap'>
                     <p className='text-xs text-muted'>
                         Running...
                     </p>
@@ -120,12 +98,12 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
                     href={image.url}
                     target='_blank'
                     rel='noreferrer'
-                    className={TOOL_IMAGE_LINK}
+                    className='mt-2 block overflow-hidden rounded-lg leading-none'
                 >
                     <img
                         src={image.url}
                         alt={image.summary ?? 'Rendered scene'}
-                        className={TOOL_IMAGE}
+                        className='block h-auto max-w-full rounded-lg border border-[rgba(255,255,255,0.08)]'
                         loading='lazy'
                     />
                 </a>

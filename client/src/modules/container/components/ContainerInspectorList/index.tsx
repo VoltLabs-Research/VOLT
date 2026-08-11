@@ -14,11 +14,6 @@ interface ContainerInspectorListProps {
     className?: string;
 }
 
-/*
- * `container-inspector-list` and `container-inspector-list-title` were carried on
- * these two elements but were defined in no stylesheet in the app — not before
- * this migration either. They are dropped rather than converted.
- */
 const ContainerInspectorList = ({ title, rows, className = '' }: ContainerInspectorListProps) => {
     if (rows.length === 0) {
         return null;

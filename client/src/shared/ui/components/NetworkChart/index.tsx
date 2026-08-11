@@ -24,7 +24,7 @@ export interface NetworkData {
 interface NetworkChartProps {
     data: NetworkData | null;
     isLoading?: boolean;
-    
+
     calculateDelta?: boolean;
     title?: string;
     height?: number;
@@ -129,9 +129,7 @@ const NetworkChart = ({
     height = 250
 }: NetworkChartProps) => {
     const [history, setHistory] = useState<NetworkDataPoint[]>([]);
-    // A ref, not state: the previous sample is bookkeeping for the delta
-    // computation, and storing it in state made the effect skip a render and
-    // silently drop the first delta.
+
     const prevDataRef = useRef<NetworkData | null>(null);
     const gradientId = useId();
 

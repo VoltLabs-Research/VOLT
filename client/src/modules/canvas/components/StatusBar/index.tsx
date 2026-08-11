@@ -70,11 +70,6 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
         }
     ];
 
-    /*
-     * `--canvas-right-overlay-size` is written as an inline style on
-     * `.canvas-editor-root` by `CanvasPage`, so the bar shrinks with the right panel.
-     * The `var()` reference is kept rather than resolved, exactly as before.
-     */
     return (
         <div className='flex h-7 w-[calc(100%-max(12px,var(--canvas-right-overlay-size,0px)))] flex-row items-center justify-between gap-3 overflow-scroll px-3'>
             <div className='flex flex-row items-center gap-2'>

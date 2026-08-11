@@ -18,26 +18,10 @@ import type { TimelineTickTone } from '../utils/analysis-status-selectors';
 interface UseCanvasAnalysisStatusProps {
     trajectoryId?: string;
     enabled?: boolean;
-    /**
-     * Analyses to fall back on before the query resolves — typically the ones already
-     * embedded in a `Trajectory`. Taken here rather than at a call site so their status
-     * still goes through the one merge, instead of a caller inventing a second rule for
-     * the first render.
-     */
+
     fallbackAnalyses?: readonly Analysis[];
 }
 
-/**
- * The canvas' single reader of analysis and job state.
- *
- * Four hooks used to fetch these same two queries and derive their own answer from
- * them, with four different precedence rules — see `analysis-status-selectors` for
- * what each of them got wrong. Everything the canvas asks about analysis progress now
- * resolves through here, so two views cannot disagree.
- *
- * Each selector is memoised on its own rather than bundled into one object: a consumer
- * that only reads `counts` should not re-render because a tone changed.
- */
 const useCanvasAnalysisStatus = ({
     trajectoryId,
     enabled = true,
@@ -85,7 +69,6 @@ const useCanvasAnalysisStatus = ({
         return isCanvasAnalysisInProgress(statusMap.get(analysisId)?.status);
     }, [statusMap]);
 
-    /** One analysis on one frame — what the ruler colours when an analysis is selected. */
     const getAnalysisFrameStatus = useCallback((
         analysisId: string,
         timestep: number
@@ -93,13 +76,6 @@ const useCanvasAnalysisStatus = ({
         return frameStatusIndex.byTimestepAndAnalysis.get(timestep)?.get(analysisId);
     }, [frameStatusIndex]);
 
-    /**
-     * Tick tone for a frame, scoped to an analysis when one is selected.
-     *
-     * Without the scope this reduced every analysis on the frame to one colour, so a
-     * queued PTM run painted the tick orange while the DXA row next to it read as
-     * running. That mismatch is the whole reason this hook exists.
-     */
     const getFrameTone = useCallback((
         timestep: number,
         analysisId?: string

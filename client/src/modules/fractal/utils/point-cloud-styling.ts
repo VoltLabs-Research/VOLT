@@ -34,18 +34,6 @@ const getStyleUniforms = (settings: PointCloudSceneSettings | undefined) => {
     };
 };
 
-/**
- * Keeps `transparent` in step with whether the shader can actually emit alpha < 1.
- *
- * It matters far more than it looks. `transparent` is what decides which render
- * list three.js puts the cloud in, and the transparent list is drawn back-to-front
- * with early-z effectively defeated — so every one of a million-plus sprites runs
- * the full sphere-impostor lighting even when it is buried behind other atoms. In a
- * dense cell only the outer shell is ever visible, so declaring an opaque material
- * transparent multiplies fragment work by the depth complexity of the lattice.
- * With the default style (`edgeSoftness` 0, `opacity` 1) the fragment alpha is
- * exactly 1, so the opaque list is both faster and pixel-identical.
- */
 const syncBlendingMode = (material: THREE.ShaderMaterial): void => {
     const opacity = (material.uniforms.opacity?.value as number | undefined) ?? 1;
     const edgeSoftness = (material.uniforms.edgeSoftness?.value as number | undefined) ?? 0;

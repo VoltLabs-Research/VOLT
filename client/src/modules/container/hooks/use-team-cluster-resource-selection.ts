@@ -20,7 +20,6 @@ const useTeamClusterResourceSelection = ({
         enabled: Boolean(teamId)
     });
 
-    // Memoised for identity, not for cost: the selection effect below depends on it.
     const teamClusters = useMemo<TeamClusterOption[]>(() => {
         return teamClustersQuery.data?.data ?? [];
     }, [teamClustersQuery.data?.data]);

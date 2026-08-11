@@ -1,6 +1,7 @@
 import { useAnalysisListingExportOptionsQuery } from '@/modules/plugin/hooks/listing/queries';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import { Switch } from '@heroui/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -171,7 +172,6 @@ const AnalysisListingDownloadModal = ({
                 {label}
             </p>
             <div className='ml-3 flex-none'>
-                {/* bravais's `LiquidToggle` was a switch: `pressed`/`onChange` become `isSelected`/`onChange`. */}
                 <Switch
                     id={`${fieldKey}-toggle`}
                     isSelected={value}

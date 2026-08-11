@@ -1,11 +1,24 @@
-import { cn } from '@heroui/react';
+import {
+    Button,
+    DropdownItem,
+    DropdownMenu,
+    DropdownPopover,
+    DropdownRoot,
+    DropdownTrigger,
+    Tooltip,
+    cn
+} from '@heroui/react';
+import AppNav from '@/modules/dashboard/components/AppNav';
 import DashboardHeader from '@/modules/dashboard/components/DashboardHeader';
-import DashboardSidebar from '@/modules/dashboard/components/DashboardSidebar';
 import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBar';
+import SettingsNav from '@/modules/dashboard/components/SettingsNav';
 import JobsDrawer from '@/modules/dashboard/components/JobsDrawer';
 import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
+import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
+import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
+import TeamSelector from '@/modules/team/components/TeamSelector';
 import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
 import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
 import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
@@ -18,36 +31,22 @@ import {
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
+import { openModal } from '@/shared/ui/modal/use-modal-store';
 import useTip from '@/shared/tips/use-tip';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
+import { panelFor } from '@/app/navigation/panels';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Plus, UserPlus, X } from 'lucide-react';
 import type {
     DashboardGlobalSearchBreadcrumb,
     DashboardHeaderContext
 } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 
-/**
- * `.dashboard-content-wrapper`. The 280px / 64px pair is duplicated from
- * `DashboardSidebar`'s own width — it always was, as a numeric rather than a
- * selector coupling — so the two have to move together.
- *
- * `.sidebar-is-collapsed .dashboard-content-wrapper` was an ancestor rule on
- * `<main>`; this component owns the flag, so it is a ternary and the flag class is
- * gone. Below 1024px the rail becomes an overlay drawer and the offset collapses to
- * zero for both states.
- */
-const CONTENT_WRAPPER = 'flex h-dvh flex-1 flex-col overflow-hidden transition-[margin-left] duration-150 ease-out-fluid max-[1024px]:ml-0';
-const CONTENT_WRAPPER_EXPANDED = 'ml-[280px]';
-const CONTENT_WRAPPER_COLLAPSED = 'ml-16';
-
-/**
- * `.sidebar-overlay`. `--color-overlay` is HeroUI's `--overlay`; the blur and
- * saturation are the sheet's own literals, not tokens.
- */
-const SIDEBAR_OVERLAY = 'fixed inset-0 z-[99] hidden bg-[color-mix(in_srgb,var(--overlay)_78%,transparent)] backdrop-blur-[8px] backdrop-saturate-[1.4]';
-const SIDEBAR_OVERLAY_OPEN = 'max-[1024px]:block';
+type SidebarRailState = 'expanded' | 'collapsed' | 'hidden';
 
 const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
     /^\/dashboard\/containers\/[^/]+/,
@@ -63,13 +62,18 @@ const getOutletTransitionKey = (pathname: string): string => {
 };
 
 const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
+const RAIL_VIEWPORT_QUERY = '(min-width: 1024.05px)';
 
 const DashboardLayout = () => {
     useGlobalSocketCacheSync();
 
     const { teams } = useTeamData();
     const location = useLocation();
+    const panel = panelFor(location.pathname);
     const prefersReducedMotion = usePrefersReducedMotion();
+    const isRailViewport = useMedia(RAIL_VIEWPORT_QUERY);
+    const singleTenant = useSingleTenant();
+    const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
     const [sidebarCollapsedOverride, setSidebarCollapsedOverride] = useState(false);
@@ -83,19 +87,21 @@ const DashboardLayout = () => {
     );
 
     const headerHidden = workspaceChromeState.headerHidden;
-    const sidebarCollapsed = workspaceChromeState.sidebarCollapsed || sidebarCollapsedOverride || sidebarCollapsedPreference;
+    const collapseRequested = workspaceChromeState.sidebarCollapsed
+        || sidebarCollapsedOverride
+        || sidebarCollapsedPreference;
+    const collapsed = collapseRequested && isRailViewport;
+
+    let rail: SidebarRailState = 'expanded';
+    if (headerHidden) {
+        rail = 'hidden';
+    } else if (collapsed) {
+        rail = 'collapsed';
+    }
 
     useTip('dashboard-sidebar-collapse', {
         enabled: !headerHidden
     });
-
-    const toggleSidebarCollapsed = useCallback(() => {
-        setSidebarCollapsedPreference((prev) => {
-            const next = !prev;
-            localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
-            return next;
-        });
-    }, []);
 
     const expandSidebar = useCallback(() => {
         localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
@@ -104,6 +110,7 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         setGlobalSearchBreadcrumb(null);
+        setSidebarOpen(false);
     }, [location.pathname]);
 
     useEffect(() => {
@@ -135,18 +142,98 @@ const DashboardLayout = () => {
                 <TeamCreatorModal isRequired={teams.length === 0} />
                 <JoinTeamModal />
 
-                {/* Sidebar Overlay for Mobile */}
-                <div className={cn(SIDEBAR_OVERLAY, sidebarOpen && SIDEBAR_OVERLAY_OPEN)} onClick={() => setSidebarOpen(false)} />
-
-                <DashboardSidebar
-                    sidebarOpen={sidebarOpen}
-                    setSidebarOpen={setSidebarOpen}
-                    collapsed={sidebarCollapsed}
-                    onToggleCollapse={toggleSidebarCollapsed}
-                    onExpandSidebar={expandSidebar}
+                <div
+                    className={cn(
+                        'fixed inset-0 z-[99] hidden bg-[color-mix(in_srgb,var(--overlay)_78%,transparent)] backdrop-blur-[8px] backdrop-saturate-[1.4]',
+                        sidebarOpen && 'max-[1024px]:block'
+                    )}
+                    onClick={() => setSidebarOpen(false)}
                 />
 
-                <div className={cn(CONTENT_WRAPPER, sidebarCollapsed ? CONTENT_WRAPPER_COLLAPSED : CONTENT_WRAPPER_EXPANDED)}>
+                <aside
+                    data-rail={rail}
+                    inert={headerHidden || (!isRailViewport && !sidebarOpen)}
+                    className={cn(
+                        'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',
+                        {
+                            expanded: 'w-[280px] min-[1024.05px]:w-56',
+                            collapsed: 'w-[280px] min-[1024.05px]:w-16',
+                            hidden: 'w-[280px] min-[1024.05px]:w-0'
+                        }[rail],
+                        sidebarOpen ? 'max-[1024px]:translate-x-0' : 'max-[1024px]:-translate-x-full'
+                    )}
+                >
+                    <Tooltip>
+                        <Button
+                            isIconOnly
+                            variant='ghost'
+                            className='absolute top-4 right-4 hidden items-center justify-center rounded-md border border-border bg-surface-tertiary max-[1024px]:flex max-[1024px]:size-11 max-[1024px]:p-0'
+                            aria-label='Close sidebar'
+                            onPress={() => setSidebarOpen(false)}
+                        >
+                            <X size={20} />
+                        </Button>
+                        <Tooltip.Content placement='bottom'>Close sidebar</Tooltip.Content>
+                    </Tooltip>
+
+                    <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pb-2'>
+                        <AppNav
+                            active={panel === 'app'}
+                            collapsed={collapsed}
+                            setSidebarOpen={setSidebarOpen}
+                            onExpandSidebar={expandSidebar}
+                        />
+                        <SettingsNav active={panel === 'settings'} collapsed={collapsed} />
+                    </div>
+
+                    <div
+                        className={cn(
+                            'flex flex-col gap-2 border-t border-border p-3',
+                            collapsed && 'items-center p-2'
+                        )}
+                    >
+                        {!singleTenant && (
+                            <div className={cn('flex flex-row items-center gap-1.5', collapsed && 'hidden')}>
+                                <div className='min-w-0 flex-1'>
+                                    <TeamSelector />
+                                </div>
+
+                                <DropdownRoot>
+                                    <Tooltip>
+                                        <DropdownTrigger
+                                            className='flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
+                                            aria-label='Team actions'
+                                        >
+                                            <Plus size={18} aria-hidden='true' />
+                                        </DropdownTrigger>
+                                        <Tooltip.Content placement='bottom'>Team actions</Tooltip.Content>
+                                    </Tooltip>
+                                    <DropdownPopover placement='bottom end'>
+                                        <DropdownMenu aria-label='Team actions'>
+                                            <DropdownItem id='create-team' textValue='Create team' onAction={() => openModal('team-creator-modal')}>
+                                                <Plus size={16} aria-hidden='true' />
+                                                Create team
+                                            </DropdownItem>
+                                            <DropdownItem id='join-team' textValue='Join existing team' onAction={() => openModal('join-team-modal')}>
+                                                <UserPlus size={16} aria-hidden='true' />
+                                                Join existing team
+                                            </DropdownItem>
+                                        </DropdownMenu>
+                                    </DropdownPopover>
+                                </DropdownRoot>
+                            </div>
+                        )}
+
+                        <UserMenuPopover
+                            onSettingsClick={handleSettingsClick}
+                            onSignOut={handleSignOut}
+                            isSigningOut={isSigningOut}
+                            collapsed={collapsed}
+                        />
+                    </div>
+                </aside>
+
+                <div className='flex h-dvh min-w-0 flex-1 flex-col overflow-hidden'>
                     {!headerHidden && (
                         <DashboardHeader
                             setSidebarOpen={setSidebarOpen}
@@ -154,7 +241,7 @@ const DashboardLayout = () => {
                         />
                     )}
 
-                    <div className='relative overflow-y-auto flex-1 min-h-0'>
+                    <div className='relative min-h-0 flex-1 overflow-y-auto'>
                         <TrajectoryUploaderContainer>
                             <motion.div
                                 key={getOutletTransitionKey(location.pathname)}

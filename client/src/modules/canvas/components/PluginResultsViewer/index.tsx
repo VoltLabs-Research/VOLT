@@ -6,36 +6,6 @@ import ExposureChart from './ExposureChart';
 import { usePluginListingQuery } from '@/modules/plugin/hooks/listing/queries';
 import { Button, CloseButton, Tooltip, cn } from '@heroui/react';
 
-/**
- * `.canvas-results-*`. The three descendant rules on `.canvas-results-chart img` and
- * `figcaption` move onto those elements — there is no `img` rendered here (the chart is
- * an `ExposureChart`), so only the caption survives.
- */
-const VIEWER_CLASS = 'absolute bottom-4 right-4 z-[200] flex max-h-[280px] w-full flex-col overflow-hidden rounded-xl border border-border bg-surface';
-
-const HEADER_CLASS = 'flex flex-row items-center justify-between border-b border-border px-2.5 py-1.5';
-
-const TABS_CLASS = 'flex flex-row items-center overflow-auto border-b border-border px-1.5 py-1';
-
-const CONTENT_CLASS = 'max-h-[180px] overflow-auto p-1.5';
-
-const CHARTS_CLASS = 'grid min-w-[320px] grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2';
-
-const CHART_CLASS = 'm-0 grid gap-1';
-
-const CHART_CAPTION_CLASS = 'truncate text-[0.6875rem] text-muted';
-
-/**
- * bravais's `variant='solid'|'ghost' intent='canvas' size='sm'` tab chrome. A plain
- * `<button role='tab'>` rather than a HeroUI `Button`, because `role` and `aria-selected`
- * are not on its prop interface and a `role='tablist'` needs real tabs.
- */
-const TAB_CLASS = 'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out';
-
-const TAB_ACTIVE_CLASS = 'bg-default text-foreground hover:bg-surface-hover';
-
-const TAB_IDLE_CLASS = 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground';
-
 interface PluginResultsViewerProps {
     pluginId: string;
     analysisId: string;
@@ -65,9 +35,9 @@ const ChartArtifactView = ({ artifact, pluginId, analysisId, trajectoryId }: {
     }
     if (rows.length === 0) {
         return (
-            <figure className={CHART_CLASS}>
+            <figure className='m-0 grid gap-1'>
                 <span className='text-xs text-muted' style={{ padding: '8px' }}>No row data available for chart.</span>
-                <figcaption className={CHART_CAPTION_CLASS}>{artifact.displayName}</figcaption>
+                <figcaption className='truncate text-[0.6875rem] text-muted'>{artifact.displayName}</figcaption>
             </figure>
         );
     }
@@ -87,8 +57,8 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
     const resolvedTeamId = teamId ?? undefined;
 
     return (
-        <div className={VIEWER_CLASS}>
-            <div className={HEADER_CLASS}>
+        <div className='absolute bottom-4 right-4 z-[200] flex max-h-[280px] w-full flex-col overflow-hidden rounded-xl border border-border bg-surface'>
+            <div className='flex flex-row items-center justify-between border-b border-border px-2.5 py-1.5'>
                 <h3 className='text-xs font-medium text-foreground'>{title}</h3>
                 <div className='flex flex-row items-center gap-2'>
                     {!isEmpty && (
@@ -115,22 +85,24 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                 </div>
             ) : (
                 <>
-                    <div className={TABS_CLASS} role='tablist'>
+                    <div className='flex flex-row items-center overflow-auto border-b border-border px-1.5 py-1' role='tablist'>
                         {tabs.map((tab, index) => (
                             <button
                                 key={tab.key}
                                 type='button'
                                 role='tab'
                                 aria-selected={activeTab === index}
-                                className={cn(TAB_CLASS, activeTab === index ? TAB_ACTIVE_CLASS : TAB_IDLE_CLASS)}
+                                className={cn(
+                                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out',
+                                    activeTab === index ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
+                                )}
                                 onClick={() => setActiveTab(index)}
                             >
                                 {tab.label}
                             </button>
                         ))}
                     </div>
-
-                    <div className={CONTENT_CLASS}>
+                    <div className='max-h-[180px] overflow-auto p-1.5'>
                         {activeExposureName && (
                             <PluginExposureTable
                                 key={`${activeExposureName}-${analysisId}`}
@@ -151,7 +123,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                             />
                         )}
                         {activeChartArtifact && (
-                            <div className={CHARTS_CLASS}>
+                            <div className='grid min-w-[320px] grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2'>
                                 <ChartArtifactView
                                     artifact={activeChartArtifact}
                                     pluginId={pluginId}

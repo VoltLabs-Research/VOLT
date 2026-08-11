@@ -1,5 +1,5 @@
 import { buildBackendUrl } from '@/app/core/http/utils/backend-origin';
-import type { CanvasAccessMode } from '@/modules/canvas/api/access';
+import type { CanvasAccessMode } from '@/modules/canvas/contracts/data-access';
 import type {
     SceneObjectType,
     PluginScene,

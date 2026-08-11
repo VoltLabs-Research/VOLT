@@ -1,5 +1,4 @@
 import { Button, Tooltip } from '@heroui/react';
-import { PALETTE_LIST_CLASS } from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import PaletteItem from '@/modules/plugin/components/plugin/PaletteItem';
 import PluginBuilderCanvas from '@/modules/plugin/components/plugin/PluginBuilderCanvas';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
@@ -63,7 +62,6 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
         shift: true
     });
 
-    // Stable identity keeps SIDEBAR_TAGS (and therefore the palette subtree) mounted.
     const handleAddNode = useCallback((nodeType: NodeType) => {
         const offset = usePluginBuilderStore.getState().nodes.length * 20;
         addNode(nodeType, {
@@ -119,7 +117,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <div className={PALETTE_LIST_CLASS}>
+                <div className='flex flex-col gap-6 overflow-y-auto p-8'>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
@@ -149,11 +147,6 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                             <Tooltip.Content placement='right'>Back</Tooltip.Content>
                         </Tooltip>
                         <Tooltip>
-                            {/*
-                              * `EditableTag` is a plain element rather than a focusable
-                              * RAC component, so it needs the explicit `Tooltip.Trigger`
-                              * wrapper that a `Button` does not.
-                              */}
                             <Tooltip.Trigger>
                                 <EditableTag
                                     as='h3'
@@ -166,12 +159,10 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                         </Tooltip>
                     </div>
                 </Sidebar.Header>
-
                 <Sidebar.Bottom>
                     {bottomSidebarContent}
                 </Sidebar.Bottom>
             </Sidebar>
-
             <PluginBuilderCanvas saveStatus={saveStatus} onSave={save} />
         </div>
     );

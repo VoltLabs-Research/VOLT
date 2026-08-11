@@ -21,7 +21,6 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const storeNodes = usePluginBuilderStore((state) => state.nodes);
 
-    // The node handed to the editor is a snapshot; the store holds the live one.
     const currentNode = storeNodes.find((candidate) => candidate.id === node.id) ?? node;
     const nodeData = currentNode.data;
     const handleDefinitions = getNodeHandleDefinitions(currentNode.type as NodeType);
@@ -97,7 +96,6 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                                 Reset
                             </Button>
                         </div>
-
                         <FormFieldRHF
                             variant='inline'
                             label='Side'
@@ -111,7 +109,6 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
                             }}
                             options={CONNECTOR_SIDE_OPTIONS}
                         />
-
                         <FormFieldRHF
                             variant='inline'
                             label='Offset (%)'

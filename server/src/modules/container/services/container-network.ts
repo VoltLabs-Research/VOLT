@@ -6,7 +6,7 @@ import type {
 import type {
     ContainerPortMapping,
     RuntimeContainerInfo
-} from '@shared/contracts/ports/IContainerService';
+} from '@shared/contracts/ports/ContainerRuntime';
 
 export const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const BROWSER_ACCESSIBLE_PORTS = new Set([80, 81, 3000, 3001, 4173, 4200, 5000, 5173, 5174, 8000, 8080, 8081, 8088, 8888, 8889]);

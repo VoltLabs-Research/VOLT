@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Settings } from 'lucide-react';
 import { Button, cn } from '@heroui/react';
 import type { ThemePreference } from '@/renderer/src/theme';
@@ -31,30 +31,9 @@ const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
     }
 ];
 
-/*
- * The traffic lights.
- *
- * `no-drag-region` on each one is not optional: the bar around them is a
- * `drag-region`, and a draggable region swallows clicks for everything drawn over
- * it, so a control that does not punch its own hole would move the window instead
- * of closing it.
- *
- * The hover glyph used to be a `::before` with a `content` per light. It is a real
- * `aria-hidden` span now, revealed by the cluster's named group — which is what
- * lets the whole thing be classes rather than a stylesheet, since a pseudo-element
- * cannot be produced by a utility.
- */
 const LIGHT = 'no-drag-region relative size-3 cursor-pointer rounded-full border-[0.5px] border-black/10';
 const GLYPH = 'absolute inset-0 flex items-center justify-center text-[9px] font-bold leading-none text-black/55 opacity-0 transition-opacity duration-[120ms] ease-out-fluid group-hover/traffic:opacity-100';
 
-/*
- * The settings menu's rows stay plain `<button>`s rather than becoming HeroUI
- * `Button`s: the roving-tabindex keyboard nav below finds them with
- * `querySelectorAll('button[data-menu-item]:not([disabled])')` and calls `.focus()`,
- * which needs the native `disabled` attribute and a real DOM button — HeroUI's
- * `isDisabled` is a React Aria concept that also removes the element from the
- * press path in ways this hand-rolled menu does not expect.
- */
 const MENU_ITEM = 'block w-full cursor-pointer rounded-lg px-3 py-2 text-left text-[13px] text-foreground hover:bg-default focus-visible:bg-default disabled:cursor-default disabled:text-muted disabled:opacity-45';
 const THEME_OPTION = 'flex-1 cursor-pointer rounded-[5px] px-2 py-[5px] text-xs';
 
@@ -72,13 +51,12 @@ const Titlebar = ({
     const wrapRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLUListElement>(null);
 
-    const focusGear = () => wrapRef.current?.querySelector<HTMLElement>('button[data-settings-gear]')?.focus();
+    const focusGear = useCallback(() => wrapRef.current?.querySelector<HTMLElement>('button[data-settings-gear]')?.focus(), []);
 
-    const closeMenu = (returnFocus = true) => {
+    const closeMenu = useCallback((returnFocus = true) => {
         setMenuOpen(false);
         if(returnFocus) focusGear();
-    };
-
+    }, [focusGear]);
 
     useEffect(() => {
         if(!menuOpen) return;
@@ -88,8 +66,7 @@ const Titlebar = ({
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [menuOpen]);
-
+    }, [menuOpen, closeMenu]);
 
     const onMenuKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
         if(!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
@@ -128,7 +105,6 @@ const Titlebar = ({
                     <span aria-hidden='true' className={GLYPH}>+</span>
                 </button>
             </div>
-
             <div className='relative ml-auto flex items-center' ref={wrapRef}>
                 <Button
                     isIconOnly
@@ -182,9 +158,7 @@ const Titlebar = ({
                                     About Volt
                                 </button>
                             </li>
-
                             <li role='separator' className='mx-1 my-1.5 h-px bg-border' />
-
                             <li role='none' className='flex flex-col gap-1.5 px-2 pb-1 pt-1.5'>
                                 <span className='text-[11px] text-muted/75'>Theme</span>
                                 <div className='flex gap-1 rounded-lg bg-surface-secondary p-[3px]' role='group' aria-label='Theme'>

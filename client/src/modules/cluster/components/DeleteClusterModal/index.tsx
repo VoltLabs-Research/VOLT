@@ -1,5 +1,6 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { useState } from 'react';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';

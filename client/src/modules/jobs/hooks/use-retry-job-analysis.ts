@@ -3,11 +3,6 @@ import { useRetryFailedFramesMutation } from '@/modules/analysis/hooks/queries';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { RetryFailedFramesResponse } from '@volt/contracts/modules/analysis/domain';
 
-/**
- * Retries the failed frames of an analysis, resolving to `null` when the retry
- * did not happen. `showPromise` has already surfaced the reason to the user, so
- * callers have nothing left to handle and must not need a `catch`.
- */
 const useRetryJobAnalysis = () => {
     const mutation = useRetryFailedFramesMutation();
 

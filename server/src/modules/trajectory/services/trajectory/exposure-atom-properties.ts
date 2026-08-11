@@ -5,10 +5,11 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 
-import type { Analysis, PluginLike, WorkflowNodeLike } from '@shared/contracts/types';
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
+import type { PluginLike, WorkflowNodeLike } from '@shared/contracts/types/Plugin';
 
 /** Results only ever consumed by another exposure, never published per atom. */
 const SHARED_ONLY_RESULTS_SUFFIX = 'neighbor_lattice.parquet';

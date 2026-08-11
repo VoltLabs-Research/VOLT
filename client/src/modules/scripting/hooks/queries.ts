@@ -1,9 +1,6 @@
 import service from '../api/scripting-service';
-import {
-    buildKeys,
-    createInvalidatingMutation,
-    createMutation
-} from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createInvalidatingMutation, createMutation } from '@/shared/query/create-mutation';
 import type {
     CreateScriptingNotebookParams,
     CreateScriptingSessionParams,

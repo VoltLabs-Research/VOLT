@@ -1,9 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type {
-    RasterAnalysisMetadata,
-    RasterMetadata, RasterTrajectoryMetadata
-} from '@shared/contracts/types/RasterMetadata';
-import { RasterMetadataStatus } from '@shared/contracts/types/RasterMetadata';
+import type { RasterMetadata } from '@shared/contracts/types/RasterMetadata';
+import {
+    RasterMetadataStatus,
+    type RasterAnalysisMetadata,
+    type RasterTrajectoryMetadata
+} from '@volt/contracts/modules/raster/domain';
 import { requireTrajectoryStorageCluster } from '@modules/raster/services/raster-frames';
 import { listAnalysisRasterPreviews, listRasterPreviews } from '@modules/raster/services/raster-storage';
 import { parseAnalysisRasterFrameKey, parseRasterTimestep } from '@shared/application/utilities/raster-storage-paths';

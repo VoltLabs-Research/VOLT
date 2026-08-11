@@ -10,7 +10,8 @@ import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
 import { Button, buttonVariants } from '@heroui/react';
-import { Modal, closeModal, openModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useEffect, useRef, useState } from 'react';
@@ -27,28 +28,6 @@ enum ClusterOnboardingStep {
 
 const INSTALL_MODAL_ID = 'cluster-onboarding-install-modal';
 const ENROLLMENT_WAIT_TIMEOUT_MS = 90_000;
-
-/**
- * `.cluster-onboarding-center` — the form's own viewport. `min(100%, 560px)` is a
- * clamp rather than a breakpoint, so it stays an arbitrary value; the 768px rule
- * only dropped the horizontal padding and moved it all to the top.
- */
-const CENTER_CLASS = 'relative flex items-center justify-center w-[min(100%,560px)] h-full min-h-0 max-h-full px-4 py-8 max-md:px-0 max-md:pt-4 max-md:pb-0';
-
-/**
- * `.cluster-onboarding-success-title`. The sheet's `@keyframes
- * cluster-onboarding-fade-in` (opacity 0→1, `translateY(12px)`→0, over 0.4s
- * `ease-out`) needs no bespoke rule: `tw-animate-css` ships with `@heroui/styles`,
- * and `slide-in-from-bottom-3` is `calc(3 * var(--spacing))` — exactly 12px. The
- * sheet's reduced-motion `animation: none` is now global in `index.css`.
- */
-const SUCCESS_TITLE_CLASS = 'text-center text-[clamp(2.25rem,5vw,3rem)] font-semibold text-foreground animate-in fade-in-0 slide-in-from-bottom-3 duration-400 ease-out';
-
-/**
- * `.cluster-onboarding-continue-btn` — 200px wide, and full-width below 640px.
- * `shape='pill'` was bravais's; spec §4d makes it `rounded-full`.
- */
-const CONTINUE_BUTTON_CLASS = 'min-w-[200px] rounded-full max-sm:w-full max-sm:min-w-0';
 
 const ClusterOnboardingPage = () => {
     const navigate = useNavigate();
@@ -191,13 +170,6 @@ const ClusterOnboardingPage = () => {
 
     const leftSlot = hasConnectedCluster ? (
         <nav className='flex items-center gap-1' aria-label='Cluster onboarding breadcrumbs'>
-            {/*
-              * `.cluster-onboarding-breadcrumb-link { padding-inline: 0 }` reached into
-              * bravais's `.button`, which spec §4f says to delete rather than port —
-              * HeroUI's button root is *also* `.button`, so a left-behind override would
-              * have kept applying to a different component. The zero inline padding is
-              * restated as `px-0` on the element itself.
-              */}
             <Link
                 to='/dashboard'
                 className={buttonVariants({
@@ -228,7 +200,7 @@ const ClusterOnboardingPage = () => {
                 isSigningOut={isSigningOut}
             >
                 <div className='flex flex-col items-center justify-center gap-4 h-full min-h-0' role='status' aria-live='polite' aria-atomic='true'>
-                    <h1 className={SUCCESS_TITLE_CLASS}>
+                    <h1 className='text-center text-[clamp(2.25rem,5vw,3rem)] font-semibold text-foreground animate-in fade-in-0 slide-in-from-bottom-3 duration-400 ease-out'>
                         {successMessage}
                     </h1>
                     <p className='text-muted'>
@@ -248,7 +220,7 @@ const ClusterOnboardingPage = () => {
             overlay={overlay}
         >
             <>
-                <div className={CENTER_CLASS}>
+                <div className='relative flex items-center justify-center w-[min(100%,560px)] h-full min-h-0 max-h-full px-4 py-8 max-md:px-0 max-md:pt-4 max-md:pb-0'>
                     <div className='flex flex-col items-center w-full gap-6'>
                         <form className='w-full flex flex-col gap-6 items-center' onSubmit={handleSubmit}>
                             <div className='flex flex-col items-center gap-3'>
@@ -256,16 +228,6 @@ const ClusterOnboardingPage = () => {
                                     Let's name your cluster
                                 </h3>
                             </div>
-
-                            {/*
-                              * `.cluster-onboarding-name-input .form-field-input {
-                              * border-radius: var(--radius-full) }` was the dependent side
-                              * of a cross-module contract into FormFieldRHF's sheet, and it
-                              * has been dead for a while: `--radius-full` is not one of the
-                              * tokens HeroUI emits, so the pill never rendered. The intent
-                              * is restored through `className`, which FormFieldRHF already
-                              * forwards to the control itself.
-                              */}
                             <div className='w-full'>
                                 <FormFieldRHF
                                     label='Cluster name'
@@ -281,9 +243,8 @@ const ClusterOnboardingPage = () => {
                                     }}
                                 />
                             </div>
-
                             <Button
-                                className={CONTINUE_BUTTON_CLASS}
+                                className='min-w-[200px] rounded-full max-sm:w-full max-sm:min-w-0'
                                 variant='primary'
                                 size='lg'
                                 type='submit'
@@ -294,7 +255,6 @@ const ClusterOnboardingPage = () => {
                         </form>
                     </div>
                 </div>
-
                 <Modal
                     id={INSTALL_MODAL_ID}
                     title='Copy & Paste on your cluster host'
@@ -315,12 +275,7 @@ const ClusterOnboardingPage = () => {
                                 onRetry={handleRetryWait}
                             />
                         ) : (
-                            /*
-                             * `.cluster-onboarding-status-row` added `flex-wrap` and a
-                             * 0.5rem `row-gap` over the row's own 0.75rem `gap`, so the two
-                             * axes are named separately rather than left to depend on which
-                             * utility the sheet happens to emit last.
-                             */
+
                             <div className='flex flex-row items-center flex-wrap gap-x-3 gap-y-2' role='status' aria-live='polite' aria-atomic='true'>
                                 <div className='flex flex-row items-center gap-2'>
                                     <ClusterStatusDot
@@ -336,7 +291,6 @@ const ClusterOnboardingPage = () => {
                         )}
                     </div>
                 </Modal>
-
                 <DeleteClusterModal
                     teamCluster={deleteTarget}
                     onDelete={handleDeleteCluster}

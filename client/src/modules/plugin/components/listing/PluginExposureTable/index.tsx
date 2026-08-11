@@ -7,13 +7,13 @@ import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing'
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
 import { normalizeListingColumns } from '@/modules/plugin/utils/listing/normalize-listing-columns';
 import { buildListingRowMenuOptions } from '@/modules/plugin/utils/listing/listing-row-menu-options';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
-import { TABLE_RECOVERY_STATE_CLASS } from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 
 interface PluginExposureTableProps {
     pluginId: string;
@@ -74,8 +74,6 @@ const CompactPluginExposureTable = ({
         }
     );
 
-    // Row and column identities feed the virtualized table's own memoized
-    // column-type inference, so they must stay stable across renders.
     const rows = useMemo(
         () => infiniteData?.pages.flatMap((page) => page.data) ?? [],
         [infiniteData]
@@ -140,7 +138,7 @@ const CompactPluginExposureTable = ({
                 title='Access denied'
                 description='You do not have permission to view this data.'
                 tone={RecoveryStateTone.AccessDenied}
-                className={TABLE_RECOVERY_STATE_CLASS}
+                className='min-h-[240px]'
             />
         );
     }

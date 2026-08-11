@@ -12,17 +12,6 @@ interface ContextMenuListProps {
 
 const MENU_ITEM_SELECTOR = '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]';
 
-const SIZE_CLASS_NAMES: Record<ContextMenuItemSize, string> = {
-    sm: 'min-w-[124px]',
-    md: 'min-w-[160px]'
-};
-
-/**
- * Item discovery is a live DOM query rather than a walk over `children`, so any
- * element carrying a menuitem role joins the arrow ring — and the
- * `closest('[role="menu"]') === menuElement` test is what keeps a submenu's own
- * items out of this menu's ring.
- */
 const getMenuItems = (menuElement: HTMLDivElement | null): HTMLElement[] => {
     if (!menuElement) {
         return [];
@@ -94,7 +83,7 @@ const ContextMenuList = ({ children, label = 'Menu', size = 'md', onClose }: Con
     return (
         <div
             ref={menuRef}
-            className={cn('flex flex-col gap-1 overflow-y-auto p-1', SIZE_CLASS_NAMES[size])}
+            className={cn('flex flex-col gap-1 overflow-y-auto p-1', { sm: 'min-w-[124px]', md: 'min-w-[160px]' }[size])}
             role='menu'
             aria-label={label}
             aria-orientation='vertical'

@@ -1,4 +1,4 @@
-import { row, vec3Rows, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
+import { row, vec3Rows } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     CAMERA_SUBSECTION_TITLES,
@@ -38,7 +38,7 @@ const useCameraGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <div className={RENDER_GRID_CLASS}>
+                <div className='flex flex-col items-stretch gap-2'>
                     <CanvasOptionSelect
                         ariaLabel='Projection'
                         value={type}

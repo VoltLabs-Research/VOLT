@@ -41,20 +41,6 @@ const TABS: ReadonlyArray<ContainerDetailsTabOption> = [
     }
 ] as const;
 
-/**
- * `ContainerDetailsHeader.css`, converted. The only arm that needed re-homing is
- * `.container-details-header-tabs-row .segmented-tabs { margin-bottom: -1px }`,
- * which reached into bravais's tab control to pull it onto the header's bottom
- * rule; it is now `-mb-px` on the control itself.
- */
-const HEADER_CLASS_NAMES = 'flex flex-col border-b border-border px-6 pt-4 max-[720px]:px-4 max-[720px]:pt-3';
-const HEADER_TOP_CLASS_NAMES = 'mt-2 flex flex-row flex-wrap items-start justify-between gap-4';
-const HEADER_IDENTITY_CLASS_NAMES = 'flex min-w-0 flex-1 flex-col gap-1';
-const HEADER_NAME_CLASS_NAMES = 'm-0 text-xl font-semibold leading-[1.15] tracking-[-0.025em] break-words text-foreground';
-const HEADER_META_CLASS_NAMES = 'flex flex-row flex-wrap items-center text-[0.8125rem] leading-[1.4] text-muted';
-const HEADER_META_DOT_CLASS_NAMES = 'mx-[0.4rem] opacity-40';
-const HEADER_ACTIONS_CLASS_NAMES = 'flex shrink-0 flex-row items-center gap-2 max-[720px]:w-full';
-
 const resolveActiveTab = (pathname: string, basePath: string): ContainerDetailsTabId => {
     const normalized = pathname.replace(/\/$/, '');
 
@@ -96,7 +82,7 @@ const ContainerDetailsHeader = ({
     };
 
     return (
-        <div className={HEADER_CLASS_NAMES}>
+        <div className='flex flex-col border-b border-border px-6 pt-4 max-[720px]:px-4 max-[720px]:pt-3'>
             <div className='flex flex-row items-center gap-2'>
                 <Button
                     className='text-muted'
@@ -108,23 +94,21 @@ const ContainerDetailsHeader = ({
                     Back
                 </Button>
             </div>
-
-            <div className={HEADER_TOP_CLASS_NAMES}>
-                <div className={HEADER_IDENTITY_CLASS_NAMES}>
+            <div className='mt-2 flex flex-row flex-wrap items-start justify-between gap-4'>
+                <div className='flex min-w-0 flex-1 flex-col gap-1'>
                     <div className='flex flex-row flex-wrap items-center gap-3'>
-                        <h1 className={HEADER_NAME_CLASS_NAMES}>
+                        <h1 className='m-0 text-xl font-semibold leading-[1.15] tracking-[-0.025em] break-words text-foreground'>
                             {container.name}
                         </h1>
                         <ContainerStatusBadge status={container.status} />
                     </div>
-                    <div className={HEADER_META_CLASS_NAMES}>
+                    <div className='flex flex-row flex-wrap items-center text-[0.8125rem] leading-[1.4] text-muted'>
                         <span className='max-w-[520px] truncate'>{container.image}</span>
-                        <span className={HEADER_META_DOT_CLASS_NAMES} aria-hidden='true'>·</span>
+                        <span className='mx-[0.4rem] opacity-40' aria-hidden='true'>·</span>
                         <span>Created {createdRelative}</span>
                     </div>
                 </div>
-
-                <div className={HEADER_ACTIONS_CLASS_NAMES}>
+                <div className='flex shrink-0 flex-row items-center gap-2 max-[720px]:w-full'>
                     {contextualActions}
                     {canUpdate && isRunning && (
                         <>
@@ -174,23 +158,7 @@ const ContainerDetailsHeader = ({
                     )}
                 </div>
             </div>
-
             <div className='my-6 flex'>
-                {/*
-                  * bravais's `SegmentedTabs` emitted role='tablist'/role='tab' but was
-                  * wired to no panel — the panels here are routes rendered by an
-                  * `<Outlet>` in the parent, so a HeroUI `Tabs` would put an
-                  * `aria-controls` on the selected tab pointing at a tabpanel id that
-                  * does not exist. `ToggleButtonGroup` is the migration spec's first
-                  * choice for exactly this case and produces the same connected
-                  * segmented control.
-                  *
-                  * `disallowEmptySelection` is not optional: without it React Aria's
-                  * single-selection toggle *deselects* on a second press of the active
-                  * key, which would blank the active tab while the route stayed put.
-                  * With it, pressing the active tab re-emits the same key — matching
-                  * bravais, which called `onChange` on every click.
-                  */}
                 <ToggleButtonGroup
                     className='-mb-px'
                     size='sm'

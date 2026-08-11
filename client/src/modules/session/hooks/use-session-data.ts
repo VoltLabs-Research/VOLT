@@ -4,7 +4,7 @@ import {
     useRevokeAllOtherSessionsMutation,
     useRevokeSessionMutation
 } from './queries';
-import { closeModal, openModal } from '@/shared/ui/modal';
+import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import { confirmAction, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { ActiveSession } from '@volt/contracts/modules/session/domain';

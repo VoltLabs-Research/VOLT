@@ -7,24 +7,6 @@ import ExpressionSelectStageEditor from './stage-editors/ExpressionSelectStageEd
 import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor';
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import {
-    PIPELINE_CLASS,
-    PIPELINE_LIST_CLASS,
-    PLUGIN_CONFIG_PANEL_CLASS,
-    PLUGIN_POPOVER_CONTENT_CLASS,
-    STAGE_ACTIONS_CLASS,
-    STAGE_ACTION_CLASS,
-    STAGE_ACTION_REMOVE_CLASS,
-    STAGE_CLASS,
-    STAGE_DRAGGING_CLASS,
-    STAGE_GEAR_CLASS,
-    STAGE_GRIP_CLASS,
-    STAGE_HEADER_CLASS,
-    STAGE_HEADER_DISABLED_CLASS,
-    STAGE_ICON_CLASS,
-    STAGE_LABEL_CLASS,
-    STAGE_SELECT_CLASS
-} from './pipeline-classes';
 import { memo, useEffect, useState } from 'react';
 import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -65,7 +47,6 @@ const stageLabel = (stage: PipelineStage, pluginNameById: Map<string, string>): 
     return STAGE_LABELS[stage.type];
 };
 
-// Stages that restyle the scene client-side can be toggled before the pipeline ever runs.
 const isLiveToggleStage = (stage: PipelineStage): boolean =>
     stage.type === 'color-coding'
     || stage.type === 'expression-select';
@@ -143,14 +124,14 @@ const CanvasPipeline = ({
     }
 
     return (
-        <div className={PIPELINE_CLASS}>
-            <div className={PIPELINE_LIST_CLASS}>
+        <div className='flex flex-col gap-2 p-1.5'>
+            <div className='flex flex-col gap-1'>
                 {stages.map((stage) => {
                     const label = stageLabel(stage, pluginNameById);
                     const canToggle = isLiveToggleStage(stage) || stage.executed;
 
                     return (
-                        <div className={cn(STAGE_CLASS, dragId === stage.id && STAGE_DRAGGING_CLASS)}
+                        <div className={cn('group overflow-hidden rounded-lg border border-border', dragId === stage.id && 'opacity-50')}
                             key={stage.id}
                             draggable
                             onDragStart={() => setDragId(stage.id)}
@@ -158,55 +139,47 @@ const CanvasPipeline = ({
                             onDragOver={(e) => { e.preventDefault(); }}
                             onDrop={() => handleDrop(stage.id)}
                         >
-                            <div className={cn(STAGE_HEADER_CLASS, !stage.enabled && STAGE_HEADER_DISABLED_CLASS)}>
-                                <span className={STAGE_GRIP_CLASS} aria-hidden='true'>
+                            <div className={cn('flex flex-row items-center gap-2 px-1.5 py-1', !stage.enabled && 'opacity-55')}>
+                                <span className='flex cursor-grab items-center text-muted' aria-hidden='true'>
                                     <GripVertical size={12} />
                                 </span>
-
                                 <ContextMenuPopover
                                     id={`canvas-pipeline-stage-config-${stage.id}`}
                                     triggerAction='click'
                                     placement='left-start'
                                     ariaLabel={`${label} settings`}
-                                    className={PLUGIN_CONFIG_PANEL_CLASS}
+                                    className='min-w-[min(22rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))]'
                                     trigger={
                                         <button
                                             type='button'
-                                            className={STAGE_SELECT_CLASS}
+                                            className='flex min-w-0 flex-1 cursor-pointer select-none items-center gap-1.5 border-none bg-transparent p-0 text-inherit'
                                             aria-label={`${label} settings`}
                                         >
-                                            <span className={STAGE_ICON_CLASS}>{STAGE_ICONS[stage.type]}</span>
-                                            {/* bravais `Text tone='secondary'|'muted'` — both collapse to `text-muted` (spec §3a). */}
-                                            <span className={cn(STAGE_LABEL_CLASS, 'text-muted')}>
+                                            <span className='flex items-center text-muted'>{STAGE_ICONS[stage.type]}</span>
+                                            <span className={cn('min-w-0 flex-1 truncate text-left text-sm', 'text-muted')}>
                                                 {label}
                                             </span>
-                                            <span className={STAGE_GEAR_CLASS} aria-hidden='true'>
+                                            <span className='ml-auto flex items-center text-muted opacity-0 transition-opacity duration-[120ms] ease-out group-hover:opacity-100 group-focus-within:opacity-100' aria-hidden='true'>
                                                 <Settings size={12} />
                                             </span>
                                         </button>
                                     }
                                     content={(close) => (
-                                        <div className={PLUGIN_POPOVER_CONTENT_CLASS}>
+                                        <div className='flex min-w-[min(21rem,calc(100vw-3rem))] max-h-[min(70vh,32rem)] flex-col overflow-hidden origin-top-right'>
                                             {renderStageEditor(stage, close)}
                                         </div>
                                     )}
                                 />
-
-                                <div className={STAGE_ACTIONS_CLASS}>
+                                <div className='flex shrink-0 flex-row items-center gap-1'>
                                     <button
                                         type='button'
-                                        className={cn(STAGE_ACTION_CLASS, STAGE_ACTION_REMOVE_CLASS)}
+                                        className={cn('flex cursor-pointer items-center rounded-lg border-none bg-transparent p-0.5 text-muted hover:text-foreground', 'opacity-0 transition-opacity duration-[120ms] ease-out hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100')}
                                         onClick={() => removeStage(stage.id, trajectoryId)}
                                         aria-label='Remove stage'
                                         title='Remove'
                                     >
                                         <Trash2 size={12} aria-hidden='true' />
                                     </button>
-                                    {/*
-                                      * `title` is not on HeroUI's Checkbox prop surface, so the
-                                      * hover hint moves to a wrapping span — a Tooltip here would
-                                      * add a tab stop to every stage row.
-                                      */}
                                     <span
                                         className='inline-flex'
                                         title={canToggle ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}

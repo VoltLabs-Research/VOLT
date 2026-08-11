@@ -20,16 +20,6 @@ const resolveFullName = (peer: WorkspacePresenceUser): string => {
     return peer.email ?? 'Peer';
 };
 
-/**
- * bravais's `Avatar size='xs'` was 1.5rem with 0.625rem initials, and the button
- * around it was a 2px transparent ring that turned `--color-primary` (the
- * foreground, under VOLT's monochrome accent) when that peer's workspace was the
- * one on screen. The button stays a plain `<button>` rather than a HeroUI one:
- * HeroUI's `Button` has no `title`, and its own padding/size variants would have to
- * be unset to get back to a bare 24px ring.
- */
-const AVATAR_BUTTON_CLASS = 'cursor-pointer rounded-full border-2 border-transparent bg-transparent p-0 leading-none transition-colors duration-[120ms] ease-out';
-
 const renderAvatarButton = (
     user: WorkspacePresenceUser,
     options: {
@@ -51,7 +41,7 @@ const renderAvatarButton = (
             key={user.id}
             type='button'
             className={cn(
-                AVATAR_BUTTON_CLASS,
+                'cursor-pointer rounded-full border-2 border-transparent bg-transparent p-0 leading-none transition-colors duration-[120ms] ease-out',
                 options.isActive && 'border-foreground',
                 options.isSelf && 'shadow-[0_0_0_1px_var(--foreground)_inset]'
             )}

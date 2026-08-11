@@ -4,13 +4,6 @@ import RequestsAreaChart from '@/modules/team/components/secret-key/shared/Reque
 import { renderRequestsAreaTooltip } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import { SecretKeyAsyncState } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
 import SecretKeyStatCard from '@/modules/team/components/secret-key/shared/SecretKeyStatCard';
-import {
-    SECRET_KEY_PAGE_CARDS_CLASS,
-    SECRET_KEY_PAGE_CHARTS_CLASS,
-    SECRET_KEY_PAGE_CLASS,
-    SECRET_KEY_PAGE_MAIN_CLASS,
-    SECRET_KEY_USAGE_BACK_CLASS
-} from '@/modules/team/components/secret-key/shared/secret-key-page-styles';
 import RecentRequestsTable from './RecentRequestsTable';
 import StatusCodesPieChart from './StatusCodesPieChart';
 import UsageSkeleton from './UsageSkeleton';
@@ -57,7 +50,7 @@ export default function SecretKeyUsage() {
         <Button
             variant='ghost'
             size='sm'
-            className={SECRET_KEY_USAGE_BACK_CLASS}
+            className='min-h-10 hover:text-accent focus-visible:text-accent'
             onPress={() => navigate(-1)}
         >
             <ArrowLeft size={18} aria-hidden='true' />
@@ -104,11 +97,7 @@ export default function SecretKeyUsage() {
         {
             icon: Clock,
             title: 'Last Used',
-            /*
-             * `smallText` used to add `.secret-key-page-card--small`, a class defined in
-             * no stylesheet in the app — so it never did anything. Dropped rather than
-             * ported (migration spec §5b.4).
-             */
+
             value: usage.key.lastUsedAt
                 ? formatDistanceToNow(new Date(usage.key.lastUsedAt), { addSuffix: true })
                 : 'Never'
@@ -116,8 +105,8 @@ export default function SecretKeyUsage() {
     ];
 
     return (
-        <div className={SECRET_KEY_PAGE_CLASS}>
-            <div className={SECRET_KEY_PAGE_MAIN_CLASS}>
+        <div className='h-full overflow-scroll text-foreground'>
+            <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
                 <div className='flex flex-col gap-2'>
                     <div className='flex flex-row items-center gap-4'>
                         {backButton}
@@ -127,8 +116,7 @@ export default function SecretKeyUsage() {
                         {usage.stats.totalRequests.toLocaleString()} total requests
                     </p>
                 </div>
-
-                <div className={SECRET_KEY_PAGE_CARDS_CLASS}>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
                     {cards.map((card) => (
                         <SecretKeyStatCard
                             key={card.title}
@@ -139,8 +127,7 @@ export default function SecretKeyUsage() {
                         />
                     ))}
                 </div>
-
-                <div className={SECRET_KEY_PAGE_CHARTS_CLASS}>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-6 min-[1440px]:gap-8'>
                     <ChartContainer
                         icon={Activity}
                         title='Hourly Requests'
@@ -165,7 +152,6 @@ export default function SecretKeyUsage() {
                             yAxisAllowDecimals={false}
                         />
                     </ChartContainer>
-
                     <ChartContainer
                         icon={BarChart3}
                         title='Top Endpoints'
@@ -184,7 +170,6 @@ export default function SecretKeyUsage() {
                             yAxisTickLine={false}
                         />
                     </ChartContainer>
-
                     <ChartContainer
                         icon={PieChartIcon}
                         title='Status Codes'
@@ -198,7 +183,6 @@ export default function SecretKeyUsage() {
                     >
                         <StatusCodesPieChart data={statusData} />
                     </ChartContainer>
-
                     <ChartContainer
                         icon={List}
                         title='Recent Requests'

@@ -7,7 +7,6 @@ interface CanvasToolbarActionsProps {
     onDownloadAnalysis: () => void;
 }
 
-/** Toolbar actions for the current selection. */
 const CanvasToolbarActions = ({
     canDownloadAnalysis,
     isDownloadingAnalysis,

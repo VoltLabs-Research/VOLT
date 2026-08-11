@@ -8,24 +8,6 @@ import Terminal from '@/shared/ui/components/Terminal';
 import type { TerminalHandle } from '@/shared/ui/components/Terminal';
 import type { Container } from '@volt/contracts/modules/container/domain';
 
-/**
- * `ContainerTerminal.css`, converted.
- *
- * Two rules in it were already inert and are not carried over. The overlay's
- * `backdrop-filter: var(--glass-blur)` resolves to `none` — glass was flattened
- * onto solid surfaces before this migration and the token has been `none` ever
- * since. And the 768px arm's `border-radius: 0` had no radius to reset: the window
- * never declared one.
- *
- * `box-shadow: var(--shadow-elevated)` is HeroUI's `--overlay-shadow`, which is a
- * real custom property in `:root` (not folded into a utility), so it can be read
- * directly by an arbitrary shadow.
- */
-const OVERLAY_CLASS_NAMES = 'fixed inset-0 z-[1000] flex items-center justify-center bg-overlay';
-const WINDOW_CLASS_NAMES = 'flex flex-col overflow-hidden border border-border shadow-[var(--overlay-shadow)] w-[90vw] h-[80vh] max-[768px]:w-screen max-[768px]:h-[100dvh]';
-const WINDOW_EMBEDDED_CLASS_NAMES = 'flex flex-col overflow-hidden w-full h-full border-none shadow-none';
-const HEADER_CLASS_NAMES = 'flex flex-row items-center justify-between border border-border px-4 py-3';
-
 interface ContainerTerminalProps {
     container: Pick<Container, '_id' | 'name'>;
     onClose?: () => void;
@@ -46,8 +28,6 @@ const TERMINAL_ERROR_MESSAGE_BY_CODE: Record<string, string> = {
     STREAM_ERROR: 'Connection lost — refresh to reconnect.'
 };
 
-// The shared terminal session hook hands errors over as `unknown`; our server only
-// ever emits ContainerTerminalSocketError on this channel.
 const resolveTerminalErrorMessage = (error: unknown): string => {
     const { code, message } = error as ContainerTerminalSocketError;
 
@@ -76,16 +56,14 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
     });
 
     const content = (
-        <div className={embedded ? WINDOW_EMBEDDED_CLASS_NAMES : WINDOW_CLASS_NAMES}>
+        <div className={embedded
+            ? 'flex flex-col overflow-hidden w-full h-full border-none shadow-none'
+            : 'flex flex-col overflow-hidden border border-border shadow-[var(--overlay-shadow)] w-[90vw] h-[80vh] max-[768px]:w-screen max-[768px]:h-[100dvh]'}>
             {!embedded && (
-                <div className={HEADER_CLASS_NAMES}>
+                <div className='flex flex-row items-center justify-between border border-border px-4 py-3'>
                     <div className='flex flex-row items-center gap-2 text-[0.9rem] text-foreground'>
                         <span>root@{container.name}:~</span>
                     </div>
-                    {/*
-                      * HeroUI's `Button` takes no `title`; the native tooltip that
-                      * mirrored the aria-label is carried by the surrounding `Tooltip`.
-                      */}
                     <Tooltip>
                         <Button variant='ghost' isIconOnly size='sm' aria-label='Close terminal' onPress={onClose}>
                             <X size={20} />
@@ -103,7 +81,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
     if (embedded) return content;
 
     return (
-        <div className={OVERLAY_CLASS_NAMES} role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
+        <div className='fixed inset-0 z-[1000] flex items-center justify-center bg-overlay' role='dialog' aria-modal='true' aria-label={`Terminal for ${container.name}`}>
             {content}
         </div>
     );

@@ -1,15 +1,9 @@
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import ArgumentField from './ArgumentField';
 import { ANY_PLUGIN_KEY_OPTION, ANY_PLUGIN_OPTION } from './argument-definition-constants';
-import { cn } from '@heroui/react';
 import { isRecord } from '@/shared/utils/type-guards';
 import DashedActionBox from '@/modules/plugin/components/plugin/DashedActionBox';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
-import {
-    ARGUMENT_ROW_DELETE_CLASS,
-    ARGUMENT_ROW_NESTED_CLASS,
-    ARGUMENT_ROW_SUBBLOCK_CLASS
-} from '@/modules/plugin/components/plugin/NodeEditor/editors/ArgumentsEditor/argument-editor-styles';
 import { Plus, Trash2 } from 'lucide-react';
 import type { IPluginReferenceArgumentMapping } from '@volt/contracts/modules/plugin/workflow';
 
@@ -120,21 +114,16 @@ const PluginReferenceMappingsEditor = ({
                     }, ...targetArgumentOptions];
                 const hasTargetOptions = targetOptions.length > 0;
 
-                /*
-                 * `group` is what `.argument-row:hover .argument-row-delete` needed: the
-                 * trash button is revealed from its own block, which is the nearest thing
-                 * to a row here.
-                 */
                 return (
                     <div
                         key={`${fieldPrefix}-mapping-${mappingIndex}`}
-                        className={cn('group', ARGUMENT_ROW_SUBBLOCK_CLASS, ARGUMENT_ROW_NESTED_CLASS)}
+                        className='group p-1 mt-2'
                     >
                         <div className='mb-2 flex flex-row items-center justify-between gap-2'>
                             <span className='text-xs text-muted'>Mapping {mappingIndex + 1}</span>
                             <button
                                 type='button'
-                                className={ARGUMENT_ROW_DELETE_CLASS}
+                                className='inline-flex size-7 shrink-0 cursor-pointer flex-row items-center justify-center rounded-md border-none bg-transparent p-0 text-muted opacity-0 transition-[opacity,color,background-color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-danger focus-visible:opacity-100 focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--focus)] group-hover:opacity-100 group-focus-within:opacity-100'
                                 onClick={() => removeMapping(mappingIndex)}
                                 aria-label={`Delete mapping ${mappingIndex + 1}`}
                                 title='Delete mapping'

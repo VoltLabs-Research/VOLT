@@ -1,5 +1,5 @@
 import { useDownloadTrajectoryMutation } from './queries';
-import { isAccessDeniedError } from '@/shared/errors/core';
+import { isAccessDeniedError } from '@/shared/errors/core/report-error';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback } from 'react';

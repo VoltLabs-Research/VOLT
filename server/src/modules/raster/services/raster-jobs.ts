@@ -3,7 +3,7 @@ import daemonAnalysisCompletionService from '@modules/cluster/services/daemon/Da
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';

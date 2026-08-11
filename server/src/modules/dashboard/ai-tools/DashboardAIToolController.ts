@@ -32,13 +32,13 @@ export default class DashboardAIToolController extends AIToolController {
 
     @AITool({
         name: 'global_search',
-        description: 'Search across the current team for trajectories, analyses, containers, plugins, teams and chats by name/content. '
+        description: 'Search across the current team for trajectories, analyses, containers, plugins and teams by name/content. '
             + 'Returns matches grouped by type, each with a deepLink the UI can navigate to.',
         parameters: typia.llm.parameters<GlobalSearchInput>(),
         validate: typia.createValidate<GlobalSearchInput>()
     })
     async globalSearch(input: GlobalSearchInput & AIToolScope) {
-        const { analyses, containers, trajectories, teams, plugins, chats } = await this.#service.getGlobalSearch(input);
+        const { analyses, containers, trajectories, teams, plugins } = await this.#service.getGlobalSearch(input);
 
         const trajectoryItems = trajectories.map((trajectory) => ({
             ...trajectory,
@@ -85,29 +85,20 @@ export default class DashboardAIToolController extends AIToolController {
             deepLink: '/dashboard/my-team'
         }));
 
-        const chatItems = chats.map((chat) => ({
-            ...chat,
-            id: chat._id,
-            name: chat.isGroup ? chat.groupName : undefined,
-            deepLink: `/dashboard/messages/${chat._id}`
-        }));
-
         const total = trajectoryItems.length
             + analysisItems.length
             + containerItems.length
             + pluginItems.length
-            + teamItems.length
-            + chatItems.length;
+            + teamItems.length;
 
         return {
-            summary: `Found ${total} result(s) across trajectories, analyses, containers, plugins, teams and chats.`,
+            summary: `Found ${total} result(s) across trajectories, analyses, containers, plugins and teams.`,
             data: {
                 trajectories: trajectoryItems,
                 analyses: analysisItems,
                 containers: containerItems,
                 plugins: pluginItems,
-                teams: teamItems,
-                chats: chatItems
+                teams: teamItems
             }
         };
     }

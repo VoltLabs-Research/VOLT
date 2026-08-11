@@ -13,21 +13,11 @@ import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/events/trajectory';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
-import { useCanvasCanCollaborate } from '@/modules/canvas/api/access';
+import { useCanvasCanCollaborate } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { useCallback } from 'react';
 
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { Job } from '@volt/contracts/modules/jobs/domain';
-
-/*
- * Payloads broadcast by our own VOLT server: `EventBroadcastSocketModule`
- * re-emits the domain event payload verbatim, so these mirror the server event
- * contracts (`server/src/shared/contracts/events/Analysis*Payload.ts`) narrowed
- * to the fields the canvas sidebar consumes. `@volt/contracts` does not model
- * socket payloads yet, so they are declared here — once, at the subscription —
- * and trusted from there on. Declared as type aliases rather than interfaces so
- * they stay assignable to the `Record<string, unknown>` cache helpers.
- */
 
 type AnalysisCreatedSocketPayload = {
     analysisId: string;
@@ -72,11 +62,6 @@ interface UseSidebarSceneSocketSyncInput {
     announceAnalysisStatus: (payload: AnalysisStatusSocketPayload) => void;
 }
 
-/**
- * Mirrors the analysis and scene-artifact events broadcast for the open
- * trajectory into the local query caches, so the sidebar reflects work done by
- * the daemon (or by a collaborator) without refetching everything.
- */
 const useSidebarSceneSocketSync = ({
     trajectoryId,
     trajectoryName,
@@ -109,8 +94,6 @@ const useSidebarSceneSocketSync = ({
             fallbackAnalyses: analyses
         }));
 
-        // An analysis we have never seen means our listing is stale, not that a
-        // single entity needs patching.
         if (!isKnown) {
             void queryClient.invalidateQueries({ queryKey: analysisQuery.QUERY_KEYS.lists() });
             void queryClient.invalidateQueries({
@@ -139,17 +122,6 @@ const useSidebarSceneSocketSync = ({
         const analysisId = resolveJobAnalysisId(job);
         if (!analysisId) return;
 
-        /*
-         * One job's status is not the analysis's status. A queued job says nothing
-         * about the analysis as a whole — its siblings may already be running — so
-         * forwarding it verbatim demoted a running analysis back to pending. With a
-         * multi-frame run there is always another queued job arriving, which is what
-         * pinned the badge to "queued" while the artifacts visibly progressed.
-         *
-         * A running job is the one unambiguous signal: whatever owns it is running.
-         * Completion and failure stay with `analysis.status.changed`, which the server
-         * derives from the whole job session rather than from a single job.
-         */
         if (!isRunningJobStatus(job.status)) return;
 
         patchAnalysisStatus({

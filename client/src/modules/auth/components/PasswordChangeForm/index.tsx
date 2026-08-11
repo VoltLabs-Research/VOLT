@@ -110,7 +110,6 @@ const PasswordChangeForm = ({
                     autoCorrect: 'off'
                 }}
             />
-
             <FormFieldRHF
                 name='confirmPassword'
                 control={control}
@@ -128,12 +127,6 @@ const PasswordChangeForm = ({
                 }}
             />
 
-            {/*
-              * bravais's inline `Callout` was a live region (`role='status'` +
-              * `aria-live='polite'`), which is how a failed password change was
-              * announced. HeroUI's `Alert` sets no role of its own, so both are stated
-              * here explicitly.
-              */}
             {submitError && (
                 <Alert
                     status='warning'

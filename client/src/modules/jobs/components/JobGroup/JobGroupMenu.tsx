@@ -12,16 +12,6 @@ interface JobGroupMenuProps {
     onRetryFailedJobs: () => void;
 };
 
-/**
- * A right-click menu, so it stays on the app's own `ContextMenuPopover` rather than
- * moving to HeroUI's `Dropdown`: the panel anchors to the pointer's coordinate, not
- * to an element, and opening it needs `preventDefault`/`stopPropagation` on a real
- * `contextmenu` event — neither of which React Aria's press model gives.
- *
- * `isLoading` per item is gone because `AsyncContextMenuItem` already awaits
- * `onClick` and shows its own spinner; `loadingAction` still disables both entries
- * while either mutation is in flight, which is what it was really for.
- */
 const JobGroupMenu = ({
     trajectoryId,
     trigger,

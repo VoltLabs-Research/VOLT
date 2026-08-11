@@ -2,14 +2,6 @@ import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import AIMessageItem from '@/modules/ai/components/AIConversationThread/AIMessageItem';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
 import useNormalizedMessages from '@/modules/ai/components/AIConversationThread/use-normalized-messages';
-import {
-    MESSAGE_ROW,
-    MESSAGE_ROW_ASSISTANT,
-    THREAD_LIST,
-    THREAD_REGION,
-    THREAD_STARTER,
-    THREAD_STARTER_TITLE
-} from '@/modules/ai/components/AIConversationThread/thread-styles';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { Skeleton, cn } from '@heroui/react';
@@ -31,8 +23,8 @@ interface AIConversationThreadProps {
 }
 
 const renderPromptStarter = () => (
-    <div className={THREAD_STARTER}>
-        <p className={THREAD_STARTER_TITLE}>
+    <div className='flex flex-1 flex-col items-center justify-center gap-4 px-4 py-6'>
+        <p className='text-center text-3xl font-medium text-foreground'>
             Ready when you are.
         </p>
     </div>
@@ -83,7 +75,7 @@ const AIConversationThread = ({
     let autoScrollDependency = '';
     if (showStandaloneTyping) {
         renderAfter = (
-            <div className={cn(MESSAGE_ROW, MESSAGE_ROW_ASSISTANT, 'gap-1')}>
+            <div className={cn('group/message flex min-w-0 max-w-full flex-col gap-4 max-md:max-w-[90%] [.ai-floating-assistant_&]:max-w-[92%] mr-auto items-start', 'gap-1')}>
                 <ThinkingBubble />
             </div>
         );
@@ -96,7 +88,7 @@ const AIConversationThread = ({
         <AutoScrollList
             items={normalizedMessages}
             isLoading={isLoading}
-            className={THREAD_LIST}
+            className='mx-auto w-[min(880px,100%)] gap-3 px-4 pt-[1.2rem] pb-3 max-md:px-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] [.ai-floating-assistant_&]:p-3'
             getItemKey={(message) => message.id}
             autoScrollDependency={autoScrollDependency}
             autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
@@ -113,7 +105,7 @@ const AIConversationThread = ({
     }
 
     return (
-        <section className={THREAD_REGION} aria-label='Conversation messages'>
+        <section className='flex min-h-0 flex-1 flex-col' aria-label='Conversation messages'>
             {threadContent}
 
             <span className='sr-only'

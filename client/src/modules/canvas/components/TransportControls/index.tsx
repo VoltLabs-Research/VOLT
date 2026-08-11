@@ -2,7 +2,7 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
 import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Button, Tooltip } from '@heroui/react';
 
@@ -11,15 +11,6 @@ interface TransportControlsProps {
     currentTimestep: number | undefined;
     availableTimesteps: number[];
 }
-
-/**
- * `.canvas-transport-mobile-step-controls` / `-play-control` shrank every button to
- * 30px under 768px, and the step group additionally picked up the canvas floating
- * surface (12px radius over `--surface-secondary`) from `CanvasPage.css`. Both are
- * expressed here as descendant variants on the group so the shared `renderButton`
- * stays a single function.
- */
-const MOBILE_GROUP_CLASS = 'max-md:flex-none max-md:gap-0.5 max-md:[&_button]:size-[1.875rem] max-md:[&_button]:min-h-[1.875rem]';
 
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
@@ -41,48 +32,48 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
     }, [availableTimesteps, rangeStart, rangeEnd]);
     const currentIndex = currentTimestep !== undefined ? timesteps.indexOf(currentTimestep) : -1;
 
-    const jumpToStart = () => {
+    const jumpToStart = useCallback(() => {
         if (timesteps.length === 0) return;
         setCurrentTimestep(timesteps[0]);
-    };
+    }, [timesteps, setCurrentTimestep]);
 
-    const jumpToEnd = () => {
+    const jumpToEnd = useCallback(() => {
         if (timesteps.length === 0) return;
         setCurrentTimestep(timesteps[timesteps.length - 1]);
-    };
+    }, [timesteps, setCurrentTimestep]);
 
-    const jumpBack10 = () => {
+    const jumpBack10 = useCallback(() => {
         if (timesteps.length === 0) return;
         const baseIndex = currentIndex === -1 ? 0 : currentIndex;
         const nextIndex = Math.max(0, baseIndex - 10);
         setCurrentTimestep(timesteps[nextIndex]);
-    };
+    }, [timesteps, currentIndex, setCurrentTimestep]);
 
-    const jumpForward10 = () => {
+    const jumpForward10 = useCallback(() => {
         if (timesteps.length === 0) return;
         const baseIndex = currentIndex === -1 ? 0 : currentIndex;
         const nextIndex = Math.min(timesteps.length - 1, baseIndex + 10);
         setCurrentTimestep(timesteps[nextIndex]);
-    };
+    }, [timesteps, currentIndex, setCurrentTimestep]);
 
-    const prevTimestep = () => {
+    const prevTimestep = useCallback(() => {
         if (timesteps.length === 0) return;
         const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
         setCurrentTimestep(timesteps[nextIndex]);
-    };
+    }, [timesteps, currentIndex, setCurrentTimestep]);
 
-    const nextTimestep = () => {
+    const nextTimestep = useCallback(() => {
         if (timesteps.length === 0) return;
         const nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, timesteps.length - 1);
         setCurrentTimestep(timesteps[nextIndex]);
-    };
+    }, [timesteps, currentIndex, setCurrentTimestep]);
 
-    const handleTogglePlay = () => {
+    const handleTogglePlay = useCallback(() => {
         togglePlay({
             trajectoryId,
             timesteps: availableTimesteps
         });
-    };
+    }, [togglePlay, trajectoryId, availableTimesteps]);
 
     const buttons = useMemo(() => ([
         {
@@ -129,13 +120,6 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
         }
     ]), [isPlaying, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
 
-    /*
-     * The `title` these buttons carried becomes a `Tooltip`, because HeroUI's `Button`
-     * has a closed prop interface with no `title` (spec §5b.8). The Button is the
-     * Tooltip's direct child rather than being wrapped in `Tooltip.Trigger` — the
-     * idiom `ThemeToggleButton` established — so no extra `role='button'` element and
-     * no extra tab stop appears in a seven-control transport bar.
-     */
     const renderButton = (btn: typeof buttons[number]) => (
         <Tooltip key={btn.action}>
             <Button
@@ -166,11 +150,11 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
                 {buttons.map(renderButton)}
             </div>
             <div className='hidden max-md:contents'>
-                <div className={`canvas-transport-mobile-step-controls flex flex-row items-center max-md:rounded-xl max-md:bg-surface-secondary ${MOBILE_GROUP_CLASS}`}>
+                <div className='canvas-transport-mobile-step-controls flex flex-row items-center max-md:rounded-xl max-md:bg-surface-secondary max-md:flex-none max-md:gap-0.5 max-md:[&_button]:size-[1.875rem] max-md:[&_button]:min-h-[1.875rem]'>
                     {renderButton(previousButton)}
                     {renderButton(nextButton)}
                 </div>
-                <div className={`flex flex-row items-center ${MOBILE_GROUP_CLASS}`}>
+                <div className='flex flex-row items-center max-md:flex-none max-md:gap-0.5 max-md:[&_button]:size-[1.875rem] max-md:[&_button]:min-h-[1.875rem]'>
                     {renderButton(playButton)}
                 </div>
             </div>

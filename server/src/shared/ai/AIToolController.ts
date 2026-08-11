@@ -1,23 +1,13 @@
 import { jsonSchema, tool } from 'ai';
 import type { Tool, ToolSet } from 'ai';
-import type { IValidation } from 'typia';
 import { getAITools } from '@shared/ai/tool';
 import type { AIToolDefinition } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
+import { formatValidationErrors } from '@shared/infrastructure/utilities/typia-validation-errors';
 
 type ToolHandler = (input: Record<string, unknown>) => unknown;
 
 type ValidationResult = { success: true; value: unknown } | { success: false; error: Error };
-
-/** Turns typia's failure report into the single Error the AI SDK feeds back to the model. */
-const messageOf = (errors: IValidation.IError[]): string => {
-    const details = errors
-        .slice(0, 5)
-        .map((error) => `${error.path.replace(/^\$input\.?/, '') || 'input'} expected ${error.expected}`)
-        .join('; ');
-
-    return `Invalid tool input: ${details}${errors.length > 5 ? ` (+${errors.length - 5} more)` : ''}`;
-};
 
 /**
  * Base class for a module's AI tool surface. Subclasses declare one decorated
@@ -66,7 +56,7 @@ export default abstract class AIToolController {
                 }
                 : {
                     success: false,
-                    error: new Error(messageOf(result.errors))
+                    error: new Error(`Invalid tool input: ${formatValidationErrors(result.errors)}`)
                 };
         };
 

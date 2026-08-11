@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -18,7 +19,7 @@ export default class TeamInvitationController extends Controller {
     send(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: SendTeamInvitationInput
+        @Body(schemaBody(typia.createValidate<SendTeamInvitationInput>())) body: SendTeamInvitationInput
     ){
         return this.#service.send(teamId, userId, body);
     }
@@ -47,7 +48,7 @@ export default class TeamInvitationController extends Controller {
     updateById(
         @Param('teamId') teamId: string,
         @Param('invitationId') invitationId: string,
-        @Body() body: UpdateTeamInvitationInput
+        @Body(schemaBody(typia.createValidate<UpdateTeamInvitationInput>())) body: UpdateTeamInvitationInput
     ){
         return this.#service.updateById(teamId, invitationId, body);
     }
@@ -58,7 +59,7 @@ export default class TeamInvitationController extends Controller {
         @Param('teamId') teamId: string,
         @Param('invitationId') invitationId: string,
         @CurrentUser() userId: string,
-        @Body() body: TeamInvitationStatusInput
+        @Body(schemaBody(typia.createValidate<TeamInvitationStatusInput>())) body: TeamInvitationStatusInput
     ) {
         return this.#service.updateStatus(invitationId, userId, body, teamId);
     }
@@ -72,7 +73,7 @@ export default class TeamInvitationController extends Controller {
     updateStatusPublic(
         @Param('invitationId') invitationId: string,
         @CurrentUser() userId: string,
-        @Body() body: TeamInvitationStatusInput
+        @Body(schemaBody(typia.createValidate<TeamInvitationStatusInput>())) body: TeamInvitationStatusInput
     ){
         return this.#service.updateStatus(invitationId, userId, body);
     }

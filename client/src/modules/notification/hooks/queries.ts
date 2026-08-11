@@ -1,5 +1,6 @@
 import service from '../api/notification-service';
-import { createMutation, createPaginatedQuery } from '@/shared/query';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createPaginatedQuery } from '@/shared/query/create-paginated-query';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 const BASE_KEY = 'notifications';

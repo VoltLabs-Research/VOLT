@@ -14,7 +14,7 @@ import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/contracts/types/TeamClusterObjectGateway';
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { pipeline } from 'node:stream/promises';

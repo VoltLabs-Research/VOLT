@@ -71,14 +71,14 @@ const useResizable = ({
     });
     const isHorizontal = direction === ResizeDirection.Horizontal;
 
-    const clamp = (value: number) => Math.max(minSize, Math.min(maxSize, value));
+    const clamp = useCallback((value: number) => Math.max(minSize, Math.min(maxSize, value)), [minSize, maxSize]);
 
     const applySize = useCallback((nextSize: number) => {
         const resolvedSize = clamp(nextSize);
         setSize(resolvedSize);
         persistSize(storageKey, resolvedSize);
         onResize?.(resolvedSize);
-    }, [onResize, minSize, maxSize, storageKey]);
+    }, [clamp, onResize, storageKey]);
 
     const resetSize = useCallback(() => {
         applySize(initialSize);

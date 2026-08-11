@@ -4,10 +4,8 @@ import storagePlacementService from '@modules/cluster/services/storage/StoragePl
 import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type {
-    IStoragePlacementService,
-    ITeamClusterObjectGatewayClient
-} from '@shared/contracts/ports';
+import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import logger from '@shared/infrastructure/logger';
 
 /**

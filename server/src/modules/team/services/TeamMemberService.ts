@@ -4,7 +4,7 @@ import TeamMember from '@modules/team/models/TeamMember';
 import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IMemberContentCounter } from '@shared/contracts/ports';
+import type { IMemberContentCounter } from '@shared/contracts/ports/IMemberContentCounter';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMemberContentCounter';
 import trajectoryMemberContentCounter from '@modules/trajectory/services/TrajectoryMemberContentCounter';

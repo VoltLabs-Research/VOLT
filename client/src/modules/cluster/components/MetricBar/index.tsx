@@ -16,11 +16,7 @@ const MetricBar = ({
     const filledSegments = Math.floor((value / maxValue) * segments);
 
     return (
-        /*
-         * `--color-border-soft` was one of bravais's names; it lives on only in the
-         * temporary compatibility shim, which is deleted with the last component
-         * stylesheet (spec §5b.1). HeroUI's own token is `--border`.
-         */
+
         <div className='flex gap-[0.1rem] rounded-full overflow-hidden'
             style={{
                 height: 6,

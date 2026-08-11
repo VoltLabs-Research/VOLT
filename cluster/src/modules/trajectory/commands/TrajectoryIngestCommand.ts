@@ -19,7 +19,7 @@ import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@core/constants/queue-names';
-import type { FrameProcessingQueueJobPayload } from '@shared/contracts';
+import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import { parseTrajectoryMetadata, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import { mapLimited } from '@shared/application/utilities/map-limited';

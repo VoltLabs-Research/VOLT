@@ -8,7 +8,7 @@ import { insertSimulationCells } from '@modules/simulation-cell/services/Simulat
 
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 import type { TrajectoryFrame } from '@shared/contracts/types/Trajectory';

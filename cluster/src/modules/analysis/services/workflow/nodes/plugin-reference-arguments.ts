@@ -3,7 +3,7 @@ import type {
     WorkflowDefinition,
     WorkflowPluginReferenceArgumentMapping,
     WorkflowPluginReferenceSelection
-} from '@shared/contracts';
+} from '@shared/contracts/types/http-workflow';
 import type { WorkflowNodeOutput, WorkflowValue } from '@shared/contracts/types/workflow.types';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import type { WorkflowPluginReferenceValueWithSelections } from '@modules/analysis/services/workflow/plugin-node-executions';

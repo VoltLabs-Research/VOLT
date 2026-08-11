@@ -1,4 +1,5 @@
-import { createService, get, post } from '@/app/core/http/utils/create-service';
+import { createService, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 interface ColorCodingPayload {
     property: string;
@@ -41,9 +42,11 @@ export interface ColorCodingStats {
     max: number;
 }
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
-    getProperties: get<GetColorCodingPropertiesInput, ColorCodingProperties>(
-        '/trajectories/:trajectoryId/color-codings/properties',
+    getProperties: routes.route<GetColorCodingPropertiesInput, ColorCodingProperties>(
+        trajectoryRoutes.colorCodingProperties,
         {
             query: ({ timestep, analysisId }) => ({
                 timestep,
@@ -51,11 +54,11 @@ const endpoints = {
             })
         }
     ),
-    getStats: get<GetColorCodingStatsInput, ColorCodingStats>(
-        '/trajectories/:trajectoryId/color-codings/stats'
+    getStats: routes.route<GetColorCodingStatsInput, ColorCodingStats>(
+        trajectoryRoutes.colorCodingStats
     ),
-    apply: post<ApplyColorCodingInput, void>(
-        '/trajectories/:trajectoryId/color-codings',
+    apply: routes.route<ApplyColorCodingInput, void>(
+        trajectoryRoutes.colorCodingCreate,
         {
             body: ({ timestep, payload, analysisId }) => ({
                 ...payload,

@@ -1,8 +1,6 @@
 import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
-const ROW = 'flex flex-row items-center gap-3 rounded-xl p-2 transition-colors duration-200 max-sm:flex-wrap';
-
 interface SettingsRowProps {
     icon?: ReactNode;
     title: string;
@@ -20,15 +18,13 @@ const SettingsRow = ({
     onClick,
     className = ''
 }: SettingsRowProps) => {
-    const classes = cn(
-        ROW,
-        onClick && 'cursor-pointer hover:bg-surface-hover',
-        className
-    );
-
     return (
         <div
-            className={classes}
+            className={cn(
+                'flex flex-row items-center gap-3 rounded-xl p-2 transition-colors duration-200 max-sm:flex-wrap',
+                onClick && 'cursor-pointer hover:bg-surface-hover',
+                className
+            )}
             onClick={onClick}
         >
             {icon && (

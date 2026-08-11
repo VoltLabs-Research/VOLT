@@ -20,7 +20,7 @@ import type {
     NotebookContainerStage
 } from '@volt/contracts/modules/scripting/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 

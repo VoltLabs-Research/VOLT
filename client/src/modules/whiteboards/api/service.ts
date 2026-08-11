@@ -9,7 +9,7 @@ import {
 } from '@/shared/api/folder-endpoints';
 
 import { createService, custom, del, download, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { WhiteboardStoredScene } from '@/modules/whiteboards/contracts/excalidraw';
 import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 import type { WhiteboardFolder } from '@volt/contracts/modules/whiteboards/domain';

@@ -9,11 +9,6 @@ const countEdges = (edges: Edge[], side: 'source' | 'target', nodeId: string): n
     return edges.filter((edge) => edge[side] === nodeId).length;
 };
 
-/**
- * Whether a connection the user is dragging is allowed by the two node types it
- * would join. `node.type` is `string | undefined` on xyflow's `Node`, so an
- * unregistered type has to be treated as a rejection rather than trusted.
- */
 export const isConnectionAllowed = (
     nodes: Node<INodeData>[],
     edges: Edge[],
@@ -47,7 +42,6 @@ export const isConnectionAllowed = (
     return true;
 };
 
-/** Reasons the graph as it stands could not be published as a plugin. */
 export const collectWorkflowErrors = (nodes: Node<INodeData>[], edges: Edge[]): string[] => {
     const modifierNodeIds = new Set(
         nodes.filter((node) => node.type === NodeType.MODIFIER).map((node) => node.id)

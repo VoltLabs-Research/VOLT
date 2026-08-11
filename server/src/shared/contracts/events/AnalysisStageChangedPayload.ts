@@ -1,6 +1,6 @@
 
+import type { AnalysisArtifactStatus } from '@volt/contracts/modules/analysis/domain';
 import type {
-    AnalysisArtifactStatus,
     AnalysisChildAnalysis,
     AnalysisExpectedArtifact,
     AnalysisStage

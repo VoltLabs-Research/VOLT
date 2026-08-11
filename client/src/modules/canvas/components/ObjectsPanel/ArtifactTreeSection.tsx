@@ -19,16 +19,6 @@ import {
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@heroui/react';
-import {
-    TREE_CONTAINER_CLASS,
-    TREE_GROUP_CHEVRON_CLASS,
-    TREE_GROUP_CHEVRON_COLLAPSED_CLASS,
-    TREE_GROUP_CLASS,
-    TREE_GROUP_COUNT_CLASS,
-    TREE_GROUP_HEADER_CLASS,
-    TREE_ITEM_TEXT_CLASS,
-    TREE_SHOW_MORE_CLASS
-} from './tree-classes';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { ArtifactSection } from './use-artifact-sections';
@@ -39,7 +29,7 @@ import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 const ROW_ICON_STYLE = {
     width: 12,
     height: 12,
-    color: 'var(--accent-blue)'
+    color: 'var(--accent)'
 } as const;
 
 const CHEVRON_STYLE = {
@@ -57,11 +47,6 @@ interface ArtifactTreeSectionProps {
     onRemoveScene: (scene: SceneObjectType) => void;
 }
 
-/**
- * One collapsible tree of scene artifacts (color coding, particle filters or line
- * styles), grouped by timestep and paged. Selecting a row moves the playhead to the
- * timestep that produced the artifact so the scene it describes is actually visible.
- */
 const ArtifactTreeSection = ({
     section,
     isLoading,
@@ -135,23 +120,18 @@ const ArtifactTreeSection = ({
         const groupId = `canvas-ctx-${section.id}-group-${timestep}`;
 
         return (
-            <div key={timestep} className={TREE_GROUP_CLASS} role='treeitem' aria-expanded={isExpanded} aria-level={1}>
-                {/*
-                  * A plain button: `.canvas-tree-group-header` stripped bravais's Button back
-                  * to a bare left-aligned row, and it needs `aria-controls`, which is not on
-                  * HeroUI's closed prop interface.
-                  */}
+            <div key={timestep} className='mt-1' role='treeitem' aria-expanded={isExpanded} aria-level={1}>
                 <button
                     type='button'
                     id={groupId}
-                    className={cn('flex items-center gap-2', TREE_GROUP_HEADER_CLASS)}
+                    className={cn('flex items-center gap-2', 'w-full cursor-pointer rounded-md border-none bg-transparent px-1.5 py-1 text-left text-muted hover:bg-surface-hover')}
                     onClick={() => section.toggleTimestep(timestep)}
                     aria-expanded={isExpanded}
                     aria-controls={isExpanded ? `${groupId}-children` : undefined}
                 >
-                    <ChevronIcon className={cn(TREE_GROUP_CHEVRON_CLASS, !isExpanded && TREE_GROUP_CHEVRON_COLLAPSED_CLASS)} style={CHEVRON_STYLE} />
-                    <span className={TREE_ITEM_TEXT_CLASS}>{timestep}</span>
-                    <span className={TREE_GROUP_COUNT_CLASS}>{group.length}</span>
+                    <ChevronIcon className={cn('transition-transform duration-150 ease-out', !isExpanded && '-rotate-90')} style={CHEVRON_STYLE} />
+                    <span className='min-w-0 flex-1 truncate'>{timestep}</span>
+                    <span className='text-[11px] text-muted'>{group.length}</span>
                 </button>
 
                 {isExpanded && (
@@ -172,7 +152,7 @@ const ArtifactTreeSection = ({
             expanded={section.open}
             onExpandedChange={section.setOpen}
         >
-            <div className={TREE_CONTAINER_CLASS} role='tree' aria-label={section.ariaLabel}>
+            <div className='canvas-tree-container flex flex-col gap-1 overflow-auto px-2 pb-2.5 pt-1.5' role='tree' aria-label={section.ariaLabel}>
                 {timesteps.length === 0 ? (
                     <CanvasTreeEmptyRow label={isLoading ? 'Loading...' : 'No models generated'} />
                 ) : (
@@ -182,7 +162,7 @@ const ArtifactTreeSection = ({
                 {hiddenCount > 0 && (
                     <button
                         type='button'
-                        className={TREE_SHOW_MORE_CLASS}
+                        className='mx-2 mb-1.5 mt-1 cursor-pointer rounded-md border border-dashed border-border bg-transparent px-2.5 py-1.5 text-center text-xs text-muted transition-[background-color,border-color] duration-[120ms] ease-out hover:border-border-secondary hover:bg-surface-hover'
                         onClick={section.showMoreTimesteps}
                     >
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)

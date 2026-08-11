@@ -11,7 +11,7 @@ import {
     getTrajectoryStorageCleanupTargets,
     type TrajectoryStorageCleanupTarget
 } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
-import { JobStatus } from '@shared/contracts/types/JobStatus';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import logger from '@shared/infrastructure/logger';

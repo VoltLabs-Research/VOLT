@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ContainerTerminalSize } from '@shared/contracts/ports/IContainerService';
+import type { ContainerTerminalSize } from '@shared/contracts/ports/ContainerRuntime';
 import Container from '@modules/container/models/Container';
 import { CONTAINER_TERMINAL_EVENTS, ContainerTerminalSessionRegistry } from '@modules/container/socket/ContainerTerminalSessionRegistry';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';

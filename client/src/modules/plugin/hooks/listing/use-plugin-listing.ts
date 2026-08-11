@@ -32,7 +32,6 @@ const usePluginListing = ({
     const navigate = useNavigate();
     const deleteRows = useDeletePluginListingAnalyses();
 
-    // `context` is part of the pagination query key, so its identity must be stable.
     const context: PluginListingContext = useMemo(() => ({
         pluginId,
         exposureName,

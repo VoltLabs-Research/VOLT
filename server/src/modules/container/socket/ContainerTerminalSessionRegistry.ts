@@ -1,6 +1,6 @@
 import daemonContainerRuntimeService from '@modules/container/services/DaemonContainerRuntimeService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/IContainerService';
+import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/ContainerRuntime';
 import logger from '@shared/infrastructure/logger';
 
 /* One PTY per container, shared by every socket watching it.

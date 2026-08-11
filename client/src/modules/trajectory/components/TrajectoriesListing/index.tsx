@@ -9,60 +9,14 @@ import {
     useFolderedListingDashboardBreadcrumb
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import { clusterColumn, dateColumn } from '@/shared/ui/utils/column-presets';
+import StatusPill from '@/shared/ui/components/StatusPill';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { useMemo } from 'react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
 
-/**
- * bravais's `StatusBadge`, reduced to the one call shape this listing used: a free-form
- * `status` string looked up in the component's own STATUS_VARIANTS table.
- *
- * Three things are easy to lose and are the whole appearance. The badge had no background
- * and no border in any variant — it was coloured *uppercase text*, applied in CSS rather
- * than to the DOM string, so a `Chip` would add a pill that was never there. And the
- * status→variant map is not the identity: `status='active'` resolved to the SUCCESS colour
- * while `status='running'` resolved to the accent, which under VOLT's monochrome accent is
- * the foreground. `text-sm` meant 0.75rem in bravais, i.e. stock Tailwind's `text-xs`.
- */
-const STATUS_TONE_CLASS: Record<string, string> = {
-    ready: 'text-success',
-    completed: 'text-success',
-    success: 'text-success',
-    active: 'text-success',
-    published: 'text-success',
-    healthy: 'text-success',
-    online: 'text-success',
-    accepted: 'text-success',
-    connected: 'text-success',
-    processing: 'text-warning',
-    queued: 'text-warning',
-    rendering: 'text-warning',
-    warning: 'text-warning',
-    pending: 'text-warning',
-    'waiting-for-process': 'text-warning',
-    analyzing: 'text-warning',
-    running: 'text-foreground',
-    failed: 'text-danger',
-    error: 'text-danger',
-    danger: 'text-danger',
-    critical: 'text-danger',
-    rejected: 'text-danger',
-    inactive: 'text-muted',
-    draft: 'text-muted',
-    disabled: 'text-muted',
-    offline: 'text-muted',
-    disconnected: 'text-muted'
-};
-
-const STATUS_BADGE = 'inline-flex items-center gap-1 whitespace-nowrap rounded-full text-xs font-medium uppercase';
-
-const renderStatusBadge = (status: string) => (
-    <span className={`${STATUS_BADGE} ${STATUS_TONE_CLASS[status.toLowerCase()] ?? 'text-muted'}`}>
-        {status}
-    </span>
-);
+const renderStatusBadge = (status: string) => <StatusPill status={status} />;
 
 const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     createFolderedTitleColumn<TrajectoryListingRow>({
@@ -175,7 +129,6 @@ export default function TrajectoriesListing() {
                 headerMenuOptions={headerMenuOptions}
                 emptyButtonIsLoading={isUploading}
             />
-
             <FolderedListingModals resource={trajectoriesListingResource} listing={listing} />
         </>
     );

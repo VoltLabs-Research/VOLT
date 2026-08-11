@@ -25,8 +25,8 @@ import {
 } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IStoragePlacementService } from '@shared/contracts/ports';
-import type { Analysis } from '@shared/contracts/types';
+import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { ExecutePipelineStageInput } from '@volt/contracts/modules/plugin/http';
 

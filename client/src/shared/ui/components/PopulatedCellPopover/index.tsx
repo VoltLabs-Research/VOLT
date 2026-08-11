@@ -32,15 +32,7 @@ const EXCLUDED_FIELDS = new Set([
     '__t'
 ]);
 
-/**
- * The trigger is a cell's own text, so it inherits everything and only grows an
- * underline on hover. `render` swaps HeroUI's `role='button'` div for a real
- * `<button>`: React Aria's `Pressable` adds press handling but neither semantics nor
- * focusability, and this trigger has to stay keyboard reachable.
- */
-const TRIGGER_CLASS_NAMES = 'inline-flex cursor-pointer rounded-sm border-0 bg-transparent text-inherit no-underline [font:inherit] transition-colors duration-150 hover:underline hover:decoration-muted hover:underline-offset-2';
 
-const LINK_CLASS_NAMES = 'flex items-center gap-1 whitespace-nowrap text-xs text-foreground no-underline transition-opacity duration-150 hover:opacity-80 [&_svg]:size-3.5';
 
 const resolveFieldValue = (value: unknown): string | null => {
     if (value === null || value === undefined) return null;
@@ -135,12 +127,11 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
             <PopoverRoot isOpen={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger<'button'>
                     type='button'
-                    className={TRIGGER_CLASS_NAMES}
+                    className='inline-flex cursor-pointer rounded-sm border-0 bg-transparent text-inherit no-underline [font:inherit] transition-colors duration-150 hover:underline hover:decoration-muted hover:underline-offset-2'
                     render={(triggerProps) => <button {...triggerProps} />}
                 >
                     {children}
                 </PopoverTrigger>
-
                 <PopoverContent placement='bottom start' className='min-w-[180px] max-w-[320px]'>
                     <PopoverDialog aria-label={`${modelName} details`} className='p-0'>
                         <div className='flex flex-col'>
@@ -150,7 +141,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                                     <nav aria-label={`${modelName} links`}>
                                         <Link
                                             to={listingRoute}
-                                            className={LINK_CLASS_NAMES}
+                                            className='flex items-center gap-1 whitespace-nowrap text-xs text-foreground no-underline transition-opacity duration-150 hover:opacity-80 [&_svg]:size-3.5'
                                             onClick={handleNavigate}
                                         >
                                             View in listing

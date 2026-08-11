@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import type { AppEvents, PhaseSpec } from '@/types/events';
 
@@ -13,12 +13,6 @@ interface PhaseProgress{
 
 const POLL_INTERVAL = 2_000;
 
-/*
- * The main process now owns provisioning: `deploy.start()` starts or installs the
- * runtime itself and reports progress through `deploy:preflight`. These are the
- * states it is actively working on, so the gate shows them as progress and the
- * renderer must not kick off a competing attempt.
- */
 const AUTOMATIC_REASONS = new Set(['daemon-starting', 'daemon-down', 'auto-starting', 'auto-installing']);
 
 interface LogLine{
@@ -48,7 +42,7 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
             return [...base, line];
         });
 
-    const run = (op: () => Promise<unknown>, reset?: () => void) => {
+    const run = useCallback((op: () => Promise<unknown>, reset?: () => void) => {
         if(busyRef.current) return false;
         busyRef.current = true;
         setBusy(true);
@@ -58,24 +52,11 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
             setBusy(false);
         });
         return true;
-    };
+    }, []);
 
-    /**
-     * Starts the deploy without pre-gating on Docker.
-     *
-     * This used to probe Docker first and stop at the gate when it was missing,
-     * which meant the automatic provisioning inside `deploy.start()` was never
-     * reached. The gate is now driven purely by `deploy:preflight` events.
-     *
-     * `clear` distinguishes a deliberate restart from the background re-check
-     * below. A user pressing Retry should see the gate reset; the two-second poll
-     * should not, because clearing the preflight unmounts the gate and remounts it
-     * on the next event — which reads as a flickering, stuck window rather than as
-     * "still waiting for Docker".
-     */
-    const boot = async ({ clear = true }: { clear?: boolean } = {}): Promise<void> => {
+    const boot = useCallback(async ({ clear = true }: { clear?: boolean } = {}): Promise<void> => {
         run(() => window.volt.deploy.start(), clear ? () => setPreflight(null) : undefined);
-    };
+    }, [run]);
 
     useEffect(() => {
         const unsubState = window.volt.on('deploy:state', (p) => {
@@ -153,19 +134,16 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         }
 
         return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); unsubPreflight(); };
-    }, []);
+    }, [autoStart, boot]);
 
-    /*
-     * A terminal preflight state ends the deploy, so nothing is polling any more.
-     * `daemon-starting` and `daemon-down` can still be reached without a deploy in
-     * flight (Docker quit while the app was open), and there retrying is correct.
-     */
+    const preflightReason = preflight?.reason;
+
     useEffect(() => {
-        if(!preflight || !AUTOMATIC_REASONS.has(preflight.reason)) return;
+        if(!preflightReason || !AUTOMATIC_REASONS.has(preflightReason)) return;
         if(busyRef.current) return;
         const id = setInterval(() => { void boot({ clear: false }); }, POLL_INTERVAL);
         return () => clearInterval(id);
-    }, [preflight?.reason]);
+    }, [preflightReason, boot]);
 
     const reset = () => {
         setState('idle');

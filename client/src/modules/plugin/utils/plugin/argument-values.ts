@@ -23,11 +23,9 @@ export const createDefaultArgumentDefinition = (): IArgumentDefinition => {
     };
 };
 
-/** A definition with a preset `value` is filled in by the plugin, not the user. */
 export const isUserConfigurableArgument = (definition: IArgumentDefinition): boolean => {
     return definition.value === undefined && !definition.inferFromContext;
 };
-
 
 export const getUserConfigurableArguments = (
     definitions: IArgumentDefinition[]

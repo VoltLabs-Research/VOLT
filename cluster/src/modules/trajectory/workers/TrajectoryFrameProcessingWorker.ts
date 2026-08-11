@@ -21,11 +21,11 @@ import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastruc
 import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@core/constants/queue-names';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
-import type { FrameProcessingQueueJobPayload } from '@shared/contracts';
+import type { LocalClusterObjectStoreGateway, ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
+import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+
 import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import {
     downloadTrajectoryDumps,

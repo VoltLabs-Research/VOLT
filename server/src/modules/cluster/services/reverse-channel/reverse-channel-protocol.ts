@@ -14,7 +14,7 @@ import {
     decodeEnvelope,
     encodeEnvelope,
     toUint8Array
-} from '@shared/infrastructure/types/reverseChannelBinary';
+} from '@shared/contracts/types/binary-envelope';
 import type { PassThrough } from 'node:stream';
 
 export interface TeamClusterDaemonCommandPayload {

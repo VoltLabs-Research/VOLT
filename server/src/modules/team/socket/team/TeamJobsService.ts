@@ -1,5 +1,5 @@
 import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
-import { JobStatus } from '@shared/contracts/types/JobStatus';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import {
     JOB_STATUS_KEY_PREFIX,
     projectedTeamJobsKey,

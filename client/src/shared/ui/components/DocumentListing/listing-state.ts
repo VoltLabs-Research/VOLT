@@ -13,10 +13,6 @@ interface ListingDisplayState {
     shouldShowAccessDeniedState: boolean;
 };
 
-/**
- * Picks the single state a listing body is in: content, first load, empty, error
- * or access denied.
- */
 const getListingDisplayState = ({
     dataLength,
     isLoading,

@@ -1,4 +1,7 @@
-import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
+import type {
+    IMemberContentCounter,
+    MemberContentCountResult
+} from '@shared/contracts/ports/IMemberContentCounter';
 import Analysis from '@modules/analysis/models/Analysis';
 
 const COUNT_KEY = 'analysesCount';

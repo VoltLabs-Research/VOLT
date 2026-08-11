@@ -37,3 +37,17 @@ export function initTheme(): void{
         if(preference === 'system') apply();
     });
 }
+
+export function getResolvedTheme(): 'light' | 'dark'{
+    return resolve(preference);
+}
+
+export function subscribeToThemeChange(listener: () => void): () => void{
+    const onChange = (): void => {
+        if(preference === 'system') listener();
+    };
+
+    query.addEventListener('change', onChange);
+
+    return () => query.removeEventListener('change', onChange);
+}

@@ -5,7 +5,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     ContainerFileEntry,
     ContainerProcessInfo
-} from '@shared/contracts/ports/IContainerService';
+} from '@shared/contracts/ports/ContainerRuntime';
 
 /* Read-only introspection of a running container: directory listings, file
    contents, process table and resource usage. Nothing here mutates state, so

@@ -52,10 +52,6 @@ const removeAnalysisScenes = (analysisId: string): void => {
     });
 };
 
-/**
- * Deletes an analysis optimistically: caches, scenes and sidebar state drop it
- * immediately and are restored from a snapshot if the request fails.
- */
 const useSidebarSceneAnalysisDeletion = ({
     selectedAnalysisIdRef,
     setAnalysisId,
@@ -99,7 +95,6 @@ const useSidebarSceneAnalysisDeletion = ({
             return context;
         },
         onError: (_error, _analysisId, context) => {
-            // TanStack types the mutation context as `unknown`.
             const rollback = context as DeleteAnalysisOptimisticContext | undefined;
             if (!rollback) return;
 

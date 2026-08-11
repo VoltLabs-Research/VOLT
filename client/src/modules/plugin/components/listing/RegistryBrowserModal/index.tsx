@@ -1,5 +1,5 @@
 import { Button, EmptyStateRoot, SearchField, Spinner } from '@heroui/react';
-import { Modal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
 import { useInstallRegistryPluginMutation, usePluginsCatalogQuery, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -22,9 +22,6 @@ const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 const isNewerVersion = (latest: string, installed: string): boolean => {
-    // `semver.gt` is coerced because registry and installed versions are not
-    // guaranteed to be strict semver; a hand-rolled compare used to strip the
-    // prerelease tag, so a plugin on `1.0.0-beta` was never offered `1.0.0`.
     const left = semver.coerce(latest, { includePrerelease: true }) ?? semver.coerce(latest);
     const right = semver.coerce(installed, { includePrerelease: true }) ?? semver.coerce(installed);
 
@@ -140,7 +137,6 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
                         <SearchField.ClearButton />
                     </SearchField.Group>
                 </SearchField>
-
                 <div className='h-[460px] overflow-y-auto'>
                     {isFetching && (
                         <div className='flex flex-row items-center justify-center p-8' role='status'>

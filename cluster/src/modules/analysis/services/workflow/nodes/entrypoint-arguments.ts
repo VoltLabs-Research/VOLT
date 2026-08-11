@@ -1,4 +1,4 @@
-import type { WorkflowDefinition } from '@shared/contracts';
+import type { WorkflowDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowEntrypointExecutionRequest } from '@modules/analysis/services/workflow/nodes/entrypoint-config';
 import { WorkflowValueResolver } from '@modules/analysis/services/workflow/WorkflowValueResolver';
 import {

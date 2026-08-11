@@ -5,7 +5,6 @@ import type { InspectorRow } from '../components/ContainerInspectorList';
 
 const BYTES_PER_MB = 1024 * 1024;
 
-/** The "Information" rows shown on the container overview. */
 export const buildContainerInspectorRows = (container: Container): InspectorRow[] => {
     const isRunning = container.status === 'running';
 

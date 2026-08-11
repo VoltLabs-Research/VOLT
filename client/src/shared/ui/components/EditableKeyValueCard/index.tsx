@@ -26,8 +26,6 @@ interface EditableKeyValueCardProps<T extends Record<string, unknown>> {
     className?: string;
 };
 
-const INPUT_CLASSES = 'w-full rounded-md border border-border bg-background px-3 py-[0.6rem] text-foreground transition-[border-color] duration-200 focus:border-accent';
-
 const EditableKeyValueCard = <T extends Record<string, unknown>>({
     title,
     titleClassName,
@@ -166,7 +164,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                             placeholder={field.placeholder}
                                             aria-label={field.label ?? field.placeholder}
                                             value={String(item[field.key] ?? '')}
-                                            className={cn(INPUT_CLASSES, 'text-sm')}
+                                            className={cn('w-full rounded-md border border-border bg-background px-3 py-[0.6rem] text-foreground transition-[border-color] duration-200 focus:border-accent', 'text-sm')}
                                             onChange={(e) => handleChange(
                                                 i,
                                                 field.key,

@@ -1,18 +1,11 @@
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import PasswordConfirmationPrompt from '@/modules/cluster/components/shared/PasswordConfirmationPrompt';
 import { Button } from '@heroui/react';
-import { Modal, closeModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useState } from 'react';
 import type { TeamCluster, TeamClusterCredentialServices } from '@volt/contracts/modules/cluster/domain';
-
-/**
- * `.cluster-credentials-warning`, the only rule in the deleted sheet that was not
- * a plain border: a 35% warning-tinted edge over a 8% warning wash. bravais's
- * `--color-warning` fallback chain is gone, so the mixes read HeroUI's `--warning`
- * and `--border` directly.
- */
-const WARNING_CARD_CLASS = 'border border-[color-mix(in_srgb,var(--warning)_35%,var(--border))] bg-[color-mix(in_srgb,var(--warning)_8%,transparent)]';
 
 export const CLUSTER_CREDENTIALS_MODAL_ID = 'cluster-credentials-modal';
 
@@ -131,7 +124,7 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
 
                 {credentials && (
                     <>
-                        <div className={`flex flex-col gap-2 p-4 rounded-xl ${WARNING_CARD_CLASS}`} role='status' aria-live='polite'>
+                        <div className='flex flex-col gap-2 p-4 rounded-xl border border-[color-mix(in_srgb,var(--warning)_35%,var(--border))] bg-[color-mix(in_srgb,var(--warning)_8%,transparent)]' role='status' aria-live='polite'>
                             <h3 className='text-sm font-semibold text-foreground'>Sensitive credentials</h3>
                             <p className='text-sm text-muted'>Copy these only into secure tools. Anyone with these values can access cluster services directly.</p>
                             <label className='flex items-start gap-2'>

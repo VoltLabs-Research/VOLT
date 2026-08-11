@@ -2,11 +2,9 @@ import type { ObjectBucketName } from '@shared/contracts/types/http-object-store
 import type {
     ColumnDType,
     TypedColumn,
-    ElementTableEntry,
-    LammpsUnits
-} from '@shared/domain/catalog';
-
-export type { ColumnDType, TypedColumn, ElementTableEntry, LammpsUnits };
+    ElementTableEntry
+} from '@shared/domain/catalog/element-table';
+import type { LammpsUnits } from '@shared/domain/catalog/units';
 
 export interface TrajectoryFrameData {
     timestep: number;

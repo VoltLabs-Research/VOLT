@@ -14,7 +14,7 @@ import {
     REBALANCE_TARGET_PCT,
     SOFT_STORAGE_LIMIT_PCT
 } from '@shared/application/utilities/cluster-storage-policy';
-import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type {
     StoragePlacementScopeType
 } from '@shared/domain/contracts/team-cluster';

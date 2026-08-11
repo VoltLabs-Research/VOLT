@@ -1,6 +1,7 @@
 import { useContainerFilesQuery, useContainerFileContentQuery } from '../../hooks/queries';
 import { useRemoteExplorer } from '@/shared/api/remote-explorer';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { ArrowLeft, FileText, Folder } from 'lucide-react';
 import FileExplorer from '@/shared/ui/components/FileExplorer';
 import FileExplorerRow from '@/shared/ui/components/FileExplorer/FileExplorerRow';
@@ -13,14 +14,6 @@ import type { ContainerFile } from '@volt/contracts/modules/container/domain';
 interface ContainerFileExplorerProps {
     containerId: string;
 }
-
-/**
- * `ContainerFileExplorer.css`, converted. `.container-file-content`'s
- * `border-radius: var(--radius-sm)` was bravais's 8px, which is `rounded-lg` on
- * HeroUI's scale — not the same-named `rounded-sm`, which is 4px there.
- */
-const FILE_CONTENT_CLASS_NAMES = 'm-0 flex-1 overflow-auto rounded-lg border border-border bg-background p-4 text-[0.85rem] text-muted';
-const VIEWER_HEADER_CLASS_NAMES = 'flex flex-row items-center gap-4 border-b border-border pb-4';
 
 const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -91,7 +84,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
 
     const renderFileViewer = (body: ReactNode) => (
         <div className='flex flex-col gap-4 h-full'>
-            <div className={VIEWER_HEADER_CLASS_NAMES}>
+            <div className='flex flex-row items-center gap-4 border-b border-border pb-4'>
                 <Button variant='ghost' size='sm' onPress={() => updateViewingFile(null)}>
                     <ArrowLeft />
                     Back
@@ -103,7 +96,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     );
 
     if(viewingFile && fileContent !== undefined){
-        return renderFileViewer(<pre className={FILE_CONTENT_CLASS_NAMES}>{fileContent}</pre>);
+        return renderFileViewer(<pre className='m-0 flex-1 overflow-auto rounded-lg border border-border bg-background p-4 text-[0.85rem] text-muted'>{fileContent}</pre>);
     }
 
     if (viewingFile && fileContentError) {
@@ -119,11 +112,6 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         <FileExplorer
             headerLeft={
                 <div className='flex flex-row items-center gap-4 flex-1'>
-                    {/*
-                      * HeroUI's `Button` has a closed prop interface with no `title`, so
-                      * the native tooltip that mirrored the aria-label is carried by the
-                      * `Tooltip` this button already sat inside.
-                      */}
                     <Tooltip>
                         <Button variant='ghost' isIconOnly size='sm' aria-label='Go to parent directory' onPress={explorer.goUp} isDisabled={explorer.isAtRoot}>
                             <ArrowLeft />

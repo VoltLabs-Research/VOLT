@@ -13,7 +13,8 @@ import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import EmailStep from '../EmailStep';
 import PasswordStep from '../PasswordStep';
 import RegisterStep from '../RegisterStep';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { Button } from '@heroui/react';
 import { useStepper } from '@/shared/ui/hooks/use-stepper';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
@@ -33,14 +34,6 @@ enum SignInStep {
     Register = 'register'
 }
 
-/*
- * bravais's `Stepper` in its standalone mode (no indicators) was one
- * AnimatePresence-wrapped panel that slid the outgoing step out before sliding
- * the incoming one in, with the direction derived from the step's index moving
- * forward or backward. There is no HeroUI equivalent, so the chrome is restated
- * here — the variants, the `mode='wait'` exchange, the 0.25s timing, the
- * reduced-motion opt-out and the focusable panel are all the originals.
- */
 type StepDirection = 'forward' | 'backward';
 
 const stepVariants = {
@@ -293,7 +286,6 @@ const SignInTemplate = () => {
                         <h1 className='text-[2rem] font-bold tracking-[-0.03em] text-foreground max-lg:text-[1.75rem]' id='sign-in-form-title'>{title}</h1>
                         <p>{subtitle}</p>
                     </header>
-
                     <div className='w-full'>
                         <AnimatePresence mode='wait' custom={direction} initial={false}>
                             <motion.div
@@ -312,7 +304,6 @@ const SignInTemplate = () => {
                             </motion.div>
                         </AnimatePresence>
                     </div>
-
                     <p className='border-t border-border/70 pt-2 text-center text-sm leading-[1.6] text-muted'>
                         By continuing with email or a social provider, you agree to our{' '}
                         <span className='font-medium text-foreground'>Terms</span> and{' '}

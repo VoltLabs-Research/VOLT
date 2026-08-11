@@ -1,7 +1,7 @@
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
-import type { IPluginDebugSessionRegistryService as IPluginDebugSessionRegistryServicePort } from '@shared/contracts/ports';
+import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types/TeamClusterExposure';
+import type { IPluginDebugSessionRegistryService as IPluginDebugSessionRegistryServicePort } from '@shared/contracts/ports/IPluginDebugSessionRegistryService';
 
 interface PluginDebugSessionRegistryEntry {
     socketId: string;

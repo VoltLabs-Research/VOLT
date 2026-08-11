@@ -53,11 +53,6 @@ export const monoValue = (node: ReactNode): ReactNode => (
 
 export const emptyValue = (): ReactNode => plainValue(<span className='text-muted'>—</span>);
 
-/**
- * Renders an arbitrary plugin config value. Analysis config is declared as
- * `Record<string, unknown>` in the contract, so dispatching on the runtime
- * value is this renderer's whole purpose rather than defensive validation.
- */
 const renderValue = (value: unknown): ReactNode => {
     if (value === null || value === undefined || value === '') return emptyValue();
     if (typeof value === 'boolean') return plainValue(value ? 'Yes' : 'No');

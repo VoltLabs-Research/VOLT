@@ -12,10 +12,6 @@ interface ListingDragAndDrop<T> {
     dispatchDragEnd: (event: DragEndEvent) => Promise<void>;
 };
 
-/**
- * Resolves the drag/drop identity of every listing row once per data change, so
- * both the table and the grid can translate a dnd-kit event back into an item.
- */
 const useListingDragAndDrop = <T extends Identifiable>(
     data: T[],
     dragAndDrop: DocumentListingDragAndDropConfig<T> | undefined,

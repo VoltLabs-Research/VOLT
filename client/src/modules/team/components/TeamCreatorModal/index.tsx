@@ -1,10 +1,12 @@
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { runAction } from '@/shared/ui/actions/run-action';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, resetModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { resetModal } from '@/shared/ui/modal/use-modal-store';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

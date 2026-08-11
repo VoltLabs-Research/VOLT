@@ -1,4 +1,4 @@
-import { TeamClusterServiceExposureAccessMode } from '@shared/contracts';
+import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/service-exposure';
 import jwt from 'jsonwebtoken';
 
 interface TeamClusterDirectAccessTokenClaims {

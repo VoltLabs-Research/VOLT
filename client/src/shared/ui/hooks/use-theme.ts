@@ -54,7 +54,7 @@ const resolvePreference = (): Theme => {
 };
 
 const syncThemeColorMeta = (): void => {
-    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim();
+    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
 
     if (!backgroundColor) {
         return;

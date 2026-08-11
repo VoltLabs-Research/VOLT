@@ -7,7 +7,6 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
 import type { ComponentProps, ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import { TAB_BODY_CLASS } from './timeline-classes';
 
 interface TimelineTabContentProps {
     activeTab: string;
@@ -21,12 +20,11 @@ interface TimelineTabContentProps {
 }
 
 const TabBody = ({ children }: { children: ReactNode }) => (
-    <div className={TAB_BODY_CLASS}>
+    <div className='relative h-full min-h-0 flex-auto overflow-hidden max-md:pointer-events-auto max-md:order-2 max-md:h-auto max-md:min-h-0 max-md:min-w-0 max-md:flex-1 max-md:self-stretch max-md:overflow-auto max-md:rounded-xl max-md:border-0 max-md:bg-surface-secondary'>
         {children}
     </div>
 );
 
-/** Body of the timeline for every tab except the ruler, which owns its own region. */
 const TimelineTabContent = ({
     activeTab,
     activeExposureId,
@@ -73,7 +71,6 @@ const TimelineTabContent = ({
     if (activeExposureId && trajectoryId && pluginId) {
         return (
             <TabBody>
-                {/* Reuse the dashboard listing flow so row actions keep the exact analysis/exposure/timestep context. */}
                 <PluginExposureTable
                     key={`${pluginId}:${analysisId ?? 'default'}:${trajectoryId}:${activeExposureId}`}
                     pluginId={pluginId}

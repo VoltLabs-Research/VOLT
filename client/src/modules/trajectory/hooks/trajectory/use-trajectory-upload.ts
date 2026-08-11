@@ -1,5 +1,6 @@
 import { createTrajectoryUploadSessionMutation } from './queries';
-import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isApiError, reportError } from '@/shared/errors/core/report-error';
 import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/store/use-trajectory-upload-progress-store';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';

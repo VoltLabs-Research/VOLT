@@ -1,4 +1,5 @@
-import { getErrorMessage, isApiError, markApiErrorHandled } from '@/shared/errors/core';
+import { getErrorMessage } from '@voltstack/voltclient';
+import { isApiError, markApiErrorHandled } from '@/shared/errors/core/report-error';
 import { sileo } from 'sileo';
 import { createCrudToastOptions, type PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import type { SileoOptions, SileoPosition } from 'sileo';

@@ -4,8 +4,12 @@ import {
     Box as CubeIcon,
     KeyRound,
     LayoutGrid,
-    MessageCircle,
+    MonitorSmartphone,
     Paintbrush,
+    Palette,
+    Plug,
+    ShieldCheck,
+    SlidersHorizontal,
     Sparkles,
     Users,
     Workflow
@@ -34,10 +38,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
         inactive: KeyRound,
         active: KeyRound
     },
-    [DashboardNavigationIconKey.Messages]: {
-        inactive: MessageCircle,
-        active: MessageCircle
-    },
     [DashboardNavigationIconKey.MyTeam]: {
         inactive: Users,
         active: Users
@@ -53,5 +53,29 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.Whiteboards]: {
         inactive: Paintbrush,
         active: Paintbrush
+    },
+    [DashboardNavigationIconKey.SettingsGeneral]: {
+        inactive: SlidersHorizontal,
+        active: SlidersHorizontal
+    },
+    [DashboardNavigationIconKey.SettingsAuthentication]: {
+        inactive: ShieldCheck,
+        active: ShieldCheck
+    },
+    [DashboardNavigationIconKey.SettingsTheme]: {
+        inactive: Palette,
+        active: Palette
+    },
+    [DashboardNavigationIconKey.SettingsIntegrations]: {
+        inactive: Plug,
+        active: Plug
+    },
+    [DashboardNavigationIconKey.SettingsSessions]: {
+        inactive: MonitorSmartphone,
+        active: MonitorSmartphone
+    },
+    [DashboardNavigationIconKey.SecretKeys]: {
+        inactive: KeyRound,
+        active: KeyRound
     }
 };

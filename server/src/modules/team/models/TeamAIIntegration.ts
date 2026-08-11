@@ -4,7 +4,7 @@ import { Hidden } from '@shared/infrastructure/persistence/Hidden';
 import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
-import type { AIProvider } from '@shared/contracts/types/AIProviders';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { EnabledModel } from '@volt/contracts/modules/team/domain';
 
 @Entity('team_ai_integrations')

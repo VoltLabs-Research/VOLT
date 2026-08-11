@@ -1,4 +1,4 @@
-import { checkbox, row, selectField, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
+import { checkbox, row, selectField } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     RENDERER_SHADOW_TYPE_OPTIONS,
@@ -48,7 +48,7 @@ const useRendererGroup = (): RenderGroup => {
                 })
             ],
             extras: (
-                <div className={RENDER_GRID_CLASS}>
+                <div className='flex flex-col items-stretch gap-2'>
                     {selectField('toneMapping', runtime.toneMapping, (value) => {
                         if (isEnumValue(value, ToneMappingMode)) {
                             setRuntime({ toneMapping: value });
@@ -64,7 +64,7 @@ const useRendererGroup = (): RenderGroup => {
             enabled: true,
             rows: [],
             extras: (
-                <div className={RENDER_GRID_CLASS}>
+                <div className='flex flex-col items-stretch gap-2'>
                     {checkbox('shadowEnabled', 'Enable Shadows', runtime.shadowEnabled, (value) => setRuntime({ shadowEnabled: value }))}
                     {selectField('shadowType', runtime.shadowType, (value) => {
                         if (isEnumValue(value, ShadowType)) {

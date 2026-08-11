@@ -7,10 +7,6 @@ export interface RepositoryRelease{
 
 const octokit = new Octokit(process.env.GITHUB_TOKEN ? { auth: process.env.GITHUB_TOKEN } : {});
 
-/**
- * The GitHub releases API is a third-party response, so its fields stay validated
- * and its status codes stay classified into actionable messages.
- */
 export const fetchLatestRelease = async (owner: string, repo: string): Promise<RepositoryRelease> => {
     const id = `${owner}/${repo}`;
 

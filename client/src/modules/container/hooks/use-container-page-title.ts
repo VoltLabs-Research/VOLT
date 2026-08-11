@@ -16,10 +16,6 @@ const resolveSectionTitle = (pathname: string): string => {
     return routeTitle.replace(/^Container\s+/u, '');
 };
 
-/**
- * Titles the container detail pages as "<name> - <section>", falling back to the
- * generic route title while the container is still loading.
- */
 const useContainerPageTitle = (containerName: string | undefined) => {
     const { pathname } = useLocation();
     const sectionTitle = resolveSectionTitle(pathname);

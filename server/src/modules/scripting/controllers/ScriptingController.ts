@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -42,7 +43,7 @@ export default class ScriptingController extends Controller {
     createNotebook(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateScriptingNotebookInput
+        @Body(schemaBody(typia.createValidate<CreateScriptingNotebookInput>())) body: CreateScriptingNotebookInput
     ) {
         return this.#service.createNotebook({
             teamId,
@@ -56,7 +57,7 @@ export default class ScriptingController extends Controller {
     updateNotebook(
         @Param('teamId') teamId: string,
         @Param('notebookId') notebookId: string,
-        @Body() body: UpdateScriptingNotebookInput
+        @Body(schemaBody(typia.createValidate<UpdateScriptingNotebookInput>())) body: UpdateScriptingNotebookInput
     ) {
         return this.#service.updateNotebook({
             teamId,
@@ -124,7 +125,7 @@ export default class ScriptingController extends Controller {
     async createJupyterSession(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateScriptingJupyterSessionInput,
+        @Body(schemaBody(typia.createValidate<CreateScriptingJupyterSessionInput>())) body: CreateScriptingJupyterSessionInput,
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {

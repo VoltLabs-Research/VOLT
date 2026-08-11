@@ -1,5 +1,8 @@
 import aiIntegrationService from '../../api/services/ai-integration-service';
-import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
 import type {
     DeleteTeamAIIntegrationInput,
     TeamAIIntegrationProviderInput

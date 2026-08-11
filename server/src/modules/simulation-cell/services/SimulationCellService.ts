@@ -5,7 +5,8 @@ import type {
     GetSimulationCellByTrajectoryInput,
     GetSimulationCellByTrajectoryOutput
 } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
-import type { SimulationCellDims, SimulationCellGeometry, SimulationCellProps } from '@shared/contracts/types/SimulationCell';
+import type { SimulationCellDims, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
+import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';

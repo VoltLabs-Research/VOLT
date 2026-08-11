@@ -6,7 +6,7 @@ import type { AtomPageResult } from '@modules/trajectory/services/native/Traject
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import { getTrajectoryRasterPreviewsPrefix } from '@shared/application/utilities/raster-storage-paths';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     TrajectoryFrame as TrajectoryFrameView,
     TrajectoryFrameSimulationCellEmbed

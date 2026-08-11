@@ -47,7 +47,10 @@ import type {
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import { ChannelCommands, type TeamClusterDaemonRegistryInstallResult } from '@shared/infrastructure/contracts/team-cluster';
+import {
+    ChannelCommands,
+    type TeamClusterDaemonRegistryInstallResult
+} from '@shared/contracts/types/team-cluster-daemon-channel';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';

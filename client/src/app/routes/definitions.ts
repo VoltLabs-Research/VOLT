@@ -38,7 +38,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/GeneralSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'General'
+            label: 'General',
+            icon: DashboardNavigationIconKey.SettingsGeneral
         }
     },
     {
@@ -47,7 +48,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/AuthenticationSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Authentication'
+            label: 'Authentication',
+            icon: DashboardNavigationIconKey.SettingsAuthentication
         }
     },
     {
@@ -56,7 +58,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/auth/components/ThemeSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Theme'
+            label: 'Theme',
+            icon: DashboardNavigationIconKey.SettingsTheme
         }
     },
     {
@@ -65,7 +68,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/team/components/IntegrationsSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Integrations'
+            label: 'Integrations',
+            icon: DashboardNavigationIconKey.SettingsIntegrations
         }
     },
     {
@@ -74,7 +78,8 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/session/components/SessionSettings'),
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Sessions'
+            label: 'Sessions',
+            icon: DashboardNavigationIconKey.SettingsSessions
         }
     },
     {
@@ -108,13 +113,11 @@ export const protectedRoutes: RouteConfig[] = [
         title: 'Secret Keys',
         loader: () => import('@/modules/team/components/SecretKeysListing'),
         requiredPermissions: ['team-secret-key:read'],
-        /*
-         * Deliberately under Settings rather than the sidebar: keys are team
-         * configuration you visit occasionally, not a daily working surface.
-         */
+
         navigation: {
             section: DashboardNavigationSection.Settings,
-            label: 'Secret Keys'
+            label: 'Secret Keys',
+            icon: DashboardNavigationIconKey.SecretKeys
         }
     },
     {
@@ -269,17 +272,6 @@ export const protectedRoutes: RouteConfig[] = [
                 loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-storage-route')
             }
         ]
-    },
-    {
-        path: '/dashboard/messages/:chatId?',
-        title: 'Messages',
-        loader: () => import('@/modules/chat/components/MessagesPage'),
-        navigation: {
-            section: DashboardNavigationSection.Secondary,
-            label: 'Messages',
-            icon: DashboardNavigationIconKey.Messages,
-            multiTenantOnly: true
-        }
     },
     {
         path: '/dashboard/ai/:conversationId?',

@@ -12,7 +12,7 @@ import {
     TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS
 } from '@modules/cluster/services/transfer/cluster-transfer-constants';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayListEntry

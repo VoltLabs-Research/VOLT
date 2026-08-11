@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { DuckDBConnection } from '@duckdb/node-api';
 
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { FlatAtomProperties, PerAtomParquetSource } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type {

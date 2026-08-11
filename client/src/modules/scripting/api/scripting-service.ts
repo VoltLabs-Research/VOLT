@@ -1,6 +1,6 @@
 import { createService, del, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
 
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ScriptingNotebook, ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
 import type { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type {

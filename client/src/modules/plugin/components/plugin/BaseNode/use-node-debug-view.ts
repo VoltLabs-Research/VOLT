@@ -1,11 +1,9 @@
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
-import { NODE_DEBUG_STATUS_CLASS } from '@/modules/plugin/components/plugin/BaseNode/node-styles';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import { useState } from 'react';
 
 export const formatTraceDuration = (ms: number): string => (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`);
 
-/** bravais `Tag` tones; `BaseNode` maps them onto HeroUI `Chip` colours. */
 export type NodeOverheadBadgeTone = 'success' | 'danger' | 'neutral';
 
 interface NodeOverheadBadge {
@@ -44,14 +42,15 @@ const resolveOverheadBadge = (
     return (status && OUTCOME_BADGES[status]) ?? null;
 };
 
-/**
- * Everything a node needs to render its debug affordances: which panel is open,
- * which nested traces are expanded, and the badge overlaid on the node.
- *
- * `debugState` is only surfaced while a debug run is active (or its results are
- * still on screen), so callers never have to re-check `isDebugging`.
- */
 const useNodeDebugView = (nodeId: string, nodeType: NodeType) => {
+    const statusClass: Record<DebugNodeStatus, string> = {
+        [DebugNodeStatus.Pending]: 'opacity-50',
+        [DebugNodeStatus.Running]: 'border-accent shadow-[0_0_0_2px_color-mix(in_srgb,var(--accent)_30%,transparent),0_0_16px_color-mix(in_srgb,var(--accent)_15%,transparent)] animate-[debug-node-pulse_1.5s_ease-in-out_infinite]',
+        [DebugNodeStatus.Completed]: 'border-success',
+        [DebugNodeStatus.Failed]: 'border-danger shadow-[0_0_0_2px_color-mix(in_srgb,var(--danger)_30%,transparent)]',
+        [DebugNodeStatus.Skipped]: 'opacity-40 border-dashed'
+    };
+
     const storedState = usePluginDebugStore((s) => s.nodeStates[nodeId]);
     const isDebugging = usePluginDebugStore((s) => s.isDebugging || s.totalDuration !== null);
     const inspectedNodeId = usePluginDebugStore((s) => s.inspectedNodeId);
@@ -107,12 +106,8 @@ const useNodeDebugView = (nodeId: string, nodeType: NodeType) => {
         debugState,
         logSegments,
         overheadBadge: resolveOverheadBadge(status, debugState?.durationMs),
-        /*
-         * This used to hand back the class name `workflow-node--debug-${status}`.
-         * The stylesheet is gone, so it hands back that status's utilities instead —
-         * from a lookup, so every value stays a complete literal Tailwind can scan.
-         */
-        debugClass: status ? NODE_DEBUG_STATUS_CLASS[status] : '',
+
+        debugClass: status ? statusClass[status] : '',
         isInspectingOutput: inspectedNodeId === nodeId && hasInspectableOutput,
         hasInspectableOutput,
         hasLog,

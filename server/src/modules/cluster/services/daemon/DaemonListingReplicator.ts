@@ -14,7 +14,7 @@ import {
     type PluginListingTransferExportResult,
     type PluginListingTransferImportResult,
     type PluginListingTransferPurgeResult
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 
 const LISTING_TRANSFER_BATCH_SIZE = 200;

@@ -20,13 +20,11 @@ import {
     WorkflowValidatorService
 } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type {
-    IClusterObjectArchiveService,
-    IStoragePlacementService,
-    ITeamClusterObjectGatewayClient
-} from '@shared/contracts/ports';
+import type { IClusterObjectArchiveService } from '@shared/contracts/ports/IClusterObjectArchiveService';
+import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import logger from '@shared/infrastructure/logger';
-import type { TeamClusterDaemonRegistryInstallBinary } from '@shared/infrastructure/contracts/team-cluster';
+import type { TeamClusterDaemonRegistryInstallBinary } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import path from 'node:path';
 import type { Readable } from 'node:stream';

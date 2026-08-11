@@ -3,14 +3,6 @@ import useExpressionSelect from '../../../hooks/use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';
-import {
-    CODE_INPUT_CLASS,
-    EXPRESSION_CHIP_CLASS,
-    EXPRESSION_CHIP_COLOR_CLASS,
-    EXPRESSION_CHIP_ERROR_CLASS,
-    EXPRESSION_CHIP_INPUT_CLASS,
-    EXPRESSION_CHIP_MATCH_COUNT_CLASS
-} from '../pipeline-classes';
 import { useState } from 'react';
 import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
@@ -83,10 +75,10 @@ const ExpressionSelectStageEditor = ({
     const hasExpression = draft.trim().length > 0;
 
     return (
-        <div className={`flex flex-col gap-2 ${EXPRESSION_CHIP_CLASS}`}>
+        <div className='flex flex-col gap-2 w-full'>
             <span className='text-xs text-muted'>Boolean expression over atom columns</span>
             <textarea
-                className={`${CODE_INPUT_CLASS} ${EXPRESSION_CHIP_INPUT_CLASS}`}
+                className='w-full rounded-lg border border-border bg-surface-secondary px-2 py-1.5 font-mono text-xs leading-[1.4] text-foreground w-full resize-y'
                 rows={TEXTAREA_ROWS}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -110,7 +102,7 @@ const ExpressionSelectStageEditor = ({
                     <span className='text-xs text-muted'>Highlight color</span>
                     <input
                         type='color'
-                        className={EXPRESSION_CHIP_COLOR_CLASS}
+                        className='h-5 w-7 cursor-pointer rounded border border-border bg-transparent p-0'
                         value={color}
                         onChange={(e) => patch({ color: e.target.value })}
                         aria-label='Selection highlight color'
@@ -121,12 +113,12 @@ const ExpressionSelectStageEditor = ({
             {hasExpression && !autoRoute && (
                 <div className='flex flex-row items-center gap-2'>
                     {isValid && matchCount !== null && (
-                        <span className={`text-xs text-muted ${EXPRESSION_CHIP_MATCH_COUNT_CLASS}`}>
+                        <span className='text-xs text-muted ml-auto'>
                             {matchCount} atoms {action === 'delete' ? 'will be deleted' : 'selected'}
                         </span>
                     )}
                     {!isValid && error && (
-                        <span className={`text-xs ${EXPRESSION_CHIP_ERROR_CLASS}`}>
+                        <span className='text-xs text-danger'>
                             {error}
                         </span>
                     )}

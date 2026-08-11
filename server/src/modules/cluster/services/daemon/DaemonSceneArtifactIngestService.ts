@@ -8,8 +8,8 @@ import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like'
 import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
 import type { TeamClusterDaemonSceneArtifactUpsertItem } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events';
-import type { AnalysisExpectedArtifact } from '@shared/contracts/types';
+import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events/SceneArtifactBatchUpsertedPayload';
+import type { AnalysisExpectedArtifact } from '@shared/contracts/types/AnalysisProps';
 import logger from '@shared/infrastructure/logger';
 
 export type ProcessDaemonSceneArtifactUpsertInput = TeamClusterDaemonSceneArtifactUpsertItem & {

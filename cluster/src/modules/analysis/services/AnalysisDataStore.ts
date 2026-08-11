@@ -3,7 +3,7 @@ import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonSt
 import { logger } from '@shared/infrastructure/logger';
 import { compressSerializedAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/domain/utilities/analysis-execution-data';
 import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@shared/contracts';
+import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;

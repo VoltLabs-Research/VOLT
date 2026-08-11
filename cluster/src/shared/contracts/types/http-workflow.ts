@@ -9,12 +9,12 @@ export interface WorkflowEdgeDefinition {
     targetHandle?: string;
 }
 
-export interface WorkflowArgumentOption {
+interface WorkflowArgumentOption {
     key: string;
     label: string;
 }
 
-export interface WorkflowArgumentOptionSource {
+interface WorkflowArgumentOptionSource {
     argument?: string;
     valueField?: string;
     labelField?: string;
@@ -58,15 +58,15 @@ export interface WorkflowArgumentDefinition {
     visibleWhen?: WorkflowArgumentVisibilityCondition;
 }
 
-export interface WorkflowArgumentsData {
+interface WorkflowArgumentsData {
     arguments?: WorkflowArgumentDefinition[];
 }
 
-export interface WorkflowForEachData {
+interface WorkflowForEachData {
     iterableSource?: string;
 }
 
-export type WorkflowTrajectoryWindowMode = 'window' | 'all' | 'referencePair';
+type WorkflowTrajectoryWindowMode = 'window' | 'all' | 'referencePair';
 
 export interface WorkflowTrajectoryWindowData {
     mode: WorkflowTrajectoryWindowMode;
@@ -82,7 +82,7 @@ export interface WorkflowIfCondition {
     type?: string;
 }
 
-export interface WorkflowIfStatementData {
+interface WorkflowIfStatementData {
     conditions?: WorkflowIfCondition[];
 }
 
@@ -95,13 +95,13 @@ export interface WorkflowSwitchCaseData {
     defaultCase?: boolean;
 }
 
-export interface WorkflowExposureData {
+interface WorkflowExposureData {
     name?: string;
     results?: string;
     id?: string;
 }
 
-export interface WorkflowExportData {
+interface WorkflowExportData {
     exporter: string;
     type: string;
     options?: JsonObject;
@@ -126,7 +126,7 @@ export interface WorkflowPluginNodeData {
     selectedTimesteps?: number[];
 }
 
-export interface WorkflowEntrypointData {
+interface WorkflowEntrypointData {
     arguments?: string;
     binaryObjectPath?: string;
     ownerClusterId?: string;
@@ -149,7 +149,7 @@ export interface WorkflowNodeData {
     switchCase?: WorkflowSwitchCaseData;
 }
 
-export type WorkflowNodeDefinitionType =
+type WorkflowNodeDefinitionType =
     | 'modifier'
     | 'arguments'
     | 'context'

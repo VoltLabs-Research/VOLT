@@ -1,5 +1,5 @@
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import type { AnalysisExpectedArtifact } from '@shared/contracts/types';
+import type { AnalysisExpectedArtifact } from '@shared/contracts/types/AnalysisProps';
 
 const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'AtomisticExporter',

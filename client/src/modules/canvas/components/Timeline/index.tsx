@@ -15,12 +15,6 @@ import { useShallow } from 'zustand/react/shallow';
 import type { CanvasExposureDownloadParams } from '../canvas-panel-props';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import {
-    RULER_REGION_CLASS,
-    TIMELINE_HEIGHT_ACTIVE_CLASS,
-    TIMELINE_HEIGHT_CLASS,
-    TIMELINE_ROOT_CLASS
-} from './timeline-classes';
 
 const SCENE_ZOOM_SUBSCRIBE_RETRY_MS = 120;
 const PLACEHOLDER_TICK_COUNT = 50;
@@ -92,7 +86,6 @@ const Timeline = ({
         return resolveRangedTimesteps(availableTimesteps, rangeStart, rangeEnd);
     }, [availableTimesteps, rangeStart, rangeEnd]);
 
-    /** Memoised because `TimelineRuler` renders one memoised element per tick. */
     const ticks = useMemo(() => {
         if (rangedTimesteps.length === 0) {
             return Array.from({ length: PLACEHOLDER_TICK_COUNT }, (_, index) => ({
@@ -131,7 +124,6 @@ const Timeline = ({
         let unsubscribe: (() => void) | undefined;
         let retryTimeoutId: number | undefined;
 
-        // The scene mounts independently of the timeline, so poll until its ref is wired.
         const trySubscribe = () => {
             if (cancelled) return;
             const scene = sceneRef.current;
@@ -153,8 +145,8 @@ const Timeline = ({
 
     return (
         <div className={cn(
-            TIMELINE_ROOT_CLASS,
-            activeTab === TimelineTab.Timeline ? TIMELINE_HEIGHT_ACTIVE_CLASS : TIMELINE_HEIGHT_CLASS
+            'flex min-h-0 flex-col overflow-hidden max-h-[calc(100dvh-2rem)] max-md:gap-2 max-md:items-stretch max-md:overflow-visible max-md:pointer-events-none',
+            activeTab === TimelineTab.Timeline ? 'h-auto' : 'h-[var(--canvas-timeline-size,12rem)]'
         )}>
             <TimelineHeader
                 activeTab={activeTab}
@@ -180,7 +172,7 @@ const Timeline = ({
             />
 
             {activeTab === TimelineTab.Timeline && (
-                <div className={RULER_REGION_CLASS} data-tour-id='canvas-timeline-ruler'>
+                <div className='relative h-[25px] min-h-[25px] flex-none max-md:pointer-events-auto max-md:order-2 max-md:h-8 max-md:min-h-8 max-md:min-w-0 max-md:self-stretch max-md:overflow-auto' data-tour-id='canvas-timeline-ruler'>
                     <TimelineRuler
                         rulerRef={rulerRef}
                         ticks={ticks}

@@ -1,5 +1,5 @@
 
-import type { JobStatus } from '@shared/contracts/types/JobStatus';
+import type { JobStatus } from '@volt/contracts/modules/jobs/domain';
 
 export interface JobStatusChangedEventPayload {
     jobId: string;

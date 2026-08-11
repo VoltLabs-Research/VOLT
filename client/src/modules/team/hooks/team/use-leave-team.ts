@@ -12,10 +12,6 @@ const LEAVE_TEAM_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to leave team'
 });
 
-/**
- * Confirms and leaves a team, then moves the active selection to another team when the one
- * being left was selected.
- */
 export default function useLeaveTeam() {
     const { teams } = useTeamData();
     const leaveTeamMutation = useLeaveTeamMutation();

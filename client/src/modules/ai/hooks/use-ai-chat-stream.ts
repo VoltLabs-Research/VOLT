@@ -8,7 +8,7 @@ import type { AddToolResultFn } from '@/modules/ai/tools/use-client-tool-dispatc
 import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
 import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { UseQueryResult } from '@tanstack/react-query';
 import type { ChatTransport, UIMessage } from 'ai';
 import type { RefObject } from 'react';

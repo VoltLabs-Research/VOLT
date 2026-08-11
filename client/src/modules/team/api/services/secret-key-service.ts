@@ -1,6 +1,7 @@
-import { createService, get, paginated, post, del } from '@/app/core/http/utils/create-service';
+import { createService, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { secretKeyRoutes } from '@volt/contracts/modules/team/routes';
 
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { SecretKey } from '@volt/contracts/modules/team/domain';
 import type { TeamUsageMetrics, KeyUsageMetrics } from '@volt/contracts/modules/team/domain';
 import type { CreateSecretKeyResponse } from '@volt/contracts/modules/team/domain';
@@ -25,18 +26,20 @@ interface GetSecretKeysInput extends TeamScopedParams, PageParams {
     sort?: string;
 }
 
+const routes = serviceRoutes('/teams');
+
 const endpoints = {
-    listByTeamId: paginated<GetSecretKeysInput, PaginatedResponse<SecretKey>>('/:teamId/secret-keys'),
-    create: post<CreateSecretKeyParams, CreateSecretKeyResponse>('/:teamId/secret-keys'),
-    revokeById: post<DeleteSecretKeyInput, void>(
-        '/:teamId/secret-keys/:secretKeyId/revocations', { unwrap: 'void' }
+    listByTeamId: paginated<GetSecretKeysInput, PaginatedResponse<SecretKey>>(routes.path(secretKeyRoutes.list)),
+    create: routes.route<CreateSecretKeyParams, CreateSecretKeyResponse>(secretKeyRoutes.create),
+    revokeById: routes.route<DeleteSecretKeyInput, void>(
+        secretKeyRoutes.revokeById, { unwrap: 'void' }
     ),
-    deleteById: del<DeleteSecretKeyInput>('/:teamId/secret-keys/:secretKeyId'),
-    getTeamMetrics: get<GetSecretKeyTeamMetricsInput, TeamUsageMetrics>(
-        '/:teamId/secret-keys/metrics'
+    deleteById: routes.route<DeleteSecretKeyInput, void>(secretKeyRoutes.deleteById, { unwrap: 'void' }),
+    getTeamMetrics: routes.route<GetSecretKeyTeamMetricsInput, TeamUsageMetrics>(
+        secretKeyRoutes.teamMetrics
     ),
-    getKeyUsage: get<GetSecretKeyUsageInput, KeyUsageMetrics>(
-        '/:teamId/secret-keys/:secretKeyId/usage'
+    getKeyUsage: routes.route<GetSecretKeyUsageInput, KeyUsageMetrics>(
+        secretKeyRoutes.keyUsage
     )
 };
 

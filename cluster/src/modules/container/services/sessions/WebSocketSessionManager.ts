@@ -4,7 +4,7 @@ import { decodeStreamChunk, encodeStreamChunk } from '@shared/contracts/channel/
 import { createSessionAttachFailureResult, failSessionAttach } from '@modules/container/services/sessions/session-transitions';
 import { WebSocket } from 'ws';
 import type { CloseEvent, Data, MessageEvent } from 'ws';
-import type { TeamClusterDaemonSessionAttachPayload } from '@shared/contracts';
+import type { TeamClusterDaemonSessionAttachPayload } from '@voltstack/daemon-cluster-client';
 import type { BinarySessionInputPayload, ReverseChannelOutboundMessage } from '@shared/contracts/channel/binary-messages';
 import type { SessionCommandResult, SessionTransitionCoordinator } from '@modules/container/services/sessions/session-transitions';
 

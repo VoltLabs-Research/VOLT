@@ -19,7 +19,7 @@ export interface BootstrapState{
 export interface DevModeState{
     enabled: boolean;
     voltPath: string;
-    /** @deprecated the daemon lives at `<voltPath>/cluster` now; kept for old configs */
+
     clusterDaemonPath?: string;
 }
 
@@ -49,18 +49,10 @@ export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
 
     async #write(config: object){
-        
-        
-        
         await writeFile(this.props.configFile, JSON.stringify(config, null, 2), { mode: 0o600 });
         await chmod(this.props.configFile, 0o600).catch(() => {});
     }
 
-    /**
-     * The config file as parsed JSON. `unknown` values rather than `any`: the file
-     * is on disk and user-editable, so every field is read through `#field`, which
-     * makes the cast explicit at one place per field.
-     */
     async get(): Promise<Record<string, unknown>>{
         if(!existsSync(this.props.configFile)) return {};
         const text = (await readFile(this.props.configFile)).toString().trim();
@@ -68,7 +60,6 @@ export default class AppConfig{
         try{ return JSON.parse(text) as Record<string, unknown>; }catch{ return {}; }
     }
 
-    /** Reads one top-level field, asserting the shape the caller expects. */
     async #field<T>(key: string): Promise<T | undefined>{
         return (await this.get())[key] as T | undefined;
     }

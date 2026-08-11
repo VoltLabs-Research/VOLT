@@ -22,13 +22,13 @@ const useDebugTrajectorySelector = () => {
     const selectedTrajectoryId = searchParams.get(DEBUG_TRAJECTORY_PARAM) || null;
     const selectedTimestepParam = searchParams.get(DEBUG_TIMESTEP_PARAM);
     const selectedTimestep = readSelectedTimestep(selectedTimestepParam);
-    const trajectories = trajectoryQuery.data ?? [];
+    const trajectoriesData = trajectoryQuery.data;
+    const trajectories = useMemo(() => trajectoriesData ?? [], [trajectoriesData]);
 
     const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, replace = false) => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), { replace });
     }, [setSearchParams]);
 
-    // Memoised: both identities are load-bearing dependencies of the effects below.
     const selectedTrajectory = useMemo(() => {
         return trajectories.find((trajectory) => trajectory._id === selectedTrajectoryId) || null;
     }, [trajectories, selectedTrajectoryId]);

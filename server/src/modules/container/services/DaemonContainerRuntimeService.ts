@@ -6,8 +6,8 @@ import type {
     ContainerTerminalAttachment,
     CreateRuntimeContainerOptions,
     RuntimeContainerInfo
-} from '@shared/contracts/ports/IContainerService';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/contracts/ports/ContainerRuntime';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 export interface RuntimeContainerSummary {
     Id: string;

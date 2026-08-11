@@ -1,4 +1,6 @@
-import { buildKeys, createSocketQuery, queryClient } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createSocketQuery } from '@/shared/query/create-query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import type { ClusterHistoryMetric, ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 import { resolveClusterMetricId } from '../utils/resolve-cluster-metric-id';

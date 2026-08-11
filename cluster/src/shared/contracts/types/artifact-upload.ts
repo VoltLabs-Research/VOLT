@@ -25,7 +25,7 @@ export interface ArtifactUploadStageInput extends ArtifactStageInput {
     reportArtifact?: SceneArtifactUpsertBatchItem;
 }
 
-export type ArtifactUploadStageFileInput = ArtifactUploadStageInput & {
+type ArtifactUploadStageFileInput = ArtifactUploadStageInput & {
     sourcePath: string;
 };
 

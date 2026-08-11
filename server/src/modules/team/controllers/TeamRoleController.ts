@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -26,7 +27,7 @@ export default class TeamRoleController extends Controller {
     create(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateTeamRoleInput
+        @Body(schemaBody(typia.createValidate<CreateTeamRoleInput>())) body: CreateTeamRoleInput
     ){
         return this.#service.create(teamId, userId, body);
     }
@@ -48,7 +49,7 @@ export default class TeamRoleController extends Controller {
     @Route(teamRoleRoutes.update)
     updateById(
         @Param('roleId') roleId: string,
-        @Body() body: UpdateTeamRoleInput
+        @Body(schemaBody(typia.createValidate<UpdateTeamRoleInput>())) body: UpdateTeamRoleInput
     ){
         return this.#service.updateById(roleId, body);
     }

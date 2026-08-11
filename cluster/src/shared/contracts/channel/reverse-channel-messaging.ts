@@ -11,7 +11,7 @@ export type AuthenticatedReverseChannelMessage<TType extends string, TPayload ex
     & TPayload
     & { type: TType };
 
-export type ReverseChannelPayloadValue = JsonValue;
+type ReverseChannelPayloadValue = JsonValue;
 
 export interface ReverseChannelCommandPayloadView {
     requestId?: string;

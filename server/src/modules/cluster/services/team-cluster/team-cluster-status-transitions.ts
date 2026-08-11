@@ -1,4 +1,4 @@
-import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 
 const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<TeamClusterStatus>> = {
     [TeamClusterStatus.WaitingForConnection]: new Set([

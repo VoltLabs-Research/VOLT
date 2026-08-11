@@ -1,25 +1,8 @@
 import { Skeleton } from '@heroui/react';
 
-/**
- * Placeholder shown while the container behind the detail route is still loading.
- *
- * Two conversions worth naming. The header block used to borrow
- * `.container-details-header` / `.container-details-header-tabs-row` from
- * `ContainerDetailsHeader.css` across a component boundary; those classes are gone,
- * so the padding, bottom rule and tab-row margin are restated here to keep the
- * skeleton the same shape as the header it stands in for.
- *
- * And bravais's `Skeleton` took `variant`/`width`/`height` props where HeroUI's is
- * sized by `className`. The radii carry over by pixel value, not by name:
- * `variant='text'` was 6px (`rounded-md`) and `variant='rounded'` was 12px
- * (`rounded-xl`). `animationType='pulse'` restates bravais's default, since
- * HeroUI's is a shimmer.
- */
-const HEADER_CLASS_NAMES = 'flex flex-col border-b border-border px-6 pt-4 max-[720px]:px-4 max-[720px]:pt-3';
-
 const ContainerDetailsSkeleton = () => (
     <div className='flex flex-col h-full min-h-0'>
-        <div className={HEADER_CLASS_NAMES}>
+        <div className='flex flex-col border-b border-border px-6 pt-4 max-[720px]:px-4 max-[720px]:pt-3'>
             <Skeleton animationType='pulse' className='mb-2 h-6 w-[60px] rounded-md' />
             <div className='flex flex-row items-start justify-between gap-4'>
                 <div className='flex flex-col gap-2'>

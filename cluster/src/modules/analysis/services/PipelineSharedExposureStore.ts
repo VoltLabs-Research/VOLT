@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 
 const sharedExposureKey = (

@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
-import { statusBadgeClass } from '@/shared/ui/status-vocabulary';
+import { resolveStatusVariant } from '@/shared/ui/status-vocabulary';
+import { cn } from '@heroui/react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
@@ -84,7 +85,18 @@ export function statusColumn<TRow = unknown>(
         sortable: options?.sortable ?? false,
         render: (value: unknown, row: TRow) => {
             const status = options?.resolveStatus ? options.resolveStatus(value, row) : String(value);
-            return <span className={statusBadgeClass(status)}>{status}</span>;
+            return (
+                <span className={cn('inline-flex items-center gap-1 rounded-full text-xs font-medium uppercase whitespace-nowrap', {
+                    active: 'text-foreground',
+                    brand: 'text-foreground',
+                    primary: 'text-foreground',
+                    success: 'text-success',
+                    warning: 'text-warning',
+                    danger: 'text-danger',
+                    inactive: 'text-muted',
+                    neutral: 'text-muted'
+                }[resolveStatusVariant(status)])}>{status}</span>
+            );
         },
         skeleton: {
             variant: 'rounded',
@@ -238,7 +250,18 @@ export function enumColumn<TRow = unknown>(
         render: (value: unknown, row: TRow) => {
             const raw = options?.resolveValue ? options.resolveValue(value, row) : String(value ?? '');
             const displayLabel = options?.resolveLabel ? options.resolveLabel(raw) : undefined;
-            return <span className={statusBadgeClass(raw)}>{displayLabel ?? raw}</span>;
+            return (
+                <span className={cn('inline-flex items-center gap-1 rounded-full text-xs font-medium uppercase whitespace-nowrap', {
+                    active: 'text-foreground',
+                    brand: 'text-foreground',
+                    primary: 'text-foreground',
+                    success: 'text-success',
+                    warning: 'text-warning',
+                    danger: 'text-danger',
+                    inactive: 'text-muted',
+                    neutral: 'text-muted'
+                }[resolveStatusVariant(raw)])}>{displayLabel ?? raw}</span>
+            );
         },
         skeleton: {
             variant: 'rounded',

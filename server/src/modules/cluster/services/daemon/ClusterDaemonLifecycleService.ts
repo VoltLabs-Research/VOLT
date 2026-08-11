@@ -17,7 +17,7 @@ import type {
     ClusterRuntimeLifecycleCommand
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 
 export interface ProcessHealthcheckInput {
     teamClusterId: string;

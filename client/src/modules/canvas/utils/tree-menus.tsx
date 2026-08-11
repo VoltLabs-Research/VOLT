@@ -12,18 +12,8 @@ interface SliderSubmenuProps {
     onChange: (value: number) => void;
 }
 
-/*
- * `.context-menu-transparency` and `__label` were never defined in any surviving
- * stylesheet — not even before this migration — so the row had no layout of its own
- * (spec §5b.4). It gets the minimum that makes a labelled control legible in a submenu
- * panel, and nothing more.
- */
-const SUBMENU_ROW_CLASS = 'flex min-w-[200px] flex-col gap-1.5 p-2';
-
-const SUBMENU_LABEL_CLASS = 'text-xs text-muted';
-
 const SliderSubmenu = ({ label, min, max, step, value, onChange }: SliderSubmenuProps) => (
-    <div className={SUBMENU_ROW_CLASS}>
+    <div className='flex min-w-[200px] flex-col gap-1.5 p-2'>
         <Slider
             minValue={min}
             maxValue={max}
@@ -31,7 +21,7 @@ const SliderSubmenu = ({ label, min, max, step, value, onChange }: SliderSubmenu
             value={value}
             onChange={(next) => onChange(Array.isArray(next) ? next[0] : next)}
         >
-            <Label className={SUBMENU_LABEL_CLASS}>{label}</Label>
+            <Label className='text-xs text-muted'>{label}</Label>
             <Slider.Track>
                 <Slider.Fill />
                 <Slider.Thumb />
@@ -101,8 +91,8 @@ interface ColorSubmenuProps {
 }
 
 const ColorSubmenu = ({ value, onChange }: ColorSubmenuProps) => (
-    <div className={SUBMENU_ROW_CLASS}>
-        <span className={SUBMENU_LABEL_CLASS}>Color</span>
+    <div className='flex min-w-[200px] flex-col gap-1.5 p-2'>
+        <span className='text-xs text-muted'>Color</span>
         <div className='flex flex-row items-center gap-2'>
             <input
                 type='color'

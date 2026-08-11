@@ -41,7 +41,6 @@ const buildTimeSpentByUser = (activityData: DailyActivity[]): Map<string, number
     const totalsByUser = new Map<string, number>();
 
     for (const entry of activityData) {
-        // `DailyActivity.user` is a populate-or-id union in the contract.
         const userId = typeof entry.user === 'string'
             ? entry.user
             : entry.user._id;

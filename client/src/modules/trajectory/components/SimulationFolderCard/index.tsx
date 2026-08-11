@@ -7,29 +7,6 @@ import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 
 const FOLDER_DRAG_INTENT_DISTANCE = 8;
 
-/**
- * `simulation-folder-card` MUST keep its class name. `shared/ui/components/DocumentListingGrid/GridItem.tsx`
- * tints this card's border when a trajectory is dragged over its cell, through
- * `[&_.simulation-folder-card]:border-accent/76` — the drop-target affordance lives in the
- * grid, not here, so the hook has to stay on the DOM.
- *
- * `group/card` is named rather than bare because the same grid item is itself a `group`; an
- * unnamed `group-hover:` on the actions would match whichever `.group` ancestor is nearest
- * and the two are not the same box.
- */
-const CARD = 'simulation-folder-card group/card relative flex h-full min-h-[200px] cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-transparent p-6 transition-[border-color,box-shadow] duration-[160ms] hover:border-border/72';
-
-const ACTIONS = 'absolute top-[0.45rem] right-[0.45rem] z-[4] opacity-0 transition-[opacity,background-color] duration-[160ms] group-hover/card:opacity-100 group-focus-within/card:opacity-100';
-
-/**
- * A plain `<button>`, not a HeroUI `Button`: `ContextMenuPopover` clones its trigger to
- * attach the floating-ui reference and the press handlers, and HeroUI's `Button` has a
- * closed prop interface with no `title`.
- */
-const ACTIONS_BUTTON = 'flex size-7 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted shadow-none transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground';
-
-const ICON = 'flex size-[3.25rem] flex-row items-center justify-center rounded-[0.95rem] border-0 bg-surface-secondary text-muted';
-
 interface SimulationFolderCardProps {
     folder: TrajectoryFolderRow;
     onOpen: (folderId: string) => void;
@@ -100,7 +77,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
 
     return (
         <article
-            className={CARD}
+            className='simulation-folder-card group/card relative flex h-full min-h-[200px] cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-transparent p-6 transition-[border-color,box-shadow] duration-[160ms] hover:border-border/72'
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}
@@ -112,7 +89,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
         >
             {menuOptions.length > 0 ? (
                 <div
-                    className={ACTIONS}
+                    className='absolute top-[0.45rem] right-[0.45rem] z-[4] opacity-0 transition-[opacity,background-color] duration-[160ms] group-hover/card:opacity-100 group-focus-within/card:opacity-100'
                     data-row-click-ignore='true'
                 >
                     <ContextMenuPopover
@@ -120,7 +97,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                         trigger={(
                             <button
                                 type='button'
-                                className={ACTIONS_BUTTON}
+                                className='flex size-7 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted shadow-none transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground'
                                 title={`Open actions for ${folder.title}`}
                                 aria-label={`Open actions for ${folder.title}`}
                             >
@@ -136,16 +113,14 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                 </div>
             ) : null}
             <div className='flex min-h-full flex-col gap-6 h-full'>
-                <div className={ICON}>
+                <div className='flex size-[3.25rem] flex-row items-center justify-center rounded-[0.95rem] border-0 bg-surface-secondary text-muted'>
                     <Folder size={30} strokeWidth={1.75} />
                 </div>
-
                 <div className='flex flex-col gap-2 flex-1'>
                     <h3 className='text-xl font-medium text-foreground truncate'>
                         {folder.title}
                     </h3>
                 </div>
-
                 <div className='mt-auto flex flex-row items-center gap-2 text-sm text-muted'>
                     <span>Open folder</span>
                     <ChevronRight size={14} strokeWidth={2} />

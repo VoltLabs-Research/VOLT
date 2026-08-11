@@ -32,7 +32,6 @@ const buildPluginsById = (plugins: Plugin[]): Record<string, Plugin> => {
     return Object.fromEntries(plugins.map((plugin) => [plugin._id, plugin]));
 };
 
-/** How a plugin is labelled anywhere the user picks one from a list. */
 export const toPluginSelectOption = (plugin: Plugin): SelectOption => ({
     value: plugin._id,
     title: plugin.modifier?.name?.trim() || plugin._id

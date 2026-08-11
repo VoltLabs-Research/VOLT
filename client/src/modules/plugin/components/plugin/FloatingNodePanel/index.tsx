@@ -1,8 +1,4 @@
 import { CloseButton } from '@heroui/react';
-import {
-    FLOATING_PANEL_CLASS,
-    FLOATING_PANEL_HEADER_CLASS
-} from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
@@ -91,7 +87,7 @@ const FloatingNodePanel = () => {
     useEffect(() => {
         if (!liveSelectedNode) return;
         setPosition(computePosition(liveSelectedNode));
-    }, [liveSelectedNode?.id, liveSelectedNode?.position.x, liveSelectedNode?.position.y, viewport.x, viewport.y, viewport.zoom, computePosition]);
+    }, [liveSelectedNode, viewport.x, viewport.y, viewport.zoom, computePosition]);
 
     useEffect(() => {
         const canvas = document.querySelector('.plugin-builder-canvas');
@@ -106,7 +102,7 @@ const FloatingNodePanel = () => {
         <AnimatePresence mode='wait'>
             {liveSelectedNode && config && position && (
                 <motion.div
-                    className={FLOATING_PANEL_CLASS}
+                    className='absolute z-[100] flex w-[400px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--overlay-shadow)] max-[768px]:fixed! max-[768px]:inset-auto! max-[768px]:bottom-2! max-[768px]:left-2! max-[768px]:right-2! max-[768px]:top-auto! max-[768px]:w-auto! max-[768px]:max-w-[calc(100vw-1rem)]! max-[768px]:max-h-[min(70dvh,560px)] max-[768px]:rounded-xl'
                     style={{
                         top: position.top,
                         right: position.right,
@@ -123,7 +119,7 @@ const FloatingNodePanel = () => {
                     key={liveSelectedNode.id}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <div className={FLOATING_PANEL_HEADER_CLASS}>
+                    <div className='flex shrink-0 flex-row items-center gap-3 border-b border-border p-4'>
                         <h3 className='flex-1 text-base font-semibold text-foreground'>
                             {config.label}
                         </h3>

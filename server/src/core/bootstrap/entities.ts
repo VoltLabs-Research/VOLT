@@ -8,8 +8,6 @@ import AIMessage from '@modules/ai/models/AIMessage';
 import Analysis from '@modules/analysis/models/Analysis';
 import AnalysisProvenance from '@modules/analysis/models/AnalysisProvenance';
 import User from '@modules/auth/models/User';
-import Chat from '@modules/chat/models/Chat';
-import ChatMessage from '@modules/chat/models/ChatMessage';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
@@ -50,8 +48,6 @@ const ENTITIES: readonly Function[] = [
     Notification,
     DailyActivity,
     DeploymentSettings,
-    Chat,
-    ChatMessage,
     AIConversation,
     AIMessage,
     TeamCluster,

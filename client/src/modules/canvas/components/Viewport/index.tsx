@@ -21,17 +21,6 @@ import type { ScreenshotComposition } from '@/modules/fractal/contracts/screensh
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode, RefObject } from 'react';
 
-/**
- * `.canvas-viewport-gradient` — a vignette that only exists in dark mode, and that
- * `prefers-reduced-motion` turned off entirely (it reads as motion against a rotating
- * scene). Both are theme/media-scoped background swaps of one element, so both are
- * variants on it: the base is transparent and the dark theme paints.
- *
- * `motion-reduce:bg-none` cancels it because the global reduced-motion block in
- * `index.css` only neutralises durations, not a painted gradient.
- */
-const VIEWPORT_GRADIENT_CLASS = 'pointer-events-none absolute inset-0 bg-none [[data-theme=dark]_&]:bg-[radial-gradient(60%_60%_at_50%_50%,transparent_0%,color-mix(in_srgb,var(--background)_25%,transparent)_100%)] motion-reduce:bg-none';
-
 interface ViewportProps {
     trajectory: Trajectory | null | undefined;
     currentTimestep: number | undefined;
@@ -53,7 +42,6 @@ const resolveTrajectoryTeamId = (trajectory: Trajectory | null | undefined): str
         return undefined;
     }
 
-    // `Ref<Team>` is a deliberate populate union.
     return typeof trajectory.team === 'string' ? trajectory.team : trajectory.team._id;
 };
 
@@ -108,7 +96,6 @@ const Viewport = ({
         setModelLoadingState: s.setModelLoadingState,
         setIsPointCloudScene: s.setIsPointCloudScene
     })));
-
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -236,7 +223,7 @@ const Viewport = ({
                     </div>
                 )}
 
-                {!hideGradient && <div className={VIEWPORT_GRADIENT_CLASS} />}
+                {!hideGradient && <div className='pointer-events-none absolute inset-0 bg-none [[data-theme=dark]_&]:bg-[radial-gradient(60%_60%_at_50%_50%,transparent_0%,color-mix(in_srgb,var(--background)_25%,transparent)_100%)] motion-reduce:bg-none' />}
 
                 {analysisOverlay}
 

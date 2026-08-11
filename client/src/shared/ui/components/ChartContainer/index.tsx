@@ -19,16 +19,6 @@ interface ChartContainerProps {
     statsLoading?: boolean;
 };
 
-const STAT_VALUE_CLASS_NAMES: Record<ChartStatEmphasis, string> = {
-    primary: 'tabular-nums lining-nums text-2xl font-semibold leading-none tracking-[-0.02em] text-foreground',
-    secondary: 'tabular-nums lining-nums text-sm font-medium leading-[1.2] text-muted'
-};
-
-const STAT_SKELETON_CLASS_NAMES: Record<ChartStatEmphasis, string> = {
-    primary: 'h-7 w-20 rounded-md',
-    secondary: 'h-[18px] w-[50px] rounded-md'
-};
-
 const ChartContainer = ({
     icon: Icon,
     title,
@@ -57,9 +47,12 @@ const ChartContainer = ({
                     {stat.label}
                 </span>
                 {statsLoading ? (
-                    <Skeleton className={STAT_SKELETON_CLASS_NAMES[emphasis]} />
+                    <Skeleton className={{ primary: 'h-7 w-20 rounded-md', secondary: 'h-[18px] w-[50px] rounded-md' }[emphasis]} />
                 ) : (
-                    <span className={STAT_VALUE_CLASS_NAMES[emphasis]}>
+                    <span className={{
+                        primary: 'tabular-nums lining-nums text-2xl font-semibold leading-none tracking-[-0.02em] text-foreground',
+                        secondary: 'tabular-nums lining-nums text-sm font-medium leading-[1.2] text-muted'
+                    }[emphasis]}>
                         {stat.value}
                     </span>
                 )}

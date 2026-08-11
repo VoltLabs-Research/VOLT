@@ -2,7 +2,7 @@ import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import Analysis from '@modules/analysis/models/Analysis';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
-import { JobStatus } from '@shared/contracts/types';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type {
     ClusterTransferJobState
 } from '@volt/contracts/modules/cluster/domain';

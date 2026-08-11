@@ -1,6 +1,7 @@
-import { createService, get, paginated } from '@/app/core/http/utils/create-service';
+import { createService, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type { SceneArtifactSourceType } from '@volt/contracts/modules/trajectory/domain';
 
@@ -52,14 +53,16 @@ export const buildSceneArtifactQuery = (
     };
 };
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
-    listByTrajectory: get<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
-        '/trajectories/:trajectoryId/scene-artifacts', {
+    listByTrajectory: routes.route<ListSceneArtifactsInput, PaginatedResponse<SceneArtifact | RenderableExposurePayload>>(
+        trajectoryRoutes.getSceneArtifacts, {
             unwrap: 'raw',
             query: buildSceneArtifactQuery
         }
     ),
-    listByTeam: paginated<ListTeamSceneArtifactsInput, PaginatedResponse<SceneArtifact>>('/scene-artifacts', {
+    listByTeam: paginated<ListTeamSceneArtifactsInput, PaginatedResponse<SceneArtifact>>(routes.path(trajectoryRoutes.listTeamSceneArtifacts), {
         unwrap: 'raw',
         query: buildSceneArtifactQuery
     })

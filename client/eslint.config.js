@@ -50,7 +50,7 @@ export default tseslint.config(
         },
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
-            '@typescript-eslint/no-empty-object-type': 'warn',
+            '@typescript-eslint/no-empty-object-type': ['warn', { allowInterfaces: 'with-single-extends' }],
             '@typescript-eslint/no-unused-vars': ['error', {
                 argsIgnorePattern: '^_',
                 caughtErrorsIgnorePattern: '^_',

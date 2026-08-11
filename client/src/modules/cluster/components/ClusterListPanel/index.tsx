@@ -5,7 +5,7 @@ import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/module
 import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-waiting';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Button, Tooltip } from '@heroui/react';
-import { openModal } from '@/shared/ui/modal';
+import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -15,27 +15,6 @@ interface ClusterListPanelProps {
     clusters: TeamCluster[];
     onDelete: (cluster: TeamCluster) => void;
 }
-
-/**
- * `.cluster-list-panel` and its children, from the deleted sheet.
- *
- * The panel is `position: fixed` at a hand-picked offset, and below 768px it
- * re-anchors to the bottom of the viewport clear of the mobile tab bar and the
- * safe-area insets — hence the `env()` expressions, which are arbitrary values
- * because they are one-off pixel maths rather than tokens (spec §5). The sheet's
- * `@media (max-width: 768px)` becomes `max-md:`, which is the same breakpoint.
- *
- * The row separator was `:not(:last-child)` rather than a `divide-y`, and is kept
- * as that selector through an arbitrary variant so the last row in the scroll area
- * still carries no rule beneath it.
- */
-const PANEL_CLASS = 'fixed top-20 left-6 w-[280px] max-h-[min(320px,calc(100dvh-10rem))] overflow-hidden max-md:top-auto max-md:right-[max(0.75rem,env(safe-area-inset-right,0px))] max-md:bottom-[calc(max(4.25rem,env(safe-area-inset-bottom,0px))+3.25rem)] max-md:left-[max(0.75rem,env(safe-area-inset-left,0px))] max-md:w-auto max-md:max-h-[min(280px,calc(100dvh-12rem))]';
-
-const PANEL_HEADER_CLASS = 'px-3 py-2.5 border-b border-border';
-
-const PANEL_LIST_CLASS = 'overflow-y-auto max-h-[min(264px,calc(100dvh-14rem))] max-md:max-h-[min(224px,calc(100dvh-16rem))]';
-
-const PANEL_ROW_CLASS = 'flex flex-row items-center gap-2 px-3 py-2 transition-colors duration-150 ease-out [&:not(:last-child)]:border-b [&:not(:last-child)]:border-border hover:bg-surface-tertiary focus-within:bg-surface-tertiary';
 
 const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
     const selectedTeamId = useSelectedTeamId();
@@ -68,7 +47,7 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
         const canConnect = isTeamClusterWaiting(cluster.status);
 
         return (
-            <div className={PANEL_ROW_CLASS} key={cluster._id}>
+            <div className='flex flex-row items-center gap-2 px-3 py-2 transition-colors duration-150 ease-out [&:not(:last-child)]:border-b [&:not(:last-child)]:border-border hover:bg-surface-tertiary focus-within:bg-surface-tertiary' key={cluster._id}>
                 <div className='flex flex-col gap-1 flex-1 min-w-0'>
                     <p className='text-sm font-medium text-foreground truncate min-w-0' title={cluster.name}>
                         {cluster.name}
@@ -82,7 +61,6 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                         <p className='text-xs text-muted'>{label}</p>
                     </div>
                 </div>
-
                 <div className='flex flex-row items-center gap-1 flex-shrink-0'>
                     {canConnect && (
                         <Button
@@ -93,16 +71,7 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                             Connect
                         </Button>
                     )}
-                    {/*
-                      * bravais's `IconButton` back-filled its `title` from the resolved
-                      * accessible name, so this control had a native tooltip *and* the
-                      * `Tooltip` wrapper. HeroUI's `Button` prop interface is closed and
-                      * takes no `title` (spec §5b.8), so the Tooltip is now the only
-                      * hover text — which is what the wrapper was there for.
-                      *
-                      * `delay`/`closeDelay` restate bravais's Tooltip defaults (300ms to
-                      * open, immediate to close) rather than inheriting HeroUI's.
-                      */}
+
                     <Tooltip delay={300} closeDelay={0}>
                         <Tooltip.Trigger>
                             <Button
@@ -125,14 +94,13 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
     };
 
     return (
-        <div className={PANEL_CLASS}>
-            <div className={PANEL_HEADER_CLASS}>
+        <div className='fixed top-20 left-6 w-[280px] max-h-[min(320px,calc(100dvh-10rem))] overflow-hidden max-md:top-auto max-md:right-[max(0.75rem,env(safe-area-inset-right,0px))] max-md:bottom-[calc(max(4.25rem,env(safe-area-inset-bottom,0px))+3.25rem)] max-md:left-[max(0.75rem,env(safe-area-inset-left,0px))] max-md:w-auto max-md:max-h-[min(280px,calc(100dvh-12rem))]'>
+            <div className='px-3 py-2.5 border-b border-border'>
                 <p className='text-sm font-semibold text-foreground'>Your clusters</p>
             </div>
-            <div className={PANEL_LIST_CLASS}>
+            <div className='overflow-y-auto max-h-[min(264px,calc(100dvh-14rem))] max-md:max-h-[min(224px,calc(100dvh-16rem))]'>
                 {clusters.map(renderRow)}
             </div>
-
             <ClusterInstallCommandModal
                 clusterId={installClusterId}
                 enrollmentToken={installToken}

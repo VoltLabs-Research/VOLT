@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
+import type { ContainerPortMapping } from '@shared/contracts/ports/ContainerRuntime';
 import Container from '@modules/container/models/Container';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';

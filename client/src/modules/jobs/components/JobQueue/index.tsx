@@ -16,58 +16,9 @@ interface JobQueueProps {
 
 interface StatusConfigEntry {
     icon: ReactNode;
-    /**
-     * What `.job-container.<status> path { stroke: … }` and
-     * `.job-container.<status> .job-message { color: … }` used to do from a
-     * stylesheet: one tone, applied to the glyph and to the message line.
-     *
-     * The nested-`<path>` selector existed because there was no way to reach inside
-     * an icon from a class on the wrapper. There is now: every lucide icon strokes
-     * with `currentColor`, so colouring the wrapper colours the glyph, and the
-     * running spinner takes `color='current'` for the same reason.
-     */
+
     toneClassName: string;
 };
-
-const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
-    [JobStatus.Completed]: {
-        icon: <Check />,
-        toneClassName: 'text-success'
-    },
-    [JobStatus.Running]: {
-        icon: <Spinner size='sm' color='current' />,
-        toneClassName: 'text-info'
-    },
-    [JobStatus.Queued]: {
-        icon: <Clock />,
-        toneClassName: 'text-warning'
-    },
-    [JobStatus.Retrying]: {
-        icon: <Redo2 />,
-        toneClassName: 'text-warning'
-    },
-    [JobStatus.QueuedAfterFailure]: {
-        icon: <TriangleAlert />,
-        toneClassName: 'text-danger'
-    },
-    [JobStatus.Failed]: {
-        icon: <X />,
-        toneClassName: 'text-danger'
-    }
-};
-
-const CONTAINER_CLASS_NAMES = [
-    'flex flex-row items-center justify-between gap-3 min-h-[3.25rem] p-3 rounded-2xl',
-    'focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_28%,transparent)]'
-].join(' ');
-
-/**
- * `.job-group-children .job-container` — the one parent contract in this module.
- * Every `JobQueue` is rendered by `FrameGroup`, which only ever renders inside that
- * container, so the ancestor selector and `isChild` selected exactly the same rows;
- * the rule moves onto the row itself rather than becoming an arbitrary variant.
- */
-const CHILD_CLASS_NAMES = 'ml-3 border-l border-border rounded-none';
 
 const queueTypeNames: Record<string, string> = {
     'analysis_processing': 'Analysis',
@@ -92,9 +43,34 @@ const formatDuration = (ms: number) => {
 };
 
 const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
-    // Every hook must run before any early return: `job.status` arrives over the
-    // socket, so an unmapped status must not change the hook call order.
     const retryJobAnalysis = useRetryJobAnalysis();
+
+    const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {
+        [JobStatus.Completed]: {
+            icon: <Check />,
+            toneClassName: 'text-success'
+        },
+        [JobStatus.Running]: {
+            icon: <Spinner size='sm' color='current' />,
+            toneClassName: 'text-info'
+        },
+        [JobStatus.Queued]: {
+            icon: <Clock />,
+            toneClassName: 'text-warning'
+        },
+        [JobStatus.Retrying]: {
+            icon: <Redo2 />,
+            toneClassName: 'text-warning'
+        },
+        [JobStatus.QueuedAfterFailure]: {
+            icon: <TriangleAlert />,
+            toneClassName: 'text-danger'
+        },
+        [JobStatus.Failed]: {
+            icon: <X />,
+            toneClassName: 'text-danger'
+        }
+    };
 
     const statusEntry = statusConfig[job.status];
     if (!statusEntry) return null;
@@ -118,7 +94,12 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
 
     return (
-        <div className={cn(CONTAINER_CLASS_NAMES, isChild && CHILD_CLASS_NAMES)}>
+        <div
+            className={cn(
+                'flex flex-row items-center justify-between gap-3 min-h-[3.25rem] p-3 rounded-2xl focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_28%,transparent)]',
+                isChild && 'ml-3 border-l border-border rounded-none'
+            )}
+        >
             <span className={cn('inline-flex items-center justify-center shrink-0 text-base', statusEntry.toneClassName)} aria-hidden='true'>
                 {statusEntry.icon}
             </span>

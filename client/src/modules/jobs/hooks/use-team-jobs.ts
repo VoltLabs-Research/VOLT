@@ -27,7 +27,6 @@ const isTerminalJobStatus = (status: JobStatus): boolean => {
     return status === JobStatus.Completed || status === JobStatus.Failed;
 };
 
-/** Unversioned updates always apply; versioned ones only when they are newer than what the cache holds. */
 const isPendingRevision = (job: Job, appliedRevision: number): boolean => {
     return job.revision === undefined || job.revision > appliedRevision;
 };

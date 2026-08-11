@@ -15,16 +15,11 @@ interface ActivityHeatmapDay {
     data?: ActivityHeatmapDayData;
 };
 
-/**
- * One square. `day` is null for the leading and trailing squares that pad the first
- * and last calendar weeks out to seven rows — they occupy a grid slot and nothing else.
- */
 interface ActivityHeatmapCell {
     key: string;
     day: ActivityHeatmapDay | null;
 };
 
-/** One column. `monthLabel` is empty unless a new month starts in this column. */
 interface ActivityHeatmapWeek {
     key: string;
     monthLabel: string;
@@ -167,13 +162,6 @@ const buildDays = (
     return days;
 };
 
-/**
- * The grid, column-major: seven rows of weekdays, one column per calendar week, which
- * is why the first column has to start on a Sunday. `getDay(startDate)` leading blanks
- * push the range's first day onto its real weekday row, and the tail is padded so the
- * last column is full — the same shape `react-calendar-heatmap` drew in SVG, now
- * expressed as cells a `grid-flow-col` container places for us.
- */
 const buildCells = (days: ActivityHeatmapDay[], leadingBlankCount: number): ActivityHeatmapCell[] => {
     const cells: ActivityHeatmapCell[] = [];
 

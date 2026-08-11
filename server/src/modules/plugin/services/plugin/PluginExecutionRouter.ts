@@ -9,9 +9,9 @@ import {
     type TrajectoryFramePayload
 } from '@modules/plugin/services/plugin/plugin-dispatch-payload';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports';
+import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
 import type { QueuedJobNotification } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginDependencyResolverService';

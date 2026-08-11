@@ -1,5 +1,5 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Modal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { useCallback } from 'react';
 import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
@@ -80,11 +80,6 @@ const TextInputModal = ({
         ...(primaryIsLoading === undefined ? {} : { isPending: primaryIsLoading })
     };
 
-    /*
-     * No padding wrapper around the body any more: HeroUI's dialog is `p-6`, so the
-     * `p-6` div this used to carry would double it. The three children stacked as
-     * blocks inside it and stack the same way inside `ModalBody`.
-     */
     return (
         <Modal
             id={modalId}

@@ -1,6 +1,9 @@
 import invitationService from '../../api/services/invitation-service';
 import { invalidateTeamsQuery } from '../team/queries';
-import { buildKeys, createMutation, createQuery, queryClient } from '@/shared/query';
+import queryClient from '@/shared/query/query-client';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
 import type { CancelInvitationInput, InvitationStatusInput, SendInvitationInput } from '../../api/services/invitation-service';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
 

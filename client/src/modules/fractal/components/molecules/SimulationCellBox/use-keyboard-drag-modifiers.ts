@@ -9,10 +9,6 @@ const _cameraForward = new THREE.Vector3();
 
 const isPrimaryDragModifierPressed = (event: KeyboardEvent) => event.ctrlKey || event.metaKey;
 
-/**
- * Keyboard modifiers that steer model dragging: Alt swaps the floor axis lock
- * for the screen-facing vertical axis, and Ctrl/Cmd arms dragging on desktop.
- */
 export const useKeyboardDragModifiers = (camera: THREE.Camera, isMobileViewport: boolean) => {
     const [axisLock, setAxisLock] = useState<DragAxisLock>(FLOOR_AXIS_LOCK);
     const [isModifierActive, setIsModifierActive] = useState(false);

@@ -29,15 +29,6 @@ export const InvitationsList = ({
     }
 
     if(invitations.length === 0) {
-        /*
-         * bravais's `EmptyState` with no icon and no action, restated on HeroUI's
-         * `EmptyStateRoot` the way `RecoveryState` does — the `<section
-         * aria-labelledby>` landmark, the `max-w-[320px]` content column and its
-         * `max-md:max-w-[90%]` are all `EmptyState.css`. `w-max` is deliberate: the
-         * root class list really did carry Tailwind's `width: max-content`, and
-         * `.invitation-list-empty`'s `height: auto` / `padding: 2rem` overrode the
-         * container's own `height: 100%`.
-         */
         return (
             <EmptyStateRoot<'section'>
                 render={(props) => <section {...props} />}

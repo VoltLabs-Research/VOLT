@@ -1,5 +1,6 @@
 import { buildErrorPath, shouldIgnoreError, isErrorPage } from '@/shared/utils/error-routing';
-import { ErrorSurface, isApiError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isApiError, reportError } from '@/shared/errors/core/report-error';
 import { runErrorRecoveryCleanup } from '@/shared/utils/app-cleanup-registry';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';

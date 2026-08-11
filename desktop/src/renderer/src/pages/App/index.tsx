@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Toaster } from 'sileo';
 import { Button, Spinner, cn } from '@heroui/react';
 import type { DevModeState, DeploymentState } from '@/services/AppConfig';
@@ -7,7 +7,7 @@ import DevModeModal from '@/renderer/src/components/DevModeModal';
 import DockerGate from '@/renderer/src/components/DockerGate';
 import Onboarding from '@/renderer/src/components/Onboarding';
 import { useDeploy, type DeployState, type PhaseStatus } from '@/renderer/src/hooks/useDeploy';
-import { getThemePreference, setThemePreference, type ThemePreference } from '@/renderer/src/theme';
+import { getResolvedTheme, getThemePreference, setThemePreference, subscribeToThemeChange, type ThemePreference } from '@/renderer/src/theme';
 
 type Mode = 'loading' | 'choose' | 'local' | 'remote';
 
@@ -20,21 +20,11 @@ const HEADING: Record<DeployState, string> = {
     error: 'Deploy failed'
 };
 
-/*
- * Every boot screen is the same absolutely-positioned sheet over `.body`. It paints
- * no background of its own — `#root` already decides whether the window is opaque
- * (Linux) or lets the platform's vibrancy through (macOS, Windows), and these sit
- * directly on it.
- */
 const PANEL = 'absolute inset-0 z-10 flex items-center gap-[clamp(32px,6vw,80px)] px-[clamp(40px,6vw,96px)]';
 const PANEL_CENTER = `${PANEL} justify-center`;
 
 const BOOT_HEADING = 'text-[clamp(24px,2.8vw,34px)] font-semibold leading-[1.05] tracking-[-0.02em] text-foreground';
 
-/*
- * The deploy timeline's three text tiers *are* the phase state, so they are a
- * lookup keyed by it rather than a chain of ternaries.
- */
 const STEP_TONE: Record<PhaseStatus, string> = {
     pending: 'text-muted/75',
     running: 'text-foreground',
@@ -44,12 +34,6 @@ const STEP_TONE: Record<PhaseStatus, string> = {
 
 const STEP = 'flex items-center gap-3 text-[15px] leading-none transition-colors duration-200 ease-out-fluid';
 
-/*
- * The log stream. `justify-end` pins the newest line to the bottom and lets older
- * ones spill off the top, where the mask fades them out over the first 88px — the
- * one rule here that has to be an arbitrary property, because a gradient mask is
- * not on Tailwind's scale.
- */
 const LOGS = 'flex shrink-0 grow-0 basis-[clamp(260px,32vw,430px)] flex-col justify-end self-stretch whitespace-pre-wrap break-words py-14 text-left font-mono text-[11.5px] leading-[1.7] text-muted/75';
 const LOGS_AMBIENT = 'overflow-hidden [mask-image:linear-gradient(to_bottom,transparent_0,#000_88px)]';
 const LOGS_READABLE = 'select-text overflow-y-auto [mask-image:none]';
@@ -81,13 +65,11 @@ const App = () => {
     const [bootError, setBootError] = useState<string | null>(null);
     const [logsCopied, setLogsCopied] = useState(false);
     const [themePref, setThemePrefState] = useState<ThemePreference>(getThemePreference());
-
+    const resolvedTheme = useSyncExternalStore(subscribeToThemeChange, getResolvedTheme);
 
     const [paused, setPaused] = useState(window.location.hash === '#launcher');
     const openedRef = useRef(false);
 
-
-    /** Idempotent by design, so it is safe as a stable effect dependency. */
     const openClient = useCallback(() => {
         if(openedRef.current) return;
         openedRef.current = true;
@@ -184,7 +166,6 @@ const App = () => {
         let cancelled = false;
         const intent = window.location.hash.replace('#', '');
 
-
         void window.volt.config.get()
             .then((config) => {
                 if(cancelled) return;
@@ -200,7 +181,6 @@ const App = () => {
                 setDeployment(current);
                 const next: Mode = (current?.mode === 'remote' && current.remote) ? 'remote'
                     : current?.mode === 'local' ? 'local' : 'choose';
-
 
                 if(intent === 'switch'){ switchDeployment(); return; }
                 if(intent === 'devmode'){ setMode(next); setPaused(true); setDevModeOpen(true); return; }
@@ -223,7 +203,6 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-
     useEffect(() => {
         if(mode === 'local' && state === 'up') openClient();
     }, [mode, state, openClient]);
@@ -245,7 +224,6 @@ const App = () => {
                 onStopStack={stopStack}
                 onSwitchDeployment={switchDeployment}
             />
-
             <div className='relative min-h-0 flex-auto'>
                 {mode === 'loading' && (
                     <main className={PANEL_CENTER}>
@@ -334,9 +312,6 @@ const App = () => {
                                 )}
                             </div>
                         </div>
-
-                        {/* Ambient texture while running; readable and scrollable on failure so
-                            the user can diagnose what went wrong. */}
                         <div className={cn(LOGS, state === 'error' ? LOGS_READABLE : LOGS_AMBIENT)}>
                             {logs.map((line, index) => (
                                 <div key={index} className={line.stream === 'stderr' ? `${TERM_LINE} text-danger` : TERM_LINE}>{line.text}</div>
@@ -345,14 +320,12 @@ const App = () => {
                     </main>
                 )}
             </div>
-
             <DevModeModal
                 open={devModeOpen}
                 onClose={() => setDevModeOpen(false)}
                 onApply={applyDevMode}
             />
-
-            <Toaster position='bottom-right' theme='dark' />
+            <Toaster position='bottom-right' theme={resolvedTheme === 'dark' ? 'light' : 'dark'} />
         </div>
     );
 };

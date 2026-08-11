@@ -1,4 +1,3 @@
-import useChatActions from '@/modules/chat/hooks/chat/use-chat-actions';
 import { useRemoveTeamMemberMutation, useUpdateTeamMemberMutation } from '@/modules/team/hooks/member/queries';
 import { useUpdateTeamMutation } from '@/modules/team/hooks/team/queries';
 import useLeaveTeam from '@/modules/team/hooks/team/use-leave-team';
@@ -6,7 +5,7 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { LogOut, MessageCircle, UserMinus } from 'lucide-react';
+import { LogOut, UserMinus } from 'lucide-react';
 import { useCallback } from 'react';
 import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
 
@@ -41,7 +40,6 @@ export default function useTeamMemberListingActions({
     currentUserId,
     canInvite
 }: UseTeamMemberListingActionsOptions) {
-    const chatActions = useChatActions();
     const updateTeamMutation = useUpdateTeamMutation();
     const updateTeamMemberMutation = useUpdateTeamMemberMutation();
     const removeTeamMemberMutation = useRemoveTeamMemberMutation();
@@ -95,13 +93,6 @@ export default function useTeamMemberListingActions({
 
     const { getMenuOptions, getSelectionActionOptions } = useListingActions<TeamMemberStats>({
         actions: {
-            message: {
-                label: 'Message',
-                icon: MessageCircle,
-                handler: async ({ item: member }) => {
-                    await chatActions.getOrCreateChat(selectedTeam._id, member.user._id);
-                }
-            },
             delete: {
                 label: 'Remove from Team',
                 icon: UserMinus,

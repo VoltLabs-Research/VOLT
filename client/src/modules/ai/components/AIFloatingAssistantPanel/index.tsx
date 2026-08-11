@@ -7,32 +7,6 @@ import { useCallback, useEffect, useId, useRef } from 'react';
 import { Expand, Plus, Sparkles } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 
-/**
- * `ai-floating-assistant` is the one class name in this file that MUST stay on the DOM: the
- * composer and the thread re-express this sheet's descendant overrides as
- * `[.ai-floating-assistant_&]:` variants, and that selector is what keeps them winning
- * against the components' own utilities.
- *
- * The entrance animation is the old `ai-floating-assistant-in` keyframes expressed through
- * tw-animate-css, which HeroUI already imports. `slide-in-from-bottom-2` is exactly the
- * 8px the keyframes translated, `zoom-in-95` is within a percent of their 0.96, and
- * `ease-out-fluid` IS `cubic-bezier(.32, .72, 0, 1)` — the same curve, by token. The
- * sheet's own reduced-motion opt-out is now the global one in `index.css`.
- */
-const PANEL = 'ai-floating-assistant fixed z-[80] flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--overlay-shadow)] h-[min(640px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[max(1rem,env(safe-area-inset-bottom,0px))] origin-bottom-right animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-[180ms] ease-out-fluid max-md:h-[min(72vh,calc(100dvh-5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] max-md:w-[calc(100vw-max(1rem,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px)))] max-md:right-[max(0.5rem,env(safe-area-inset-right,0px))] max-md:bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))]';
-
-const PANEL_ALERT = 'border-b border-border bg-danger-soft px-3 py-2';
-
-/**
- * `.dashboard-ai-trigger` carries no styling of its own any more, but it stays on the DOM:
- * `modules/dashboard/components/DashboardHeader/DashboardHeader.css` still names it inside a
- * `:not()` list, and that sheet is another agent's to migrate.
- */
-const TRIGGER = 'dashboard-ai-trigger';
-
-/** `.dashboard-ai-trigger.is-active` — the accent is the foreground, over a soft info fill. */
-const TRIGGER_ACTIVE = 'is-active bg-info-soft text-foreground';
-
 interface AIFloatingAssistantPanelContentProps {
     onClose: () => void;
     triggerRef: RefObject<HTMLButtonElement | null>;
@@ -74,13 +48,14 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
     } = useAIConversationPanel({ onNavigateAway: onClose });
 
     useEffect(() => {
+        const triggerElement = triggerRef.current;
         const focusableElements = getFocusableElements(panelRef.current);
         const target = focusableElements[0] ?? panelRef.current;
 
         target?.focus();
 
         return () => {
-            triggerRef.current?.focus();
+            triggerElement?.focus();
         };
     }, [triggerRef]);
 
@@ -131,7 +106,6 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                 </Button>
                 <Tooltip.Content placement='top'>New conversation</Tooltip.Content>
             </Tooltip>
-
             <Tooltip>
                 <Button isIconOnly variant='ghost' aria-label='Open full AI page' onPress={openAIPage}>
                     <Expand size={16} />
@@ -142,7 +116,7 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
     );
 
     return (
-        <div className={PANEL} ref={panelRef} role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
+        <div className='ai-floating-assistant fixed z-[80] flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--overlay-shadow)] h-[min(640px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[max(1rem,env(safe-area-inset-bottom,0px))] origin-bottom-right animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-[180ms] ease-out-fluid max-md:h-[min(72vh,calc(100dvh-5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] max-md:w-[calc(100vw-max(1rem,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px)))] max-md:right-[max(0.5rem,env(safe-area-inset-right,0px))] max-md:bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))]' ref={panelRef} role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
             <span className='sr-only' id={titleId}>Volt AI assistant</span>
             <span className='sr-only' id={descriptionId}>
                 Floating assistant dialog. Press Escape to close. Tab moves between controls inside the dialog.
@@ -151,9 +125,8 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                 actions={headerActions}
                 onClose={onClose}
             />
-
             <AIConversationAlerts
-                className={PANEL_ALERT}
+                className='border-b border-border bg-danger-soft px-3 py-2'
                 providerCatalogError={providerCatalogError}
                 conversationsError={conversationsError}
                 loadProviderCatalog={loadProviderCatalog}
@@ -170,7 +143,6 @@ const AIFloatingAssistantPanel = () => {
     const closeWidget = useChatSurfaceStore((state) => state.closeWidget);
     const toggleWidget = useChatSurfaceStore((state) => state.toggleWidget);
     const triggerRef = useRef<HTMLButtonElement>(null);
-    const triggerClassName = cn(TRIGGER, isOpen && TRIGGER_ACTIVE);
 
     let panelContent: ReactNode = null;
     if (isOpen) {
@@ -190,7 +162,7 @@ const AIFloatingAssistantPanel = () => {
                     isIconOnly
                     variant='ghost'
                     aria-label={isOpen ? 'Close Volt AI assistant' : 'Open Volt AI assistant'}
-                    className={triggerClassName}
+                    className={cn('dashboard-ai-trigger', isOpen && 'is-active bg-info-soft text-foreground')}
                     onPress={toggleWidget}
                 >
                     <Sparkles size={18} />

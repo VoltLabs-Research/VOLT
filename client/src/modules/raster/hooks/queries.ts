@@ -1,13 +1,11 @@
 import rasterService from '@/modules/raster/api/service';
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
 import { TRAJECTORY_QUERY_KEYS } from '@/modules/trajectory/hooks/trajectory/queries';
-import { buildKeys, createQuery } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createQuery } from '@/shared/query/create-query';
 import queryClient from '@/shared/query/query-client';
 import { useMutation } from '@tanstack/react-query';
-import {
-    currentCanvasDataAccess,
-    currentAccessKey
-} from '@/modules/canvas/api/access';
+import { currentCanvasDataAccess, currentAccessKey } from '@/modules/canvas/api/access/use-canvas-access-store';
 import type { GetRasterMetadataParams, TriggerRasterizationParams } from '@/modules/raster/api/service';
 import type { TriggerRasterizationResponse } from '@volt/contracts/modules/raster/domain';
 

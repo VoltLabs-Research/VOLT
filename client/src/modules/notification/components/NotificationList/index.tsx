@@ -15,12 +15,6 @@ interface NotificationListProps {
 
 const LOAD_MORE_THRESHOLD = 50;
 
-/**
- * The two bars are sized to what bravais actually painted, not to what it reserved:
- * `variant='text'` carried `transform: scale(1, 0.6)`, so `height={20}` rendered ~12px
- * of bar inside a 20px box. HeroUI's Skeleton paints its full box, so the heights come
- * down to the painted values and the box is made up with a gap.
- */
 const skeletonLines = (
     <>
         <Skeleton className='h-3 w-[60%] rounded-sm' />

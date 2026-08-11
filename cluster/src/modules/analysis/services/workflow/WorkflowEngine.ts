@@ -7,8 +7,8 @@ import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSes
 import { WorkflowTrajectoryWindowHandler } from '@modules/analysis/services/workflow/nodes/TrajectoryWindowHandler';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { resolvePluginNativeThreadBudget } from '@shared/domain/utilities/runtime-capacity';
-import type { DaemonAnalysisDocument, NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition, WorkflowTrajectoryWindowData } from '@shared/contracts';
-import type { PlannedExecutionItem, WorkflowWindowMode } from '@shared/contracts/types/http-analysis';
+import type { NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition, WorkflowTrajectoryWindowData } from '@shared/contracts/types/http-workflow';
+import type { PlannedExecutionItem, WorkflowWindowMode, DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
 import type { WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 
 interface WorkflowRuntimeArgumentSelection extends WorkflowNodeOutput {

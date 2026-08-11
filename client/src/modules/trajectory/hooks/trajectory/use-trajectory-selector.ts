@@ -4,12 +4,6 @@ import { sileo } from 'sileo';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-/**
- * bravais's `SelectOption`, field for field. That type is not one of the symbols the
- * migration relocated into the client, so the shape is declared beside the hook that
- * produces it; it stays structurally identical, so consumers in other modules are
- * unaffected.
- */
 interface TrajectorySelectOption {
     value: string;
     title: string;

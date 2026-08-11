@@ -7,8 +7,8 @@ import type {
     TrajectoryNativeObjectStreamResponse
 } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { toUint8Array } from '@shared/infrastructure/types/reverseChannelBinary';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
+import { toUint8Array } from '@shared/contracts/types/binary-envelope';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;

@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
-import { Param, Query, Body } from '@shared/http/params';
+import { Param, Query, Body, schemaBody } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -26,7 +27,7 @@ export default class JobsController extends Controller {
     @Route(jobsRoutes.retryFailedJobs)
     retryFailedJobs(
         @Param('teamId') teamId: string,
-        @Body() body: RetryTeamFailedJobsInput
+        @Body(schemaBody(typia.createValidate<RetryTeamFailedJobsInput>())) body: RetryTeamFailedJobsInput
     ){
         return this.#service.retryFailedJobs({
             teamId,

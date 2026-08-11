@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { downloadDumpObject } from '@shared/infrastructure/storage/download-dump-object';
 
 export const downloadCompressedDump = async (

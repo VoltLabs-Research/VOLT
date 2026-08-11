@@ -1,5 +1,5 @@
 import { del, get, paginated, patch, post } from '@/app/core/http/utils/create-service';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 
 export interface FolderCreateParams {
     title: string;

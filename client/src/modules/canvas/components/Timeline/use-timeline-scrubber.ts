@@ -9,11 +9,6 @@ interface UseTimelineScrubberParams {
     currentFrame: number;
 }
 
-/**
- * Ruler geometry and pointer/keyboard scrubbing. Tick centers are measured from the DOM
- * (the ruler is a scrollable flex row, so positions are not derivable from the frame
- * numbers) and cached, then a binary search maps a client X to the nearest frame.
- */
 const useTimelineScrubber = ({ rangedTimesteps, currentTimestep, currentFrame }: UseTimelineScrubberParams) => {
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
 
@@ -174,7 +169,6 @@ const useTimelineScrubber = ({ rangedTimesteps, currentTimestep, currentFrame }:
 
         onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => {
             if (touchPointerIdRef.current === event.pointerId) {
-                // Leaving the ruler mid-touch keeps the gesture alive; the capture still tracks it.
                 if (event.type === 'pointerleave') return;
 
                 touchPointerIdRef.current = null;

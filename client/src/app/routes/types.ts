@@ -12,12 +12,18 @@ export enum DashboardNavigationIconKey {
     AI = 'ai',
     Containers = 'containers',
     Dashboard = 'dashboard',
-    Messages = 'messages',
     MyTeam = 'my-team',
     Notebooks = 'notebooks',
     Plugins = 'plugins',
     ManageRoles = 'manage-roles',
-    Whiteboards = 'whiteboards'
+    Whiteboards = 'whiteboards',
+
+    SettingsGeneral = 'settings-general',
+    SettingsAuthentication = 'settings-authentication',
+    SettingsTheme = 'settings-theme',
+    SettingsIntegrations = 'settings-integrations',
+    SettingsSessions = 'settings-sessions',
+    SecretKeys = 'secret-keys'
 };
 
 export enum RoutePermissionMode {

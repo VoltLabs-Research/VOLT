@@ -16,28 +16,6 @@ import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { ReactNode } from 'react';
 import type { Params } from 'react-router-dom';
 
-/**
- * `.ai-page` pinned itself to the parent's height and clipped, so the page can only ever
- * scroll inside the thread list and inner growth cannot propagate scrollable overflow up
- * into the dashboard content area.
- */
-const PAGE = 'flex h-full flex-row items-center overflow-hidden border-t border-border pb-[env(safe-area-inset-bottom,0px)] max-md:flex-col max-md:gap-2 max-md:p-2';
-
-const PAGE_MAIN = 'flex h-full min-w-0 flex-1 flex-col overflow-hidden';
-
-/**
- * The workspace counters the old `Row` default (`items-center`): with at least one message
- * the chat pane stretches to full height — messages flow from the top, composer pinned at
- * the bottom — while the starter state keeps the centred block. The stylesheet expressed
- * this as `:not(.is-empty)`; here the two states are chosen in JSX instead.
- */
-const PAGE_WORKSPACE = 'flex min-h-0 flex-1 flex-row max-md:flex-col';
-
-const PAGE_CHAT_PANE = 'flex min-h-0 min-w-0 flex-1 flex-col';
-
-/** `--status-error-border` was `color-mix(in oklab, var(--danger) 24%, transparent)`. */
-const PAGE_INLINE_ALERT = 'border-b border-danger/24 bg-danger-soft px-4 py-[0.55rem]';
-
 interface AIPageRouteParams extends Params {
     conversationId?: string;
 }
@@ -148,7 +126,6 @@ const AIPage = () => {
     };
 
     const isWorkspaceEmpty = !isMessagesLoading && messages.length === 0;
-    const workspaceClassName = cn(PAGE_WORKSPACE, isWorkspaceEmpty ? 'items-center' : 'items-stretch');
 
     const handleRetry = () => {
         if (conversationId) {
@@ -167,8 +144,8 @@ const AIPage = () => {
     }
 
     let workspaceContent: ReactNode = (
-        <div className={workspaceClassName}>
-            <div className={PAGE_CHAT_PANE}>
+        <div className={cn('flex min-h-0 flex-1 flex-row max-md:flex-col', isWorkspaceEmpty ? 'items-center' : 'items-stretch')}>
+            <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
                 <AIConversationThread
                     conversationId={conversationId}
                     messages={messages}
@@ -179,7 +156,6 @@ const AIPage = () => {
                     addToolApprovalResponse={addToolApprovalResponse}
                     onRetry={handleRetry}
                 />
-
                 <AIComposer
                     value={messageDraft}
                     modelOptions={modelOptions}
@@ -239,7 +215,7 @@ const AIPage = () => {
     }
 
     return (
-        <div className={PAGE}>
+        <div className='flex h-full flex-row items-center overflow-hidden border-t border-border pb-[env(safe-area-inset-bottom,0px)] max-md:flex-col max-md:gap-2 max-md:p-2'>
             <AIConversationSidebar
                 conversations={conversations}
                 activeConversationId={conversationId}
@@ -253,10 +229,9 @@ const AIPage = () => {
                 canUpdate={canUpdate}
                 canDelete={canDelete}
             />
-
-            <div className={PAGE_MAIN}>
+            <div className='flex h-full min-w-0 flex-1 flex-col overflow-hidden'>
                 {providerCatalogError && (
-                    <div className={PAGE_INLINE_ALERT}>
+                    <div className='border-b border-danger/24 bg-danger-soft px-4 py-[0.55rem]'>
                         <RecoveryState
                             title='Unable to load AI providers'
                             description={providerCatalogError}

@@ -1,5 +1,4 @@
 import type { Analysis } from '../analysis/domain';
-import type { Chat } from '../chat/domain';
 import type { Container } from '../container/domain';
 import type { Plugin } from '../plugin/plugin';
 import type { Team } from '../team/domain';
@@ -11,7 +10,6 @@ export interface GlobalSearchResponse{
     trajectories: Trajectory[];
     teams: Team[];
     plugins: Plugin[];
-    chats: Chat[];
 }
 
 export interface DashboardWeeklySeries{

@@ -7,7 +7,7 @@ import * as tar from 'tar';
 import { logger } from '@shared/infrastructure/logger';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
 import {
     PYTHON_PROJECT_DIRECTORY,

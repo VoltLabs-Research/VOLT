@@ -15,10 +15,6 @@ interface UseSidebarSceneExecutionNotificationsInput {
     setCurrentTimestep: (timestep: number) => void;
 }
 
-/**
- * Turns status changes of plugin runs the user started into toasts, and selects
- * the finished analysis when nothing else has claimed the selection meanwhile.
- */
 const useSidebarSceneExecutionNotifications = ({
     analyses,
     selectedAnalysisIdRef,
@@ -27,8 +23,6 @@ const useSidebarSceneExecutionNotifications = ({
 }: UseSidebarSceneExecutionNotificationsInput) => {
     const retryFailedFrames = useRetryFailedFrames();
 
-    // Identifies the analysis this hook auto-selected last, so a chain of runs
-    // can keep advancing the selection while a manual pick freezes it.
     const autoSelectChainRef = useRef<string | null>(null);
 
     const clearAutoSelectChain = useCallback(() => {

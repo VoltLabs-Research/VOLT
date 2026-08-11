@@ -1,8 +1,6 @@
-import type {
-    SceneArtifactBatchUpsertedEventPayload,
-    TrajectoryDeletedEventPayload,
-    TrajectoryUpdatedEventPayload
-} from '@shared/contracts/events';
+import type { SceneArtifactBatchUpsertedEventPayload } from '@shared/contracts/events/SceneArtifactBatchUpsertedPayload';
+import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events/TrajectoryDeletedPayload';
+import type { TrajectoryUpdatedEventPayload } from '@shared/contracts/events/TrajectoryUpdatedPayload';
 import type { TrajectoryCreatedEventPayload } from '@modules/trajectory/contracts/events';
 
 declare global {

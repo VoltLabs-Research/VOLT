@@ -1,13 +1,12 @@
 
 import type {
     Analysis,
-    AnalysisArtifactStatus,
     AnalysisChildAnalysis,
     AnalysisExpectedArtifact,
-    AnalysisStage,
-    AnalysisStageStatus
-} from '@shared/contracts/types';
-import { JobStatus } from '@shared/contracts/types';
+    AnalysisStage
+} from '@shared/contracts/types/AnalysisProps';
+import type { AnalysisArtifactStatus, AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type { DaemonAnalysisStageStatusInput } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
 
 /**

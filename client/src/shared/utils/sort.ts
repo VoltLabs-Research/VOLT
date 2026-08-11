@@ -7,11 +7,6 @@ export interface SortConfig {
     direction: SortDirection;
 }
 
-/**
- * Listing columns are addressed by a runtime string path, so a cell value can be
- * any JSON shape the server produced. Arrays are flattened because plugin
- * listings expose vector columns.
- */
 const toComparableString = (value: unknown): string => {
     if(value == null) return '';
     if(Array.isArray(value)) return value.map(toComparableString).join(' ');

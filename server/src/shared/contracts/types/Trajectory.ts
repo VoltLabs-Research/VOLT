@@ -43,13 +43,6 @@ export interface TrajectoryFrame {
     simulationCell?: string | TrajectoryFrameSimulationCellEmbed;
 }
 
-/*
- * Re-exported, not redeclared: this used to be a second `TrajectoryStats` whose
- * shape had drifted from the wire contract, so the client was promised
- * `totalAtoms`, `totalFrames` and `atomTypes` that the server never writes.
- */
-export type { TrajectoryStats };
-
 export interface TrajectoryProps {
     name: string;
     team: string;

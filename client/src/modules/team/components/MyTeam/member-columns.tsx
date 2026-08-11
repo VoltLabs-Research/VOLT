@@ -8,10 +8,6 @@ import type { Key } from 'react-aria-components';
 import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 
-/**
- * bravais's `SelectOption`, kept locally now that the design system is gone. The
- * shape is unchanged, so `MyTeam`'s `roleOptions` still builds the same objects.
- */
 interface TeamRoleSelectOption {
     value: string;
     title: string;
@@ -28,14 +24,6 @@ interface TeamMemberColumnsConfig {
     hasPresenceSnapshot: boolean;
     timeSpentByUser: Map<string, number>;
 }
-
-/**
- * `MyTeam.css`'s `.my-team-page .role-select-compact { min-width: 120px }`, which
- * bravais applied to the Select's trigger. HeroUI's Select root is the flex item, so
- * the clamp belongs on the root — the same move `FormFieldRHF`'s `SELECT_ROOT_CLASS`
- * makes, for the same reason.
- */
-const ROLE_SELECT_CLASS = 'min-w-[120px]';
 
 export const createTeamMemberColumns = ({
     selectedTeam,
@@ -71,12 +59,6 @@ export const createTeamMemberColumns = ({
             }
 
             if (canInvite && currentUserId !== member.user._id && roleOptions.length > 0) {
-                /*
-                 * bravais's `onChange` only ever fired with a value; React Aria types
-                 * `onSelectionChange` as `Key | null` because a clearable select can
-                 * deselect. This one cannot, so `null` is ignored rather than sent on as
-                 * an empty role id.
-                 */
                 const handleSelectionChange = (key: Key | null) => {
                     if (key === null) return;
 
@@ -85,18 +67,13 @@ export const createTeamMemberColumns = ({
 
                 return (
                     <Select
-                        className={ROLE_SELECT_CLASS}
+                        className='min-w-[120px]'
                         selectedKey={member.role._id}
                         onSelectionChange={handleSelectionChange}
                         placeholder='Select role...'
                         aria-label={`Role for ${member.user.email}`}
                     >
                         <Select.Trigger>
-                            {/*
-                              * bravais's trigger showed the selected option's `title`
-                              * only; RAC's default children render the whole item, so a
-                              * `description` would leak into the trigger.
-                              */}
                             <Select.Value>
                                 {({ isPlaceholder, selectedText, defaultChildren }) => (
                                     isPlaceholder ? defaultChildren : selectedText

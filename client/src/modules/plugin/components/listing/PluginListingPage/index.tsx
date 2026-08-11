@@ -12,7 +12,7 @@ const PluginListingPage = () => {
     const pluginId = params.pluginId ?? '';
     const exposureName = params.exposureName;
     const trajectoryId = params.trajectoryId;
-    // Stale links can carry the literal strings `undefined` / `null` in the path.
+
     const rawExposureId = params.exposureId;
     const exposureId = rawExposureId && rawExposureId !== 'undefined' && rawExposureId !== 'null'
         ? rawExposureId

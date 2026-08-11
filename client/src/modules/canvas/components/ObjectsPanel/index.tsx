@@ -22,16 +22,6 @@ import type { ArtifactSection } from './use-artifact-sections';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
-import {
-    OBJECTS_PANEL_BOTTOM_CLASS,
-    OBJECTS_PANEL_CLASS,
-    OBJECTS_PANEL_COMPACT_CLASS,
-    OBJECTS_PANEL_TOP_CLASS,
-    RASTER_PANELS_CLASS,
-    RASTER_PANEL_ACTIVE_CLASS,
-    RASTER_PANEL_SUMMARY_ACTIVE_CLASS,
-    RASTER_PANEL_SUMMARY_CLASS
-} from './tree-classes';
 
 interface ObjectsPanelProps extends CanvasPanelActionProps {
     trajectory: Trajectory | null | undefined;
@@ -191,11 +181,11 @@ const ObjectsPanel = ({
                 icon={<Layers style={PANEL_ICON_STYLE} />}
                 expanded={isActive}
                 onExpandedChange={(next) => { if (next) onSetActiveRasterContainer?.(selection.id); }}
-                extraClassName={isActive ? RASTER_PANEL_ACTIVE_CLASS : ''}
+                extraClassName={isActive ? 'rounded-lg border border-border' : ''}
                 headerAction={(
                     <button
                         type='button'
-                        className={cn(RASTER_PANEL_SUMMARY_CLASS, isActive && RASTER_PANEL_SUMMARY_ACTIVE_CLASS)}
+                        className={cn('cursor-pointer rounded-full border border-transparent bg-transparent px-[0.55rem] py-[0.3rem] text-[11px] leading-none text-muted', isActive && 'border-border bg-surface-tertiary text-foreground')}
                         onClick={() => onSetActiveRasterContainer?.(selection.id)}
                     >
                         {selection.label}
@@ -258,16 +248,12 @@ const ObjectsPanel = ({
         </RightCollapsible>
     ) : null;
 
-    /**
-     * Compact mode drops the simulation cell and the raster container picker, and moves
-     * the artifact trees into the top region so the panel stays scrollable on mobile.
-     */
     const populatedSections = artifactSections.filter((section) => section.timesteps.length > 0);
     const showSceneCollection = !isAnalysisCompact || sceneCollectionSections.length > 0;
 
     return (
-        <div className={cn(OBJECTS_PANEL_CLASS, isAnalysisCompact && OBJECTS_PANEL_COMPACT_CLASS)}>
-            <div className={OBJECTS_PANEL_TOP_CLASS}>
+        <div className={cn('canvas-objects-panel flex h-full min-h-0 flex-col justify-between overflow-hidden', isAnalysisCompact && 'canvas-objects-panel--analysis-compact justify-start')}>
+            <div className='flex min-h-0 flex-auto flex-col overflow-y-auto [&>:first-child]:mt-2'>
                 {showSceneCollection && (
                     <RightCollapsible
                         title="Visual Elements"
@@ -278,7 +264,7 @@ const ObjectsPanel = ({
                         tourId='canvas-analyses-section'
                     >
                         {isRasterWorkspace && !isAnalysisCompact ? (
-                            <div className={RASTER_PANELS_CLASS}>
+                            <div className='flex flex-col gap-2 px-1.5 pb-3 pt-1.5'>
                                 {rasterContainerSelections.map(renderRasterContainerPanel)}
                             </div>
                         ) : (
@@ -301,7 +287,7 @@ const ObjectsPanel = ({
             </div>
 
             {!isAnalysisCompact && (
-                <div className={OBJECTS_PANEL_BOTTOM_CLASS}>
+                <div className='flex flex-none flex-col border-t border-border'>
                     {artifactSections.map(renderArtifactSection)}
                 </div>
             )}

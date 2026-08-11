@@ -1,5 +1,6 @@
 import { trajectoryQuery, TRAJECTORY_QUERY_KEYS } from './queries';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import queryClient from '@/shared/query/query-client';
 import { sileo } from 'sileo';
 import { useCallback } from 'react';

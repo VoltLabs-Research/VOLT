@@ -13,12 +13,7 @@ interface ThemeOption {
 const ThemeSelector = () => {
     const { preference, setTheme } = useTheme();
     const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-    /*
-     * The sizes below are the ones the preview actually rendered at: the deleted
-     * stylesheet overrode every preview `svg` to 28px, and the system one to 34px,
-     * so `size={32}` at the call site never took effect. They are stated here now
-     * instead of being corrected by a descendant selector.
-     */
+
     const options: ThemeOption[] = [
         {
             theme: Theme.System,

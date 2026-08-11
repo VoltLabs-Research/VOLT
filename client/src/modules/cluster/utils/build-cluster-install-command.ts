@@ -26,12 +26,6 @@ export const CLUSTER_INSTALL_PLATFORM_OPTIONS: ReadonlyArray<ClusterInstallPlatf
     }
 ];
 
-/**
- * Narrows a toggle group's emitted key back to the enum. bravais's `SegmentedTabs`
- * was generic over its own id union and handed the value back already typed;
- * React Aria's selection is a `Set<Key>`, so the check happens against the option
- * list itself rather than through an assertion.
- */
 export const isClusterInstallPlatform = (value: string): value is ClusterInstallPlatform => {
     return CLUSTER_INSTALL_PLATFORM_OPTIONS.some((option) => option.id === value);
 };

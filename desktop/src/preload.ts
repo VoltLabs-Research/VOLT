@@ -46,10 +46,7 @@ contextBridge.exposeInMainWorld('volt', {
         maximize: () => ipcRenderer.invoke('window:maximize'),
         close: () => ipcRenderer.invoke('window:close')
     },
-    /*
-     * Keyed on `AppEvents` so a channel and its payload cannot drift apart: the
-     * renderer's callback is typed by the channel it subscribes to.
-     */
+
     on: <K extends keyof AppEvents>(channel: K, cb: (payload: AppEvents[K]) => void) => {
         const handler = (_: IpcRendererEvent, payload: AppEvents[K]): void => cb(payload);
         ipcRenderer.on(channel, handler);

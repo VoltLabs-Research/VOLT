@@ -1,5 +1,5 @@
 import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
-import type { ContainerAction, CreateContainerRequest } from '@shared/contracts';
+import type { ContainerAction, CreateContainerRequest } from '@shared/contracts/types/http-container';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { resolveComposeDefaultNetworkName } from '@shared/contracts/types/runtime-container';
 import type { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';

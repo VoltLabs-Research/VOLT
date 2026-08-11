@@ -1,6 +1,7 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal, openModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import { ConfirmActionTone, registerConfirmActionController } from '@/shared/ui/hooks/use-confirm';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
@@ -14,16 +15,6 @@ interface ConfirmActionModalState extends ConfirmActionOptions {
 
 const CONFIRM_ACTION_MODAL_ID = 'shared-confirm-action-modal';
 
-/**
- * The deleted `.confirm-action-modal { width: min(100%, 28rem) }`, carried as a
- * value instead of a class — `width` on the modal sets max-width on the dialog.
- *
- * It is numerically HeroUI's own default (`ModalContainer` size `md` →
- * `max-w-md` → 28rem), so this restates rather than overrides. It is stated
- * anyway: the 28rem was a deliberate choice for a confirmation prompt, and
- * leaving it implicit would make the prompt's width follow a change to the
- * default size of every modal in the app.
- */
 const CONFIRM_ACTION_MODAL_WIDTH = 'min(100%, 28rem)';
 
 const ConfirmActionModal = () => {
@@ -89,12 +80,7 @@ const ConfirmActionModal = () => {
     const typedConfirmationDescription = modalState?.requireTypedText
         ? `This action requires an exact confirmation phrase: ${modalState.requireTypedText}`
         : '';
-    /*
-     * `data-modal-initial-focus` is how this component asks for focus to land on
-     * the typed-confirmation field rather than on the first focusable node (which
-     * would be the close button). The new modal still honours it — see
-     * `shared/ui/modal/initial-focus.ts` — so the attribute stays exactly here.
-     */
+
     const typedConfirmationInputProps: InputHTMLAttributes<HTMLInputElement> & {
         'data-modal-initial-focus'?: string;
     } = {

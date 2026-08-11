@@ -8,7 +8,7 @@ import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStor
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import type { DaemonConfig } from '@core/config/daemon';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { EntrypointType } from '@shared/contracts/types/http-runtime';
 import {
     PluginArtifactDownloader,

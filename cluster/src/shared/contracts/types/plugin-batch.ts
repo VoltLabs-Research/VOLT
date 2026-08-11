@@ -1,10 +1,10 @@
-export type PluginProtocolOpcode =
+type PluginProtocolOpcode =
     | 'process'
     | 'process_batch'
     | 'ping'
     | 'warmup';
 
-export interface PluginFrameBindingMetadata {
+interface PluginFrameBindingMetadata {
     kind: 'mmap' | 'inline';
     mmapPath?: string;
     offset?: number;

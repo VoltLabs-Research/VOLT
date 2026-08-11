@@ -6,7 +6,7 @@ import useListingViewPreferences from '@/shared/ui/components/DocumentListing/us
 import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { describeSortState, getColumnAriaSort, getColumnSortIndicator } from '@/shared/ui/components/DocumentListing/sort-affordances';
-import { isAccessDeniedCode } from '@/shared/errors/core';
+import { isAccessDeniedCode } from '@/shared/errors/core/report-error';
 import { sortData } from '@/shared/utils/sort';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 
@@ -19,11 +19,9 @@ import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/Do
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { MouseEvent, ReactNode } from 'react';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { QueryKey } from '@tanstack/react-query';
-
-export type { DocumentListingTab } from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
 
 export interface SocketInvalidationConfig {
     event: string;
@@ -182,7 +180,6 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
 
     const isAccessDenied = !!errorCode && isAccessDeniedCode(errorCode);
 
-    /** Every prop both body renderers share, kept in one place so the two views cannot drift. */
     const bodyProps = {
         data: sortedData,
         isLoading,
@@ -219,7 +216,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
         }
 
         return (
-            <div ref={scrollContainerRef} className='flex-1 overflow-auto border-t border-border [overflow-anchor:none] max-md:overflow-visible'>
+            <div ref={scrollContainerRef} className='flex-1 overflow-auto [overflow-anchor:none] max-md:overflow-visible'>
                 <motion.div
                     initial={prefersReducedMotion ? false : {
                         opacity: 0,

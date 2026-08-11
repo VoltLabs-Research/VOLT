@@ -6,7 +6,7 @@ import {
 } from '../hooks/queries';
 import { removeEntityFromList, snapshotQueries } from '@/shared/query/cache-utils';
 import queryClient from '@/shared/query/query-client';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type {
     AnalysisCreatedSocketPayload,
@@ -31,7 +31,6 @@ interface FindCachedAnalysisByIdInput {
     fallbackAnalyses?: Analysis[];
 };
 
-// TanStack hands query keys back as `readonly unknown[]`, so the params object has to be narrowed.
 const getQueryKeyTrajectoryId = (queryKey: readonly unknown[]): string | undefined => {
     const params = queryKey.find((entry): entry is { trajectoryId: string } => {
         return typeof entry === 'object'
@@ -200,14 +199,6 @@ const patchAnalysisCaches = (
     patchAnalysisByTrajectoryQueries(patchPage);
 };
 
-/*
- * Artifact generation only moves forward, and two independent event streams write it
- * (`analysis.status.changed` carries a snapshot of it, `analysis.stage.changed` is
- * dedicated to it). They interleave, so a snapshot taken while artifacts were still
- * uploading can land after the event that already reported them ready and drag the
- * value backwards — which left the status bar reading "Uploading artifacts" for a run
- * that had finished. Ranking the states makes the merge order-insensitive.
- */
 const ARTIFACT_STATUS_RANK: Record<string, number> = {
     pending: 0,
     generating: 1,

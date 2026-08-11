@@ -8,8 +8,6 @@ const buildRegistry = (): Map<string, ClientToolHandler> => {
     for (const [path, module] of Object.entries(handlerModules)) {
         const handler = module.default;
 
-        // Two handlers claiming the same tool name is the one invariant the compiler
-        // cannot see: each file type-checks alone, and `name` is only compared here.
         if (registry.has(handler.name)) {
             console.warn(`[ai-tools] duplicate client tool name "${handler.name}" from ${path}; keeping the first.`);
             continue;

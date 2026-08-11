@@ -15,14 +15,6 @@ interface IpcDeps{
     loadShell: (hash?: string) => void;
 };
 
-/*
- * The window navigates away from the shell to the VOLT client, and with
- * `remote.connect` that client can live on any endpoint the user names. The
- * preload is attached to the window, so every one of those pages would otherwise
- * inherit this bridge — including `deploy:reset`, which destroys the local stack's
- * volumes, and `devmode:apply`, which takes filesystem paths. The web client never
- * calls into `window.volt`, so the bridge is answered only for the shell itself.
- */
 const isShellSender = (event: IpcMainInvokeEvent): boolean => {
     const senderUrl = event.senderFrame?.url ?? '';
     if(!senderUrl) return false;
@@ -33,7 +25,6 @@ const isShellSender = (event: IpcMainInvokeEvent): boolean => {
     return senderUrl.startsWith('file://');
 };
 
-/** Registers a handler that only answers the shell; anything else is rejected. */
 const handleFromShell = <TResult>(
     channel: string,
     handler: (event: IpcMainInvokeEvent, ...args: never[]) => TResult
@@ -48,7 +39,6 @@ const handleFromShell = <TResult>(
 };
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
-    
     const localClientUrl = async (): Promise<string> => {
         const env = await deps.appConfig.getStackEnv();
         const origin = `http://localhost:${env.WEB_PORT ?? '5273'}`;

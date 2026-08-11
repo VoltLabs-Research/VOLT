@@ -16,7 +16,6 @@ const ARROW_DELTAS: Record<string, [rowDelta: number, colDelta: number]> = {
 
 const cellKey = (row: number, col: number) => `${row}:${col}`;
 
-/** Cells hold whatever the tool or the uploaded sheet produced, so every value is coerced for display. */
 const stringifyValue = (value: unknown): string => {
     if (value == null) return '';
     if (typeof value === 'string') return value;
@@ -28,10 +27,6 @@ const stringifyValue = (value: unknown): string => {
     }
 };
 
-/**
- * Owns the grid interaction state: which cell is selected, which one is being edited, the pending
- * edits overlaid on the artifact rows, and the announcements screen readers get for each change.
- */
 const useSpreadsheetEditor = (columns: string[], rows: Record<string, unknown>[]) => {
     const [edits, setEdits] = useState<Record<string, string>>({});
     const [activeCell, setActiveCell] = useState<CellAddress>({

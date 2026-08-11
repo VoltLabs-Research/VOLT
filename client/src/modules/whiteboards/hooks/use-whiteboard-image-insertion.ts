@@ -11,13 +11,11 @@ interface UseWhiteboardImageInsertionProps {
     prepareImageAsset: (file: File) => Promise<PreparedWhiteboardImageAsset | null>;
 };
 
-/** Excalidraw handles its own scene clipboard; only non-Excalidraw payloads are ours to insert. */
 const EXCALIDRAW_CLIPBOARD_MIME_TYPES = [
     'application/vnd.excalidraw+json',
     'application/vnd.excalidrawlib+json'
 ];
 
-/** Routes image files from the picker, drag-and-drop and paste into the Excalidraw scene. */
 const useWhiteboardImageInsertion = ({
     excalidrawApiRef,
     prepareImageAsset

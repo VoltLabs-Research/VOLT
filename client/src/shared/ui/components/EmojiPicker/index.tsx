@@ -8,16 +8,9 @@ interface EmojiPickerProps {
     columns?: number;
 };
 
-/**
- * The keyframes `emoji-picker-slide` names live in the global sheet — a
- * `@keyframes` block is the one thing a utility cannot declare. The animation
- * that plays them is a utility, so the picker keeps no class hook of its own.
- */
-const PICKER_CLASS_NAMES = 'max-h-[min(18rem,60vh)] animate-[emoji-picker-slide_0.2s_cubic-bezier(0.25,0.46,0.45,0.94)] overflow-y-auto overscroll-contain rounded-xl border border-border bg-surface-tertiary p-2 shadow-lg';
-
 const EmojiPicker = ({ onSelect, emojis = DEFAULT_EMOJIS, columns = 6 }: EmojiPickerProps) => (
     <div
-        className={PICKER_CLASS_NAMES}
+        className='max-h-[min(18rem,60vh)] animate-[emoji-picker-slide_0.2s_cubic-bezier(0.25,0.46,0.45,0.94)] overflow-y-auto overscroll-contain rounded-xl border border-border bg-surface-tertiary p-2 shadow-lg'
         role='group'
         aria-label='Emoji picker'
     >

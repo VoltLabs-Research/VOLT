@@ -5,7 +5,8 @@ import { Button, cn } from '@heroui/react';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
 import { buildCompactSubListingColumns } from '@/modules/plugin/components/listing/sub-listing-columns';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 
 export interface InlineSubListingViewProps {
     analysisId: string;

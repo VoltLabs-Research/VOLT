@@ -2,15 +2,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 /**
- * The two buckets the control plane owns.
+ * The bucket the control plane owns.
  *
- * Both hold files a browser fetches by plain URL, so both are served without
+ * It holds files a browser fetches by plain URL, so it is served without
  * credentials — see the router in `user-files-router.ts` for why that is a
  * constraint rather than a choice.
  */
 export const SYS_BUCKETS = {
-    AVATARS: 'volt-avatars',
-    CHAT: 'volt-chat'
+    AVATARS: 'volt-avatars'
 } as const;
 
 export type SysBucket = typeof SYS_BUCKETS[keyof typeof SYS_BUCKETS];
@@ -57,7 +56,7 @@ export const readFileMetadata = async (bucket: string, objectName: string): Prom
 };
 
 /**
- * Avatars and chat attachments, on the local filesystem.
+ * Avatars, on the local filesystem.
  *
  * Only the two operations the callers actually use are here. The object store
  * this replaced also exposed reads, deletes, existence checks and prefix deletes,

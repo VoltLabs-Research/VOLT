@@ -1,4 +1,5 @@
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect } from 'react';
 

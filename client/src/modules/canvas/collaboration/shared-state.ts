@@ -2,7 +2,6 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import type { EditorStore } from '@/modules/canvas/store/editor/types';
 
-/** Store fields shared verbatim between collaborators. */
 type SharedValueKey =
     | 'activeScene'
     | 'activeScenes'
@@ -19,7 +18,6 @@ type SharedValueKey =
     | 'rangeEnd'
     | 'modelDragOffsets';
 
-/** Store slices shared as a data-only subset, merged onto the local slice. */
 type SharedSliceKey =
     | 'lights'
     | 'effects'
@@ -76,7 +74,6 @@ const RENDERER_DATA_KEYS = ['create', 'runtime'] as const;
 const PERFORMANCE_DATA_KEYS = ['preset', 'dpr', 'performance', 'adaptiveEvents', 'interactionDegrade'] as const;
 const CONFIGURATION_DATA_KEYS = ['activeSidebarOption', 'activeModifier'] as const;
 
-/** Copies the data fields of a slice, leaving its action functions behind. */
 const pickDataFields = <Slice extends object, Key extends keyof Slice>(
     source: Slice,
     keys: readonly Key[]
@@ -124,10 +121,6 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
     });
 };
 
-/**
- * Shared values land on the store as sent; shared slices are merged so the
- * action functions and any unshared fields of the local slice survive.
- */
 export const applySharedCanvasPatch = (patch: SharedCanvasState): void => {
     useEditorStore.setState((state) => {
         const {

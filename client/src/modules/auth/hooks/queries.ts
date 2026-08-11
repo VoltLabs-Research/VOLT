@@ -1,5 +1,7 @@
 import { updateSocketAuthToken } from '@/modules/socket/services/socket-auth-session';
-import { buildKeys, createMutation, createQuery } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import service from '../api/service';
 import queryClient from '@/shared/query/query-client';

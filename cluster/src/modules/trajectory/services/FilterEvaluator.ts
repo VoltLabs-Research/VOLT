@@ -16,7 +16,8 @@ import {
 import { resolvePerAtomValues } from '@modules/trajectory/services/per-atom-value-resolver';
 import { resolveGradientCode } from '@modules/trajectory/services/gradient-codes';
 import { uploadGlbBuffer } from '@modules/trajectory/services/glb/upload-glb-buffer';
-import { type ClusterObjectStore, getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { type ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { ComparisonOperator } from '@modules/trajectory/services/particle-filter-kernels';
 import type { ParsedTrajectory, TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';

@@ -1,7 +1,8 @@
 import path from 'node:path';
-import { ObjectBucketName } from '@shared/contracts';
+import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { DAEMON_PATHS } from '@core/config/paths';
-import { createScopedClusterObjectStore, type ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { createScopedClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { type ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { uploadBufferToObjectStore } from '@shared/infrastructure/storage/upload-buffer-to-object-store';
 
 const GLB_TEMP_DIRECTORY = path.join(DAEMON_PATHS.analysisOutput, 'glb-export');

@@ -9,7 +9,7 @@ import {
     resolveAnalysisClusterContext
 } from '@modules/trajectory/services/trajectory/exposure-atom-properties';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import type { ExposureAtomConfig } from '@modules/trajectory/services/trajectory/exposure-atom-properties';
 

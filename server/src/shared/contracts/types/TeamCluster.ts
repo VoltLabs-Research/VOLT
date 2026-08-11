@@ -1,10 +1,6 @@
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 
-export { TeamClusterStatus };
-export type { TeamClusterRole };
-
-
 export interface TeamClusterServiceProps {
     port: number | null;
     username?: string;

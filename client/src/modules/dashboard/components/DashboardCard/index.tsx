@@ -7,14 +7,6 @@ interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
     overflowHidden?: boolean;
 }
 
-/**
- * `.dashboard-card` was `1px solid var(--color-border-soft)` at
- * `var(--radius-xl)`. That radius is 20px on bravais's scale, a full step away
- * from HeroUI's same-named `rounded-xl` (12px) — hence the arbitrary value
- * (spec §3b).
- */
-const CARD = 'border border-border rounded-[1.25rem]';
-
 const DashboardCard = ({
     children,
     className = '',
@@ -25,7 +17,7 @@ const DashboardCard = ({
     return (
         <div
             className={cn(
-                CARD,
+                'border border-border rounded-[1.25rem]',
                 isRelative && 'relative',
                 overflowHidden && 'overflow-hidden',
                 className

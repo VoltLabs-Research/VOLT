@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, CurrentUser } from '@shared/http/params';
+import { Body, schemaBody, Param, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -28,7 +29,7 @@ export default class TeamAIIntegrationController extends Controller {
         @Param('teamId') teamId: string,
         @Param('provider') provider: string,
         @CurrentUser() userId: string,
-        @Body() body: TeamAIIntegrationMutationInput
+        @Body(schemaBody(typia.createValidate<TeamAIIntegrationMutationInput>())) body: TeamAIIntegrationMutationInput
     ){
         return this.#service.createByProvider(teamId, userId, provider, body);
     }
@@ -37,7 +38,7 @@ export default class TeamAIIntegrationController extends Controller {
     updateByProvider(
         @Param('teamId') teamId: string,
         @Param('provider') provider: string,
-        @Body() body: TeamAIIntegrationMutationInput
+        @Body(schemaBody(typia.createValidate<TeamAIIntegrationMutationInput>())) body: TeamAIIntegrationMutationInput
     ){
         return this.#service.updateByProvider(teamId, provider, body);
     }

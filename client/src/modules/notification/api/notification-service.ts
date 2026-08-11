@@ -2,7 +2,7 @@ import { createService, paginated, patch } from '@/app/core/http/utils/create-se
 
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 
 interface ListNotificationsInput {
     page?: number;

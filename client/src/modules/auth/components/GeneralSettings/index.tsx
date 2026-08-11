@@ -51,7 +51,6 @@ const GeneralSettings = () => {
         });
     };
 
-    // Identity must stay stable across renders: ProfileForm resets its form whenever it changes.
     const profileInitialValues = useMemo(() => ({
         fullName: user?.fullName || '',
         email: user?.email || ''
@@ -78,24 +77,16 @@ const GeneralSettings = () => {
                 <SettingsSectionHeader
                     title="Profile"
                     description="Update your personal information and profile picture" />
-
                 <div className='flex flex-col gap-4'>
                     <AvatarUpload
                         avatarUrl={user?.avatar || null}
                         isUploading={isUploadingAvatar}
                         onUpload={handleAvatarUpload} />
-
                     <ProfileForm
                         initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
                 </div>
             </div>
-
-            {/*
-              * bravais's stacked `Callout` was a landmark, not a live region:
-              * `role='region'` labelled by its own title. HeroUI's `Alert` declares no
-              * role, so both are restated here.
-              */}
             <Alert status='danger' role='region' aria-label='Delete Account'>
                 <Alert.Content>
                     <Alert.Title>Delete Account</Alert.Title>

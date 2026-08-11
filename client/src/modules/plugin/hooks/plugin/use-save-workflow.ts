@@ -1,6 +1,7 @@
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useSavePluginMutation } from './queries';
-import { isAccessDeniedError, reportError, ErrorSurface } from '@/shared/errors/core';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
+import { ErrorSurface } from '@/shared/contracts/errors';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';

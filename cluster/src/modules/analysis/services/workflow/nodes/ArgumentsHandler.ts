@@ -1,4 +1,4 @@
-import type { WorkflowArgumentDefinition } from '@shared/contracts';
+import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowExecutionContext,
     WorkflowNode,

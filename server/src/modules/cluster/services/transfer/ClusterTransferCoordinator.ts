@@ -18,7 +18,7 @@ import type { StoragePlacement } from '@modules/cluster/contracts/storage-placem
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import { HARD_STORAGE_LIMIT_PCT } from '@shared/application/utilities/cluster-storage-policy';
-import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type {
     StoragePlacementScopeType,

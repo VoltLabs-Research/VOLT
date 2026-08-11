@@ -1,12 +1,5 @@
 import { Alert, Button } from '@heroui/react';
 import SectionTabs from '@/modules/plugin/components/plugin/NodeEditor/SectionTabs';
-import {
-    CALLOUT_DANGER_CLASS,
-    FLOATING_PANEL_BODY_CLASS,
-    FLOATING_PANEL_DESCRIPTION_CLASS,
-    FLOATING_PANEL_FOOTER_CLASS,
-    FLOATING_PANEL_TABS_CLASS
-} from '@/modules/plugin/components/plugin/PluginBuilder/builder-styles';
 import { useState } from 'react';
 import type { FC } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -70,7 +63,7 @@ const NodeEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <div className={FLOATING_PANEL_TABS_CLASS}>
+            <div className='shrink-0 px-4 pt-3 max-[768px]:px-3 max-[768px]:pt-2'>
                 <SectionTabs
                     tabs={SECTION_TABS}
                     activeTab={activeSection}
@@ -79,13 +72,12 @@ const NodeEditor = ({ node }: EditorProps) => {
                     layoutId={`node-editor-${node.id}`}
                 />
             </div>
-
-            <div className={FLOATING_PANEL_BODY_CLASS}>
+            <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 max-[768px]:p-3'>
                 {activeSection === 'details' && (
                     EditorComponent ? (
                         <>
                             {nodeDescription && (
-                                <p className={FLOATING_PANEL_DESCRIPTION_CLASS}>
+                                <p className='mb-3 border-b border-border pb-3 text-xs text-muted'>
                                     {nodeDescription}
                                 </p>
                             )}
@@ -102,19 +94,12 @@ const NodeEditor = ({ node }: EditorProps) => {
                     <ConnectorLayoutEditor node={node} />
                 )}
             </div>
-
-            <div className={FLOATING_PANEL_FOOTER_CLASS}>
-                {/*
-                  * bravais derived `role='region'` and `aria-label={title}` for a Callout
-                  * with a title, and rendered its `action` as an outline button in the
-                  * tone's intent. Spec §4d maps `outline` + `danger` to `ghost` plus
-                  * `text-danger`.
-                  */}
+            <div className='shrink-0 border-t border-border px-4 py-3'>
                 <Alert
                     status='danger'
                     role='region'
                     aria-label='Delete Node'
-                    className={CALLOUT_DANGER_CLASS}
+                    className='flex-row items-center justify-between rounded-xl border border-danger/24 bg-danger-soft p-4 shadow-none'
                 >
                     <Alert.Content className='gap-1'>
                         <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-sm font-semibold'>
@@ -124,7 +109,6 @@ const NodeEditor = ({ node }: EditorProps) => {
                             Remove this node and its connections
                         </Alert.Description>
                     </Alert.Content>
-
                     <Button variant='ghost' size='sm' className='shrink-0 text-danger' onPress={handleDelete}>
                         <Trash2 size={14} aria-hidden='true' />
                         Delete

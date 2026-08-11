@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
-import { JobStatus } from '@shared/contracts/types';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';

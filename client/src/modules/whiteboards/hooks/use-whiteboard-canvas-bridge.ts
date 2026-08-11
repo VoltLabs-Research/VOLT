@@ -25,10 +25,6 @@ interface UseWhiteboardCanvasBridgeProps {
     whiteboardId: string;
 };
 
-/**
- * Excalidraw echoes every scene we push back through onChange. The signature lets us
- * recognise that echo and skip re-broadcasting it as a local edit.
- */
 const createSceneSignature = (elements: WhiteboardElements, appState: WhiteboardAppState): string => JSON.stringify({
     elements: elements.map((element) => [
         element.id,
@@ -57,10 +53,6 @@ const pushSceneToCanvas = (api: ExcalidrawAPI, scene: WhiteboardStoredScene) => 
     });
 };
 
-/**
- * Owns the live Excalidraw handle: pushes remote scenes into it, forwards local edits to
- * persistence and realtime sync, and publishes the handle for the AI draw tool.
- */
 const useWhiteboardCanvasBridge = ({ whiteboardId }: UseWhiteboardCanvasBridgeProps) => {
     const excalidrawApiRef = useRef<ExcalidrawAPI | null>(null);
     const pendingSceneRef = useRef<WhiteboardStoredScene | null>(null);

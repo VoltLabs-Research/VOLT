@@ -18,7 +18,7 @@ import type {
     TrajectoryFolderQuery,
     TrajectoryFolderView
 } from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
-import type { DownloadStreamOutput } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { StreamableOutput } from '@shared/contracts/types/StreamableOutput';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type {

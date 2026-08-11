@@ -85,7 +85,6 @@ const toSegments = (message: UIMessage): MessageSegment[] => {
     return segments;
 };
 
-/** Consecutive assistant messages render as a single thread entry, so they are grouped before normalization. */
 export const groupAssistantRuns = (messages: UIMessage[]): UIMessage[][] => {
     const groups: UIMessage[][] = [];
 
@@ -102,7 +101,6 @@ export const groupAssistantRuns = (messages: UIMessage[]): UIMessage[][] => {
     return groups;
 };
 
-/** Cheap change detector: the parts that affect rendering are their kind plus streamed length or tool state. */
 export const signMessageGroup = (group: UIMessage[]): string => {
     let signature = '';
 

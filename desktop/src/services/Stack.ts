@@ -3,11 +3,7 @@ import bus from '@/services/EventBus';
 
 export interface ComposeOptions{
     composeFile: string;
-    /**
-     * Extra compose files layered on top of `composeFile`, in order.
-     *
-     * Used for the prebuilt-image overlay; empty means build from source.
-     */
+
     overlayFiles?: string[];
     env?: Record<string, string>;
     dockerPath?: string;
@@ -38,12 +34,6 @@ const compose = (options: ComposeOptions, args: string[], profiles: string[]) =>
     });
 };
 
-/**
- * Runs a compose command without narrating it.
- *
- * The inspection below is asked on every launch to decide whether a phase has
- * anything to do, so its output does not belong in the deploy log the user reads.
- */
 const composeQuiet = async (options: ComposeOptions, args: string[], profiles: string[]): Promise<string> => {
     const lines: string[] = [];
     const profileArgs = profiles.flatMap((p) => ['--profile', p]);
@@ -60,13 +50,6 @@ const composeQuiet = async (options: ComposeOptions, args: string[], profiles: s
     return lines.join('\n');
 };
 
-/**
- * The container id of a service that is currently running, or null.
- *
- * Failures resolve to null rather than throwing: "not running" and "cannot tell"
- * both mean the caller should go ahead and reconcile the service, so there is no
- * outcome an error would express differently.
- */
 export const runningServiceId = async (
     options: ComposeOptions,
     service: string,
@@ -80,7 +63,6 @@ export const runningServiceId = async (
     }
 };
 
-/** Reads one environment variable from a running container, or null. */
 export const containerEnvValue = async (
     options: ComposeOptions,
     containerId: string,
@@ -108,17 +90,6 @@ export const composeUp = (options: ComposeOptions, profiles: string[] = [], buil
 export const composeDown = (options: ComposeOptions, profiles: string[] = [], volumes = false) =>
     compose(options, ['down', ...(volumes ? ['-v'] : [])], profiles);
 
-/**
- * Pulls specific services' images.
- *
- * Resolves to `false` instead of throwing when the pull fails, because the caller
- * treats an unavailable image as "fall back to building" rather than an error: a
- * tag that has not been published yet, or a machine with no network, must not stop
- * the deploy.
- *
- * `services` is explicit so probing the prebuilt images does not also pull the
- * datastore images that `up` would fetch anyway.
- */
 export const composePull = async (
     options: ComposeOptions,
     services: string[],

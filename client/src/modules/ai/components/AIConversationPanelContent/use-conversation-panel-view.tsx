@@ -17,10 +17,6 @@ interface ConversationPanelViewOptions {
     onNavigateAway?: () => void;
 }
 
-/**
- * Shared wiring for every embedded assistant panel: it turns a chat page state into the select
- * options, navigation callbacks and rendered panel that every embedded panel mounts.
- */
 const useConversationPanelView = ({
     pageState,
     conversationId,

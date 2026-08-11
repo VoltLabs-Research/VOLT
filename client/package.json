@@ -36,7 +36,6 @@
     "postprocessing": "^6.39.4",
     "react": "^19.2.8",
     "react-aria": "^3.51.0",
-    "react-calendar-heatmap": "^1.10.0",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.71.2",
     "react-hotkeys-hook": "^5.2.4",

@@ -63,12 +63,7 @@ const PublicSimulationGrid = ({ teamId, onPublicListingChange }: PublicSimulatio
             includeCopyDocumentId={false}
             emptyTitle='No public trajectories'
             emptyMessage='This team has no public trajectories.'
-            /*
-             * `max-md:p-0` is what `DiscoverTeamTrajectoriesPage.css`'s
-             * `.public-simulation-grid.document-listing-grid { padding: 0 }` did at the 768px
-             * breakpoint: it cancels the grid's own `max-md:p-4`. `DocumentListingGrid` passes
-             * `className` last into `cn`, so tailwind-merge drops the padding it replaces.
-             */
+
             gridClassName='public-simulation-grid max-md:p-0'
         />
     );

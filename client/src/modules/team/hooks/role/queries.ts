@@ -1,5 +1,6 @@
 import roleService from '../../api/services/role-service';
-import { createInvalidatingMutation, createQuery } from '@/shared/query';
+import { createInvalidatingMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
 import { createTeamScopedPaginatedResource } from '../shared/team-scoped-paginated-resource';
 import type { TeamScopedAggregateParams } from '../shared/team-scoped-paginated-resource';
 import type { TeamRole } from '@volt/contracts/modules/team/domain';

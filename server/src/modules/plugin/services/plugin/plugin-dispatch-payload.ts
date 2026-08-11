@@ -3,7 +3,7 @@ import pluginBinaryOwnerResolver from '@modules/plugin/services/plugin/PluginBin
 import pluginBinarySyncService from '@modules/plugin/services/plugin/PluginBinarySyncService';
 import pluginDispatchEncoder from '@modules/plugin/services/plugin/PluginDispatchEncoder';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-import type { Analysis, AnalysisProps } from '@shared/contracts/types';
+import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
 import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
 
 export interface TrajectoryFramePayload {

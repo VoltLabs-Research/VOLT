@@ -1,4 +1,7 @@
-import type { IMemberContentCounter, MemberContentCountResult } from '@shared/contracts/ports';
+import type {
+    IMemberContentCounter,
+    MemberContentCountResult
+} from '@shared/contracts/ports/IMemberContentCounter';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 
 const COUNT_KEY = 'trajectoriesCount';

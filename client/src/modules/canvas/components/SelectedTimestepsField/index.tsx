@@ -10,12 +10,6 @@ interface SelectedTimestepsFieldProps {
     onChange: (selectedTimesteps?: number[]) => void;
 }
 
-/**
- * bravais's `allOption` was not a selectable value: picking it called
- * `onMultiChange([])`, which this field maps back to `undefined` — "every timestep".
- * The key is kept out of `selectedValues` so it never renders as selected, exactly as
- * before.
- */
 const ALL_OPTION_KEY = '__all__';
 
 const SelectedTimestepsField = ({
@@ -56,23 +50,6 @@ const SelectedTimestepsField = ({
 
     const triggerLabel = selectedValues.length === 0 ? 'All' : `${selectedValues.length} selected`;
 
-    /*
-     * This field borrowed FormFieldRHF's canvas-surface classes by importing its
-     * stylesheet across module boundaries. That sheet is gone; the utilities below
-     * are the same rules it provided, copied from `FormFieldRHF/field-styles.ts`
-     * (canvas surface). The class names stay as markers because `RightPanel`'s plugin
-     * config view still re-expresses its mobile layout as descendant variants over
-     * `.form-field-canvas`, `.canvas-form-label` and `.render-input-container`.
-     *
-     * Note `gap-2`, not the `gap-4` that was here: the old unlayered
-     * `.form-field-canvas { gap: .5rem }` outranked the utility, so 0.5rem is what
-     * actually rendered.
-     *
-     * The control is an `Autocomplete` rather than a `Select` because bravais's
-     * `isMulti` + `hasSearch` needs both multiple selection and a text filter;
-     * `Autocomplete`'s root IS a RAC Select, and `Autocomplete.Filter` is the filter
-     * provider `hasSearch` was.
-     */
     return (
         <div className='form-field-canvas flex min-h-6 flex-row items-center justify-between gap-2'>
             <span className='canvas-form-label min-w-[130px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.7rem] leading-6 tracking-[0.01em] text-muted'>
@@ -92,7 +69,6 @@ const SelectedTimestepsField = ({
                         <Autocomplete.Value className='truncate text-[0.7rem]'>{triggerLabel}</Autocomplete.Value>
                         <Autocomplete.Indicator />
                     </Autocomplete.Trigger>
-
                     <Autocomplete.Popover>
                         <Autocomplete.Filter>
                             <SearchField autoFocus aria-label='Search timesteps'>
@@ -102,7 +78,6 @@ const SelectedTimestepsField = ({
                                     <SearchField.ClearButton />
                                 </SearchField.Group>
                             </SearchField>
-
                             <ListBox aria-label='Timesteps'>
                                 <ListBox.Item id={ALL_OPTION_KEY} textValue='All'>
                                     <ListBox.ItemIndicator />

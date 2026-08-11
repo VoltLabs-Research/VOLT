@@ -23,7 +23,7 @@ import {
     type InlineWorkflowTraceNode,
     type WorkflowWalkerDelegate
 } from '@modules/analysis/services/workflow/WorkflowWalker';
-import type { DaemonAnalysisDocument } from '@shared/contracts';
+
 import type {
     WorkflowDumpTarget,
     WorkflowExecutionOptions,
@@ -33,11 +33,11 @@ import type {
     WorkflowOutputs
 } from '@shared/contracts/types/workflow.types';
 import type { BinaryExecutor, PluginRuntimeProvider } from '@shared/contracts/types/plugin-execution';
-import type { AnalysisExecutionIdentity, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
+import type { AnalysisExecutionIdentity, AnalysisJobExecutionData, DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
-import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
 
 interface WorkflowExecuteInput {

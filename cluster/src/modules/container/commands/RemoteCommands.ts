@@ -1,5 +1,5 @@
 import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
-import { RemoteExplorerTarget, type RemoteExplorerRequest } from '@shared/contracts';
+import { RemoteExplorerTarget, type RemoteExplorerRequest } from '@shared/contracts/types/remote-explorer';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { FilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import BaseRemoteAccess from '@modules/container/services/remote-access/BaseRemoteAccess';

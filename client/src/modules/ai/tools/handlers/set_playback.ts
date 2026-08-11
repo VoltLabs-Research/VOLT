@@ -15,7 +15,6 @@ const setPlayback: ClientToolHandler<SetPlaybackInput> = {
             applied.speed = input.speed;
         }
 
-        // The only bound the contract does not tag, and a zero would stall the clock.
         if (input.targetFps !== undefined && input.targetFps > 0) {
             store.setTargetFps(input.targetFps);
             applied.targetFps = input.targetFps;

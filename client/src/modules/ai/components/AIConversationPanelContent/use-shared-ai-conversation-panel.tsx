@@ -5,7 +5,6 @@ interface UseSharedAIConversationPanelOptions {
     onNavigateAway?: () => void;
 }
 
-/** Embedded assistant panel backed by the dashboard-wide conversation, so it survives navigation. */
 const useSharedAIConversationPanel = ({ onNavigateAway }: UseSharedAIConversationPanelOptions = {}) => {
     const chatContext = useAIChatContext();
 

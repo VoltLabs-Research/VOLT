@@ -1,5 +1,6 @@
-import { createService, get, post } from '@/app/core/http/utils/create-service';
+import { createService, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
+import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 
 interface ParticleFilterCondition {
@@ -116,9 +117,11 @@ const buildApplyFilterBody = (input: ApplyFilterInput) => {
     };
 };
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
-    getProperties: get<GetFilterPropertiesInput, FilterPropertiesData>(
-        '/trajectories/:trajectoryId/particle-filters/properties',
+    getProperties: routes.route<GetFilterPropertiesInput, FilterPropertiesData>(
+        trajectoryRoutes.particleFilterProperties,
         {
             query: ({ timestep, analysisId }) => ({
                 timestep,
@@ -126,20 +129,20 @@ const endpoints = {
             })
         }
     ),
-    preview: get<PreviewFilterInput, PreviewFilterResponse>(
-        '/trajectories/:trajectoryId/particle-filters/previews',
+    preview: routes.route<PreviewFilterInput, PreviewFilterResponse>(
+        trajectoryRoutes.particleFilterPreview,
         {
             query: buildPreviewQuery
         }
     ),
-    applyAction: post<ApplyFilterInput, ApplyFilterResponse>(
-        '/trajectories/:trajectoryId/particle-filters',
+    applyAction: routes.route<ApplyFilterInput, ApplyFilterResponse>(
+        trajectoryRoutes.particleFilterApply,
         {
             body: buildApplyFilterBody
         }
     ),
-    getUniqueValues: get<GetUniqueValuesInput, GetUniqueValuesResponse>(
-        '/trajectories/:trajectoryId/particle-filters/unique-values'
+    getUniqueValues: routes.route<GetUniqueValuesInput, GetUniqueValuesResponse>(
+        trajectoryRoutes.particleFilterUniqueValues
     )
 };
 

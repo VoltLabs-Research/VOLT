@@ -1,5 +1,7 @@
 import service from '../api/service';
-import { buildKeys, createPaginatedQuery, createQuery } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createPaginatedQuery } from '@/shared/query/create-paginated-query';
+import { createQuery } from '@/shared/query/create-query';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type {
     CreateAIConversationParams,

@@ -1,7 +1,7 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
-import type { SceneArtifactParams } from '@shared/contracts/types/SceneArtifact';
+import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
     buildClusterRequiredError,

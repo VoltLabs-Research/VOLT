@@ -7,13 +7,11 @@ import service, {
     type UpdateContainerFields
 } from '../api/service';
 import { teamClusterService } from '@/modules/cluster/api/service';
-import {
-    buildKeys,
-    createInvalidatingMutation,
-    createFolderResourceQueries,
-    createPaginatedQuery,
-    createQuery
-} from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createInvalidatingMutation } from '@/shared/query/create-mutation';
+import { createFolderResourceQueries } from '@/shared/query/create-folder-resource-queries';
+import { createPaginatedQuery } from '@/shared/query/create-paginated-query';
+import { createQuery } from '@/shared/query/create-query';
 import type {
     FolderCreateParams,
     FolderDeleteParams,
@@ -21,7 +19,7 @@ import type {
     FolderListParams,
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ClusterResourceLimits } from '@volt/contracts/modules/cluster/domain';
 import type { Container } from '@volt/contracts/modules/container/domain';
 import type { ContainerFolder } from '@volt/contracts/modules/container/domain';

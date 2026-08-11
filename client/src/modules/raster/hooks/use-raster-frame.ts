@@ -1,6 +1,6 @@
 import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { RasterFrameScope } from '@volt/contracts/modules/raster/domain';
-import { isAbortError, isApiError } from '@/shared/errors/core';
+import { isAbortError, isApiError } from '@/shared/errors/core/report-error';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { ApiError } from '@voltstack/voltclient';

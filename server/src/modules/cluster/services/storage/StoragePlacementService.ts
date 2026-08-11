@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
 import StoragePlacementEntity from '@modules/cluster/models/StoragePlacement';
@@ -24,7 +24,7 @@ import type {
     StoragePlacementScopeType,
     StoragePlacementState
 } from '@shared/domain/contracts/team-cluster';
-import type { IStoragePlacementService } from '@shared/contracts/ports';
+import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
 import { In } from 'typeorm';
 
 const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => [{

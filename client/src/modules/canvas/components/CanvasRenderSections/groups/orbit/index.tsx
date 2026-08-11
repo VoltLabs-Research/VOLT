@@ -1,4 +1,4 @@
-import { row, PRESETS, checkboxGrid, targetRows, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, checkboxGrid, targetRows } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';
@@ -18,7 +18,7 @@ const useOrbitGroup = (): RenderGroup => {
                 enabled: true,
                 rows: [],
                 extras: (
-                    <div className={RENDER_GRID_CLASS}>
+                    <div className='flex flex-col items-stretch gap-2'>
                         {checkboxGrid([
                             {
                                 key: 'enabled',

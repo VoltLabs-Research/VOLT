@@ -10,7 +10,8 @@ import OnboardingLayout from '@/modules/onboarding/components/templates/Onboardi
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import { useCreateTeamMutation } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button, Spinner } from '@heroui/react';
 import { sileo } from 'sileo';

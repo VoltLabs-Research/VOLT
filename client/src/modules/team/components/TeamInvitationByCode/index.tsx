@@ -1,7 +1,5 @@
-import { Button, Chip, Spinner, cn } from '@heroui/react';
+import { Button, Chip, Spinner } from '@heroui/react';
 import {
-    TEAM_INVITATION_ACTIONS_CLASS,
-    TEAM_INVITATION_ICON_ERROR_CLASS,
     TeamInvitationCard,
     TeamInvitationDetailItem,
     TeamInvitationDetails,
@@ -15,19 +13,11 @@ import {
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { useJoinByCodeMutation, usePreviewJoinByCodeQuery } from '@/modules/team/hooks/team/queries';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { AlertCircle, CheckCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-
-/**
- * `.team-invitation-by-code-icon` and its two tones. `--color-brand-primary` is
- * HeroUI's `--accent`, so the 10% `color-mix` fill is `bg-accent/10`; the ready tone's
- * `--status-success` / `--status-success-bg` pair is `text-success bg-success-soft`.
- */
-const BY_CODE_ICON_CLASS = 'flex size-16 items-center justify-center rounded-full';
-const BY_CODE_ICON_LOADING_CLASS = 'text-accent bg-accent/10';
-const BY_CODE_ICON_READY_CLASS = 'text-success bg-success-soft';
 
 const isAlreadyMemberError = (message: string): boolean => {
     return message.toLowerCase().includes('already a member');
@@ -112,7 +102,7 @@ const TeamInvitationByCodeTemplate = () => {
         return (
             <TeamInvitationStateCard
                 icon={(
-                    <div className={cn(BY_CODE_ICON_CLASS, BY_CODE_ICON_LOADING_CLASS)}>
+                    <div className='flex size-16 items-center justify-center rounded-full text-accent bg-accent/10'>
                         <Spinner size='lg' color='current' />
                     </div>
                 )}
@@ -156,7 +146,7 @@ const TeamInvitationByCodeTemplate = () => {
         return (
             <TeamInvitationStateCard
                 icon={(
-                    <div className={TEAM_INVITATION_ICON_ERROR_CLASS}>
+                    <div className='text-danger'>
                         <XCircle size={48} />
                     </div>
                 )}
@@ -181,7 +171,7 @@ const TeamInvitationByCodeTemplate = () => {
 
     return (
         <TeamInvitationCard>
-            <div className={cn(BY_CODE_ICON_CLASS, BY_CODE_ICON_READY_CLASS)}>
+            <div className='flex size-16 items-center justify-center rounded-full text-success bg-success-soft'>
                 <ShieldCheck size={40} />
             </div>
             <h3 className='text-xl font-semibold text-foreground'>Join this team?</h3>
@@ -195,7 +185,7 @@ const TeamInvitationByCodeTemplate = () => {
                     <TeamInvitationDetailItem label='Invite code' value={normalizedCode} />
                 </TeamInvitationDetails>
             )}
-            <div className={cn('flex flex-row items-center gap-3', TEAM_INVITATION_ACTIONS_CLASS)}>
+            <div className='flex flex-row items-center gap-3 mt-4'>
                 <Button variant='ghost' onPress={handleNavigateToNextDestination}>
                     Cancel
                 </Button>

@@ -1,4 +1,4 @@
-import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types';
+import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types/TeamClusterExposure';
 
 export type AnalysisFrameLogStatus = 'pending' | 'running' | 'completed' | 'failed';
 

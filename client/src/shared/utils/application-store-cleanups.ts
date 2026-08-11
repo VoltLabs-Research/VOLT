@@ -5,7 +5,6 @@ import {
 } from '@/shared/utils/app-cleanup-registry';
 
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
-import { useChatPresenceStore } from '@/modules/chat/store/chat/use-chat-presence-store';
 import { useClusterStore } from '@/modules/cluster/store/use-cluster-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
@@ -23,7 +22,6 @@ const socketManagedStoreResetters = [
 const teamScopedStoreResetters = [
     () => useEditorStore.getState().resetAll(),
     () => useScreenshotStore.getState().reset(),
-    () => useChatPresenceStore.getState().reset(),
     () => usePluginBuilderStore.getState().reset(),
     () => usePluginDebugStore.getState().reset()
 ] satisfies StoreResetter[];

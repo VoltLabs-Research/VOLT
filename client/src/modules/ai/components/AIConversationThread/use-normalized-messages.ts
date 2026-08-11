@@ -8,10 +8,6 @@ interface NormalizedMessageCacheEntry {
     value: NormalizedConversationMessage;
 }
 
-/**
- * Normalizes the streamed message list into renderable segments, reusing the previous object for
- * every message whose parts did not change so that memoized message items skip re-rendering.
- */
 const useNormalizedMessages = (messages: UIMessage[]): NormalizedConversationMessage[] => {
     const cacheRef = useRef(new Map<string, NormalizedMessageCacheEntry>());
 

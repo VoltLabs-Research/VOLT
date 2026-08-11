@@ -1,5 +1,5 @@
-import { isAccessDeniedError } from '@/shared/errors/core';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { isAccessDeniedError } from '@/shared/errors/core/report-error';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import useFolderBreadcrumbs from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';

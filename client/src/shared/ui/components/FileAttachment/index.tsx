@@ -18,16 +18,6 @@ const IMAGE_FILE_EXTENSIONS = new Set([
     'heif'
 ]);
 
-const ICON_SIZE_CLASSES: Record<FileAttachmentVariant, string> = {
-    compact: 'size-10',
-    detailed: 'size-12'
-};
-
-const PREVIEW_SIZE_CLASSES: Record<FileAttachmentVariant, string> = {
-    compact: 'size-12',
-    detailed: 'size-14'
-};
-
 const getFileExtension = (value?: string): string => {
     if (!value) return '';
     const normalized = value.split('?')[0].toLowerCase();
@@ -84,8 +74,8 @@ const FileAttachment = ({
             <div className={cn(
                 'flex items-center justify-center shrink-0 rounded-lg',
                 usePreviewTile
-                    ? cn(PREVIEW_SIZE_CLASSES[variant], 'overflow-hidden')
-                    : cn(ICON_SIZE_CLASSES[variant], 'bg-surface-secondary')
+                    ? cn({ compact: 'size-12', detailed: 'size-14' }[variant], 'overflow-hidden')
+                    : cn({ compact: 'size-10', detailed: 'size-12' }[variant], 'bg-surface-secondary')
             )}>
                 {usePreviewTile && fileUrl ? (
                     <img

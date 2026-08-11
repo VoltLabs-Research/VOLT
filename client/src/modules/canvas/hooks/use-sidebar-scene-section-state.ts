@@ -5,11 +5,6 @@ export interface SidebarSceneSectionSnapshot {
     headerPopoverStates: Map<string, boolean>;
 }
 
-/**
- * Per-analysis UI state of the canvas sidebar: which sections are expanded and
- * which header popovers are open. Snapshot/restore exists so an optimistic
- * analysis delete can put this state back if the request fails.
- */
 const useSidebarSceneSectionState = () => {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [headerPopoverStates, setHeaderPopoverStates] = useState<Map<string, boolean>>(new Map());

@@ -42,7 +42,7 @@ services:
       volt-postgres: { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # Avatars and chat attachments live here now, so this is data, not a cache.
+      # Avatars live here now, so this is data, not a cache.
       - volt-server-data:/var/lib/volt-server
       - ${VOLT_SOURCE_DIR}/server:/app
       - ${VOLT_SOURCE_DIR}/contracts:/contracts:ro

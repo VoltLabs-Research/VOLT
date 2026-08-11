@@ -1,4 +1,5 @@
-import { ErrorSurface, isApiError, markApiErrorHandled, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isApiError, markApiErrorHandled, reportError } from '@/shared/errors/core/report-error';
 import { useEffect, useMemo, useState } from 'react';
 import { sileo } from 'sileo';
 

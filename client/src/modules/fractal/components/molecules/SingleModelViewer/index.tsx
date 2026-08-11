@@ -9,7 +9,7 @@ import { calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { resolveGlbResource } from '@/modules/fractal/api/service/compute-glb-url';
-import { useCanvasAccessMode } from '@/modules/canvas/api/access';
+import { useCanvasAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utils/camera-fit';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -332,10 +332,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             onSelect={setSelectedObject}
             onHoverChange={onHoverChange}
         >
-            {/* Imperative model container — the loaded 3D model is attached via
-                scene.add() in useGlbScene, never through React reconciliation.
-                R3F raycasts handler-bearing groups recursively, so the click
-                still reaches the imperatively-added line mesh. */}
             <group
                 ref={modelContainerRef}
                 userData={{ isScreenshotCaptureTarget: true }}

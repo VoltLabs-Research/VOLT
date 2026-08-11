@@ -11,7 +11,7 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import logger from '@shared/infrastructure/logger';
 import type { FindOptionsWhere } from 'typeorm';

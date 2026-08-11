@@ -1,5 +1,5 @@
-import type { ColumnDef, ListingRowData } from '@shared/contracts/operations/GetPluginListingDocuments';
-import type { ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/listing';
+import type { ColumnDef } from '@shared/contracts/operations/GetPluginListingDocuments';
+import type { ListingRowByAnalysisData, ListingRowData } from '@volt/contracts/modules/plugin/listing';
 
 export interface DaemonListingRow {
     _id: string;

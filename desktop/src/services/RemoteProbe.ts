@@ -24,10 +24,6 @@ interface HealthzResponse{
     clientHost?: string | null;
 }
 
-/**
- * The endpoint is a user-typed address that may not be a VOLT server at all, so
- * every field of the response stays validated.
- */
 export const probeRemoteEndpoint = async (rawEndpoint: string): Promise<RemoteProbeResult> => {
     const origins = candidateOrigins(rawEndpoint);
     if(origins.length === 0) return {

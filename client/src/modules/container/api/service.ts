@@ -7,7 +7,7 @@ import {
     type FolderListParams,
     type FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Container } from '@volt/contracts/modules/container/domain';
 
 import type { ContainerFolder } from '@volt/contracts/modules/container/domain';

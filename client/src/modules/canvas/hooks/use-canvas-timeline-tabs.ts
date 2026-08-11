@@ -7,7 +7,8 @@ import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/list
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import { useEffect, useMemo } from 'react';
 
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/services/scene-artifacts-service';
@@ -39,7 +40,9 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         },
         { enabled: !!trajectoryId && !!analysisId }
     );
-    const analyses = analysesQuery.data?.data ?? trajectory?.analysis ?? [];
+    const analysesData = analysesQuery.data?.data;
+    const trajectoryAnalyses = trajectory?.analysis;
+    const analyses = useMemo(() => analysesData ?? trajectoryAnalyses ?? [], [analysesData, trajectoryAnalyses]);
 
     const selectedAnalysis = useMemo(() => {
         if (!analysisId) {

@@ -10,7 +10,6 @@ const subscribe = <TListener>(listeners: Set<TListener>, listener: TListener): (
     };
 };
 
-/** A throwing listener must not stop the others from being told. */
 const notify = <TValue>(listeners: Set<(value: TValue) => void>, value: TValue): void => {
     listeners.forEach((listener) => {
         try {

@@ -16,7 +16,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import { DAEMON_PAGE_SIZE } from '@modules/plugin/services/plugin/listing-constants';
 const DEFAULT_MAX_ROWS = 50_000;

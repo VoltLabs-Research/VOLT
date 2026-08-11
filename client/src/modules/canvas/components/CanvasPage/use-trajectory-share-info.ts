@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-/** Visibility descriptor for the toolbar: only the owning team with update rights may publish. */
 const useTrajectoryShareInfo = (trajectory: Trajectory | null) => {
     const selectedTeamId = useSelectedTeamId();
     const { canAccess } = useTeamPermissions();

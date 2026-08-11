@@ -36,8 +36,7 @@ const buildCard = (
 ): DashboardCard => {
     let series: number[] = [];
     const weeklySeries = data.weekly[key];
-    // DashboardWeeklySeries indexes labels (string[]) and series (number[]) under one
-    // signature, so `weeklySeries` is `number[] | string[]` and must be narrowed here.
+
     if (weeklySeries.every((value) => typeof value === 'number')) {
         series = weeklySeries;
     }

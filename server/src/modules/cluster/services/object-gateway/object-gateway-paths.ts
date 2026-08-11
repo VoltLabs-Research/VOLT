@@ -2,7 +2,7 @@
 import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
-} from '@shared/infrastructure/contracts/team-cluster';
+} from '@shared/contracts/types/TeamClusterObjectGateway';
 import type {
     TeamClusterObjectGatewayPutRequest
 } from '@shared/contracts/types/TeamClusterObjectGateway';

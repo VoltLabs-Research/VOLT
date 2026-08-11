@@ -24,19 +24,11 @@ export const buildAnalysisSections = (
     }));
 };
 
-/**
- * Failed and unrecognised analyses stay hidden unless they are the one currently
- * selected; the search box then narrows what is left down by plugin name.
- */
 export const filterVisibleSections = (
     sections: AnalysisSectionData[],
     selectedAnalysisId: string | undefined,
     searchQuery: string,
-    /*
-     * The merged status, supplied by the caller that holds the hook. Reading
-     * `section.analysis.status` alone hid an analysis whose row still said `failed`
-     * after its retry had already been picked up.
-     */
+
     getResolvedStatus?: (analysisId: string) => CanvasAnalysisStatus | undefined
 ): AnalysisSectionData[] => {
     const query = searchQuery.trim().toLowerCase();
@@ -55,10 +47,6 @@ export const filterVisibleSections = (
     });
 };
 
-/**
- * Scene Collection only lists analyses that produced data for the frame on
- * screen. Analyses without a timestep scope ran on every frame.
- */
 export const filterSectionsByTimestep = (
     sections: AnalysisSectionData[],
     selectedAnalysisId: string | undefined,

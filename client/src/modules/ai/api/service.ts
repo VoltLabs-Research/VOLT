@@ -3,7 +3,7 @@ import { createService, del, paginated, patch, post } from '@/app/core/http/util
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ChatTransport, UIMessage } from 'ai';
 
 export interface CreateAIConversationParams {

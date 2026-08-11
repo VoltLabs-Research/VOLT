@@ -1,14 +1,5 @@
-/**
- * User-display helpers, relocated verbatim from bravais when that package was
- * retired.
- *
- * The avatar palette stays coloured on purpose. VOLT's accent is monochrome, but
- * an avatar is imagery rather than an accent: the hue identifies a person, it
- * never sits under body text or on a control, so it is outside that rule.
- */
 
-/** Minimal user-like shape needed to derive initials — structural, so this
- *  helper carries no domain (auth) dependency. */
+
 interface InitialsUserSource {
     firstName?: string | null;
     lastName?: string | null;

@@ -7,13 +7,6 @@ import type { ReactNode } from 'react';
 
 type AriaSort = 'ascending' | 'descending' | 'none';
 
-/**
- * `group-hover:` reaches the sort button, which carries `group`: the indicator used
- * to be revealed by `.document-listing-sort-button:hover .sort-indicator`, and the
- * button is the only ancestor that can express that now.
- */
-const SORT_INDICATOR = 'inline-flex items-center justify-center ml-1.5 text-muted opacity-60 transition-[color,opacity] duration-150 group-hover:opacity-100';
-const SORT_INDICATOR_ACTIVE = 'text-foreground opacity-100';
 
 const isSortedBy = <TRow,>(col: ColumnConfig<TRow>, sortConfig: SortConfig | null): boolean => {
     return Boolean(col.sortable) && sortConfig?.key === getColumnKey(col);
@@ -32,7 +25,7 @@ export const getColumnSortIndicator = <TRow,>(
 
     return (
         <span
-            className={cn(SORT_INDICATOR, isActive && SORT_INDICATOR_ACTIVE)}
+            className={cn('inline-flex items-center justify-center ml-1.5 text-muted opacity-60 transition-[color,opacity] duration-150 group-hover:opacity-100', isActive && 'text-foreground opacity-100')}
             aria-hidden='true'
         >
             <Icon size={12} strokeWidth={2} />

@@ -94,12 +94,6 @@ const NAVIGATION_DESTINATIONS = {
         requiredParams: ['containerId'],
         description: 'Container details (append tab via query)'
     },
-    messages: {
-        pathTemplate: '/dashboard/messages',
-        requiredParams: [],
-        optionalParams: ['chatId'],
-        description: 'Team messages'
-    },
     ai_conversation: {
         pathTemplate: '/dashboard/ai',
         requiredParams: [],

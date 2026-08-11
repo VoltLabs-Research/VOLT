@@ -1,4 +1,3 @@
-import { TREE_CONTAINER_CLASS } from '../ObjectsPanel/tree-classes';
 import AnalysisTreeNode from '../AnalysisTreeNode';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { resolvePluginSceneRenderMetadata } from '../../utils/plugin-exposure-export';
@@ -19,7 +18,7 @@ import {
 } from '../../utils/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
-import type { AnalysisSectionData } from '../../hooks/use-canvas-sidebar-scene';
+import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { CanvasAnalysisStatusEntry } from '../../utils/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
@@ -64,7 +63,7 @@ interface SceneCollectionProps {
     firstExposureTourTargetId?: string;
 }
 
-const TREE_SCENE_ICON_COLOR = 'var(--accent-blue)';
+const TREE_SCENE_ICON_COLOR = 'var(--accent)';
 
 const SceneCollection = ({
     filteredSections,
@@ -163,7 +162,7 @@ const SceneCollection = ({
     );
 
     return (
-        <div className={TREE_CONTAINER_CLASS} role='tree' aria-label='Scene hierarchy'>
+        <div className='canvas-tree-container flex flex-col gap-1 overflow-auto px-2 pb-2.5 pt-1.5' role='tree' aria-label='Scene hierarchy'>
             {showDefaultScene && (
                 <MaybeContextMenu enabled={!isRasterSelectionMode} id='canvas-ctx-default-scene' options={defaultSceneOptions}>
                     {trajectoryRow}

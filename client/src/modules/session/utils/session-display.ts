@@ -2,7 +2,6 @@ import { SessionActivityType } from '@volt/contracts/modules/session/domain';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
 import { Globe, KeyRound, LogIn, LogOut } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-export { parseUserAgent as parseSessionUserAgent } from '@volt/contracts/modules/session/user-agent';
 
 const SESSION_RELATIVE_DAY_LIMIT = 30;
 

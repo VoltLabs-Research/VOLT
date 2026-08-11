@@ -26,7 +26,6 @@ const sleep = (delayMs: number): Promise<void> => new Promise((resolve) => setTi
 
 const getRemainingTimeMs = (deadlineMs: number): number => Math.max(0, deadlineMs - Date.now());
 
-/** Resolves null when the deadline wins the race against the status request. */
 const readSessionWithinDeadline = async (
     readSession: () => Promise<GetScriptingSessionStatusResponse>,
     deadlineMs: number

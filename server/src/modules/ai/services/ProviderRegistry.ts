@@ -13,7 +13,7 @@ import { createXai } from '@ai-sdk/xai';
 import { createOllama } from 'ollama-ai-provider-v2';
 import type { LanguageModel } from 'ai';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { AIProvider, AI_PROVIDERS } from '@shared/contracts/types/AIProviders';
+import { AIProvider, AI_PROVIDERS } from '@volt/contracts/modules/ai/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
 interface SdkOptions{

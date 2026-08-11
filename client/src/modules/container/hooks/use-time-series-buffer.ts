@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 
-/** Rolling window of the most recent `maxPoints` metric samples. */
 const useTimeSeriesBuffer = (maxPoints: number) => {
     const [history, setHistory] = useState<number[]>([]);
 

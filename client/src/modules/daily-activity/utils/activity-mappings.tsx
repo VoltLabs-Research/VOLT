@@ -18,16 +18,16 @@ export const ACTIVITY_ICON: Record<ActivityItem['type'], ReactNode> = {
 };
 
 export const ACTIVITY_ACCENT: Record<ActivityItem['type'], string> = {
-    'trajectory-upload': 'var(--accent-blue)',
-    'trajectory-deletion': 'var(--accent-red)',
-    'analysis-performed': 'var(--accent-green)',
-    'analysis-deletion': 'var(--accent-red)',
+    'trajectory-upload': 'var(--accent)',
+    'trajectory-deletion': 'var(--danger)',
+    'analysis-performed': 'var(--success)',
+    'analysis-deletion': 'var(--danger)',
     'container-creation': 'var(--accent-purple)',
-    'container-deletion': 'var(--accent-red)',
-    'whiteboard-creation': 'var(--accent-yellow)',
-    'whiteboard-deletion': 'var(--accent-red)',
+    'container-deletion': 'var(--danger)',
+    'whiteboard-creation': 'var(--warning)',
+    'whiteboard-deletion': 'var(--danger)',
     'role-creation': 'var(--accent-indigo)',
-    'role-deletion': 'var(--accent-red)',
-    'secret-key-creation': 'var(--accent-orange)',
-    'secret-key-deletion': 'var(--accent-red)'
+    'role-deletion': 'var(--danger)',
+    'secret-key-creation': 'var(--warning)',
+    'secret-key-deletion': 'var(--danger)'
 };

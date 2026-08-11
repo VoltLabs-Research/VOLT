@@ -27,23 +27,6 @@ export interface ContextMenuItemProps {
     onMouseLeave?: MouseEventHandler<HTMLButtonElement>;
 };
 
-/**
- * The chrome bravais's `PopoverMenuItem` actually painted once `Button.css` had
- * won the cascade: a full-width ghost button whose default ink is muted and
- * whose hover state brightens it, sized by `size` rather than by a variant.
- */
-const SIZE_CLASS_NAMES: Record<ContextMenuItemSize, string> = {
-    sm: 'min-h-[2.1rem] gap-2 rounded-md px-3.5 py-2 text-[0.8125rem]',
-    md: 'min-h-[2.75rem] gap-2 rounded-[10px] px-3.5 text-sm'
-};
-
-const VARIANT_CLASS_NAMES: Record<ContextMenuItemVariant, string> = {
-    default: 'text-muted hover:bg-surface-hover hover:text-foreground',
-    danger: 'text-danger hover:bg-danger/8'
-};
-
-const ICON_WRAPPER_CLASS_NAMES = 'flex shrink-0 items-center justify-center';
-
 const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
     icon,
     label,
@@ -74,8 +57,8 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             className={cn(
                 'relative flex w-full cursor-pointer select-none items-center justify-start font-medium transition-colors duration-150',
                 'disabled:cursor-not-allowed disabled:opacity-50',
-                SIZE_CLASS_NAMES[size],
-                VARIANT_CLASS_NAMES[variant],
+                { sm: 'min-h-[2.1rem] gap-2 rounded-md px-3.5 py-2 text-[0.8125rem]', md: 'min-h-[2.75rem] gap-2 rounded-[10px] px-3.5 text-sm' }[size],
+                { default: 'text-muted hover:bg-surface-hover hover:text-foreground', danger: 'text-danger hover:bg-danger/8' }[variant],
                 isLoading && 'pointer-events-none text-transparent'
             )}
             disabled={isInert}
@@ -100,7 +83,7 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             )}
 
             {icon && (
-                <span className={ICON_WRAPPER_CLASS_NAMES} aria-hidden='true'>
+                <span className='flex shrink-0 items-center justify-center' aria-hidden='true'>
                     {icon}
                 </span>
             )}
@@ -108,7 +91,7 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             <span className='flex w-full items-center justify-between gap-2'>
                 <span>{content}</span>
                 {rightAdornment ? (
-                    <span className={ICON_WRAPPER_CLASS_NAMES}>{rightAdornment}</span>
+                    <span className='flex shrink-0 items-center justify-center'>{rightAdornment}</span>
                 ) : null}
             </span>
         </button>

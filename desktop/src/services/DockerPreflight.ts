@@ -152,10 +152,6 @@ const result = (reason: PreflightReason, extra: {
     };
 };
 
-/**
- * The docker CLI is a spawned subprocess, not a typed client: its exit codes and
- * stderr text are the only signal available, so they stay parsed and classified.
- */
 const classifyViaCli = async (cliPath: string, platform: NodeJS.Platform): Promise<PreflightResult> => {
     const info = await probe(cliPath, ['info'], { env: { PATH: augmentedPath() } });
     if(info.errno === 'ETIMEDOUT') return result('daemon-starting', {
@@ -231,7 +227,6 @@ export const dockerPreflight = async (): Promise<PreflightResult> => {
     });
 };
 
-/** How long to keep polling after a start or install before giving up. */
 const READY_TIMEOUT_MS = 180_000;
 const READY_POLL_MS = 2_000;
 
@@ -239,12 +234,6 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
     setTimeout(resolve, ms).unref();
 });
 
-/**
- * Polls until the runtime reports ready, or the budget runs out.
- *
- * A freshly started Docker Desktop reports `daemon-down` before it reports
- * `daemon-starting`, so anything that is not a terminal answer keeps polling.
- */
 const waitUntilReady = async (
     onProgress: (status: PreflightResult) => void,
     timeoutMs = READY_TIMEOUT_MS
@@ -264,14 +253,6 @@ const waitUntilReady = async (
     return last;
 };
 
-/**
- * Brings the container runtime up, doing the work the user would otherwise be
- * sent away to do: start it when it is installed but stopped, install it when it
- * is missing, and wait for it to become usable.
- *
- * Emits `deploy:preflight` at every transition so the UI can show progress rather
- * than a dead end with a link to a download page.
- */
 export const ensureDockerReady = async (
     onProgress: (status: PreflightResult) => void
 ): Promise<PreflightResult> => {
@@ -302,7 +283,6 @@ export const ensureDockerReady = async (
             });
         }
 
-        // A fresh install is not running yet on any platform.
         onProgress(result('auto-starting', { platform }));
         await startRuntime();
 

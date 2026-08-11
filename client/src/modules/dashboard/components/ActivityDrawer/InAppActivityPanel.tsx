@@ -1,5 +1,4 @@
 import RecoveryState from '@/shared/ui/components/RecoveryState';
-import { CHART_SURFACE } from '@/modules/dashboard/components/ActivityDrawer/activity-chrome';
 import { formatDuration } from '@/shared/utils/format';
 import { useMemo } from 'react';
 import { Activity as ActivityIcon } from 'lucide-react';
@@ -27,33 +26,6 @@ interface InAppActivityBucket {
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-/**
- * `.dashboard-activity-tooltip` and friends. recharts renders this content itself, so
- * every colour has to be a real token: `--color-surface-1` is `--surface-secondary`,
- * `--color-border` is `--border`, and `--radius-sm` is 8px, i.e. `rounded-lg`
- * (spec §3a/§3b).
- */
-const TOOLTIP = 'min-w-[120px] rounded-lg border border-border bg-surface-secondary px-[0.65rem] py-2';
-const TOOLTIP_LABEL = 'block text-[0.7rem] font-medium text-muted mb-[0.35rem]';
-const TOOLTIP_ROW = 'flex items-center gap-[0.35rem] py-[0.1rem]';
-const TOOLTIP_DOT = 'size-1.5 shrink-0 rounded-full';
-const TOOLTIP_NAME = 'flex-1 text-xs text-muted';
-const TOOLTIP_VALUE = 'text-xs font-semibold text-foreground';
-
-/** `.dashboard-activity-summary` and its two items. */
-const SUMMARY = 'flex items-center gap-6 mt-3 max-[768px]:flex-col max-[768px]:items-start max-[768px]:gap-3';
-const SUMMARY_ITEM = 'flex flex-col gap-[0.1rem]';
-const SUMMARY_ITEM_END = 'ml-auto max-[768px]:ml-0';
-
-/**
- * The chart's own colours. `--accent-blue` was the monochrome accent, not an
- * informational blue, and `--accent-green` was the success hue (spec §3a).
- */
-const CHART_GRID_COLOR = 'var(--border-secondary)';
-const CHART_AXIS_COLOR = 'var(--muted)';
-const CHART_TIME_COLOR = 'var(--accent)';
-const CHART_ACTIONS_COLOR = 'var(--success)';
 
 const toMondayIndex = (jsDay: number): number => {
     if (jsDay === 0) {
@@ -117,26 +89,24 @@ const buildInAppActivitySummary = (activityData: DailyActivity[]) => {
     };
 };
 
-// recharts renders the tooltip content even while inactive and with no payload, so both
-// have to be checked; `value` is recharts' `ValueType` union and needs narrowing to format.
 const renderTooltip = ({ active, payload, label }: TooltipContentProps<ValueType, NameType>) => {
     if (!active || !payload?.length) {
         return null;
     }
 
     return (
-        <div className={TOOLTIP}>
-            <span className={TOOLTIP_LABEL}>{label}</span>
+        <div className='min-w-[120px] rounded-lg border border-border bg-surface-secondary px-[0.65rem] py-2'>
+            <span className='block text-[0.7rem] font-medium text-muted mb-[0.35rem]'>{label}</span>
             {payload.map((entry, index) => {
                 const formattedValue = entry.dataKey === 'minutes' && typeof entry.value === 'number'
                     ? formatDuration(entry.value)
                     : entry.value;
 
                 return (
-                    <div key={index} className={TOOLTIP_ROW}>
-                        <span className={TOOLTIP_DOT} style={{ background: entry.color }} />
-                        <span className={TOOLTIP_NAME}>{entry.name}</span>
-                        <span className={TOOLTIP_VALUE}>{formattedValue}</span>
+                    <div key={index} className='flex items-center gap-[0.35rem] py-[0.1rem]'>
+                        <span className='size-1.5 shrink-0 rounded-full' style={{ background: entry.color }} />
+                        <span className='flex-1 text-xs text-muted'>{entry.name}</span>
+                        <span className='text-xs font-semibold text-foreground'>{formattedValue}</span>
                     </div>
                 );
             })}
@@ -160,7 +130,7 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
 
     return (
         <div className='flex flex-col gap-2 flex-1 min-h-0'>
-            <div className={CHART_SURFACE}>
+            <div className='min-h-0 flex-1 overflow-hidden rounded-2xl border border-border'>
                 <ResponsiveContainer width='100%' height={250}>
                     <RadarChart
                         data={inAppActivity.radarData}
@@ -169,13 +139,13 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
                         outerRadius='70%'
                     >
                         <PolarGrid
-                            stroke={CHART_GRID_COLOR}
+                            stroke='var(--border-secondary)'
                             strokeDasharray='4 4'
                         />
                         <PolarAngleAxis
                             dataKey='day'
                             tick={{
-                                fill: CHART_AXIS_COLOR,
+                                fill: 'var(--muted)',
                                 fontSize: 11
                             }}
                         />
@@ -184,33 +154,32 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
                         <Radar
                             name='Avg. time'
                             dataKey='minutes'
-                            stroke={CHART_TIME_COLOR}
-                            fill={CHART_TIME_COLOR}
+                            stroke='var(--accent)'
+                            fill='var(--accent)'
                             fillOpacity={0.12}
                             strokeWidth={2}
                         />
                         <Radar
                             name='Avg. actions'
                             dataKey='actions'
-                            stroke={CHART_ACTIONS_COLOR}
-                            fill={CHART_ACTIONS_COLOR}
+                            stroke='var(--success)'
+                            fill='var(--success)'
                             fillOpacity={0.06}
                             strokeWidth={1.5}
                         />
                     </RadarChart>
                 </ResponsiveContainer>
             </div>
-
-            <div className={SUMMARY}>
-                <div className={SUMMARY_ITEM}>
+            <div className='flex items-center gap-6 mt-3 max-[768px]:flex-col max-[768px]:items-start max-[768px]:gap-3'>
+                <div className='flex flex-col gap-[0.1rem]'>
                     <span className='text-base font-semibold text-foreground'>{formatDuration(inAppActivity.totalMinutes)}</span>
                     <span className='text-xs text-muted'>Total time</span>
                 </div>
-                <div className={SUMMARY_ITEM}>
+                <div className='flex flex-col gap-[0.1rem]'>
                     <span className='text-base font-semibold text-foreground'>{inAppActivity.totalActions}</span>
                     <span className='text-xs text-muted'>Actions</span>
                 </div>
-                <div className={`${SUMMARY_ITEM} ${SUMMARY_ITEM_END}`}>
+                <div className='flex flex-col gap-[0.1rem] ml-auto max-[768px]:ml-0'>
                     <span className='text-sm font-medium text-foreground'>{inAppActivity.peakDay}</span>
                     <span className='text-xs text-muted'>Peak day</span>
                 </div>

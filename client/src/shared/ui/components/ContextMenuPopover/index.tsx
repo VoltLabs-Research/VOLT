@@ -51,24 +51,6 @@ interface ContextMenuPosition {
     y: number;
 };
 
-/**
- * `overflow-visible` used to be `.context-menu-popover { overflow: visible }`
- * overriding bravais's `.popover { overflow-y: auto }`, and it is load-bearing:
- * SubmenuItemWrapper portals its panel *into* this element, so a clipping
- * overflow would cut every submenu off at the parent's edge.
- */
-const PANEL_CLASS_NAMES = 'z-[99999] max-w-[320px] overflow-visible rounded-xl border border-border bg-overlay text-foreground shadow-lg';
-
-const PANEL_SIZE_CLASS_NAMES: Record<'sm' | 'md', string> = {
-    sm: 'min-w-[124px]',
-    md: 'min-w-[180px]'
-};
-
-const CONTENT_SIZE_CLASS_NAMES: Record<'sm' | 'md', string> = {
-    sm: 'min-w-[180px]',
-    md: 'min-w-[min(22rem,calc(100vw-2rem))]'
-};
-
 const isTriggerElement = (node: ReactNode): node is ContextMenuTriggerElement => {
     return isValidElement(node);
 };
@@ -96,9 +78,6 @@ const ContextMenuPopover = ({
     const hasCustomContent = content !== undefined;
     const popoverRole = hasCustomContent ? 'dialog' : 'menu';
 
-    // Held in a ref, and read through the ref inside handleOpenChange, so that
-    // handleOpenChange stays referentially stable: putting the callback straight
-    // into the dep array re-runs floating-ui's autoUpdate on every parent render.
     const onOpenChangeRef = useRef<((isOpen: boolean) => void) | null>(null);
     onOpenChangeRef.current = (nextOpen: boolean) => {
         if (!nextOpen) {
@@ -232,8 +211,8 @@ const ContextMenuPopover = ({
                             ref={handleFloatingRef}
                             id={id}
                             className={cn(
-                                PANEL_CLASS_NAMES,
-                                PANEL_SIZE_CLASS_NAMES[size],
+                                'z-[99999] max-w-[320px] overflow-visible rounded-xl border border-border bg-overlay text-foreground shadow-lg',
+                                { sm: 'min-w-[124px]', md: 'min-w-[180px]' }[size],
                                 className
                             )}
                             style={floatingStyles}
@@ -246,7 +225,7 @@ const ContextMenuPopover = ({
                             <FloatingOwnerIdsContext.Provider value={nextFloatingOwnerIds}>
                                 <FloatingRootContext.Provider value={floatingElement ?? floatingRoot}>
                                     {hasCustomContent ? (
-                                        <div className={cn('flex flex-col p-2', CONTENT_SIZE_CLASS_NAMES[size])}>
+                                        <div className={cn('flex flex-col p-2', { sm: 'min-w-[180px]', md: 'min-w-[min(22rem,calc(100vw-2rem))]' }[size])}>
                                             {typeof content === 'function' ? content(close) : content}
                                         </div>
                                     ) : (

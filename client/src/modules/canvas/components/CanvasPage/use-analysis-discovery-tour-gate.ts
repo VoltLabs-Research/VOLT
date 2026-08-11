@@ -10,10 +10,6 @@ interface AnalysisDiscoveryTourGateParams {
     isSceneInteractive: boolean;
 }
 
-/**
- * Runs the guided analysis tour only for visitors arriving from a team
- * discovery page, once identity is settled and there is something to point at.
- */
 const useAnalysisDiscoveryTourGate = ({
     analyses,
     isAnalysesLoading,

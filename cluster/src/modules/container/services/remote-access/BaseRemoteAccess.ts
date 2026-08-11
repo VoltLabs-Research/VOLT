@@ -1,4 +1,4 @@
-import { RemoteExplorerTarget, type RemoteExplorerEntry, type RemoteExplorerNode } from '@shared/contracts';
+import { RemoteExplorerTarget, type RemoteExplorerEntry, type RemoteExplorerNode } from '@shared/contracts/types/remote-explorer';
 import type { ReverseChannelCommandResult } from '@shared/contracts/channel/reverse-channel-messaging';
 
 export default abstract class BaseRemoteAccess {

@@ -2,10 +2,6 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { computeGroupStatus } from '@/modules/jobs/utils/job-status-semantics';
 import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
-/*
- * Re-exported so existing importers keep their path. The definition lives in
- * `job-status-semantics`, next to the predicates it is built from.
- */
 export { computeGroupStatus };
 
 const isUngroupedTimestep = (timestep: number): boolean => timestep === UNGROUPED_TIMESTEP;

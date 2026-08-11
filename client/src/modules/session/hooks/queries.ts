@@ -1,5 +1,7 @@
 import service from '../api/service';
-import { buildKeys, createMutation, createQuery } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
 import type { RevokeAllSessionsResponse } from '@volt/contracts/modules/session/domain';
 import type { RevokeSessionInput } from '../api/service';
 

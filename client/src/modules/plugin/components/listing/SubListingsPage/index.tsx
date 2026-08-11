@@ -8,7 +8,7 @@ import listingService from '@/modules/plugin/api/services/listing-service';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
 import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { resolvePersistenceKey } from '@/shared/ui/components/DocumentListing/use-listing-view-preferences';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 
 interface SubListingRow extends Record<string, unknown> {
     _id: string;
@@ -35,7 +35,7 @@ const SubListingsPage = () => {
     const timestepRaw = searchParams.get('timestep');
     const timestep = timestepRaw !== null ? Number(timestepRaw) : Number.NaN;
     const namesRaw = searchParams.get('names') ?? '';
-    // Identity is load-bearing: `names` is a dependency of the tab-reset effect.
+
     const names = useMemo(() => parseNames(namesRaw), [namesRaw]);
 
     const queryKey = useMemo(() => (
@@ -43,8 +43,6 @@ const SubListingsPage = () => {
     ), [analysisId, exposureId, timestep]);
 
     const [activeTab, setActiveTab] = useState(() => {
-        // `DocumentListing` persists the selected tab under this exact param, so
-        // the initial tab has to be read back through the same key it writes.
         const persistedTab = searchParams.get(`${resolvePersistenceKey(queryKey)}-tab`);
         if(persistedTab && names.includes(persistedTab)) return persistedTab;
 
@@ -88,7 +86,6 @@ const SubListingsPage = () => {
         timestep
     }), [activeTab, analysisId, exposureId, timestep]);
 
-    // Kept stable: `DocumentListing` treats this as the identity of its data source.
     const fetchData = useCallback(async (requestParams: {
         page: number;
         limit: number;

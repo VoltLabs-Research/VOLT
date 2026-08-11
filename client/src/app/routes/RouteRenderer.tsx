@@ -13,16 +13,6 @@ import { lazy, Suspense } from 'react';
 import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 import type { RouteConfig, RouteLoader } from '@/app/routes/types';
 
-/*
- * The route-loading fallback, inline rather than as a component.
- *
- * bravais's `Loader` was a 12-piece CSS spinner with a visible label and an
- * `aria-live` region; HeroUI's `Spinner` covers the visual, so what remains is the
- * announcement and the positioning contract. `fillParent` fills the dashboard's
- * content area; otherwise it covers the viewport, which is what `isFixed` defaulted
- * to. The label is announced politely and atomically so a screen reader hears the
- * whole phrase once rather than character by character.
- */
 const renderRouteLoader = (label?: string, fillParent = false) => (
     <div
         className={fillParent ? 'absolute inset-0 flex items-center justify-center' : 'fixed inset-0 flex items-center justify-center'}
@@ -37,7 +27,6 @@ const renderRouteLoader = (label?: string, fillParent = false) => (
         </div>
     </div>
 );
-
 
 interface RoutePermissionGuardProps {
     route: RouteConfig;

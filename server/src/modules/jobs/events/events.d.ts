@@ -1,4 +1,4 @@
-import type { JobStatusChangedEventPayload } from '@shared/contracts/events';
+import type { JobStatusChangedEventPayload } from '@shared/contracts/events/JobStatusChangedPayload';
 
 declare global {
     interface EventMap {

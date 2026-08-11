@@ -1,4 +1,4 @@
-import type { AIProvider } from '@shared/contracts/types/AIProviders';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { EnabledModel } from '@volt/contracts/modules/team/domain';
 
 export type TeamAIProvider = AIProvider;

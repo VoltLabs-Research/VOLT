@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -28,7 +29,7 @@ export default class ContainerController extends Controller {
     create(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateContainerInput
+        @Body(schemaBody(typia.createValidate<CreateContainerInput>())) body: CreateContainerInput
     ){
         return createContainer(teamId, userId, body);
     }
@@ -62,7 +63,7 @@ export default class ContainerController extends Controller {
     createFolder(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateContainerFolderInput
+        @Body(schemaBody(typia.createValidate<CreateContainerFolderInput>())) body: CreateContainerFolderInput
     ){
         return containerFolderService.create(teamId, userId, body);
     }
@@ -71,7 +72,7 @@ export default class ContainerController extends Controller {
     updateFolder(
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string,
-        @Body() body: UpdateContainerFolderInput
+        @Body(schemaBody(typia.createValidate<UpdateContainerFolderInput>())) body: UpdateContainerFolderInput
     ){
         return containerFolderService.update(teamId, folderId, body);
     }
@@ -97,7 +98,7 @@ export default class ContainerController extends Controller {
     updateById(
         @Param('teamId') teamId: string,
         @Param('containerId') containerId: string,
-        @Body() body: UpdateContainerInput
+        @Body(schemaBody(typia.createValidate<UpdateContainerInput>())) body: UpdateContainerInput
     ){
         return updateContainer(teamId, containerId, body);
     }
@@ -126,7 +127,7 @@ export default class ContainerController extends Controller {
     async move(
         @Param('teamId') teamId: string,
         @Param('containerId') containerId: string,
-        @Body() body: MoveContainerInput
+        @Body(schemaBody(typia.createValidate<MoveContainerInput>())) body: MoveContainerInput
     ){
         return this.#service.move(teamId, containerId, body.folderId);
     }

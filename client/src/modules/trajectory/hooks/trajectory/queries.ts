@@ -1,15 +1,12 @@
 import trajectoryService from '../../api/services/trajectory-service';
 import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
-import {
-    buildKeys,
-    createInfiniteQuery,
-    createFolderResourceQueries,
-    createInvalidatingMutation,
-    createMutation,
-    createPaginatedQuery,
-    createQuery
-} from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createInfiniteQuery } from '@/shared/query/create-infinite-query';
+import { createFolderResourceQueries } from '@/shared/query/create-folder-resource-queries';
+import { createInvalidatingMutation, createMutation } from '@/shared/query/create-mutation';
+import { createPaginatedQuery } from '@/shared/query/create-paginated-query';
+import { createQuery } from '@/shared/query/create-query';
 import { batchInvalidateQueries } from '@/shared/query/cache-utils';
 import queryClient from '@/shared/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -20,14 +17,8 @@ import type {
     FolderListParams,
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import {
-    useCanvasAccessMode,
-    useCanvasDataAccess,
-    withAccessMode,
-    currentCanvasDataAccess,
-    currentAccessKey
-} from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { useCanvasAccessMode, useCanvasDataAccess, withAccessMode, currentCanvasDataAccess, currentAccessKey } from '@/modules/canvas/api/access/use-canvas-access-store';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { CreateTrajectoryInput, DownloadTrajectoryAnalysesInput, DownloadTrajectoryInput, GetAtomsInput, GetAtomsResponse, GetPreviewInput, GetTrajectoriesInput } from '../../api/services/trajectory-service';
 import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
 import type { MoveTrajectoryParams } from '../../api/services/trajectory-service';

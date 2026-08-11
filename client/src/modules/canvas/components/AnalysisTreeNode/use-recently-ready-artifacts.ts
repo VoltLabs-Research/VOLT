@@ -4,13 +4,6 @@ import type { AnalysisArtifactStatus, AnalysisExpectedArtifact } from '@volt/con
 
 const READY_ARTIFACT_HIGHLIGHT_MS = 1400;
 
-/**
- * Tracks artifacts that just finished so the tree can flash them briefly. An
- * artifact is highlighted only when this hook observed it move into `ready`,
- * so artifacts already ready on mount stay quiet. A highlight and its removal
- * timer are always created and cleared together, which makes the live timers
- * an exact mirror of the highlighted ids.
- */
 const useRecentlyReadyArtifacts = (
     expectedArtifacts: AnalysisExpectedArtifact[] | undefined
 ): ReadonlySet<string> => {

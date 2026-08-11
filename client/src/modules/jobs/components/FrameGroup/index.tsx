@@ -12,17 +12,6 @@ interface FrameGroupProps {
     frame: FrameJobGroup;
 };
 
-/**
- * `.frame-job-group-header` + `.frame-job-group-toggle`. Shorter than a job-group
- * row and, as before, without the background transition that row carries.
- */
-const TOGGLE_CLASS_NAMES = [
-    'w-full min-h-[2.75rem] px-3 py-2.5 border-0 bg-transparent text-left select-none rounded-xl',
-    'hover:bg-surface-hover',
-    'focus-visible:outline-none',
-    'focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
-].join(' ');
-
 const FrameGroup = ({ frame }: FrameGroupProps) => {
     const containsTransferJobs = useMemo(() => {
         return frame.jobs.some((job) => job.queueType === 'cluster_transfer');
@@ -50,7 +39,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
         <div className='ml-2 border-l border-border'>
             <button
                 type='button'
-                className={TOGGLE_CLASS_NAMES}
+                className='w-full min-h-[2.75rem] px-3 py-2.5 border-0 bg-transparent text-left select-none rounded-xl hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-expanded={isExpanded}
                 aria-controls={contentId}

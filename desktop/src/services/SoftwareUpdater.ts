@@ -36,8 +36,6 @@ const download = async (repoId: string, release: RepositoryRelease, downloadPath
         }
     });
 
-    // `fetch` types the body with the DOM ReadableStream while `fromWeb` wants the
-    // node:stream/web one; same runtime object, two declarations.
     await pipeline(Readable.fromWeb(res.body as NodeReadableStream<Uint8Array>), counter, createWriteStream(downloadPath));
 };
 
@@ -53,10 +51,6 @@ const extract = async (zipPath: string, outputDir: string) => {
     });
 };
 
-/**
- * Reads back what was just written to disk, so the layout of the extracted
- * archive stays probed rather than assumed.
- */
 export const resolveExtractedPath = async (downloadDir: string, repoId: string) => {
     const root = extractRoot(downloadDir, repoId);
     if(!existsSync(root)) throw new Error(`No source for ${repoId} at ${root}`);

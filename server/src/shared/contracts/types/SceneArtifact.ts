@@ -24,13 +24,6 @@ export enum SceneArtifactStatus {
     Failed = 'failed'
 }
 
-/*
- * Re-exported, not redeclared: the local copy had drifted and was missing the
- * `combinator` and `conditions` fields the client sends for multi-condition
- * particle filters, so the persisted JSON column carried data the type denied.
- */
-export type { SceneArtifactParams };
-
 export interface SceneArtifactProps {
     trajectory: string;
     storageClusterId?: string;

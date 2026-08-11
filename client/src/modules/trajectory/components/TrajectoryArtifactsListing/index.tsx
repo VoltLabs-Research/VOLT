@@ -4,7 +4,7 @@ import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/ui/utils/column-presets';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { useCallback } from 'react';

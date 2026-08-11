@@ -7,10 +7,6 @@ import type { SlicePlaneStageConfig } from '@/modules/canvas/store/canvas-pipeli
 
 type FieldChangeHandler = (fieldKey: string, value: string | number | boolean) => void;
 
-/**
- * Keeps the slice plane fields editable as text while the user types, committing
- * to the pipeline stage only once the input parses as a number.
- */
 const useSlicePlane = (stageId: string, trajectoryId?: string) => {
     const { config, patch } = useStageConfig<SlicePlaneStageConfig>(stageId, trajectoryId);
 

@@ -81,13 +81,6 @@ const useTimestepIndex = (artifacts: SceneArtifact[]) => useMemo(() => {
     };
 }, [artifacts]);
 
-/**
- * Owns the collapse / expand / paging state of the three scene-artifact trees and
- * indexes each artifact list by timestep. State lives here rather than inside the
- * section component because `canvas:scene-artifacts:changed` can reveal a timestep
- * before the artifact that triggered it has been fetched (and therefore before the
- * section is rendered at all in compact mode).
- */
 const useArtifactSections = (artifacts: SectionRecord<SceneArtifact[]>): ArtifactSection[] => {
     const [openById, setOpenById] = useState(ALL_CLOSED);
     const [visibleCountById, setVisibleCountById] = useState(FIRST_PAGE);

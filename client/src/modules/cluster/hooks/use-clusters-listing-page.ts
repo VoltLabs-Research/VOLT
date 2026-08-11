@@ -11,7 +11,7 @@ import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { ServerRow } from '@/modules/cluster/utils/transform-cluster-row';
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { InfiniteData } from '@tanstack/react-query';
 
@@ -46,9 +46,6 @@ const useClustersListingPage = () => {
         queryClient.setQueriesData<ClusterListingCache>({
             queryKey: TEAM_CLUSTER_QUERY_KEYS.listingByTeam(selectedTeamId)
         }, (cachedData) => {
-            // Only DocumentListing's infinite query lives under `listingByTeam`, so every
-            // match is already page-shaped. The guard stays because this is a prefix match:
-            // it is what keeps a future sibling query from being fed to a pages updater.
             if (!cachedData?.pages) {
                 return cachedData;
             }

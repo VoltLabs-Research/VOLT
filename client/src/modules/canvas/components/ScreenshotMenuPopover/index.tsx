@@ -5,8 +5,7 @@ import {
     clampScreenshotDimension,
     resolveScreenshotSize
 } from '@/modules/canvas/utils/screenshot';
-import { Button, Tooltip } from '@heroui/react';
-import { VIEWPORT_FLOATING_BUTTON_CLASS } from '../ViewportFloatingControls/floating-button';
+import { Button } from '@heroui/react';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Camera, Image } from 'lucide-react';
@@ -139,28 +138,24 @@ const ScreenshotMenuPopover = ({ compact = false }: ScreenshotMenuPopoverProps) 
         <ContextMenuPopover
             id='viewport-screenshot-menu'
             trigger={compact ? (
-                <span className='inline-flex items-center justify-center'>
-                    <Tooltip>
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            isIconOnly
-                            className={VIEWPORT_FLOATING_BUTTON_CLASS}
-                            aria-label='Screenshot settings'
-                        >
-                            <Camera size={14} />
-                        </Button>
-                        <Tooltip.Content placement='bottom'>Screenshot</Tooltip.Content>
-                    </Tooltip>
-                </span>
+                <button
+                    type='button'
+                    className='no-highlight inline-flex size-[30px] min-h-[30px] min-w-[30px] transform-gpu cursor-pointer select-none items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted [transition:transform_250ms_ease,background-color_100ms_cubic-bezier(0,0,0.2,1)] motion-reduce:transition-none hover:bg-default hover:text-foreground focus-visible:text-foreground active:scale-[0.98] active:bg-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 max-md:size-[34px] max-md:min-h-[34px] max-md:min-w-[34px] [&>svg]:pointer-events-none [&>svg]:size-4 [&>svg]:shrink-0'
+                    title='Screenshot'
+                    aria-label='Screenshot settings'
+                >
+                    <Camera size={14} />
+                </button>
             ) : (
-                <Tooltip>
-                    <Button variant='ghost' size='sm' className='text-xs' aria-label='Screenshot settings'>
-                        <Camera size={12} className='shrink-0' />
-                        Screenshot
-                    </Button>
-                    <Tooltip.Content placement='bottom'>Screenshot settings</Tooltip.Content>
-                </Tooltip>
+                <button
+                    type='button'
+                    className='no-highlight inline-flex h-9 w-fit transform-gpu cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-3xl border-0 bg-transparent px-3 text-xs font-medium text-default-foreground [transition:transform_250ms_ease,background-color_100ms_cubic-bezier(0,0,0.2,1)] motion-reduce:transition-none hover:bg-default active:scale-[0.98] active:bg-default disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:h-8 [&>svg]:pointer-events-none [&>svg]:-mx-0.5 [&>svg]:size-4 [&>svg]:shrink-0'
+                    title='Screenshot settings'
+                    aria-label='Screenshot settings'
+                >
+                    <Camera size={12} className='shrink-0' />
+                    Screenshot
+                </button>
             )}
             content={(close) => <ScreenshotMenuPanel close={close} />}
             triggerAction='click'

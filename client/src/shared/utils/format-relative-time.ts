@@ -3,20 +3,16 @@ const MINUTES_PER_HOUR = 60;
 const HOURS_PER_DAY = 24;
 const DEFAULT_RELATIVE_DAY_LIMIT = 7;
 
-// `date-fns` cannot produce this form: `formatDistanceToNowStrict` with
-// `addSuffix` renders '5 minutes ago', not '5m ago'. `Intl.RelativeTimeFormat`
-// with `style: 'narrow'` emits the compact form natively and localises it.
 const RELATIVE_TIME_FORMATTER = new Intl.RelativeTimeFormat('en', {
     numeric: 'always',
     style: 'narrow'
 });
 
 interface CompactRelativeTimeOptions {
-    /** Returned when the value is missing or is not a parseable date. */
     fallback?: string;
-    /** Values older than this many days render through `formatAbsolute` instead. */
+
     relativeDayLimit?: number;
-    /** Renders values that fall outside `relativeDayLimit`. */
+
     formatAbsolute?: (date: Date) => string;
 }
 
@@ -27,12 +23,6 @@ const formatAbsoluteDefault = (date: Date): string => {
     });
 };
 
-/**
- * Compact relative time: '5m ago', '2h ago', '3d ago'.
- *
- * Values under a minute old render as 'Just now'. Values beyond
- * `relativeDayLimit` render as an absolute date instead.
- */
 export const formatCompactRelativeTime = (
     dateValue: string | null | undefined,
     options: CompactRelativeTimeOptions = {}

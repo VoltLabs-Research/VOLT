@@ -11,7 +11,7 @@ interface SourceResolverProps{
 interface ResolvedSources{
     env: Record<string, string>;
     changed: boolean;
-    
+
     commit: () => Promise<void>;
 }
 
@@ -22,10 +22,6 @@ interface RepoUpdateStatus{
     changed: boolean;
 }
 
-/*
- * The cluster daemon and the SDKs live inside the VOLT repository now
- * (cluster/ and sdk/), so a single source checkout covers the whole stack.
- */
 const REPOS = [
     {
         owner: 'voltlabs-research',
@@ -86,7 +82,6 @@ export default class SourceResolver{
         };
     }
 
-    
     async checkForUpdates(): Promise<{ devMode: boolean; repos: RepoUpdateStatus[] }>{
         const dev = await this.#devSources();
         if(dev) return {

@@ -40,12 +40,10 @@ export interface WhiteboardScene {
     appState: WhiteboardAppState;
 };
 
-/** A scene together with the image cache Excalidraw keeps beside it, as our API stores it. */
 export interface WhiteboardStoredScene extends WhiteboardScene {
     files?: WhiteboardFiles;
 };
 
-/** A scene as our realtime channel broadcasts it. */
 export interface WhiteboardScenePayload extends WhiteboardScene {
     whiteboardId: string;
     revision: number;

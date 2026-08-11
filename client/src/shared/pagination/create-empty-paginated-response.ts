@@ -1,4 +1,4 @@
-import type { PaginatedResponse } from './PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 
 interface EmptyPaginationParams {
     page?: number | string;

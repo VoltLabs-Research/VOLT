@@ -11,8 +11,8 @@ import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
-import type { Analysis } from '@shared/contracts/types';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import logger from '@shared/infrastructure/logger';
 import type {
     ExecutePipelineInput as WireExecutePipelineInput,

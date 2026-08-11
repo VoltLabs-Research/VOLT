@@ -1,11 +1,9 @@
 import service from '../api/service';
-import {
-    buildKeys,
-    createFolderResourceQueries,
-    createInvalidatingMutation,
-    createPaginatedQuery,
-    createQuery
-} from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createFolderResourceQueries } from '@/shared/query/create-folder-resource-queries';
+import { createInvalidatingMutation } from '@/shared/query/create-mutation';
+import { createPaginatedQuery } from '@/shared/query/create-paginated-query';
+import { createQuery } from '@/shared/query/create-query';
 import type {
     FolderCreateParams,
     FolderDeleteParams,
@@ -13,7 +11,7 @@ import type {
     FolderListParams,
     FolderUpdateParams
 } from '@/shared/api/folder-endpoints';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type {
     CreateWhiteboardParams,
     DeleteWhiteboardParams,

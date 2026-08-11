@@ -26,17 +26,6 @@ interface ReviewStepProps {
     onCreate: () => void;
 }
 
-/**
- * From the deleted `CreateContainer.css`. `.create-container-review-card`'s fill was
- * `color-mix(in srgb, var(--color-surface-1) 94%, var(--color-surface-2))` — a
- * barely-there step between the two card surfaces, which under HeroUI's names is
- * `--surface-secondary` mixed with `--surface-tertiary`. `.create-container-step-actions`
- * keeps its top rule and its 768px reversed-column arm.
- */
-const REVIEW_CARD_CLASS_NAMES = 'overflow-hidden rounded-xl border border-border bg-[color-mix(in_srgb,var(--surface-secondary)_94%,var(--surface-tertiary))] p-4';
-const STEP_ACTIONS_CLASS_NAMES = 'mt-12 flex flex-row items-center justify-end gap-4 border-t border-border pt-6 max-[768px]:flex-col-reverse max-[768px]:gap-3 max-[768px]:[&>*]:w-full';
-const STEP_COPY_CLASS_NAMES = 'max-w-[46rem] text-base text-muted';
-
 const formatElapsed = (totalSeconds: number): string => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -98,10 +87,9 @@ const ReviewStep = ({
         <div className='flex flex-col gap-8'>
             <div className='flex flex-col gap-2'>
                 <h3 className='text-xl font-semibold text-foreground'>Review &amp; Deploy</h3>
-                <p className={STEP_COPY_CLASS_NAMES}>Confirm the deployment details before creating the container.</p>
+                <p className='max-w-[46rem] text-base text-muted'>Confirm the deployment details before creating the container.</p>
             </div>
-
-            <div className={REVIEW_CARD_CLASS_NAMES}>
+            <div className='overflow-hidden rounded-xl border border-border bg-[color-mix(in_srgb,var(--surface-secondary)_94%,var(--surface-tertiary))] p-4'>
                 <ContainerKeyValueList>
                     <ContainerKeyValueRow label='Name' value={config.name} />
                     <ContainerKeyValueRow label='Team' value={selectedTeamName} />
@@ -116,7 +104,6 @@ const ReviewStep = ({
                     {draftLastSavedAt ? <ContainerKeyValueRow label='Draft saved' value={formatDistanceToNow(new Date(draftLastSavedAt), { addSuffix: true })} /> : null}
                 </ContainerKeyValueList>
             </div>
-
             <ProcessingLoader
                 isVisible={isLoading && !!deployProgressMessage}
                 message={deployProgressMessage || 'Deploying container...'}
@@ -131,7 +118,7 @@ const ReviewStep = ({
                 </p>
             )}
 
-            <div className={STEP_ACTIONS_CLASS_NAMES}>
+            <div className='mt-12 flex flex-row items-center justify-end gap-4 border-t border-border pt-6 max-[768px]:flex-col-reverse max-[768px]:gap-3 max-[768px]:[&>*]:w-full'>
                 <Button variant='outline' onPress={onBack}>Back</Button>
                 <Button
                     variant='primary'

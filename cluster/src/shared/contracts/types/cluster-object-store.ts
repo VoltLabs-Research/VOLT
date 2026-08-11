@@ -28,7 +28,7 @@ export interface ClusterObjectReadOptions {
     };
 }
 
-export interface ClusterObjectPutInput {
+interface ClusterObjectPutInput {
     ownerClusterId: string;
     bucket: string;
     objectKey: string;
@@ -36,7 +36,7 @@ export interface ClusterObjectPutInput {
     metadata?: Record<string, string>;
 }
 
-export interface ClusterObjectPutStreamInput {
+interface ClusterObjectPutStreamInput {
     ownerClusterId: string;
     bucket: string;
     objectKey: string;

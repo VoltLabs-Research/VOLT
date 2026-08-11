@@ -89,7 +89,8 @@ const useClusterManagement = () => {
     const updateRoleMutation = useUpdateTeamClusterRoleMutation();
     const createTransferRequestMutation = useCreateTeamClusterTransferRequestMutation();
 
-    const clusters = teamClustersQuery.data?.data ?? [];
+    const teamClusters = teamClustersQuery.data?.data;
+    const clusters = useMemo(() => teamClusters ?? [], [teamClusters]);
     const resolvedSelectedClusterId = useMemo(() => {
         return resolveSelectedClusterId(selectedClusterId, clusters);
     }, [clusters, selectedClusterId]);

@@ -1,10 +1,8 @@
 import type {
     TeamClusterDaemonHostCapabilities,
     TeamClusterDaemonQueueConcurrency as DaemonQueueConcurrencyWire,
-    TeamClusterDaemonQueueScopeLimit,
     TeamClusterDaemonQueueScopeLimits as DaemonQueueScopeLimitsWire,
     TeamClusterDaemonRole,
-    TeamClusterDaemonRoleDrainState,
     TeamClusterDaemonRuntimeRoleConfig
 } from '@voltstack/daemon-cluster-client';
 
@@ -14,9 +12,7 @@ import type {
  * names used across the daemon.
  */
 export type TeamClusterRole = TeamClusterDaemonRole;
-export type TeamClusterRoleDrainState = TeamClusterDaemonRoleDrainState;
 export type TeamClusterRuntimeRoleConfig = TeamClusterDaemonRuntimeRoleConfig;
-export type TeamClusterQueueScopeLimit = TeamClusterDaemonQueueScopeLimit;
 export type TeamClusterDaemonQueueScopeLimits = DaemonQueueScopeLimitsWire;
 export type TeamClusterDaemonQueueConcurrency = DaemonQueueConcurrencyWire;
 export type TeamClusterHostCapabilities = TeamClusterDaemonHostCapabilities;

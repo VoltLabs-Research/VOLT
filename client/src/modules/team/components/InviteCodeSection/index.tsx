@@ -19,16 +19,6 @@ interface InviteCodeSectionProps {
     onCopy: () => Promise<void>;
 }
 
-/**
- * bravais's `IconButton variant='ghost' size='sm'` as utilities, because
- * `DropdownTrigger` *is* the React Aria button and a HeroUI `Button` cannot be nested
- * inside it (`DocumentListingHeader` reaches the same conclusion). The metrics are
- * bravais's own: `.volt-icon-button`'s `min-width`/`min-height` of 2.75rem beat every
- * per-size width, `--radius-sm` is 8px (`rounded-lg`), `--color-text-secondary` is
- * `text-muted` and `--hover-bg` is `bg-surface-hover`.
- */
-const GHOST_ICON_BUTTON = 'flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
-
 export const InviteCodeSection = ({
     inviteCode,
     canManageCode,
@@ -55,19 +45,12 @@ export const InviteCodeSection = ({
                     <div className='rounded-lg flex-1 px-3 py-2 bg-surface-tertiary border border-border tracking-[0.15em] text-xl font-semibold font-mono'>
                         {inviteCode}
                     </div>
-                    {/*
-                      * bravais's Popover + PopoverMenu + PopoverMenuItem — an action
-                      * menu of `role='menu'` items with a `close` render prop. React
-                      * Aria closes the menu itself when an item is actioned, so the
-                      * explicit `close()` calls are gone rather than dropped.
-                      */}
                     <DropdownRoot>
                         <DropdownTrigger
-                            className={GHOST_ICON_BUTTON}
+                            className='flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50'
                             aria-label='Open invite code actions'
                             isDisabled={isLoading}
                         >
-                            {/* React Aria's Button drops `title`, so the native tooltip hangs off the glyph. */}
                             <span className='flex items-center justify-center' title='Invite code actions'>
                                 <EllipsisVertical size={16} aria-hidden='true' />
                             </span>

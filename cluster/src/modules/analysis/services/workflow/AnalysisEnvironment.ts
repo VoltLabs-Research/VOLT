@@ -4,13 +4,13 @@ import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
 
 import { DAEMON_PATHS } from '@core/config/paths';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import {
     downloadAnalysisDump,
     dumpObjectKey,
     materializeFrameArgumentDumps
 } from '@modules/analysis/services/workflow/analysis-dump-localization';
-import type { TrajectoryDumpDescriptor } from '@shared/contracts';
+import type { TrajectoryDumpDescriptor } from '@shared/contracts/types/http-workflow';
 import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@shared/contracts/types/http-analysis';
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';

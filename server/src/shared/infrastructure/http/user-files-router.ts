@@ -14,18 +14,18 @@ const SERVABLE_BUCKETS = new Set<string>(Object.values(SYS_BUCKETS));
 /**
  * A year, because every key carries what makes it unique.
  *
- * An avatar's name embeds the upload timestamp and a chat file's is a uuid, so a
- * given URL's bytes never change — a new upload produces a new URL.
+ * An avatar's name embeds the upload timestamp, so a given URL's bytes never
+ * change — a new upload produces a new URL.
  */
 const CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 /**
- * Serves avatars and chat attachments.
+ * Serves avatars.
  *
  * Deliberately unauthenticated, and that is forced rather than chosen: the client
  * renders these through `<img src>` and `<a href>`, which send no Authorization
  * header. Requiring a session would blank every avatar in the product. The object
- * store this replaced made the same two buckets world-readable, so this preserves
+ * store this replaced made the same bucket world-readable, so this preserves
  * the reachability that already existed instead of quietly widening or narrowing
  * it. Signed URLs are the way to close it, and that is a product change.
  */

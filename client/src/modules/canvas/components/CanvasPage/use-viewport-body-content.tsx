@@ -29,11 +29,6 @@ const centeredViewportState = (children: ReactNode, className?: string): ReactNo
     </div>
 );
 
-/**
- * bravais's `EmptyState` took `title` / `description` props; HeroUI's is a single
- * polymorphic part whose children you compose. `level={3}` keeps bravais's default
- * heading level.
- */
 const emptyViewportState = (title: string, description: string, className?: string): ReactNode => (
     centeredViewportState(
         <EmptyState>
@@ -44,11 +39,6 @@ const emptyViewportState = (title: string, description: string, className?: stri
     )
 );
 
-/**
- * Resolves what covers the 3D viewport: an alternate workspace, a local viewer
- * state or a trajectory recovery state. `undefined` means the scene shows
- * through untouched.
- */
 const useViewportBodyContent = ({
     trajectory,
     trajectoryId,

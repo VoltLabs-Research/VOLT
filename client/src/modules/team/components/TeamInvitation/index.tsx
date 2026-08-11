@@ -1,12 +1,5 @@
-import { Button, Chip, Spinner, cn } from '@heroui/react';
+import { Button, Chip, Spinner } from '@heroui/react';
 import {
-    TEAM_INVITATION_ACTIONS_CLASS,
-    TEAM_INVITATION_DETAILS_CLASS,
-    TEAM_INVITATION_DETAIL_CLASS,
-    TEAM_INVITATION_DETAIL_LABEL_CLASS,
-    TEAM_INVITATION_DETAIL_VALUE_CLASS,
-    TEAM_INVITATION_ICON_ERROR_CLASS,
-    TEAM_INVITATION_ICON_WARNING_CLASS,
     TeamInvitationCard,
     TeamInvitationStateCard
 } from '@/modules/team/components/TeamInvitationShared';
@@ -18,7 +11,8 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
@@ -104,7 +98,7 @@ export default function TeamInvitationTemplate() {
     const renderUnavailableCard = (icon: 'error' | 'warning', title: string, description: string) => (
         <TeamInvitationStateCard
             icon={(
-                <div className={icon === 'error' ? TEAM_INVITATION_ICON_ERROR_CLASS : TEAM_INVITATION_ICON_WARNING_CLASS}>
+                <div className={icon === 'error' ? 'text-danger' : 'text-warning'}>
                     {icon === 'error' ? <XCircle size={48} /> : <Clock size={48} />}
                 </div>
             )}
@@ -164,24 +158,24 @@ export default function TeamInvitationTemplate() {
                 Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
             </p>
 
-            <div className={cn('flex flex-row items-center justify-center flex-wrap gap-4 rounded-xl', TEAM_INVITATION_DETAILS_CLASS)}>
-                <div className={cn('flex flex-col text-center', TEAM_INVITATION_DETAIL_CLASS)}>
-                    <span className={TEAM_INVITATION_DETAIL_LABEL_CLASS}>Email</span>
-                    <p className={cn('flex flex-row items-center gap-1', TEAM_INVITATION_DETAIL_VALUE_CLASS)}>
+            <div className='flex flex-row items-center justify-center flex-wrap gap-4 rounded-xl p-4 bg-surface-tertiary w-full'>
+                <div className='flex flex-col text-center flex-1 min-w-[100px]'>
+                    <span className='block text-xs text-muted mb-1'>Email</span>
+                    <p className='flex flex-row items-center gap-1 text-sm text-muted justify-center'>
                         <Mail size={14} />
                         {invitation.email}
                     </p>
                 </div>
-                <div className={cn('flex flex-col text-center', TEAM_INVITATION_DETAIL_CLASS)}>
-                    <span className={TEAM_INVITATION_DETAIL_LABEL_CLASS}>Invited</span>
-                    <p className={cn('flex flex-row items-center gap-1', TEAM_INVITATION_DETAIL_VALUE_CLASS)}>
+                <div className='flex flex-col text-center flex-1 min-w-[100px]'>
+                    <span className='block text-xs text-muted mb-1'>Invited</span>
+                    <p className='flex flex-row items-center gap-1 text-sm text-muted justify-center'>
                         <Clock size={14} />
                         {new Date(invitation.createdAt).toLocaleDateString()}
                     </p>
                 </div>
-                <div className={cn('flex flex-col text-center', TEAM_INVITATION_DETAIL_CLASS)}>
-                    <span className={TEAM_INVITATION_DETAIL_LABEL_CLASS}>Expires</span>
-                    <p className={TEAM_INVITATION_DETAIL_VALUE_CLASS}>
+                <div className='flex flex-col text-center flex-1 min-w-[100px]'>
+                    <span className='block text-xs text-muted mb-1'>Expires</span>
+                    <p className='text-sm text-muted justify-center'>
                         {expiresAt.toLocaleString(undefined, {
                             month: 'short',
                             day: 'numeric',
@@ -191,7 +185,7 @@ export default function TeamInvitationTemplate() {
                 </div>
             </div>
 
-            <div className={cn('flex flex-row items-center gap-4 w-full', TEAM_INVITATION_ACTIONS_CLASS)}>
+            <div className='flex flex-row items-center gap-4 w-full mt-4'>
                 <Button
                     variant='primary'
                     fullWidth

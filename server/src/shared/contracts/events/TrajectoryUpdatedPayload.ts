@@ -1,7 +1,7 @@
 
+import type { TrajectoryStats } from '@volt/contracts/modules/trajectory/domain';
 import type {
     TrajectoryStatus,
-    TrajectoryStats,
     TrajectoryFrame
 } from '@shared/contracts/types/Trajectory';
 import type { ErrorCode } from '@core/constants/error-codes';

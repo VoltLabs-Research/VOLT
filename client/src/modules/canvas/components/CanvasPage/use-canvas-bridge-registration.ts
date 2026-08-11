@@ -12,7 +12,6 @@ interface CanvasBridgeRegistrationParams {
     sceneRef: RefObject<FractalSceneRef | null>;
 }
 
-/** Exposes the mounted canvas to the AI bridge while a trajectory is open. */
 const useCanvasBridgeRegistration = ({
     trajectoryId,
     timesteps,

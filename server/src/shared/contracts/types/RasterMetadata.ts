@@ -6,9 +6,6 @@ import type {
     RasterMetadata as WireRasterMetadata
 } from '@volt/contracts/modules/raster/domain';
 
-export { RasterMetadataStatus };
-export type { RasterTrajectoryMetadata, RasterAnalysisMetadata };
-
 /**
  * The persisted shape. Identical to the wire type except that the timestamps are
  * `Date` here and `string` after JSON serialization, which is why it is declared

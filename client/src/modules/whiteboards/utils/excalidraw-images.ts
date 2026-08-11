@@ -51,7 +51,6 @@ const blobToDataURL = (blob: Blob): Promise<string> =>
         reader.readAsDataURL(blob);
     });
 
-/** Excalidraw only accepts a closed set of mime types; anything else is read as a PNG. */
 const resolveExcalidrawImageMimeType = (mimeType: string): PreparedWhiteboardImageAsset['mimeType'] => {
     if (EXCALIDRAW_IMAGE_MIME_TYPES.has(mimeType as PreparedWhiteboardImageAsset['mimeType'])) {
         return mimeType as PreparedWhiteboardImageAsset['mimeType'];

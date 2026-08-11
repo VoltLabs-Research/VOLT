@@ -3,19 +3,6 @@ import FrameCombobox from '../FrameCombobox';
 import PresetPopover from './PresetPopover';
 import TransportControls from '../TransportControls';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import {
-    CONTROLS_CENTER_CLASS,
-    CONTROLS_REGION_CLASS,
-    FRAME_INFO_CLASS,
-    FRAME_INFO_COMPACT_INPUT_CLASS,
-    FRAME_REGION_CLASS,
-    HEADER_CLASS,
-    MOBILE_ACTIONS_CLASS,
-    TABS_CLASS,
-    TABS_REGION_CLASS,
-    TAB_SELECT_REGION_CLASS,
-    TAB_SELECT_TRIGGER_CLASS
-} from '../Timeline/timeline-classes';
 
 import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
 import { Separator, cn } from '@heroui/react';
@@ -61,21 +48,6 @@ interface TimelineHeaderProps {
     onDownloadExposureListing?: (params: DownloadPluginListingParams) => void;
     downloadContext: TimelineDownloadContext;
 }
-
-/**
- * A timeline tab stays a plain `<button>`, not a HeroUI one: `role='tab'` and
- * `aria-selected` are not on `Button`'s closed prop interface (spec §5b.8), and a
- * `role='tablist'` whose children are not tabs is broken ARIA rather than a style
- * choice. The chrome below is bravais's `variant='ghost'|'solid' intent='canvas'
- * size='sm' shape='rounded'` translated by value — `--button-bg` is `--default`,
- * `--hover-bg`/`--active-bg` are `--surface-hover`, and `size-sm`'s own 0.8125rem font
- * size outranked the `text-xs` the call site passed, so 0.8125rem is what rendered.
- */
-const TAB_BUTTON_CLASS = 'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out';
-
-const TAB_BUTTON_ACTIVE_CLASS = 'bg-default text-foreground hover:bg-surface-hover';
-
-const TAB_BUTTON_IDLE_CLASS = 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground';
 
 const ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 400];
 const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4, 8, 10];
@@ -141,7 +113,10 @@ const TimelineHeader = ({
                 type='button'
                 role='tab'
                 aria-selected={isActive}
-                className={cn(TAB_BUTTON_CLASS, isActive ? TAB_BUTTON_ACTIVE_CLASS : TAB_BUTTON_IDLE_CLASS)}
+                className={cn(
+                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-3.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out',
+                    isActive ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
+                )}
                 onClick={() => onTabChange(tab.id)}
             >
                 {tab.icon}
@@ -163,13 +138,6 @@ const TimelineHeader = ({
             return <span key={tab.id} className='inline-flex'>{renderTabButton(tab)}</span>;
         }
 
-        /*
-         * A right-click download menu, so this stays `ContextMenuPopover`: React Aria has
-         * no contextmenu trigger, and suppressing the browser menu needs the real
-         * `MouseEvent`. The span is the trigger element — it is what receives the cloned
-         * `onContextMenu` and `data-popover-trigger` — because HeroUI's `Button` has a
-         * closed prop interface and cannot be handed either.
-         */
         return (
             <ContextMenuPopover
                 key={`exposure-tab-popover-${tab.id}`}
@@ -196,26 +164,25 @@ const TimelineHeader = ({
     };
 
     return (
-        <div className={HEADER_CLASS}>
-            <div className={TABS_REGION_CLASS}>
-                <div className={TABS_CLASS} role='tablist' aria-label='Timeline tabs' data-tour-id='canvas-timeline-tabs'>
+        <div className='relative flex w-full flex-row items-center px-2 py-1 h-10 max-[900px]:h-auto max-[900px]:min-h-10 max-[900px]:flex-wrap max-[900px]:gap-2 max-md:contents max-md:h-auto max-md:min-h-0 max-md:p-0'>
+            <div className='flex min-w-0 flex-auto flex-row items-center max-[900px]:flex-[1_1_100%] max-md:pointer-events-none max-md:order-1 max-md:w-full max-md:flex-none max-md:self-stretch'>
+                <div className='flex flex-[0_1_auto] flex-row flex-nowrap items-center overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-[min(55vw,500px)] max-[900px]:max-w-full max-md:hidden [&>*]:shrink-0 [mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)]' role='tablist' aria-label='Timeline tabs' data-tour-id='canvas-timeline-tabs'>
                     {tabs.map(renderTab)}
                 </div>
-                <div className={TAB_SELECT_REGION_CLASS} data-tour-id='canvas-timeline-tab-selector'>
+                <div className='hidden max-md:block max-md:overflow-hidden max-md:rounded-xl max-md:bg-surface-secondary max-md:pointer-events-auto' data-tour-id='canvas-timeline-tab-selector'>
                     <CanvasOptionSelect
                         ariaLabel='Timeline tab'
                         options={tabSelectOptions}
                         value={activeTab}
                         onChange={onTabChange}
                         placeholder='Tab'
-                        triggerClassName={TAB_SELECT_TRIGGER_CLASS}
+                        triggerClassName='max-md:pointer-events-auto max-md:h-auto max-md:min-h-[1.875rem] max-md:w-full max-md:rounded-[inherit] max-md:border-transparent max-md:bg-inherit max-md:px-2 max-md:py-1 max-md:text-[0.6875rem]'
                     />
                 </div>
             </div>
-
-            <div className={MOBILE_ACTIONS_CLASS}>
-                <div className={CONTROLS_REGION_CLASS}>
-                    <div className={CONTROLS_CENTER_CLASS}>
+            <div className='contents max-md:order-3 max-md:flex max-md:w-full max-md:flex-none max-md:items-center max-md:justify-between max-md:gap-2 max-md:self-stretch max-md:pointer-events-none max-md:[&_button]:pointer-events-auto max-md:[&_input]:pointer-events-auto max-md:[&_select]:pointer-events-auto max-md:[&_[role=button]]:pointer-events-auto max-md:[&_[data-popover-trigger]]:pointer-events-auto'>
+                <div className='pointer-events-none absolute left-1/2 top-1/2 z-[2] flex -translate-x-1/2 -translate-y-1/2 flex-row items-center justify-center px-1.5 max-[900px]:static max-[900px]:order-3 max-[900px]:w-full max-[900px]:transform-none max-[900px]:justify-center max-[900px]:p-0 max-md:w-auto max-md:flex-none max-md:justify-start max-md:rounded-xl max-md:border-0 max-md:bg-surface-secondary'>
+                    <div className='pointer-events-auto flex w-max flex-row items-center justify-center max-[900px]:w-full max-md:contents max-md:w-auto'>
                         <TransportControls
                             trajectoryId={trajectoryId}
                             currentTimestep={currentTimestep}
@@ -223,27 +190,23 @@ const TimelineHeader = ({
                         />
                     </div>
                 </div>
-
-                <div className={FRAME_REGION_CLASS}>
-                    <div className={FRAME_INFO_CLASS}>
+                <div className='flex min-w-0 flex-auto flex-row items-center justify-end max-[900px]:flex-[1_1_100%] max-[900px]:justify-start max-md:pointer-events-none max-md:w-auto max-md:flex-none max-md:justify-start'>
+                    <div className='flex min-w-0 flex-[0_1_auto] flex-row items-center justify-end gap-2 max-[900px]:flex-wrap max-[900px]:justify-start max-md:pointer-events-none max-md:flex-nowrap max-md:gap-1 max-md:overflow-hidden'>
                         <FrameCombobox
                             value={startFrame}
                             options={availableTimesteps}
                             onChange={onRangeStartChange}
                             title='Start timestep'
-                            groupClassName={FRAME_INFO_COMPACT_INPUT_CLASS}
+                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-[0.625rem]'
                         />
                         <FrameCombobox
                             value={endFrame}
                             options={availableTimesteps}
                             onChange={onRangeEndChange}
                             title='End timestep'
-                            groupClassName={FRAME_INFO_COMPACT_INPUT_CLASS}
+                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-[0.625rem]'
                         />
-
-                        {/* `.canvas-timeline-frame-info .volt-divider { display: none }` under 768px. */}
                         <Separator orientation='vertical' className='h-4 shrink-0 max-md:hidden' />
-
                         <PresetPopover
                             id='timeline-speed'
                             icon={<Gauge size={12} />}
@@ -252,7 +215,6 @@ const TimelineHeader = ({
                             suffix='x'
                             onSelect={onPlaySpeedChange}
                         />
-
                         <PresetPopover
                             id='timeline-zoom'
                             icon={<ZoomIn size={12} />}

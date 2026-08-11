@@ -25,7 +25,6 @@ const AnalysisPluginStageEditor = ({
     const { config, patch } = useStageConfig<AnalysisPluginStageConfig>(stageId, trajectoryId);
     const { modifiers, getPluginArguments } = usePluginSelectors();
 
-    // Memoised because a trajectory can carry thousands of timesteps.
     const frameOptions: SelectOption[] = useMemo(
         () => extractTrajectoryTimesteps(trajectory).map((t) => ({
             value: String(t),

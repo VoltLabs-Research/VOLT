@@ -2,16 +2,10 @@ import CompactTableRow from '@/modules/plugin/components/listing/PluginCompactTa
 import CompactTableSkeleton from '@/modules/plugin/components/listing/PluginCompactTable/CompactTableSkeleton';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useMedia } from '@/shared/ui/hooks/use-media';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { getColumnKey, getColumnTitle } from '@/shared/ui/components/DocumentListingTable';
 import { getTotalColumnsWidth, MOBILE_COLUMN_WIDTH_SCALE, resolveColumnStyle } from '@/modules/plugin/components/listing/PluginCompactTable/column-layout';
-import {
-    TABLE_FRAME_CLASS,
-    TABLE_HEADER_CELL_CLASS,
-    TABLE_HEADER_CLASS,
-    TABLE_LOADING_CLASS,
-    TABLE_RECOVERY_STATE_CLASS
-} from '@/modules/plugin/components/listing/PluginCompactTable/table-styles';
 import { inferColumnType, type InferredColumnType } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { List } from 'react-window';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +23,7 @@ interface PluginCompactTableProps {
     isLoading?: boolean;
     isFetchingMore?: boolean;
     onLoadMore?: () => void;
-    /** Either a message the caller already reported, or a raw failure. */
+
     error?: unknown;
     rowHeight?: number;
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
@@ -37,8 +31,6 @@ interface PluginCompactTableProps {
     selectedRowId?: string | null;
 }
 
-// Only seeds `react-window`'s first (and SSR) paint: its own ResizeObserver reports
-// the real viewport height as soon as the list is laid out.
 const DEFAULT_VISIBLE_ROWS = 24;
 
 const TYPE_INFERENCE_SAMPLE_SIZE = 30;
@@ -85,10 +77,6 @@ const getDisplayErrorMessage = (error: unknown): string => {
     }).title;
 };
 
-/**
- * Virtualized table for plugin exposure data: the columns are discovered at
- * runtime, so cell rendering is driven by types inferred from the rows.
- */
 const PluginCompactTable = ({
     columns,
     data,
@@ -108,8 +96,6 @@ const PluginCompactTable = ({
     const isMobile = useMedia('(max-width: 768px)');
     const columnWidthScale = isMobile ? MOBILE_COLUMN_WIDTH_SCALE : 1;
 
-    // Sampling every column on every render would be wasted work on a table
-    // whose whole point is large row counts.
     const inferredColumnTypes = useMemo(() => {
         const result: Record<string, InferredColumnType> = {};
 
@@ -125,10 +111,6 @@ const PluginCompactTable = ({
 
     const effectiveWidth = Math.max(getTotalColumnsWidth(columns, columnWidthScale), containerWidth);
 
-    // `react-window` measures its own height, but it cannot supply this width: the list
-    // lives *inside* the horizontal scroll box, so its own width is already
-    // `effectiveWidth`. Reading the frame instead keeps `effectiveWidth` from latching
-    // onto the content width and never shrinking back.
     useEffect(() => {
         if(!containerElement) return;
 
@@ -148,7 +130,6 @@ const PluginCompactTable = ({
         };
     }, [containerElement]);
 
-    // Kept stable so a parent re-render does not re-render the whole virtual list.
     const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
         if (!hasMore || isLoading || isFetchingMore || !onLoadMore) return;
 
@@ -173,7 +154,7 @@ const PluginCompactTable = ({
                 title='Unable to load this data'
                 description={getDisplayErrorMessage(error)}
                 tone={RecoveryStateTone.Error}
-                className={TABLE_RECOVERY_STATE_CLASS}
+                className='min-h-[240px]'
             />
         );
     }
@@ -183,14 +164,14 @@ const PluginCompactTable = ({
             <RecoveryState
                 title='No data available'
                 description='There are no rows to display for this selection.'
-                className={TABLE_RECOVERY_STATE_CLASS}
+                className='min-h-[240px]'
             />
         );
     }
 
     return (
         <div
-            className={TABLE_FRAME_CLASS}
+            className='flex h-full w-full flex-col overflow-hidden'
             ref={setContainerElement}
             style={compactTableFrameStyle}
         >
@@ -198,11 +179,11 @@ const PluginCompactTable = ({
                 ...compactTableInnerStyle,
                 minWidth: `${effectiveWidth}px`
             }}>
-                <div className={TABLE_HEADER_CLASS}>
+                <div className='sticky top-0 z-10 flex flex-row justify-between border-b border-border pb-[5px]'>
                     {columns.map((col) => (
                         <div
                             key={getColumnKey(col)}
-                            className={TABLE_HEADER_CELL_CLASS}
+                            className='overflow-hidden whitespace-nowrap text-ellipsis px-2 py-1 text-[0.6875rem] font-medium text-muted max-[768px]:px-1 max-[768px]:text-[0.625rem]'
                             style={resolveColumnStyle(col, columnWidthScale)}
                         >
                             {getColumnTitle(col)}
@@ -230,7 +211,7 @@ const PluginCompactTable = ({
                 </div>
             </div>
             {isFetchingMore && (
-                <div className={TABLE_LOADING_CLASS}>
+                <div className='border-t border-border p-1 text-center text-xs text-muted'>
                     Loading more...
                 </div>
             )}

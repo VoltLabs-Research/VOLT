@@ -53,7 +53,7 @@ export interface GlbConversionQueueJobPayload extends JobIdentity {
     updatedAt: string;
 }
 
-export interface EnqueuePreprocessingFrame {
+interface EnqueuePreprocessingFrame {
     timestep: number;
     objectKey: string;
     ownerClusterId?: string;

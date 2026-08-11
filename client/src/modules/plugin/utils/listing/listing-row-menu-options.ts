@@ -16,18 +16,14 @@ interface ListingRowMenuOptionsParams {
     row: ListingRow;
     subListingNames: string[];
     navigate: (path: string) => void;
-    /** Omitted when the row cannot be deleted. */
+
     onDelete?: () => void;
-    /** Renders the sub-listing in place instead of navigating to its page. */
+
     onViewSubListing?: (target: ListingRowSubListingTarget) => void;
-    /** Row-scoped navigation is hidden while several rows are selected. */
+
     allowRowNavigation?: boolean;
 }
 
-/**
- * Context menu of a single listing row: inspect its atoms, open one of its
- * sub-listings, or delete the analysis that produced it.
- */
 export const buildListingRowMenuOptions = ({
     row,
     subListingNames,

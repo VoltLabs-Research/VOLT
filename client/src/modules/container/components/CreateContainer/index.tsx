@@ -1,13 +1,16 @@
 import useCreateContainerForm from '../../hooks/use-create-container-form';
 import { getCustomImageValidationError } from '../../utils/container-form';
-import { ImageSelectionStep, ConfigurationStep, ReviewStep } from '../CreateContainerSteps';
+import ImageSelectionStep from '../CreateContainerSteps/ImageSelectionStep';
+import ConfigurationStep from '../CreateContainerSteps/ConfigurationStep';
+import ReviewStep from '../CreateContainerSteps/ReviewStep';
 import CreateContainerStepper from '../CreateContainerStepper';
 import type { StepperIndicator } from '../CreateContainerStepper';
 import { useStepper } from '@/shared/ui/hooks/use-stepper';
 import useTip from '@/shared/tips/use-tip';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Modal, closeModal, openModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import { Button, Tooltip } from '@heroui/react';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
@@ -161,10 +164,6 @@ const CreateContainer = () => {
     return (
         <div className='flex flex-col overflow-hidden h-full'>
             <div className='flex flex-row items-center gap-6 p-6 shrink-0'>
-                {/*
-                  * HeroUI's `Button` prop interface is closed and has no `title`, so the
-                  * native tooltip this icon button carried becomes a real `Tooltip`.
-                  */}
                 <Tooltip>
                     <Button variant='ghost' isIconOnly aria-label='Back to containers' onPress={() => navigate('/dashboard/containers')}>
                         <ArrowLeft size={20} />
@@ -175,7 +174,6 @@ const CreateContainer = () => {
                     <h3 className='text-xl font-semibold text-foreground'>Create New Container</h3>
                 </div>
             </div>
-
             <CreateContainerStepper
                 steps={steps}
                 activeStep={step}
@@ -183,7 +181,6 @@ const CreateContainer = () => {
                 onStepClick={goTo}
                 canNavigateTo={canNavigateTo}
             />
-
             <Modal
                 id={CUSTOM_IMAGE_MODAL_ID}
                 title='Use a custom image'

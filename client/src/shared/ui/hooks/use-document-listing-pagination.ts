@@ -1,6 +1,6 @@
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import usePaginationParams from './use-pagination-params';
-import { isApiError, resolveErrorTitle } from '@/shared/errors/core';
+import { isApiError, resolveErrorTitle } from '@/shared/errors/core/report-error';
 import queryClient from '@/shared/query/query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';

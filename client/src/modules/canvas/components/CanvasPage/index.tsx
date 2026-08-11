@@ -50,49 +50,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { CSSProperties, RefObject } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 
-/**
- * `CanvasPage.css` was the sole declaration site of the `--canvas-*` custom-property
- * contract, read by `TopToolbar`, `StatusBar`, `ViewportFloatingControls`,
- * `CanvasAnalysisDiscoveryTour` and — across a module boundary —
- * `modules/raster/.../CanvasRasterViewport.css`. The declarations survive as arbitrary
- * *property* utilities so that contract keeps resolving for every consumer, including
- * the one this module does not own.
- *
- * `--canvas-floating-surface-*` is deliberately NOT among them. Every one of its five
- * values was already a constant by the time glass was flattened — background
- * `--surface-secondary`, border `0`, shadow `0`, radius `12px`, backdrop `none` — so
- * each consumer now carries `rounded-xl bg-surface-secondary` directly instead of
- * routing two `var()` hops to reach it.
- *
- * `--canvas-right-overlay-size` stays an inline style, as before; `--canvas-timeline-size`
- * is written by `CanvasTimelineDock`.
- */
-const CANVAS_TOKENS_CLASS = [
-    '[--canvas-header-height:55px]',
-    'max-md:[--canvas-header-height:40px]',
-    'max-md:[--canvas-mobile-panel-edge:0.75rem]',
-    'max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)]',
-    'max-md:[--canvas-mobile-controls-gutter:5rem]',
-    'max-md:[--canvas-mobile-control-column-size:2.625rem]',
-    'max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))]',
-    'max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))]',
-    'max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]'
-].join(' ');
 
-/**
- * `.canvas-panel-drawer-backdrop`. The `@keyframes canvas-drawer-backdrop-in` it
- * animates has no utility form and is reported for the global sheet; the `animation`
- * shorthand itself is a utility, so only the keyframe block moves.
- *
- * Under 768px the backdrop goes fully transparent — the mobile panel is a floating
- * card rather than a drawer, so the scrim would only dim the scene.
- */
-const DRAWER_BACKDROP_CLASS = [
-    'absolute inset-0 z-[4] cursor-pointer border-none p-0',
-    'bg-[color-mix(in_srgb,var(--overlay)_55%,transparent)] backdrop-blur-[6px] backdrop-saturate-[1.3]',
-    'animate-[canvas-drawer-backdrop-in_180ms_ease-out]',
-    'max-md:z-[130] max-md:bg-transparent max-md:backdrop-filter-none'
-].join(' ');
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
@@ -317,7 +275,7 @@ const CanvasPage = () => {
 
     if (accessDenied || trajectoryMissing) {
         return (
-            <div className={cn('flex w-screen h-dvh bg-background text-foreground', 'canvas-editor-root', CANVAS_TOKENS_CLASS)}>
+            <div className={cn('flex w-screen h-dvh bg-background text-foreground', 'canvas-editor-root', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]')}>
                 {accessDenied
                     ? (
                         <AccessDenied
@@ -333,7 +291,7 @@ const CanvasPage = () => {
     const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
 
     return (
-        <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', CANVAS_TOKENS_CLASS, `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
+        <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
             style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as CSSProperties}
         >
             <PreloadingOverlay
@@ -345,7 +303,7 @@ const CanvasPage = () => {
             {isNarrowViewport && rightDrawerOpen && (
                 <button
                     type='button'
-                    className={DRAWER_BACKDROP_CLASS}
+                    className='absolute inset-0 z-[4] cursor-pointer border-none p-0 bg-[color-mix(in_srgb,var(--overlay)_55%,transparent)] backdrop-blur-[6px] backdrop-saturate-[1.3] animate-[canvas-drawer-backdrop-in_180ms_ease-out] max-md:z-[130] max-md:bg-transparent max-md:backdrop-filter-none'
                     aria-label='Close panel'
                     onClick={closeRightDrawer}
                 />
@@ -479,7 +437,6 @@ const CanvasPage = () => {
                 onActiveChange={setAnalysisDiscoveryTourActive}
                 onComplete={closeRightDrawer}
             />
-
         </div>
     );
 };

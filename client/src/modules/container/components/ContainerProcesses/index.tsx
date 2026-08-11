@@ -30,20 +30,6 @@ interface ProcessColumn {
 const SKELETON_ROW_COUNT = 8;
 const SKELETON_ROW_KEYS = Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => `skeleton-${index}`);
 
-/**
- * `ContainerProcesses.css`, converted.
- *
- * `.container-processes-numeric` was `font-variant-numeric: tabular-nums` plus
- * `font-feature-settings: 'tnum' on, 'lnum' on`; Tailwind's `tabular-nums` and
- * `lining-nums` compose into the same two features through `--tw-numeric-*`.
- *
- * `.container-processes-command-cell` clamped the command to 320px and let it
- * wrap anywhere below 768px, which is the only reason a full `docker run …`
- * argument list does not push the table sideways.
- */
-const NUMERIC_CELL_CLASS_NAMES = 'lining-nums tabular-nums';
-const COMMAND_CELL_CLASS_NAMES = 'max-w-[320px] truncate text-muted max-[768px]:max-w-none max-[768px]:whitespace-normal max-[768px]:[overflow-wrap:anywhere]';
-
 const formatMemory = (kbStr: string): string => {
     const kb = parseInt(kbStr, 10);
     if(isNaN(kb)) return kbStr;
@@ -66,7 +52,7 @@ const COLUMNS: ProcessColumn[] = [
     {
         key: 'PID',
         header: 'PID',
-        cellClassName: NUMERIC_CELL_CLASS_NAMES
+        cellClassName: 'lining-nums tabular-nums'
     },
     {
         key: 'Program',
@@ -76,12 +62,12 @@ const COLUMNS: ProcessColumn[] = [
     {
         key: 'Command',
         header: 'Command',
-        cellClassName: COMMAND_CELL_CLASS_NAMES
+        cellClassName: 'max-w-[320px] truncate text-muted max-[768px]:max-w-none max-[768px]:whitespace-normal max-[768px]:[overflow-wrap:anywhere]'
     },
     {
         key: 'Threads',
         header: 'Threads',
-        cellClassName: NUMERIC_CELL_CLASS_NAMES
+        cellClassName: 'lining-nums tabular-nums'
     },
     {
         key: 'User',
@@ -90,24 +76,15 @@ const COLUMNS: ProcessColumn[] = [
     {
         key: 'MemB',
         header: 'Memory',
-        cellClassName: NUMERIC_CELL_CLASS_NAMES
+        cellClassName: 'lining-nums tabular-nums'
     },
     {
         key: 'Cpu',
         header: 'CPU',
-        cellClassName: NUMERIC_CELL_CLASS_NAMES,
+        cellClassName: 'lining-nums tabular-nums',
         render: (row) => `${row.Cpu}%`
     }
 ];
-
-/**
- * The container fills its route and fades in, as `.container-processes-container`
- * did. `animate-in fade-in-0 slide-in-from-bottom-[10px] duration-300 ease-out` is
- * bravais's `animate-fade-in 0.3s ease-out` keyframe expressed through
- * `tw-animate-css`, which ships with `@heroui/styles`, and
- * `motion-reduce:animate-none` restates the sheet's own reduced-motion opt-out.
- */
-const CONTAINER_CLASS_NAMES = 'flex h-full min-h-0 w-full flex-col animate-in fade-in-0 slide-in-from-bottom-[10px] duration-300 ease-out motion-reduce:animate-none';
 
 const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
@@ -165,15 +142,9 @@ const ContainerProcesses = ({ containerId }: ContainerProcessesProps) => {
     const isSkeleton = isLoading && mappedProcesses.length === 0;
 
     return (
-        <div className={CONTAINER_CLASS_NAMES}>
+        <div className='flex h-full min-h-0 w-full flex-col animate-in fade-in-0 slide-in-from-bottom-[10px] duration-300 ease-out motion-reduce:animate-none'>
             <Table>
                 <Table.ScrollContainer>
-                    {/*
-                      * `aria-label` is required by React Aria's table and bravais's had
-                      * none (its `caption` prop, the only labelling channel, was never
-                      * passed here). It is visually hidden, matching what the caption
-                      * would have been.
-                      */}
                     <Table.Content aria-label='Running processes'>
                         <Table.Header>
                             {COLUMNS.map((column, index) => (

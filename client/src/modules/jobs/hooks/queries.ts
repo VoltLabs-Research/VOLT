@@ -2,7 +2,8 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { computeGroupStatus } from '../utils/job-group-updates';
 import { TEAM_JOBS_QUERY_KEYS } from '../utils/query-keys';
 import service from '../api/service';
-import { createSocketQuery, withSuccess } from '@/shared/query';
+import { createSocketQuery } from '@/shared/query/create-query';
+import { withSuccess } from '@/shared/query/create-mutation';
 import queryClient from '@/shared/query/query-client';
 import useTeamJobsStore from '../store/use-team-jobs-store';
 import { useMutation } from '@tanstack/react-query';
@@ -14,7 +15,7 @@ import type {
     TrajectoryJobGroup
 } from '@volt/contracts/modules/jobs/domain';
 import type { TrajectoryJobsParams } from '../api/service';
-import type { MutationOptions } from '@/shared/query';
+import type { MutationOptions } from '@/shared/query/create-mutation';
 
 interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];

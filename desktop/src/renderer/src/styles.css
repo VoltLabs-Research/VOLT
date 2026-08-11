@@ -66,22 +66,6 @@
     -webkit-app-region: no-drag;
 }
 
-/**
- * The accent is monochrome: it IS the foreground, inverted.
- *
- * HeroUI drives every accent surface off these tokens — `.button--primary` sets
- * `--button-bg: var(--accent)`, `--focus: var(--accent)`, and so on — so
- * redefining them here is what makes every primary action black-on-light /
- * white-on-dark without a single call site restating it.
- *
- * This is not a new decision, and it is the same one the client made: the desktop
- * already collapsed bravais's blue onto the ink, declaring `--color-brand`
- * as `#1D1D1F` / `#F5F5F7` — the foreground of each theme — with `--color-on-brand`
- * as the page behind it. `--accent` / `--accent-foreground` say exactly that, and
- * `--focus` derives from `--accent` upstream, which is what retires the old
- * `.volt-text-input--focused` override that existed only to cancel bravais's blue
- * focus glow.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -115,11 +99,6 @@
     --field-border: var(--border);
 }
 
-/**
- * The scrim behind a modal. HeroUI's is `rgba(0,0,0,.5)` / `.6`; this is the
- * lighter slate wash the desktop's own modal used, in both themes, so a dialog
- * still reads as floating over a translucent window rather than over a hole.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -128,34 +107,11 @@
     --backdrop: rgba(15, 23, 42, 0.28);
 }
 
-/**
- * Light theme — the desktop's macOS palette, unchanged in value from the sheet
- * this replaces, restated on HeroUI's token names.
- *
- *   --color-bg           #FFFFFF   → --background
- *   --color-surface-2    #F6F6FA   → --surface-secondary  (a field, a card, a well)
- *   --color-surface-3    #EFEFF4   → --default            (a neutral/hover fill)
- *   --color-text-primary #1D1D1F   → --foreground
- *   --color-text-secondary #6E6E73 → --muted
- *
- * Two notes on the mapping.
- *
- * The old sheet carried *three* greys: primary, secondary (#6E6E73 / #AEAEB2) and
- * muted (#8E8E93). HeroUI has one supporting-text token, and the migration spec
- * collapses the three onto it. Rather than invent a second token, `--muted` takes
- * the secondary value and the fainter tier is written as `text-muted/75` at the
- * ~10 call sites that need it — which lands within a few units of #8E8E93 in both
- * themes, and stays a complete static literal.
- *
- * `--surface` is HeroUI's "panel above the page" step. The desktop's ladder is
- * flatter than the client's and never uses it; it is set to the page colour so
- * that `--surface-hover`, which HeroUI derives from it, still resolves sensibly.
- */
 :root,
 .light,
 [data-theme='light'] {
     --background: #ffffff;
-    --foreground: #1d1d1f;
+    --foreground: #28282b;
 
     --surface: #ffffff;
     --surface-secondary: #f6f6fa;
@@ -172,27 +128,15 @@
     --separator: rgba(60, 60, 67, 0.12);
     --border-secondary: rgba(60, 60, 67, 0.18);
 
-    --field-background: #f6f6fa;
+    --field-background: transparent;
 
     --danger: #ff3b30;
 }
 
-/**
- * Dark theme.
- *
- * macOS vibrancy and Windows acrylic adapt natively behind the window; these keep
- * the chrome painted on top of them in sync. Pure black is deliberate — it is
- * what the platform's own dark chrome sits on, and it is why the titlebar below
- * is opaque rather than tinted.
- *
- * `--danger` moves from #FF3B30 to #FF453A here, which is the one value that is
- * not a straight restatement: #FF453A is Apple's systemRed for dark mode and is
- * what the VOLT client uses, so the two apps now agree.
- */
 .dark,
 [data-theme='dark'] {
-    --background: #000000;
-    --foreground: #f5f5f7;
+    --background: #0c0c0e;
+    --foreground: #e9e9ec;
 
     --surface: #1c1c1e;
     --surface-secondary: #1c1c1e;
@@ -209,21 +153,11 @@
     --separator: rgba(255, 255, 255, 0.12);
     --border-secondary: rgba(255, 255, 255, 0.2);
 
-    --field-background: #1c1c1e;
+    --field-background: transparent;
 
     --danger: #ff453a;
 }
 
-/**
- * The focus ring. HeroUI rings its own components with `--focus`, which the
- * monochrome accent above already points at the foreground; this covers the plain
- * elements that are not HeroUI components and therefore ring through the UA — the
- * traffic lights, the settings menu's items and the recent-endpoint rows, all of
- * which are deliberately hand-rolled buttons.
- *
- * It replaces three near-identical `box-shadow: 0 0 0 2px var(--color-border-strong)`
- * rules that the component sheets each declared for themselves.
- */
 :where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus {
     outline: none;
 }
@@ -233,18 +167,6 @@
     outline-offset: 2px;
 }
 
-/**
- * The app shell.
- *
- * `color-scheme` is no longer set here: it used to be `light dark` on `:root`,
- * but HeroUI declares it per theme block, and `theme.ts` always writes a resolved
- * `light`/`dark` onto `data-theme`, so the UA now gets the one scheme actually in
- * effect instead of both.
- *
- * `user-select: none` is what makes the window feel like an application rather
- * than a document; the one region that is meant to be selectable — the deploy log
- * on failure — opts back in with `select-text`.
- */
 html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -262,26 +184,6 @@ body {
     user-select: none;
 }
 
-/**
- * Frameless desktop chrome.
- *
- * Electron gives this window no frame, so the app draws its own rounded corner
- * and has to let the desktop show through behind it — which is why `html` and
- * `body` go transparent above and `#root` takes the background instead. This is
- * the same arrangement the client's stylesheet makes for the page it serves
- * inside this window; there it is gated on `data-volt-desktop`, but here every
- * render is the desktop, so the gate would always be true.
- *
- * `data-volt-maximized` is set on `documentElement` from `main.tsx` off the
- * `window:state` IPC event: a maximized window is flush with the screen edge and
- * has no corner to round. `data-platform` is set there too, and carries the one
- * genuine platform difference — macOS vibrancy and Windows acrylic paint *behind*
- * the window, so the shell must not cover them, while Linux has no compositor
- * blur to reveal and stays solid.
- *
- * The radius is a literal 12px rather than a token: it is the window's corner, a
- * value the OS cares about and the design scale does not.
- */
 #root {
     height: 100%;
     border-radius: 12px;

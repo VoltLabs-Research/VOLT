@@ -50,12 +50,6 @@ export const getTeamClusterRoleBadgeVariant = (role: TeamClusterRole): ClusterBa
     return TEAM_CLUSTER_ROLE_META[role].badgeVariant;
 };
 
-/**
- * Narrows a `Select`'s emitted key back to the union. bravais's `Select` handed
- * back a bare `string` and the call site asserted; HeroUI's hands back a React
- * `Key`, so the check is done once here against the same record the options are
- * built from — the option list and the guard cannot drift apart.
- */
 export const isTeamClusterRole = (value: string): value is TeamClusterRole => {
     return Object.hasOwn(TEAM_CLUSTER_ROLE_META, value);
 };

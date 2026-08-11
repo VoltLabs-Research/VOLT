@@ -50,16 +50,12 @@ interface RequestOptions{
     params?: Record<string, string>;
     body?: object;
     token?: string;
-    /** Attempts for transport-level failures; the server may still be starting. */
+
     attempts?: number;
 }
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
-/**
- * Server code for "the stored cluster credentials cannot be decrypted with the
- * current key". Recoverable by provisioning a new cluster.
- */
 const CLUSTER_CREDENTIALS_UNREADABLE = 'TeamCluster::CredentialsUnreadable';
 
 const readMessage = (payload: unknown): string | undefined => {
@@ -76,7 +72,6 @@ const readCode = (payload: unknown): string => {
     return '';
 };
 
-/** Unwraps the `{ data }` envelope the API uses, tolerating a bare body. */
 const readData = (payload: unknown): unknown => {
     if(typeof payload !== 'object' || payload === null) return payload;
     return 'data' in payload ? (payload as { data: unknown }).data : payload;
@@ -183,16 +178,6 @@ export default class Bootstrap{
         return state;
     }
 
-    /**
-     * Reveals the daemon password, provisioning a replacement cluster when the one
-     * being reused cannot be read.
-     *
-     * A cluster row outlives the encryption key it was written with whenever the
-     * database volume survives a regenerated `SSH_KEY`, and the cloud then cannot
-     * decrypt its stored credentials. Reusing such a cluster used to fail the whole
-     * deploy at "Provision workspace" with a 500; a fresh cluster is the recovery,
-     * so the launch completes without the user having to do anything.
-     */
     async #resolveDaemonCredentials(
         token: string,
         teamId: string,
@@ -331,11 +316,6 @@ export default class Bootstrap{
         return daemonPassword;
     }
 
-    /**
-     * Single request path for the bootstrap flow. Method and path come from
-     * `@volt/contracts`, so a route change on the server surfaces here as a
-     * compile error instead of a 404 at first launch.
-     */
     async #request<T>(
         endpoint: Endpoint<never, unknown> | Endpoint<unknown, unknown>,
         options: RequestOptions = {}
@@ -375,7 +355,6 @@ export default class Bootstrap{
             try{
                 payload = text ? JSON.parse(text) : null;
             }catch{
-                // A non-JSON body is still usable as an error message below.
                 payload = null;
             }
 

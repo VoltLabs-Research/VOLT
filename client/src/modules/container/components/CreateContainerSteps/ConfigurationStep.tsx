@@ -57,26 +57,6 @@ const ENV_FIELDS: FieldConfig[] = [
     }
 ];
 
-/**
- * From the deleted `CreateContainer.css`.
- *
- * `.create-container-config-grid` was `display: flex; flex-direction: column;
- * gap: 1rem` — its 768px arm set `grid-template-columns: 1fr` on a flex container,
- * which did nothing. The `gap-6` the call site already carried wins over the
- * sheet's `gap: 1rem`, so `flex flex-col gap-6` is what actually rendered.
- * `.full-width`'s `grid-column: 1 / -1` is likewise inert inside a flex column, but
- * it is preserved as `col-span-full` because `OptionalConfigSection` shares the
- * class and the grid could come back.
- *
- * `.create-container-step-actions` is the one rule with a real responsive arm: at
- * 768px the row becomes a reversed column whose children each go full width.
- */
-const CONFIG_GRID_CLASS_NAMES = 'mt-6 flex flex-col gap-6';
-const CONFIG_CARD_CLASS_NAMES = 'col-span-full flex flex-col gap-4 rounded-xl border border-border p-6';
-const DEPLOYMENT_FIELDS_CLASS_NAMES = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 max-[768px]:grid-cols-1';
-const STEP_ACTIONS_CLASS_NAMES = 'mt-8 flex flex-row items-center justify-between gap-4 border-t border-border pt-6 max-[768px]:flex-col-reverse max-[768px]:gap-3 max-[768px]:[&>*]:w-full';
-const STEP_COPY_CLASS_NAMES = 'max-w-[46rem] text-base text-muted';
-
 const getTeamFieldError = (selectedTeamId: string | null, teams: Team[]) => {
     if (selectedTeamId) {
         return undefined;
@@ -110,10 +90,7 @@ const ConfigurationStep = ({
         value: item.value
     }));
     const teamFieldError = getTeamFieldError(selectedTeamId, teams);
-    /*
-     * Was annotated `SelectOption[]`, a bravais type. The inferred shape still
-     * satisfies `FormFieldRHF`'s `options`, so no type needs naming here.
-     */
+
     const teamOptions = teams.map((team) => ({
         value: team._id,
         title: team.name
@@ -130,29 +107,16 @@ const ConfigurationStep = ({
         <div className='flex flex-col gap-8'>
             <div className='flex flex-col gap-2'>
                 <h3 className='text-xl font-semibold text-foreground'>Configuration</h3>
-                <p className={STEP_COPY_CLASS_NAMES}>Fill in the required deployment details, then adjust optional settings only if needed.</p>
+                <p className='max-w-[46rem] text-base text-muted'>Fill in the required deployment details, then adjust optional settings only if needed.</p>
             </div>
-
-            <div className={CONFIG_GRID_CLASS_NAMES}>
-                <div className={CONFIG_CARD_CLASS_NAMES}>
+            <div className='mt-6 flex flex-col gap-6'>
+                <div className='col-span-full flex flex-col gap-4 rounded-xl border border-border p-6'>
                     <SettingsSectionHeader
                         title='Deployment details'
                         description='These fields are required before you can continue to review.'
                         className='mb-4'
                     />
-                    {/*
-                      * `.create-container-deployment-name` and
-                      * `.create-container-deployment-selects` existed only to force
-                      * `width: 100%` onto FormFieldRHF's internals through
-                      * `.form-field-container`, `.form-field-input`, `.render-input-container`
-                      * and `.select-trigger`. All four arms are now dead: the migrated
-                      * stacked renderer carries `w-full` on `.form-field-container` itself
-                      * and passes `fullWidth` to HeroUI's TextField and Select, and it emits
-                      * neither `.form-field-input`, `.render-input-container` nor
-                      * `.select-trigger` at all. So the wrappers keep only `w-full`, which is
-                      * what they were reaching for.
-                      */}
-                    <div className={DEPLOYMENT_FIELDS_CLASS_NAMES}>
+                    <div className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 max-[768px]:grid-cols-1'>
                         <div className='w-full'>
                             <FormFieldRHF
                                 label='Container Name'
@@ -178,7 +142,6 @@ const ConfigurationStep = ({
                         </div>
                     </div>
                 </div>
-
                 <ClusterResourceSelectionPanel
                     teamClusters={teamClusters}
                     isTeamSelected={Boolean(selectedTeamId)}
@@ -193,7 +156,6 @@ const ConfigurationStep = ({
                     clusterTitle='Deployment cluster'
                     clusterDescription='Choose where this container will be deployed.'
                 />
-
                 <OptionalConfigSection
                     title='Network'
                     description='Optional public port mappings.'
@@ -208,7 +170,6 @@ const ConfigurationStep = ({
                         emptyMessage='No port mappings added.'
                     />
                 </OptionalConfigSection>
-
                 <OptionalConfigSection
                     title='Environment variables'
                     description='Optional runtime values for the container.'
@@ -226,7 +187,6 @@ const ConfigurationStep = ({
                         emptyMessage='No environment variables added.'
                     />
                 </OptionalConfigSection>
-
                 <OptionalConfigSection
                     title='Advanced'
                     description='Enable only when the image needs direct access to the host Docker socket.'
@@ -246,8 +206,7 @@ const ConfigurationStep = ({
                     </p>
                 </OptionalConfigSection>
             </div>
-
-            <div className={STEP_ACTIONS_CLASS_NAMES}>
+            <div className='mt-8 flex flex-row items-center justify-between gap-4 border-t border-border pt-6 max-[768px]:flex-col-reverse max-[768px]:gap-3 max-[768px]:[&>*]:w-full'>
                 <p className='text-sm text-muted'>
                     {canProceed ? 'Required fields complete. Continue when you are ready.' : remainingItemsLabel}
                 </p>

@@ -1,4 +1,4 @@
-import type { AnalysisJobExecutionData } from '@shared/contracts';
+import type { AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import {
     deflateJsonToBase64Gzip,
     inflateBase64GzipJson

@@ -15,17 +15,8 @@ import type { ReactNode } from 'react';
 
 const DRAG_ACTIVATION_DISTANCE = 8;
 
-/**
- * `document-listing-grid` carries no styling of its own any more, but it stays on the
- * DOM: `modules/trajectory/components/DiscoverTeamTrajectoriesPage/DiscoverTeamTrajectoriesPage.css`
- * still selects `.public-simulation-grid.document-listing-grid` to drop the grid's
- * mobile padding, and that sheet is another agent's to migrate.
- */
-const GRID_CLASS_NAMES = 'document-listing-grid grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(300px,1fr))] content-start gap-6 overflow-y-auto max-md:grid-cols-1 max-md:p-4';
 
-const GRID_STATE_CLASS_NAMES = 'col-span-full min-h-[300px] items-center justify-center';
 
-const DRAG_OVERLAY_CLASS_NAMES = 'inline-flex min-w-[15rem] max-w-[22rem] items-center gap-3 rounded-xl px-4 py-[0.85rem] text-foreground bg-surface border border-border';
 
 interface DocumentListingGridProps<T extends Identifiable> {
     data: T[];
@@ -57,10 +48,6 @@ const collisionDetection: CollisionDetection = (args) => {
     return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args);
 };
 
-/**
- * Grid rows are heterogeneous documents, so the drag overlay label falls back to
- * whichever human-readable field the row happens to expose.
- */
 const getGridItemTitle = (item: { _id: string }): string => {
     const record = item as Record<string, unknown>;
     const value = record.name ?? record.title;
@@ -146,11 +133,11 @@ const DocumentListingGrid = <T extends Identifiable,>({
     };
 
     const grid = (
-        <div ref={containerRef} className={cn(GRID_CLASS_NAMES, className)}>
+        <div ref={containerRef} className={cn('document-listing-grid grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(300px,1fr))] content-start gap-6 overflow-y-auto max-md:grid-cols-1 max-md:p-4', className)}>
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <div className={GRID_STATE_CLASS_NAMES}>
+                <div className='col-span-full min-h-[300px] items-center justify-center'>
                     <RecoveryState
                         icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}
@@ -163,7 +150,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowErrorState && (
-                <div className={GRID_STATE_CLASS_NAMES}>
+                <div className='col-span-full min-h-[300px] items-center justify-center'>
                     <RecoveryState
                         title="Couldn't load these items"
                         description={errorMessage ?? 'Try again in a moment.'}
@@ -176,7 +163,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowAccessDeniedState && (
-                <div className={GRID_STATE_CLASS_NAMES}>
+                <div className='col-span-full min-h-[300px] items-center justify-center'>
                     <RecoveryState
                         title='Access denied'
                         description={errorMessage ?? "You don't have permission to view these items."}
@@ -226,7 +213,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {gridContent}
             <DragOverlay>
                 {activeDragItem ? (
-                    <div className={DRAG_OVERLAY_CLASS_NAMES}>
+                    <div className='inline-flex min-w-[15rem] max-w-[22rem] items-center gap-3 rounded-xl px-4 py-[0.85rem] text-foreground bg-surface border border-border'>
                         {showDragAffordance ? (
                             <span className='inline-flex size-8 items-center justify-center rounded-full text-foreground'>
                                 <GripVertical size={16} strokeWidth={1.8} />

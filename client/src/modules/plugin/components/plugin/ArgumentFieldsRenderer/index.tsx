@@ -1,9 +1,8 @@
-import { Button, cn } from '@heroui/react';
+import { Button } from '@heroui/react';
 import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
 import { PluginMultiSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
-import { CANVAS_FIELD, CANVAS_FIELD_CLASS, CANVAS_LABEL_CLASS, CANVAS_SELECT_SLOT_CLASS } from '@/modules/plugin/components/plugin/canvas-field-styles';
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import {
     coerceArgumentInputValue,
@@ -23,14 +22,6 @@ import { useState } from 'react';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
-
-/**
- * `.canvas-argument-list-add.button.size-sm` — the one rule in
- * `ArgumentFieldsRenderer.css` that was not reaching into a bravais component's
- * private DOM. All six others sized `CollapsibleSection`'s internals, which is now
- * the `isCompact` prop on this module's own CollapsibleSection.
- */
-const ARGUMENT_LIST_ADD_CLASS = 'h-6 min-h-6 px-2 text-[0.7rem]';
 
 interface ArgumentFieldsRendererProps {
     arguments: IArgumentDefinition[];
@@ -143,7 +134,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className={CANVAS_LABEL_CLASS}>
+                    <p className='canvas-form-label min-w-[130px] shrink-0 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
                         {argumentLabel}
                     </p>
                     <ArgumentFieldsRenderer
@@ -169,7 +160,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className={CANVAS_LABEL_CLASS}>
+                    <p className='canvas-form-label min-w-[130px] shrink-0 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
                         {argumentLabel}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
@@ -179,7 +170,7 @@ const ArgumentFieldsRenderer = ({
                         variant='outline'
                         size='sm'
                         fullWidth
-                        className={ARGUMENT_LIST_ADD_CLASS}
+                        className='h-6 min-h-6 px-2 text-[0.7rem]'
                         onPress={() => {
                             onChange(argument.argument, [...items, createDefaultListItem(argument.listArguments)]);
                             setSectionExpanded(`${fieldKey}.${items.length}`, true);
@@ -199,20 +190,20 @@ const ArgumentFieldsRenderer = ({
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
 
             return (
-                <div className={CANVAS_FIELD_CLASS} key={fieldKey}>
-                    <p className={CANVAS_LABEL_CLASS}>
+                <div className='form-field-canvas flex flex-row items-center justify-between gap-2 min-h-6' key={fieldKey}>
+                    <p className='canvas-form-label min-w-[130px] shrink-0 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
                         {argumentLabel}
                     </p>
-                    <div className={CANVAS_SELECT_SLOT_CLASS}>
+                    <div className='render-input-container flex items-center justify-end relative w-full min-w-0 max-w-[150px]'>
                         <PluginMultiSelect
                             id={`${fieldKey}-multi-select`}
                             options={selectOptions}
                             selectedValues={selectValues}
                             onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
                             placeholder='Select options'
-                            className={cn('form-field-canvas-select labeled-input', CANVAS_FIELD.selectRoot)}
-                            triggerClassName={CANVAS_FIELD.selectTrigger}
-                            valueClassName={CANVAS_FIELD.selectValue}
+                            className='form-field-canvas-select labeled-input flex-1 min-w-0'
+                            triggerClassName='w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
+                            valueClassName='text-[0.7rem]'
                             ariaLabel={argumentLabel}
                             renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                 selectedCount,

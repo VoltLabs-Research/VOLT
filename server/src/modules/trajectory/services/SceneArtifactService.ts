@@ -8,8 +8,8 @@ import trajectoryDumpStorageService from '@modules/trajectory/services/trajector
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import type {
-    SceneArtifactParams,
     SceneArtifactSourceType,
     SceneArtifactStatus
 } from '@shared/contracts/types/SceneArtifact';

@@ -1,5 +1,5 @@
 import { publicTrajectoryPreviewQuery, trajectoryPreviewQuery } from './queries';
-import { isApiError } from '@/shared/errors/core';
+import { isApiError } from '@/shared/errors/core/report-error';
 import { useEffect, useRef, useState } from 'react';
 
 interface UseTrajectoryPreviewParams {

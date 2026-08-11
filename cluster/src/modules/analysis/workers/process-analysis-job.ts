@@ -5,10 +5,8 @@ import { createAnalysisExecutionLogSink } from '@shared/infrastructure/runtime/e
 import { logAndSwallow } from '@shared/application/utilities/error-message';
 import type { AnalysisQueueAdmissionController } from '@modules/analysis/services/AnalysisQueueAdmissionController';
 import { AnalysisEnvironment, type AnalysisEnvironmentState } from '@modules/analysis/services/workflow/AnalysisEnvironment';
-import {
-    createAnalysisStageReporter,
-    type AnalysisStageReportInput
-} from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import { type AnalysisStageReportInput } from '@shared/contracts/types/analysis-stage-reporter';
 import type { WorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import { readWorkflowTrace, type InlineWorkflowTraceNode } from '@modules/analysis/services/workflow/WorkflowWalker';
 import { buildTraceLogSegments } from '@modules/analysis/services/workflow/trace-log-segments';

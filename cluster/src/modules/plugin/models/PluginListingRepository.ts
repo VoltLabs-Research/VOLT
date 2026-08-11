@@ -5,7 +5,6 @@ import { PluginSubListingRow, buildPluginSubListingRowId } from '@modules/plugin
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@shared/contracts/types/pagination';
 import { singleton } from '@shared/application/utilities/singleton';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
-import type { PluginListingRowDocument } from '@modules/plugin/models/plugin-listing-row-model';
 import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@shared/contracts/types/pagination';
 import type {
@@ -13,7 +12,7 @@ import type {
     PluginListingTransferExportPayload,
     PluginListingTransferImportPayload,
     PluginListingTransferPurgePayload
-} from '@shared/contracts';
+} from '@shared/contracts/types/listing-transfer-payloads';
 import type {
     BulkUpsertOperation,
     ListingPaginatedResult,
@@ -293,7 +292,6 @@ class TypeOrmPluginListingRepository {
 }
 
 export type PluginListingRepository = TypeOrmPluginListingRepository;
-export type { PluginListingRowDocument };
 
 export const getPluginListingRepository = singleton(
     (): TypeOrmPluginListingRepository => new TypeOrmPluginListingRepository()

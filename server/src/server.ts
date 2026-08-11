@@ -1,6 +1,4 @@
-import 'reflect-metadata';
 import './core/config/env';
-import './shared/infrastructure/logging/installOutputDuplicateGuard';
 
 import http from 'http';
 import { AI_TOOL_CONTROLLERS } from './core/bootstrap/ai-tools';
@@ -17,7 +15,6 @@ import { socketModules } from './modules/socket/socket/socket-modules';
 import { ClusterTransferRunner } from './modules/cluster/services/transfer/ClusterTransferRunner';
 import containerPortRelayLifecycleService, { ContainerPortRelayLifecycleService } from './modules/container/services/ContainerPortRelayLifecycleService';
 import containerTerminalSocketModule from './modules/container/socket/ContainerTerminalSocketModule';
-import chatSocketModule from './modules/chat/socket/ChatSocketModule';
 import trajectoryCloneRunner, { TrajectoryCloneRunner } from './modules/trajectory/services/trajectory/TrajectoryCloneRunner';
 import canvasWorkspaceSocketModule from './modules/trajectory/socket/CanvasWorkspaceSocketModule';
 import trajectoryPresenceSocketModule from './modules/trajectory/socket/TrajectoryPresenceSocketModule';
@@ -201,7 +198,6 @@ const startServer = async () => {
                 canvasWorkspaceSocketModule,
                 trajectoryPresenceSocketModule,
                 containerTerminalSocketModule,
-                chatSocketModule,
                 teamJobsSocketModule,
                 teamPresenceSocketModule,
                 whiteboardSocketModule,

@@ -24,16 +24,6 @@ interface InviteButtonProps {
     type?: 'button' | 'submit';
 }
 
-/**
- * `min-h-11` is `InvitationEmailInput.css`'s `.invitation-email-input button
- * { min-height: 2.75rem }` — a rule that only ever matched this button, lining the
- * commit button up with the field beside it. It sits here rather than at the call
- * site because HeroUI's `Button` prop interface is closed and this is its only use.
- *
- * `onClick` / `isLoading` / `disabled` stay this component's own prop names — they
- * are its API, not HeroUI's — and are mapped to `onPress` / `isPending` /
- * `isDisabled` here.
- */
 export const InviteButton = ({
     state,
     isLoading,

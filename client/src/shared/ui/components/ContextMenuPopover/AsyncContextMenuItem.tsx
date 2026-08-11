@@ -1,4 +1,5 @@
-import { ErrorSurface, isAccessDeniedError, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import ContextMenuItem from './ContextMenuItem';
 import { useCallback, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';

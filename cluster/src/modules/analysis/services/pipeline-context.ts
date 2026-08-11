@@ -1,6 +1,6 @@
 import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
-import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
-import type { WorkflowDefinition } from '@shared/contracts';
+import type { WorkflowArgumentDefinition, WorkflowDefinition } from '@shared/contracts/types/http-workflow';
+
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 
 export const createPipelineContext = (pipelineTempPath: string): PipelineContext => ({

@@ -19,15 +19,6 @@ interface ProfileFormProps {
 
 const AUTO_SAVE_DELAY = 1000;
 
-/*
- * bravais's `InlineStatus` is a live region, not decoration: `role='status'` or
- * `role='alert'` plus `aria-live` and `aria-atomic='true'` are what announce the
- * result of this form's debounced auto-save. HeroUI has no equivalent, so the row
- * is hand-built and every one of those attributes is preserved. The icon stays
- * `aria-hidden`, exactly as before, because the text carries the message.
- */
-const STATUS_ROW = 'flex flex-row items-center gap-2 text-sm';
-
 const ProfileForm = ({
     initialValues,
     onUpdate
@@ -123,7 +114,7 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Saving) {
         saveFeedback = (
-            <div className={STATUS_ROW} role='status' aria-live='polite' aria-atomic='true'>
+            <div className='flex flex-row items-center gap-2 text-sm' role='status' aria-live='polite' aria-atomic='true'>
                 <span className='flex items-center' aria-hidden='true'>
                     <Spinner size='sm' color='current' />
                 </span>
@@ -134,7 +125,7 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Saved) {
         saveFeedback = (
-            <div className={STATUS_ROW} role='status' aria-live='polite' aria-atomic='true'>
+            <div className='flex flex-row items-center gap-2 text-sm' role='status' aria-live='polite' aria-atomic='true'>
                 <span className='flex items-center' aria-hidden='true'>
                     <CheckCircle2 size={14} className='text-success' />
                 </span>
@@ -145,7 +136,7 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Error) {
         saveFeedback = (
-            <div className={`${STATUS_ROW} text-danger`} role='alert' aria-live='assertive' aria-atomic='true'>
+            <div className='flex flex-row items-center gap-2 text-sm text-danger' role='alert' aria-live='assertive' aria-atomic='true'>
                 <span className='flex items-center' aria-hidden='true'>
                     <AlertCircle size={14} />
                 </span>
@@ -172,7 +163,6 @@ const ProfileForm = ({
                     name: 'fullName'
                 }}
             />
-
             <FormFieldRHF
                 name='email'
                 control={control}

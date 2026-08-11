@@ -8,16 +8,6 @@ import { buildAnalysisExecutionRows } from './execution-rows';
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { cn } from '@heroui/react';
-import {
-    EXECUTION_BLOCK_CLASS,
-    EXECUTION_CHIP_CLASS,
-    EXECUTION_ICON_CLASS,
-    EXECUTION_ICON_TONE_CLASS,
-    EXECUTION_LABEL_CLASS,
-    EXECUTION_META_CLASS,
-    OVERLAY_CLASS,
-    OVERLAY_COMPLETED_CLASS
-} from './execution-classes';
 
 interface AnalysisExecutionOverlayProps {
     trajectory?: Trajectory | null;
@@ -80,7 +70,8 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
         },
         { enabled: Boolean(trajectoryId && analysisId) }
     );
-    const analyses = analysesQuery.data?.data ?? [];
+    const analysesData = analysesQuery.data?.data;
+    const analyses = useMemo(() => analysesData ?? [], [analysesData]);
 
     const analysis = useMemo(() => {
         return resolveSelectedAnalysis(
@@ -110,30 +101,42 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
 
     const isFullyCompleted = rows.every((row) => row.status === 'completed' || row.status === 'cached');
 
+    const rowToneClass = {
+        running: '[&_[data-execution-label]]:text-accent',
+        completed: '[&_[data-execution-label]]:text-success max-md:hidden',
+        cached: '[&_[data-execution-label]]:text-success max-md:hidden',
+        failed: '[&_[data-execution-label]]:text-danger'
+    } as const;
+
+    const iconToneClass = {
+        running: 'text-accent',
+        completed: 'text-success',
+        cached: 'text-success',
+        failed: 'text-danger'
+    } as const;
+
     return (
         <div className={cn(
             'canvas-analysis-execution-overlay',
-            OVERLAY_CLASS,
-            isFullyCompleted && `canvas-analysis-execution-overlay--completed ${OVERLAY_COMPLETED_CLASS}`
+            'group pointer-events-auto absolute bottom-20 left-4 z-[4] w-[min(320px,calc(100%-2rem))] max-h-[min(42vh,360px)] overflow-auto rounded-3xl px-2.5 py-2 max-md:left-0 max-md:z-[150] max-md:w-[min(240px,calc(100%-1rem))] max-md:max-h-30 max-md:rounded-2xl max-md:px-2 max-md:py-1.5',
+            isFullyCompleted && 'canvas-analysis-execution-overlay--completed max-md:hidden'
         )}>
-            <div className={EXECUTION_BLOCK_CLASS} role='group' aria-label={`${analysis.pluginDisplayName} execution timeline`}>
+            <div className='m-0 border-l-0 p-0' role='group' aria-label={`${analysis.pluginDisplayName} execution timeline`}>
                 {rows.map((row) => (
-                    <div key={row.key} className={row.className}>
+                    <div key={row.key} className={cn(
+                        'flex min-h-[22px] items-center gap-1.5 text-[0.72rem] text-muted max-md:min-h-[18px] max-md:gap-1 max-md:text-[0.625rem]',
+                        row.status in rowToneClass && rowToneClass[row.status as keyof typeof rowToneClass]
+                    )}>
                         <span className={cn(
-                            EXECUTION_ICON_CLASS,
-                            row.status in EXECUTION_ICON_TONE_CLASS && EXECUTION_ICON_TONE_CLASS[row.status as keyof typeof EXECUTION_ICON_TONE_CLASS]
+                            'inline-flex size-3.5 items-center justify-center text-muted',
+                            row.status in iconToneClass && iconToneClass[row.status as keyof typeof iconToneClass]
                         )}>
                             {getStageIcon(row.iconSource)}
                         </span>
-                        {/*
-                          * `data-execution-label` replaces the `.canvas-tree-execution-label`
-                          * class the row's tone rule selected: the tone lives on the row, and a
-                          * descendant variant needs something to aim at.
-                          */}
-                        <span data-execution-label className={EXECUTION_LABEL_CLASS}>{row.label}</span>
-                        {row.cacheHit && <span className={`${EXECUTION_META_CLASS} ${EXECUTION_CHIP_CLASS}`}>cached</span>}
+                        <span data-execution-label className='min-w-0 flex-auto truncate'>{row.label}</span>
+                        {row.cacheHit && <span className='invisible flex-none text-[0.65rem] leading-none text-muted opacity-0 transition-[opacity,visibility] duration-[120ms] ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 max-md:hidden px-1 py-0.5'>cached</span>}
                         {row.durationMs !== undefined && (
-                            <span className={EXECUTION_META_CLASS}>{formatDuration(row.durationMs)}</span>
+                            <span className='invisible flex-none text-[0.65rem] leading-none text-muted opacity-0 transition-[opacity,visibility] duration-[120ms] ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 max-md:hidden'>{formatDuration(row.durationMs)}</span>
                         )}
                     </div>
                 ))}

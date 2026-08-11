@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser, Res } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -12,7 +13,7 @@ import type {
     SendAIConversationMessageInput
 } from '@volt/contracts/modules/ai/http';
 import type { AIConversationMessage } from '@modules/ai/contracts/ai-message';
-import type { AIProvider } from '@shared/contracts/types/AIProviders';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import express from 'express';
 import type { Response } from 'express';
 
@@ -42,7 +43,7 @@ export default class AiController extends Controller {
     createConversation(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateAIConversationInput
+        @Body(schemaBody(typia.createValidate<CreateAIConversationInput>())) body: CreateAIConversationInput
     ) {
         return this.#service.createConversation({
             teamId,
@@ -73,7 +74,7 @@ export default class AiController extends Controller {
         @Param('teamId') teamId: string,
         @Param('conversationId') conversationId: string,
         @CurrentUser() userId: string,
-        @Body() body: SendAIConversationMessageInput,
+        @Body(schemaBody(typia.createValidate<SendAIConversationMessageInput>())) body: SendAIConversationMessageInput,
         @Res() res: Response
     ): Promise<void> {
         const value = await this.#service.streamMessage({
@@ -94,7 +95,7 @@ export default class AiController extends Controller {
         @Param('teamId') teamId: string,
         @Param('conversationId') conversationId: string,
         @CurrentUser() userId: string,
-        @Body() body: UpdateAIConversationInput
+        @Body(schemaBody(typia.createValidate<UpdateAIConversationInput>())) body: UpdateAIConversationInput
     ) {
         return this.#service.updateConversation({
             teamId,

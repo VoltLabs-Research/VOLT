@@ -1,7 +1,9 @@
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import { Disclosure } from '@heroui/react';
-import { Modal, closeModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { useEffect, useState } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
@@ -33,32 +35,6 @@ interface ClusterQueueConcurrencyModalProps {
 
 const MIN_CONCURRENCY = 1;
 const MIN_SCOPE_LIMIT = 0;
-
-/**
- * bravais's `Table` was a plain `<table>` inside an x-scrolling wrapper, and these
- * are its own metrics from `Table.css` — kept rather than handed to HeroUI's
- * `Table` family, which is a RAC grid: it would add row focus management and its
- * own scroll container around what is a two-column, four-row static list holding a
- * number input, and it never sorted, never loaded, and never had clickable rows.
- * Reproducing it costs three class constants.
- *
- * `aria-sort` is the one thing deliberately not carried over. bravais emitted it on
- * every `th`, defaulting to `'none'` even for non-sortable columns, which is
- * invalid ARIA; nothing here sorts.
- */
-const TABLE_WRAPPER_CLASS = 'w-full overflow-x-auto';
-
-const TABLE_HEAD_CLASS = 'text-left px-4 py-2.5 text-[0.6875rem] font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap';
-
-const TABLE_CELL_CLASS = 'px-4 py-2.5 border-b border-border text-foreground text-[0.8125rem]';
-
-/**
- * `.form-field-input` used to reach this input from `FormFieldRHF`'s stylesheet.
- * That sheet is gone and the class carries nothing, so the field's own inline text
- * metrics are restated here — the same declarations `field-styles.ts` gives an
- * inline text control, at the 8px radius bravais's `rounded-lg` meant (spec §3b).
- */
-const SCOPE_LIMIT_INPUT_CLASS = 'w-20 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent';
 
 const QUEUE_FIELDS: QueueFieldDefinition[] = [
     {
@@ -285,20 +261,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                         </div>
                     ))}
                 </div>
-                {/*
-                  * bravais's `CollapsibleSection` → HeroUI `Disclosure` (spec §4c).
-                  * `titleAs='h3'` is the heading's `level`, `noSpacing` dropped the
-                  * section's `mb-6`, and the section was collapsed on first render —
-                  * `Disclosure` is collapsed by default too, so there is no
-                  * `defaultExpanded` to restate.
-                  *
-                  * Two behaviour changes, both from HeroUI rather than from this edit:
-                  * the panel now animates its height (bravais flipped between `0` and
-                  * `auto` with `transition: none`), and the body mounts and unmounts with
-                  * the panel instead of mounting once on first expand and staying. Neither
-                  * matters here — the fields are controlled from `scopeValues` above, so
-                  * nothing lives inside the panel that could be lost.
-                  */}
                 <Disclosure>
                     <Disclosure.Heading level={3}>
                         <Disclosure.Trigger>
@@ -310,28 +272,28 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                         <Disclosure.Body>
                             <div className='flex flex-col gap-2 mt-2'>
                                 <p className='text-xs text-muted'>Per-trajectory limits. Use 0 for no limit.</p>
-                                <div className={TABLE_WRAPPER_CLASS}>
+                                <div className='w-full overflow-x-auto'>
                                     <table className='w-full border-collapse'>
                                         <thead>
                                             <tr>
-                                                <th scope='col' className={TABLE_HEAD_CLASS}>Queue</th>
-                                                <th scope='col' className={TABLE_HEAD_CLASS}>Max / trajectory</th>
+                                                <th scope='col' className='text-left px-4 py-2.5 text-[0.6875rem] font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Queue</th>
+                                                <th scope='col' className='text-left px-4 py-2.5 text-[0.6875rem] font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Max / trajectory</th>
                                             </tr>
                                         </thead>
                                         <tbody className='[&_tr:last-child_td]:border-b-0'>
                                             {QUEUE_SCOPE_FIELDS.map((row) => (
                                                 <tr className='hover:bg-surface-hover' key={row.key}>
-                                                    <td className={TABLE_CELL_CLASS}>
+                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-[0.8125rem]'>
                                                         <span className='text-xs font-medium'>{row.label}</span>
                                                     </td>
-                                                    <td className={TABLE_CELL_CLASS}>
+                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-[0.8125rem]'>
                                                         <input
                                                             type='number'
                                                             min={MIN_SCOPE_LIMIT}
                                                             step={1}
                                                             inputMode='numeric'
                                                             aria-label={`${row.label} max per trajectory`}
-                                                            className={SCOPE_LIMIT_INPUT_CLASS}
+                                                            className='w-20 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent'
                                                             value={scopeValues[row.key].maxRunningPerTrajectory}
                                                             onChange={(e) => handleScopeFieldChange(row.key, e.target.value)}
                                                         />

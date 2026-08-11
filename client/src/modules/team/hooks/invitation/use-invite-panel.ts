@@ -1,7 +1,8 @@
 import useTeamInvitationData from '@/modules/team/hooks/invitation/use-team-invitation-data';
 import { useCancelInvitationMutation, useSendInvitationMutation } from '@/modules/team/hooks/invitation/queries';
 import type { InviteButtonState } from '../../components/InviteButton';
-import { ErrorSurface, isAccessDeniedError, reportError, resolveErrorTitle } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { isAccessDeniedError, reportError, resolveErrorTitle } from '@/shared/errors/core/report-error';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import type { ChangeEvent } from 'react';

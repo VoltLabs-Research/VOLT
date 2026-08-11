@@ -29,7 +29,7 @@ import type {
     GetPluginListingDocumentsOutput
 } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { GetSubListingInput, GetSubListingOutput } from '@shared/contracts/operations/GetSubListing';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
 import { ExportType, type PaginatedResult } from '@shared/domain/port/persistence';
 

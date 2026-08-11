@@ -18,7 +18,7 @@ import type {
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { enrichDaemonListingRows } from '@modules/plugin/services/listing-row/ListingRowEnrichmentService';
 import { Exporter } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';

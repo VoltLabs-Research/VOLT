@@ -9,7 +9,7 @@ import {
 } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import reverseWsHttpRelay from '@modules/cluster/services/reverse-channel/ReverseWsHttpRelay';
-import type { TeamClusterServiceExposure } from '@shared/contracts/types';
+import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import logger from '@shared/infrastructure/logger';
 import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';

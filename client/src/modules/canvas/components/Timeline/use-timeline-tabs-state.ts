@@ -18,11 +18,6 @@ interface UseTimelineTabsStateParams {
     analysisId: string | undefined;
 }
 
-/**
- * Keeps the active timeline tab, the tab list and the `timelineExposureId` URL parameter
- * in sync. Exposure tabs come and go with the selected analysis, so a tab that is no
- * longer backed by an exposure falls back to the ruler.
- */
 const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStateParams) => {
     const [activeTab, setActiveTab] = useState<string>(TimelineTab.Timeline);
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();

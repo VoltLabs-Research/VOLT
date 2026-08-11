@@ -1,5 +1,5 @@
 
-import { TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX } from '@shared/infrastructure/contracts/team-cluster';
+import { TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX } from '@shared/contracts/types/TeamClusterObjectGateway';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Readable as NodeReadable } from 'node:stream';
 import type {

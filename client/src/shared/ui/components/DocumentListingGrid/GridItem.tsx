@@ -8,25 +8,6 @@ import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { MutableRefObject, ReactNode } from 'react';
 
-/**
- * `[&>*]:` replaces `.document-listing-grid-item > *`, which is what makes an
- * arbitrary card fill its cell — the item wraps whatever the caller renders, so the
- * sizing cannot be moved onto the card itself from here.
- */
-const GRID_ITEM = 'group relative flex h-full min-w-0 rounded-xl transition-[opacity,filter,transform] duration-150 [&>*]:h-full [&>*]:w-full';
-
-/**
- * The one selector that reaches into another module: the drop target used to tint the
- * trajectory card's own border (`.document-listing-grid-item.is-drag-over .simulation-folder-card`).
- * Expressed as a descendant variant so the affordance keeps working while
- * `SimulationFolderCard` is still another agent's to migrate.
- */
-const GRID_ITEM_DRAG_OVER = '[&_.simulation-folder-card]:border-accent/76';
-
-const DRAG_AFFORDANCE = 'pointer-events-none absolute left-3 top-3 z-[12] inline-flex size-[1.8rem] items-center justify-center rounded-full border border-border/78 bg-surface-secondary/84 text-muted shadow-surface transition-[opacity,transform,color,background-color] duration-150';
-const DRAG_AFFORDANCE_IDLE = 'opacity-0 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100';
-const DRAG_AFFORDANCE_DRAGGING = 'opacity-0';
-
 interface GridItemProps<T extends Identifiable> {
     item: T;
     index: number;
@@ -79,10 +60,10 @@ const DraggableGridItemBody = <T extends Identifiable,>({
         <div
             ref={setItemNodeRef}
             className={cn(
-                GRID_ITEM,
+                'group relative flex h-full min-w-0 rounded-xl transition-[opacity,filter,transform] duration-150 [&>*]:h-full [&>*]:w-full',
                 draggableId && 'touch-none',
                 isDragging && 'opacity-24 saturate-70',
-                isOver && GRID_ITEM_DRAG_OVER
+                isOver && '[&_.simulation-folder-card]:border-accent/76'
             )}
             style={{
                 transform: CSS.Translate.toString(transform),
@@ -100,7 +81,7 @@ const DraggableGridItemBody = <T extends Identifiable,>({
         >
             {draggableId && showDragAffordance ? (
                 <div
-                    className={cn(DRAG_AFFORDANCE, isDragging ? DRAG_AFFORDANCE_DRAGGING : DRAG_AFFORDANCE_IDLE)}
+                    className={cn('pointer-events-none absolute left-3 top-3 z-[12] inline-flex size-[1.8rem] items-center justify-center rounded-full border border-border/78 bg-surface-secondary/84 text-muted shadow-surface transition-[opacity,transform,color,background-color] duration-150', isDragging ? 'opacity-0' : 'opacity-0 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100')}
                     aria-hidden='true'
                 >
                     <GripVertical size={14} strokeWidth={1.8} />
@@ -135,7 +116,7 @@ const GridItem = <T extends Identifiable,>({
             {body}
         </DraggableGridItemBody>
     ) : (
-        <div className={GRID_ITEM}>
+        <div className='group relative flex h-full min-w-0 rounded-xl transition-[opacity,filter,transform] duration-150 [&>*]:h-full [&>*]:w-full'>
             {body}
         </div>
     );

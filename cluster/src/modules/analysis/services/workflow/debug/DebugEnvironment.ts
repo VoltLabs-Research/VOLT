@@ -1,7 +1,7 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
 import { DAEMON_PATHS } from '@core/config/paths';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';
 import type { WorkflowExecutionContext } from '@shared/contracts/types/workflow.types';

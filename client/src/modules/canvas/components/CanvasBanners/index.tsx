@@ -19,21 +19,6 @@ const formatPeerName = (peer: WorkspacePresenceUser): string => {
     return 'another user';
 };
 
-/**
- * `.canvas-banner-stack` clears the toolbar with the same `--canvas-header-height` the
- * toolbar uses, and clears the right panel with the `--canvas-right-overlay-size`
- * `CanvasPage` writes as an inline style. Both `var()` references are kept rather than
- * resolved.
- */
-const STACK_CLASS = 'z-[4] mt-[var(--canvas-header-height,55px)] mr-[var(--canvas-right-overlay-size,0px)] border-b border-border';
-
-/**
- * `.canvas-banner--collab` tinted the row with 14% of `--accent-blue` over the page.
- * That token collapsed onto the monochrome accent, so the mix is expressed against
- * `--accent` — the same computed colour, without the dead token name.
- */
-const BANNER_CLASS = 'w-full gap-3 border-b border-border px-3.5 py-2 text-[0.8125rem] leading-[1.35] last:border-b-0 bg-[color-mix(in_srgb,var(--accent)_14%,var(--background))] text-foreground';
-
 const CanvasBanners = ({
     collaborationOwner,
     isWorkspaceOwner,
@@ -46,9 +31,9 @@ const CanvasBanners = ({
     }
 
     return (
-        <div className={`flex flex-col ${STACK_CLASS}`} role='region' aria-label='Canvas notifications'>
+        <div className='flex flex-col z-[4] mt-[var(--canvas-header-height,55px)] mr-[var(--canvas-right-overlay-size,0px)] border-b border-border' role='region' aria-label='Canvas notifications'>
             {showCollabBanner && collaborationOwner && (
-                <div className={`flex flex-row items-center ${BANNER_CLASS}`} role='status'>
+                <div className='flex flex-row items-center w-full gap-3 border-b border-border px-3.5 py-2 text-[0.8125rem] leading-[1.35] last:border-b-0 bg-[color-mix(in_srgb,var(--accent)_14%,var(--background))] text-foreground' role='status'>
                     <span className='inline-flex shrink-0 items-center justify-center' aria-hidden='true'>
                         <Users size={14} />
                     </span>

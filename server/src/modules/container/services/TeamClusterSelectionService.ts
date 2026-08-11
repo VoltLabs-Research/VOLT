@@ -7,7 +7,7 @@ import {
 } from '@shared/application/utilities/cluster-storage-policy';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
-import { TeamClusterStatus } from '@shared/contracts/types';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';

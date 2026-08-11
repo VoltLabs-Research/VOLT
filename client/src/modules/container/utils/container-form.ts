@@ -30,7 +30,6 @@ export const getTemplateConfiguration = (template: ContainerTemplate): TemplateC
     };
 };
 
-/** Dedupes by key, last writer wins, dropping entries the user left half-filled. */
 export const mergeContainerEnvVariables = (envVariables: EnvVariable[]): EnvVariable[] => {
     const mergedEnvVariables = new Map<string, EnvVariable>();
 

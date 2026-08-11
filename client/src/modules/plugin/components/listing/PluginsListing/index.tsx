@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react';
-import { closeModal, openModal } from '@/shared/ui/modal';
+import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import { Ban, Check, Copy, Download, FilePen, Pencil, Store, Upload } from 'lucide-react';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';

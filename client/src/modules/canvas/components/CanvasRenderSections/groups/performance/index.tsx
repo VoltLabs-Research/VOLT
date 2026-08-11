@@ -1,4 +1,4 @@
-import { selectField, RENDER_GRID_CLASS } from '../../../CanvasRenderConfigHelpers';
+import { selectField } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     isPerformancePreset,
@@ -32,7 +32,7 @@ const usePerformanceGroup = (): RenderGroup => {
                     enabled: true,
                     rows: [],
                     extras: (
-                        <div className={RENDER_GRID_CLASS}>
+                        <div className='flex flex-col items-stretch gap-2'>
                             <CanvasOptionSelect
                                 ariaLabel='Performance preset'
                                 size='compact'

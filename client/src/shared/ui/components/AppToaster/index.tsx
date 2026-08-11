@@ -36,12 +36,6 @@ const AppToaster = () => {
             popover='manual'
             style={POPOVER_STYLE}
         >
-            {/*
-             * Sileo v0.1.5 uses contrast-inverted fills internally
-             * (THEME_FILLS maps 'light' → dark fill, 'dark' → light fill).
-             * We counter-invert the prop so notifications visually match
-             * the app's active theme.
-             */}
             <Toaster
                 position='bottom-right'
                 theme={theme === Theme.Dark ? 'light' : 'dark'}

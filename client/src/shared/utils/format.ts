@@ -1,15 +1,5 @@
-/**
- * Value formatters, relocated verbatim from bravais when that package was
- * retired. They are pure and carry no design-system dependency, which is why
- * they outlived it.
- *
- * Note there are still module-local `formatNumber` / `formatDuration` variants
- * (canvas `config-values.tsx`, jobs `JobQueue`, plugin `DebugToolbar`) that
- * predate these. They were left alone rather than folded in, because their
- * rounding differs and collapsing them silently would change displayed numbers.
- */
 
-/** Format a number to a human-readable string with K, M, B suffixes. */
+
 export const formatNumber = (num: number): string => {
     if(num === 0) return '0';
     const absNum = Math.abs(num);
@@ -26,7 +16,6 @@ export const formatNumber = (num: number): string => {
     return sign + absNum.toString();
 };
 
-/** Format a duration in minutes as "Dd Hh", "Hh Mm", "Mm", or "<1m". */
 export const formatDuration = (minutes: number): string => {
     if(minutes <= 0) return '0m';
     if(minutes < 1) return '<1m';
@@ -46,7 +35,6 @@ export const formatDuration = (minutes: number): string => {
     return `${mins}m`;
 };
 
-/** Format bytes to a human-readable size string. */
 export const formatSize = (bytes: number): string => {
     if(bytes === 0) return '0 B';
     const k = 1024;
@@ -55,7 +43,6 @@ export const formatSize = (bytes: number): string => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-/** Format an unknown runtime value into a safe display string. */
 export const formatUnknownValue = (value: unknown): string => {
     if(value === null || value === undefined) return '-';
     if(typeof value === 'string') return value;
@@ -86,7 +73,6 @@ export const formatUnknownValue = (value: unknown): string => {
     }
 };
 
-/** Get a nested value from an object by dot-notation path. */
 export const getValueByPath = (obj: unknown, path: string): unknown => {
     if(!obj || typeof obj !== 'object') return undefined;
     const keys = path.split('.');

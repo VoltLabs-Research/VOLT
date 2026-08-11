@@ -16,8 +16,6 @@ const setTheme: ClientToolHandler<SetThemeInput> = {
     name: 'set_theme',
 
     run(input): ClientToolResult {
-        // The contract declares this as the literal union the LLM may send; it is
-        // value-identical to Theme, which TS keeps nominal for enums.
         const preference = input.theme as Theme;
 
         localStorage.setItem(THEME_STORAGE_KEY, preference);

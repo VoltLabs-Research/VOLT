@@ -6,7 +6,7 @@ import type {
     GlbConversionQueueJobPayload,
     RasterizeTrajectoryRequest,
     TrajectoryRuntimeCleanupRequest
-} from '@shared/contracts';
+} from '@shared/contracts/types/queue-trajectory';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { logger } from '@shared/infrastructure/logger';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';

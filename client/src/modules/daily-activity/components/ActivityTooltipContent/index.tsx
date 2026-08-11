@@ -13,8 +13,6 @@ const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
     minute: '2-digit'
 });
 
-const ENTRY_DOT_CLASS_NAMES = 'flex size-[22px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface-tertiary';
-
 const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: ActivityTooltipContentProps) => {
     if (!activity.length) {
         return (
@@ -35,7 +33,10 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
             </div>
             {activity.map((item, index) => (
                 <div className='flex items-start gap-2' key={`${item.createdAt}-${index}`}>
-                    <span className={ENTRY_DOT_CLASS_NAMES} style={{ color: ACTIVITY_ACCENT[item.type] }}>
+                    <span
+                        className='flex size-[22px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface-tertiary'
+                        style={{ color: ACTIVITY_ACCENT[item.type] }}
+                    >
                         {ACTIVITY_ICON[item.type]}
                     </span>
                     <div className='flex flex-col min-w-0 gap-[0.1rem]'>

@@ -9,16 +9,6 @@ interface CopyableFieldProps {
     className?: string;
 };
 
-/**
- * `copyable-field` and `copyable-field-value` carry no rules of their own any
- * more — both are hooks two other modules reach in by name:
- * `.cluster-install-command-picker .copyable-field { min-width: 0 }` and
- * `.trajectory-share-link-field .copyable-field-value { font-size: 0.7rem }`.
- * They stay until those two call sites express the same thing on their own
- * elements; dropping them here would silently unstyle both.
- */
-const FIELD_CLASS_NAMES = 'copyable-field flex flex-row items-center justify-between gap-4 rounded-xl border border-border bg-surface-tertiary/55 p-4';
-const VALUE_CLASS_NAMES = 'copyable-field-value break-all font-mono text-sm text-foreground';
 
 const CopyableField = ({ value, successMessage = 'Copied to clipboard', className = '' }: CopyableFieldProps) => {
     const [copied, setCopied] = useState(false);
@@ -35,8 +25,8 @@ const CopyableField = ({ value, successMessage = 'Copied to clipboard', classNam
     };
 
     return (
-        <div className={cn(FIELD_CLASS_NAMES, className)}>
-            <p className={VALUE_CLASS_NAMES}>
+        <div className={cn('copyable-field flex flex-row items-center justify-between gap-4 rounded-xl border border-border bg-surface-tertiary/55 p-4', className)}>
+            <p className='copyable-field-value break-all font-mono text-sm text-foreground'>
                 {value}
             </p>
             <Button

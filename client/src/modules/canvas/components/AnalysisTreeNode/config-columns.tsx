@@ -45,11 +45,6 @@ const buildScopeColumn = (config: Analysis['config']): ConfigColumn | undefined 
     };
 };
 
-/**
- * The stored value is written by our own plugin config editor through
- * `getPluginReferenceValue`, so the declared `IPluginReferenceValue` shape is
- * taken at face value; only the `unknown` config entry needs a declaration.
- */
 const readPluginReferenceSelections = (value: unknown): IPluginReferenceSelection[] => {
     if (!isRecord(value) || !Array.isArray(value.selections)) return [];
     return value.selections as IPluginReferenceSelection[];

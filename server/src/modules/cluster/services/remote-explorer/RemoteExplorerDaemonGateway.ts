@@ -1,6 +1,6 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { TeamClusterRemoteAccessTarget } from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import type {
     TeamClusterRemoteExplorerEntryView,
     TeamClusterRemoteExplorerNodeView

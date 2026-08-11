@@ -1,6 +1,6 @@
 import { createService, paginated, get } from '@/app/core/http/utils/create-service';
 
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 
 export interface GetSimulationCellByTrajectoryParams {

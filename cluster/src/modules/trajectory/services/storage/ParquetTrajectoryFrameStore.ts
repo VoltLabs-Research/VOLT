@@ -10,24 +10,23 @@ import { DuckDBConnection, DuckDBTypeId } from '@duckdb/node-api';
 
 import { DAEMON_PATHS } from '@core/config/paths';
 import { logger } from '@shared/infrastructure/logger';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { toTrajectoryFrameError } from '@modules/trajectory/services/storage/trajectory-not-found-error';
-import {
-    type ColumnDType,
-    type TrajectoryElementMetadata,
-    type TrajectoryFrameData,
-    type TrajectoryFrameLookupInput,
-    type TrajectoryFramePage,
-    type TrajectoryPropertyStats,
-    type TrajectoryFrameRange,
-    type TrajectoryFrameSource,
-    type TrajectoryFrameStore,
-    type TrajectoryFrameStoreIngestInput,
-    type TrajectoryFrameStoreIngestResult,
-    type TypedColumn
+import type {
+    TrajectoryElementMetadata,
+    TrajectoryFrameData,
+    TrajectoryFrameLookupInput,
+    TrajectoryFramePage,
+    TrajectoryPropertyStats,
+    TrajectoryFrameRange,
+    TrajectoryFrameSource,
+    TrajectoryFrameStore,
+    TrajectoryFrameStoreIngestInput,
+    TrajectoryFrameStoreIngestResult
 } from '@shared/contracts/types/trajectory-frame-store';
-import { DEFAULT_UNITS } from '@shared/domain/catalog';
+import type { ColumnDType, TypedColumn } from '@shared/domain/catalog/element-table';
+import { DEFAULT_UNITS } from '@shared/domain/catalog/units';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import {
     toTrajectoryParquetObjectKey,

@@ -10,19 +10,6 @@ import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useCallback, useState } from 'react';
 import { BookOpen, Copy } from 'lucide-react';
 
-/**
- * bravais's `.panel-footer-bordered` composite (`padding: 0.75rem 1rem; border-top: 1px
- * solid var(--color-border-soft)`), which lived in `composites.css` and dies with the
- * design system. `mt-auto` was an inline `style={{ marginTop: 'auto' }}`.
- */
-const PANEL_FOOTER_CLASS = 'flex flex-row items-center justify-between gap-2 shrink-0 mt-auto px-4 py-3 border-t border-border';
-
-/**
- * `.team-public-trajectories-link` — `--radius-sm` is 8px (`rounded-lg`) and
- * `--color-surface-2` at 55% is `bg-surface-tertiary/55`.
- */
-const PUBLIC_LINK_CLASS = 'min-w-0 p-3 border border-border rounded-lg bg-surface-tertiary/55';
-
 enum InviteTab {
     Share = 'Share',
     InvitationCode = 'Invitation Code',
@@ -100,7 +87,6 @@ export const TeamInvitePanel = ({
                 tabs={tabs}
                 onClose={onClose}
             />
-
             <div className='flex flex-col overflow-y-auto flex-1'>
                 {activeTab === InviteTab.Share && (
                     <>
@@ -113,15 +99,13 @@ export const TeamInvitePanel = ({
                             isSubmitting={isSubmitting}
                             buttonState={buttonState}
                         />
-
                         <InvitationsList
                             invitations={pendingInvitations}
                             isLoading={loadingInvitations}
                             cancelingId={cancelingId}
                             onCancelInvitation={handleCancelInvitation}
                         />
-
-                        <div className={PANEL_FOOTER_CLASS}>
+                        <div className='flex flex-row items-center justify-between gap-2 shrink-0 mt-auto px-4 py-3 border-t border-border'>
                             <Button variant='ghost' size='sm' onPress={handleCopy} isDisabled={!inviteCode}>
                                 <Copy size={16} aria-hidden='true' />
                                 Copy link
@@ -150,14 +134,13 @@ export const TeamInvitePanel = ({
                     <>
                         <div className='flex flex-col gap-3 p-4'>
                             <span className='text-sm font-medium text-foreground'>Public Trajectories</span>
-                            <div className={PUBLIC_LINK_CLASS}>
+                            <div className='min-w-0 p-3 border border-border rounded-lg bg-surface-tertiary/55'>
                                 <span className='block min-w-0 truncate font-mono text-xs text-muted'>
                                     {publicTrajectoriesLink || 'No team selected'}
                                 </span>
                             </div>
                         </div>
-
-                        <div className={PANEL_FOOTER_CLASS}>
+                        <div className='flex flex-row items-center justify-between gap-2 shrink-0 mt-auto px-4 py-3 border-t border-border'>
                             <Button
                                 variant='ghost'
                                 size='sm'

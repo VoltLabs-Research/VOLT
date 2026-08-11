@@ -8,30 +8,6 @@ const MAX_ARRAY_ROWS = 500;
 
 const DIMENSION_LABELS = ['x', 'y', 'z', 'w'];
 
-/**
- * `SubListingDetailPanel.css`'s renderer half, as utilities.
- *
- * Four of its rules were sibling/positional selectors, and each becomes a ternary
- * over an index the renderer already has — `.plugin-detail-points__row + …__row`
- * and `.plugin-detail-matrix__row + …__row` become `index > 0`,
- * `.plugin-detail-array__item--block:last-child` becomes the last capped index, and
- * `.plugin-detail-object:not([data-depth="0"])` becomes `depth > 0`. `data-depth` is
- * kept on the element regardless: it is the only thing that makes the recursion
- * legible in the inspector.
- *
- * The one rule that stays a runtime custom property is the points grid. Its column
- * count is the data's dimensionality, set inline as `--points-dim`, and Tailwind can
- * name a `var()` inside an arbitrary value — so
- * `grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))]` is a complete
- * static literal that still reads a value only JavaScript knows.
- */
-const META_CLASS = 'text-[0.6875rem] text-muted';
-const STACK_CLASS = 'flex flex-col gap-[0.4rem]';
-const NUMERIC_CLASS = 'break-words tabular-nums lining-nums';
-
-const POINTS_GRID_CLASS = 'grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-[0.3rem] text-[0.8125rem] tabular-nums lining-nums';
-const POINTS_CELL_CLASS = 'overflow-hidden whitespace-nowrap text-ellipsis text-foreground';
-
 const renderPrimitive = (value: unknown): ReactNode => {
     if(value === null || value === undefined){
         return <span className='text-muted'>null</span>;
@@ -46,16 +22,16 @@ const renderPrimitive = (value: unknown): ReactNode => {
     if(typeof value === 'number'){
         if(!Number.isFinite(value)) return <span className='text-muted'>{String(value)}</span>;
         const { short, long } = formatScientific(value, NUMERIC_PRECISION);
-        return <span className={NUMERIC_CLASS} title={short === long ? undefined : long}>{long}</span>;
+        return <span className='break-words tabular-nums lining-nums' title={short === long ? undefined : long}>{long}</span>;
     }
     if(typeof value === 'bigint'){
-        return <span className={NUMERIC_CLASS}>{value.toString()}</span>;
+        return <span className='break-words tabular-nums lining-nums'>{value.toString()}</span>;
     }
     if(typeof value === 'string'){
-        return <span className={NUMERIC_CLASS}>{value.length === 0 ? '""' : value}</span>;
+        return <span className='break-words tabular-nums lining-nums'>{value.length === 0 ? '""' : value}</span>;
     }
     if(value instanceof Date){
-        return <span className={NUMERIC_CLASS}>{value.toISOString()}</span>;
+        return <span className='break-words tabular-nums lining-nums'>{value.toISOString()}</span>;
     }
     return <span className='break-all font-mono text-[0.8125rem] text-muted'>{JSON.stringify(value)}</span>;
 };
@@ -89,8 +65,8 @@ const renderNumberArray = (values: number[]): ReactNode => {
     const capped = values.slice(0, MAX_ARRAY_ROWS);
     const overflow = values.length - capped.length;
     return (
-        <div className={STACK_CLASS}>
-            <div className={META_CLASS}>
+        <div className='flex flex-col gap-[0.4rem]'>
+            <div className='text-[0.6875rem] text-muted'>
                 <span>{values.length} values</span>
             </div>
             <div className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 overflow-y-auto tabular-nums'>
@@ -101,7 +77,7 @@ const renderNumberArray = (values: number[]): ReactNode => {
                 ))}
             </div>
             {overflow > 0 && (
-                <div className={META_CLASS}>
+                <div className='text-[0.6875rem] text-muted'>
                     +{overflow} more
                 </div>
             )}
@@ -120,14 +96,14 @@ const renderPoints = (points: number[][]): ReactNode => {
     const gridStyle = { '--points-dim': dim } as React.CSSProperties;
 
     return (
-        <div className={STACK_CLASS}>
-            <div className={META_CLASS}>
+        <div className='flex flex-col gap-[0.4rem]'>
+            <div className='text-[0.6875rem] text-muted'>
                 <span>{points.length} points · dim {dim}</span>
             </div>
             <div className='flex max-h-[240px] flex-col overflow-auto'>
                 <div
                     className={cn(
-                        POINTS_GRID_CLASS,
+                        'grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-[0.3rem] text-[0.8125rem] tabular-nums lining-nums',
                         'sticky top-0 z-[1] border-b border-border bg-surface backdrop-blur-md text-[0.6875rem] font-medium text-muted'
                     )}
                     style={gridStyle}
@@ -143,12 +119,12 @@ const renderPoints = (points: number[][]): ReactNode => {
                     {capped.map((point, rowIndex) => (
                         <div
                             key={rowIndex}
-                            className={cn(POINTS_GRID_CLASS, rowIndex > 0 ? 'border-t border-border' : null)}
+                            className={cn('grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-[0.3rem] text-[0.8125rem] tabular-nums lining-nums', rowIndex > 0 ? 'border-t border-border' : null)}
                             style={gridStyle}
                         >
                             <span className='text-muted tabular-nums'>{rowIndex}</span>
                             {point.map((component, colIndex) => (
-                                <span key={colIndex} className={cn(POINTS_CELL_CLASS, 'tabular-nums')}>
+                                <span key={colIndex} className='overflow-hidden whitespace-nowrap text-ellipsis text-foreground tabular-nums'>
                                     {formatScientific(component, NUMERIC_PRECISION).long}
                                 </span>
                             ))}
@@ -157,7 +133,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                 </div>
             </div>
             {overflow > 0 && (
-                <div className={META_CLASS}>
+                <div className='text-[0.6875rem] text-muted'>
                     +{overflow} more rows
                 </div>
             )}
@@ -171,8 +147,8 @@ const renderMatrix = (matrix: number[][]): ReactNode => {
     }
     const cols = matrix.reduce((acc, row) => Math.max(acc, row.length), 0);
     return (
-        <div className={STACK_CLASS}>
-            <div className={META_CLASS}>
+        <div className='flex flex-col gap-[0.4rem]'>
+            <div className='text-[0.6875rem] text-muted'>
                 <span>{matrix.length}×{cols}</span>
             </div>
             <div className='flex max-h-[220px] flex-col overflow-auto tabular-nums'>
@@ -222,8 +198,8 @@ const renderHeterogeneousArray = (values: unknown[]): ReactNode => {
     }
     const capped = values.slice(0, MAX_ARRAY_ROWS);
     return (
-        <div className={STACK_CLASS}>
-            <div className={META_CLASS}>
+        <div className='flex flex-col gap-[0.4rem]'>
+            <div className='text-[0.6875rem] text-muted'>
                 <span>{values.length} items</span>
             </div>
             <div className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 overflow-y-auto'>
@@ -235,7 +211,7 @@ const renderHeterogeneousArray = (values: unknown[]): ReactNode => {
                             index === capped.length - 1 ? 'border-b-0 pb-0' : null
                         )}
                     >
-                        <span className={META_CLASS}>{index}</span>
+                        <span className='text-[0.6875rem] text-muted'>{index}</span>
                         <div className='min-w-0'>
                             {renderExpandedValue(item, 1)}
                         </div>
@@ -269,8 +245,7 @@ export const renderExpandedValue = (value: unknown, depth = 0): ReactNode => {
             return renderObject(value as Record<string, unknown>, depth);
         case 'mixed':
         default:
-            // `mixed` is only produced for arrays that are neither all-numbers
-            // nor all-number-rows, and for values that are not objects at all.
+
             if(Array.isArray(value)){
                 return renderHeterogeneousArray(value);
             }

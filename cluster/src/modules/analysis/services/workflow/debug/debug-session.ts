@@ -7,12 +7,12 @@ import type { ReverseChannelCommandPayloadView } from '@shared/contracts/channel
 import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
 import type { DebugEnvironmentState } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import type { InlineWorkflowTraceNode } from '@modules/analysis/services/workflow/WorkflowWalker';
+import type { AnalysisExposureDefinition } from '@shared/contracts/types/http-analysis';
 import type {
-    AnalysisExposureDefinition,
     NestedPluginDefinition,
     TrajectoryFrame,
     WorkflowDefinition
-} from '@shared/contracts';
+} from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowExecutionContext,
     WorkflowNode,

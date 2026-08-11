@@ -5,12 +5,12 @@ import {
     resolvePostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
-import { resolveErrorTitle } from '@/shared/errors/core';
+import { resolveErrorTitle } from '@/shared/errors/core/report-error';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Spinner } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const DEFAULT_OAUTH_ERROR_MESSAGE = 'We could not complete sign in with your provider. Please try again.';
@@ -22,10 +22,10 @@ const OAuthCallbackTemplate = () => {
     const [errorMessage, setErrorMessage] = useState(DEFAULT_OAUTH_ERROR_MESSAGE);
     const redirectTimeoutReference = useRef<number | null>(null);
 
-    const params = new URLSearchParams(window.location.search);
-    const next = resolvePostAuthDestination({
+    const params = useMemo(() => new URLSearchParams(window.location.search), []);
+    const next = useMemo(() => resolvePostAuthDestination({
         queryNext: params.get('next')
-    });
+    }), [params]);
     const signInRedirectPath = `/auth/sign-in?${new URLSearchParams({
         error: 'oauth_failed',
         next
@@ -79,16 +79,10 @@ const OAuthCallbackTemplate = () => {
                 window.clearTimeout(redirectTimeoutReference.current);
             }
         };
-    }, [markAuthenticated, navigate]);
+    }, [markAuthenticated, navigate, next, params]);
 
     return (
         <div className='flex flex-row items-center justify-center relative overflow-hidden h-dvh bg-background'>
-            {/*
-              * Two decorative blurred blobs. They were `--accent-blue` and
-              * `--accent-purple` at 10%; §3a collapses the blue accent onto the
-              * monochrome `--accent`, and purple has no successor token, so both now
-              * read the one accent.
-              */}
             <div className='absolute overflow-hidden inset-0'>
                 <div className='rounded-full absolute -top-[20%] -left-[10%] w-1/2 h-1/2 bg-accent/10 blur-[120px] opacity-50' />
                 <div className='rounded-full absolute top-[20%] -right-[10%] w-2/5 h-2/5 bg-accent/10 blur-[120px] opacity-50' />
@@ -133,7 +127,6 @@ const OAuthCallbackTemplate = () => {
                             </motion.div>
                         )}
                     </div>
-
                     <motion.div
                         key={status}
                         initial={{
@@ -150,7 +143,6 @@ const OAuthCallbackTemplate = () => {
                             {status === 'success' && 'Successfully Authenticated!'}
                         </h3>
                     </motion.div>
-
                     <motion.div
                         key={`desc-${status}`}
                         initial={{ opacity: 0 }}

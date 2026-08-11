@@ -23,11 +23,6 @@ type MutationInvalidationKeys<TData, TVariables, TOnMutateResult = unknown> =
         context: MutationFunctionContext
     ) => QueryKey[]);
 
-/**
- * Chains a factory's own success handler ahead of the caller's, so passing
- * `onSuccess` to a generated hook adds to the built-in behaviour instead of
- * silently replacing it.
- */
 export const withSuccess = <TData, TVariables, TOnMutateResult = unknown>(
     handler: (data: TData, variables: TVariables, onMutateResult: TOnMutateResult, context: MutationFunctionContext) => void,
     options?: { onSuccess?: SuccessHandler<TData, TVariables, TOnMutateResult> }
@@ -53,7 +48,6 @@ export const createMutation = <TData, TVariables>(
     });
 };
 
-/** A mutation that invalidates a fixed or result-derived set of keys once it lands. */
 export const createInvalidatingMutation = <TData, TVariables, TOnMutateResult = unknown>(
     mutationFn: (variables: TVariables) => Promise<TData>,
     invalidationKeys: MutationInvalidationKeys<TData, TVariables, TOnMutateResult>,

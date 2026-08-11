@@ -12,9 +12,6 @@ interface JobGroupProps {
     statusPresentation?: 'badge' | 'trajectory-name';
 };
 
-/** `.job-group-children`: the indent, and the rail its child rows hang their border off. */
-export const JOB_GROUP_CHILDREN_CLASS_NAMES = 'pt-1 pl-4';
-
 const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge' }: JobGroupProps) => {
     const containsTransferJobs = useMemo(() => {
         return group.frameGroups.some((frame) => frame.jobs.some((job) => job.queueType === 'cluster_transfer'));
@@ -58,8 +55,7 @@ const JobGroup = ({ group, defaultExpanded = false, statusPresentation = 'badge'
                     />
                 )}
             />
-
-            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className={JOB_GROUP_CHILDREN_CLASS_NAMES} duration={0.25} ease='easeInOut'>
+            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='pt-1 pl-4' duration={0.25} ease='easeInOut'>
                 {content}
             </CollapsibleJobContent>
         </div>

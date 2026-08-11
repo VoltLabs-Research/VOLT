@@ -8,11 +8,9 @@ import {
     requirePluginEntity
 } from '@modules/plugin/services/plugin/PluginQueries';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type {
-    IClusterObjectSignedUrlService,
-    IStoragePlacementService,
-    ITeamClusterObjectGatewayClient
-} from '@shared/contracts/ports';
+import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports/IClusterObjectSignedUrlService';
+import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
+import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import logger from '@shared/infrastructure/logger';

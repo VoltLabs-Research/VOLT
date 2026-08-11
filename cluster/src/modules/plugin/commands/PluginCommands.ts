@@ -4,19 +4,23 @@ import { getPluginListingRepository } from '@modules/plugin/models/PluginListing
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { getConfig } from '@core/config/daemon';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
+import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import {
-    ObjectBucketName,
     type PluginSyncRequest,
     type PluginWarmupRequest,
-    type PluginWarmupResponse,
+    type PluginWarmupResponse
+} from '@shared/contracts/types/http-analysis';
+import {
     type PluginListingTransferExportPayload,
     type PluginListingTransferImportPayload,
-    type PluginListingTransferPurgePayload,
+    type PluginListingTransferPurgePayload
+} from '@shared/contracts/types/listing-transfer-payloads';
+import {
     type TeamClusterDaemonRegistryInstallPayload,
     type TeamClusterDaemonRegistryInstallResult
-} from '@shared/contracts';
+} from '@shared/contracts/types/registry-install';
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type {
     PluginListingFilter,

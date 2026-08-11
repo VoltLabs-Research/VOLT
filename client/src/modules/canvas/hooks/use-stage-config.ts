@@ -7,11 +7,6 @@ interface StageConfigHandle<T extends StageConfig> {
     patch: (next: Partial<T>) => void;
 }
 
-/**
- * Reads a single stage's config from the trajectory-scoped pipeline store and
- * exposes an in-place patcher for it, so every stage editor stops re-deriving
- * the same lookup.
- */
 const useStageConfig = <T extends StageConfig>(stageId: string, trajectoryId?: string): StageConfigHandle<T> => {
     const config = useCanvasPipelineStore((s) =>
         (trajectoryId ? s.byTrajectory[trajectoryId] : undefined)

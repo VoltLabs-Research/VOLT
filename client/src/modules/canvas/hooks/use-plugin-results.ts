@@ -7,7 +7,7 @@ import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/list
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { sceneArtifactsQuery } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import useAnalysisAtomPropertiesAvailability from '@/modules/trajectory/hooks/trajectory/use-analysis-atom-properties-availability';
-import { isAccessDeniedError } from '@/shared/errors/core';
+import { isAccessDeniedError } from '@/shared/errors/core/report-error';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -47,7 +47,8 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
     const isDownloading = exportResultsMutation.isPending;
     const [activeTab, setActiveTab] = useState(0);
 
-    const exposures = plugin?.exposures ?? [];
+    const pluginExposures = plugin?.exposures;
+    const exposures = useMemo(() => pluginExposures ?? [], [pluginExposures]);
     const listingExposures = useMemo(() => getListingRelevantExposures(exposures), [exposures]);
     const { hasAtomProperties } = useAnalysisAtomPropertiesAvailability({
         trajectoryId,

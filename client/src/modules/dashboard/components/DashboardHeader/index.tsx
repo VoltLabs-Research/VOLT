@@ -16,37 +16,6 @@ interface DashboardHeaderProps {
     globalSearchBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
 }
 
-/**
- * `dashboard-top-header` is the ONE class name in this module that has to survive.
- *
- * In the Electron shell this header doubles as the OS titlebar, and the two
- * `-webkit-app-region` rules that arrange that cannot be expressed here: the
- * no-drag half is a descendant rule over `:is(button, input, a, [role='button'],
- * .volt-window-controls)`, and most of those children belong to other modules
- * (notifications, AI, invite, theme toggle). Both rules are reported for
- * `index.css`; this class is their anchor. Drop it and the desktop window either
- * stops being draggable or swallows every click in its own titlebar.
- */
-const HEADER = 'dashboard-top-header flex flex-row items-center gap-4 sticky top-0 z-50 px-8 py-4 max-[768px]:flex-wrap max-[768px]:gap-2 max-[768px]:p-3';
-
-/**
- * `.mobile-sidebar-trigger` — hidden on desktop, shown as the rail's only opener
- * below 1024px.
- */
-const MOBILE_TRIGGER = 'hidden rounded-md bg-transparent border-none hover:bg-surface-hover max-[1024px]:flex';
-
-/**
- * The sheet hid everything in the right cluster below 768px through a triple
- * negation over `.volt-icon-button` — a bravais internal — whitelisting only the
- * notification, AI and theme controls. The only thing that list actually hid was
- * the invite action, so the intent moves onto the invite action itself and the
- * negation (and its dependence on `.dashboard-ai-trigger` surviving) goes away.
- *
- * `contents` keeps the wrapper out of the flex layout so the cluster's spacing is
- * unchanged; `max-[768px]:hidden` then wins over it and removes the box entirely.
- */
-const INVITE_SLOT = 'contents max-[768px]:hidden';
-
 const DashboardHeader = ({
     setSidebarOpen,
     globalSearchBreadcrumb
@@ -54,13 +23,7 @@ const DashboardHeader = ({
     const { canAccess } = useTeamPermissions();
     const singleTenant = useSingleTenant();
     const canInvite = canAccess(['team-invitation:create']);
-    /*
-     * `Tooltip.Trigger` is required here and cannot be collapsed into the button the
-     * way ThemeToggleButton does it: a disabled control receives no pointer events,
-     * so a disabled Button used directly as the trigger would never show the reason
-     * it is disabled. The wrapper is what stays hoverable — it replaces the bare
-     * `<span>` bravais needed for the same reason.
-     */
+
     let inviteAction = (
         <Tooltip>
             <Tooltip.Trigger>
@@ -77,27 +40,24 @@ const DashboardHeader = ({
     }
 
     return (
-        <header className={HEADER}>
+        <header className='dashboard-top-header flex flex-row items-center gap-4 sticky top-0 z-50 px-8 py-4 max-[768px]:flex-wrap max-[768px]:gap-2 max-[768px]:p-3'>
             <Button
                 isIconOnly
                 variant='ghost'
-                className={MOBILE_TRIGGER}
+                className='hidden rounded-md bg-transparent border-none hover:bg-surface-hover max-[1024px]:flex'
                 aria-label='Open sidebar'
                 onPress={() => setSidebarOpen(true)}
             >
                 <Menu size={20} />
             </Button>
-
             <div className='flex flex-row items-center flex-1 min-w-0 max-[768px]:flex-auto max-[768px]:overflow-hidden'>
                 <HeaderBreadcrumbs />
             </div>
-
             <div className='flex justify-center w-[min(400px,100%)] min-w-0 flex-[0_1_400px] max-[768px]:order-4 max-[768px]:w-full max-[768px]:flex-[1_1_100%]'>
                 <GlobalSearch contextBreadcrumb={globalSearchBreadcrumb} />
             </div>
-
             <div className='flex flex-row items-center justify-end gap-2 flex-1 max-[768px]:min-w-0 max-[768px]:flex-none max-[768px]:gap-1'>
-                {!singleTenant && <span className={INVITE_SLOT}>{inviteAction}</span>}
+                {!singleTenant && <span className='contents max-[768px]:hidden'>{inviteAction}</span>}
 
                 <ThemeToggleButton />
                 <AIFloatingAssistantPanel />

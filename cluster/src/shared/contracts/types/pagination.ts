@@ -1,4 +1,4 @@
-export interface PaginationInput {
+interface PaginationInput {
     page: number;
     limit: number;
 }

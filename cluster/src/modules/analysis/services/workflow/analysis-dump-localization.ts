@@ -2,7 +2,7 @@ import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/s
 import { DAEMON_PATHS } from '@core/config/paths';
 import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';
 import { decodeCliArgumentsToken, encodeCliArgumentsToken } from '@shared/application/utilities/serialization';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';

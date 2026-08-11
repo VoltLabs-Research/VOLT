@@ -1,6 +1,6 @@
 import queryClient from './query-client';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { InfiniteData, QueryKey, UseInfiniteQueryOptions } from '@tanstack/react-query';
 
 export interface PaginationRequest {
@@ -17,10 +17,6 @@ export type InfinitePages<TEntity> = InfiniteData<PaginatedResponse<TEntity>, nu
 
 const DEFAULT_PAGE_LIMIT = 20;
 
-/**
- * Page cursors come from `pagination.hasMore`, which every paginated endpoint
- * returns, so no caller has to write the next-page arithmetic.
- */
 export const createInfiniteQuery = <TParams, TEntity>(
     keyFn: (params: TParams) => QueryKey,
     fetchPage: (params: TParams, pagination: PaginationRequest) => Promise<PaginatedResponse<TEntity>>,

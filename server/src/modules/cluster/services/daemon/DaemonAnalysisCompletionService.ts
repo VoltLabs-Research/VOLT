@@ -1,6 +1,7 @@
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import type { Analysis } from '@shared/contracts/types';
-import { JobStatus, TrajectoryStatus } from '@shared/contracts/types';
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import type {
     DaemonAnalysisJobStatusInput,
     DaemonAnalysisStageStatusInput,

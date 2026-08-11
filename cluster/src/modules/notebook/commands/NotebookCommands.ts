@@ -2,7 +2,7 @@ import { errorMessage } from '@shared/application/utilities/error-message';
 import { logger } from '@shared/infrastructure/logger';
 import { getJupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
 import { getDaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';
-import type { CreateNotebookSessionRequest } from '@shared/contracts';
+import type { CreateNotebookSessionRequest } from '@shared/contracts/types/http-notebook';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { JupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
 import type { DaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';

@@ -1,13 +1,13 @@
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { JobStatus } from '@shared/contracts/types/JobStatus';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type {
     RetryTeamJobsResult,
     TeamClusterFailureDetail
 } from '@shared/contracts/ports/ITeamJobMaintenanceService';
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';

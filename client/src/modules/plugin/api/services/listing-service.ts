@@ -1,7 +1,8 @@
-import { createService, download, get } from '@/app/core/http/utils/create-service';
+import { createService, download, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { mapRawListingResponse } from './listing-response';
+import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import type { RawListingResponse } from './listing-response';
@@ -73,20 +74,22 @@ export interface GetSubListingResponse {
 
 const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
 
+const routes = serviceRoutes('/teams', { rbac: true });
+
 const endpoints = {
-    getListing: get<GetPluginListingInput, GetPluginListingResponse, RawListingResponse>('/plugins/:pluginId/listings', {
+    getListing: routes.route<GetPluginListingInput, GetPluginListingResponse, RawListingResponse>(pluginRoutes.getPluginListingDocuments, {
         unwrap: 'raw',
         omit: ['pluginId'],
         map: mapRawListingResponse
     }),
-    getSubListing: get<GetSubListingInput, GetSubListingResponse>(
-        '/plugins/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'
+    getSubListing: routes.route<GetSubListingInput, GetSubListingResponse>(
+        pluginRoutes.getSubListing
     ),
-    getAnalysisListingExportOptions: get<GetAnalysisListingExportOptionsInput, GetAnalysisListingExportOptionsResponse>(
-        '/plugins/listings/analyses/:analysisId/export/options'
+    getAnalysisListingExportOptions: routes.route<GetAnalysisListingExportOptionsInput, GetAnalysisListingExportOptionsResponse>(
+        pluginRoutes.getAnalysisListingExportOptions
     ),
     exportListing: download<ExportPluginListingInput>('GET',
-        '/plugins/:pluginId/listings/export',
+        routes.path(pluginRoutes.exportPluginListingDocuments),
         {
             query: ({ trajectoryId, analysisId, exposureId, exposureName, format }) => ({
                 ...(trajectoryId ? { trajectoryId } : {}),
@@ -98,7 +101,7 @@ const endpoints = {
         }
     ),
     exportListingByAnalysis: download<ExportListingByAnalysisInput>('GET',
-        '/plugins/listings/analyses/:analysisId/export',
+        routes.path(pluginRoutes.exportListingRowsByAnalysisId),
         {
             query: ({ format, includeConfig, selectedListingIds, selectedSubListingIds }) => ({
                 format,

@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
-import { Body, Param, Query } from '@shared/http/params';
+import { Body, schemaBody, Param, Query } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -29,7 +30,7 @@ export default class TeamMemberController extends Controller {
     @Route(teamMemberRoutes.update)
     updateById(
         @Param('teamMemberId') teamMemberId: string,
-        @Body() body: UpdateTeamMemberInput
+        @Body(schemaBody(typia.createValidate<UpdateTeamMemberInput>())) body: UpdateTeamMemberInput
     ){
         return this.#service.updateById(teamMemberId, body);
     }

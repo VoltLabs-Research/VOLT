@@ -1,6 +1,7 @@
+import typia from 'typia';
 import { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
-import { Req, Res, Param, Query, Body, CurrentUser } from '@shared/http/params';
+import { Req, Res, Param, Query, Body, schemaBody, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -114,7 +115,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     async createFolder(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: { title: string; parentId?: string | null },
+        @Body(schemaBody(typia.createValidate<{ title: string; parentId?: string | null }>())) body: { title: string; parentId?: string | null },
         @Res() res: Response
     ): Promise<void> {
         const folder = await this.service.createFolder(teamId, userId, body);
@@ -125,7 +126,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
     async updateFolder(
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string,
-        @Body() body: { title: string },
+        @Body(schemaBody(typia.createValidate<{ title: string }>())) body: { title: string },
         @Res() res: Response
     ): Promise<void> {
         const folder = await this.service.updateFolder(teamId, folderId, body);

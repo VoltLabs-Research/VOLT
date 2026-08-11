@@ -13,7 +13,7 @@ import {
 import { processExportNode } from '@modules/plugin/services/exports/ExportNodeProcessor';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
-import type { AnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';

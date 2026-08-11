@@ -20,11 +20,7 @@ interface PluginBuilderState {
     selectedNode: Node<INodeData> | null;
     isSaving: boolean;
     validationErrors: string[];
-    /**
-     * Bumped on every structural change. Undo steps are collapsed by comparing
-     * this instead of diffing the graph, which also keeps node *data* edits from
-     * being recorded as separate history entries.
-     */
+
     graphVersion: number;
 }
 
@@ -91,7 +87,6 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                 }
             };
 
-            /** Applies a structural change, or nothing at all when the updater declines. */
             const _setGraphState = (updater: (state: PluginBuilderState) => Partial<PluginBuilderState> | null) => {
                 const currentState = get();
                 const nextState = updater(currentState);
@@ -231,8 +226,6 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
 
             clearWorkflow: _resetGraph,
 
-            // The team-switch teardown in `application-store-cleanups` resets
-            // every store through this name.
             reset: _resetGraph,
 
             setSaving: (value) => set({ isSaving: value }),

@@ -1,6 +1,7 @@
 import canvasService from '../api/services/canvas-service';
-import { buildKeys, createQuery } from '@/shared/query';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createQuery } from '@/shared/query/create-query';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type {
     GetPublicCanvasBootstrapInput,

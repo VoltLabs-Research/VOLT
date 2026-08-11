@@ -6,8 +6,6 @@ import type {
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@modules/analysis/events/analysis-events';
 
-export type { AnalysisStageReportInput, AnalysisStageReporter };
-
 type AnalysisStageReporterTransport = Pick<DaemonJobReporter, 'reportAnalysisStageStatus' | 'reportAnalysisLogChunk'>;
 
 const TERMINAL_STAGE_STATUSES = new Set<AnalysisStageStatus>(['completed', 'failed', 'cached']);

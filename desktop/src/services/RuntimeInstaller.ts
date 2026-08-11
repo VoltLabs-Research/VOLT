@@ -6,23 +6,11 @@ import { probe } from '@/services/ProbeRunner';
 import { run } from '@/services/ProcessRunner';
 import { augmentedPath } from '@/services/DockerBinary';
 
-/**
- * Provisioning the container runtime on the user's behalf.
- *
- * The app cannot drop Docker: `ClusterDaemon` creates containers at runtime for
- * notebooks, plugins and user workloads, so a container runtime *is* the compute
- * substrate. What it can do is stop asking the user to go and install it — start
- * it when it is present but stopped, and install it when it is missing.
- *
- * Every command here is a fixed argument vector with `shell: false`; nothing is
- * interpolated from user input.
- */
-
 type ProvisionAction = 'start' | 'install';
 
 interface ProvisionAttempt{
     action: ProvisionAction;
-    /** False when this platform has no automatic path for the action. */
+
     attempted: boolean;
     ok: boolean;
     detail?: string;
@@ -60,17 +48,8 @@ const hasCommand = async (name: string): Promise<boolean> => {
     return result.code === 0;
 };
 
-/**
- * How long a provisioning command may stay silent before it is treated as hung.
- *
- * Every command here either prints progress or finishes quickly, so silence is a
- * reliable signal. It is what bounds the case this exists for: a `winget install`
- * that blocks on a prompt or an elevation dialog nobody will ever see produces no
- * output at all, and used to sit there until the 30-minute ceiling expired.
- */
 const IDLE_TIMEOUT_MS = 180_000;
 
-/** Streams a provisioning command into the deploy log so the UI shows progress. */
 const runLogged = async (bin: string, args: string[], timeoutMs?: number): Promise<ProvisionAttempt['ok']> => {
     log(`$ ${bin} ${args.join(' ')}`);
     try{
@@ -88,13 +67,6 @@ const runLogged = async (bin: string, args: string[], timeoutMs?: number): Promi
     }
 };
 
-/**
- * Launches a GUI application and returns immediately.
- *
- * Docker Desktop keeps running after its launcher returns, so the child is
- * detached and unreferenced; readiness is then established by polling, not by
- * waiting on this process.
- */
 const launchDetached = (bin: string, args: string[]): boolean => {
     try{
         log(`$ ${bin} ${args.join(' ')}`);
@@ -120,7 +92,6 @@ const DOCKER_DESKTOP_WINDOWS_CANDIDATES = [
     .map((root) => join(root, 'Docker', 'Docker', 'Docker Desktop.exe'));
 
 const startOnDarwin = async (): Promise<ProvisionAttempt> => {
-    // `open -a` is a no-op when Docker is already running, so it is safe to retry.
     const ok = await runLogged('/usr/bin/open', ['-a', 'Docker'], 30_000);
     return {
         action: 'start',
@@ -147,11 +118,6 @@ const startOnWindows = async (): Promise<ProvisionAttempt> => {
     };
 };
 
-/**
- * Linux has two shapes: rootless Docker runs as a user service and needs no
- * elevation, while the system daemon does. The user service is tried first so the
- * common rootless setup never raises a password prompt.
- */
 const startOnLinux = async (): Promise<ProvisionAttempt> => {
     if(await hasCommand('systemctl')){
         if(await runLogged('systemctl', ['--user', 'start', 'docker'], 30_000)){
@@ -187,7 +153,6 @@ const startOnLinux = async (): Promise<ProvisionAttempt> => {
     };
 };
 
-/** Starts an installed-but-stopped runtime. */
 export const startRuntime = (): Promise<ProvisionAttempt> => {
     if(process.platform === 'darwin') return startOnDarwin();
     if(process.platform === 'win32') return startOnWindows();
@@ -204,14 +169,6 @@ const installOnWindows = async (): Promise<ProvisionAttempt> => {
         };
     }
 
-    /*
-     * `where.exe winget.exe` finding a file is not the same as winget working.
-     * Stripped-down Windows images — Sandbox, a WinBoat guest, Server core, a
-     * fresh LTSC — often ship the App Installer stub without a usable package
-     * manager, and there `winget install` blocks instead of failing. One cheap
-     * `--version` call distinguishes "absent" from "present but broken", and both
-     * are worth reporting rather than hanging on.
-     */
     const version = await probe('winget', ['--version'], {
         env: { PATH: augmentedPath() },
         timeoutMs: 15_000
@@ -316,12 +273,6 @@ const installOnLinux = async (): Promise<ProvisionAttempt> => {
 
         await runLogged('pkexec', ['systemctl', 'enable', '--now', 'docker'], 120_000);
 
-        /*
-         * Group membership is read when a session starts, so adding the user now
-         * does not grant this process access to the socket. It is still done here
-         * so the permission survives the next login, and the preflight reports the
-         * remaining step if the socket is still refused.
-         */
         const user = process.env['USER'] ?? process.env['LOGNAME'];
         if(user){
             await runLogged('pkexec', ['usermod', '-aG', 'docker', user], 60_000);
@@ -342,7 +293,6 @@ const installOnLinux = async (): Promise<ProvisionAttempt> => {
     };
 };
 
-/** Installs the container runtime with the platform's own package manager. */
 export const installRuntime = (): Promise<ProvisionAttempt> => {
     if(process.platform === 'darwin') return installOnDarwin();
     if(process.platform === 'win32') return installOnWindows();

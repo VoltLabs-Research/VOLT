@@ -12,7 +12,7 @@ import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
-import type { GlbConversionQueueJobPayload } from '@shared/contracts';
+import type { GlbConversionQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 

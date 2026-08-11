@@ -17,8 +17,7 @@ export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResponse = {
     containers: [],
     trajectories: [],
     teams: [],
-    plugins: [],
-    chats: []
+    plugins: []
 };
 
 export const MIN_SEARCH_QUERY_LENGTH = 2;

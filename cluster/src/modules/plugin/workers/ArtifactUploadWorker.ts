@@ -15,7 +15,7 @@ import { QueueService, getQueueService } from '@shared/infrastructure/queues/Que
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
 import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@core/constants/queue-names';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { logAndSwallow } from '@shared/application/utilities/error-message';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
 import type { ArtifactUploadBatchJobPayload } from '@shared/contracts/types/artifact-upload';

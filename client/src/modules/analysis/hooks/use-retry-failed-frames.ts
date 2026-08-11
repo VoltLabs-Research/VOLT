@@ -1,5 +1,5 @@
 import { useRetryFailedFramesMutation } from './queries';
-import { isAccessDeniedError } from '@/shared/errors/core';
+import { isAccessDeniedError } from '@/shared/errors/core/report-error';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';
 

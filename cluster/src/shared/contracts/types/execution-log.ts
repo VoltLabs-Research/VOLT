@@ -1,4 +1,4 @@
-export type ExecutionLogStream = 'stdout' | 'stderr' | 'system';
+type ExecutionLogStream = 'stdout' | 'stderr' | 'system';
 
 export interface ExecutionLogSegmentMetadata {
     executionPath?: string[];

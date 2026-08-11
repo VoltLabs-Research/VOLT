@@ -1,5 +1,5 @@
 import queryClient from './query-client';
-import type { PaginatedResponse, PaginationMeta } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse, PaginationMeta } from '@voltstack/voltclient';
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { Query, QueryKey } from '@tanstack/react-query';
 

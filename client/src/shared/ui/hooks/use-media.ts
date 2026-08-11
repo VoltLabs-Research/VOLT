@@ -11,7 +11,6 @@ const getInitialMatch = (query: string): boolean => {
     return window.matchMedia(query).matches;
 };
 
-/** Subscribes to a CSS media query and returns whether it currently matches. */
 export const useMedia = (query: string): boolean => {
     const [matches, setMatches] = useState<boolean>(() => getInitialMatch(query));
 

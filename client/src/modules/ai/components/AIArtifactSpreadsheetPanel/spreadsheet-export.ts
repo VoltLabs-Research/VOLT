@@ -6,7 +6,6 @@ export type SheetRow = Record<string, string>;
 
 const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-/** Excel only honors the delimiter when the file opens with a BOM followed by a sep hint. */
 const EXCEL_COMPATIBLE_CSV_PREFIX = '\uFEFFsep=,\r\n';
 
 let xlsxPromise: Promise<XlsxModule> | null = null;

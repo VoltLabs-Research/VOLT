@@ -63,15 +63,7 @@ const Onboarding = ({ onConnectRemote, onUseLocal }: OnboardingProps) => {
                     <h1 className='text-2xl font-semibold text-foreground'>Connect to VOLT</h1>
                     <p className='text-sm text-muted'>Enter the server address of your deployment.</p>
                 </div>
-
                 <form className='flex flex-col gap-2' onSubmit={submit}>
-                    {/*
-                     * `TextField` owns the value and the invalid state, which is what
-                     * lets `FieldError` render the message with the field's own
-                     * `aria-describedby` wiring instead of an unassociated span.
-                     * The icon becomes an `InputGroup.Prefix` — HeroUI's replacement
-                     * for the old `leftIcon` prop.
-                     */}
                     <TextField
                         aria-label='Server address'
                         value={endpoint}
@@ -92,12 +84,6 @@ const Onboarding = ({ onConnectRemote, onUseLocal }: OnboardingProps) => {
                         </InputGroup>
                         {error && <FieldError>{error}</FieldError>}
                     </TextField>
-
-                    {/*
-                     * `isPending` covers what `disabled` used to: React Aria blocks the
-                     * press and rewrites a pending submit button's type so Enter in the
-                     * field cannot double-submit either.
-                     */}
                     <Button type='submit' variant='primary' fullWidth isPending={connecting} isDisabled={!endpoint.trim()}>
                         {connecting && <Spinner size='sm' color='current' />}
                         Continue
@@ -124,7 +110,6 @@ const Onboarding = ({ onConnectRemote, onUseLocal }: OnboardingProps) => {
                     </div>
                 )}
 
-                {/* Local deployment: a quiet line under the input, the action segment highlighted. */}
                 <button type='button' className='group/local self-center cursor-pointer text-[0.8125rem] text-muted/75' onClick={onUseLocal}>
                     Prefer to run it here? <span className='text-muted transition-colors duration-150 ease-out-fluid group-hover/local:text-foreground group-hover/local:underline group-hover/local:underline-offset-2'>Set up Volt on this machine</span>
                 </button>

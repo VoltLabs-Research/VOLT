@@ -1,5 +1,5 @@
 import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-paginated-response';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import type { FolderedListingContext } from '@/shared/ui/hooks/use-foldered-listing';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';

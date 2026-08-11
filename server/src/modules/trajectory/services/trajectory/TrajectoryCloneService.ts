@@ -15,7 +15,7 @@ import { replaceTrajectoryFrames } from '@modules/trajectory/services/trajectory
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
-import { TeamClusterStatus } from '@shared/contracts/types';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 
 import type {

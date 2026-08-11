@@ -2,13 +2,6 @@ import getListingDisplayState from '@/shared/ui/components/DocumentListing/listi
 import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import TableRow from '@/shared/ui/components/TableRow';
-import {
-    LISTING_CELL_CLASS_NAMES,
-    LISTING_CELL_NUMERIC,
-    LISTING_ROUNDED_SKELETON,
-    LISTING_ROW_CLASS_NAMES,
-    LISTING_TEXT_SKELETON
-} from '@/shared/ui/components/DocumentListingTable/listing-chrome';
 import { Skeleton, cn } from '@heroui/react';
 import { useInfiniteScroll } from '@/shared/ui/hooks/use-infinite-scroll';
 import { DndContext } from '@dnd-kit/core';
@@ -17,7 +10,6 @@ import { useMemo, useState, useCallback } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
-import type { ListingDensity } from '@/shared/ui/components/DocumentListingTable/listing-chrome';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Identifiable } from '@/shared/contracts/entity';
 
@@ -31,31 +23,7 @@ const DRAG_ACTIVATION_DISTANCE = 6;
 
 const INITIAL_SKELETON_ROWS_COUNT = 20;
 
-const CONTAINER_CLASS_NAMES = 'flex h-full flex-col max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]';
-
-/**
- * The compact header grows a background and a border because it doubles as a panel
- * toolbar (canvas' plugin results view), where the rows scroll under it.
- */
-const HEADER_CLASS_NAMES: Record<ListingDensity, string> = {
-    default: 'sticky top-0 z-[2] flex p-8 max-md:px-4 max-md:py-3',
-    compact: 'sticky top-0 z-10 flex border-b border-border bg-surface-secondary px-2 py-1'
-};
-
-const HEADER_CELL_CLASS_NAMES = 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs font-medium text-muted';
-
-const BODY_CLASS_NAMES: Record<ListingDensity, string> = {
-    default: 'relative flex flex-1 flex-col min-h-[400px]',
-    compact: 'relative flex flex-1 flex-col min-h-0'
-};
-
-const FOOTER_CLASS_NAMES: Record<ListingDensity, string> = {
-    default: 'py-4 max-md:px-4 max-md:py-3',
-    compact: 'py-1'
-};
-
-/** `group` is what lets the sort indicator brighten on hover of the whole button. */
-const SORT_BUTTON_CLASS_NAMES = 'group flex w-full min-w-0 cursor-pointer items-center border-0 bg-transparent p-0 text-left text-muted';
+export type ListingDensity = 'default' | 'compact';
 
 export interface ColumnConfig<TRow = unknown> {
     key?: string;
@@ -152,7 +120,10 @@ interface SkeletonRowsProps<T> {
 const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, density }: SkeletonRowsProps<T>) => (
     <>
         {Array.from({ length: count }).map((_, rowIndex) => (
-            <div key={`${keyPrefix}-${rowIndex}`} className={cn(LISTING_ROW_CLASS_NAMES[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
+            <div key={`${keyPrefix}-${rowIndex}`} className={cn({
+                default: 'flex items-center cursor-pointer border-b border-border last:border-b-0 px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
+                compact: 'flex items-center cursor-pointer border-b border-border last:border-b-0 box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
+            }[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
                 {columns.map((col, colIdx) => {
                     const skeleton = col.skeleton ?? {
                         variant: 'text' as const,
@@ -160,11 +131,14 @@ const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, 
                     };
 
                     return (
-                        <div className={cn(LISTING_CELL_CLASS_NAMES[density], col.numeric && LISTING_CELL_NUMERIC)} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
+                        <div className={cn({
+                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm text-muted max-md:text-[0.8125rem]',
+                            compact: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs text-muted'
+                        }[density], col.numeric && 'justify-end text-right tabular-nums')} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
                             <span>
                                 <Skeleton
                                     aria-hidden='true'
-                                    className={skeleton.variant === 'rounded' ? LISTING_ROUNDED_SKELETON : cn(LISTING_TEXT_SKELETON, 'h-[1em]')}
+                                    className={skeleton.variant === 'rounded' ? 'shrink-0 rounded-xl' : 'shrink-0 origin-[0_55%] scale-y-[0.6] rounded-sm h-[1em]'}
                                     style={{
                                         width: skeleton.width,
                                         height: skeleton.height
@@ -304,20 +278,23 @@ const DocumentListingTable = <T extends Identifiable>({
     ));
 
     return (
-        <div className={CONTAINER_CLASS_NAMES} role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
+        <div className='flex h-full flex-col rounded-xl border border-border bg-surface max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
-                <div className={HEADER_CLASS_NAMES[density]} role='row' style={{
+                <div className={{
+                    default: 'sticky top-0 z-[2] flex rounded-t-xl border-b border-border bg-surface-secondary px-6 py-3 max-md:px-4 max-md:py-3',
+                    compact: 'sticky top-0 z-10 flex border-b border-border bg-surface-secondary px-2 py-1'
+                }[density]} role='row' style={{
                     minWidth: `${minContentWidth}px`,
                     gap: `${resolvedGap}px`
                 }}>
                     {columns.map((col, colIdx) => {
                         const columnTitle = getColumnTitle(col);
                         const cellClassName = cn(
-                            HEADER_CELL_CLASS_NAMES,
-                            col.numeric && LISTING_CELL_NUMERIC
+                            'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs font-medium text-muted',
+                            col.numeric && 'justify-end text-right tabular-nums'
                         );
                         const heading = (
-                            <h3 className={cn('text-[0.95rem] text-muted', col.headerTitleClassName ?? 'font-medium')}>
+                            <h3 className={cn('text-[0.8125rem] text-muted', col.headerTitleClassName ?? 'font-medium')}>
                                 {getCellTitle(col)}
                             </h3>
                         );
@@ -326,7 +303,7 @@ const DocumentListingTable = <T extends Identifiable>({
                                 {col.sortable ? (
                                     <button
                                         type='button'
-                                        className={cn(SORT_BUTTON_CLASS_NAMES, col.numeric && 'justify-end')}
+                                        className={cn('group flex w-full min-w-0 cursor-pointer items-center border-0 bg-transparent p-0 text-left text-muted', col.numeric && 'justify-end')}
                                         onClick={() => onCellClick(col)}
                                         aria-label={`Sort by ${columnTitle}`}
                                     >
@@ -339,7 +316,10 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div className={BODY_CLASS_NAMES[density]} role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
+            <div className={{
+                default: 'relative flex flex-1 flex-col min-h-[400px]',
+                compact: 'relative flex flex-1 flex-col min-h-0'
+            }[density]} role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
                         {rows}
@@ -403,8 +383,7 @@ const DocumentListingTable = <T extends Identifiable>({
                     </div>
                 )}
             </div>
-
-            <div className={FOOTER_CLASS_NAMES[density]} />
+            <div className={{ default: 'py-4 max-md:px-4 max-md:py-3', compact: 'py-1' }[density]} />
         </div>
     );
 };

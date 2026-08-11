@@ -9,7 +9,7 @@ import aiSdkChatTransport from '@modules/ai/services/AISDKChatTransport';
 import { persistAssistantResponse } from '@modules/ai/services/AIAssistantResponseStore';
 import { toAIMessageView } from '@modules/ai/services/AIMessageViewMapper';
 import { assertTeamMembership } from '@modules/team/services/team/team-membership-guard';
-import type { AIProvider } from '@shared/contracts/types/AIProviders';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';

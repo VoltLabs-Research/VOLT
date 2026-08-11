@@ -1,6 +1,6 @@
 
+import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type {
-    TeamClusterRole,
     TeamClusterRoleCapabilitiesProps,
     TeamClusterRuntimeRoleConfigProps,
     TeamClusterEffectiveCapabilitiesProps

@@ -34,8 +34,6 @@ import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugi
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-export type { AnalysisSectionData } from '../utils/sidebar-scene-sections';
-
 interface UseCanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
@@ -101,16 +99,12 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         reset: resetSectionState
     } = sectionState;
 
-    // Socket handlers and the delete mutation must not re-subscribe whenever the
-    // selection changes, so they read it through a ref instead of a dependency.
     const selectedAnalysisIdRef = useRef<string | undefined>(analysisConfigId);
     useEffect(() => { selectedAnalysisIdRef.current = analysisConfigId; }, [analysisConfigId]);
 
     const activeSceneRef = useRef(activeScene);
     useEffect(() => { activeSceneRef.current = activeScene; }, [activeScene]);
 
-    // Set when the user picks a scene themselves, so the auto-selection effect
-    // below skips the pass it would otherwise run for that analysis.
     const manualSelectionRef = useRef<string | null>(null);
 
     const analysesQuery = useAnalysesByTrajectoryQuery(
@@ -123,7 +117,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     );
 
     const bootstrapLoading = analysesQuery.isLoading;
-    const analyses = analysesQuery.data?.data ?? [];    const selectedAnalysis = useMemo(() => {
+    const analysesData = analysesQuery.data?.data;
+    const analyses = useMemo(() => analysesData ?? [], [analysesData]);
+
+    const selectedAnalysis = useMemo(() => {
         if (!analysisConfigId) {
             return undefined;
         }
@@ -135,7 +132,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         });
     }, [analyses, analysisConfigId, trajectory?.analysis, trajectoryId]);
 
-    // The selected analysis may not be on the fetched page yet; keep it listed.
     const resolvedAnalyses = useMemo(() => {
         if (!selectedAnalysis || analyses.some((analysis) => analysis._id === selectedAnalysis._id)) {
             return analyses;
@@ -238,8 +234,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         const currentScene = activeSceneRef.current;
         const { exposures } = entry;
 
-        // Re-resolve the scene already on screen; its render metadata may have
-        // arrived only now that the exposures finished loading.
         if (currentScene.source === 'plugin') {
             const match = exposures.find((exposure) => exposure.exposureId === currentScene.sceneType);
             if (match) {
@@ -301,8 +295,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         const scopedTimesteps = getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
         if (!scopedTimesteps || scopedTimesteps.includes(currentTimestep)) return;
 
-        // Selecting an analysis that did not run on this frame moves the frame,
-        // whereas moving to a frame the selected analysis skipped clears it.
         if (previousAnalysisId !== analysisConfigId) {
             const nextTimestep = getNearestTimestep(currentTimestep, scopedTimesteps);
             if (nextTimestep !== undefined && nextTimestep !== currentTimestep) {

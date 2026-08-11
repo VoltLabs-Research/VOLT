@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, Param, Query, CurrentUser, Req } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser, Req } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
@@ -53,7 +54,7 @@ export default class SecretKeyController extends Controller {
     create(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
-        @Body() body: CreateSecretKeyInput
+        @Body(schemaBody(typia.createValidate<CreateSecretKeyInput>())) body: CreateSecretKeyInput
     ){
         return this.#service.create(teamId, userId, body);
     }

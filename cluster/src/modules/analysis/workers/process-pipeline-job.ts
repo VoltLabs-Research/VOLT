@@ -8,7 +8,7 @@ import { DAEMON_PATHS } from '@core/config/paths';
 import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
 import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
 import { createAnalysisExecutionLogSink } from '@shared/infrastructure/runtime/execution-log-streaming';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { logAndSwallow } from '@shared/application/utilities/error-message';
 import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
 import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';

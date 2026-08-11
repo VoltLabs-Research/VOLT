@@ -15,7 +15,6 @@ interface FieldAutocompleteOption {
     label: string;
 };
 
-/** Slice of the field value the user is currently completing. */
 interface FieldAutocompleteToken {
     start: number;
     end: number;
@@ -28,10 +27,6 @@ interface UseFieldAutocompleteParams {
     autocomplete: FieldRendererProps['autocomplete'];
 };
 
-/**
- * Token autocomplete for inline text fields: tracks the `{{token` the caret sits
- * in, filters the offered options and writes the pick back into the value.
- */
 const useFieldAutocomplete = ({ field, fieldType, autocomplete }: UseFieldAutocompleteParams) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);

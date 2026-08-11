@@ -5,7 +5,7 @@ import { withSuccess } from './create-mutation';
 import { useMutation } from '@tanstack/react-query';
 import type { InfinitePages, PaginationRequest } from './create-infinite-query';
 import type { MutationOptions } from './create-mutation';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { QueryKey } from '@tanstack/react-query';
 
@@ -47,11 +47,6 @@ const shiftTotal = (current: PaginatedResponse<unknown>, shouldRemove = false) =
     };
 };
 
-/**
- * The CRUD surface of one paginated resource: list and infinite-list hooks, the
- * three mutations, and the cache patching that keeps every cached page in step
- * with a create/update/delete without a refetch.
- */
 export const createPaginatedQuery = <
     TEntity extends Identifiable,
     TListParams extends object = Record<string, never>,
@@ -59,8 +54,6 @@ export const createPaginatedQuery = <
     TUpdateParams = Partial<TEntity>,
     TCreateResult extends TEntity = TEntity
 >(config: PaginatedQueryConfig<TEntity, TListParams, TCreateParams, TUpdateParams, TCreateResult>) => {
-    // Every hook is returned regardless of which service methods the resource
-    // declares, so a missing one can only be caught when it is actually called.
     const requireService = <T,>(fn: T | undefined, method: string): T => {
         if (!fn) {
             throw new Error(`[${config.baseKey}] service.${method} is not defined`);
@@ -183,7 +176,6 @@ export const createPaginatedQuery = <
         ]);
     };
 
-    /** Shared tail of create and update: the entity is already the server's answer. */
     const acceptEntity = (entity: TEntity): void => {
         queryClient.setQueryData<TEntity>(config.detailKey(entity._id), entity);
         void invalidateListings();

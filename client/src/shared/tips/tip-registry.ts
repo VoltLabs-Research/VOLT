@@ -37,7 +37,7 @@ const CONTEXTUAL_TIPS = {
         surface: 'feature',
         dismissMode: 'auto',
         title: 'Search across Volt',
-        description: 'Search trajectories, containers, plugins, teams, and chats, then use Arrow keys and Enter to jump in.',
+        description: 'Search trajectories, containers, plugins, and teams, then use Arrow keys and Enter to jump in.',
         delay: 350,
         duration: 6500,
         position: 'top-center'
@@ -62,7 +62,7 @@ const CONTEXTUAL_TIPS = {
         surface: 'feature',
         dismissMode: 'auto',
         title: 'Teams change your context',
-        description: 'Switch teams here to update the dashboards, chats, containers, and resources you are working with.',
+        description: 'Switch teams here to update the dashboards, containers, and resources you are working with.',
         delay: 250,
         duration: 6500,
         position: 'top-center'
@@ -130,15 +130,6 @@ const CONTEXTUAL_TIPS = {
         delay: 1400,
         position: 'top-center'
     },
-    'messages-details-panel': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Open chat details for more',
-        description: 'Use the details panel to review members, activity, and group settings without leaving the conversation.',
-        buttonLabel: 'Got it',
-        delay: 1600,
-        position: 'top-center'
-    },
     'ai-spreadsheet-panel': {
         surface: 'page',
         dismissMode: 'manual',
@@ -174,15 +165,6 @@ const CONTEXTUAL_TIPS = {
         buttonLabel: 'Got it',
         delay: 1600,
         position: 'top-center'
-    },
-    'chat-file-attachments': {
-        surface: 'feature',
-        dismissMode: 'auto',
-        title: 'Attach files to messages',
-        description: 'Drag files or use the attachment button to share files in the conversation. Press Enter to send, Shift+Enter for a new line.',
-        delay: 350,
-        duration: 6500,
-        position: 'bottom-center'
     },
     'container-create-stepper': {
         surface: 'page',

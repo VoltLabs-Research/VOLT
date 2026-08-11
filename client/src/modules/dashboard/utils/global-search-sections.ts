@@ -82,17 +82,6 @@ export const buildGlobalSearchSections = (results: GlobalSearchResponse): Dashbo
                 path: '/dashboard/my-team',
                 teamId: team._id
             }))
-        },
-        {
-            key: 'chats',
-            items: results.chats.map((chat) => ({
-                id: chat._id,
-                title: chat.participants
-                    .map((participant) => participant.firstName || participant.email)
-                    .join(', ') || 'Chat',
-                subtitle: chat.lastMessage?.content?.substring(0, 50) || 'No messages',
-                path: `/dashboard/messages/${chat._id}`
-            }))
         }
     ];
 };

@@ -2,21 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import type { QueryKey } from '@tanstack/react-query';
 import { createEntityCacheResource } from '@/shared/api/query-resources';
 import queryClient from '@/shared/query/query-client';
-import {
-    buildCanvasDataAccess,
-    DEFAULT_CANVAS_ACCESS_STATE,
-    useCanvasAccessStore,
-    withAccessMode
-} from '@/modules/canvas/api/access';
+import { buildCanvasDataAccess } from '@/modules/canvas/api/access/build-canvas-data-access';
+import { DEFAULT_CANVAS_ACCESS_STATE } from '@/modules/canvas/contracts/data-access';
+import { useCanvasAccessStore, withAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
 import {
     upsertEntityInList,
     removeEntityFromList,
     patchPaginatedPage,
     batchInvalidateQueries
 } from '@/shared/query/cache-utils';
-import { createMutation, createQuery, buildKeys } from '@/shared/query';
-import type { QueryOptions } from '@/shared/query';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { createMutation } from '@/shared/query/create-mutation';
+import { createQuery } from '@/shared/query/create-query';
+import { buildKeys } from '@/shared/query/query-keys';
+import type { QueryOptions } from '@/shared/query/create-query';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';

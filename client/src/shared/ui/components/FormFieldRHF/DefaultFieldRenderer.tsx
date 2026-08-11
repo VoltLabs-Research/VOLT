@@ -14,12 +14,6 @@ import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
 import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import { buildFieldAccessibilityState } from './field-accessibility';
-import {
-    FIELD_ERROR_CLASS,
-    SELECT_ROOT_CLASS,
-    STACKED_CONTAINER_CLASS,
-    STACKED_LABEL_CLASS
-} from './field-styles';
 
 const DefaultFieldRenderer = ({
     field,
@@ -54,13 +48,6 @@ const DefaultFieldRenderer = ({
         inputProps
     });
 
-    /*
-     * `aria-invalid` is not part of any HeroUI/React-Aria field's prop surface —
-     * react-aria's `filterDOMProps` drops unknown `aria-*` — so the boolean is
-     * handed over as `isInvalid`, which is what puts `aria-invalid` on the real
-     * control. `aria-describedby` and `aria-errormessage` are typed props and
-     * pass straight through, so the wiring to the error node below is unchanged.
-     */
     const isInvalid = Boolean(error);
     const describedBy = fieldStatusAriaProps['aria-describedby'];
     const errorMessageId = fieldStatusAriaProps['aria-errormessage'];
@@ -70,7 +57,7 @@ const DefaultFieldRenderer = ({
             return (
                 <Select
                     id={fieldId}
-                    className={SELECT_ROOT_CLASS}
+                    className='flex-1 min-w-0'
                     selectedKey={String(field.value ?? '') || null}
                     onSelectionChange={(key) => field.onChange(key === null ? '' : String(key))}
                     placeholder={placeholder}
@@ -83,11 +70,6 @@ const DefaultFieldRenderer = ({
                     aria-errormessage={errorMessageId}
                 >
                     <Select.Trigger>
-                        {/*
-                          * bravais's trigger showed the selected option's `title`
-                          * only; RAC's default children render the whole item, so
-                          * a `description` would leak into the trigger.
-                          */}
                         <Select.Value>
                             {({ isPlaceholder, selectedText, defaultChildren }) => (
                                 isPlaceholder ? defaultChildren : selectedText
@@ -177,16 +159,7 @@ const DefaultFieldRenderer = ({
         }
 
         const { size: _size, ...restInputProps } = inputProps ?? {};
-        /*
-         * `type` stays on the control rather than on `TextField`, and after the
-         * `inputProps` spread, to keep bravais's precedence: a call site passing
-         * `inputProps={{ type: 'number' }}` to the stacked renderer was overridden
-         * by the explicit `type` prop, and still is.
-         *
-         * `leftIcon` becomes an `InputGroup.Prefix`, which is HeroUI's affix slot;
-         * the plain `Input` is kept for the iconless case so a field without an
-         * adornment does not grow an extra wrapper element.
-         */
+
         return (
             <TextField
                 id={fieldId}
@@ -204,7 +177,6 @@ const DefaultFieldRenderer = ({
             >
                 {icon ? (
                     <InputGroup fullWidth>
-                        {/* bravais rendered its adornments inside an aria-hidden span. */}
                         <InputGroup.Prefix aria-hidden='true'>{icon}</InputGroup.Prefix>
                         <InputGroup.Input
                             ref={field.ref}
@@ -230,12 +202,12 @@ const DefaultFieldRenderer = ({
     };
 
     return (
-        <div className={cn('form-field-container', STACKED_CONTAINER_CLASS)}>
+        <div className='form-field-container flex flex-col gap-2 w-full transition-opacity duration-150 ease-out'>
             {label && (
                 <label
                     id={labelId}
                     htmlFor={labelTargetId}
-                    className={STACKED_LABEL_CLASS}
+                    className='text-xs font-medium text-muted'
                 >
                     {label}
                 </label>
@@ -246,7 +218,7 @@ const DefaultFieldRenderer = ({
             </div>
 
             {error && (
-                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className={cn('form-field-error', FIELD_ERROR_CLASS)}>
+                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='form-field-error flex items-center gap-1 text-danger text-xs'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>

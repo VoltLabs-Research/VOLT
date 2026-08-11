@@ -1,28 +1,14 @@
-import { Chip, cn } from '@heroui/react';
-import {
-    EXEC_LOG_CHUNK_CLASS,
-    EXEC_LOG_CLASS,
-    EXEC_LOG_CONTENT_CLASS,
-    EXEC_LOG_EMPTY_CLASS,
-    EXEC_LOG_EXIT_CLASS,
-    EXEC_LOG_HEADER_CLASS,
-    EXEC_LOG_STDERR_CLASS,
-    EXEC_LOG_STDOUT_CLASS
-} from '@/modules/plugin/components/plugin/BaseNode/node-styles';
+import { Chip } from '@heroui/react';
 import { Terminal } from 'lucide-react';
 import type { DebugExecutionLogSegment } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { ReactNode } from 'react';
 
 interface NodeExecutionLogProps {
     logSegments: DebugExecutionLogSegment[];
-    /** Untyped bag of whatever the executed node returned. */
+
     output?: Record<string, unknown>;
 }
 
-/**
- * Renders one of the loosely typed fields a node execution reports, which may be
- * anything the plugin decided to write.
- */
 const renderOutputStream = (value: unknown): ReactNode => {
     if (value === null || value === undefined) {
         return null;
@@ -35,18 +21,20 @@ const renderOutputStream = (value: unknown): ReactNode => {
     return JSON.stringify(value, null, 2);
 };
 
-/**
- * Terminal-style overlay streaming a node's stdout/stderr while it runs, falling
- * back to the output it reported once it has finished.
- */
 const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
+    const streamClass: Record<DebugExecutionLogSegment['stream'], string | null> = {
+        stdout: null,
+        stderr: 'text-danger',
+        system: 'text-accent'
+    };
+
     const exitCode = typeof output?.exitCode === 'number' ? output.exitCode : undefined;
     const stdout = renderOutputStream(output?.stdout);
     const stderr = renderOutputStream(output?.stderr);
 
     return (
-        <div className={cn(EXEC_LOG_CLASS, 'nowheel')} onClick={(event) => event.stopPropagation()}>
-            <div className={EXEC_LOG_HEADER_CLASS}>
+        <div className='absolute left-1/2 top-[calc(100%+2rem)] z-[5] w-[300px] -translate-x-1/2 overflow-hidden rounded-md border border-border bg-surface-secondary nowheel' onClick={(event) => event.stopPropagation()}>
+            <div className='flex flex-row items-center gap-1 border-b border-border px-2 py-[0.4rem] text-muted'>
                 <Terminal size={10} aria-hidden='true' />
                 <p className='text-xs font-semibold'>Execution Log</p>
                 {exitCode !== undefined && (
@@ -54,18 +42,18 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                         size='sm'
                         variant='soft'
                         color={exitCode === 0 ? 'success' : 'danger'}
-                        className={EXEC_LOG_EXIT_CLASS}
+                        className='ml-auto rounded-full font-mono text-[0.55rem]'
                     >
                         exit {exitCode}
                     </Chip>
                 )}
             </div>
-            <pre className={EXEC_LOG_CONTENT_CLASS}>
+            <pre className='m-0 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words p-2 font-mono text-[0.65rem] leading-[1.6]'>
                 {logSegments.length > 0 ? (
                     logSegments.map((segment, index) => (
                         <span
                             key={`${segment.occurredAt}-${index}`}
-                            className={EXEC_LOG_CHUNK_CLASS[segment.stream] ?? undefined}
+                            className={streamClass[segment.stream] ?? undefined}
                         >
                             {segment.text}
                         </span>
@@ -73,13 +61,13 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                 ) : (
                     <>
                         {stdout && (
-                            <span className={EXEC_LOG_STDOUT_CLASS}>{stdout}</span>
+                            <span className='text-foreground'>{stdout}</span>
                         )}
                         {stderr && (
-                            <span className={EXEC_LOG_STDERR_CLASS}>{stderr}</span>
+                            <span className='text-danger'>{stderr}</span>
                         )}
                         {!stdout && !stderr && (
-                            <span className={EXEC_LOG_EMPTY_CLASS}>Waiting for output...</span>
+                            <span className='italic text-muted'>Waiting for output...</span>
                         )}
                     </>
                 )}

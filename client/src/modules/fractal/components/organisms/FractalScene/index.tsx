@@ -276,22 +276,11 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                 dpr={canvasRuntimeProps.dpr}
                 frameloop='demand'
                 performance={canvasRuntimeProps.performance}
-                /* Canvas is third-party, so it takes bravais's utility classes
-                   directly rather than a bespoke one this component would own. */
+
                 className='w-full h-full'
                 onCreated={(state) => {
                     canvasEventCleanupRef.current?.();
 
-                    /*
-                     * Shader validation reads the program and shader info logs right
-                     * after linking, and those reads are synchronous round trips that
-                     * stall until the driver has finished compiling. A load profile of
-                     * a 10M-atom scene put 1.66s in exactly that path. The shaders here
-                     * ship with the app rather than coming from user input, so a
-                     * production build gains nothing from re-validating them on every
-                     * viewer mount; dev keeps the check, which is where a broken shader
-                     * actually gets written.
-                     */
                     state.gl.debug.checkShaderErrors = import.meta.env.DEV;
 
                     const canvas = state.gl.domElement;

@@ -2,7 +2,7 @@ import type { RuntimeProgressEvent as DaemonRuntimeProgressEvent } from '@voltst
 
 type RuntimeProgressPayloadData = NonNullable<DaemonRuntimeProgressEvent['payload']>;
 
-export type RuntimeProgressStage = DaemonRuntimeProgressEvent['stage'];
+type RuntimeProgressStage = DaemonRuntimeProgressEvent['stage'];
 
 export interface RuntimeProgressPayload {
     action: string;

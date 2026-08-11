@@ -142,7 +142,6 @@ const clampConnectorOffset = (value: number | undefined, fallback: number): numb
 };
 
 export const getNodeHandleDefinitions = (nodeType: NodeType): NodeHandleDefinition[] => {
-    // `nodeType` reaches us as an unchecked cast of xyflow's `string | undefined`.
     return NODE_HANDLE_DEFINITIONS[nodeType] ?? [];
 };
 

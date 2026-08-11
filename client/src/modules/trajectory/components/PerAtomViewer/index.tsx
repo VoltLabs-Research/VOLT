@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import AtomTypeBadge from '../AtomTypeBadge';
 import type { AtomData } from '@/modules/trajectory/api/services/trajectory-service';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 
@@ -42,23 +42,6 @@ interface TimestepOption {
     value: string;
     title: string;
 };
-
-/**
- * `.form-field-canvas-input--compact` belonged to the now-deleted `FormField.css`, so its
- * styling has to be restated at the call site. These are the canvas field surface's own
- * metrics — the ones `shared/ui/components/FormFieldRHF/field-styles.ts` carries for
- * `surface: 'canvas'` — at the compact width the modifier set
- * (`clamp(3.25rem, 17vw, 4.5rem)`, from the sheet that overrode it).
- *
- * The control is a `ComboBox` rather than a `Select` because bravais's `isEditable` made
- * this an editable field: the timestep could be typed as well as picked, and the list can
- * be long. `Select` would silently drop that.
- */
-const TIMESTEP_ROOT = 'min-w-0 shrink-0';
-
-const TIMESTEP_GROUP = 'h-6 min-h-6 w-[clamp(3.25rem,17vw,4.5rem)] rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary';
-
-const TIMESTEP_INPUT = 'h-6 min-h-6 border-0 bg-transparent px-[0.4rem] text-[0.7rem] text-foreground shadow-none placeholder:text-[0.7rem] placeholder:text-muted';
 
 const COORDINATE_KEYS = ['x', 'y', 'z'] as const;
 
@@ -217,7 +200,7 @@ export default function PerAtomViewer() {
             <div className='flex flex-row items-center gap-3'>
                 <p className='text-xs text-muted'>Timestep</p>
                 <ComboBox
-                    className={TIMESTEP_ROOT}
+                    className='min-w-0 shrink-0'
                     selectedKey={String(timestep)}
                     onSelectionChange={(key) => {
                         if (key === null) return;
@@ -226,8 +209,8 @@ export default function PerAtomViewer() {
                     }}
                     aria-label='Select timestep'
                 >
-                    <ComboBox.InputGroup className={TIMESTEP_GROUP}>
-                        <Input className={TIMESTEP_INPUT} placeholder={String(timestep)} />
+                    <ComboBox.InputGroup className='h-6 min-h-6 w-[clamp(3.25rem,17vw,4.5rem)] rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary'>
+                        <Input className='h-6 min-h-6 border-0 bg-transparent px-[0.4rem] text-[0.7rem] text-foreground shadow-none placeholder:text-[0.7rem] placeholder:text-muted' placeholder={String(timestep)} />
                         <ComboBox.Trigger />
                     </ComboBox.InputGroup>
                     <ComboBox.Popover>

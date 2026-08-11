@@ -2,9 +2,9 @@ import { singleton } from '@shared/application/utilities/singleton';
 import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type {
     AnalysisRuntimeCleanupRequest,
-    RuntimeStateCleanupResponse,
-    TrajectoryRuntimeCleanupRequest
-} from '@shared/contracts';
+    RuntimeStateCleanupResponse
+} from '@shared/contracts/types/http-analysis';
+import type { TrajectoryRuntimeCleanupRequest } from '@shared/contracts/types/queue-trajectory';
 import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 
 export class RuntimeStateCleanupControl {

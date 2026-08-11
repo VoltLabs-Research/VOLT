@@ -14,16 +14,6 @@ const resolveTimestep = (job: Job): number | undefined => {
     return job.timestep ?? job.metadata?.timestep;
 };
 
-/**
- * Timeline tick presentation: the shared status, plus a brief flash when a frame lands.
- *
- * This hook used to derive frame status itself with a raw `.some(isQueued)` per frame,
- * which made it a fourth opinion on a question the server and two other hooks already
- * answered — and because it ignored which analysis a job belonged to, a queued PTM run
- * painted a tick orange while the DXA row beside it read as running. Status now comes
- * from `useCanvasAnalysisStatus`; all that is left here is the ephemeral highlight,
- * which is genuinely presentation and has no other home.
- */
 const useTimelineJobActivity = (trajectoryId?: string, analysisId?: string) => {
     const { getFrameTone, getAnalysisFrameStatus } = useCanvasAnalysisStatus({
         trajectoryId,
@@ -100,7 +90,6 @@ const useTimelineJobActivity = (trajectoryId?: string, analysisId?: string) => {
             return;
         }
 
-        /* Only a job this session watched running earns a flash on landing. */
         if (job.status === JobStatus.Completed) {
             if (runningJobIdsRef.current.has(job.jobId)) {
                 markCompletedHighlight(timestep);
@@ -115,13 +104,6 @@ const useTimelineJobActivity = (trajectoryId?: string, analysisId?: string) => {
 
     useSocketEvent<Job>(SOCKET_TEAM_EVENTS.JOB_UPDATED, handleJobUpdated, { enabled: !!trajectoryId });
 
-    /**
-     * Tone for one tick, scoped to the selected analysis when there is one.
-     *
-     * The completion flash wins while it lasts, because it is the one thing here the
-     * shared status cannot express: a frame that just finished looks the same to the
-     * selectors as one that finished an hour ago.
-     */
     const getTickTone = useCallback((timestep: number): TimelineTickTone | undefined => {
         if (completedTimesteps.has(timestep)) return 'completed';
 

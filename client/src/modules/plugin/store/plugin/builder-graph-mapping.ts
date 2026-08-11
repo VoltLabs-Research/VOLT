@@ -10,7 +10,6 @@ export const DEFAULT_EDGE_STYLE = {
     }
 };
 
-/** Shared by stored workflows and by the canvas graph itself. */
 interface GraphNodeSource {
     id: string;
     type?: string;
@@ -26,10 +25,6 @@ interface GraphEdgeSource {
     targetHandle?: string | null;
 }
 
-/**
- * Strips a graph down to the fields the builder owns, dropping the transient
- * flags xyflow attaches to live nodes (measurements, drag and selection state).
- */
 export const toBuilderNodes = (nodes: GraphNodeSource[]): Node<INodeData>[] => {
     return nodes.map((node) => ({
         id: node.id,
@@ -56,12 +51,6 @@ const toWorkflowEdge = (edge: GraphEdgeSource): IWorkflow['edges'][number] => ({
 
 export const toWorkflowEdges = (edges: GraphEdgeSource[]): IWorkflow['edges'] => edges.map(toWorkflowEdge);
 
-/**
- * A plugin node can either name its plugin outright or resolve it from an
- * argument at runtime. Persisting the mode explicitly — inferred from which of
- * the two fields is filled in when the editor never set it — keeps the runtime
- * from having to guess.
- */
 const toWorkflowPluginNode = (node: Node<INodeData>): INodeData => {
     const pluginNode = node.type === NodeType.PLUGIN ? node.data.pluginNode : undefined;
 

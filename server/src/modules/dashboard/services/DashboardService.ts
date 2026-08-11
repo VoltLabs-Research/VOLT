@@ -1,20 +1,14 @@
 import { ILike, In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
-import type { ChatRecord } from '@shared/contracts/ports';
 import { mapPluginToRecord } from '@shared/application/utilities/mapPluginToRecord';
-import type {
-    GetAnalysesByTeamIdItemView,
-    PluginRecord,
-    TrajectoryRecord
-} from '@shared/contracts/operations';
+import type { GetAnalysesByTeamIdItemView } from '@shared/contracts/operations/GetAnalysesByTeamId';
+import type { PluginRecord } from '@shared/contracts/operations/PluginRecord';
+import type { TrajectoryRecord } from '@shared/contracts/operations/GetTrajectoriesByTeamId';
 import Analysis from '@modules/analysis/models/Analysis';
-import Chat from '@modules/chat/models/Chat';
-import ChatMessage from '@modules/chat/models/ChatMessage';
 import Container from '@modules/container/models/Container';
 import Plugin from '@modules/plugin/models/Plugin';
 import Team from '@modules/team/models/Team';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import User from '@modules/auth/models/User';
 import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/services/plugin/WorkflowProjection';
 import TeamService from '@modules/team/services/TeamService';
@@ -27,13 +21,6 @@ type ContainerSearchRecord = {
     _id: string;
     name: string;
 };
-
-type ChatSearchRecord = ChatRecord<{
-    participants: User[];
-    lastMessage: ChatMessage | null;
-    isGroup: boolean;
-    groupName: string | null;
-}>;
 
 interface PluginSearchProps{
     modifier?: { name: string } | null;
@@ -57,7 +44,6 @@ interface GetGlobalSearchResult{
     trajectories: TrajectoryRecord[];
     teams: Team[];
     plugins: PluginSearchRecord[];
-    chats: ChatSearchRecord[];
 }
 
 interface FindAnalysesOptions{
@@ -73,8 +59,7 @@ const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchResult = {
     containers: [],
     trajectories: [],
     teams: [],
-    plugins: [],
-    chats: []
+    plugins: []
 };
 
 const DEFAULT_LIMIT = 5;
@@ -93,11 +78,6 @@ const escapeLikePattern = (value: string): string =>
     value.replace(/[\\%_]/g, (character) => `${LIKE_ESCAPE_CHARACTER}${character}`);
 
 const containsPattern = (value: string): string => `%${escapeLikePattern(value)}%`;
-
-const memberToken = (userId: string): string => `%,${escapeLikePattern(userId)},%`;
-
-const participantCondition = (parameter: string): string =>
-    `',' || COALESCE(chat.participants, '') || ',' LIKE :${parameter} ESCAPE '${LIKE_ESCAPE_CHARACTER}'`;
 
 const matchesNormalizedQuery = (normalizedQuery: string, ...values: Array<string | null | undefined>): boolean =>
     values.some((value) => value?.toLowerCase().includes(normalizedQuery) ?? false);
@@ -168,12 +148,10 @@ export default class DashboardService{
 
         const [
             trajectoryIds,
-            teams,
-            chats
+            teams
         ] = await Promise.all([
             this.#searchTrajectoryIdsByTeamAndName(input.teamId, searchPattern),
-            this.#teamService.listUserTeams(input.userId),
-            this.#findChatsByUserId(input.userId)
+            this.#teamService.listUserTeams(input.userId)
         ]);
 
         const [
@@ -205,18 +183,7 @@ export default class DashboardService{
                     team.description
                 ))
                 .slice(0, limit),
-            plugins: pluginsResult.data,
-            chats: chats
-                .filter((chat) => matchesNormalizedQuery(
-                    normalizedLowerCaseQuery,
-                    chat.lastMessage?.content,
-                    ...chat.participants.flatMap((participant) => [
-                        participant.firstName,
-                        participant.lastName,
-                        participant.email
-                    ])
-                ))
-                .slice(0, limit)
+            plugins: pluginsResult.data
         };
     }
 
@@ -318,40 +285,5 @@ export default class DashboardService{
         });
 
         return trajectories.map((trajectory) => toTrajectoryRecord(trajectory));
-    }
-
-    async #findChatsByUserId(userId: string): Promise<ChatSearchRecord[]>{
-        const chats = await Chat.createQueryBuilder('chat')
-            .where(participantCondition('member'), { member: memberToken(userId) })
-            .andWhere('chat.isActive = :isActive', { isActive: true })
-            .orderBy('chat.lastMessageAt', 'DESC', 'NULLS LAST')
-            .getMany();
-
-        const [participants, lastMessages] = await Promise.all([
-            this.#loadUsers(chats.flatMap((chat) => chat.participants ?? [])),
-            this.#loadMessages(chats.flatMap((chat) => (chat.lastMessage === null ? [] : [chat.lastMessage])))
-        ]);
-
-        return chats.map((chat) => ({
-            ...chat.toJSON(),
-            participants: (chat.participants ?? []).flatMap((participantId) => participants.get(participantId) ?? []),
-            lastMessage: chat.lastMessage === null ? null : lastMessages.get(chat.lastMessage) ?? null
-        } as ChatSearchRecord));
-    }
-
-    async #loadUsers(userIds: string[]): Promise<Map<string, User>>{
-        const uniqueIds = Array.from(new Set(userIds));
-        if(uniqueIds.length === 0) return new Map();
-
-        const users = await User.findBy({ id: In(uniqueIds) });
-        return new Map(users.map((user) => [user.id, user]));
-    }
-
-    async #loadMessages(messageIds: string[]): Promise<Map<string, ChatMessage>>{
-        const uniqueIds = Array.from(new Set(messageIds));
-        if(uniqueIds.length === 0) return new Map();
-
-        const messages = await ChatMessage.findBy({ id: In(uniqueIds) });
-        return new Map(messages.map((message) => [message.id, message]));
     }
 }

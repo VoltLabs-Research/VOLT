@@ -25,7 +25,6 @@ const useDeletePluginListingAnalyses = () => {
         );
         if (!isConfirmed) return;
 
-        // Failures are already surfaced by runCrudMutation's toast.
         await Promise.all(analysisIds.map((analysisId) =>
             runCrudMutation(deleteAnalysisMutation.mutateAsync(analysisId), {
                 action: 'Deleting',

@@ -83,15 +83,6 @@ export const ErrorCodes = createErrorCodes({
     PLUGIN_NODE_NOT_FOUND: 'Plugin::Node::NotFound',
     PLUGIN_EXECUTOR_BINARY_NOT_ACCESSIBLE: 'Plugin::Executor::Binary::NotAccessible',
 
-    CHAT_NOT_FOUND: 'Chat::NotFound',
-    CHAT_USERS_NOT_IN_TEAM: 'Chat::Users::NotInTeam',
-    CHAT_GROUP_MIN_PARTICIPANTS: 'Chat::Group::MinParticipants',
-    CHAT_GROUP_MIN_ADMINS: 'Chat::Group::MinAdmins',
-    CHAT_INVALID_ACTION: 'Chat::InvalidAction',
-
-    MESSAGE_NOT_FOUND: 'Message::NotFound',
-    MESSAGE_FORBIDDEN: 'Message:Forbidden',
-
     FILE_NOT_FOUND: 'File::NotFound',
     FILE_READ_ERROR: 'File::ReadError',
 

@@ -2,7 +2,8 @@ import { Download } from 'lucide-react';
 import { CanvasTreeRow, MaybeContextMenu } from '../CanvasTree';
 import { DEFAULT_LINE_WIDTH, buildPluginScene, buildSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
-import { buildArtifactNameClassName, getArtifactIcon } from './artifact-rows';
+import { getArtifactIcon } from './artifact-rows';
+import { cn } from '@heroui/react';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import {
@@ -21,9 +22,6 @@ import type { RasterSelectableScene } from '@/modules/raster/contracts/container
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 
-/**
- * Scene wiring shared by the tree node and the exposure rows it renders.
- */
 export interface SceneRowActions {
     onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
     isSceneActive: (scene: SceneObjectType) => boolean;
@@ -55,10 +53,6 @@ interface ExposureRowProps extends SceneRowActions {
     tourTargetId?: string;
 }
 
-/**
- * Row for a loaded exposure: builds its scene handle and exposes the
- * per-scene visual overrides through the context menu.
- */
 const ExposureRow = ({
     analysis,
     artifact,
@@ -94,6 +88,14 @@ const ExposureRow = ({
     const sceneOverride = sceneVisualOverrides[sceneKey];
     const isLineExposure = sceneRenderMetadata?.exporter === Exporter.LINE;
     const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_LINE_WIDTH;
+
+    const labelToneClass = {
+        pending: '[&>.truncate]:text-warning [[data-theme=light]_&]:[&>.truncate]:text-[#8a5300]',
+        generating: '[&>.truncate]:text-accent [[data-theme=light]_&]:[&>.truncate]:text-[#0a5fbf]',
+        uploading: '[&>.truncate]:text-accent [[data-theme=light]_&]:[&>.truncate]:text-[#0a5fbf]',
+        'ready-recent': '[&>.truncate]:text-success [&>.truncate]:[text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)] [[data-theme=light]_&]:[&>.truncate]:text-[#0f7a34]',
+        failed: '[&>.truncate]:text-danger [[data-theme=light]_&]:[&>.truncate]:text-[#c41e1e]'
+    } as const;
 
     const exposureMenuOptions: MenuOption[] = [
         buildAddRemoveOption({
@@ -131,7 +133,12 @@ const ExposureRow = ({
                 isActive={isActive}
                 icon={getArtifactIcon('ready')}
                 label={(
-                    <span className={buildArtifactNameClassName(artifact, isRecentlyReady)}>
+                    <span className={cn(
+                        'flex w-full min-w-0 items-center gap-1.5 [&>.truncate]:min-w-0 [&>.truncate]:transition-[color,text-shadow] [&>.truncate]:duration-[180ms]',
+                        isRecentlyReady
+                            ? labelToneClass['ready-recent']
+                            : artifact && artifact.status !== 'ready' && labelToneClass[artifact.status]
+                    )}>
                         <span className='truncate'>{exposure.name}</span>
                     </span>
                 )}

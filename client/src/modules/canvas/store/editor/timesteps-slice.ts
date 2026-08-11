@@ -1,7 +1,7 @@
 import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
-import { useCanvasAccessStore } from '@/modules/canvas/api/access';
+import { useCanvasAccessStore } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
-import { isAbortError, reportError } from '@/shared/errors/core';
+import { isAbortError, reportError } from '@/shared/errors/core/report-error';
 
 import type { EditorStore } from './types';
 import type { TimestepStore } from '@/modules/fractal/contracts/editor/scene-types';
@@ -64,8 +64,6 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
                 failedCount++;
             }
 
-            // Progress still advances on failure so the bar cannot stall, but the
-            // failure is counted and reported rather than silently swallowed.
             if (signal?.aborted) return;
 
             loadedCount++;

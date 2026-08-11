@@ -8,7 +8,6 @@ interface AITabularArtifactPayload {
     rows: Record<string, unknown>[];
 }
 
-/** Table payloads come from parsed markdown or an uploaded sheet, so shape is checked before use. */
 export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArtifactPayload | null => {
     if (artifact.kind !== AIMessageArtifactKind.Table || !isRecord(artifact.payload)) {
         return null;
@@ -60,7 +59,6 @@ const isAllowedImageUrl = (url: string): boolean => {
     }
 };
 
-/** Tool outputs reach us as `unknown`, so an image result is only trusted once its url checks out. */
 export const resolveImagePayload = (output: unknown): AIImageArtifactPayload | null => {
     if (!isRecord(output)) {
         return null;

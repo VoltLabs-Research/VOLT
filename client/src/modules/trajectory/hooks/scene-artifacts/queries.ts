@@ -1,12 +1,10 @@
 import { useQueries } from '@tanstack/react-query';
-import { buildKeys, createQuery } from '@/shared/query';
+import { buildKeys } from '@/shared/query/query-keys';
+import { createQuery } from '@/shared/query/create-query';
 import { snapshotQueries } from '@/shared/query/cache-utils';
 import queryClient from '@/shared/query/query-client';
-import {
-    currentCanvasDataAccess,
-    currentAccessKey
-} from '@/modules/canvas/api/access';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { currentCanvasDataAccess, currentAccessKey } from '@/modules/canvas/api/access/use-canvas-access-store';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type {

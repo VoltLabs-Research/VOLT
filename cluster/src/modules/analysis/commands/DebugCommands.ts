@@ -1,5 +1,5 @@
 import { getDebugSessionManager } from '@modules/analysis/services/workflow/debug/DebugSessionManager';
-import type { NestedPluginDefinition, TrajectoryFrame, WorkflowDefinition } from '@shared/contracts';
+import type { NestedPluginDefinition, TrajectoryFrame, WorkflowDefinition } from '@shared/contracts/types/http-workflow';
 import type { ReverseChannelCommandPayloadView } from '@shared/contracts/channel/reverse-channel-messaging';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { DebugSessionManager } from '@modules/analysis/services/workflow/debug/DebugSessionManager';

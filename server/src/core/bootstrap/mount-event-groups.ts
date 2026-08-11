@@ -4,7 +4,6 @@ import logger from '@shared/infrastructure/logger';
 import AiEvents from '@modules/ai/events/AiEvents';
 import AnalysisEvents from '@modules/analysis/events/AnalysisEvents';
 import AuthEvents from '@modules/auth/events/AuthEvents';
-import ChatEvents from '@modules/chat/events/ChatEvents';
 import ClusterEvents from '@modules/cluster/events/ClusterEvents';
 import ContainerEvents from '@modules/container/events/ContainerEvents';
 import DailyActivityEvents from '@modules/daily-activity/events/DailyActivityEvents';
@@ -28,7 +27,6 @@ const EVENT_GROUPS: Readonly<Record<string, readonly EventGroupClass[]>> = {
     ai: [AiEvents],
     analysis: [AnalysisEvents],
     auth: [AuthEvents],
-    chat: [ChatEvents],
     cluster: [ClusterEvents],
     container: [ContainerEvents],
     'daily-activity': [DailyActivityEvents],

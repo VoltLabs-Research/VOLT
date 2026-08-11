@@ -1,4 +1,5 @@
-import { createService, get, post, patch, del } from '@/app/core/http/utils/create-service';
+import { createService, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { teamAIIntegrationRoutes } from '@volt/contracts/modules/team/routes';
 
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { TeamScopedParams } from '@/shared/api/request-params';
@@ -17,21 +18,23 @@ export interface DeleteTeamAIIntegrationInput extends TeamScopedParams {
     provider: AIProvider;
 }
 
+const routes = serviceRoutes('/teams');
+
 const endpoints = {
-    listByTeamId: get<TeamScopedParams, GetTeamAIIntegrationsResponse>(
-        '/:teamId/ai-integrations'
+    listByTeamId: routes.route<TeamScopedParams, GetTeamAIIntegrationsResponse>(
+        teamAIIntegrationRoutes.list
     ),
-    createByProvider: post<TeamAIIntegrationProviderInput, TeamAIIntegrationMutationResponse>(
-        '/:teamId/ai-integrations/:provider'
+    createByProvider: routes.route<TeamAIIntegrationProviderInput, TeamAIIntegrationMutationResponse>(
+        teamAIIntegrationRoutes.createByProvider
     ),
-    updateByProvider: patch<TeamAIIntegrationProviderInput, TeamAIIntegrationMutationResponse>(
-        '/:teamId/ai-integrations/:provider'
+    updateByProvider: routes.route<TeamAIIntegrationProviderInput, TeamAIIntegrationMutationResponse>(
+        teamAIIntegrationRoutes.updateByProvider
     ),
-    deleteByProvider: del<DeleteTeamAIIntegrationInput>(
-        '/:teamId/ai-integrations/:provider'
+    deleteByProvider: routes.route<DeleteTeamAIIntegrationInput, void>(
+        teamAIIntegrationRoutes.deleteByProvider, { unwrap: 'void' }
     ),
-    listModels: get<TeamScopedParams, GetTeamAIIntegrationModelsResponse>(
-        '/:teamId/ai-integrations/models'
+    listModels: routes.route<TeamScopedParams, GetTeamAIIntegrationModelsResponse>(
+        teamAIIntegrationRoutes.listModels
     )
 };
 

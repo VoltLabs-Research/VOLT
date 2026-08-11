@@ -28,10 +28,6 @@ const DEPLOY_STEPS = [
     }
 ];
 
-/**
- * Follows the deployment of a single container over the socket, exposing a progress
- * message and completion rate for the operation it started.
- */
 const useContainerDeployProgress = () => {
     const [operationId, setOperationId] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);

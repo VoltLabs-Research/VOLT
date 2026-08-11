@@ -13,7 +13,7 @@ import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-han
 import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
 import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import type { ClusterObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { PIPELINE_QUEUE_NAME } from '@core/constants/queue-names';
 import { AnalysisEnvironment, getAnalysisEnvironment } from '@modules/analysis/services/workflow/AnalysisEnvironment';
 import type { WorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';

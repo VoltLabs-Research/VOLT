@@ -1,5 +1,5 @@
 import { Button } from '@heroui/react';
-import { openModal } from '@/shared/ui/modal';
+import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
@@ -15,16 +15,6 @@ interface FolderHeaderMenuOptionsParams<TFolder> {
     extraOptions?: MenuOption[];
 };
 
-/**
- * `title='Create folder'` is dropped: HeroUI's `Button` prop interface is closed
- * (React Aria's `ButtonProps` plus `GlobalDOMAttributes`, which does not carry
- * `title`), so the native tooltip has no route through it. The button keeps its
- * visible "New Folder" label, which was already its accessible name — the tooltip
- * was a second, differently-worded copy of it.
- *
- * `shape='rounded'` was bravais's default and is dropped with it; HeroUI's button
- * radius is the design system's, not a per-call-site choice.
- */
 export const NewFolderHeaderAction = ({ modalId }: NewFolderHeaderActionProps) => (
     <Button
         variant='ghost'

@@ -5,8 +5,8 @@ import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
-import { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
-import { ChannelCommands } from '@shared/infrastructure/contracts/team-cluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/infrastructure/logger';
 
 @DefineEventGroup('cluster')

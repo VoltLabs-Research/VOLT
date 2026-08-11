@@ -4,7 +4,7 @@ import { JupyterNotebookService } from '@modules/scripting/services/JupyterNoteb
 import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/services/scripting-notebook-defaults';
 import type { CreateJupyterSessionInput } from '@modules/scripting/contracts/notebook-session';
 import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports';
+import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
 import pRetry from 'p-retry';
 

@@ -1,6 +1,5 @@
 import type * as THREE from 'three';
 
-/** Normalises Three's `Material | Material[]` union on a renderable object. */
 export const forEachMaterial = (
     object: { material: THREE.Material | THREE.Material[] },
     apply: (material: THREE.Material) => void

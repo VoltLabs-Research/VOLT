@@ -7,7 +7,8 @@ import {
 } from '@/modules/team/hooks/ai-integration/queries';
 import useTeamAIIntegrationsSocketSync from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-socket-sync';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
@@ -46,7 +47,6 @@ const isAIProvider = (value: string): value is AIProvider => {
     return AI_PROVIDER_VALUES.some((provider) => provider === value);
 };
 
-// `TeamAIIntegration.metadata` is an untyped bag in the contract, so `baseUrl` has to be probed.
 const resolveEndpoint = (provider: AIProvider | null, metadata?: Record<string, unknown>): string => {
     if (typeof metadata?.baseUrl === 'string') {
         return metadata.baseUrl;

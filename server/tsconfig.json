@@ -15,7 +15,6 @@
     "baseUrl": "./",
     "verbatimModuleSyntax": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "plugins": [
       {
         "transform": "typia/lib/transform"

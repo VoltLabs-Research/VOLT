@@ -13,7 +13,7 @@ import { SYSTEM_PROMPT } from '@modules/ai/contracts/system-prompt';
 import AIToolService from '@modules/ai/services/AIToolService';
 import ModelResolver from '@modules/ai/services/ModelResolver';
 import { toModelMessages, toToolSteps } from '@modules/ai/services/SdkMapper';
-import type { AIProvider } from '@shared/contracts/types/AIProviders';
+import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import logger from '@shared/infrastructure/logger';
 
 const MAX_TOOL_STEPS = 12;

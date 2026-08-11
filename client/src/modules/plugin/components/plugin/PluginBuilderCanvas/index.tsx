@@ -20,24 +20,24 @@ const getCSSVar = (name: string): string =>
 
 const resolveThemeColors = () => ({
     minimapColors: {
-        [NodeType.MODIFIER]: getCSSVar('--accent-blue'),
+        [NodeType.MODIFIER]: getCSSVar('--accent'),
         [NodeType.ARGUMENTS]: getCSSVar('--accent-indigo'),
         [NodeType.CONTEXT]: getCSSVar('--accent-teal'),
         [NodeType.FOREACH]: getCSSVar('--accent-purple'),
-        [NodeType.ENTRYPOINT]: getCSSVar('--accent-green'),
-        [NodeType.PLUGIN]: getCSSVar('--accent-blue'),
-        [NodeType.EXPOSURE]: getCSSVar('--accent-orange'),
-        [NodeType.EXPORT]: getCSSVar('--accent-red'),
+        [NodeType.ENTRYPOINT]: getCSSVar('--success'),
+        [NodeType.PLUGIN]: getCSSVar('--accent'),
+        [NodeType.EXPOSURE]: getCSSVar('--warning'),
+        [NodeType.EXPORT]: getCSSVar('--danger'),
         [NodeType.IF_STATEMENT]: getCSSVar('--accent-purple'),
-        [NodeType.SWITCH_STATEMENT]: getCSSVar('--accent-orange'),
-        [NodeType.SWITCH_CASE]: getCSSVar('--accent-blue')
+        [NodeType.SWITCH_STATEMENT]: getCSSVar('--warning'),
+        [NodeType.SWITCH_CASE]: getCSSVar('--accent')
     } as Record<string, string>,
-    edgeStroke: getCSSVar('--color-border-strong'),
-    canvasBg: getCSSVar('--color-bg'),
-    gridColor: getCSSVar('--color-text-muted'),
-    minimapMask: getCSSVar('--color-overlay'),
-    minimapBg: getCSSVar('--color-surface-1'),
-    nodeFallback: getCSSVar('--color-text-muted')
+    edgeStroke: getCSSVar('--border-secondary'),
+    canvasBg: getCSSVar('--background'),
+    gridColor: getCSSVar('--muted'),
+    minimapMask: getCSSVar('--overlay'),
+    minimapBg: getCSSVar('--surface-secondary'),
+    nodeFallback: getCSSVar('--muted')
 });
 
 const useCanvasThemeColors = () => {

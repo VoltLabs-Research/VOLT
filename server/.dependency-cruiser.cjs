@@ -9,9 +9,9 @@ module.exports = {
             comment:
                 'A module may only import from its own folder, from kernel modules '
                 + `(${KERNEL_MODULES.join(', ')}) or from @shared/**. Route anything else `
-                + 'through src/shared/contracts so modules stay physically detachable '
-                + '(see scripts/PHYSICAL_DETACH_PROOF.md). Known debt: warn until the '
-                + 'existing edges are routed through ports, then promote to error.',
+                + 'through src/shared/contracts so modules stay physically detachable. '
+                + 'Known debt: warn until the existing edges are routed through ports, '
+                + 'then promote to error.',
             severity: 'warn',
             from: { path: '^src/modules/([^/]+)/' },
             to: {

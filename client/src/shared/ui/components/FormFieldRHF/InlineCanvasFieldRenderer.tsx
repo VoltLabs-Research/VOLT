@@ -1,17 +1,5 @@
 import useFieldAutocomplete from './use-field-autocomplete';
 import { buildFieldAccessibilityState } from './field-accessibility';
-import {
-    AUTOCOMPLETE_MENU_CLASS,
-    AUTOCOMPLETE_OPTION_ACTIVE_CLASS,
-    AUTOCOMPLETE_OPTION_CLASS,
-    AUTOCOMPLETE_OPTION_LABEL_CLASS,
-    AUTOCOMPLETE_OPTION_VALUE_CLASS,
-    CONTAINER_LOADING_CLASS,
-    FIELD_ERROR_CLASS,
-    SELECT_ROOT_CLASS,
-    resolveFieldSurface,
-    resolveFieldSurfaceClasses
-} from './field-styles';
 import { useIsInFormSectionGroup } from '@/shared/ui/components/FormSection';
 import { Description, Label, ListBox, Select, Switch, cn } from '@heroui/react';
 import { useFloatingLayerRoot } from '@/shared/ui/utils/floating-layer';
@@ -66,20 +54,11 @@ const InlineCanvasFieldRenderer = ({
 
     const effectiveValue = field.value;
     const isCanvasVariant = variant === 'canvas';
-    const surface = resolveFieldSurface(variant, isInFormSectionGroup);
-    const surfaceClasses = resolveFieldSurfaceClasses(surface, fieldType, Boolean(label));
-    const fieldClass = isCanvasVariant ? 'form-field-canvas-input' : 'form-field-inline-input';
-    const selectClass = isCanvasVariant ? 'form-field-canvas-select' : 'form-field-inline-select';
-    const textareaClass = isCanvasVariant ? 'form-field-canvas-textarea' : 'form-field-inline-textarea';
-    const containerBaseClass = isCanvasVariant ? 'form-field-canvas' : 'form-field-inline';
+    const isCheckbox = fieldType === 'checkbox';
+    const surface = isCanvasVariant ? 'canvas' : (isInFormSectionGroup ? 'section' : 'inline');
+    const collapsesLabelColumn = !isCheckbox && !isCanvasVariant && !label;
     const datalistId = (suggestions?.length && !tokenAutocomplete.isEnabled) ? `${field.name}-suggestions` : undefined;
 
-    /*
-     * `aria-invalid` is not part of any HeroUI/React-Aria field's prop surface —
-     * react-aria's `filterDOMProps` drops unknown `aria-*` — so it is handed to
-     * `Select` / `Switch` as `isInvalid`, which is what puts the attribute on the
-     * real control. The plain `input` / `textarea` below still take the spread.
-     */
     const isInvalid = Boolean(error);
     const describedBy = fieldStatusAriaProps['aria-describedby'];
     const errorMessageId = fieldStatusAriaProps['aria-errormessage'];
@@ -99,7 +78,7 @@ const InlineCanvasFieldRenderer = ({
             return (
                 <Select
                     id={fieldId}
-                    className={cn(selectClass, 'labeled-input', SELECT_ROOT_CLASS)}
+                    className={cn(isCanvasVariant ? 'form-field-canvas-select' : 'form-field-inline-select', 'labeled-input flex-1 min-w-0')}
                     selectedKey={String(effectiveValue ?? '') || null}
                     onSelectionChange={(key) => field.onChange(key === null ? '' : String(key))}
                     placeholder={placeholder}
@@ -111,13 +90,16 @@ const InlineCanvasFieldRenderer = ({
                     aria-describedby={describedBy}
                     aria-errormessage={errorMessageId}
                 >
-                    <Select.Trigger className={surfaceClasses.selectTrigger}>
-                        {/*
-                          * bravais's trigger showed the selected option's `title`
-                          * only; RAC's default children render the whole item, so
-                          * a `description` would leak into the trigger.
-                          */}
-                        <Select.Value className={surfaceClasses.selectValue}>
+                    <Select.Trigger className={{
+                        inline: 'w-full min-h-0 px-3 py-[0.4375rem] pe-7 border border-border rounded-lg bg-transparent text-foreground',
+                        section: 'w-full h-auto min-h-0 p-0 pe-6 border-0 bg-transparent shadow-none text-muted hover:text-foreground',
+                        canvas: 'w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
+                    }[surface]}>
+                        <Select.Value className={{
+                            inline: 'text-sm',
+                            section: 'text-sm text-end tabular-nums',
+                            canvas: 'text-[0.7rem]'
+                        }[surface]}>
                             {({ isPlaceholder, selectedText, defaultChildren }) => (
                                 isPlaceholder ? defaultChildren : selectedText
                             )}
@@ -143,7 +125,7 @@ const InlineCanvasFieldRenderer = ({
             return (
                 <Switch
                     id={fieldId}
-                    size={surfaceClasses.toggleSize}
+                    size={isCanvasVariant ? 'sm' : 'md'}
                     isSelected={Boolean(effectiveValue)}
                     onChange={(next) => field.onChange(next)}
                     isInvalid={isInvalid}
@@ -183,7 +165,11 @@ const InlineCanvasFieldRenderer = ({
                     ref={tokenAutocomplete.textareaRef}
                     id={fieldId}
                     name={fieldName}
-                    className={cn(fieldClass, textareaClass, surfaceClasses.textareaControl)}
+                    className={cn(isCanvasVariant ? 'form-field-canvas-input form-field-canvas-textarea' : 'form-field-inline-input form-field-inline-textarea', {
+                        inline: 'flex-1 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent resize-y min-h-20',
+                        section: 'flex-1 min-w-0 px-0 py-1 border-0 bg-transparent text-muted text-sm text-left tabular-nums placeholder:text-muted placeholder:text-left focus:text-foreground resize-y min-h-20',
+                        canvas: 'flex-1 min-w-0 px-[0.4rem] border border-border rounded-lg bg-transparent text-foreground text-[0.7rem] transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-[0.7rem] resize-y min-h-[60px]'
+                    }[surface])}
                     value={String(effectiveValue ?? '')}
                     onChange={handleValueChange}
                     onBlur={field.onBlur}
@@ -212,7 +198,11 @@ const InlineCanvasFieldRenderer = ({
                     id={fieldId}
                     name={fieldName}
                     {...inputProps}
-                    className={cn(fieldClass, 'labeled-input', surfaceClasses.textControl)}
+                    className={cn(isCanvasVariant ? 'form-field-canvas-input' : 'form-field-inline-input', 'labeled-input', {
+                        inline: 'flex-1 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent',
+                        section: 'flex-1 min-w-0 px-0 py-1 border-0 bg-transparent text-muted text-sm text-right tabular-nums placeholder:text-muted placeholder:text-right focus:text-foreground',
+                        canvas: 'flex-1 min-w-0 h-6 px-[0.4rem] border border-border rounded-lg bg-transparent text-foreground text-[0.7rem] transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-[0.7rem]'
+                    }[surface])}
                     value={String(effectiveValue ?? '')}
                     onChange={handleValueChange}
                     onBlur={field.onBlur}
@@ -239,56 +229,65 @@ const InlineCanvasFieldRenderer = ({
         );
     };
 
-    /*
-     * The marker classes the four other modules' stylesheets still select on. They
-     * carry no styling of their own any more — `surfaceClasses.container` does —
-     * but they stay on the DOM so those overrides keep matching.
-     */
-    const checkboxContainerMarkers = fieldType === 'checkbox'
-        ? 'form-field-inline-checkbox-container checkbox-container'
-        : undefined;
-    const noLabelContainerMarker = (fieldType !== 'checkbox' && !isCanvasVariant && !label)
-        ? 'form-field-inline-no-label'
-        : undefined;
-    const containerClass = cn(containerBaseClass, checkboxContainerMarkers, noLabelContainerMarker, surfaceClasses.container);
-
-    const labelClass = isCanvasVariant
-        ? cn('canvas-form-label', surfaceClasses.label)
-        : cn('form-field-inline-label labeled-input-label', surfaceClasses.label);
-    const loadingClass = isLoading ? cn('is-loading form-field-loading', CONTAINER_LOADING_CLASS) : '';
-
     return (
-        <div className={cn(containerClass, loadingClass)}>
+        <div className={cn(
+            isCanvasVariant ? 'form-field-canvas' : 'form-field-inline',
+            isCheckbox && 'form-field-inline-checkbox-container checkbox-container',
+            collapsesLabelColumn && 'form-field-inline-no-label',
+            collapsesLabelColumn ? {
+                inline: 'grid grid-cols-[1fr] items-center gap-3 min-h-[2.375rem]',
+                section: 'grid grid-cols-[1fr] items-center gap-3 px-3.5 py-2 min-h-10 border-b border-border last:border-b-0',
+                canvas: 'flex flex-row items-center justify-between gap-2 min-h-6'
+            }[surface] : {
+                inline: 'grid grid-cols-[140px_1fr] items-center gap-3 min-h-[2.375rem]',
+                section: 'grid grid-cols-[minmax(88px,40%)_1fr] items-center gap-3 px-3.5 py-2 min-h-10 border-b border-border last:border-b-0',
+                canvas: 'flex flex-row items-center justify-between gap-2 min-h-6'
+            }[surface],
+            isLoading && 'is-loading form-field-loading opacity-70 pointer-events-none'
+        )}>
             {label && (
-                <label id={labelId} htmlFor={labelTargetId} className={labelClass}>
+                <label id={labelId} htmlFor={labelTargetId} className={cn(
+                    isCanvasVariant ? 'canvas-form-label' : 'form-field-inline-label labeled-input-label',
+                    isCheckbox ? {
+                        inline: 'shrink-0 text-[0.95rem] font-normal',
+                        section: 'shrink-0 text-[0.8125rem] font-normal text-foreground',
+                        canvas: 'w-auto min-w-0 flex-1 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
+                    }[surface] : {
+                        inline: 'shrink-0 text-[0.95rem] font-normal',
+                        section: 'shrink-0 text-[0.8125rem] font-normal text-foreground',
+                        canvas: 'min-w-[130px] shrink-0 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
+                    }[surface]
+                )}>
                     {label}
                 </label>
             )}
-            <div ref={tokenAutocomplete.refs.setReference} className={cn('render-input-container', surfaceClasses.controlSlot)}>
+            <div ref={tokenAutocomplete.refs.setReference} className={cn('render-input-container', {
+                inline: 'flex items-center justify-end relative w-full min-w-0',
+                section: 'flex items-center justify-end relative w-full min-w-0',
+                canvas: 'flex items-center justify-end relative w-full min-w-0 max-w-[150px]'
+            }[surface])}>
                 {renderInlineField()}
             </div>
 
             {tokenAutocomplete.isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={tokenAutocomplete.refs.setFloating} className={cn('form-field-autocomplete-menu', AUTOCOMPLETE_MENU_CLASS)} data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
+                    <div ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu flex flex-col max-h-[180px] overflow-y-auto border border-border rounded-lg bg-surface-secondary shadow-[0_8px_24px_rgba(0,0,0,0.25)] z-[99999]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
                         {tokenAutocomplete.options.map((option, index) => (
                             <button
                                 type='button'
                                 key={`${option.value}-${index}`}
                                 className={cn(
-                                    'form-field-autocomplete-option',
-                                    AUTOCOMPLETE_OPTION_CLASS,
-                                    index === tokenAutocomplete.activeIndex && 'is-active',
-                                    index === tokenAutocomplete.activeIndex && AUTOCOMPLETE_OPTION_ACTIVE_CLASS
+                                    'form-field-autocomplete-option w-full flex flex-col items-start gap-0.5 min-h-10 px-2 py-[0.4375rem] border-0 bg-transparent text-foreground text-left cursor-pointer hover:bg-surface-hover',
+                                    index === tokenAutocomplete.activeIndex && 'is-active bg-surface-hover'
                                 )}
                                 onMouseDown={(event) => {
                                     event.preventDefault();
                                     tokenAutocomplete.applyOption(option.value);
                                 }}
                             >
-                                <span className={cn('form-field-autocomplete-option-label', AUTOCOMPLETE_OPTION_LABEL_CLASS)}>{option.label}</span>
+                                <span className='form-field-autocomplete-option-label text-xs leading-[1.2]'>{option.label}</span>
                                 {option.label !== option.value && (
-                                    <span className={cn('form-field-autocomplete-option-value', AUTOCOMPLETE_OPTION_VALUE_CLASS)}>{option.value}</span>
+                                    <span className='form-field-autocomplete-option-value text-[0.65rem] leading-[1.1] text-muted'>{option.value}</span>
                                 )}
                             </button>
                         ))}
@@ -297,7 +296,7 @@ const InlineCanvasFieldRenderer = ({
             )}
 
             {error && (
-                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className={cn('form-field-error', FIELD_ERROR_CLASS)}>
+                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='form-field-error flex items-center gap-1 text-danger text-xs'>
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </div>

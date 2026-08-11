@@ -1,6 +1,6 @@
 import { createService, paginated, get, post, del } from '@/app/core/http/utils/create-service';
 
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { RetryFailedFramesResponse } from '@volt/contracts/modules/analysis/domain';
 

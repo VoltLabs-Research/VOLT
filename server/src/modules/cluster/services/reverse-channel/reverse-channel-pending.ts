@@ -2,7 +2,7 @@ import { clearPendingTimeout } from '@modules/cluster/services/reverse-channel/r
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
 import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
-import type { ContainerTerminalAttachment } from '@shared/contracts/ports';
+import type { ContainerTerminalAttachment } from '@shared/contracts/ports/ContainerRuntime';
 import type { TeamClusterDaemonSocketResponsePayload } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import logger from '@shared/infrastructure/logger';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';

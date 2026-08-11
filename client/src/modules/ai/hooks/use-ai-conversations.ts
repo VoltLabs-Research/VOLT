@@ -1,5 +1,6 @@
 import { conversationQuery, invalidateConversationsQueries } from '@/modules/ai/hooks/queries';
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +17,12 @@ const useAIConversations = (
     options: UseAIConversationsOptions
 ) => {
     const navigate = useNavigate();
-    const navigateOnConversationChange = options.navigateOnConversationChange ?? true;
+    const {
+        navigateOnConversationChange = true,
+        onConversationChange,
+        onConversationCreated,
+        checkAccessDeniedError
+    } = options;
 
     const conversationsResult = conversationQuery.useListQuery(
         {
@@ -48,8 +54,8 @@ const useAIConversations = (
                 navigate('/dashboard/ai');
             }
         }
-        options.onConversationChange?.(targetConversationId);
-    }, [navigate, navigateOnConversationChange, options.onConversationChange]);
+        onConversationChange?.(targetConversationId);
+    }, [navigate, navigateOnConversationChange, onConversationChange]);
 
     const handleCreateConversation = useCallback(async (initialTitle?: string) => {
         try {
@@ -57,18 +63,18 @@ const useAIConversations = (
                 title: initialTitle?.trim() || 'New Conversation'
             });
 
-            options.onConversationCreated?.();
+            onConversationCreated?.();
             handleConversationChange(conversation._id);
             return conversation;
         } catch (error) {
-            if (options.checkAccessDeniedError(error)) throw error;
+            if (checkAccessDeniedError(error)) throw error;
             reportError(error, {
                 surface: ErrorSurface.Toast,
                 fallbackTitle: 'Failed to create conversation'
             });
             throw error;
         }
-    }, [handleConversationChange, createConversationMutationResult, options.checkAccessDeniedError, options.onConversationCreated]);
+    }, [handleConversationChange, createConversationMutationResult, checkAccessDeniedError, onConversationCreated]);
 
     const handleDeleteConversation = useCallback(async (targetConversationId: string) => {
         await showPromise(
@@ -94,14 +100,14 @@ const useAIConversations = (
                 params: { title: normalizedTitle }
             });
         } catch (error) {
-            if (options.checkAccessDeniedError(error)) throw error;
+            if (checkAccessDeniedError(error)) throw error;
             reportError(error, {
                 surface: ErrorSurface.Toast,
                 fallbackTitle: 'Failed to rename conversation'
             });
             throw error;
         }
-    }, [renameConversationMutationResult, options.checkAccessDeniedError]);
+    }, [renameConversationMutationResult, checkAccessDeniedError]);
 
     return {
         conversations,

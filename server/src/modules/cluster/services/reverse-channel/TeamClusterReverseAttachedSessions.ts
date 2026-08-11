@@ -24,7 +24,10 @@ import {
     type TeamClusterDaemonSessionEndPayload,
     type TeamClusterDaemonSocketResponsePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports';
+import type {
+    ContainerTerminalAttachment,
+    ContainerTerminalSize
+} from '@shared/contracts/ports/ContainerRuntime';
 import { randomUUID } from 'node:crypto';
 
 type AttachedSessionEntry = PendingTerminalEntry | PendingWebSocketEntry;

@@ -1,5 +1,5 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
-import JobGroup, { JOB_GROUP_CHILDREN_CLASS_NAMES } from '@/modules/jobs/components/JobGroup';
+import JobGroup from '@/modules/jobs/components/JobGroup';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { Inbox } from 'lucide-react';
@@ -45,7 +45,7 @@ const JobsHistory = ({
     let content: ReactNode = filteredGroups.map((group: TJG) => {
         if (displayMode === 'children-only') {
             return group.frameGroups.map((frame) => (
-                <div key={`${group.trajectoryId}-${frame.timestep}`} className={JOB_GROUP_CHILDREN_CLASS_NAMES}>
+                <div key={`${group.trajectoryId}-${frame.timestep}`} className='pt-1 pl-4'>
                     <FrameGroup frame={frame} />
                 </div>
             ));

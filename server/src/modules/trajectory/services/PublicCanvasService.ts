@@ -29,7 +29,7 @@ import { createDownloadStreamResponse } from '@shared/infrastructure/http/respon
 
 import type Trajectory from '@modules/trajectory/models/Trajectory';
 import type { TrajectoryFrame } from '@shared/contracts/types/Trajectory';
-import type { DownloadStreamOutput } from '@shared/contracts/types';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { StreamableOutput } from '@shared/contracts/types/StreamableOutput';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type {
@@ -58,12 +58,10 @@ import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operatio
 import type { GetAnalysisFrameLogOutput } from '@shared/contracts/operations/GetAnalysisFrameLog';
 import type { GetRasterMetadataOutput } from '@shared/contracts/operations/GetRasterMetadata';
 import type { GetSimulationCellByTrajectoryOutput } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
-import type {
-    GetPluginByIdOutput,
-    GetPluginExposureGLBOutput,
-    GetPluginListingDocumentsOutput,
-    GetSubListingOutput
-} from '@shared/contracts/operations';
+import type { GetPluginByIdOutput } from '@shared/contracts/operations/GetPluginById';
+import type { GetPluginExposureGLBOutput } from '@shared/contracts/operations/GetPluginExposureGLB';
+import type { GetPluginListingDocumentsOutput } from '@shared/contracts/operations/GetPluginListingDocuments';
+import type { GetSubListingOutput } from '@shared/contracts/operations/GetSubListing';
 
 /** Every canvas call is trajectory-scoped; the viewer may be an anonymous guest. */
 interface PublicCanvasRequest{

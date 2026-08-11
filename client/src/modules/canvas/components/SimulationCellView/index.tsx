@@ -18,10 +18,6 @@ const PBC_AXES = ['x', 'y', 'z'] as const;
 
 const cloneVectors = (vectors: number[][]): number[][] => vectors.map((v) => [...v]);
 
-/**
- * bravais's `Checkbox` took an inline `label` and a native change event; HeroUI's is
- * compositional and reports the next boolean directly.
- */
 interface CellCheckboxProps {
     isSelected: boolean;
     label: string;

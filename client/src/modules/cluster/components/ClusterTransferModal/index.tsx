@@ -1,6 +1,8 @@
-import { ErrorSurface, reportError } from '@/shared/errors/core';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
 import { useTeamClusterTransferJobsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { Modal, closeModal } from '@/shared/ui/modal';
+import { Modal } from '@/shared/ui/modal/Modal';
+import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import ClusterOptionSelect from '@/modules/cluster/components/shared/ClusterOptionSelect';
 import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';

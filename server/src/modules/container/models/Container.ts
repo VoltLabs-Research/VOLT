@@ -5,7 +5,7 @@ import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFold
 import Team from '@modules/team/models/Team';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import User from '@modules/auth/models/User';
-import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@shared/contracts/ports/IContainerService';
+import type { ContainerEnvironmentVariable, ContainerPortMapping } from '@shared/contracts/ports/ContainerRuntime';
 
 @Entity('containers')
 @Index(['team', 'folder', 'createdAt'])

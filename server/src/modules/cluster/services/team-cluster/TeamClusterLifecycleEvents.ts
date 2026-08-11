@@ -1,7 +1,7 @@
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
-import type { TeamClusterStatus } from '@shared/contracts/types/TeamCluster';
+import type { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { toTeamClusterView, type TeamClusterView } from '@modules/cluster/services/team-cluster/TeamClusterView';
 import {
     getTeamClusterRoom,

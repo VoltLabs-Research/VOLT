@@ -34,16 +34,18 @@ const useSocketQueryInvalidation = (
             return;
         }
 
+        const pendingQueryKeys = pendingQueryKeysRef.current;
+
         const scheduleInvalidation = (queryKey: QueryKey): void => {
-            pendingQueryKeysRef.current.set(JSON.stringify(queryKey), queryKey);
+            pendingQueryKeys.set(JSON.stringify(queryKey), queryKey);
 
             if (flushTimerRef.current) {
                 return;
             }
 
             flushTimerRef.current = setTimeout(() => {
-                const queryKeys = Array.from(pendingQueryKeysRef.current.values());
-                pendingQueryKeysRef.current.clear();
+                const queryKeys = Array.from(pendingQueryKeys.values());
+                pendingQueryKeys.clear();
                 flushTimerRef.current = null;
                 Promise.allSettled(
                     queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
@@ -71,7 +73,7 @@ const useSocketQueryInvalidation = (
                 clearTimeout(flushTimerRef.current);
                 flushTimerRef.current = null;
             }
-            pendingQueryKeysRef.current.clear();
+            pendingQueryKeys.clear();
             unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
     }, [socketService, enabled, debounceMs]);

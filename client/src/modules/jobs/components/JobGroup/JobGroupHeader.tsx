@@ -20,31 +20,6 @@ interface JobGroupHeaderProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     onToggle: () => void;
 };
 
-/**
- * `.job-group-header` + `.job-group-toggle`: a full-width, borderless, transparent
- * row that keeps a control's height and its own focus ring instead of the UA outline.
- */
-const TOGGLE_CLASS_NAMES = [
-    'w-full min-h-[3.25rem] border-0 bg-transparent text-left select-none rounded-2xl',
-    'transition-colors duration-200 hover:bg-surface-hover',
-    'focus-visible:outline-none',
-    'focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
-].join(' ');
-
-/**
- * Two durations, so this is the `transition` shorthand rather than
- * `transition-[color,text-shadow]` — the colour settles faster than the glow.
- * The reduced-motion opt-out is global now (`index.css`), not restated per rule.
- */
-const NAME_CLASS_NAMES = 'max-w-[200px] truncate [transition:color_140ms_ease,text-shadow_180ms_ease]';
-
-const NAME_TONE_CLASS_NAMES: Record<'queued' | 'running' | 'completed', string> = {
-    queued: 'text-warning',
-    // `--accent-blue`, which is now the foreground — the same ink the row already has.
-    running: 'text-foreground',
-    completed: 'text-success text-shadow-[0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)]'
-};
-
 const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
     group,
     isExpanded,
@@ -99,15 +74,15 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         }
 
         if (showCompletedHighlight) {
-            return NAME_TONE_CLASS_NAMES.completed;
+            return 'text-success text-shadow-[0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)]';
         }
 
         if (group.overallStatus === FrameJobGroupStatus.Running) {
-            return NAME_TONE_CLASS_NAMES.running;
+            return 'text-foreground';
         }
 
         if (group.overallStatus === FrameJobGroupStatus.Queued) {
-            return NAME_TONE_CLASS_NAMES.queued;
+            return 'text-warning';
         }
 
         return '';
@@ -117,7 +92,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         <button
             ref={ref}
             type='button'
-            className={TOGGLE_CLASS_NAMES}
+            className='w-full min-h-[3.25rem] border-0 bg-transparent text-left select-none rounded-2xl transition-colors duration-200 hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
             onClick={onToggle}
             aria-expanded={isExpanded}
             aria-controls={contentId}
@@ -126,7 +101,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         >
             <div className='flex flex-row items-center justify-between gap-2 p-4 w-full'>
                 <div className='flex flex-col gap-2'>
-                    <h3 className={cn('text-xs font-semibold text-foreground truncate', NAME_CLASS_NAMES, nameToneClassName)}>
+                    <h3 className={cn('text-xs font-semibold text-foreground truncate max-w-[200px] [transition:color_140ms_ease,text-shadow_180ms_ease]', nameToneClassName)}>
                         {group.trajectoryName}
                     </h3>
                     <p className='text-xs text-muted'>

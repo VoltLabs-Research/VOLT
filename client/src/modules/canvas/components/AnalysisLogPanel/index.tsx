@@ -2,16 +2,6 @@ import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-/**
- * `.canvas-analysis-log-stream`. `--color-surface-0` / `-1` are `--surface` and
- * `--surface-secondary`; the two `color-mix` stops stay literal because the gradient is
- * the point.
- */
-const LOG_STREAM_CLASS = 'min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_86%,transparent)_0%,color-mix(in_srgb,var(--surface-secondary)_92%,transparent)_100%)]';
-
-/** `.canvas-analysis-log-terminal` */
-const LOG_TERMINAL_CLASS = 'm-0 whitespace-pre-wrap break-words px-4 pb-[1.1rem] pt-[0.85rem] font-mono text-[0.72rem] leading-[1.55] text-foreground';
-
 interface AnalysisLogPanelProps {
     analysisId?: string;
     timestep?: number;
@@ -108,13 +98,13 @@ const AnalysisLogPanel = ({
 
     return (
         <div className='flex h-full min-h-0 flex-1 flex-col'>
-            <div className={LOG_STREAM_CLASS} ref={scrollRef}>
+            <div className='min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_86%,transparent)_0%,color-mix(in_srgb,var(--surface-secondary)_92%,transparent)_100%)]' ref={scrollRef}>
                 {helperText ? (
                     <div className='flex min-h-0 flex-1 flex-row items-center justify-center p-4'>
                         <p className='text-xs text-muted'>{helperText}</p>
                     </div>
                 ) : (
-                    <pre className={LOG_TERMINAL_CLASS}>
+                    <pre className='m-0 whitespace-pre-wrap break-words px-4 pb-[1.1rem] pt-[0.85rem] font-mono text-[0.72rem] leading-[1.55] text-foreground'>
                         {segments.map((segment, index) => (
                             <span
                                 key={`${segment.occurredAt}-${index}`}

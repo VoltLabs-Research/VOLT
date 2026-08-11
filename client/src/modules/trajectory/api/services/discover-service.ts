@@ -1,5 +1,6 @@
-import { createService, paginated } from '@/app/core/http/utils/create-service';
-import type { PaginatedResponse } from '@/shared/pagination/PaginationResponse';
+import { createService, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
+import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 export interface DiscoverTeamSummary {
@@ -22,11 +23,13 @@ type ListPublicTeamTrajectoriesResponse = PaginatedResponse<Trajectory> & {
     _meta?: DiscoverTeamTrajectoriesMeta;
 };
 
+const routes = serviceRoutes('/public/teams');
+
 const endpoints = {
     listPublicTeamTrajectories: paginated<
         ListPublicTeamTrajectoriesInput,
         ListPublicTeamTrajectoriesResponse
-    >('/:teamId/trajectories', {
+    >(routes.path(trajectoryRoutes.discoverListPublicTrajectories), {
         omit: ['teamId'],
         query: ({ page, limit, search }) => ({
             page,
