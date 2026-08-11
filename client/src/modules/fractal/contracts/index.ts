@@ -42,6 +42,8 @@ export type UseGlbSceneParams = {
     pointSizeMultiplier: number;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
+    /** Draws this scene above the others instead of letting depth hide it. */
+    renderOnTop?: boolean;
     visibilityMask?: Uint8Array | null;
     selectionHighlightMask?: Uint8Array | null;
     selectionHighlightColor?: string | null;

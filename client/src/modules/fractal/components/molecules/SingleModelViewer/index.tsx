@@ -1,5 +1,6 @@
 import usePipelineSlicePlanes from '@/modules/canvas/hooks/use-pipeline-slice-planes';
 import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import useExpressionVisibilityMask from '@/modules/canvas/hooks/use-expression-visibility-mask';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
 import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
@@ -183,6 +184,13 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     );
 
     const sceneKey = getSceneKey(sceneConfig);
+    /*
+     * A dislocation traces a defect and the defect mesh wraps that same defect, so the
+     * line is always inside the surface and depth alone would hide it. Lines are lifted
+     * above the rest for that reason; see `applyMeshDepthOverlay`.
+     */
+    const renderOnTop = sceneConfig.source === 'plugin'
+        && sceneConfig.sceneRenderMetadata?.exporter === Exporter.LINE;
 
     const {
         mask: expressionVisibilityMask,
@@ -246,6 +254,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         pointSizeMultiplier,
         pointCloudSettings,
         lineSettings,
+        renderOnTop,
             sceneVisualOverrides,
         visibilityMask: expressionVisibilityMask,
         selectionHighlightMask: expressionHighlightMask,

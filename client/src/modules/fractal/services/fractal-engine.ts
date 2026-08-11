@@ -16,7 +16,7 @@ import {
     applyPointCloudSelectionHighlight,
     applyPointCloudVisibilityMask
 } from '@/modules/fractal/utils/point-cloud-vertex-overrides';
-import { applyMeshColorOverride, applyMeshOpacity } from '@/modules/fractal/utils/mesh-visual-overrides';
+import { applyMeshColorOverride, applyMeshDepthOverlay, applyMeshOpacity } from '@/modules/fractal/utils/mesh-visual-overrides';
 import { applyLineWidth } from '@/modules/fractal/utils/line-geometry-styling';
 import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
@@ -42,6 +42,8 @@ export type FractalParams = {
     sceneKey?: string;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
+    /** Draws this scene above the others instead of letting depth hide it. */
+    renderOnTop?: boolean;
 };
 
 export type EngineCallbacks = {
@@ -122,6 +124,7 @@ export class FractalEngine {
     private lastOpacitySceneKey: string | undefined = undefined;
     private lastOpacityValue: number = 1;
     private lastPointOpacityValue: number = 1;
+    private lastDepthOverlay: boolean | undefined = undefined;
     private lastColorSceneKey: string | undefined = undefined;
     private lastColorValue: string | undefined = undefined;
     private lastBaseLineWidth: number | undefined = undefined;
@@ -325,6 +328,14 @@ export class FractalEngine {
 
         applyPointCloudOpacity(this.traversalCache.pointClouds, pointOpacity, pointCloudSettings);
         applyMeshOpacity(this.traversalCache.meshes, opacity);
+        this.surface.invalidate();
+    }
+
+    /** Keeps this scene visible through the others; see `applyMeshDepthOverlay`. */
+    updateDepthOverlay(overlay: boolean) {
+        if (!this.model || overlay === this.lastDepthOverlay) return;
+        this.lastDepthOverlay = overlay;
+        applyMeshDepthOverlay(this.traversalCache.meshes, overlay);
         this.surface.invalidate();
     }
 

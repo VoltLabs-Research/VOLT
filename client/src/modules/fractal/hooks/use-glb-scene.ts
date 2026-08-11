@@ -26,6 +26,7 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
         sceneKey: params.sceneKey,
         pointCloudSettings: params.pointCloudSettings,
         lineSettings: params.lineSettings,
+        renderOnTop: params.renderOnTop,
     };
 }
 
@@ -103,6 +104,7 @@ export default function useGlbScene(
                             paramsRef.current.sceneVisualOverrides
                         );
                         engine.updateLineWidth(paramsRef.current.lineSettings);
+                        engine.updateDepthOverlay(Boolean(paramsRef.current.renderOnTop));
                         engine.setVisibilityMask(paramsRef.current.visibilityMask ?? null);
                         engine.setSelectionHighlight(
                             paramsRef.current.selectionHighlightMask ?? null,
@@ -152,7 +154,9 @@ export default function useGlbScene(
             paramsRef.current.sceneVisualOverrides
         );
         engine.updateLineWidth(paramsRef.current.lineSettings);
+        engine.updateDepthOverlay(Boolean(params.renderOnTop));
     }, [
+        params.renderOnTop,
         params.url,
         params.resourceKey,
         params.sliceClippingPlanes,

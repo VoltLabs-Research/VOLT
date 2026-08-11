@@ -11,6 +11,34 @@ export const applyMeshOpacity = (meshes: ReadonlyArray<THREE.Mesh>, opacity: num
     });
 };
 
+const OVERLAY_RENDER_ORDER = 10;
+
+export const applyMeshDepthOverlay = (meshes: ReadonlyArray<THREE.Mesh>, overlay: boolean): void => {
+    meshes.forEach((mesh) => {
+        mesh.renderOrder = overlay ? OVERLAY_RENDER_ORDER : 0;
+        forEachMaterial(mesh, (material) => {
+            const userData = material.userData;
+            if (overlay) {
+                if (userData.baseDepthTest === undefined) {
+                    userData.baseDepthTest = material.depthTest;
+                    userData.baseDepthWrite = material.depthWrite;
+                }
+                material.depthTest = false;
+                material.depthWrite = false;
+                material.needsUpdate = true;
+                return;
+            }
+
+            if (userData.baseDepthTest === undefined) return;
+            material.depthTest = userData.baseDepthTest as boolean;
+            material.depthWrite = userData.baseDepthWrite as boolean;
+            delete userData.baseDepthTest;
+            delete userData.baseDepthWrite;
+            material.needsUpdate = true;
+        });
+    });
+};
+
 export const applyMeshColorOverride = (
     meshes: ReadonlyArray<THREE.Mesh>,
     override: THREE.Color | null
