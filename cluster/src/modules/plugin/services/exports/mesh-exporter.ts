@@ -1,7 +1,7 @@
 import { DuckDBConnection } from '@duckdb/node-api';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { logger } from '@shared/infrastructure/logger';
-import { stageExportBufferUpload, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
+import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
 import { readMeshParquetSource } from '@modules/plugin/services/exports/export-node-processor-types';
 import { sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
@@ -148,6 +148,14 @@ const processMeshFromParquet = async (
             `SELECT x, y, z FROM read_parquet(${sqlString(source.vertices)}) ORDER BY slot`
         );
         let positionOffset = 0;
+        /*
+         * Yielding per chunk means one event-loop round-trip every 2048 rows, and a chunk
+         * here is a fraction of a millisecond of work — so the loop paid ~530 round-trips
+         * to fill both arrays and inherited the loop's queue latency on every one of them.
+         * `YIELD_INTERVAL` is the interval the atomistic exporter already uses, and it
+         * keeps the loop responsive at a hundredth of the round-trips.
+         */
+        let sinceLastYield = 0;
         for (let chunk = await positionsResult.fetchChunk(); chunk; chunk = await positionsResult.fetchChunk()) {
             const rows = chunk.rowCount;
             if (rows === 0) break;
@@ -161,7 +169,11 @@ const processMeshFromParquet = async (
                 positions[base + 2] = Number(zs.getItem(row) ?? 0);
                 positionOffset += 1;
             }
-            await yieldToEventLoop();
+            sinceLastYield += rows;
+            if (sinceLastYield >= YIELD_INTERVAL) {
+                sinceLastYield = 0;
+                await yieldToEventLoop();
+            }
         }
 
         /* Upper bound: the joins can only drop facets, never add them. */
@@ -178,6 +190,7 @@ const processMeshFromParquet = async (
             + 'ORDER BY f.ord'
         );
         let indexOffset = 0;
+        sinceLastYield = 0;
         for (let chunk = await trianglesResult.fetchChunk(); chunk; chunk = await trianglesResult.fetchChunk()) {
             const rows = chunk.rowCount;
             if (rows === 0) break;
@@ -190,7 +203,11 @@ const processMeshFromParquet = async (
                 indices[indexOffset + 2] = Number(ic.getItem(row) ?? 0);
                 indexOffset += 3;
             }
-            await yieldToEventLoop();
+            sinceLastYield += rows;
+            if (sinceLastYield >= YIELD_INTERVAL) {
+                sinceLastYield = 0;
+                await yieldToEventLoop();
+            }
         }
 
         if (indexOffset === 0) {
