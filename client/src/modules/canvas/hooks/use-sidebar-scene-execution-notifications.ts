@@ -47,6 +47,20 @@ const useSidebarSceneExecutionNotifications = ({
         if (payload.status === AnalysisStatus.Running) {
             if (pending) {
                 pendingStore.update(analysisId, { totalFrames: payload.totalFrames });
+
+                const selectedAnalysisId = selectedAnalysisIdRef.current;
+                const selectedPending = selectedAnalysisId
+                    ? pendingStore.get(selectedAnalysisId)
+                    : undefined;
+                const shouldAutoSelect = Boolean(pending.autoSelect)
+                    && (!selectedAnalysisId
+                        || selectedAnalysisId === analysisId
+                        || !selectedPending?.autoSelect);
+
+                if (shouldAutoSelect && selectedAnalysisId !== analysisId) {
+                    autoSelectChainRef.current = analysisId;
+                    selectAnalysis(analysisId, pending.timestep);
+                }
             }
             return;
         }

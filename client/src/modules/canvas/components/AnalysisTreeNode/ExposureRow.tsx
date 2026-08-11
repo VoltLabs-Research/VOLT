@@ -2,7 +2,6 @@ import { Download } from 'lucide-react';
 import { CanvasTreeRow, MaybeContextMenu } from '../CanvasTree';
 import { DEFAULT_LINE_WIDTH, buildPluginScene, buildSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
-import { getArtifactIcon } from './artifact-rows';
 import { cn } from '@heroui/react';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { isSameScene } from '@/modules/canvas/utils/scene-identity';
@@ -131,7 +130,6 @@ const ExposureRow = ({
             <CanvasTreeRow
                 indent='lg'
                 isActive={isActive}
-                icon={getArtifactIcon('ready')}
                 label={(
                     <span className={cn(
                         'flex w-full min-w-0 items-center gap-1.5 [&>.truncate]:min-w-0 [&>.truncate]:transition-[color,text-shadow] [&>.truncate]:duration-[180ms]',

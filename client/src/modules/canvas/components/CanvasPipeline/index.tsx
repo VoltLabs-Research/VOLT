@@ -1,4 +1,4 @@
-import { Checkbox, cn } from '@heroui/react';
+import { Switch, cn } from '@heroui/react';
 import { useCanvasPipelineStore, useStages } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
@@ -8,7 +8,7 @@ import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { memo, useEffect, useState } from 'react';
-import { Filter, FlaskConical, GripVertical, Palette, Scissors, Settings, Trash2 } from 'lucide-react';
+import { GripVertical, Settings, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PipelineStage, StageType } from '../../store/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../store/canvas-pipeline';
@@ -21,13 +21,6 @@ interface CanvasPipelineProps {
     currentTimestep?: number;
     canMutateCanvas?: boolean;
 }
-
-const STAGE_ICONS: Record<StageType, ReactNode> = {
-    'analysis-plugin': <FlaskConical size={13} aria-hidden='true' />,
-    'color-coding': <Palette size={13} aria-hidden='true' />,
-    'slice-plane': <Scissors size={13} aria-hidden='true' />,
-    'expression-select': <Filter size={13} aria-hidden='true' />
-};
 
 const STAGE_LABELS: Record<StageType, string> = {
     'analysis-plugin': 'Analysis',
@@ -155,8 +148,7 @@ const CanvasPipeline = ({
                                             className='flex min-w-0 flex-1 cursor-pointer select-none items-center gap-1.5 border-none bg-transparent p-0 text-inherit'
                                             aria-label={`${label} settings`}
                                         >
-                                            <span className='flex items-center text-muted'>{STAGE_ICONS[stage.type]}</span>
-                                            <span className={cn('min-w-0 flex-1 truncate text-left text-sm', 'text-muted')}>
+                                            <span className={cn('min-w-0 flex-1 truncate text-left text-xs', 'text-muted')}>
                                                 {label}
                                             </span>
                                             <span className='ml-auto flex items-center text-muted opacity-0 transition-opacity duration-[120ms] ease-out group-hover:opacity-100 group-focus-within:opacity-100' aria-hidden='true'>
@@ -184,18 +176,13 @@ const CanvasPipeline = ({
                                         className='inline-flex'
                                         title={canToggle ? (stage.enabled ? 'Disable' : 'Enable') : 'Run the pipeline to enable this stage'}
                                     >
-                                        <Checkbox
+                                        <Switch
+                                            size='sm'
                                             isSelected={stage.enabled}
                                             isDisabled={!canToggle}
                                             onChange={() => toggleStageEnabled(stage.id, trajectoryId)}
                                             aria-label={stage.enabled ? 'Disable stage' : 'Enable stage'}
-                                        >
-                                            <Checkbox.Content>
-                                                <Checkbox.Control>
-                                                    <Checkbox.Indicator />
-                                                </Checkbox.Control>
-                                            </Checkbox.Content>
-                                        </Checkbox>
+                                        />
                                     </span>
                                 </div>
                             </div>

@@ -10,9 +10,8 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from './PipelineRunControl';
 import { Button, Popover } from '@heroui/react';
-import { Filter, FlaskConical, Palette, Play, Plus, Scissors } from 'lucide-react';
+import { Play, Plus } from 'lucide-react';
 import { useState } from 'react';
-import type { ReactNode } from 'react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
@@ -24,14 +23,12 @@ interface PipelineHeaderActionsProps {
 }
 
 interface AddMenuItemProps {
-    icon: ReactNode;
     label: string;
     onSelect: () => void;
 }
 
-const AddMenuItem = ({ icon, label, onSelect }: AddMenuItemProps) => (
+const AddMenuItem = ({ label, onSelect }: AddMenuItemProps) => (
     <button type='button' role='menuitem' className='flex w-full min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-xs text-foreground hover:bg-default' onClick={onSelect}>
-        {icon}
         <span className='min-w-0 flex-1 truncate'>{label}</span>
     </button>
 );
@@ -96,29 +93,21 @@ const PipelineHeaderActions = ({
                 </Button>
                 <Popover.Content placement='bottom start'>
                     <Popover.Dialog id='canvas-pipeline-add-menu' aria-label='Add pipeline stage' className='flex min-w-45 max-w-80 flex-col p-1'>
-                        <span className='px-2 pb-0.5 pt-1 text-xs font-semibold uppercase tracking-[0.05em] text-muted'>View</span>
                         <AddMenuItem
-                            icon={<Scissors size={13} aria-hidden='true' />}
                             label='Slice Plane'
                             onSelect={() => { handleAdd('slice-plane', { ...DEFAULT_SLICE_PLANE_STAGE_CONFIG }); closeAddMenu(); }}
                         />
                         <AddMenuItem
-                            icon={<Filter size={13} aria-hidden='true' />}
                             label='Expression Select'
                             onSelect={() => { handleAdd('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG }); closeAddMenu(); }}
                         />
                         <AddMenuItem
-                            icon={<Palette size={13} aria-hidden='true' />}
                             label='Color Coding'
                             onSelect={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); closeAddMenu(); }}
                         />
-                        {modifiers.length > 0 && (
-                            <span className='px-2 pb-0.5 pt-1 text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Plugins</span>
-                        )}
                         {modifiers.map((modifier) => (
                             <AddMenuItem
                                 key={modifier.pluginId}
-                                icon={<FlaskConical size={13} aria-hidden='true' />}
                                 label={modifier.name}
                                 onSelect={() => {
                                     handleAdd('analysis-plugin', {
