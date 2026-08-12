@@ -5,7 +5,6 @@ import { pipeline } from 'node:stream/promises';
 import { Open as UnzipperOpen } from 'unzipper';
 import fg from 'fast-glob';
 
-/** Extracts plugin project archives into the runtime cache, once per archive revision. */
 
 export const normalizeProjectRelativePath = (value: string): string => {
     return path.posix.normalize(value.replace(/\\/g, '/'))
@@ -50,7 +49,6 @@ const extractZip = async (zipPath: string, destinationDir: string): Promise<void
     }
 };
 
-/** Re-extracts the archive unless the on-disk marker already matches the archive revision. */
 export const ensureExtractedProject = async (input: {
     archivePath: string;
     projectDir: string;

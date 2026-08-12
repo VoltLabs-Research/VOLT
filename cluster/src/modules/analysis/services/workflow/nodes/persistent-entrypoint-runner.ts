@@ -22,10 +22,6 @@ import { isRecord } from '@shared/domain/utilities/is-record';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 
-/**
- * The rendered argument template doubles as the plugin config channel, and its
- * content is authored outside the daemon, so the parse result is untrusted here.
- */
 const buildPluginConfig = (
     preparedArgs: ResolvedWorkflowEntrypointArgs,
     context: WorkflowExecutionContext
@@ -94,7 +90,6 @@ const buildSharedFramePublish = (frame: TrajectoryFrameData): SharedFramePublish
     return { columns };
 };
 
-/** Plugin stdout is untrusted, so the result is coerced rather than typed. */
 const serializePluginResult = (result: unknown): string => {
     if (result === undefined || result === null) {
         return '';
@@ -138,10 +133,6 @@ const resolveEntrypointScript = (
     return script;
 };
 
-/**
- * Runs a python entrypoint through the warm persistent plugin pool, or returns null
- * when this entrypoint cannot use it and has to fall back to a one-shot subprocess.
- */
 export const runPersistentEntrypoint = async (
     { context, entrypoint, execution }: WorkflowEntrypointExecutionRequest,
     executionRuntime: PluginExecutionRuntime,

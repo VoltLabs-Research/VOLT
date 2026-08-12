@@ -16,12 +16,6 @@ export interface AtomProperties {
 export type PerAtomColumnarData = Record<string, AtomPropertyValue[]>;
 export type PerAtomProperties = AtomProperties[] | PerAtomColumnarData;
 
-/**
- * A per-atom result still sitting in the plugin's parquet file.
- *
- * Carried instead of rows so the exposure parquet can be produced by projection,
- * without every atom becoming a JS object first.
- */
 export interface PerAtomParquetSource {
     filePath: string;
     rowCount: number;

@@ -14,13 +14,6 @@ import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import { findTeamClusterByIdWithSensitiveData, toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 
-/* Placement for cross-module work: which team cluster should own a storage
- * write, a compute job, or any connected workload.
- *
- * All three are the same walk — honour an explicitly requested cluster if it can
- * do the job, otherwise score every connected candidate on its latest heartbeat
- * metrics and take the best. Only the capability filter, the error codes and the
- * co-location penalty differ, so `SelectionTarget` carries that difference. */
 
 type SelectionCapability = 'compute' | 'storage';
 type SelectionTarget = SelectionCapability | 'connected';
@@ -28,7 +21,6 @@ type SelectionTarget = SelectionCapability | 'connected';
 const NETWORK_USAGE_SATURATION_KBPS = 25_000;
 const HARD_STORAGE_ASSIGNMENT_PENALTY = 100;
 
-/** Cost of placing work away from the cluster that already owns its counterpart. */
 const REMOTE_PEER_PENALTY = {
     compute: 20,
     storage: 8
@@ -49,7 +41,6 @@ const buildSelectionError = ([code, message]: readonly [ErrorCode, string]): App
 
 const clampPercent = (value: number): number => Math.min(100, Math.max(0, value));
 
-/** Absent heartbeat metrics score as an average cluster rather than a dead one. */
 const normalizePercent = (value: number | undefined): number => clampPercent(value ?? 50);
 
 const normalizeNetworkUsage = (metrics: SystemMetrics | null): number => metrics
@@ -159,7 +150,6 @@ class TeamClusterSelectionService implements ITeamClusterSelectionService {
         return entities.map(toTeamClusterLike);
     }
 
-    /** Highest score wins; candidates is non-empty, so there is always a winner. */
     async #pickBestClusterId(target: SelectionTarget, candidates: TeamCluster[], preferredPeerClusterId?: string): Promise<string> {
         const scoredCandidates = await Promise.all(candidates.map(async (cluster) => {
             const metrics = await systemMetricsRepository.getLatestByClusterId(cluster._id);

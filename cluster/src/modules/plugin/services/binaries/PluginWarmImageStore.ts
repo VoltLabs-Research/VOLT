@@ -15,7 +15,6 @@ import {
     PYTHON_VENV_DIRECTORY
 } from '@modules/plugin/services/binaries/python-runtime-provisioner';
 
-/** Publishes and restores warm images: tarballs of a provisioned python runtime directory. */
 
 const WARM_IMAGE_MARKER_FILENAME = '.warm-image-applied';
 const WARM_IMAGE_OBJECT_KEY_PREFIX = 'plugins/warm/';
@@ -95,7 +94,6 @@ export class PluginWarmImageStore {
         return descriptor;
     }
 
-    /** Returns false when no warm image exists yet, so provisioning can continue locally. */
     public async restore(input: {
         binaryObjectPath: string;
         binaryHash: string;

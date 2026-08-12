@@ -1,63 +1,11 @@
-/**
- * VOLT desktop's entire stylesheet.
- *
- * This one file replaces bravais (`styles.css` + `components.css` + `tailwind.css`),
- * the renderer's own `tailwind.css`, and the four per-component sheets that had
- * grown up beside it — Titlebar (182 lines), DevModeModal (107), Onboarding (103)
- * and DockerGate (98). Everything visual now comes from HeroUI's components plus
- * Tailwind utilities written at the call site; what remains here is only what a
- * utility class cannot express:
- *
- *   1. token rebasing — HeroUI's tokens redefined into VOLT desktop's identity
- *   2. two real utilities for `-webkit-app-region`, which Tailwind has no
- *      equivalent for and which a frameless window cannot work without
- *   3. chrome that is genuinely bespoke — the frameless window's own rounded
- *      corner and its platform transparency, both of which land on `html`, `body`
- *      and `#root`: elements that live in `index.html`, so no `className` reaches
- *      them
- *
- * Same rule as the client's sheet keeps this file this size: a rule may live here
- * only if it has no selector of its own (a token redefinition) or if no
- * combination of utilities can produce it. "It would be tidier in CSS" is not a
- * reason.
- */
 
 @import '@heroui/styles';
 
-/**
- * HeroUI does not own the type stack, so these are plain `@theme` (not `inline`):
- * we want the literal value emitted into `:root`, not a pass-through to a token
- * that nothing declares. Tailwind's preflight feeds `--font-sans` to `html`
- * through `--default-font-family`, which is what replaces the `font-family` the
- * old sheet set on `:root` by hand.
- *
- * The desktop ships no webfont — unlike the client, which loads Inter and
- * JetBrains Mono from `@fontsource`. A shell whose whole job is to look like part
- * of the OS wants the OS's own UI face first, so the stack stays platform-led.
- */
 @theme {
     --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, Monaco, monospace;
 }
 
-/**
- * The frameless window's drag handle, as two real utilities.
- *
- * `-webkit-app-region` is the only way to tell Chromium which pixels move the
- * OS window, and Electron gives this window no frame, so without it the titlebar
- * is inert and the app cannot be moved. Tailwind has no equivalent — the property
- * is not in any of its plugins — and it is needed on five separate elements
- * (the bar itself, each traffic light, the settings button, the settings menu and
- * its dismiss backdrop, and the modal backdrop).
- *
- * Declaring them as `@utility` rather than as `.titlebar { … }` rules is what
- * keeps the sheet free of component selectors: the drag region is a property of
- * *this element*, applied at the call site like any other class, and it composes
- * with `cn()` and variants. `no-drag-region` is not merely the absence of
- * `drag-region` — a draggable region swallows clicks for everything painted over
- * it, including elements that are not its descendants, so anything interactive
- * that overlaps the titlebar has to punch its own hole.
- */
 @utility drag-region {
     -webkit-app-region: drag;
 }
@@ -77,18 +25,6 @@
     --link: var(--foreground);
 }
 
-/**
- * A field is defined by its edge, not by elevation — the same correction the
- * client makes. HeroUI lifts a field with a drop shadow and gives it no border;
- * the desktop's fields sit flat on the surface with a hairline, matching the
- * platform.
- *
- * The shadow is emptied to a transparent inset rather than to `none`, which is
- * HeroUI's own trick: `.input` feeds `--field-shadow` into Tailwind's
- * `--tw-shadow`, and a `none` inside a box-shadow list would take the focus ring
- * down with it. `--field-border-hover` and `--field-border-focus` derive from
- * `--field-border` upstream, so they follow for free.
- */
 :root,
 .light,
 [data-theme='light'],
@@ -200,20 +136,6 @@ body {
     background-color: transparent;
 }
 
-/**
- * Reduced motion, declared once for the whole app.
- *
- * This is load-bearing, not a nicety. The four deleted sheets each carried their
- * own `prefers-reduced-motion` block — for the boot heading's pulse, the three
- * ring spinners and the modal's entrance — and every one of those animations is
- * now either a Tailwind utility or a HeroUI component. Without this block the
- * opt-out would have disappeared along with the sheets that declared it, silently,
- * at every animated site in the window.
- *
- * Declaring it globally rather than as a `motion-reduce:` utility per call site is
- * deliberate: an accessibility guarantee that depends on each author remembering a
- * modifier is not a guarantee.
- */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

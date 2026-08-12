@@ -3,8 +3,6 @@ import type { AIMessageToolStep } from '@modules/ai/contracts/ai-message';
 import { AIMessageArtifactKind } from '@volt/contracts/modules/ai/domain';
 import { isRecord } from '@shared/infrastructure/utilities/type-guards';
 
-/* Maps a persisted AI message row to its wire view, deriving renderable artifacts
-   from the tool results recorded on each step. */
 
 const ARTIFACT_KINDS = new Set<string>(Object.values(AIMessageArtifactKind));
 
@@ -13,7 +11,6 @@ const extractArtifacts = (messageId: string, steps: AIMessageToolStep[]): Record
 
     steps.forEach((step, stepIndex) => {
         step.toolResults.forEach((result, resultIndex) => {
-            /* Tool outputs travel through the AI SDK as `unknown`. */
             if(!isRecord(result.output)) return;
 
             const output = result.output;

@@ -6,7 +6,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 
 const passwordHasher = new BcryptPasswordHasher();
 
-/** Every cluster route is team scoped: a cluster of another team must read as absent. */
 export const requireOwnedTeamCluster = async (
     teamClusterId: string,
     teamId: string
@@ -19,7 +18,6 @@ export const requireOwnedTeamCluster = async (
     return entity;
 };
 
-/** Re-confirms the caller's own account password before a destructive or secret-revealing action. */
 export const requireConfirmedPassword = async (userId: string, password: string): Promise<void> => {
     const user = await User.findOneBy({ id: userId });
     if (!user) {

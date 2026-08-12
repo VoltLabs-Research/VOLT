@@ -30,16 +30,6 @@ const sessionKeys = (namespace: string, id: string): DaemonSessionKeys => {
     };
 };
 
-/**
- * Bookkeeping for a daemon job session: how many jobs are still outstanding, how
- * many of them failed, and which job receipts already reached a terminal state so
- * that duplicate daemon reports stay idempotent.
- *
- * `initialize` and `decrementAndCheckDrain` each decide something from a value
- * they then overwrite, so both run under a lock named for the session. Without it
- * two daemons reporting the last two jobs of an analysis at the same moment can
- * both observe the counter reach zero and both announce the analysis complete.
- */
 class DaemonAnalysisSessionStore {
     analysisKeys(analysisId: string): DaemonSessionKeys {
         return sessionKeys('daemon-analysis', analysisId);
@@ -49,13 +39,6 @@ class DaemonAnalysisSessionStore {
         return sessionKeys('daemon-glb', trajectoryId);
     }
 
-    /**
-     * Sets the outstanding count to the jobs that have not already reported.
-     *
-     * Receipts are counted rather than the caller's total being trusted, so a
-     * session that is re-initialised after a restart does not wait again on jobs
-     * that finished before it.
-     */
     async initialize(keys: DaemonSessionKeys, totalJobs: number): Promise<DaemonSessionInitialization> {
         return getKeyValueStore().withLock(keys.remaining, async (store) => {
             const terminalCount = await store.setCount(keys.terminalSet);
@@ -68,10 +51,6 @@ class DaemonAnalysisSessionStore {
                 await store.delete([keys.remaining]);
             }
 
-            /*
-             * Deadlines are refreshed but never created here: writing them would
-             * resurrect a session whose receipts have already aged out.
-             */
             await store.expire(keys.failed, SESSION_TTL_MS);
             await store.setExpire(keys.terminalSet, SESSION_TTL_MS);
 
@@ -82,7 +61,6 @@ class DaemonAnalysisSessionStore {
         });
     }
 
-    /** False when this job already reported, which is what keeps reports idempotent. */
     async tryMarkTerminalReceipt(keys: DaemonSessionKeys, jobId: string, status: JobStatus): Promise<boolean> {
         const receiptKey = keys.terminal(jobId);
         const store = getKeyValueStore();
@@ -108,13 +86,6 @@ class DaemonAnalysisSessionStore {
         await getKeyValueStore().adjust(keys.failed, 1, { ttlMs: SESSION_TTL_MS });
     }
 
-    /**
-     * Counts one job off the session and reports whether that was the last one.
-     *
-     * A missing counter means the session already drained, so a late or duplicate
-     * report is absorbed instead of driving the count negative and announcing a
-     * second completion.
-     */
     async decrementAndCheckDrain(keys: DaemonSessionKeys): Promise<DaemonSessionDrainResult> {
         return getKeyValueStore().withLock(keys.remaining, async (store) => {
             if (!await store.exists(keys.remaining)) {

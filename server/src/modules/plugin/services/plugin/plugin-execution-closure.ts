@@ -19,12 +19,6 @@ const rejectOnErrors = (errors: string[]): void => {
     }
 };
 
-/**
- * An execution needs every transitively referenced plugin published and shipped
- * alongside it: the plugin's own dependencies, the plugins its config points at,
- * and those plugins' dependencies in turn. Anything unresolvable at this point is
- * a request the platform cannot run, so it is rejected rather than collected.
- */
 export const resolveExecutionClosure = async (
     dependencyResolver: PluginDependencyResolverService,
     plugin: Plugin,

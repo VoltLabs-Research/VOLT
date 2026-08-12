@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
 
-/** Locates the python stub that hosts persistent plugin processes. */
 export const resolvePythonStubPath = (): string => {
     const candidates = [
         path.resolve(__dirname, '..', 'python', 'volt_plugin_stub.py'),

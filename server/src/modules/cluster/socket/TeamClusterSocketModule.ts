@@ -42,7 +42,6 @@ const TEAM_CLUSTER_DAEMON_DISCONNECT_GRACE_MS = readPositiveIntegerEnv(
     60_000
 );
 
-/** Only these channels mean "the cluster is up"; the others are pure transports. */
 const LIFECYCLE_CHANNELS: TeamClusterDaemonSocketChannel[] = [
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Heartbeat
@@ -189,7 +188,6 @@ class TeamClusterSocketModule extends BaseSocketModule {
         });
     }
 
-    /** Emits the forbidden error and returns null when this connection may not see the cluster. */
     private async findAuthorizedTeamCluster(
         conn: ISocketConnection,
         teamClusterId: string,
@@ -231,7 +229,6 @@ class TeamClusterSocketModule extends BaseSocketModule {
         this.pendingDaemonDisconnectTimers.delete(teamClusterId);
     }
 
-    /** A daemon restart closes its sockets, so a disconnect is only real after a grace window. */
     private scheduleDaemonDisconnect(teamClusterId: string, channel: TeamClusterDaemonSocketChannel): void {
         this.clearPendingDaemonDisconnect(teamClusterId);
 

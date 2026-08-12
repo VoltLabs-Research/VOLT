@@ -23,11 +23,6 @@ import logger from '@shared/infrastructure/logger';
 
 type EmitToSocket = (socketId: string, event: string, payload: unknown) => void;
 
-/**
- * Routes everything a registered daemon sends us: the runtime.* commands it invokes
- * on the control plane, the job/provenance events it reports, and the JSON stream
- * bodies it pushes. Client-facing socket traffic is not handled here.
- */
 export default class TeamClusterDaemonFrameRouter {
     readonly #emitToSocket: EmitToSocket;
     readonly #onHeartbeat: (teamClusterId: string) => void;
@@ -38,7 +33,6 @@ export default class TeamClusterDaemonFrameRouter {
         this.#onHeartbeat = onHeartbeat;
     }
 
-    /** Subscribes to the streams a daemon opens on its own; returns the unsubscribers. */
     registerInboundStreamConsumers(): Array<() => void> {
         return [
             teamClusterReverseChannelService.registerInboundStreamConsumer(
@@ -62,7 +56,6 @@ export default class TeamClusterDaemonFrameRouter {
         ];
     }
 
-    /** A daemon only ever invokes two commands on the control plane: config-get and lifecycle. */
     async handleCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {
         if (payload.command === ChannelCommands.RuntimeConfigGet) {
             await this.#emitRuntimeConfig(socketId, payload.requestId);
@@ -96,7 +89,6 @@ export default class TeamClusterDaemonFrameRouter {
         }
     }
 
-    /** Returns false for frames the reverse channel itself has to handle. */
     async handleEvent(socketId: string, payload: TeamClusterDaemonMessage): Promise<boolean> {
         const registeredTeamClusterId = teamClusterReverseChannelService.getRegisteredTeamClusterId(socketId);
 
@@ -184,11 +176,6 @@ export default class TeamClusterDaemonFrameRouter {
             return;
         }
 
-        /*
-         * Log persistence goes through the daemon reverse tunnel, so a dropped tunnel
-         * rejects here. This runs detached from any request, so it has to contain its
-         * own failures: an unpersisted log line must never take the process down.
-         */
         try {
             await analysisExecutionLogService.appendFrameSegments({
                 analysisId: payload.analysisId,
@@ -236,11 +223,6 @@ export default class TeamClusterDaemonFrameRouter {
         }
     }
 
-    /**
-     * A stream body arrives as bytes, so it must be parsed; the cluster id is then
-     * cross-checked against the socket's registration so one daemon cannot report
-     * on behalf of another.
-     */
     #parseStreamPayload<TPayload extends { teamClusterId: string }>(
         message: TeamClusterDaemonInboundStreamPayload
     ): TPayload | null {

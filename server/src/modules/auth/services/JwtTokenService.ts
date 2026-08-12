@@ -58,11 +58,6 @@ export default class JwtTokenService {
     private readonly secret: Secret = getSecretKey();
     private readonly expiresIn = getExpiresIn();
 
-    /**
-     * `iat` only has second resolution, so two sign-ins for the same user inside
-     * one second would otherwise mint byte-identical tokens and collide on the
-     * unique `sessions.token` index. `jti` makes every session token distinct.
-     */
     public sign(userId: string): string {
         const signOptions: SignOptions = {
             expiresIn: this.expiresIn,

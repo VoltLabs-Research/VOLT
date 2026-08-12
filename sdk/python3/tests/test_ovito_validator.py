@@ -19,7 +19,7 @@ _PKG_ROOT = Path(__file__).resolve().parents[1]
 if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
-from voltsdk.integrations.ovito_validator import (  # noqa: E402
+from voltsdk.integrations.ovito_validator import (
     OVITO_AVAILABLE,
     OVITO_STRUCTURE,
     OvitoUnavailableError,
@@ -32,9 +32,6 @@ from voltsdk.integrations.ovito_validator import (  # noqa: E402
 )
 
 
-# ===========================================================================
-#  Coarse-code mapping (always available)
-# ===========================================================================
 def test_coarse_structure_code():
     assert coarse_structure_code('FCC') == 1
     assert coarse_structure_code('bcc') == 2
@@ -42,22 +39,18 @@ def test_coarse_structure_code():
     assert coarse_structure_code('cubic_diamond') == 4
     assert coarse_structure_code('hex_diamond') == 4
     assert coarse_structure_code('SC') == 5
-    assert coarse_structure_code('ICO') == 0          # folded to OTHER
+    assert coarse_structure_code('ICO') == 0
     assert coarse_structure_code('garbage') == 0
 
 
 def test_ovito_structure_enum_complete():
-    # The enum the harness standardises on must cover the coarse families.
     for k in ('FCC', 'BCC', 'HCP'):
         assert k in OVITO_STRUCTURE
 
 
-# ===========================================================================
-#  Recorded references (always available — degraded mode)
-# ===========================================================================
 def test_reference_structure_fractions():
     fcc = reference_structure_fractions('FCC')
-    assert fcc == {1: 1.0}                              # 100% FCC for pristine
+    assert fcc == {1: 1.0}
     assert reference_structure_fractions('HCP') == {3: 1.0}
 
 
@@ -70,9 +63,6 @@ def test_reference_burgers_families():
     assert reference_burgers_families('HCP')['1/3<11-20>'] == pytest.approx(1.0)
 
 
-# ===========================================================================
-#  Live-OVITO accessors — degrade cleanly when OVITO is absent
-# ===========================================================================
 @pytest.mark.skipif(OVITO_AVAILABLE, reason='OVITO installed; degradation path not exercised')
 def test_extract_structure_types_without_ovito():
     with pytest.raises(OvitoUnavailableError):
@@ -87,17 +77,15 @@ def test_extract_strain_invariants_without_ovito():
 
 @pytest.mark.skipif(OVITO_AVAILABLE, reason='OVITO installed; degradation path not exercised')
 def test_extract_burgers_vectors_without_ovito():
-    # No OVITO → OvitoUnavailableError (a subclass-free RuntimeError) before the
-    # DXA-not-available NotImplementedError can be reached.
     with pytest.raises(OvitoUnavailableError):
         extract_burgers_vectors(frame=None)
 
 
 @pytest.mark.skipif(not OVITO_AVAILABLE, reason='OVITO not installed')
-def test_extract_structure_types_with_ovito(tmp_path):  # pragma: no cover - needs OVITO
+def test_extract_structure_types_with_ovito(tmp_path):
     """Build a tiny FCC dump, classify via OVITO, check shape/dtype."""
     from pyatomsk.corpus import build_lattice, write_annotated_dump
-    from voltsdk.resources.frames import Frame  # noqa: F401
+    from voltsdk.resources.frames import Frame
 
     pos, box = build_lattice('FCC', (4, 4, 4))
     dump = write_annotated_dump(tmp_path / 'fcc.dump', pos, box, 1)

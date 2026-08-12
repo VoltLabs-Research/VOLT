@@ -52,11 +52,6 @@ export interface PlanPluginStageParams {
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
-/**
- * Turns one plugin stage of a pipeline request into the execution the daemon
- * runs: validates the plugin, resolves its dependency closure, reuses a cached
- * stage when its hash already completed, and creates the Analysis row otherwise.
- */
 export default class PluginStagePlanner {
     #dependencyResolver = new PluginDependencyResolverService();
     #workflowValidator = new WorkflowValidatorService(this.#dependencyResolver);

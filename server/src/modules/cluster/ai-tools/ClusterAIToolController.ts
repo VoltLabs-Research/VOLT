@@ -29,8 +29,6 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ListClustersInput>()
     })
     async listClusters(input: ListClustersInput & AIToolScope) {
-        // typia validates but does not transform, so the documented defaults are
-        // applied here; an absent key does not override them on spread.
         const { total, data } = await this.#service.listByTeamId({
             page: 1,
             limit: 50,

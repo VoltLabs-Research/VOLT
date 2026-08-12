@@ -81,10 +81,6 @@ const resolveTrajectoryName = async (trajectoryId: string): Promise<string> => {
     return trajectory?.name || `Trajectory ${trajectoryId}`;
 };
 
-/**
- * The team job feed is keyed by trajectory, so a transfer that cannot be traced
- * back to one is projected onto a synthetic trajectory instead of being dropped.
- */
 const resolveProjectionContext = async (
     scopeType: StoragePlacementScopeType,
     scopeId: string
@@ -121,10 +117,6 @@ const resolveProjectionContext = async (
     };
 };
 
-/**
- * Projects cluster transfer job state onto the team job feed so the UI can
- * follow a transfer without polling the transfer tables directly.
- */
 const publishTransferJobProjection = async (job: ClusterTransferJob): Promise<void> => {
     try {
         const context = await resolveProjectionContext(job.props.scopeType, job.props.scopeId);

@@ -18,13 +18,8 @@ import type { ReverseChannelInboundMessage } from '@shared/contracts/channel/bin
 const CONTROL_CHANNEL = 'control';
 const DEFAULT_COMMAND_TIMEOUT_MS = 180_000;
 
-/** Command results are wrapped by the VOLT server as `{ status, data }`. */
 type SocketResponse = TeamClusterDaemonSocketResponsePayload<{ status?: string; data?: unknown }>;
 
-/**
- * Everything the control socket can deliver: an inbound command to forward to the
- * daemon, a response to a command we sent, or any other frame the daemon handles.
- */
 type InboundControlMessage =
     | TeamClusterDaemonCommandMessage
     | SocketResponse
@@ -61,7 +56,6 @@ type ParentMessage = EmitMessage | SendCommandMessage | CommandResponseMessage;
 const config = loadConfig();
 let socket: Socket | null = null;
 let isRegistered = (): boolean => false;
-/** ipcRequestId -> the socket requestId the response has to be addressed to. */
 const pendingInboundCommands = new Map<string, string>();
 const pendingCommands = new Map<string, PendingCommand>();
 

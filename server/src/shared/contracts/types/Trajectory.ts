@@ -7,11 +7,6 @@ import type {
     TrajectoryStatus as WireTrajectoryStatus
 } from '@volt/contracts/modules/trajectory/domain';
 
-/*
- * A runtime enum because the persistence layer needs the values (see the `enum:`
- * column in `modules/trajectory/models/Trajectory.ts`), while `@volt/contracts`
- * declares the same set as a union. The assertion fails the build if they diverge.
- */
 export enum TrajectoryStatus {
     Queued = 'queued',
     WaitingForProcess = 'waiting-for-process',

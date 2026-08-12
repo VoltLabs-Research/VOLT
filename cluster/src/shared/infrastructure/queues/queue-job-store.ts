@@ -3,26 +3,9 @@ import { QueueJob } from '@shared/infrastructure/queues/queue-job-model';
 import type { QueueJobState } from '@shared/infrastructure/queues/queue-job-model';
 import type { JsonObject } from '@shared/contracts/types/json';
 
-/*
- * Mutations that report rows are wrapped in a CTE so the statement reads as a
- * SELECT.
- *
- * The driver returns a bare row array for SELECT and INSERT, but `[rows, count]`
- * for UPDATE and DELETE. Reading `rows[0]` off the second shape yields the row
- * array itself — truthy, and silently wrong. Wrapping makes every statement here
- * return the one shape.
- */
 
-/** Woken workers poll immediately; the interval below is only the fallback. */
 export const QUEUE_NOTIFY_CHANNEL = 'volt_queue_jobs';
 
-/**
- * How long a terminal job is kept.
- *
- * Failed rows have to outlive their run because retrying one is a user action
- * taken minutes later, and `getJobCounts` reports both states to the runtime
- * view. Nothing reads them after that.
- */
 const TERMINAL_JOB_RETENTION_MS = 86_400_000;
 
 export interface EnqueueRequest {
@@ -49,14 +32,6 @@ export interface QueueJobCounts {
 
 const manager = () => getDaemonDataSource().manager;
 
-/**
- * Inserts a job unless its key is already live in that queue.
- *
- * The conflict target is the partial unique index over non-terminal states, so
- * the "is it already queued?" check and the insert are one statement. Doing it as
- * a read followed by a write would let two callers both find nothing and both
- * enqueue the same work.
- */
 export const insertJob = async (request: EnqueueRequest): Promise<boolean> => {
     const rows = await manager().query<{ id: string }[]>(
         `INSERT INTO queue_jobs
@@ -77,13 +52,6 @@ export const insertJob = async (request: EnqueueRequest): Promise<boolean> => {
     return rows.length > 0;
 };
 
-/**
- * Inserts many jobs in one statement, skipping any whose key is already live.
- *
- * A trajectory can fan out to thousands of frame jobs, so this is one round trip
- * rather than one per job; the same partial unique index makes each row's
- * duplicate check atomic.
- */
 export const insertJobs = async (queue: string, requests: EnqueueRequest[]): Promise<number> => {
     if (requests.length === 0) {
         return 0;
@@ -109,7 +77,6 @@ export const insertJobs = async (queue: string, requests: EnqueueRequest[]): Pro
     return rows.length;
 };
 
-/** Drops a job whose previous run already settled, so its key can be enqueued again. */
 export const deleteTerminalJob = async (queue: string, jobKey: string): Promise<void> => {
     await manager().query(
         `DELETE FROM queue_jobs
@@ -132,14 +99,6 @@ export const notifyQueue = async (queue: string): Promise<void> => {
     await manager().query('SELECT pg_notify($1, $2)', [QUEUE_NOTIFY_CHANNEL, queue]);
 };
 
-/**
- * Takes the next eligible job and leases it.
- *
- * `SKIP LOCKED` is what lets many workers pull from one queue without
- * coordinating: each skips rows another worker has already locked in its own
- * transaction rather than queueing behind them. The claim and the lease are the
- * same statement, so a job is never visible as claimed-but-unleased.
- */
 export const claimNextJob = async (
     queue: string,
     workerId: string,
@@ -172,7 +131,6 @@ export const claimNextJob = async (
     return rows[0] ?? null;
 };
 
-/** Extends the lease of a job still being worked on. False once it has been reclaimed. */
 export const renewLease = async (
     jobId: string,
     workerId: string,
@@ -201,13 +159,6 @@ export const completeJob = async (jobId: string): Promise<void> => {
     );
 };
 
-/**
- * Records a failed attempt, scheduling a retry while attempts remain.
- *
- * The decision is made in SQL against the row's own counters rather than from the
- * copy the worker is holding, so a job reclaimed and retried elsewhere in the
- * meantime cannot have its attempt count rolled back by a late report.
- */
 export const failJob = async (jobId: string, reason: string): Promise<QueueJobState> => {
     const rows = await manager().query<{ state: QueueJobState }[]>(
         `WITH settled AS (
@@ -237,13 +188,6 @@ export const failJob = async (jobId: string, reason: string): Promise<QueueJobSt
     return rows[0]?.state ?? 'failed';
 };
 
-/**
- * Puts an active job back without spending an attempt.
- *
- * This is how a worker declines work it cannot run yet — a scope limit is already
- * held by another job on the same trajectory — as opposed to failing it. The
- * attempt is refunded so deferral does not eat the job's retry budget.
- */
 export const deferJob = async (jobId: string, runAt: Date): Promise<void> => {
     await manager().query(
         `UPDATE queue_jobs
@@ -258,13 +202,6 @@ export const deferJob = async (jobId: string, runAt: Date): Promise<void> => {
     );
 };
 
-/**
- * Reclaims jobs whose lease lapsed, and fails those that have now stalled twice.
- *
- * A lapsed lease means the worker died or stopped renewing; the job itself may be
- * innocent, so the first reclaim returns it to the queue. A second means the job
- * is what took the worker down, and handing it out again would loop.
- */
 export const reclaimStalledJobs = async (): Promise<ReclaimedJobs> => {
     const rows = await manager().query<{ state: QueueJobState }[]>(
         `WITH reclaimed AS (
@@ -303,7 +240,6 @@ export const purgeExpiredTerminalJobs = async (): Promise<number> => {
     return rows.length;
 };
 
-/** Only a failed job may be retried, matching the contract the callers relied on. */
 export const retryFailedJobByKey = async (jobKey: string): Promise<boolean> => {
     const rows = await manager().query<{ id: string }[]>(
         `WITH retried AS (

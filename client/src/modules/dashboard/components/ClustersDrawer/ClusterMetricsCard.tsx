@@ -122,12 +122,12 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
     };
 
     return (
-        <Card variant='secondary'>
+        <Card variant='secondary' className='gap-2 p-3'>
             <Card.Header>
-                <div className='flex w-full flex-row items-center justify-between gap-3 min-w-0'>
+                <div className='flex w-full flex-row items-center justify-between gap-2 min-w-0'>
                     <div className='flex min-w-0 flex-col gap-0.5'>
                         <Card.Title className='truncate'>{teamCluster.name}</Card.Title>
-                        <Card.Description>{CLUSTER_ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}</Card.Description>
+                        <Card.Description className='text-xs'>{CLUSTER_ROLE_LABELS[teamCluster.roleConfig.effectiveRole]}</Card.Description>
                     </div>
                     <Chip color={STATUS_CHIP_COLORS[liveMetricsStatus.variant]} variant='soft' size='sm' className='shrink-0'>
                         <Chip.Label>{liveMetricsStatus.label}</Chip.Label>
@@ -144,15 +144,16 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
                         selectedKeys={[activeMetric]}
                         onSelectionChange={handleMetricChange}
                         aria-label={`${teamCluster.name} metrics view`}
+                        className='w-full'
                     >
                         {CLUSTER_METRIC_TABS.map((tab) => (
-                            <ToggleButton key={tab.id} id={tab.id}>
+                            <ToggleButton key={tab.id} id={tab.id} className='min-w-0 flex-1 px-1 text-xs'>
                                 {tab.label}
                             </ToggleButton>
                         ))}
                     </ToggleButtonGroup>
 
-                    <div className='flex flex-col gap-3 mt-2'>
+                    <div className='flex flex-col gap-2 mt-2'>
                         {activeMetric === 'cpu' && (
                             <ClusterProgressMetric
                                 label='CPU'
@@ -172,14 +173,14 @@ const ClusterMetricsCard = ({ teamCluster, liveMetrics, isMetricsConnected }: Cl
                         {activeMetric === 'network' && (
                             <div className='flex flex-col gap-1.5' role='group' aria-label='Network activity'>
                                 <div className='flex items-center justify-between gap-3 tabular-nums'>
-                                    <span className='text-sm font-medium text-muted'>Incoming</span>
-                                    <span className='text-sm text-foreground tabular-nums whitespace-nowrap'>
+                                    <span className='text-xs font-medium text-muted'>Incoming</span>
+                                    <span className='text-xs text-foreground tabular-nums whitespace-nowrap'>
                                         <span aria-hidden='true'>↓</span> {formatNetworkSpeed(liveMetrics.network.incoming)}
                                     </span>
                                 </div>
                                 <div className='flex items-center justify-between gap-3 tabular-nums'>
-                                    <span className='text-sm font-medium text-muted'>Outgoing</span>
-                                    <span className='text-sm text-foreground tabular-nums whitespace-nowrap'>
+                                    <span className='text-xs font-medium text-muted'>Outgoing</span>
+                                    <span className='text-xs text-foreground tabular-nums whitespace-nowrap'>
                                         <span aria-hidden='true'>↑</span> {formatNetworkSpeed(liveMetrics.network.outgoing)}
                                     </span>
                                 </div>

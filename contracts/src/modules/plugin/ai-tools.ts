@@ -2,8 +2,6 @@ import type { tags } from 'typia';
 import type { PluginStatus } from './enums';
 import type { IViewport } from './workflow';
 
-// Free-form key/value bag. Aliased so the generated schema does not inherit the
-// TypeScript standard library's JSDoc for `Record` as a model-facing description.
 type UnknownRecord = Record<string, unknown>;
 
 export interface PluginRefInput{
@@ -50,16 +48,11 @@ export interface UninstallPluginInput{
 
 export interface PipelineStageInput{
     pluginId: string;
-    // `tags.Default` accepts primitives only, so the empty-object default is
-    // injected through typia's JSON-schema tag to keep the schema unchanged.
     config?: { [key: string]: unknown } & tags.JsonSchemaPlugin<{ default: {} }>;
 }
 
 export interface ExecutePipelineInput{
     trajectoryId: string;
-    /**
-     * Ordered plugin stages. An upstream stage must precede any stage that consumes its exposures.
-     */
     stages: PipelineStageInput[] & tags.MinItems<1>;
     selectedTimesteps?: number[];
     teamClusterId?: string;

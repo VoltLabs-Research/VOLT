@@ -3,7 +3,6 @@ import path from 'node:path';
 import { DAEMON_PATHS } from '@core/config/paths';
 import { logger } from '@shared/infrastructure/logger';
 
-/** Keeps the on-disk plugin parquet cache under its byte budget, evicting the oldest files first. */
 
 const CACHE_MAX_BYTES = Math.max(
     0,

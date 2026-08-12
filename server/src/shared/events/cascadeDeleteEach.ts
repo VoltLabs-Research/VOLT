@@ -1,7 +1,6 @@
 import logger from '@shared/infrastructure/logger';
 
 interface CascadeDeleteEachOptions {
-    /** Identifies the caller in the warning emitted when one child fails. */
     label: string;
     ids: readonly string[];
     deleteOne: (id: string) => Promise<void>;
@@ -10,10 +9,6 @@ interface CascadeDeleteEachOptions {
 
 const DEFAULT_CONCURRENCY = 8;
 
-/**
- * Deletes children one by one with bounded concurrency, isolating failures so a
- * single bad child cannot abort the rest of the cascade.
- */
 export const cascadeDeleteEach = async ({
     label,
     ids,

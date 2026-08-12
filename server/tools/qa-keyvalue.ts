@@ -27,7 +27,6 @@ const main = async () => {
     check('adjust increments', await s.adjust(`${K}ctr`, 1), 2);
     check('adjust decrements', await s.adjust(`${K}ctr`, -1), 1);
 
-    // TTL: NX must be able to take an expired key
     await s.set(`${K}exp`, 'old', { ttlMs: 1 });
     await new Promise((r) => setTimeout(r, 30));
     check('get on expired key', await s.get(`${K}exp`), null);
@@ -35,7 +34,6 @@ const main = async () => {
     check('expire on live key', await s.expire(`${K}exp`, 60_000), true);
     check('expire on missing key', await s.expire(`${K}zzz`, 60_000), false);
 
-    // compare-and-delete
     await s.set(`${K}lock`, 'token-A', { ttlMs: 60_000 });
     check('deleteIfValue with wrong token', await s.deleteIfValue(`${K}lock`, 'token-B'), false);
     check('lock still stands', await s.get(`${K}lock`), 'token-A');
@@ -44,7 +42,6 @@ const main = async () => {
     check('getMany keeps order and nulls', await s.getMany([`${K}a`, `${K}zzz`, `${K}ctr`]), ['3', null, '1']);
     check('deleteReturningPresent only live keys', (await s.deleteReturningPresent([`${K}a`, `${K}zzz`])).length, 1);
 
-    // sets
     await s.setAdd(`${K}set`, ['x', 'y', 'z'], { ttlMs: 60_000 });
     await s.setAdd(`${K}set`, ['x'], { ttlMs: 60_000 });
     check('setCount deduplicates', await s.setCount(`${K}set`), 3);
@@ -55,7 +52,6 @@ const main = async () => {
     await s.deleteSets([`${K}set`]);
     check('deleteSets', await s.setCount(`${K}set`), 0);
 
-    // named lock: truly serializes
     const order: string[] = [];
     await Promise.all([
         s.withLock(`${K}race`, async () => { order.push('a-enter'); await new Promise((r) => setTimeout(r, 120)); order.push('a-exit'); }),

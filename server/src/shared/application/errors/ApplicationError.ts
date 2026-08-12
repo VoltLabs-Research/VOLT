@@ -10,15 +10,6 @@ interface ApplicationErrorOptions {
 const withStatus = (statusCode: number) =>
     (code: ErrorCode, message: string): ApplicationError => new ApplicationError(code, message, statusCode);
 
-/**
- * An error the client is allowed to see: it carries the machine-readable code and
- * the HTTP status the middleware should answer with. Anything thrown that is not
- * an `ApplicationError` is treated as a server defect and reported as a 500.
- *
- * `code` is an `ErrorCode`, not a `string`: every code must be declared in
- * `@core/constants/error-codes` so the set the client can receive is knowable
- * from one file. `message` is what the user reads, so it must never be the code.
- */
 export default class ApplicationError extends Error {
     public readonly statusCode: number;
     public readonly headers: Record<string, string>;

@@ -169,10 +169,6 @@ const buildTree = (positions: Float32Array, atomCount: number, options: OctreeBu
     return root;
 };
 
-/**
- * Breadth-first flatten. `firstAtomIndex` is the running count of leaf atoms emitted
- * before this cell, so it only needs the per-node counts, not the atom ids themselves.
- */
 const flattenOctree = (root: BuildNode | null): LODCell[] => {
     const cells: LODCell[] = [];
     if (!root) return cells;

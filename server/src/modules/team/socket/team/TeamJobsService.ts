@@ -116,8 +116,6 @@ export default class TeamJobsService {
         }
 
         if (staleJobIds.length > 0) {
-            /* Pruning is opportunistic: the caller's jobs are already assembled, so a
-               failed cleanup costs a repeated miss rather than a wrong answer. */
             store.setRemove(projectedTeamJobsKey(teamId), staleJobIds).catch(() => {
                 logger.warn(`Failed to prune stale projected team jobs staleJobCount=${staleJobIds.length} teamId=${teamId}`);
             });
@@ -246,16 +244,6 @@ export default class TeamJobsService {
         return 0;
     }
 
-    /**
-     * The status of a set of jobs taken together — a frame, or a whole trajectory.
-     *
-     * Kept identical to `computeGroupStatus` in the client's
-     * `modules/jobs/utils/job-status-semantics`, which is what the browser applies to
-     * its own optimistic socket patches. `QueuedAfterFailure` was missing here, so a
-     * frame in that state was reported as `partial` by the server and as `queued` by
-     * the client patch — the same frame changing colour depending on whether the page
-     * had reloaded since.
-     */
     private computeFrameStatus(jobs: TeamJobSummary[]): TeamJobStatus {
         const hasRunning = jobs.some((job) => job.status === JobStatus.Running);
         const hasQueued = jobs.some((job) => job.status === JobStatus.Queued

@@ -31,11 +31,6 @@ import type { Readable } from 'node:stream';
 import unzipper from 'unzipper';
 import { v4 } from 'uuid';
 
-/**
- * Moves whole plugins in and out of the platform as zip archives: the `.zip`
- * export, the user-uploaded import, and the registry install that shares the
- * same "create the plugin, attach its binary, publish when valid" path.
- */
 export default class PluginArchiveService {
     constructor(
         private readonly storagePlacementService: IStoragePlacementService,
@@ -196,10 +191,6 @@ export default class PluginArchiveService {
         return match ? PluginEntity.findOneBy({ id: match.id }) : null;
     }
 
-    /**
-     * Imported and registry-installed plugins are only published when their
-     * workflow is publishable; otherwise they stay a draft the user can fix.
-     */
     private async publishIfValid(plugin: Plugin): Promise<Plugin> {
         const validation = await this.workflowValidator.validate(
             plugin.props.workflow.props,

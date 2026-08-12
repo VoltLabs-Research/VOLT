@@ -10,7 +10,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import jwt from 'jsonwebtoken';
 
-/* Claim frame the daemon verifies on every direct-access request. */
 interface TeamClusterDirectAccessTokenClaims {
     requesterKind: 'daemon' | 'server';
     requesterId: string;
@@ -31,11 +30,6 @@ export interface ObjectGatewayAccessToken {
 const TOKEN_TTL_SECONDS = 5 * 60;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 
-/*
- * Mints and caches the short-lived direct-access token that authorises this
- * server against a cluster's object gateway exposure. Concurrent misses share a
- * single in-flight issue so a burst of transfers signs one token, not hundreds.
- */
 export default class ObjectGatewayAccessTokenProvider {
     private readonly cachedTokens = new Map<string, ObjectGatewayAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<ObjectGatewayAccessToken>>();

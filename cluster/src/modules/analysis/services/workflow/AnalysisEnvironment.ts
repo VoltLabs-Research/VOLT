@@ -23,7 +23,6 @@ export interface AnalysisEnvironmentState {
     primaryFrameIndex: number;
 }
 
-/** The only metadata the initial node outputs need: which forEach item this job is. */
 export type AnalysisSeedMetadata = Pick<AnalysisJobMetadata, 'forEachItem' | 'forEachIndex'>;
 
 const createState = (outputDir: string): AnalysisEnvironmentState => ({
@@ -98,7 +97,6 @@ export class AnalysisEnvironment {
         })).path);
     }
 
-    /** Pairs one already-localized dump with the trajectory frame it belongs to. */
     private buildDumpTarget(
         executionData: AnalysisJobExecutionData,
         timestep: number,
@@ -141,7 +139,6 @@ export class AnalysisEnvironment {
         return timestepToLocalPath;
     }
 
-    /** Seeds the node outputs the workflow starts from, rebound to the frames this job localized. */
     private async seedOutputs(
         runtime: AnalysisEnvironmentState,
         executionData: AnalysisJobExecutionData,

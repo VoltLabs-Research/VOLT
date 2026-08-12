@@ -111,7 +111,7 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         const url = (deployment?.mode === 'remote' && deployment.remote)
             ? deployment.remote.clientUrl
             : await localClientUrl();
-        void win.loadURL(url).catch(() => { /* superseded by a newer navigation */ });
+        void win.loadURL(url).catch(() => { });
     });
 
     handleFromShell('app:openShell', (_e, intent?: string) => {

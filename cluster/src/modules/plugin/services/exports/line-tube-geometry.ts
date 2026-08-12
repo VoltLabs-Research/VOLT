@@ -1,6 +1,5 @@
 import type { LineEntity } from '@modules/plugin/services/exports/export-node-processor-types';
 
-/** Meshes polylines into triangulated tubes. Pure geometry: no I/O, no glTF encoding. */
 
 export const MAX_LINE_VERTICES = 5_000_000;
 

@@ -3,13 +3,6 @@ import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { ContainerTerminalAttachment, ContainerTerminalSize } from '@shared/contracts/ports/ContainerRuntime';
 import logger from '@shared/infrastructure/logger';
 
-/* One PTY per container, shared by every socket watching it.
- *
- * A terminal is a single daemon-side exec session, so a second viewer must join
- * the existing stream rather than open a new one. Joining late replays a capped
- * transcript so the newcomer sees the scrollback, and because attach, resize,
- * join and teardown all mutate the same session they are serialized through a
- * per-session promise chain. */
 
 const TRANSCRIPT_REPLAY_BYTE_CAP = 512 * 1024;
 
@@ -250,7 +243,6 @@ export class ContainerTerminalSessionRegistry {
         }
     }
 
-    /** Serializes every mutation of one session so joins never interleave with teardown. */
     private async runSessionTask(session: SharedTerminalSession, task: () => Promise<void>): Promise<void> {
         const previousOperation = session.operationChain.catch(() => undefined);
         let releaseOperation: () => void = () => undefined;

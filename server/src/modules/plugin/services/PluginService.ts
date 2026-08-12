@@ -80,7 +80,6 @@ export type {
     UpdatePluginByIdInput
 };
 
-/** Identifies a plugin by id, for the routes that need nothing else. */
 export interface PluginIdInput {
     pluginId: string;
 }
@@ -139,10 +138,6 @@ interface ValidateWorkflowOutput {
 
 const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
 
-/**
- * The outputs each workflow node type publishes downstream, used by the editor to
- * offer expression autocompletion.
- */
 const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
     [WorkflowNodeType.Modifier]: ['pluginId', 'trajectory', 'analysis'],
     [WorkflowNodeType.Arguments]: ['as_str', 'as_array', 'selectedTimesteps'],
@@ -157,11 +152,6 @@ const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
     [WorkflowNodeType.SwitchCase]: ['value', 'defaultCase']
 };
 
-/**
- * Entry point of the plugin module: the HTTP, AI-tool and cross-module callers
- * talk to this facade, which owns the wiring and routes each request to the
- * service that owns that concern.
- */
 export default class PluginService {
     #workflowValidator = new WorkflowValidatorService(new PluginDependencyResolverService());
 
@@ -229,10 +219,6 @@ export default class PluginService {
         return this.#registryGateway.search(input.q ?? '', input.page ?? 1, input.limit ?? 20);
     }
 
-    /**
-     * Installing pulls the tarball through the compute cluster's daemon, which
-     * unpacks it and reports back the workflow plus where it stored the binary.
-     */
     async installRegistry(input: RegistryInstallPluginInput): Promise<PluginRecord> {
         if (!input.name) {
             throw ApplicationError.badRequest(ErrorCodes.REGISTRY_PACKAGE_NAME_REQUIRED, 'A registry package name is required');

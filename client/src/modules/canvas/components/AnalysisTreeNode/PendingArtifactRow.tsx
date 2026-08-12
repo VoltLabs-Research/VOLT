@@ -9,7 +9,6 @@ interface PendingArtifactRowProps {
     isRecentlyReady: boolean;
 }
 
-/** Why this row is not selectable yet. The row colours by status already; this says it in words. */
 const STATUS_TITLE: Record<AnalysisArtifactStatus, string> = {
     pending: 'Waiting for the analysis to reach this model',
     generating: 'This model is still being generated',

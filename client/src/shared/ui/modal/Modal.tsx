@@ -193,8 +193,6 @@ export const Modal = ({
         onOpenChange: handleOpenChange,
         isDismissable: paintedDismissible,
         isKeyboardDismissDisabled: !paintedDismissible
-        // `as const` keeps `variant` as the literal `'blur'`; in a bare object
-        // literal it would widen to `string` and stop matching the variant union.
     } as const;
 
     if (paintedPlacement === 'center') {

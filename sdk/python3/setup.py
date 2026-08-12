@@ -7,7 +7,7 @@ from setuptools import setup
 
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
-except ImportError:  # pragma: no cover - build backend provides wheel
+except ImportError:
     _bdist_wheel = None
 
 

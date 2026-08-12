@@ -17,10 +17,6 @@ export const measureRecordBytes = (record: StoredAnalysisFrameLogRecord): number
         ?? record.segments.reduce((total, segment) => total + Buffer.byteLength(segment.text, 'utf8'), 0);
 };
 
-/**
- * Accepts segments while the frame log stays under the size limit. The first segment that
- * would cross the limit is replaced by a truncation notice and the remainder is dropped.
- */
 export const takeSegmentsWithinBudget = (
     record: StoredAnalysisFrameLogRecord,
     segments: AnalysisExecutionLogSegment[]

@@ -8,6 +8,7 @@ import DynamicEnvironment from '@/modules/fractal/components/molecules/DynamicEn
 import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights';
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
 import { LightingPreset } from '@/shared/rendering/lights';
+import { isMeshScene } from '@/modules/fractal/utils/scene-utils';
 import { Theme } from '@/shared/ui/hooks/use-theme';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
@@ -58,7 +59,8 @@ const FractalScenePipeline = ({
     markInteracting,
     children
 }: FractalScenePipelineProps) => {
-    const isDefectScene = config.activeScene?.sceneType === 'defect';
+    const isDefectScene = config.activeScene?.sceneType === 'defect'
+        || isMeshScene(config.activeScene);
     const gridEnabled = showGrid ?? config.grid.enabled;
     const [theme, setTheme] = useState<Theme>(() => getActiveAppTheme());
     const isMobile = useMedia('(max-width: 768px)');

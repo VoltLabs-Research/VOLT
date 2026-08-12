@@ -42,16 +42,6 @@ interface WorkflowPlanResult {
 };
 
 const createRuntimeArguments = (request: WorkflowExecutionRequest): WorkflowNodeOutput => {
-    /*
-     * `threads` is offered to every workflow but only reaches the binary when the
-     * plugin declares the argument, because `WorkflowArgumentsHandler` builds the
-     * command line from declared definitions alone. That keeps plugins with no
-     * such flag untouched while giving the ones that do a budget sized for the
-     * host, instead of the topology-wide arena they would pick on their own.
-     *
-     * It sits in `runtimeArguments` rather than being forced, so an explicit value
-     * in the user's stage config still wins.
-     */
     const runtimeArguments: WorkflowNodeOutput = {
         threads: resolvePluginNativeThreadBudget()
     };

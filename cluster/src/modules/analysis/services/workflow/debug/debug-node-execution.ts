@@ -18,11 +18,6 @@ interface DebugNodeExecutionDependencies {
 
 export type DebugNodeRunner = (session: DebugSession, node: WorkflowNode) => Promise<NodeExecutionOutcome>;
 
-/**
- * Builds the "run one node of a paused workflow" step. Entrypoint, exposure, export and
- * plugin nodes all need the session's dump and output directory on disk, so the first of
- * them to run materialises it and the rest of the session reuses it.
- */
 export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): DebugNodeRunner => {
     const ensureEnvironment = async (session: DebugSession): Promise<DebugEnvironmentState> => {
         if (session.preparedExecution) {
@@ -84,7 +79,6 @@ export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): Deb
         };
     };
 
-    /** Expands a plugin node into nested workflow runs, pinned to the session's single dump. */
     const runPluginNode = async (session: DebugSession, node: WorkflowNode): Promise<NodeExecutionOutcome> => {
         const { dumpPath, outputDir, selectedDump } = await ensureEnvironment(session);
         const { context } = session;

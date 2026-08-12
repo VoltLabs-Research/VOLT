@@ -59,16 +59,8 @@ import {
     mergeExposureRows
 } from '@modules/plugin/services/properties/exposure-property-merge';
 
-/** Temp table the per-atom scan joins against; per-connection, so it needs no cleanup. */
 const ATOM_ID_TABLE = '__volt_requested_atom_ids';
 
-/**
- * The requested ids as a plain array, or `null` when the caller wants everything.
- *
- * Non-integer and negative ids are dropped the way `buildPluginIndexForAtomIds` drops
- * them. An empty set is a request for no atoms, not for all of them, so it stays an empty
- * array rather than collapsing to `null`.
- */
 const normalizeRequestedAtomIds = (atomIds: Set<number> | undefined): number[] | null => {
     if (!atomIds) return null;
     const ids: number[] = [];
@@ -93,13 +85,6 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             : this.writeFromRows(input);
     }
 
-    /**
-     * Columnar path: one DuckDB projection from the plugin's own parquet.
-     *
-     * Cost is independent of the atom count because no row ever reaches JS. The
-     * row-based path below needs ~5 KB of heap per atom, which is what made
-     * multi-million-atom frames impossible.
-     */
     private async writeFromParquetSource(
         input: PluginPropertyStoreWriteInput,
         source: PerAtomParquetSource
@@ -324,7 +309,6 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
     }
 
     public buildPluginIndexForAtomIds(request: PluginAtomIndexRequest): Promise<PluginAtomIndex | null> {
-        // Ids are inlined into the statement, so only whole non-negative ids are accepted.
         const targetIds = Array.from(new Set(
             request.targetIds.filter((id) => Number.isInteger(id) && id >= 0)
         ));
@@ -346,21 +330,6 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         );
     }
 
-    /**
-     * Reads the analysis's per-atom rows for the atoms actually asked for.
-     *
-     * The atom filter used to be applied in JS, after every row of every exposure had been
-     * read and turned into an object: a request for one page of 100 atoms still
-     * materialised the whole frame. On a 4.45M-atom frame with three per-atom exposures
-     * that is ~13.4M objects built and discarded, which took the daemon past the 30 s
-     * command timeout and past V8's string ceiling when the page was large — the caller
-     * saw a bare 500 either way. The ids now go into a temp table the parquet scan joins
-     * against, so the cost follows the page rather than the frame.
-     *
-     * A temp table rather than an inlined `IN (...)` list because the list is the page,
-     * and a page can hold millions of ids; `buildPluginIndexForAtomIds` inlines only
-     * because its targets are a handful of selected atoms.
-     */
     public async getAnalysisAllPerAtomData(
         request: PluginAnalysisAllAtomsRequest
     ): Promise<PluginAnalysisAllAtomsResponse> {
@@ -409,16 +378,6 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         return mergeExposureRows(exposures, request.atomIds);
     }
 
-    /**
-     * One exposure's rows, restricted to the requested atoms inside DuckDB.
-     *
-     * With no ids the whole exposure is read, which is what a caller asking for the frame
-     * wants. Otherwise the ids are appended into a temp table on the same connection and
-     * the scan is filtered by a semi-join, so neither the statement text nor the JS heap
-     * grows with the page. A temp table rather than an inlined `IN (...)`: a page can hold
-     * millions of ids, and `buildPluginIndexForAtomIds` inlines only because its targets
-     * are a handful of selected atoms.
-     */
     private async readExposureRowsForAtoms(
         request: PluginModifierAnalysisRequest,
         atomIds: number[] | null
@@ -468,7 +427,6 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         return schemas.some((schema) => schema.name === request.property && schema.type === 'string');
     }
 
-    /** Every exposure read resolves the parquet file, runs one statement, and degrades to a fallback. */
     private async queryExposure<T>(
         request: PluginModifierAnalysisRequest,
         buildSql: (parquetPath: string) => string,

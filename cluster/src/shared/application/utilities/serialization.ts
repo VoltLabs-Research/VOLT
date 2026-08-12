@@ -33,10 +33,5 @@ export const decodeCliArgumentsToken = (value: string): string[] | null => {
     }
 };
 
-/**
- * Renders a WorkflowValue as a CLI/template-safe string. Strings pass through
- * verbatim; everything else is delegated to safe-stable-stringify, which is
- * cycle-safe and key-order deterministic.
- */
 export const stringifyWorkflowValue = (value: WorkflowValue): string =>
     typeof value === 'string' ? value : stringify(value) ?? '';

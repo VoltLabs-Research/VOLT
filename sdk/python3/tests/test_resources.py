@@ -48,8 +48,6 @@ class BaseCollectionTests(unittest.TestCase):
         calls_after_first = transport.calls
         second = [item.value for item in collection]
         self.assertEqual(first, second)
-        # The cache is fully populated after the first pass; iterating again
-        # must not hit the transport at all.
         self.assertEqual(transport.calls, calls_after_first)
 
     def test_iteration_wraps_each_item_once(self) -> None:
@@ -70,7 +68,6 @@ class BaseCollectionTests(unittest.TestCase):
         self.assertIsNone(empty.first())
 
     def test_exact_multiple_of_page_size_terminates(self) -> None:
-        # 4 items, page_size 2: page 1 -> [0,1], page 2 -> [2,3], page 3 -> [].
         collection, transport = _collection(4, page_size=2)
         self.assertEqual([i.value for i in collection], [0, 1, 2, 3])
 

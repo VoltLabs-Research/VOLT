@@ -5,14 +5,6 @@ const QUEUE_JOB_STATES = ['waiting', 'delayed', 'active', 'completed', 'failed']
 
 export type QueueJobState = typeof QUEUE_JOB_STATES[number];
 
-/**
- * One unit of queued work.
- *
- * `jobKey` is the identity the rest of the system knows a job by — an analysis id,
- * a frame id — while `id` is this row's own. They are separate because a key may
- * legitimately be enqueued again after its previous run reached a terminal state,
- * and the partial unique index below is what allows exactly that and no more.
- */
 @Entity('queue_jobs')
 @Index(['queue', 'state', 'runAt'])
 @Index(['state', 'lockedUntil'])
@@ -46,7 +38,6 @@ export class QueueJob {
     @Column('int', { default: 1 })
     maxAttempts!: number;
 
-    /** Mirrors the caller's backoff request so a retry can be re-scheduled without it. */
     @Column('varchar', {
         length: 32,
         nullable: true
@@ -56,19 +47,12 @@ export class QueueJob {
     @Column('int', { nullable: true })
     backoffDelayMs!: number | null;
 
-    /**
-     * How many times this job was reclaimed from a worker that stopped renewing
-     * its lease. One reclaim is a hiccup; a second means the job itself is what
-     * kills the worker, so it is failed rather than handed out again.
-     */
     @Column('int', { default: 0 })
     stalledCount!: number;
 
-    /** When the job becomes eligible; a delay is a `runAt` in the future. */
     @Column('timestamptz')
     runAt!: Date;
 
-    /** Lease deadline while active. Past it, the job is reclaimable. */
     @Column('timestamptz', { nullable: true })
     lockedUntil!: Date | null;
 

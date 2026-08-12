@@ -17,13 +17,6 @@ interface OctreeStreamResponse {
     contentLength?: number;
 }
 
-/**
- * Streams the LOD octree metadata baked next to an exposure's GLB.
- *
- * Extracted from the retired LineStyleService: styled-model creation is gone, but
- * the octree sidecar is what lets large exposures stream progressively, and the
- * `lodOctreeMetadata` route still serves it.
- */
 class ExposureOctreeService {
     async getOctreeMetadataStreamResponse(
         trajectoryId: string,

@@ -13,21 +13,11 @@ export enum DaemonDistributionMode {
     Image = 'image'
 }
 
-/*
- * The daemon lives at `cluster/` inside this repository; the stack compose keeps
- * mounting it at `/ClusterDaemon` (with the SDK at `/VoltSdk`) for this flow.
- */
 const DAEMON_SOURCE_ROOT_CANDIDATES = [
     path.resolve(process.cwd(), '..', '..', 'ClusterDaemon'),
     path.resolve(process.cwd(), '..', 'cluster')
 ];
 
-/*
- * The daemon links @voltstack/daemon-cluster-client from the repository, so the
- * build context shipped to enrolled hosts must carry the SDK package alongside
- * the daemon source. `../../sdk/...` covers both the repository layout (server
- * run from `server/`) and the stack compose mount (`/sdk`).
- */
 const SDK_PACKAGE_RELATIVE_PATH = ['sdk', 'node', 'DaemonClusterClient'];
 
 const SDK_SOURCE_ROOT_CANDIDATES = [
@@ -76,11 +66,6 @@ const requireSdkPackageRoot = async (): Promise<string> => {
 
 const DAEMON_MANIFEST_SKIPPED_ENTRIES = new Set(['node_modules', 'dist', '.git', '.runtime']);
 
-/**
- * Manifest files travel as strings, so a file that is not valid UTF-8 cannot be
- * represented. Decoding it leniently would silently corrupt it, so binary files
- * are omitted instead and reported.
- */
 const decodeManifestText = (contents: Buffer): string | null => {
     try {
         return new TextDecoder('utf8', { fatal: true }).decode(contents);
@@ -131,10 +116,6 @@ export const getTeamClusterDaemonDistributionMode = async (): Promise<DaemonDist
         return DaemonDistributionMode.Image;
     }
 
-    /*
-     * Build mode ships the daemon source to the host and builds it there; the
-     * daemon's SDK link must travel with it, so both roots are required.
-     */
     if (await resolveDaemonPackageRoot() && await resolveSdkPackageRoot()) {
         return DaemonDistributionMode.Build;
     }

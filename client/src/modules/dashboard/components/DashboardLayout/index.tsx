@@ -1,10 +1,5 @@
 import {
     Button,
-    DropdownItem,
-    DropdownMenu,
-    DropdownPopover,
-    DropdownRoot,
-    DropdownTrigger,
     Tooltip,
     cn
 } from '@heroui/react';
@@ -17,7 +12,6 @@ import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
-import TeamSelector from '@/modules/team/components/TeamSelector';
 import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
 import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
 import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
@@ -30,8 +24,6 @@ import {
 import { TeamCreatorModal } from '@/modules/team/components/TeamCreatorModal';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
-import { openModal } from '@/shared/ui/modal/use-modal-store';
 import useTip from '@/shared/tips/use-tip';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
@@ -39,7 +31,7 @@ import { panelFor } from '@/app/navigation/panels';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, UserPlus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type {
     DashboardGlobalSearchBreadcrumb,
     DashboardHeaderContext
@@ -71,7 +63,6 @@ const DashboardLayout = () => {
     const panel = panelFor(location.pathname);
     const prefersReducedMotion = usePrefersReducedMotion();
     const isRailViewport = useMedia(RAIL_VIEWPORT_QUERY);
-    const singleTenant = useSingleTenant();
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
@@ -191,38 +182,6 @@ const DashboardLayout = () => {
                             collapsed && 'items-center'
                         )}
                     >
-                        {!singleTenant && (
-                            <div className={cn('flex flex-row items-center gap-1.5', collapsed && 'hidden')}>
-                                <div className='min-w-0 flex-1'>
-                                    <TeamSelector />
-                                </div>
-
-                                <DropdownRoot>
-                                    <Tooltip>
-                                        <DropdownTrigger
-                                            className='flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
-                                            aria-label='Team actions'
-                                        >
-                                            <Plus size={18} aria-hidden='true' />
-                                        </DropdownTrigger>
-                                        <Tooltip.Content placement='bottom'>Team actions</Tooltip.Content>
-                                    </Tooltip>
-                                    <DropdownPopover placement='bottom end'>
-                                        <DropdownMenu aria-label='Team actions'>
-                                            <DropdownItem id='create-team' textValue='Create team' onAction={() => openModal('team-creator-modal')}>
-                                                <Plus size={16} aria-hidden='true' />
-                                                Create team
-                                            </DropdownItem>
-                                            <DropdownItem id='join-team' textValue='Join existing team' onAction={() => openModal('join-team-modal')}>
-                                                <UserPlus size={16} aria-hidden='true' />
-                                                Join existing team
-                                            </DropdownItem>
-                                        </DropdownMenu>
-                                    </DropdownPopover>
-                                </DropdownRoot>
-                            </div>
-                        )}
-
                         <UserMenuPopover
                             onSettingsClick={handleSettingsClick}
                             onSignOut={handleSignOut}

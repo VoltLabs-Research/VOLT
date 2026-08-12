@@ -98,16 +98,6 @@ const useExpressionVisibilityMask = ({
         && Boolean(trajectoryId)
         && currentTimestep !== undefined;
 
-    /*
-     * The frame's size is asked for before the frame itself.
-     *
-     * The expression used to be decided against a full-frame fetch: every atom was
-     * downloaded and only then compared to `CLIENT_EVAL_ATOM_LIMIT`, so a frame over the
-     * limit was transferred in full and thrown away on the next line. On a 4.45M-atom
-     * frame that is ~170 MB moved to reach a single number, and it is the request that
-     * made the endpoint fail before it was chunked server-side. One row carries the same
-     * `total` in its header.
-     */
     const { data: frameSize } = trajectoryAtomsQuery(
         {
             trajectoryId: trajectoryId ?? '',
@@ -129,7 +119,6 @@ const useExpressionVisibilityMask = ({
             analysisId,
             timestep: currentTimestep ?? 0,
             page: 1,
-            /* The cap is the real bound, so it is also the request. */
             limit: CLIENT_EVAL_ATOM_LIMIT
         },
         { enabled: queryEnabled && canEvaluateOnClient }

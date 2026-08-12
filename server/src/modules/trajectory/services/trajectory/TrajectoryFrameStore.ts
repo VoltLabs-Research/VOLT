@@ -23,7 +23,6 @@ const buildFrameRows = (
         : frame.simulationCell?._id) ?? null
 }));
 
-/** Swaps a trajectory's whole frame set in one transaction. */
 export const replaceTrajectoryFrames = async (trajectoryId: string, frames: TrajectoryFrame[]): Promise<void> => {
     const dataSource = TrajectoryFrameEntity.getRepository().manager.connection;
 
@@ -42,10 +41,6 @@ export const replaceTrajectoryFrames = async (trajectoryId: string, frames: Traj
     });
 };
 
-/**
- * Frame counts and first-frame atom totals for a page of trajectories, so
- * listings do not have to load every frame row.
- */
 export const getTrajectoryFrameSummaries = async (
     trajectoryIds: string[]
 ): Promise<Map<string, TrajectoryFrameSummary>> => {

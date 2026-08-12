@@ -13,7 +13,6 @@ import type {
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
-/** Assembles tube geometry for line-like entities and encodes it as a GLB plus range sidecar. */
 
 interface ProcessedLineGeometry {
     positions: Float32Array;

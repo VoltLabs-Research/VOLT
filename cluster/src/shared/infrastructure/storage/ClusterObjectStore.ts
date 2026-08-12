@@ -35,7 +35,6 @@ const toHeadResponse = (stat: LocalClusterObjectStat): ClusterObjectHeadResponse
     };
 };
 
-/** Splits caller metadata into S3's `x-amz-meta-*` form and the proxy's plain form. */
 const splitObjectMetadata = (metadata?: Record<string, string>) => {
     const localMetadata: Record<string, string> = {};
     const remoteMetadata: Record<string, string> = {};

@@ -8,13 +8,6 @@ import type {
     AnalysisStageStatus
 } from '@volt/contracts/modules/analysis/domain';
 
-/*
- * The wire unions are the single source of truth. This file used to redeclare
- * `AnalysisArtifactStatus`, an identical `AnalysisExpectedArtifactStatus`, and
- * `AnalysisStageType` (the same five values as `AnalysisStageKind`), which is how
- * three definitions of one status ended up in the repo. `AnalysisStageType` is
- * kept as an alias because it is the name the server's ports already use.
- */
 export type AnalysisStageType = AnalysisStageKind;
 
 export type AnalysisConfig = Record<string, unknown>;
@@ -89,12 +82,6 @@ export interface Analysis {
     props: AnalysisProps;
 }
 
-/*
- * These three differ from their wire counterparts only in that the timestamps are
- * `Date` here and `string` after JSON serialization, so they are declared rather
- * than re-exported. The assertions tie the field lists together: adding a field to
- * the wire contract without adding it here fails the build.
- */
 assertSameFields<AnalysisExpectedArtifact, WireAnalysisExpectedArtifact>();
 assertSameFields<AnalysisStage, WireAnalysisStage>();
 assertSameFields<AnalysisChildAnalysis, WireAnalysisChildAnalysis>();

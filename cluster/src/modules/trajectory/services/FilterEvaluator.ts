@@ -64,7 +64,6 @@ export interface ExportParticleFilterModelInput {
     ownerClusterId: string;
     objectKey: string;
     action: 'delete' | 'highlight';
-    /* Built on the server and shipped over the reverse channel, so not a typed array yet. */
     mask: InboundChunk;
 }
 

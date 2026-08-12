@@ -23,10 +23,8 @@ export type PreflightReason =
     | 'daemon-starting'
     | 'permission-denied'
     | 'unknown'
-    /* Reported while the app provisions the runtime itself; no user action. */
     | 'auto-starting'
     | 'auto-installing'
-    /* Automatic provisioning ran and could not finish on its own. */
     | 'install-failed'
     | 'reboot-required'
     | 'relogin-required';

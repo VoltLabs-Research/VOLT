@@ -22,8 +22,6 @@ import { logger } from '@shared/infrastructure/logger';
 
 export class DaemonLifecycle {
     private async connectInfrastructure(): Promise<void> {
-        /* The analysis data store now shares the daemon's data source, so it has
-           no connection of its own to open. */
         await Promise.all([
             connectDaemonDataSource(getDaemonEntities()),
             getFilesystemObjectStore().ensureBuckets()
@@ -51,8 +49,6 @@ export class DaemonLifecycle {
 
         await this.connectInfrastructure();
 
-        /* Before the workers start claiming: the first pass returns any job whose
-           lease was stranded by the restart this is recovering from. */
         getQueueMaintenance().start();
 
         getHeartbeatPlaneProcess().start();

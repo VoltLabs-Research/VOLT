@@ -5,7 +5,6 @@ import {
     flattenAtomProperties
 } from '@modules/plugin/services/properties/PluginAtomProperties';
 
-/** Derives the parquet schema of an exposure: property columns, their type and the row count. */
 
 type PropertyColumnType = 'double' | 'varchar';
 
@@ -16,10 +15,8 @@ export interface PropertyColumn {
     vectorIndex?: number;
 }
 
-/** Columns owned by the parquet table itself, never exposed as plugin properties. */
 export const BASE_COLUMNS = new Set(['timestep', 'atom_index', 'id']);
 
-/** Numeric typing rule shared by schema inference, appending and reading. */
 export const toFiniteNumber = (value: unknown): number | null => {
     if (value === null || value === undefined) return null;
     if (typeof value === 'boolean') return value ? 1 : 0;
@@ -96,7 +93,6 @@ export const getRowCount = (rows: PerAtomProperties | null | undefined): number 
 export const inferPropertyColumns = (rows: PerAtomProperties): PropertyColumn[] =>
     Array.isArray(rows) ? inferColumnsFromFlatRows(rows) : inferColumnsFromColumnarRows(rows);
 
-/** Property columns present in a parquet result row, ignoring the base columns. */
 export const listPropertyColumnNames = (rows: Record<string, unknown>[]): string[] => {
     if (rows.length === 0) return [];
     return Object.keys(rows[0]).filter((name) => !BASE_COLUMNS.has(name));

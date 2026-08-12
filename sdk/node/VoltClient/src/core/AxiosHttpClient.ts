@@ -9,17 +9,9 @@ import type { AxiosInstance } from 'axios';
 export interface AxiosHttpClientOpts {
     baseUrl: string;
     credential?: CredentialProvider;
-    /** Request timeout in ms. Default: 30 000. */
     timeout?: number;
 };
 
-/**
- * Axios-backed implementation of `HttpClient`.
- * Prefer this adapter when upload progress reporting (`onUploadProgress`) is needed,
- * since the Fetch API does not expose upload progress events.
- *
- * Requires `axios` as a peer dependency.
- */
 export default class AxiosHttpClient implements HttpClient {
     private readonly api: AxiosInstance;
     private readonly credential: CredentialProvider | undefined;

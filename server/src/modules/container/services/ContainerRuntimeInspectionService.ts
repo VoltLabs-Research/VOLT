@@ -7,10 +7,6 @@ import type {
     ContainerProcessInfo
 } from '@shared/contracts/ports/ContainerRuntime';
 
-/* Read-only introspection of a running container: directory listings, file
-   contents, process table and resource usage. Nothing here mutates state, so
-   the only concern beyond forwarding to the daemon is turning daemon-side
-   state conflicts into the right HTTP status. */
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;
 
@@ -90,11 +86,6 @@ export class ContainerRuntimeInspectionService{
         };
     }
 
-    /**
-     * Docker answers 409 when the container is not running. That is a state
-     * conflict caused by the request, not a server failure, so it must not
-     * surface as a 500 carrying the raw daemon message.
-     */
     async #runtimeCall<T>(operation: () => Promise<T>): Promise<T>{
         try{
             return await operation();

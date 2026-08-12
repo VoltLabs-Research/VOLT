@@ -4,10 +4,6 @@ import type {
 } from '@modules/analysis/contracts/analysis-execution-log';
 import type { AnalysisFrameLogSnapshot } from '@shared/contracts/types/AnalysisFrameLog';
 
-/**
- * Cursors are the number of segments emitted so far. An already published cursor wins over the
- * current segment count so a frame never rewinds its cursor.
- */
 export const resolveFrameLogCursor = (value: string | null, segmentCount: number): string | null => {
     if (value) {
         return value;

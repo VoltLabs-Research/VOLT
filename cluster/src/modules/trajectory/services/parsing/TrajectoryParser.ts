@@ -157,7 +157,6 @@ export class TrajectoryParser {
     }
 
     public async getPropertyStats(input: PropertyStatsInput): Promise<PropertyStatsResult> {
-        /* A resident frame is already cheaper to scan than a fresh query. */
         const resident = this.trajectoryFrameStore.peekFrame?.(input) ?? null;
         if (!resident && this.trajectoryFrameStore.readPropertyStats) {
             const pushedDown = await this.trajectoryFrameStore.readPropertyStats(input, input.property);
@@ -186,14 +185,6 @@ export class TrajectoryParser {
         };
     }
 
-    /**
-     * A page is a few thousand atoms, so decoding a whole frame to slice it is the
-     * wrong shape once frames get large: at 10M atoms it costs seconds for a 20 KB
-     * answer. A resident frame is still preferred — slicing it is free — but a cold
-     * read asks the store for just the range, which it can satisfy without
-     * materialising the rest. `pageOffset` tracks where the returned buffer starts,
-     * since a range read is indexed from zero while a sliced frame is not.
-     */
     public async getAtomsPage(input: AtomsPageInput): Promise<AtomsPageResult> {
         const pagination = normalizePagination(input.page, input.limit);
         const requestedStart = calculatePaginationOffset(pagination.page, pagination.limit);

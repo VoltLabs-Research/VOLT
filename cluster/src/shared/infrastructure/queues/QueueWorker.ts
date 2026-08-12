@@ -16,7 +16,6 @@ interface QueueWorkerOptions {
     pollIntervalMs: number;
 }
 
-/** A lease is renewed well inside its window so one slow tick cannot lose the job. */
 const LEASE_RENEWAL_DIVISOR = 3;
 
 interface Slot {
@@ -25,14 +24,6 @@ interface Slot {
     finished: Promise<void>;
 }
 
-/**
- * Pulls jobs from one queue and runs them.
- *
- * Concurrency is N independent slots rather than one loop fetching N jobs at a
- * time. With batching, a slot cannot start its next job until the slowest job in
- * its batch finishes, which for compute that ranges from seconds to minutes per
- * frame idles most of the capacity. Independent slots keep every one of them busy.
- */
 export class QueueWorker<TPayload> {
     private readonly slots = new Set<Slot>();
     private readonly failedListeners: QueueWorkerFailedListener[] = [];
@@ -64,7 +55,6 @@ export class QueueWorker<TPayload> {
         this.scaleToTarget();
     }
 
-    /** Resolves once every slot has finished the job it was holding. */
     async close(): Promise<void> {
         this.closing = true;
 
@@ -80,11 +70,6 @@ export class QueueWorker<TPayload> {
             this.spawnSlot();
         }
 
-        /*
-         * Shrinking asks slots to retire after their current job rather than
-         * cancelling: a compute job may be minutes into a native binary, and
-         * abandoning it would leave the lease to lapse and the work to repeat.
-         */
         const excess = this.slots.size - this.targetConcurrency;
         if (excess <= 0) return;
 
@@ -150,7 +135,6 @@ export class QueueWorker<TPayload> {
             void renewLease(claimed.id, slot.id, this.options.leaseDurationMs).then((held) => {
                 if (held) return;
 
-                /* The job was reclaimed, so another slot may already be running it. */
                 logger.warn({
                     queue: this.queue,
                     jobId: claimed.id

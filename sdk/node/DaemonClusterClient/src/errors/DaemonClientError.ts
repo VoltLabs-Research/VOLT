@@ -1,11 +1,5 @@
 import { DaemonClientErrorCode } from './error-codes';
 
-/**
- * Typed error thrown by `ClusterDaemonClient` and its sub-components.
- *
- * Always carries a `code` from `DaemonClientErrorCode` so consumers can
- * discriminate failure modes without string-matching on `message`.
- */
 export class DaemonClientError extends Error {
     public readonly code: DaemonClientErrorCode;
     public readonly cause?: unknown;

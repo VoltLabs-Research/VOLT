@@ -16,7 +16,6 @@ export const emitOrSwallow = async (event: string, data?: unknown): Promise<void
     try {
         await socketService.emit(event, data);
     } catch {
-        // Swallowing is this helper's contract, stated in its name.
     }
 };
 

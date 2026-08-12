@@ -31,11 +31,6 @@ export const sanitizeComposeProjectName = (teamClusterId: string): string => {
 };
 
 const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): string => {
-    /*
-     * The build context is the install directory itself: it mirrors the repository
-     * layout (cluster/ + sdk/) that the daemon's Dockerfile expects, because the
-     * daemon links @voltstack/daemon-cluster-client from the repository.
-     */
     const daemonBuildConfiguration = daemonDistributionMode === DaemonDistributionMode.Build
         ? [
             '    build:',
@@ -71,8 +66,6 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         '      - postgres',
         '    volumes:',
         '      - /var/run/docker.sock:/var/run/docker.sock',
-        // The object store lives on the daemon's own disk now, so this holds the
-        // cluster's data rather than a cache and must outlive the container.
         '      - daemon-data:/var/lib/volt-daemon',
         'volumes:',
         '  postgres-data:',
@@ -101,7 +94,6 @@ const buildPostgresEnvFile = (credentials: DecryptedTeamClusterServiceCredential
     return [
         `POSTGRES_USER=${credentials.postgresUsername}`,
         `POSTGRES_PASSWORD=${credentials.postgresPassword}`,
-        /* The daemon creates its own database if absent, but naming it here saves a round trip. */
         'POSTGRES_DB=volt-cluster'
     ].join('\n');
 };

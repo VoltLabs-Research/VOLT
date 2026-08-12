@@ -122,7 +122,6 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             gltfLoader.setDRACOLoader(FractalAssetLoader.getDracoLoader());
             gltfLoader.setMeshoptDecoder(MeshoptDecoder);
         } catch {
-            // DRACO and meshopt are optional: an uncompressed GLB still loads.
         }
         return gltfLoader;
     }

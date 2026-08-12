@@ -123,8 +123,6 @@ class WhiteboardSocketModule extends BaseSocketModule {
                 return ackError('Whiteboard state unavailable');
             }
 
-            // Echoed back on the ack and on the broadcast so a peer can tell its own
-            // patches apart from someone else's and reconcile against its base revision.
             const origin = {
                 senderId: conn.user._id,
                 clientId: payload.clientId,
@@ -142,7 +140,6 @@ class WhiteboardSocketModule extends BaseSocketModule {
                 this.emitToRoomExcept(conn.id, room, 'whiteboard_apply_delta', delta);
             }
 
-            // A patch built on an outdated revision gets the authoritative scene back.
             const snapshot = isStalePatch ? await realtimeStateService.getSnapshot(payload.whiteboardId) : null;
             if (!snapshot) {
                 return ackOk({
@@ -177,7 +174,6 @@ class WhiteboardSocketModule extends BaseSocketModule {
         });
     }
 
-    /** The last subscriber out flushes the room so its scene is not held in memory forever. */
     private async releaseRoomIfIdle(whiteboardId: string): Promise<void> {
         const socketIds = await this.roomManager.getSocketsInRoom(this.buildRoomId(whiteboardId));
         if (socketIds.length === 0) {

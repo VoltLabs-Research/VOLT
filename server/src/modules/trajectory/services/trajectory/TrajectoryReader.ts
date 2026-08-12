@@ -71,12 +71,6 @@ export const readTrajectoryPreview = async (
         return null;
     }
 
-    /*
-     * Listing and reading are two round trips, and the rasterizer may still be
-     * writing that object in between: the key can disappear, or the bytes can come
-     * back as a half-written PNG that the decoder rejects. Both mean the preview is
-     * not ready yet, which the caller already reports as a 404.
-     */
     try{
         const buffer = await input.objectGatewayClient.getBuffer(
             input.storageClusterId,
@@ -100,9 +94,6 @@ export const getTrajectoryFrames = async (trajectoryId: string): Promise<Traject
     return frames.map(toTrajectoryFrameView);
 };
 
-/**
- * Atoms are always read on a compute cluster; the caller resolves which one.
- */
 export const readAtomsPage = async (
     teamClusterId: string,
     trajectoryId: string,

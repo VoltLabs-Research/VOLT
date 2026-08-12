@@ -48,14 +48,6 @@ class CanvasWorkspaceRealtimeStateService {
         return snapshot;
     }
 
-    /**
-     * Merges a patch and returns only what changed.
-     *
-     * Read, diff and write are held under a lock named for the workspace. Two
-     * collaborators patching different fields at the same moment would otherwise
-     * each write a snapshot built from the state they read, and the later write
-     * would drop the earlier one's field along with its revision.
-     */
     async applyPatch(
         trajectoryId: string,
         ownerId: string,
@@ -113,10 +105,6 @@ class CanvasWorkspaceRealtimeStateService {
             { ttlMs: TTL_MS }
         );
 
-        /*
-         * The index outlives its members, so a workspace can still be enumerated
-         * for cleanup after its last snapshot has lapsed.
-         */
         await store.setAdd(this.buildIndexKey(snapshot.trajectoryId), [snapshot.ownerId], {
             ttlMs: TTL_MS * 2
         });

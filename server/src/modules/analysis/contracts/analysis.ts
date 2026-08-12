@@ -17,11 +17,6 @@ export enum AnalysisArtifactStatus {
     Failed = 'failed'
 }
 
-/*
- * This enum exists because the server needs the values at runtime, while
- * `@volt/contracts` declares the same set as a union. The assertion fails the
- * build if the two ever stop matching.
- */
 assertWireMatch<Equal<`${AnalysisArtifactStatus}`, WireAnalysisArtifactStatus>>();
 
 export enum AnalysisRelation {

@@ -149,7 +149,6 @@ export class WebSocketSessionManager {
                     }
                 };
 
-                /** Shared by `error` and `close`: both end the session and fail a still-pending attach. */
                 const finalizeSessionClose = (
                     endMessage: ReverseChannelOutboundMessage,
                     attachFailureMessage: string
@@ -294,11 +293,6 @@ export class WebSocketSessionManager {
         this.options.coordinator.clearSessionActivityIfUntracked(sessionId);
     }
 
-    /**
-     * `binaryType` is pinned to `arraybuffer` at construction, so `ws` only ever hands back a
-     * string (text frames) or an `ArrayBuffer` (binary frames); the view branch covers its
-     * default `nodebuffer` shape.
-     */
     private readWebSocketMessage(data: Data): WebSocketMessageResult {
         if (typeof data === 'string') {
             return {

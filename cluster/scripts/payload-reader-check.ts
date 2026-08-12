@@ -1,18 +1,3 @@
-/**
- * Valida la extraccion de documentos `payload` grandes sin materializarlos en JS.
- *
- * Construye parquets de una sola columna `payload` con las formas que admite el
- * contrato y comprueba que el listing, los sub-listings, el export y el parquet
- * per-atom salen bien. Para las secciones que ahora se aplanan a parquet (mesh y
- * atomistic) compara el GLB que produce el exportador por la ruta columnar contra el
- * que produce por la ruta en memoria: deben ser identicos byte a byte.
- *
- * El limite de tamano en si se prueba en `payload-limit-check.ts`, que si genera un
- * documento por encima del techo de V8.
- *
- * Ejecutar dentro del contenedor del daemon:
- *   npx tsx scripts/payload-reader-check.ts
- */
 import { DuckDBConnection } from '@duckdb/node-api';
 import assert from 'node:assert/strict';
 import {
@@ -34,7 +19,6 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-/** DuckDB devuelve enteros como BigInt, que JSON.stringify no admite. */
 const stringify = (value: unknown): string =>
     JSON.stringify(value, (_key, item) => (typeof item === 'bigint' ? Number(item) : item));
 
@@ -130,7 +114,6 @@ const checkPerAtom = (label: string, perAtom: unknown): Promise<void> =>
         }
     });
 
-/** Malla con indices desordenados, un indice repetido y un facet que apunta a la nada. */
 const buildMeshDocument = (): JsonObject => ({
     main_listing: {
         total_nodes: 5,
@@ -167,7 +150,6 @@ const buildMeshDocument = (): JsonObject => ({
                     index: 4,
                     position: [0, 0, 1]
                 },
-                /* Indice repetido: el ultimo gana, igual que un Map. */
                 {
                     index: 7,
                     position: [2, 2, 2]
@@ -176,7 +158,6 @@ const buildMeshDocument = (): JsonObject => ({
             facets: [
                 { vertices: [7, 3, 11] },
                 { vertices: [3, 11, 4] },
-                /* 99 no existe: el facet se descarta. */
                 { vertices: [7, 99, 4] },
                 { vertices: [4, 7, 3] }
             ]
@@ -184,7 +165,6 @@ const buildMeshDocument = (): JsonObject => ({
     }
 });
 
-/** Dos buckets, colores explicitos solo en uno, para ejercitar la precedencia. */
 const buildAtomisticDocument = (): JsonObject => ({
     main_listing: { total_atoms: 5 },
     'export': {
@@ -238,10 +218,6 @@ const runExporter = async (
     return staged[0];
 };
 
-/**
- * El mismo documento por las dos rutas: inline (documento chico) y columnar
- * (`readLargePayloadDocument`). El GLB tiene que salir igual.
- */
 const checkExporterEquivalence = (
     label: string,
     exporter: Exporter,
@@ -282,13 +258,11 @@ const checkExporterEquivalence = (
             'el GLB de la ruta columnar difiere del de la ruta inline'
         );
 
-        /* Los sub-listings del documento tienen que sobrevivir el viaje intactos. */
         const originalSubListings = (document.sub_listings ?? {}) as Record<string, JsonObject[]>;
         assert.deepEqual(await collectSubListingRows(subListings), originalSubListings);
         console.log('  sub-listings identicos y GLB identico');
     });
 
-/** El camino completo: parquet -> readWorkflowExposurePayload, como en produccion. */
 const checkFullReadPath = (): Promise<void> =>
     withTempDir('payload-full', async (dir) => {
         const parquet = path.join(dir, 'defect_mesh.parquet');

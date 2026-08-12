@@ -69,8 +69,6 @@ export const commandGroupFactory = <TGroup extends object>(
 
     const factory = (): CommandHandlerMap => {
         instance ??= create();
-        // Irreducible: dispatch is reflective (by string key), and TS cannot express "the keys
-        // @Command recorded are callable" — @Command itself enforces that at decoration time.
         return instance as unknown as CommandHandlerMap;
     };
 

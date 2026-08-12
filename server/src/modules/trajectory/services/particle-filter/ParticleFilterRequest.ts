@@ -24,11 +24,6 @@ interface ParticleFilterRequestInputLike {
     conditions?: ParticleFilterConditionInput[] | string;
 }
 
-/**
- * `conditions` arrives from a query string or a JSON body, so it may be absent
- * or a JSON-encoded array. Parsing it is the point of this function; an empty
- * result is rejected with a 400 by the caller.
- */
 const normalizeConditions = (
     conditions: ParticleFilterConditionInput[] | string | undefined
 ): ParticleFilterConditionInput[] => {
@@ -44,11 +39,6 @@ const normalizeConditions = (
     }
 };
 
-/**
- * The wire contract declares `operator` as a plain `string`, while the native
- * filter expression only accepts the six comparison literals, so this narrowing
- * is load-bearing rather than defensive.
- */
 const resolveFilterOperator = (operator: string): FilterExpression['operator'] => {
     switch (operator) {
         case '!=':

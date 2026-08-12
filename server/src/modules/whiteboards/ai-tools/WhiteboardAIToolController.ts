@@ -17,7 +17,6 @@ import type {
     WhiteboardRefInput
 } from '@volt/contracts/modules/whiteboards/ai-tools';
 
-/** Excalidraw persists an image cache alongside the scene; the realtime path ignores it. */
 type StoredScene = WhiteboardScene & { files?: Record<string, unknown> };
 
 export default class WhiteboardAIToolController extends AIToolController {
@@ -42,8 +41,6 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<ListWhiteboardsInput>()
     })
     async listWhiteboards(input: ListWhiteboardsInput & AIToolScope) {
-        // typia validates but does not transform, so the documented defaults are
-        // applied here; an absent key does not override them on spread.
         const { total, data } = await this.#service.listWhiteboards(input.teamId, {
             page: 1,
             limit: 50,

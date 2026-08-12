@@ -9,18 +9,11 @@ import { PluginSubListingRow } from '@modules/plugin/models/plugin-sub-listing-r
 import { Readable } from 'node:stream';
 import type { EntityTarget, ObjectLiteral } from 'typeorm';
 
-/*
- * Only the tables the daemon owns are browsable, named explicitly rather than read
- * from the metadata catalog: the explorer takes a path from the caller, and mapping
- * it through a fixed allowlist is what keeps that path from reaching anything else
- * in the database.
- */
 const BROWSABLE_TABLES: Record<string, EntityTarget<ObjectLiteral>> = {
     plugin_listing_rows: PluginListingRow,
     plugin_sub_listing_rows: PluginSubListingRow
 };
 
-/** Browses the daemon's relational tables: the listing data plugins produce. */
 export default class DaemonTableRemoteAccess extends BaseRemoteAccess {
     readonly target = RemoteExplorerTarget.DaemonTables;
 
@@ -76,10 +69,6 @@ export default class DaemonTableRemoteAccess extends BaseRemoteAccess {
                 'content-type': 'application/json',
                 'content-disposition': buildAttachmentContentDisposition(`${tableName}.json`)
             },
-            /*
-             * Paged rather than a single query: a sub-listing table can hold millions of
-             * rows, and the point of streaming the download is to never hold them all.
-             */
             stream: toWebReadableStream(Readable.from((async function* () {
                 const pageSize = 1000;
                 let offset = 0;

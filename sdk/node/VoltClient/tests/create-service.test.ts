@@ -5,7 +5,6 @@ import VoltClient from '../src/core/VoltClient';
 import type { HttpClient, HttpRequest } from '../src/core/HttpClient';
 import { createService, get, post } from '../src/dsl/create-service';
 
-/** Echoes the request back inside a { status, data } envelope. */
 function echoFactory() {
     const requests: HttpRequest[] = [];
     const http: HttpClient = {

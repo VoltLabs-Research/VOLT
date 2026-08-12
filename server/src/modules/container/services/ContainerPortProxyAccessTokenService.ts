@@ -3,12 +3,6 @@ import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload, Secret } from 'jsonwebtoken';
 
-/* How a browser proves it may use one container port relay.
- *
- * A relay listens on a plain TCP port with no VOLT session on it, so the grant
- * is carried by a short-lived signed token: in the query string on the first
- * hop (that is the URL we hand out), then in a cookie the relay sets on the
- * first proxied response so in-page navigation keeps working. */
 
 const ACCESS_TOKEN_TYPE = 'container-port-proxy';
 const ACCESS_TOKEN_QUERY_PARAM = 'access_token';
@@ -75,9 +69,6 @@ export class ContainerPortProxyAccessTokenService {
     verify(token: string): ContainerPortProxyAccessTokenContext | null {
         try {
             const decoded = jwt.verify(token, this.secret);
-            /* The claim bodies are ours, but the `type` discriminator is not
-               decoration: SECRET_KEY also signs VOLT session tokens, so without
-               it any valid session JWT would authorize any container relay. */
             if (typeof decoded === 'string' || decoded.type !== ACCESS_TOKEN_TYPE) {
                 return null;
             }
@@ -103,7 +94,6 @@ export class ContainerPortProxyAccessTokenService {
         return this.readFromUrl(requestUrl) || cookieToken || null;
     }
 
-    /** Appended to the first proxied response so later same-origin requests carry the grant. */
     appendCookie(existing: string[] | undefined, accessToken: string): string[] {
         const accessTokenCookie = serializeCookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, {
             path: '/',

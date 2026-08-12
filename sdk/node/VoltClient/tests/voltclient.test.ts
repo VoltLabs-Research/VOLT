@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import VoltClient from '../src/core/VoltClient';
 import type { HttpClient, HttpRequest } from '../src/core/HttpClient';
 
-/** Records every request and returns canned responses keyed by URL. */
 class RecordingHttp implements HttpClient {
     public readonly requests: HttpRequest[] = [];
     constructor(private readonly responder: (req: HttpRequest) => unknown = () => ({})) {}

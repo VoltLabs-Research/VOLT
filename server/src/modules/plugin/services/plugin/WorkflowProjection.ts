@@ -106,15 +106,6 @@ export const resolvePluginDisplayName = (workflow: Workflow): string => {
 
     return modifierNode?.data?.modifier?.name?.trim() ?? '';
 };
-/**
- * This `stableStringify` feeds `computePipelineStageHash` /
- * `computeDumpStageHash`, persisted as the indexed `Analysis.pipelineStageHash`
- * and looked up to reuse a completed stage, so it is a cache key over stored
- * rows. The two copies already disagree: this one uses the default `.sort()`
- * and serializes `undefined` as `null`, the other sorts with `localeCompare`
- * and drops those entries. Merging them invalidates every persisted stage hash
- * and forces full pipeline re-execution.
- */
 const stableStringify = (value: unknown): string => {
     if (value === null || typeof value !== 'object') {
         return JSON.stringify(value) ?? 'null';

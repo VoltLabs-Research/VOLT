@@ -6,7 +6,6 @@ import { ensureExtractedProject } from '@modules/plugin/services/binaries/zip-pr
 import { resolvePythonEntrypoint } from '@modules/plugin/services/binaries/extracted-entrypoint-resolver';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
 
-/** Provisions a plugin python runtime (project, venv, requirements) and owns its layout. */
 
 export const PYTHON_VENV_DIRECTORY = 'venv';
 export const PYTHON_PROJECT_DIRECTORY = 'project';
@@ -16,7 +15,6 @@ const PYTHON_ZIP_EXTRACTED_MARKER = '.zip-extracted';
 const PYTHON_PROJECT_REQUIREMENTS_FILENAME = '.volt-requirements.txt';
 const STUB_MSGPACK_REQUIREMENT = 'msgpack';
 
-/** Entries of a provisioned runtime directory that a warm image can carry. */
 export const PYTHON_RUNTIME_WARM_ENTRIES = [
     PYTHON_VENV_DIRECTORY,
     PYTHON_PROJECT_DIRECTORY,
@@ -28,7 +26,6 @@ export const PYTHON_RUNTIME_WARM_ENTRIES = [
 const pathExists = (target: string, mode: number): Promise<boolean> =>
     fs.access(target, mode).then(() => true, () => false);
 
-/** The stub talks msgpack, so it is always installed alongside the plugin requirements. */
 const withStubRequirements = (requirementsFile: string): string => {
     const lines = requirementsFile.split(/\r?\n/);
     if (lines.some((line) => /^\s*msgpack\b/i.test(line))) {
@@ -43,7 +40,6 @@ const withStubRequirements = (requirementsFile: string): string => {
 export const providePythonRuntime = async (input: {
     runtimeKey: string;
     artifactPath: string;
-    /** Identity of the artifact revision the extracted project must match. */
     artifactRevision: string;
     requirementsFile: string;
     entrypointScript?: string;

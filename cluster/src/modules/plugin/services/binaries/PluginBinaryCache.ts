@@ -22,7 +22,6 @@ import { buildRuntimeCacheKey } from '@modules/plugin/services/binaries/runtime-
 import { providePythonRuntime } from '@modules/plugin/services/binaries/python-runtime-provisioner';
 import { providePackagedRuntime } from '@modules/plugin/services/binaries/packaged-runtime-provisioner';
 
-/** Resolves the runtime a plugin executes with, provisioning it once per artifact revision. */
 
 export class PluginBinaryCache {
     private readonly artifacts: PluginArtifactDownloader;
@@ -46,7 +45,6 @@ export class PluginBinaryCache {
             );
         }
         if (entrypointType === EntrypointType.PackagedExecutable) {
-            // Declared by the plugin manifest, so it may legitimately be missing.
             if (!input.entrypointScript) {
                 throw new Error('Packaged executable entrypointScript is required');
             }
@@ -157,7 +155,6 @@ export class PluginBinaryCache {
         });
     }
 
-    /** Warm images are addressed without a requirements variant. */
     private async prefetchWarmImage(binaryObjectPath: string, source: PluginArtifactSource): Promise<void> {
         if (!source.expectedHash) return;
 

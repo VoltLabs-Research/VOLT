@@ -35,10 +35,6 @@ import type { PluginBinaryCache } from '@modules/plugin/services/binaries/Plugin
 
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
-/**
- * Steps a workflow one node at a time for the plugin debugger, keeping each session's
- * outputs and materialised dump alive between commands until it goes idle.
- */
 export class DebugSessionManager {
     private readonly sessions = new TTLCache<string, DebugSession>({
         ttl: SESSION_IDLE_TTL_MS,

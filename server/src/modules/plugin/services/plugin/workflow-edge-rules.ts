@@ -2,16 +2,7 @@ import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workf
 import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type { WorkflowTopologyIndex } from '@modules/plugin/services/plugin/WorkflowTopologyIndex';
 
-/**
- * Which node types may follow which, i.e. the whole legal shape of a workflow
- * graph as a lookup table. A node type absent from the map, or a target absent
- * from its set, is not connectable.
- */
 
-/**
- * Where a branch continues once it leaves an if/switch: the same set for an
- * if-statement branch, a switch case body, and a switch's "continue" handle.
- */
 const BRANCH_CONTINUATION_TARGETS = new Set<WorkflowNodeType>([
     WorkflowNodeType.Plugin,
     WorkflowNodeType.Entrypoint,

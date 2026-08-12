@@ -5,10 +5,6 @@ import type {
     WorkflowNode
 } from '@shared/contracts/types/workflow.types';
 
-/**
- * An entrypoint node resolved down to what running it requires: everything the
- * plugin runtime provider needs, plus the raw argument template to render.
- */
 export interface WorkflowEntrypointConfig extends PluginExecutionRuntimeInput {
     argumentsTemplate: string;
 }
@@ -20,10 +16,6 @@ export interface WorkflowEntrypointExecutionRequest {
     execution: WorkflowEntrypointExecutionOptions;
 }
 
-/**
- * Plugin manifests may omit any entrypoint field, so the missing binary, argument
- * template and entrypoint type errors below are domain validation.
- */
 export const resolveEntrypointConfig = (
     node: WorkflowNode,
     execution: WorkflowEntrypointExecutionOptions

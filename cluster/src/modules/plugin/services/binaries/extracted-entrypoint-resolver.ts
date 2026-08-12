@@ -5,10 +5,6 @@ import {
     normalizeProjectRelativePath
 } from '@modules/plugin/services/binaries/zip-project-extractor';
 
-/**
- * Locates the manifest entrypoint inside an extracted project. Manifests are user
- * authored, so the declared path is a hint: it may sit under a wrapper directory.
- */
 
 interface ResolvedEntrypoint {
     entrypointPath: string;
@@ -49,7 +45,6 @@ const resolveRelativePath = async (
     );
 };
 
-/** Python projects run from the directory that contains the declared script path. */
 export const resolvePythonEntrypoint = async (
     projectDir: string,
     entrypointScript: string
@@ -66,7 +61,6 @@ export const resolvePythonEntrypoint = async (
     };
 };
 
-/** Packaged executables run from the directory that holds the executable itself. */
 export const resolvePackagedEntrypoint = async (
     projectDir: string,
     entrypointScript: string

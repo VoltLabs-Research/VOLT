@@ -31,11 +31,6 @@ interface PluginReferenceValidationResult {
     errors: string[];
 }
 
-/**
- * A plugin may only ship with published plugins, so both edges that pull another
- * plugin in — a plugin node in the workflow, and a pluginReference argument in the
- * config — are resolved and checked here before an execution is dispatched.
- */
 export class PluginDependencyResolverService {
     async collectTransitivePublishedDependencies(plugin: Plugin): Promise<PluginDependencyTraversalResult> {
         const visited = new Set<string>([plugin.id]);
@@ -122,10 +117,6 @@ export class PluginDependencyResolverService {
         };
     }
 
-    /**
-     * A pluginReference argument may restrict what it accepts by plugin id, by
-     * modifier key, or both; matching either declared filter is enough.
-     */
     private assertReferenceAllowed(
         target: PluginReferenceValidationTarget,
         referencedPlugin: Plugin,

@@ -15,13 +15,6 @@ import { compressFileWithZstd } from '@shared/infrastructure/storage/storage-cod
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
-/**
- * What a GLB export needs.
- *
- * Typed rather than `any` because the payload crosses the queue boundary: the GLB
- * conversion worker reads it back off a job row, so a field renamed on one side
- * has to fail at compile time instead of at runtime.
- */
 interface PreprocessTrajectoryInput {
     trajectoryId: string;
     timestep: number;

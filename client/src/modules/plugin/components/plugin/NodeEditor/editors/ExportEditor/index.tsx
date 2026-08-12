@@ -69,7 +69,6 @@ const ExportEditor = ({ node }: EditorProps) => {
         try {
             form.setValue('options', JSON.parse(value), { shouldDirty: true });
         } catch {
-            // Invalid JSON, don't update store
         }
     };
 

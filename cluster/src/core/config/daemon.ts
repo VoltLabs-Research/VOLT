@@ -22,23 +22,11 @@ export interface DaemonConfig {
     metricsIntervalMs: number;
     composeProjectName?: string;
     installRoot?: string;
-    /*
-     * The daemon's own relational store. Separate from the control plane's database
-     * even when a single-node deployment points both at the same server: a remote
-     * cluster has no route to the control plane's Postgres.
-     */
     databaseUrl: string;
     jupyter: JupyterConfig;
     allowedBuckets: ObjectBucketName[];
     bucketPrefix: string;
-    /** Where the cluster's objects live on disk. */
     objectStoreRoot: string;
-    /*
-     * Where the control plane can reach this daemon's object gateway without going
-     * through the reverse channel. Only set where the daemon is actually routable
-     * from the server (compose network, LAN, published ingress); left undefined the
-     * server keeps tunnelling, which always works and is only slow.
-     */
     objectGatewayPublicBaseUrl?: string;
 }
 

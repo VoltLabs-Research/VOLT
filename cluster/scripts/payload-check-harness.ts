@@ -1,13 +1,9 @@
-/**
- * Piezas compartidas por los checks de lectura de documentos `payload`.
- */
 import type { DuckDBConnection } from '@duckdb/node-api';
 import type { ArtifactUploadBatch, ArtifactUploadStageBufferInput } from '@shared/contracts/types/artifact-upload';
 import type { ExportExecutionInput } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject } from '@shared/contracts/types/json';
 import type { SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
 
-/** Escribe un documento como parquet de una sola columna `payload`. */
 export const writePayloadParquet = async (
     connection: DuckDBConnection,
     document: string,
@@ -19,7 +15,6 @@ export const writePayloadParquet = async (
     );
 };
 
-/** Junta las filas de cada sub-listing para poder compararlas contra el documento. */
 export const collectSubListingRows = async (
     sources: SubListingBatchSource[]
 ): Promise<Record<string, JsonObject[]>> => {
@@ -39,7 +34,6 @@ export const collectSubListingRows = async (
     return collected;
 };
 
-/** Batch de artefactos que se queda con los buffers en memoria en vez de subirlos. */
 export const buildExportInput = (
     exporter: string,
     outputDirectory: string

@@ -59,17 +59,20 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
             onSelectionChange={handleTeamChange}
             aria-label='Switch team'
         >
-            <Select.Trigger onFocus={() => setTipTrigger((current) => current + 1)}>
-                <span className='flex min-w-0 flex-1 items-center' title='Switch team'>
-                    <Select.Value>
-                        {({ isPlaceholder, selectedText, defaultChildren }) => (
-                            isPlaceholder ? defaultChildren : selectedText
-                        )}
-                    </Select.Value>
-                </span>
-                <Select.Indicator />
+            <Select.Trigger
+                onFocus={() => setTipTrigger((current) => current + 1)}
+                className='flex h-8 min-h-0 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-[0.875rem] font-medium text-foreground transition-colors duration-150 hover:bg-surface-hover'
+            >
+                <Select.Value>
+                    {({ isPlaceholder, selectedText, defaultChildren }) => (
+                        <span className='max-w-28 truncate capitalize sm:max-w-40' title='Switch team'>
+                            {isPlaceholder ? defaultChildren : selectedText}
+                        </span>
+                    )}
+                </Select.Value>
+                <Select.Indicator className='static size-4 shrink-0 text-muted' />
             </Select.Trigger>
-            <Select.Popover>
+            <Select.Popover className='min-w-60'>
                 <ListBox>
                     {teamOptions.map((option) => (
                         <ListBox.Item

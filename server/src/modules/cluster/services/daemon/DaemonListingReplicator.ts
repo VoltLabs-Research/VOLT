@@ -20,10 +20,6 @@ import logger from '@shared/infrastructure/logger';
 const LISTING_TRANSFER_BATCH_SIZE = 200;
 const LISTING_TRANSFER_KINDS: PluginListingTransferKind[] = ['listing', 'sub-listing'];
 
-/**
- * Moves plugin listing rows between cluster databases during a
- * storage transfer, and purges them from the source once the copy is verified.
- */
 export default class DaemonListingReplicator{
     #daemonClient = teamClusterDaemonClient;
 

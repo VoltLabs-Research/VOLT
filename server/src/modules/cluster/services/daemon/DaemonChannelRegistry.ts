@@ -1,11 +1,5 @@
 type ConnectionWaiter = (socketId: string) => void;
 
-/**
- * Socket bindings and pending connection waiters for a single daemon channel.
- *
- * One instance per channel replaces the parallel per-channel maps the reverse
- * channel service used to keep, so adding a channel needs no new plumbing.
- */
 export default class DaemonChannelRegistry{
     #socketIdsByTeamClusterId = new Map<string, string>();
     #waitersByTeamClusterId = new Map<string, ConnectionWaiter[]>();
@@ -26,7 +20,6 @@ export default class DaemonChannelRegistry{
         this.#socketIdsByTeamClusterId.delete(teamClusterId);
     }
 
-    /** Hands the freshly bound socket to everyone waiting on this cluster. */
     resolveWaiters(teamClusterId: string, socketId: string): void{
         const waiters = this.#waitersByTeamClusterId.get(teamClusterId);
         if(!waiters) return;

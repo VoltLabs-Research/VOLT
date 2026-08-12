@@ -16,7 +16,6 @@ const CLUSTER_NAME_SELECTION = {
     name: true
 } as const;
 
-/** Listings hydrate the author and the owning cluster so the client can name both. */
 export const LISTING_RELATIONS = {
     relations: {
         createdByRef: true,
@@ -28,7 +27,6 @@ export const LISTING_RELATIONS = {
     }
 } as const;
 
-/** Public discovery answers with the columns a guest is allowed to see. */
 export const PUBLIC_LISTING_SELECTION = {
     id: true,
     name: true,
@@ -41,21 +39,10 @@ export const PUBLIC_LISTING_SELECTION = {
     updatedAt: true
 } as const;
 
-/**
- * The only entity -> wire projection for trajectories.
- *
- * `BaseModel.toJSON()` is declared as `Record<string, unknown>` rather than the
- * row's own shape, so the projection has to be re-asserted. It is asserted here
- * once: when `toJSON()` becomes typed, this is the single line to delete.
- */
 export const toTrajectoryRecord = (trajectory: Trajectory): TrajectoryRecord => (
     trajectory.toJSON() as unknown as TrajectoryRecord
 );
 
-/**
- * Frame counts live in a separate table, so listings decorate each row with a
- * batched summary instead of hydrating frames.
- */
 export const withFrameSummaries = async (trajectories: Trajectory[]): Promise<TrajectoryRecord[]> => {
     const summaries = await getTrajectoryFrameSummaries(trajectories.map((trajectory) => trajectory.id));
 

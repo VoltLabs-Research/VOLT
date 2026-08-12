@@ -42,11 +42,6 @@ interface ClusterResourceLimitsView {
     lastUpdatedAt: string | null;
 }
 
-/**
- * The runtime knobs of a connected cluster — queue concurrency, desired role and
- * the observed resource ceiling. Each write is persisted first and then pushed to
- * the daemon, so a cluster that is offline still converges on its next reconnect.
- */
 class ClusterRuntimeSettingsService {
     async getRuntimeSnapshot(input: { teamId: string; teamClusterId: string }): Promise<{
         capturedAt: string;

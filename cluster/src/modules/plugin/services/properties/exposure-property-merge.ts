@@ -2,10 +2,6 @@ import type { FlatAtomProperties } from '@modules/plugin/services/properties/Plu
 import { normalizeAtomId } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { PluginAnalysisAllAtomsResponse } from '@modules/plugin/services/properties/PluginPropertyStore';
 
-/**
- * Merges the per-atom rows of several exposures into a single atom table, prefixing
- * property names with their exposure id when the same property comes from more than one.
- */
 
 export interface ExposurePropertyRows {
     exposureId: string;

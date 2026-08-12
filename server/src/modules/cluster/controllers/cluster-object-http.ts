@@ -1,10 +1,6 @@
 import type { TeamClusterObjectGatewayHeadResponse } from '@shared/contracts/types/TeamClusterObjectGateway';
 import type { Request, Response } from 'express';
 
-/**
- * The HTTP conventions shared by the two object surfaces of this module: the
- * signed-URL object endpoints and the daemon-to-daemon object store proxy.
- */
 
 export const readContentLength = (request: Request): number | undefined => {
     const rawContentLength = request.header('content-length');
@@ -36,7 +32,6 @@ export const applyObjectHeaders = (
     }
 };
 
-/** Range support is decided by the upstream object store, so it is passed through. */
 export const applyRangeHeaders = (
     response: Response,
     headers: Record<string, string> | undefined
@@ -56,10 +51,6 @@ export const isPartialContent = (headers: Record<string, string> | undefined): b
     return Boolean(headers?.['content-range']);
 };
 
-/**
- * These handlers stream, so they answer outside the global error middleware and
- * have to shape the error body themselves.
- */
 export const sendObjectError = (
     response: Response,
     error: unknown,

@@ -25,7 +25,6 @@ import type {
     LineExportOptions
 } from '@modules/plugin/services/exports/export-node-processor-types';
 
-/** Stages the GLB and sidecars for the tube-based exporters (lines and bonds). */
 
 const DEFAULT_BOND_RADIUS = 0.15;
 const DEFAULT_BOND_TUBULAR_SEGMENTS = 8;

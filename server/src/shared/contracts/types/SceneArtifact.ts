@@ -7,10 +7,6 @@ import type {
     SceneArtifactSourceType as WireSceneArtifactSourceType
 } from '@volt/contracts/modules/trajectory/domain';
 
-/*
- * A runtime enum because the server uses the values, while `@volt/contracts`
- * declares the same set as a union. The assertion fails the build on divergence.
- */
 export enum SceneArtifactSourceType {
     ColorCoding = 'color-coding',
     ParticleFilter = 'particle-filter',

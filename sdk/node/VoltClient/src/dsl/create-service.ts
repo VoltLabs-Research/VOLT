@@ -69,11 +69,6 @@ export type BuiltService<T extends Record<string, unknown>> = {
 
 type ServiceConfig = string | SingleClientConfig | MultiClientConfig;
 
-/**
- * Factory function that creates a `VoltClient` scoped to a base path.
- * Provided by the caller so that the DSL remains decoupled from any
- * specific HTTP configuration or environment.
- */
 export type ClientFactory = (
     basePath: string,
     opts?: { useRBAC?: boolean; getTeamId?: () => string | null }
@@ -244,22 +239,6 @@ const execute = async <P, R, TRaw>(
     return toTypedResult<R>(unwrapped);
 };
 
-/**
- * Builds a typed service object from a declarative method descriptor map.
- *
- * The `factory` argument creates `VoltClient` instances scoped to each `basePath`
- * defined in the service config. This keeps the DSL decoupled from any particular
- * HTTP configuration or runtime environment.
- *
- * @example
- * ```ts
- * const userService = createService('/user', {
- *     getAll: get('/'),
- *     getById: get('/:id'),
- *     create: post('/'),
- * }, myClientFactory);
- * ```
- */
 export const createService = <const T extends Record<string, unknown>>(
     config: ServiceConfig,
     methods: T,
@@ -328,7 +307,6 @@ export const createService = <const T extends Record<string, unknown>>(
     return service;
 };
 
-/** Declares a GET endpoint in a service descriptor. */
 export const get = <P, R, TRaw = unknown>(
     path: PathLike<P>,
     opts?: MethodOpts<P, R, TRaw>
@@ -339,7 +317,6 @@ export const get = <P, R, TRaw = unknown>(
     opts
 });
 
-/** Declares a POST endpoint in a service descriptor. */
 export const post = <P, R, TRaw = unknown>(
     path: PathLike<P>,
     opts?: MethodOpts<P, R, TRaw>
@@ -350,7 +327,6 @@ export const post = <P, R, TRaw = unknown>(
     opts
 });
 
-/** Declares a PATCH endpoint in a service descriptor. */
 export const patch = <P, R, TRaw = unknown>(
     path: PathLike<P>,
     opts?: MethodOpts<P, R, TRaw>
@@ -361,7 +337,6 @@ export const patch = <P, R, TRaw = unknown>(
     opts
 });
 
-/** Declares a DELETE endpoint in a service descriptor. */
 export const del = <P, R = void, TRaw = unknown>(
     path: PathLike<P>,
     opts?: MethodOpts<P, R, TRaw>
@@ -372,7 +347,6 @@ export const del = <P, R = void, TRaw = unknown>(
     opts
 });
 
-/** Declares a paginated GET endpoint in a service descriptor. */
 export const paginated = <P, R, TRaw = unknown>(
     path: PathLike<P>,
     opts?: MethodOpts<P, R, TRaw>
@@ -383,7 +357,6 @@ export const paginated = <P, R, TRaw = unknown>(
     opts
 });
 
-/** Declares a raw HTTP request endpoint with an explicit method. */
 export const request = <P, R, TRaw = unknown>(
     method: HttpMethod,
     path: PathLike<P>,
@@ -396,10 +369,6 @@ export const request = <P, R, TRaw = unknown>(
     opts
 });
 
-/**
- * Declares a download endpoint that returns a `Blob`.
- * Automatically sets `responseType: 'blob'` and `unwrap: 'raw'`.
- */
 export const download = <P>(
     method: HttpMethod,
     path: PathLike<P>,
@@ -420,10 +389,6 @@ export const download = <P>(
     };
 };
 
-/**
- * Declares a custom endpoint with full control over execution.
- * Use when the standard GET/POST/PATCH/DELETE patterns don't fit.
- */
 export const custom = <P, R>(
     run: (ctx: ServiceExecutionContext, params: P) => Promise<R> | R,
     opts?: Pick<MethodOpts<P, R>, 'validate'>

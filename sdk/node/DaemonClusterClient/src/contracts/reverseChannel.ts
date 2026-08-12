@@ -1,12 +1,3 @@
-/**
- * All wire types exchanged over the reverse channel (`team-cluster-daemon:message`).
- * These are shared between the SDK and any consumer that needs to interop with the
- * Volt server control plane.
- *
- * Chunk-carrying frames travel as binary: socket.io transmits the `Uint8Array`
- * as a binary attachment. (Older revisions of this contract declared base64
- * strings; the transport moved to binary framing.)
- */
 
 import type { ProgressStageType } from './events';
 
@@ -39,7 +30,6 @@ export type TeamClusterDaemonSessionKind = ValueOf<typeof REVERSE_CHANNEL.Sessio
 export type TeamClusterDaemonTerminalTarget = ValueOf<typeof REVERSE_CHANNEL.TerminalTarget>;
 export type TeamClusterTunnelSessionStatus = ValueOf<typeof REVERSE_CHANNEL.TunnelSessionStatus>;
 
-/** Socket planes a daemon registers on; presence of the lifecycle planes marks the cluster connected. */
 export const TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL = Object.freeze({
     Heartbeat: 'heartbeat',
     Control: 'control',
@@ -67,11 +57,6 @@ export interface TeamClusterDaemonCommandMessage {
     payload?: unknown;
 };
 
-/**
- * Every JSON reply on the reverse channel wraps the handler result one level in:
- * `data` is the envelope and the handler result sits inside it. The handler result
- * itself may be an error report, which is why it is a declared union member.
- */
 export interface TeamClusterDaemonSuccessEnvelope<T> {
     status: 'success';
     data: T;
@@ -114,12 +99,6 @@ export interface TeamClusterDaemonSessionAttachPayload {
     terminalTarget?: TeamClusterDaemonTerminalTarget;
     containerId?: string;
     targetUrl?: string;
-    /**
-     * WebSocket subprotocols to negotiate with the upstream (e.g.
-     * `v1.kernel.websocket.jupyter.org`). Required so the daemon can match the
-     * subprotocol the browser negotiated; without it the upstream falls back to
-     * text frames while the browser expects binary, breaking the connection.
-     */
     protocols?: string[];
 };
 
@@ -162,25 +141,21 @@ export interface TeamClusterDaemonSessionEndPayload {
     error?: string;
 };
 
-/** Replaces the full exposure registry for a connected team cluster. */
 export interface TeamClusterDaemonExposureSnapshotPayload {
     type: 'exposure-snapshot';
     exposures: unknown[];
 };
 
-/** Applies additive exposure changes without replacing the full registry. */
 export interface TeamClusterDaemonExposureUpsertPayload {
     type: 'exposure-upsert';
     exposures: unknown[];
 };
 
-/** Removes exposures that are no longer published by the daemon. */
 export interface TeamClusterDaemonExposureRemovePayload {
     type: 'exposure-remove';
     exposureIds: string[];
 };
 
-/** Opens a generic tunnel session against a persistent exposure. */
 export interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
@@ -188,10 +163,6 @@ export interface TeamClusterDaemonExposureTunnelOpenPayload {
     accessMode: string;
 };
 
-/**
- * The object gateway connection opens tunnels straight at a host:port instead of
- * naming a published exposure, so `tunnel-open` has two legitimate shapes.
- */
 export interface TeamClusterDaemonDirectTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
@@ -204,7 +175,6 @@ export type TeamClusterDaemonTunnelOpenPayload =
     | TeamClusterDaemonExposureTunnelOpenPayload
     | TeamClusterDaemonDirectTunnelOpenPayload;
 
-/** Acknowledges the final state of a tunnel session transition. */
 export interface TeamClusterDaemonTunnelStatePayload {
     type: 'tunnel-state';
     sessionId: string;
@@ -213,7 +183,6 @@ export interface TeamClusterDaemonTunnelStatePayload {
     error?: string;
 };
 
-/** Carries raw tunnel bytes for HTTP, WebSocket or arbitrary TCP sessions. */
 export interface TeamClusterDaemonTunnelDataPayload {
     type: 'tunnel-data';
     sessionId: string;
@@ -223,14 +192,12 @@ export interface TeamClusterDaemonTunnelDataPayload {
     requiresAck?: boolean;
 };
 
-/** Acknowledges tunnel bytes up to a sequence number so the sender can release them. */
 export interface TeamClusterDaemonTunnelDrainPayload {
     type: 'tunnel-drain';
     sessionId: string;
     sequence: number;
 };
 
-/** Closes a generic tunnel session on either side of the reverse channel. */
 export interface TeamClusterDaemonTunnelClosePayload {
     type: 'tunnel-close';
     sessionId: string;
@@ -238,19 +205,12 @@ export interface TeamClusterDaemonTunnelClosePayload {
     message?: string;
 };
 
-/** Keeps long-lived tunnel sessions observable without transferring business data. */
 export interface TeamClusterDaemonTunnelHeartbeatPayload {
     type: 'tunnel-heartbeat';
     sessionId: string;
     occurredAt: string;
 };
 
-/**
- * The documented shape of the `payload` carried by container-create
- * `runtime-progress` frames. The field itself is open (`Record<string, unknown>`)
- * because other actions (e.g. analysis dispatch) carry different payloads such as
- * trace context.
- */
 export interface TeamClusterDaemonContainerCreateProgress {
     operationId: string;
     step?: string;

@@ -145,7 +145,6 @@ const ClusterOnboardingPage = () => {
             setEnrollmentToken(result.enrollmentToken);
             openModal(INSTALL_MODAL_ID);
         } catch {
-            // Error toast is already shown by showPromise in useClusterManagement
         } finally {
             setIsSubmitting(false);
         }

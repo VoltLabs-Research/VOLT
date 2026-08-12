@@ -119,15 +119,6 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
             const analysisId = analysisIdArray[i];
             const result = queryResults[i];
 
-            /*
-             * The branch order is what makes an exposure selectable the moment it lands,
-             * so it matters more than it looks: the data has to be read before the fetch
-             * flags. Each exposure that becomes ready invalidates this query, `isFetching`
-             * is true for every one of those background refetches, and React Query keeps
-             * `data` on the entry throughout — so testing `isFetching` first emptied the
-             * whole list on each arrival and every row fell back to a disabled placeholder
-             * until the analysis stopped producing. That was the "wait for all of them".
-             */
             const page = result.data as { data?: RenderableExposurePayload[] } | undefined;
             const exposures = ((page?.data ?? []) as RenderableExposure[])
                 .filter((exposure) => isRenderableSceneExport(exposure.export));
@@ -139,7 +130,6 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
                     error: result.error
                 });
             } else if (page) {
-                /* Gated on the page, not on `page.data`: a malformed body must not read as loaded. */
                 map.set(analysisId, {
                     state: 'loaded',
                     exposures

@@ -57,12 +57,6 @@ import type {
     UpdateTrajectoryByIdInput
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
-/** `style` travels as a JSON-encoded query parameter, so it needs decoding. */
-/**
- * `timestep` reaches these endpoints as a query parameter, so the key can simply
- * be absent. Without this the missing value travels all the way to the daemon and
- * surfaces as an unhandled `BigInt` conversion instead of a 400.
- */
 const requireTimestep = (timestep: string): string => {
     const value = String(timestep ?? '').trim();
     if (!value || !Number.isFinite(Number(value))) {
@@ -75,11 +69,6 @@ const requireTimestep = (timestep: string): string => {
     return value;
 };
 
-/**
- * Public surface of the trajectory module. Everything here delegates to the
- * service that owns the concern; the facade exists so controllers, AI tools and
- * the public canvas share one entry point.
- */
 export default class TrajectoryService {
     createUploadSession(input: CreateTrajectoryUploadSessionInput): Promise<CreateTrajectoryUploadSessionOutput> {
         return trajectoryUploadSessionService.create(input);

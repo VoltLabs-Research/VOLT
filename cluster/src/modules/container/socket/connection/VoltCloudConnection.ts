@@ -61,11 +61,6 @@ export class VoltCloudConnection {
         return this.connectedToCloud;
     }
 
-    /**
-     * Increments on every successful (re)connect. Callers that cache what they
-     * already sent to the cloud compare generations instead of watching for a
-     * transient disconnect, which a poll can miss entirely.
-     */
     getConnectionGeneration(): number {
         return this.connectionGeneration;
     }

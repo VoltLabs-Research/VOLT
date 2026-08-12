@@ -37,10 +37,6 @@ const TIMEOUT_BY_CLASS: Record<NonNullable<TeamClusterDaemonCommandOptions['time
     'long-running-control-plane': 60_000
 };
 
-/**
- * A daemon handler can answer with an error report inside the success envelope,
- * which is a declared member of the envelope payload union.
- */
 const readDaemonErrorResult = (data: unknown): TeamClusterDaemonErrorResult | null => {
     const candidate = data as TeamClusterDaemonErrorResult | null;
     return candidate?.status === 'error' ? candidate : null;
@@ -76,10 +72,6 @@ class TeamClusterDaemonClient {
         };
     }
 
-    /**
-     * Logs one dispatch/outcome pair around a reverse channel call so every verb
-     * reports the same shape without repeating the timing plumbing.
-     */
     private async dispatch<T>(
         label: string,
         teamClusterId: string,

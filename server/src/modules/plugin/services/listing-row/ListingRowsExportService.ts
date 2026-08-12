@@ -123,7 +123,6 @@ export class ListingRowsExportService {
         });
     }
 
-    /** The catalogue never emits an empty config object, so its presence is the whole test. */
     async present(payload: ExportListingRowsByAnalysisIdOutput): Promise<DownloadStreamOutput> {
         if (payload.listings.length <= 1 && payload.subListings.length === 0 && payload.config === undefined) {
             const listing = payload.listings[0] || this.getEmptyListing();

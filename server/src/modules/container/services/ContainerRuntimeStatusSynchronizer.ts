@@ -4,10 +4,6 @@ import type { RuntimeContainerSummary } from '@modules/container/services/Daemon
 import { PLACEHOLDER_INTERNAL_IP, resolveNonPlaceholderInternalIp } from '@modules/container/services/container-network';
 import logger from '@shared/infrastructure/logger';
 
-/* Persisted container rows drift from daemon reality: a container can exit, be
-   restarted by the daemon, or only receive its network address after creation.
-   Listing containers therefore kicks off a best-effort reconciliation in the
-   background — it must never delay or fail the response it was triggered from. */
 
 interface RuntimeStatusSnapshot{
     id: string;

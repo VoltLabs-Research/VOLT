@@ -43,12 +43,6 @@ const emptyPage = () => ({
     limit: 0
 });
 
-/**
- * Listing rows live in the compute cluster that ran the analysis, so every read
- * here resolves that cluster first and then queries its daemon. The rows come
- * back from our own daemon over the reverse channel, so they are mapped once and
- * trusted.
- */
 export default class PluginListingQueryService {
     #daemonClient: ITeamClusterDaemonClient;
 
@@ -215,7 +209,6 @@ export default class PluginListingQueryService {
         };
     }
 
-    /** The daemon's own counters win; the request's page/limit only fill in blanks. */
     #pageMeta(daemonResult: DaemonPaginatedResult, page: number, limit: number): PageMeta {
         return {
             total: daemonResult.total || 0,

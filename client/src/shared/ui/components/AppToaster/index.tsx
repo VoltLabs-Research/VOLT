@@ -9,12 +9,6 @@ const POPOVER_STYLE = {
     overflow: 'visible'
 } as const;
 
-/*
- * No `theme` prop on purpose: sileo would stamp its own data-theme on the
- * viewport and re-resolve the app's CSS variables against it. Leaving it
- * unset lets toasts inherit the app theme straight from documentElement,
- * and every toast fills with the app's tertiary surface by default.
- */
 const TOASTER_DEFAULTS = {
     fill: 'var(--surface-tertiary)'
 };

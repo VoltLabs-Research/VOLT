@@ -31,14 +31,6 @@ const toCatalogFolderView = (folder: CatalogFolder): CatalogFolderView => ({
     updatedAt: folder.updatedAt
 });
 
-/**
- * Catalog folder CRUD for one folder kind.
- *
- * Trajectories, containers and whiteboards all organise
- * themselves with the same folder tree; only the kind discriminator differs.
- * Cascade deletion stays with the caller, since only it knows how to remove
- * the items a folder holds.
- */
 export default class CatalogFolderService{
     #kind: CatalogFolderKind;
 
@@ -115,10 +107,6 @@ export default class CatalogFolderService{
         });
     }
 
-    /**
-     * Depth-first folder removal. `removeItems` is invoked for every folder in
-     * the subtree so the owning module can delete whatever it stores there.
-     */
     async removeTree(teamId: string, folderId: string, removeItems: (folderId: string) => Promise<void>): Promise<void>{
         for(const subfolder of await this.subfolders(teamId, folderId)){
             await this.removeTree(teamId, subfolder.id, removeItems);

@@ -2,7 +2,6 @@ import si from 'systeminformation';
 import { logger } from '@shared/infrastructure/logger';
 import { selectAvailableMemoryMb } from '@shared/domain/utilities/runtime-capacity';
 
-/** Decides if there is free memory for another process, sampling at most once per second. */
 
 const MEM_SAMPLE_CACHE_TTL_MS = 1_000;
 

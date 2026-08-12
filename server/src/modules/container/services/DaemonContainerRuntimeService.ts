@@ -20,11 +20,6 @@ interface ReadContainerFileResponse {
     contents: string;
 }
 
-/**
- * Stats and process listings are polled by every open container view, so they
- * are cached briefly and concurrent callers share one in-flight command instead
- * of each waking the daemon.
- */
 class DaemonCommandCache<T> {
     private readonly entries = new Map<string, { expiresAt: number; value: T }>();
     private readonly pending = new Map<string, Promise<T>>();

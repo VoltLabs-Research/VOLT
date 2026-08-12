@@ -26,10 +26,6 @@ export const readPluginReferenceSelections = (value: WorkflowValue): PluginRefer
     })) ?? [];
 };
 
-/**
- * Resolved runtime value first, then the definition's pinned value, then its default.
- * `isArgumentVisible` intentionally uses the opposite precedence.
- */
 const readEffectiveArgumentValue = (
     definition: WorkflowArgumentDefinition | undefined,
     value: WorkflowValue
@@ -45,7 +41,6 @@ const readEffectiveArgumentValue = (
     return definition?.default;
 };
 
-/** Mappings come from a plugin manifest, so either endpoint may legitimately be absent. */
 const normalizePluginReferenceMappings = (
     mappings: WorkflowPluginReferenceArgumentMapping[] | undefined
 ): WorkflowPluginReferenceArgumentMapping[] => (mappings ?? []).flatMap((mapping) => {
@@ -120,11 +115,6 @@ const applyMappingsToSelectionConfig = (
     return config;
 };
 
-/**
- * Rewrites every `pluginReference` entry of `values` in place into its normalized
- * `{ selections }` shape, with each selection's config enriched by the definition's
- * argument mappings.
- */
 export const applyPluginReferenceMappings = (
     definitions: WorkflowArgumentDefinition[],
     values: WorkflowNodeOutput,
@@ -150,10 +140,6 @@ export const applyPluginReferenceMappings = (
     }
 };
 
-/**
- * Flattens every visible `pluginReference` argument — including those nested inside
- * `list` arguments — into the plugin executions the planner has to schedule.
- */
 export const collectPluginReferences = (
     definitions: WorkflowArgumentDefinition[],
     values: WorkflowNodeOutput,

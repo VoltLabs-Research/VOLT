@@ -25,47 +25,17 @@ import type {
 import { spawn } from 'node:child_process';
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
-/**
- * Absolute ceiling on one attempt. A backstop only: it has to clear the slowest
- * legitimate frame, so progress is judged by `STALL_TIMEOUT_MS` instead.
- */
 const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_EXECUTION_TIMEOUT_MS')
     ?? 60 * 60 * 1000;
-/**
- * How long a plugin may stay completely silent before it counts as wedged.
- *
- * A wall-clock cap cannot tell a slow frame from a hung one, so it has to be set
- * high and every hang then costs the full window — a livelocked frame burnt 15
- * minutes before anything noticed. Plugins narrate their phases on stdout, so
- * silence is the usable progress signal: the timer is rearmed on every chunk, which
- * lets a genuinely long computation run as long as it keeps reporting while a
- * spinning one is caught in minutes.
- */
 const DEFAULT_PROCESS_STALL_TIMEOUT_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_STALL_TIMEOUT_MS')
     ?? 8 * 60 * 1000;
 const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
-/** After SIGKILL, how long to wait for stdio to drain before giving up on the child. */
 const PROCESS_ABANDON_GRACE_PERIOD_MS = 5_000;
 
-/**
- * How many times a binary may be respawned when it never finished on its own.
- *
- * A plugin that hits its execution timeout is not a deterministic failure: the
- * process is wedged, not wrong. At least one shipped plugin
- * (polyhedral-template-matching 2.0.2) livelocks on a race inside its OneTBB
- * arena, spinning at full CPU without ever producing output, and a fresh process
- * on the same input completes in seconds. Retrying is safe because a plugin
- * invocation is idempotent: it reads the staged dump and rewrites its output base.
- *
- * Without this, one wedged frame failed its whole analysis and discarded every
- * sibling frame that had already succeeded.
- */
 const DEFAULT_MAX_PROCESS_ATTEMPTS = readPositiveIntegerEnv('PLUGIN_PROCESS_MAX_ATTEMPTS') ?? 3;
 
 interface SingleRunOutcome extends ProcessExecutionResult {
-    /** The process was killed by the watchdog rather than exiting on its own. */
     timedOut: boolean;
-    /** Why the watchdog fired, for the retry log. */
     wedgeReason: 'stalled' | 'absolute-timeout' | null;
 }
 
@@ -145,13 +115,6 @@ export class BinaryExecutorService {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
                 env: buildPluginProcessEnv(env),
-                /*
-                 * Own process group, so the watchdog can signal the whole tree. A
-                 * plugin that shells out leaves the grandchild holding the stdio
-                 * pipes open, and `close` only fires once every writer is gone: a
-                 * plain `child.kill()` then left this promise pending forever, which
-                 * is the one outcome the caller cannot recover from.
-                 */
                 detached: true
             });
             registerProcess(jobId, child);
@@ -173,7 +136,6 @@ export class BinaryExecutorService {
                         return;
                     }
                 } catch {
-                    // The group is already gone, or was never created; fall through.
                 }
                 try {
                     child.kill(signal);
@@ -235,10 +197,6 @@ export class BinaryExecutorService {
 
                 forceKillTimeout = setTimeout(() => {
                     signalTree('SIGKILL');
-                    /*
-                     * Last resort: report the wedge even if something still holds
-                     * the pipes open, so the retry above always gets its turn.
-                     */
                     abandonTimeout = setTimeout(() => {
                         logger.error(
                             {
@@ -254,7 +212,6 @@ export class BinaryExecutorService {
                 forceKillTimeout.unref();
             };
 
-            /** Rearmed by every chunk the plugin writes, so output counts as progress. */
             const armStallTimer = (): void => {
                 if (stallTimeoutMs <= 0 || settled || wedgeReason) return;
                 if (stallTimeout) {

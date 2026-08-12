@@ -3,7 +3,7 @@ import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { cn } from '@heroui/react';
 
-const PANEL_WIDTH_CLASS = 'w-[400px] max-md:w-[85vw]';
+const PANEL_WIDTH_CLASS = 'w-[280px] min-[1024.05px]:w-60';
 
 const DashboardSidePanel = () => {
     const openPanel = useDashboardSidePanelStore((state) => state.openPanel);

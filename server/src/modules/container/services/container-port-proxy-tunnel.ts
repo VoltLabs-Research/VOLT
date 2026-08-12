@@ -10,14 +10,6 @@ import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/web
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
 
-/* What happens to a request that lands on a published container port: prove the
- * caller holds a grant for that exact port, then tunnel the request through the
- * owning cluster daemon to the container's private port.
- *
- * Which ports are bound, and to which container, is the registry's business
- * (ContainerPortProxyRelayService). It hands over whatever relay is bound on the
- * port the request arrived on — possibly none, if it was torn down while the
- * connection was in flight. */
 
 const requireRelay = (relay: ContainerPortRelayTarget | undefined): ContainerPortRelayTarget => {
     if (!relay) {
@@ -27,11 +19,6 @@ const requireRelay = (relay: ContainerPortRelayTarget | undefined): ContainerPor
     return relay;
 };
 
-/**
- * A relay listens on a bare TCP port with no VOLT session on it, so the grant
- * travels in the URL or a cookie. The token is bound to one container port, so a
- * grant for one relay cannot be replayed against another relay on the same host.
- */
 const authorizeRelayRequest = (
     relay: ContainerPortRelayTarget,
     requestUrl: string,
@@ -70,7 +57,6 @@ const writeRelayHttpError = (res: ServerResponse<IncomingMessage>, error: unknow
     }));
 };
 
-/** Everything after the origin, minus the access token we injected ourselves. */
 const extractProxyTarget = (requestUrl: string): string => {
     const url = containerPortProxyAccessTokenService.stripFromUrl(requestUrl);
     const search = url.searchParams.toString();
@@ -78,11 +64,6 @@ const extractProxyTarget = (requestUrl: string): string => {
     return `${url.pathname || '/'}${search ? `?${search}` : ''}`;
 };
 
-/**
- * An upstream redirect to its own `internalIp:privatePort` would send the browser
- * to an unreachable address, so it is rewritten to a relative path that comes
- * back through this relay.
- */
 const rewriteLocationHeader = (location: string, relay: ContainerPortRelayTarget): string => {
     if (!location) {
         return location;

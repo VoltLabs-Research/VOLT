@@ -6,11 +6,6 @@ import type {
     TeamClusterDaemonRuntimeRoleConfig
 } from '@voltstack/daemon-cluster-client';
 
-/**
- * The runtime role/queue/capability shapes are heartbeat wire contracts owned by
- * `@voltstack/daemon-cluster-client`; these aliases keep the historical local
- * names used across the daemon.
- */
 export type TeamClusterRole = TeamClusterDaemonRole;
 export type TeamClusterRuntimeRoleConfig = TeamClusterDaemonRuntimeRoleConfig;
 export type TeamClusterDaemonQueueScopeLimits = DaemonQueueScopeLimitsWire;

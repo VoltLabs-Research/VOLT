@@ -65,8 +65,6 @@ class StoragePlacementService implements IStoragePlacementService{
         );
     }
 
-    /* Whitelist rather than a blind spread: createdAt/updatedAt are owned by the
-       entity, so props must never patch them. */
     private toEntityPatch(data: Partial<StoragePlacementProps>): Partial<StoragePlacementEntity>{
         const patch: Partial<StoragePlacementEntity> = {};
 
@@ -84,14 +82,6 @@ class StoragePlacementService implements IStoragePlacementService{
         return patch;
     }
 
-    /**
-     * Reads the current row and writes the merged patch. `findOneBy` followed by an
-     * insert is not atomic, so a concurrent caller can win the race between them:
-     * the unique index on (scopeType, scopeId) is what actually enforces
-     * uniqueness, and losing that race means the row now exists and has to be
-     * patched instead. Plugin-binary placements share a scopeId across every
-     * concurrent execution of the plugin, so this collides routinely.
-     */
     private async upsertPlacementByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
@@ -123,10 +113,6 @@ class StoragePlacementService implements IStoragePlacementService{
         }
     }
 
-    /**
-     * Refreshes the bucket list from the current cleanup prefixes while leaving
-     * every ownership field of an existing placement untouched.
-     */
     private async persistResolvedPlacement(
         scopeType: StoragePlacementScopeType,
         scopeId: string,
@@ -242,10 +228,6 @@ class StoragePlacementService implements IStoragePlacementService{
         return entities.map(toStoragePlacementLike);
     }
 
-    /**
-     * A trajectory transfer already carries its analyses, so an analysis only
-     * needs its own placement when its trajectory is not moving with it.
-     */
     async resolveTransferPlacementsForCluster(teamId: string, primaryClusterId: string): Promise<StoragePlacement[]>{
         const trajectories = await Trajectory.find({
             where: {
@@ -279,7 +261,6 @@ class StoragePlacementService implements IStoragePlacementService{
         return [...trajectoryPlacements, ...analysisPlacements];
     }
 
-    /** Keeps only the scopes the cluster still owns after their placement is refreshed. */
     private async collectOwnedPlacements<TScope extends { id: string; }>(
         scopeType: StoragePlacementScopeType,
         scopes: TScope[],
@@ -395,10 +376,6 @@ class StoragePlacementService implements IStoragePlacementService{
         };
     }
 
-    /**
-     * Analyses follow their trajectory's storage owner, and the previous owner is
-     * dropped from the replica set because it no longer holds a usable copy.
-     */
     private async synchronizeAnalysisPlacements(
         analyses: Analysis[],
         storageClusterId: string

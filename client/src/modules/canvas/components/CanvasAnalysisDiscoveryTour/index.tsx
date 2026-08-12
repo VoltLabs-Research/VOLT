@@ -53,7 +53,6 @@ const markTourCompleted = (storageScopeId: string): void => {
     try {
         window.localStorage.setItem(getTourStorageKey(storageScopeId), 'completed');
     } catch {
-        // Storage can be unavailable in private contexts; the tour still works for this session.
     }
 };
 

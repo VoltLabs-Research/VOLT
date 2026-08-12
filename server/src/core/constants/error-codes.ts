@@ -1,10 +1,5 @@
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
-/**
- * `const T` is load-bearing: without it TypeScript widens each property to
- * `string`, which silently turned `ErrorCode` into `string` and made both the
- * `isErrorCode` guard and every `code: ErrorCode` parameter accept anything.
- */
 const createErrorCodes = <const T extends Record<string, string>>(errorCodes: T): Readonly<T> => Object.freeze(errorCodes);
 
 export const ErrorCodes = createErrorCodes({
@@ -42,11 +37,6 @@ export const ErrorCodes = createErrorCodes({
     TEAM_CLUSTER_LIFECYCLE_STATUS_INVALID: 'TeamCluster::LifecycleStatusInvalid',
     TEAM_CLUSTER_MISSING: 'TeamCluster::Missing',
     TEAM_CLUSTER_NAME_REQUIRED: 'TeamCluster::NameRequired',
-    /*
-     * The stored service credentials cannot be decrypted with the encryption key
-     * this process has. Recoverable state, not a server defect: the cluster row
-     * outlived the key it was encrypted with.
-     */
     TEAM_CLUSTER_CREDENTIALS_UNREADABLE: 'TeamCluster::CredentialsUnreadable',
     TEAM_CLUSTER_REMOTE_UNINSTALL_REJECTED: 'TeamCluster::RemoteUninstallRejected',
     TEAM_CLUSTER_REMOTE_UNINSTALL_REQUEST_FAILED: 'TeamCluster::RemoteUninstallRequestFailed',
@@ -174,8 +164,6 @@ export const ErrorCodes = createErrorCodes({
     TEAM_CLUSTER_OBJECT_STORE_PROXY_METHOD_NOT_ALLOWED: 'TeamCluster::ObjectStoreProxyMethodNotAllowed',
     TEAM_CLUSTER_STORAGE_CAPABILITY_REQUIRED: 'TeamCluster::StorageCapabilityRequired',
 
-    // Codes that used to be written as bare string literals at the throw site.
-    // Registering them here is what lets ApplicationError require an ErrorCode.
     ANALYSIS_STORAGE_CLUSTER_REQUIRED: 'Analysis::StorageClusterRequired',
     CLUSTER_OBJECT_CONTENT_LENGTH_MISMATCH: 'ClusterObject::ContentLengthMismatch',
     CLUSTER_OBJECT_CONTENT_LENGTH_REQUIRED: 'ClusterObject::ContentLengthRequired',
@@ -230,13 +218,6 @@ const isErrorCode = (value: unknown): value is ErrorCode => {
     return typeof value === 'string' && ERROR_CODE_SET.has(value);
 };
 
-/**
- * Narrows a code that arrived from outside this process — a daemon response, a
- * queue payload — to a registered `ErrorCode`, falling back when it is not one.
- *
- * Without this, a remote peer decides which codes reach the browser, and the
- * client's error table has no way to translate what it gets.
- */
 export const toErrorCode = (value: unknown, fallback: ErrorCode): ErrorCode => {
     return isErrorCode(value) ? value : fallback;
 };

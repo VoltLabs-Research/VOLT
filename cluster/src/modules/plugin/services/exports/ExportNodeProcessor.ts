@@ -55,7 +55,6 @@ const runEntries = async <TExportData>(
     const entries = resolveExporterEntries(input.decodedPayload, exporter);
     for (const { exportData, arrayIndex } of entries) {
         const objectPath = buildObjectPath(input, exporter, type, arrayIndex);
-        // Exposure payloads are plugin-authored JSON; each exporter declares the shape it reads.
         await run(exportData as TExportData, objectPath);
     }
 };

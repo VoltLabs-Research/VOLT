@@ -12,7 +12,6 @@ export const toModelMessages = (messages: AIConversationMessage[]): Promise<Mode
     );
 };
 
-/* Keeps only the fields worth persisting out of the SDK's much wider step results. */
 export const toToolSteps = (steps: readonly AIMessageToolStep[]): AIMessageToolStep[] => {
     return steps.map((step) => ({
         stepNumber: step.stepNumber,

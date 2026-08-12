@@ -20,7 +20,6 @@ export const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv(
     'TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS',
     120_000
 );
-/** Shared by every attach kind: terminal, websocket and tunnel. */
 export const SESSION_ATTACH_TIMEOUT_MS = 15_000;
 
 const STREAM_HIGH_WATER_MARK = 256 * 1024;
@@ -98,10 +97,6 @@ interface PendingPromiseOptions<TResult, TEntry extends PendingEntry> {
 
 export const createBufferedStream = (): PassThrough => new PassThrough({ highWaterMark: STREAM_HIGH_WATER_MARK });
 
-/**
- * Fails every unacknowledged tunnel write and unblocks a writer parked on the
- * flow-control window, so a dying tunnel never leaves a stalled `write` callback.
- */
 export const failPendingTunnelWrites = (entry: PendingTunnelEntry, error: Error): void => {
     for (const pendingAck of entry.pendingWriteAcks.values()) {
         clearTimeout(pendingAck.timeout);
@@ -119,11 +114,6 @@ export const failPendingTunnelWrites = (entry: PendingTunnelEntry, error: Error)
     callback(error);
 };
 
-/**
- * The in-flight correlations of the reverse channel: one entry per request,
- * stream, session or tunnel awaiting the daemon, with idle expiry and the
- * per-kind rules for how a failure surfaces to whoever is waiting.
- */
 export default class ReverseChannelPendingEntries {
     #entries = new Map<string, PendingEntry>();
     #lastActivityAt = new Map<string, number>();
@@ -172,10 +162,6 @@ export default class ReverseChannelPendingEntries {
         }
     }
 
-    /**
-     * While the attach is still pending the waiting promise is rejected; once it
-     * resolved, the only channel left to report on is the stream itself.
-     */
     reject(correlationId: string, entry: PendingEntry, error: Error): void {
         this.delete(correlationId);
         clearPendingTimeout(entry.timeout);

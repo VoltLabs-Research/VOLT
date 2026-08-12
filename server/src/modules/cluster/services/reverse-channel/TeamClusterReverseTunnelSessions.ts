@@ -35,10 +35,6 @@ interface TeamClusterReverseTunnelSessionsOptions {
     emitToDaemon: (socketId: string, payload: TeamClusterDaemonMessage) => void;
 }
 
-/**
- * Reverse-channel tunnel sessions: opening them and moving bytes both ways under
- * a byte-window flow control that acknowledges every write with a drain frame.
- */
 export default class TeamClusterReverseTunnelSessions {
     readonly #pending: ReverseChannelPendingEntries;
     readonly #requireSocketId: TeamClusterReverseTunnelSessionsOptions['requireSocketId'];

@@ -2,24 +2,9 @@ import { DaemonClientError } from '../errors/DaemonClientError';
 import type { EnrollmentOptions, EnrollmentResult } from './types';
 import type { EnrollmentApiResponse } from '../contracts/http';
 
-/**
- * Handles the HTTP enrollment (healthcheck) handshake with the Volt server.
- *
- * Posts the enrollment token and installed version to the server's
- * healthcheck endpoint and returns the rotated `daemonPassword` that must
- * be used for all subsequent socket registrations.
- */
 export class EnrollmentClient {
     constructor(private readonly options: EnrollmentOptions) {}
 
-    /**
-     * Performs the enrollment healthcheck POST request.
-     *
-     * @param enrollmentToken - One-time token issued when the cluster was provisioned.
-     * @param installedVersion - Semantic version of the running daemon binary.
-     * @returns The rotated credential and team cluster snapshot from the server.
-     * @throws {DaemonClientError} with code `ENROLLMENT_FAILED` on any HTTP or parse failure.
-     */
     async enroll(enrollmentToken: string, installedVersion?: string): Promise<EnrollmentResult> {
         let response: Response;
 

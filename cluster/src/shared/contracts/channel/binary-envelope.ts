@@ -1,10 +1,3 @@
-/**
- * Framing for the chunk-carrying reverse-channel messages.
- *
- * Wire layout, little-endian: [u32 opId][u16 kind][u32 payloadLen][payload].
- * Both ends only ever exchange stream chunks, so `opId` is pinned to 0 and
- * `kind` to STREAM_CHUNK_KIND; the header keeps its shape for compatibility.
- */
 const BINARY_ENVELOPE_HEADER_BYTES = 10;
 const STREAM_CHUNK_KIND = 3;
 
@@ -20,22 +13,13 @@ export const encodeStreamChunk = (payload: Uint8Array): Uint8Array => {
     return out;
 };
 
-/**
- * A Node `Buffer` that has been through JSON serialization. The reverse channel
- * emits chunks this way, so it is the shape inbound frames actually arrive in.
- */
 export interface SerializedBuffer {
     type: 'Buffer';
     data: number[];
 }
 
-/** Every representation an inbound chunk can legitimately have on the wire. */
 export type InboundChunk = ArrayBuffer | ArrayBufferView | SerializedBuffer;
 
-/**
- * Normalizes any of those representations to a zero-copy view where possible.
- * Every value that reached us over the reverse channel goes through here.
- */
 export const toBytes = (frame: InboundChunk): Uint8Array => {
     if (ArrayBuffer.isView(frame)) {
         return new Uint8Array(frame.buffer, frame.byteOffset, frame.byteLength);
@@ -48,11 +32,6 @@ export const toBytes = (frame: InboundChunk): Uint8Array => {
     return Uint8Array.from(frame.data);
 };
 
-/**
- * Both length checks are load-bearing: the frame is usually a view into a pooled
- * Buffer, so a bogus payloadLen would otherwise read adjacent pool memory
- * instead of throwing.
- */
 export const decodeStreamChunk = (frame: InboundChunk): Buffer => {
     const bytes = toBytes(frame);
 

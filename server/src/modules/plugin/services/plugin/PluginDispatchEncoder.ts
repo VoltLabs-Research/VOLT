@@ -9,9 +9,6 @@ import zlib from 'node:zlib';
 const gzipAsync = promisify(zlib.gzip);
 
 const CACHE_TTL_MS = 600_000;
-// The version segment is part of the stored value format, not just the key: bump
-// it whenever the encoded payload shape changes so a rolling deploy can never
-// read a value written in the previous format.
 const CACHE_PREFIX = 'plugin-dispatch:v2:';
 
 interface NestedPluginDefinition {
@@ -48,12 +45,6 @@ const injectOwnerClusterIdIntoWorkflow = (
     };
 };
 
-/**
- * Compresses the oversized sections of a plugin dispatch payload (trajectory
- * frames, workflows, nested plugin definitions) into gzipped base64, caching the
- * revision-addressable ones and collapsing concurrent encodes of the
- * same key into a single compression pass.
- */
 class PluginDispatchEncoder {
     private readonly inflightEncodes = new Map<string, Promise<string>>();
 

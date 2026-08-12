@@ -102,8 +102,6 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
                 try {
                     socketService.emitWithoutAck(leaveEvent, leavePayload);
                 } catch {
-                    // Leaving a room is fire-and-forget: the server drops the
-                    // membership on disconnect anyway.
                 }
                 return;
             }

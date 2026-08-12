@@ -3,11 +3,6 @@ import ClusterMetricSample from '@modules/system/models/ClusterMetricSample';
 import logger from '@shared/infrastructure/logger';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 
-/**
- * How long samples are kept. The store this replaced appended to a sorted set it
- * never trimmed, so history grew without bound for the life of a deployment;
- * nothing reads further back than the dashboards' window.
- */
 export const METRIC_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 const toSystemMetrics = (sample: ClusterMetricSample): SystemMetrics => {
@@ -23,14 +18,8 @@ class SystemMetricsRepository {
         || process.env.CLUSTER_ID?.trim()
         || os.hostname();
 
-    /**
-     * Metric loss must never take a request down with it, so failures here are
-     * logged and swallowed exactly as they were before.
-     */
     async save(metrics: SystemMetrics): Promise<void> {
         try {
-            /* An opaque `jsonb` column does not survive TypeORM's deep-partial
-               mapping of the insert literal, so the shape is asserted here. */
             await ClusterMetricSample.getRepository().insert({
                 clusterId: metrics.teamClusterId ?? this.clusterId,
                 recordedAt: metrics.timestamp,

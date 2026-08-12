@@ -1,5 +1,6 @@
 import { checkbox, valueRow } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
+import { isMeshScene } from '@/modules/fractal/utils/scene-utils';
 import {
     EFFECT_SECTION_ORDER,
     EFFECT_SECTION_TITLES,
@@ -16,7 +17,9 @@ import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 const useEffectsGroup = (): RenderGroup => {
     const effects = useEditorStore(useShallow((state) => state.effects));
     const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
-    const isDefectScene = useEditorStore((s) => s.activeScene?.sceneType === 'defect');
+    const isDefectScene = useEditorStore(
+        (s) => s.activeScene?.sceneType === 'defect' || isMeshScene(s.activeScene)
+    );
     const ssaoEnabled = resolveSSAOEnabledState(effects.ssao, { isDefectScene });
 
     return useMemo(() => {

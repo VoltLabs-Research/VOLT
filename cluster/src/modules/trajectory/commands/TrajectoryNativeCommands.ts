@@ -21,10 +21,6 @@ import type {
 } from '@modules/trajectory/services/FilterEvaluator';
 import type { TrajectoryFrameLookupInput } from '@shared/contracts/types/trajectory-frame-store';
 
-/**
- * Per-atom analysis data is an opt-in extension of an atoms page: passing an
- * `analysisId` also requires the cluster that owns the analysis artifacts.
- */
 interface AtomsCommandInput extends AtomsPageInput {
     analysisId?: string;
 }

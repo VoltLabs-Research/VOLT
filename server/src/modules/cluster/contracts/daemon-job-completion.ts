@@ -7,11 +7,6 @@ import type {
     DaemonRasterJobStatusInput
 } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
 
-/**
- * A daemon job report as it arrives on the reverse channel: the handler input
- * declared by IDaemonAnalysisCompletionService, tagged with the frame type the
- * daemon dispatches on and carrying the credentials it authenticates with.
- */
 type DaemonJobReport<TType extends string, TInput> = TInput & {
     type: TType;
     teamClusterId: string;

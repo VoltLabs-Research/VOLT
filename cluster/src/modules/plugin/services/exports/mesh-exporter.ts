@@ -115,16 +115,6 @@ const finishMesh = (
     };
 };
 
-/**
- * Builds the geometry straight from the two parquet tables a payload-document mesh was
- * split into.
- *
- * The facet-to-vertex resolution is the join DuckDB does below, so the 16-million-entry
- * `Map` the inline path needs never exists; `MAX(slot)` reproduces its last-write-wins
- * behaviour for a repeated vertex index, and the inner joins drop a facet that names an
- * unknown vertex exactly as the inline filter did. Rows arrive one chunk at a time and
- * go straight into the typed arrays, so peak memory is the geometry itself.
- */
 const processMeshFromParquet = async (
     source: MeshParquetSource,
     smoothIterations: number | undefined
@@ -144,24 +134,11 @@ const processMeshFromParquet = async (
         }
 
         const positions = new Float32Array(vertexCount * 3);
-        /*
-         * `FLOAT` and `INTEGER` rather than the parquet's `DOUBLE`/`BIGINT`: the node
-         * binding hands back a `bigint` object for every BIGINT value, so the index
-         * columns alone allocated one per element. A mesh cannot exceed the `Uint32Array`
-         * that carries its indices anyway, and the positions land in a `Float32Array`.
-         */
         const positionsResult = await connection.stream(
             'SELECT CAST(x AS FLOAT) AS x, CAST(y AS FLOAT) AS y, CAST(z AS FLOAT) AS z '
             + `FROM read_parquet(${sqlString(source.vertices)}) ORDER BY slot`
         );
         let positionOffset = 0;
-        /*
-         * Yielding per chunk means one event-loop round-trip every 2048 rows, and a chunk
-         * here is a fraction of a millisecond of work — so the loop paid ~530 round-trips
-         * to fill both arrays and inherited the loop's queue latency on every one of them.
-         * `YIELD_INTERVAL` is the interval the atomistic exporter already uses, and it
-         * keeps the loop responsive at a hundredth of the round-trips.
-         */
         let sinceLastYield = 0;
         for (let chunk = await positionsResult.fetchChunk(); chunk; chunk = await positionsResult.fetchChunk()) {
             const rows = chunk.rowCount;
@@ -183,7 +160,6 @@ const processMeshFromParquet = async (
             }
         }
 
-        /* Upper bound: the joins can only drop facets, never add them. */
         const indices = new Uint32Array(facetCount * 3);
         const trianglesResult = await connection.stream(
             'WITH vertex_map AS ('
@@ -301,35 +277,14 @@ const DEFAULT_MESH_MATERIAL: ExportMaterial = {
     emissive: [0, 0, 0]
 };
 
-/**
- * Taubin iterations applied when the export node does not ask for a specific count.
- *
- * A defect mesh arrives straight off a Delaunay tessellation, so untouched it reads
- * as the pile of tetrahedra it is rather than as a surface. This matches the default
- * OVITO uses for the same mesh, and OpenDXA derives from OVITO, so the two stay
- * visually comparable for anyone checking one against the other. Taubin alternates
- * its two passes precisely so the iterations do not shrink the surface the way plain
- * Laplacian smoothing would.
- *
- * Every mesh export used to skip smoothing entirely, because the material and the
- * line options had defaults and this one did not.
- */
 const DEFAULT_MESH_SMOOTH_ITERATIONS = 8;
 
-/**
- * Upper bound on the iterations a plugin may ask for.
- *
- * The count reaches a native call that walks every triangle once per iteration, and
- * it arrives unvalidated from a plugin's own JSON. Without a ceiling a stray value
- * would keep the daemon busy for as long as the number says.
- */
 const MAX_MESH_SMOOTH_ITERATIONS = 50;
 
 const resolveSmoothIterations = (requested: number | undefined): number => {
     if (requested === undefined) {
         return DEFAULT_MESH_SMOOTH_ITERATIONS;
     }
-    /* An explicit 0 means "do not smooth", so `??` above and no `||` anywhere. */
     if (!Number.isFinite(requested) || requested <= 0) {
         return 0;
     }

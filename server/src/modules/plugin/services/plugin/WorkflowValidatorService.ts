@@ -44,8 +44,6 @@ export class WorkflowValidatorService {
         currentPluginId?: string,
         mode: WorkflowValidationMode = WorkflowValidationMode.Strict
     ): Promise<WorkflowValidationResult> {
-        // `workflow` is user-authored content parsed from an uploaded/POSTed
-        // document, so its shape is checked once here and trusted afterwards.
         if (!Array.isArray(workflow?.nodes)) {
             return {
                 isValid: false,

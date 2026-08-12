@@ -6,14 +6,6 @@ import type {
     RasterMetadata as WireRasterMetadata
 } from '@volt/contracts/modules/raster/domain';
 
-/**
- * The persisted shape. Identical to the wire type except that the timestamps are
- * `Date` here and `string` after JSON serialization, which is why it is declared
- * rather than re-exported.
- *
- * `assertSameFields` keeps the field lists tied together, so adding a field to the
- * wire contract without adding it here fails the build.
- */
 export interface RasterMetadata {
     trajectoryId: string;
     totalFrames: number;

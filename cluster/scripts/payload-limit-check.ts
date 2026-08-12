@@ -1,18 +1,3 @@
-/**
- * Prueba que un documento `payload` cuyas secciones pasan el techo de cadena de V8 se
- * lee completo, sin el error "Cannot create a string longer than 0x1fffffe8 characters".
- *
- * Es el caso que rompia DXA: el defect mesh de una trama de millones de atomos deja un
- * `export.MeshExporter` (y un `sub_listings.points` con los mismos datos) de cientos de
- * MB, y cada seccion por si sola pasa los 536.870.888 caracteres que V8 admite.
- *
- * Los documentos se arman dentro de DuckDB, nunca en JS, porque construirlos en JS
- * chocaria contra el mismo limite que se esta probando. Cada escenario aisla una ruta
- * para que el pico de memoria sea manejable.
- *
- * Tarda varios minutos y necesita ~8 GB de heap:
- *   NODE_OPTIONS=--max-old-space-size=12288 npx tsx scripts/payload-limit-check.ts
- */
 import { DuckDBConnection } from '@duckdb/node-api';
 import assert from 'node:assert/strict';
 import { readWorkflowExposurePayload } from '@modules/analysis/services/workflow/exposure-payload-reader';
@@ -25,17 +10,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-/** El techo exacto de V8: cualquier seccion por encima rompia la lectura. */
 const V8_MAX_STRING_LENGTH = 0x1fffffe8;
 
-/*
- * Las secciones tienen que pasar los ~512 MB de verdad, y generar medio giga de JSON
- * elemento por elemento con `string_agg` tarda demasiado. Asi que cada seccion se arma
- * con un bloque de elementos que si varian (indices, posiciones, colores) repetido en
- * bloque hasta pasar el techo: el conteo de filas, el aplanado a parquet, el join de
- * indices y el llenado de los arreglos tipados se ejercitan a escala completa, y la
- * deduplicacion de indices repetidos queda mas exigida todavia.
- */
 const VERTEX_BLOCK = 100_000;
 const VERTEX_BLOCKS = 68;
 const MESH_VERTICES = VERTEX_BLOCK * VERTEX_BLOCKS;
@@ -54,11 +30,9 @@ const megabytes = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)
 
 const heapUsedMb = (): string => `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(0)} MB`;
 
-/** Un bloque de elementos JSON separados por coma, sin coma final. */
 const jsonBlock = (element: string, count: number): string =>
     `(SELECT string_agg(${element}, ',' ORDER BY i) FROM range(0, ${count}) t(i))`;
 
-/** El bloque repetido `blocks` veces, tambien sin coma final. */
 const repeatedBlock = (element: string, count: number, blocks: number): string =>
     `rtrim(repeat(${jsonBlock(element, count)} || ',', ${blocks}), ',')`;
 
@@ -79,7 +53,6 @@ const ATOM_ELEMENT =
     + `|| ((i % 997) * 0.2509765625) || ',' `
     + `|| ((i % 991) * 0.12548828125) || '],"color":[0.5,0.25,0.125]}'`;
 
-/** Filas anchas: lo que importa es que el arreglo entero pase el techo, no cuantas son. */
 const SUB_LISTING_ELEMENT =
     `'{"row_id":' || i || ',"label":"segment-' || i || '","note":"' || repeat('x', 500) || '"}'`;
 
@@ -103,7 +76,6 @@ const withTempDir = async <T>(label: string, run: (dir: string) => Promise<T>): 
     }
 };
 
-/** Tamano de una seccion medido dentro del motor, para poder afirmar que paso el techo. */
 const sectionBytes = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -165,7 +137,6 @@ const checkOversizedMesh = (): Promise<void> =>
         await exportMeshArtifact(input, section as never, 'mesh.glb', 'cluster-1', {});
         assert.equal(staged.length, 1, 'el exportador no produjo un GLB');
         console.log(`  glb=${megabytes(staged[0].byteLength)} (heap ${heapUsedMb()})`);
-        /* Posiciones + normales + indices de esta malla no caben en un GLB pequeno. */
         assert.ok(staged[0].byteLength > 100 * 1024 * 1024, 'el GLB salio sospechosamente chico');
     });
 
@@ -211,7 +182,6 @@ const checkOversizedAtomistic = (): Promise<void> =>
         await exportAtomisticArtifact(input, section as never, 'atoms.glb', 'cluster-1');
         assert.equal(staged.length, 1, 'el exportador no produjo un GLB');
         console.log(`  glb=${megabytes(staged[0].byteLength)} (heap ${heapUsedMb()})`);
-        /* 3 componentes de posicion + 3 de color, en float32, por atomo. */
         assert.ok(staged[0].byteLength > totalAtoms * 6 * 4 * 0.9, 'el GLB no contiene todos los atomos');
     });
 

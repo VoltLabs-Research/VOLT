@@ -15,7 +15,6 @@ export default defineConfig(({ mode }) => {
             allowedHosts: ['5173--main--volt-development--rodyherrera--frda5i519n648.pit-1.try.coder.app'],
             port: 5173,
             strictPort: true,
-            // Allow importing the sibling @volt/contracts raw source (outside client/).
             fs: {
                 allow: [
                     path.resolve(__dirname, '..')
@@ -45,12 +44,6 @@ export default defineConfig(({ mode }) => {
                     replacement: path.resolve(__dirname, './src')
                 }
             ],
-            /*
-             * Keeps the bundle from carrying two copies of a library that several
-             * packages depend on. React and react-router must be single-instance or
-             * hooks and router context break; the rest are shared by HeroUI and the
-             * app and would otherwise duplicate.
-             */
             dedupe: [
                 'react',
                 'react-dom',

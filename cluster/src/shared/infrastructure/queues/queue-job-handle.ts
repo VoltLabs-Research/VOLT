@@ -1,9 +1,3 @@
-/**
- * Thrown to unwind out of a processor that has already put its job back.
- *
- * It is not a failure: the worker recognises it and leaves the job alone rather
- * than spending an attempt on it.
- */
 export class DeferJobError extends Error {
     constructor(message = 'Job deferred') {
         super(message);
@@ -11,18 +5,10 @@ export class DeferJobError extends Error {
     }
 }
 
-/** The attempt budget, as the processor sees it. */
 interface QueueJobAttemptOptions {
     attempts?: number;
 }
 
-/**
- * What a processor sees of the job it is running.
- *
- * Deliberately the subset of the queue row that processors were already using, so
- * the queue's own bookkeeping — leases, stall counts, backoff — stays out of
- * reach of the code doing the work.
- */
 export interface QueueJobHandle<TPayload> {
     id: string;
     name: string;

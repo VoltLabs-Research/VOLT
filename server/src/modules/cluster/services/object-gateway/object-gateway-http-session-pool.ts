@@ -44,7 +44,6 @@ const HTTP_PROXY_FAST_TUNNEL_ATTACH_TIMEOUT_MS = readPositiveIntegerEnv(
     20_000
 );
 
-/* Attaching a tunnel can never be allowed to outlive the request budget it serves. */
 const FAST_REQUEST_TIMEOUT_MS = Math.min(HTTP_PROXY_FAST_REQUEST_TIMEOUT_MS, HTTP_PROXY_REQUEST_TIMEOUT_MS);
 const ATTACH_TIMEOUT_MS = Math.min(HTTP_PROXY_TUNNEL_ATTACH_TIMEOUT_MS, HTTP_PROXY_REQUEST_TIMEOUT_MS);
 const FAST_ATTACH_TIMEOUT_MS = Math.min(
@@ -53,15 +52,10 @@ const FAST_ATTACH_TIMEOUT_MS = Math.min(
     HTTP_PROXY_FAST_REQUEST_TIMEOUT_MS
 );
 
-/* Metadata-only verbs must not sit behind the long transfer timeouts. */
 const isFastOperation = (operation: ObjectGatewayOperationName): boolean => (
     operation === 'head' || operation === 'list'
 );
 
-/*
- * Keep-alive HTTP sessions layered over daemon reverse-channel tunnels: one
- * agent per tunnel, reused while idle and destroyed as soon as the tunnel dies.
- */
 export default class ObjectGatewayHttpSessionPool {
     private readonly sessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
 
@@ -144,7 +138,6 @@ export default class ObjectGatewayHttpSessionPool {
         });
     }
 
-    /* The session stays checked out until the caller finishes draining the body. */
     bindResponseLifecycle(stream: NodeReadable, session: ObjectGatewayHttpSessionEntry): void {
         let finalized = false;
         const finalize = (destroySession = false): void => {
@@ -177,12 +170,6 @@ export default class ObjectGatewayHttpSessionPool {
         session.expiresAt = Date.now() + HTTP_PROXY_SESSION_TTL_MS;
     }
 
-    /**
-     * A reverse channel that dropped takes every tunnel layered on it down at once,
-     * and a pooled session only discovers that when something is written to it.
-     * Discarding the whole cluster's pool makes a retry deterministic instead of a
-     * gamble on which zombie gets handed out next.
-     */
     discardCluster(teamClusterId: string): void {
         for (const session of this.sessions.get(teamClusterId) ?? []) {
             this.destroySession(session);

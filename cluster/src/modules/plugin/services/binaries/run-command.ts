@@ -1,6 +1,5 @@
 import { spawn } from 'node:child_process';
 
-/** Runs a provisioning command to completion, rejecting with its stderr when it fails. */
 
 const MAX_STDERR_BYTES = 10 * 1024 * 1024;
 

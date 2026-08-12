@@ -55,10 +55,6 @@ export interface ClusterTransferJob {
     props: ClusterTransferJobProps;
 }
 
-/**
- * Mirrors the entity column defaults: TypeORM does not read database defaults
- * back after an insert, so a freshly created job must be complete in memory too.
- */
 export const createClusterTransferJobDefaults = (): Partial<ClusterTransferJobProps> => ({
     state: ClusterTransferJobState.Queued,
     reason: ClusterTransferJobReason.Manual,
@@ -106,7 +102,6 @@ export const toClusterTransferJobLike = (entity: ClusterTransferJobEntity): Clus
 });
 
 
-/** Shared log suffix so every transfer phase is greppable by the same keys. */
 export const describeClusterTransferJob = (job: ClusterTransferJob): string => {
     return `transferJobId=${job.id} scopeType=${job.props.scopeType} scopeId=${job.props.scopeId} sourceClusterId=${job.props.sourceClusterId}`;
 };

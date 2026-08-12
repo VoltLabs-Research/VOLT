@@ -25,10 +25,6 @@ interface PluginReferenceSelectionValue {
     config: Record<string, unknown>;
 }
 
-/**
- * A pluginReference argument value is authored in the editor and stored as-is, so
- * its selections are shape-checked rather than trusted.
- */
 const readPluginReferenceSelections = (
     value: unknown
 ): PluginReferenceSelectionValue[] => {
@@ -117,12 +113,6 @@ const visitArgument = (
     });
 };
 
-/**
- * Walks an argument config, including nested list items, and reports every plugin
- * the config selects through a pluginReference argument. Cardinality problems
- * (a required reference left empty, several plugins in a single-selection
- * argument) are appended to `errors` as they are found.
- */
 export const collectPluginReferenceValidationTargets = (
     definitions: ArgumentDefinition[],
     config: Record<string, unknown>,

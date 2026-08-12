@@ -1,10 +1,5 @@
 import type { HttpQuery } from './HttpClient';
 
-/**
- * Maps HTTP status codes to fallback error codes.
- * Used by both `AxiosHttpClient` and `FetchHttpClient` when the server
- * does not return a structured error body.
- */
 export const getHttpFallbackCode = (status: number): string => {
     if (status === 400) return 'Http::400';
     if (status === 401) return 'Http::401';
@@ -19,10 +14,6 @@ export const getHttpFallbackCode = (status: number): string => {
     return 'Internal::Server::Error';
 };
 
-/**
- * Converts an `HttpQuery` object into a `URLSearchParams` instance,
- * skipping `null` and `undefined` values and appending array entries individually.
- */
 export const toParams = (query?: HttpQuery): URLSearchParams | undefined => {
     if (!query) return undefined;
 

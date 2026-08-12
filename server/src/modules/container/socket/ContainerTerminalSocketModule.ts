@@ -9,10 +9,6 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import logger from '@shared/infrastructure/logger';
 
-/* Socket wiring for container terminals: authorize the attach, then hand the
- * socket to the shared session registry. Sessions outlive individual sockets,
- * so an attach that is superseded while the daemon is still connecting has to
- * be detected and undone — that is what the attach token guards. */
 
 interface ContainerTerminalAttachPayload {
     containerId: string;

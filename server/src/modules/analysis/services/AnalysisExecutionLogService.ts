@@ -27,11 +27,6 @@ import type {
     AnalysisFrameLogStatus
 } from '@shared/contracts/types/AnalysisFrameLog';
 
-/**
- * Command surface of the per-frame execution log: it decides what the next stored record looks
- * like and broadcasts the resulting chunk. Concurrency, caching and persistence live in
- * AnalysisFrameLogRuntime, cursors and replay in AnalysisFrameLogProjection.
- */
 class AnalysisExecutionLogService {
     async markFrameRunning(input: AnalysisFrameLogJobIdentity): Promise<void> {
         await analysisFrameLogRuntime.serialize(input.analysisId, input.timestep, async () => {

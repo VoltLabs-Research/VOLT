@@ -71,10 +71,6 @@ const TEAM_CLUSTER_ALLOWED_TRANSITIONS: Record<TeamClusterStatus, ReadonlySet<Te
     ])
 };
 
-/**
- * Statuses owned by an in-flight lifecycle operation: socket connectivity events
- * must not overwrite them, only the operation that set them may move on.
- */
 export const HEARTBEAT_LOCKED_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.Deleting,
     TeamClusterStatus.DeleteFailed,

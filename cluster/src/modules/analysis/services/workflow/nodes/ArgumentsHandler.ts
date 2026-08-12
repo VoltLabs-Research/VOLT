@@ -26,7 +26,6 @@ const definitionTreeHasArgument = (
     || definitionTreeHasArgument(definition.listArguments ?? [], argumentKey)
 ));
 
-/** `required` is declared by the plugin manifest, so this is domain validation. */
 const isRequiredValueMissing = (
     definition: WorkflowArgumentDefinition,
     value: WorkflowValue

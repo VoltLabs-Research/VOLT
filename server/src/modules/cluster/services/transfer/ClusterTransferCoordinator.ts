@@ -40,10 +40,6 @@ interface TransferRequestInput {
     reason?: ClusterTransferJobReason;
 }
 
-/**
- * Orchestrates storage transfers: accepts transfer requests, leases queued jobs
- * and drives one job through freeze, copy, verify, switch and cleanup.
- */
 class ClusterTransferCoordinator {
     private readonly storagePlacementService = storagePlacementService;
     private readonly systemMetricsRepository = systemMetricsRepository;
@@ -67,9 +63,6 @@ class ClusterTransferCoordinator {
             reason: input.reason ?? 'manual'
         };
 
-        /* A concurrent transfer may already have moved the placement. Recording a
-           completed job keeps the request idempotent instead of queueing a
-           self-transfer, whose cleanup phase would delete its own destination. */
         if (placement.props.primaryClusterId === input.destinationClusterId) {
             const settledPlacement = await this.storagePlacementService.switchPrimaryCluster(
                 input.scopeType,
@@ -105,7 +98,6 @@ class ClusterTransferCoordinator {
                 buckets: placement.props.buckets
             }));
         } catch (error) {
-            /* The partial unique index rejects a second open job for this scope. */
             const duplicate = await this.jobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
             if (!duplicate) {
                 throw error;
@@ -190,7 +182,6 @@ class ClusterTransferCoordinator {
                 publishUpdate: true
             });
 
-            /* The source is kept as a replica until its copy is actually dropped. */
             const replicaClusterIds = [...new Set([
                 ...placement.props.replicaClusterIds.filter((clusterId) => clusterId !== destinationClusterId),
                 sourceClusterId

@@ -5,13 +5,6 @@ export interface ScriptingSessionLockLease {
     release(): Promise<void>;
 }
 
-/**
- * A lease over a scripting session, held for at most `ttlMs`.
- *
- * The lease carries a token and release is a compare-and-delete, so a holder
- * that overran its deadline cannot free a lock another caller has since taken.
- * The deadline is the only thing that recovers a crashed holder.
- */
 class ScriptingSessionLock {
     async acquire(key: string, ttlMs: number): Promise<ScriptingSessionLockLease | null> {
         const token = randomUUID();

@@ -1,7 +1,3 @@
-/**
- * Socket event names used by the daemon ↔ server control channel.
- * Mirrors the EventType enum from the daemon shared contracts.
- */
 export enum DaemonSocketEvent {
     RuntimeLifecycle = 'lifecycle',
     RuntimeProgress = 'progress',

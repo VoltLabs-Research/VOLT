@@ -44,7 +44,6 @@ const ANALYSIS_EXPORT_CONCURRENCY = 8;
 const archiveService = new ClusterObjectArchiveService();
 const pluginService = new PluginService();
 
-/** Team scoping: a trajectory is only downloadable from the team that owns it. */
 const requireTeamTrajectory = async (trajectoryId: string, teamId: string): Promise<Trajectory> => {
     const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
     if (!trajectory || trajectory.team !== teamId) {
@@ -54,10 +53,6 @@ const requireTeamTrajectory = async (trajectoryId: string, teamId: string): Prom
     return trajectory;
 };
 
-/**
- * Resolves one analysis' exported bundle to a cluster object reference the
- * archive builder can pull directly, skipping analyses that never produced one.
- */
 const buildAnalysisArchiveEntry = async (
     analysisId: string,
     teamId: string
@@ -97,7 +92,6 @@ const buildAnalysisArchiveEntry = async (
 };
 
 class TrajectoryDownloadService {
-    /** Single dump by default; `archive` bundles every timestep into one zip. */
     async downloadTrajectory(input: DownloadTrajectoryInput): Promise<DownloadStreamOutput> {
         const { trajectoryId } = input;
         const trajectory = await requireTeamTrajectory(trajectoryId, input.teamId);
@@ -141,7 +135,6 @@ class TrajectoryDownloadService {
         });
     }
 
-    /** Bundles every completed analysis export for one trajectory. */
     async downloadTrajectoryAnalyses(input: DownloadTrajectoryAnalysesInput): Promise<DownloadStreamOutput> {
         const trajectory = await requireTeamTrajectory(input.trajectoryId, input.teamId);
 
@@ -199,10 +192,6 @@ class TrajectoryDownloadService {
         return entries.filter((entry) => entry.endsWith('.zip'));
     }
 
-    /**
-     * Reads a bundled sample off local disk. The name reaches the filesystem, so
-     * it is reduced to a basename and required to be a zip.
-     */
     async downloadSamples(input: { filename?: string }): Promise<DownloadSampleSimulationsOutput> {
         const filename = input.filename ? path.basename(input.filename) : '';
         if (!filename.endsWith('.zip')) {

@@ -49,26 +49,8 @@ const KNOWN_QUEUE_NAMES = [
 
 const KNOWN_QUEUE_NAME_SET = new Set<string>(KNOWN_QUEUE_NAMES);
 
-/**
- * How long a worker may hold a job before the queue assumes it died.
- *
- * Compute jobs here drive native binaries that run for minutes on large frames.
- * The lease is renewed on a timer while a job runs, so a busy event loop can miss
- * a renewal and let the lease lapse — the job is then handed to another slot and
- * the same frame is analysed twice in parallel. That was observed on a 4.45M-atom
- * frame: two OpenDXA processes on the identical timestep, each holding several GB.
- *
- * The window is therefore set well beyond any realistic job, and a job is failed
- * rather than redelivered after a second stall so a job that kills its worker
- * cannot loop.
- */
 const WORKER_LEASE_DURATION_MS = readPositiveIntegerEnv('QUEUE_WORKER_LOCK_DURATION_MS') ?? 3_600_000;
 
-/**
- * Fallback poll interval. Enqueues notify idle workers, so this only bounds how
- * late a delayed job's own deadline can be noticed, and how long a queue stays
- * quiet if the notification listener is down.
- */
 const WORKER_POLL_INTERVAL_MS = readPositiveIntegerEnv('QUEUE_WORKER_POLL_INTERVAL_MS') ?? 2_000;
 
 const assertKnownQueue = (queueName: string): void => {
@@ -83,11 +65,6 @@ const toEnqueueRequest = (
     options: EnqueueOptions
 ): EnqueueRequest => ({
     queue: queueName,
-    /*
-     * A job without a caller-supplied id gets a generated one so every row has a
-     * key. Only supplied ids are addressable afterwards, which is the same
-     * property the previous queue had.
-     */
     jobKey: payload.jobId ?? randomUUID(),
     payload: payload as unknown as JsonObject,
     maxAttempts: Math.max(1, options.attempts ?? 1),
@@ -95,15 +72,6 @@ const toEnqueueRequest = (
     backoffDelayMs: options.backoff?.delay ?? null
 });
 
-/**
- * The daemon's job queues, on Postgres.
- *
- * Jobs are claimed with `FOR UPDATE SKIP LOCKED`, which is what lets several
- * workers draw from one queue without coordinating, and idle workers are woken by
- * `NOTIFY` rather than only polling. Duplicate suppression is a partial unique
- * index over the non-terminal states, so "is this already queued?" and the insert
- * are a single statement instead of a check followed by a write.
- */
 export class QueueService {
     private readonly workers = new Set<QueueWorker<never>>();
 
@@ -113,11 +81,6 @@ export class QueueService {
         await getQueueNotifier().close();
     }
 
-    /**
-     * Resolves false when the job was not added because an equivalent one is still
-     * live in that queue. Callers that pass `preserveExistingJob` read this; the
-     * rest enqueue and ignore it.
-     */
     async enqueue<T extends QueuePayload>(
         queueName: string,
         payload: T,
@@ -131,11 +94,6 @@ export class QueueService {
             return false;
         }
 
-        /*
-         * A settled row still holds the key, and the unique index deliberately
-         * does not cover terminal states, so the old row is cleared to let the key
-         * be re-enqueued rather than accumulating a row per run.
-         */
         await deleteTerminalJob(queueName, request.jobKey);
 
         const inserted = await insertJob(request);
@@ -180,7 +138,6 @@ export class QueueService {
         return worker;
     };
 
-    /** Only a failed job is retryable, so a running or queued one is left alone. */
     retryJobById(jobId: string): Promise<boolean> {
         return retryFailedJobByKey(jobId);
     }

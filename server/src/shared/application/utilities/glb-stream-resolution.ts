@@ -10,17 +10,8 @@ interface ResolvedGlbStream {
     stream: Readable;
     objectName: string;
     size?: number;
-    /* What the bytes on the wire actually carry, which for a `.zst` object is zstd. */
     contentEncoding: GlbContentEncoding;
-    /*
-     * Only set once the caller has advertised zstd, so the response can carry a
-     * standard `Content-Encoding` and let the browser decode in C++ instead of
-     * shipping 100 MiB through a JS decompressor on the renderer's main thread.
-     * A `Content-Encoding` nobody asked for is a decode failure, not a fallback,
-     * so this stays null unless it was negotiated.
-     */
     negotiatedContentEncoding: 'zstd' | null;
-    /* Forwarded from the daemon so caches and intermediaries get real validators. */
     etag?: string;
     lastModified?: Date;
 }
@@ -40,7 +31,6 @@ const acceptsZstd = (acceptEncoding: string | undefined): boolean => (
                 return false;
             }
 
-            /* `zstd;q=0` is an explicit refusal, not an offer. */
             return !parameters.some((parameter) => parameter.replace(/\s/g, '') === 'q=0');
         })
 );

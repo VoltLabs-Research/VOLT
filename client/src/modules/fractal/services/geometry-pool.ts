@@ -120,7 +120,6 @@ class GeometryPool {
             await writable.write(buffer);
             await writable.close();
         } catch {
-            // OPFS is a cache: a failed write only costs a later refetch.
         }
     }
 }

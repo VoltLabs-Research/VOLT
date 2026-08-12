@@ -1,3 +1,4 @@
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 
 export interface SceneKeyConfig {
@@ -23,6 +24,12 @@ const isChartScene = (scene: SceneObjectType) => {
     if (scene?.source !== 'plugin') return false;
 
     return scene.sceneRenderMetadata?.exportType === 'chart-png';
+};
+
+export const isMeshScene = (scene: SceneObjectType | null | undefined): boolean => {
+    if (scene?.source !== 'plugin') return false;
+
+    return scene.sceneRenderMetadata?.exporter === Exporter.MESH;
 };
 
 export const getRenderableScenes = (scenes: SceneObjectType[], forceDefaultScene: boolean) => {

@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 def _ovito_available() -> bool:
     try:
-        import ovito  # noqa: F401
+        import ovito
     except Exception:
         return False
     return True
@@ -46,9 +46,6 @@ def _ovito_available() -> bool:
 
 OVITO_AVAILABLE: bool = _ovito_available()
 
-# OVITO's StructureIdentificationModifier common-type enum. Both CNA and PTM
-# share the leading codes; PTM adds graphene/cubic-diamond variants we fold into
-# the coarse families the harness compares on.
 OVITO_STRUCTURE: dict[str, int] = {
     'OTHER': 0,
     'FCC': 1,
@@ -61,7 +58,6 @@ OVITO_STRUCTURE: dict[str, int] = {
     'GRAPHENE': 8,
 }
 
-# Coarse harness families (what the parquet `structure_name` collapses to).
 _COARSE: dict[str, int] = {
     'OTHER': 0,
     'FCC': 1,
@@ -71,7 +67,6 @@ _COARSE: dict[str, int] = {
     'SC': 5,
 }
 
-# How OVITO's fine enum maps onto the coarse harness families.
 _OVITO_TO_COARSE: dict[int, int] = {
     OVITO_STRUCTURE['OTHER']: _COARSE['OTHER'],
     OVITO_STRUCTURE['FCC']: _COARSE['FCC'],
@@ -90,7 +85,6 @@ def coarse_structure_code(name: str) -> int:
     key = str(name).strip().upper()
     if key in _COARSE:
         return _COARSE[key]
-    # tolerate PSM/PTM spellings
     aliases = {
         'CUBIC_DIAMOND': 'DIAMOND', 'HEX_DIAMOND': 'DIAMOND', 'DIA': 'DIAMOND',
         'SIMPLE_CUBIC': 'SC', 'ICO': 'OTHER', 'NONE': 'OTHER', 'UNKNOWN': 'OTHER',
@@ -112,9 +106,6 @@ def _require_ovito() -> None:
         )
 
 
-# ===========================================================================
-#  Live-OVITO accessors (used only when OVITO_AVAILABLE)
-# ===========================================================================
 def extract_structure_types(frame: Frame, classifier: str = 'PTM') -> np.ndarray:
     """Per-atom structure-type codes for ``frame`` via OVITO (OVITO enum).
 
@@ -172,7 +163,7 @@ def extract_burgers_vectors(
 
     try:
         from ovito.modifiers import DislocationAnalysisModifier
-    except Exception as exc:  # pragma: no cover - depends on OVITO build
+    except Exception as exc:
         raise NotImplementedError(
             'OVITO is installed but its DislocationAnalysisModifier (DXA) is not '
             'available in this build; Burgers parity cannot be computed via OVITO.'
@@ -190,9 +181,6 @@ def extract_burgers_vectors(
     return vectors, families
 
 
-# ===========================================================================
-#  Recorded-reference accessors (always available; used in degraded mode)
-# ===========================================================================
 def reference_structure_fractions(structure: str) -> dict[int, float]:
     """Expected per-atom structure-type fractions (coarse codes) for a pristine
     lattice of the given crystal ``structure``.
@@ -214,7 +202,6 @@ def reference_burgers_families(structure: str) -> dict[str, float]:
     Used by the harness to score |b| recovery when no OVITO DXA is present.
     """
     s = str(structure).strip().upper()
-    # |b|/a for the dominant perfect dislocation of each lattice.
     table = {
         'FCC': {'1/2<110>': float(np.sqrt(2) / 2)},
         'BCC': {'1/2<111>': float(np.sqrt(3) / 2)},

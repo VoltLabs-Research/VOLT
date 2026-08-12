@@ -4,27 +4,14 @@ import { getHttpFallbackCode, toParams } from './http-utils';
 import type { CredentialProvider } from '../auth/CredentialProvider';
 import type { HttpClient, HttpQuery, HttpRequest } from './HttpClient';
 
-/** Default request timeout in milliseconds. */
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 export interface FetchHttpClientOpts {
     baseUrl: string;
     credential?: CredentialProvider;
-    /** Request timeout in ms. Default: 30 000. */
     timeout?: number;
 };
 
-/**
- * Native-fetch implementation of `HttpClient`.
- * Works in Node.js 18+ and modern browsers without external dependencies.
- *
- * Notes:
- * - Upload progress (`onUploadProgress`) is not supported by the Fetch API.
- *   Use `AxiosHttpClient` when progress reporting is required.
- * - Cancellation is supported via `AbortSignal` on individual requests.
- *   A timeout signal is composed with the caller-supplied signal via
- *   `AbortSignal.any` when available (Node 20+, modern browsers).
- */
 export default class FetchHttpClient implements HttpClient {
     private readonly baseUrl: string;
     private readonly credential: CredentialProvider | undefined;
@@ -56,27 +43,22 @@ export default class FetchHttpClient implements HttpClient {
 
         if (!callerSignal) return timeout;
 
-        // AbortSignal.any is available in Node 20+ and modern browsers.
         return AbortSignal.any([timeout, callerSignal]);
     }
 
     private async toApiError(error: unknown, signal?: AbortSignal): Promise<never> {
         if (error instanceof ApiError) throw error;
 
-        // AbortError - re-throw without wrapping, preserving dedup/cancel semantics.
         if (error instanceof DOMException && error.name === 'AbortError') throw error;
         if (error instanceof Error && error.name === 'AbortError') throw error;
 
-        // TimeoutError from AbortSignal.timeout (Node 20+, modern browsers).
         if (error instanceof DOMException && error.name === 'TimeoutError') {
             throw new ApiError('Network::Timeout', undefined, error);
         }
 
-        // If a caller signal is already aborted we treat it as a cancellation.
         if (signal?.aborted) throw error;
 
         if (error instanceof TypeError) {
-            // fetch throws TypeError for network failures.
             throw new ApiError('Network::ConnectionError', undefined, error);
         }
 
@@ -93,7 +75,6 @@ export default class FetchHttpClient implements HttpClient {
         let body: BodyInit | undefined;
         if (req.body !== undefined) {
             if (req.body instanceof FormData) {
-                // Let fetch set Content-Type with the correct boundary.
                 body = req.body;
             } else {
                 headers['Content-Type'] = 'application/json';
@@ -134,7 +115,6 @@ export default class FetchHttpClient implements HttpClient {
             return response.text() as Promise<T>;
         }
 
-        // JSON (default)
         if (response.status === 204 || response.headers.get('content-length') === '0') {
             return undefined as T;
         }

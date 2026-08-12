@@ -7,17 +7,6 @@ import { singleton } from '@shared/application/utilities/singleton';
 const RECONNECT_DELAY_MS = 1_000;
 const MAX_RECONNECT_DELAY_MS = 15_000;
 
-/**
- * Wakes idle workers the moment something is enqueued.
- *
- * Workers poll as well, so this is a latency optimisation and not a correctness
- * requirement — if the listener is down, work is still picked up on the next poll.
- * That is deliberate: a queue whose delivery depends on a live notification
- * silently stops when the connection drops.
- *
- * A LISTEN belongs to one session, so this holds its own connection rather than
- * borrowing from the pool, which would stop delivering as soon as it was recycled.
- */
 export class QueueNotifier {
     private readonly waiters = new Map<string, Set<() => void>>();
     private client: Client | null = null;
@@ -25,7 +14,6 @@ export class QueueNotifier {
     private reconnectDelayMs = RECONNECT_DELAY_MS;
     private stopped = false;
 
-    /** Resolves when this queue is notified, or when `timeoutMs` elapses. */
     async waitForWork(queue: string, timeoutMs: number): Promise<void> {
         void this.ensureConnected();
 
@@ -97,7 +85,6 @@ export class QueueNotifier {
             const queueWaiters = this.waiters.get(message.payload);
             if (!queueWaiters) return;
 
-            /* Copied before waking: each waiter removes itself as it settles. */
             for (const wake of [...queueWaiters]) wake();
         });
 

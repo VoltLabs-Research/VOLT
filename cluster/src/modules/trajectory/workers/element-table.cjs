@@ -1,12 +1,5 @@
 'use strict';
 
-// CommonJS companion to src/shared/typed-data/ (periodic-table + units + element-table).
-//
-// The parquet ingest worker runs as a worker_threads module loaded by path at runtime;
-// it cannot import the daemon's .ts sources (no TS loader in the worker). This file is
-// the plain-CJS port of the element-table + units helpers it needs (buildElementTable,
-// DEFAULT_UNITS, asLammpsUnits). It MUST stay value-identical to the TS twin in
-// src/shared/typed-data/. Pure data + pure derivation; no I/O, no runtime validation.
 
 const PERIODIC_TABLE = {
     H: {
@@ -1191,17 +1184,13 @@ const PERIODIC_TABLE = {
     }
 };
 
-// --- units (port of src/shared/typed-data/units.ts) ---
 
 const LAMMPS_UNITS = ['lj', 'real', 'metal', 'si', 'cgs', 'electron', 'micro', 'nano'];
 
-// Default units convention when a trajectory declares none. `metal` is the
-// atomistic-MD default and the one VOLT's element radii (Angstrom) align with.
 const DEFAULT_UNITS = 'metal';
 
 const LAMMPS_UNITS_SET = new Set(LAMMPS_UNITS);
 
-// Narrow a free-form string to a known LammpsUnits, or null.
 const asLammpsUnits = (value) => {
     if (!value) return null;
     const lowered = value.trim().toLowerCase();
@@ -1209,27 +1198,21 @@ const asLammpsUnits = (value) => {
 };
 
 
-// --- periodic-table helpers (port of src/shared/typed-data/periodic-table.ts) ---
 
 const ELEMENT_SYMBOLS = Object.keys(PERIODIC_TABLE);
 
-// Fallback per-LAMMPS-type colors used when no element identity is known. Mirrors
-// OVITO's default particle-type color cycle (linear RGB in [0, 1]).
 const DEFAULT_TYPE_PALETTE = [
     [0.9, 0.2, 0.2], [0.2, 0.4, 0.9], [0.2, 0.8, 0.3], [0.9, 0.7, 0.2],
     [0.7, 0.3, 0.85], [0.25, 0.8, 0.85], [0.95, 0.5, 0.2], [0.6, 0.6, 0.6],
     [0.85, 0.4, 0.6], [0.5, 0.75, 0.3]
 ];
 
-// Per-type fallback color by 1-indexed LAMMPS atom type.
 const typePaletteColor = (type) => {
     const palette = DEFAULT_TYPE_PALETTE;
     const index = ((type - 1) % palette.length + palette.length) % palette.length;
     return palette[index];
 };
 
-// Nearest-mass element lookup for `.data` files that declare a `Masses` section but
-// carry no element column. Returns null when no element falls within `tolerance` u.
 const inferElementFromMass = (mass, tolerance = 0.5) => {
     let best = null;
     let bestDelta = tolerance;
@@ -1244,11 +1227,7 @@ const inferElementFromMass = (mass, tolerance = 0.5) => {
 };
 
 
-// --- element-table (port of src/shared/typed-data/element-table.ts) ---
 
-// Build an element-table entry for a LAMMPS type. When `symbol` resolves to a known
-// element, the row is fully populated from the periodic table; otherwise it falls
-// back to the default type palette + a synthetic label.
 const buildElementTableEntry = (type, symbol, mass) => {
     if (symbol) {
         const reference = PERIODIC_TABLE[symbol];
@@ -1280,7 +1259,6 @@ const buildElementTableEntry = (type, symbol, mass) => {
 
 const ELEMENT_SYMBOL_SET = new Set(Object.keys(PERIODIC_TABLE));
 
-// Resolve an element symbol from an explicit hint first, then mass-nearest.
 const resolveElementSymbol = (hint, mass) => {
     if (hint) {
         const normalized = hint.trim();
@@ -1291,10 +1269,6 @@ const resolveElementSymbol = (hint, mass) => {
     return null;
 };
 
-// Derive a full element table from per-type masses and/or element hints. Index 0 of
-// each input array is the 1-indexed `type` 1 (LAMMPS types are 1-based; callers pass
-// compact 0-based arrays). An explicit element hint wins; otherwise mass-nearest
-// inference is used; otherwise the type-palette fallback.
 const buildElementTable = (input) => {
     const table = [];
     for (let typeIndex = 0; typeIndex < input.typeCount; typeIndex++) {

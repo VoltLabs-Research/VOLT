@@ -16,12 +16,6 @@ interface DaemonPluginSyncResponse {
     synced: boolean;
 }
 
-/**
- * Makes a plugin binary reachable from the compute cluster that is about to run
- * it, by asking that cluster's daemon to pull the object from its owner cluster.
- * Successful syncs are remembered and concurrent requests for the same
- * binary share a single daemon round trip.
- */
 class PluginBinarySyncService {
     private readonly objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClientSingleton;
 

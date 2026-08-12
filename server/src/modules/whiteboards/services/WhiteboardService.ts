@@ -143,7 +143,6 @@ export default class WhiteboardService{
                 `${teamId}/${whiteboardId}/`
             );
         }catch{
-            // Best effort: the row is already gone, orphaned objects are reclaimed by the bucket lifecycle.
         }
 
         await eventBus.emit('whiteboard.deleted', {

@@ -31,17 +31,11 @@ const JSON_RENDERED_TARGETS = new Set<TeamClusterRemoteAccessTarget>([
     TeamClusterRemoteAccessTarget.DaemonTables
 ]);
 
-/** Daemon table rows are rendered as JSON, so a download needs that suffix. */
 const deriveFallbackFilename = (target: TeamClusterRemoteAccessTarget, path: string): string => {
     const lastSegment = path.split('/').filter(Boolean).pop() ?? 'download';
     return JSON_RENDERED_TARGETS.has(target) ? `${lastSegment}.json` : lastSegment;
 };
 
-/**
- * Password-confirmed read-only browsing of a cluster's own storage (the object store,
- * daemon tables) through the daemon. Every call re-validates the
- * short-lived remote-access session that the password confirmation issued.
- */
 class ClusterRemoteExplorerService {
     async createRemoteAccessSession(input: {
         teamId: string;
@@ -152,7 +146,6 @@ class ClusterRemoteExplorerService {
         }
     }
 
-    /** A daemon-side failure already carries its own code; anything else is a bad request. */
     async #viaDaemon<T>(
         call: () => Promise<T>,
         failureCode: ErrorCode,

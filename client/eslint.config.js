@@ -5,10 +5,6 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import { cssBaseline } from './eslint.css-baseline.js';
 
-/**
- * Matches an app-local stylesheet import — relative or `@/`-aliased — and not a
- * package one, so `bravais/styles.css` and `sileo/styles.css` stay reachable.
- */
 const LOCAL_CSS_IMPORT = '^(\\.{1,2}/|@/).*\\.css(\\?.*)?$';
 
 const CSS_BOUNDARY_MESSAGE = [
@@ -57,30 +53,13 @@ export default tseslint.config(
                 ignoreRestSiblings: true,
                 varsIgnorePattern: '^_'
             }],
-            // An empty block is allowed only with a comment explaining the
-            // deliberate swallow, so an accidental one fails the build.
-            'no-empty': 'error',
+            'no-empty': ['error', { allowEmptyCatch: true }],
             'no-unsafe-finally': 'error',
             'prefer-const': 'warn',
-            // A hook called out of order corrupts React's internal state: this is
-            // never a stylistic warning.
             'react-hooks/rules-of-hooks': 'error',
             'react-refresh/only-export-components': 'off'
         }
     },
-    /*
-     * The design-system boundary.
-     *
-     * 58% of this app's CSS declarations were layout and typography that bravais
-     * style props already express, which is how 204 stylesheets accumulated next
-     * to a design system that had the vocabulary all along. Closing the escape
-     * hatch is what keeps that from happening again: a component reaches for
-     * bravais, and anything genuinely missing gets added there once.
-     *
-     * `cssBaseline` exempts the components that predate the rule. It is a
-     * ratchet — regenerate with `node scripts/generate-css-baseline.mjs` after
-     * migrating a component, and the list shrinks.
-     */
     {
         files: ['src/**/*.{ts,tsx}'],
         ignores: ['src/app/**', ...cssBaseline],

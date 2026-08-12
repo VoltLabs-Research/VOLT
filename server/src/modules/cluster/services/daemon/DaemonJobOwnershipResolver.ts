@@ -34,11 +34,6 @@ type AnalysisOwnershipQuery = Pick<
 
 type TrajectoryOwnershipQuery = Pick<DaemonRasterJobStatusInput, 'trajectoryId' | 'teamId' | 'timestep'>;
 
-/**
- * Resolves which analysis / trajectory a daemon job report belongs to and
- * asserts that the reporting team cluster actually owns it. Also owns the
- * entity <-> domain mapping for the two aggregates it reads and writes.
- */
 class DaemonJobOwnershipResolver {
     async resolveAnalysisOwnership(input: AnalysisOwnershipQuery): Promise<ResolvedAnalysisOwnership> {
         const analysis = await this.findAnalysisById(input.analysisId);

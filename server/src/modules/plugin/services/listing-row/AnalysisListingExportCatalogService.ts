@@ -43,10 +43,6 @@ const emptyExcludedExposures = (): ExcludedExposureSet => ({
     names: new Set<string>()
 });
 
-/*
- * Query-string clients serialise the selection as a single comma-separated
- * value, while JSON callers send a real array; accept both.
- */
 const toSelectionArray = (selectionIds?: string | string[]): string[] | undefined => {
     if (selectionIds === undefined) {
         return undefined;
@@ -55,7 +51,6 @@ const toSelectionArray = (selectionIds?: string | string[]): string[] | undefine
     return Array.isArray(selectionIds) ? selectionIds : selectionIds.split(',');
 };
 
-/** An absent selection means "export everything"; an empty one means "nothing". */
 const normalizeSelectionSet = (selectionIds?: string | string[]): Set<string> | null => {
     const selectionArray = toSelectionArray(selectionIds);
     if (!selectionArray) {
@@ -69,11 +64,6 @@ const normalizeSelectionSet = (selectionIds?: string | string[]): Set<string> | 
     );
 };
 
-/**
- * Catalogues what an analysis can export and materialises the selected listings,
- * delegating the row folding to ListingTableAggregation and the nested
- * sub-listings to SubListingExportCollector.
- */
 export class AnalysisListingExportCatalogService {
     #subListingCollector: SubListingExportCollector;
 
@@ -104,7 +94,6 @@ export class AnalysisListingExportCatalogService {
 
     async buildExportPayload(input: ExportListingRowsByAnalysisIdInput): Promise<ExportListingRowsByAnalysisIdOutput> {
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(input.analysisId);
-        /* Query strings deliver booleans as "true"/"false" text; honour the text form too. */
         const includeConfig = typeof input.includeConfig === 'boolean'
             ? input.includeConfig
             : String(input.includeConfig ?? 'true') !== 'false';
@@ -136,7 +125,6 @@ export class AnalysisListingExportCatalogService {
             || Boolean(row.exposureName && excluded.names.has(row.exposureName));
     }
 
-    /** Mesh exposures carry geometry rather than tabular rows, so they never export. */
     private async resolveExcludedExposures(pluginId?: string): Promise<ExcludedExposureSet> {
         if (!pluginId) {
             return emptyExcludedExposures();

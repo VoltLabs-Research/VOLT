@@ -4,7 +4,6 @@ import type {
     ProcessExecutionLogStream
 } from '@shared/contracts/types/execution-log';
 
-/** Streams process output into an execution log sink without ever failing the caller. */
 
 export const forwardLogChunk = (
     logSink: ProcessExecutionLogSink | undefined,

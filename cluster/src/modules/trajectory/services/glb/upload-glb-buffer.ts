@@ -7,10 +7,6 @@ import { uploadBufferToObjectStore } from '@shared/infrastructure/storage/upload
 
 const GLB_TEMP_DIRECTORY = path.join(DAEMON_PATHS.analysisOutput, 'glb-export');
 
-/**
- * Uploads an in-memory GLB to the models bucket. A `.zst` object key means the buffer
- * is already zstd-compressed, so the encoding headers must advertise it.
- */
 export const uploadGlbBuffer = (
     objectStore: ClusterObjectStore,
     buffer: Buffer,

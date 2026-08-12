@@ -41,7 +41,6 @@ export const readReadinessProbe = (labels: Record<string, string>): ContainerRea
     };
 };
 
-/** Prefers a routable IPv4 address on any attached network, falling back to IPv6. */
 export const readInspectionInternalIp = (inspection: ContainerInspection): string | null => {
     const networks = Object.values(inspection.NetworkSettings.Networks);
     let ipv6Address: string | null = null;

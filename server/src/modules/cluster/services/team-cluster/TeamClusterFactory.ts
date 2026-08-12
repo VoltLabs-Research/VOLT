@@ -131,7 +131,6 @@ export const buildTeamClusterProps = (params: {
         queueConcurrency: createDefaultTeamClusterQueueConcurrency(),
         queueScopeLimits: createDefaultTeamClusterQueueScopeLimits(),
         roleConfig: createDefaultTeamClusterRoleConfig(),
-        /* Nothing is known about the host until its daemon connects and reports. */
         hostCapabilities: null,
         createdAt: now,
         updatedAt: now
@@ -141,10 +140,6 @@ export const buildTeamClusterProps = (params: {
 
 export const TEAM_CLUSTER_NAME_CONFLICT_CODE = ErrorCodes.TEAM_CLUSTER_ALREADY_EXISTS;
 
-/**
- * Persists freshly built props, translating the (team, name) unique index
- * into a conflict the caller can branch on.
- */
 export const insertTeamCluster = async (props: TeamClusterProps): Promise<TeamClusterEntity> => {
     const {
         createdAt: _createdAt,

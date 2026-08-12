@@ -42,7 +42,6 @@ export type FractalParams = {
     sceneKey?: string;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
-    /** Draws this scene above the others instead of letting depth hide it. */
     renderOnTop?: boolean;
 };
 
@@ -331,7 +330,6 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    /** Keeps this scene visible through the others; see `applyMeshDepthOverlay`. */
     updateDepthOverlay(overlay: boolean) {
         if (!this.model || overlay === this.lastDepthOverlay) return;
         this.lastDepthOverlay = overlay;

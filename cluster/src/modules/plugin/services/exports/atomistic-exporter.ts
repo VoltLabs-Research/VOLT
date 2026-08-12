@@ -184,7 +184,6 @@ const buildPointCloudDataDirect = async (
     };
 };
 
-/** Colour columns an atom may carry, in the precedence `colorForAtom` applies. */
 const COLOR_COLUMN_PRECEDENCE = ['color', 'structure_color', 'rgb', 'base_color'] as const;
 
 interface ColorColumnSource {
@@ -203,7 +202,6 @@ const resolveColorColumnSources = (
         }
 
         const quoted = quoteIdentifier(name);
-        // Lists hold the components; DuckDB indexes them from 1.
         sources.push({
             componentExpressions: type.endsWith('[]') || type.startsWith('LIST')
                 ? [`${quoted}[1]`, `${quoted}[2]`, `${quoted}[3]`]
@@ -237,13 +235,6 @@ const toNullableNumber = (value: unknown): number | null => {
     return Number.isFinite(numeric) ? numeric : null;
 };
 
-/**
- * Builds the point cloud straight from the exposure parquet.
- *
- * Reads one bucket at a time as columns, so peak memory is three position arrays
- * rather than an object per atom. Bucket order and the per-atom colour precedence
- * match the row-based path, keeping the generated GLB and octree identical.
- */
 const buildPointCloudFromParquet = async (filePath: string): Promise<PointCloudData | null> => {
     const connection = await DuckDBConnection.create();
 
@@ -290,21 +281,6 @@ const buildPointCloudFromParquet = async (filePath: string): Promise<PointCloudD
         const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
         let offset = 0;
 
-        /*
-         * One scan, not one per bucket.
-         *
-         * This used to issue a statement per bucket, each re-reading and re-sorting the
-         * whole parquet to pull out the rows of that one bucket. Buckets are clusters, so
-         * their count tracks the defect structure rather than the atom count: a coherent
-         * regions document from a 2.5M-atom frame reached 164224 of them, and the export
-         * stopped finishing at all. `atom_index` is a running counter assigned in bucket
-         * order, so ordering the whole file by it once yields the identical sequence the
-         * per-bucket loop produced.
-         *
-         * The fallback colour still comes from the bucket's position, resolved from the
-         * bucket summary already read above. Rows arrive grouped, so the lookup only
-         * happens when the bucket changes.
-         */
         const fallbackColors = new Map(
             buckets.map((bucket, bucketIndex) => [bucket.name, colorForType(bucket.name, bucketIndex)])
         );

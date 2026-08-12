@@ -7,7 +7,6 @@ import type { CommandResult } from '../src/reverse-channel/types';
 
 type Listener = (payload: unknown) => unknown | Promise<unknown>;
 
-/** Minimal stand-in for a socket.io-client Socket. */
 class FakeSocket {
     readonly listeners = new Map<string, Listener[]>();
     readonly emitted: Array<{ event: string; payload: any }> = [];

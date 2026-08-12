@@ -112,11 +112,6 @@ export const processAnalysisJob = async (
                         logger.error(`Analysis job failed for jobId=${job.jobId}: ${error ?? 'Unknown error'}`);
                     }
 
-                    /*
-                     * `started` used to return here, so a running frame never reached the
-                     * control plane and its projected job sat at `queued` until it
-                     * completed. See the same change in `processPipelineJob`.
-                     */
                     reportAnalysisStatus(status, error);
                 },
                 cleanup: async () => {

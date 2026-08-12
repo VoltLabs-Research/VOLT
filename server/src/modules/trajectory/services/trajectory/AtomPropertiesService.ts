@@ -71,10 +71,6 @@ class AtomPropertiesService {
         return pluginIndex.size > 0 ? pluginIndex : null;
     }
 
-    /**
-     * Colour coding and particle filtering both reject a property the exposure
-     * does not actually publish, so the check lives here rather than in each.
-     */
     async assertExposurePublishesProperty(
         analysisId: string,
         exposureId: string,

@@ -8,7 +8,6 @@ const TYPE_PROPERTY_NAME = 'type';
 const POSITION_PROPERTY_NAMES = ['x', 'y', 'z'];
 const FIXED_COLUMN_NAMES = new Set([ID_PROPERTY_NAME, TYPE_PROPERTY_NAME, ...POSITION_PROPERTY_NAMES]);
 
-/** Length-prefixed UTF-8 blob, matching the `str` dtype the client decodes. */
 const encodeStringColumn = (values: unknown[]): Buffer => {
     const encoded = values.map((value) => Buffer.from(value == null ? '' : String(value), 'utf8'));
     const buffer = Buffer.alloc(encoded.reduce((size, bytes) => size + 4 + bytes.byteLength, 0));
@@ -31,33 +30,10 @@ const encodeFloatColumn = (values: unknown[]): Uint8Array => {
     return new Uint8Array(buffer);
 };
 
-/**
- * A dump property whose values are not numeric has to travel as strings; the
- * numeric fast path packs into Float32 instead.
- */
 const isStringColumn = (values: unknown[]): boolean => values.some((value) => (
     typeof value === 'string' && !Number.isFinite(Number(value))
 ));
 
-/**
- * Turns a daemon atom page into the flat typed-array columns the viewer streams
- * straight into GPU buffers. Analysis per-atom values are merged in by atom id.
- */
-/**
- * Joins the columnar pages of one logical request into a single response.
- *
- * A page crosses the daemon channel as row-shaped JSON, so asking for a whole
- * multi-million-atom frame in one hop exceeds both the 30 s command timeout and V8's
- * string ceiling — the caller got a bare 500. Read in chunks and stitched here, each hop
- * stays small while the client still receives the one response it asked for.
- *
- * Concatenation is sound because of how the columns are encoded: the numeric ones are
- * fixed-width arrays, and `encodeStringColumn` emits a headerless run of
- * `[uint32 length][bytes]` entries that the decoder walks until the buffer ends. What is
- * *not* sound is joining a property that came back `f32` in one chunk and `str` in
- * another — `isStringColumn` decides per chunk — so a dtype that changes between chunks
- * is refused rather than silently producing a corrupt column.
- */
 export const concatAtomsColumnarOutputs = (
     pages: GetAtomsColumnarOutput[],
     page: number,
@@ -184,7 +160,6 @@ export const toAtomsColumnarOutput = (
 }
     ];
 
-    // String columns trail the numeric ones so the client can decode in order.
     const stringColumns: AtomColumn[] = [];
     for (const [property, values] of extraColumns) {
         if (isStringColumn(values)) {

@@ -184,11 +184,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     );
 
     const sceneKey = getSceneKey(sceneConfig);
-    /*
-     * A dislocation traces a defect and the defect mesh wraps that same defect, so the
-     * line is always inside the surface and depth alone would hide it. Lines are lifted
-     * above the rest for that reason; see `applyMeshDepthOverlay`.
-     */
     const renderOnTop = sceneConfig.source === 'plugin'
         && sceneConfig.sceneRenderMetadata?.exporter === Exporter.LINE;
 

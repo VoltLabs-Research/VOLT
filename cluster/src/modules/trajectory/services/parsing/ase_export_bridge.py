@@ -18,10 +18,8 @@ import json
 import sys
 
 
-# Formats handled natively (not via ASE write)
 NATIVE_FORMATS = {'lammps-dump'}
 
-# ASE format keyword for formats delegated to ase.io.write
 ASE_FORMAT_MAP = {
     'lammps-data': 'lammps-data',
     'extxyz': 'extxyz',
@@ -90,7 +88,6 @@ def main():
         print(f'numpy not available: {exc}', file=sys.stderr)
         sys.exit(1)
 
-    # Read Parquet
     try:
         table = pq.read_table(parquet_path)
     except Exception as exc:
@@ -99,7 +96,6 @@ def main():
 
     col_names = set(table.schema.names)
 
-    # Validate required position columns
     for role in ('x', 'y', 'z'):
         col = col_mapping.get(role)
         if not col:
@@ -121,7 +117,6 @@ def main():
     natoms = len(xs)
     positions = list(zip(xs, ys, zs))
 
-    # Build type IDs (1-indexed integer)
     type_col = getcol('type')
     symbol_col = getcol('symbol')
     if type_col is not None:
@@ -133,7 +128,6 @@ def main():
     else:
         type_ids = [1] * natoms
 
-    # Collect custom columns
     custom_cols = {}
     for role, colname in col_mapping.items():
         if role.startswith('custom:'):
@@ -143,7 +137,6 @@ def main():
                 sys.exit(1)
             custom_cols[array_name] = table.column(colname).to_pylist()
 
-    # --- LAMMPS dump: native writer (ASE can't write this format) ---
     if fmt == 'lammps-dump':
         try:
             _write_lammps_dump(output_path, positions, type_ids, col_mapping, table, custom_cols)
@@ -152,7 +145,6 @@ def main():
             sys.exit(1)
         return
 
-    # --- All other formats: delegate to ASE ---
     try:
         import ase
         import ase.io
@@ -160,25 +152,20 @@ def main():
         print(f'ase not available: {exc}', file=sys.stderr)
         sys.exit(1)
 
-    # Build ASE Atoms object
     pos_arr = np.array(positions, dtype=float)
 
-    # Build symbols for ASE (must be valid chemical element symbols)
     if symbol_col is not None:
-        # Validate against ASE's known elements
         from ase.data import chemical_symbols as _ase_syms
         valid_set = set(_ase_syms)
         raw_syms = [str(s) for s in symbol_col]
         if all(s in valid_set for s in raw_syms):
             symbols = raw_syms
         else:
-            # Fall back to type-based dummy symbols
             symbols = None
     else:
         symbols = None
 
     if symbols is None:
-        # Map type IDs to dummy element symbols using small real elements (H=1, He=2, Li=3...)
         from ase.data import chemical_symbols as _ase_syms
         unique_types = sorted(set(type_ids))
         type_to_sym = {t: _ase_syms[min(i + 1, len(_ase_syms) - 1)] for i, t in enumerate(unique_types)}
@@ -186,35 +173,28 @@ def main():
 
     atoms = ase.Atoms(symbols=symbols, positions=pos_arr)
 
-    # Unit cell — required for POSCAR/CIF. If cell_a/b/c roles are present use them;
-    # otherwise build a padded orthorhombic cell from the bounding box.
-    cell_a = getcol('cell_a')  # lattice vector component axx, axy, axz as separate cols? No — optional 3-vector
+    cell_a = getcol('cell_a')
     if fmt in ('poscar', 'cif'):
         if pos_arr.shape[0] > 0:
             mins = pos_arr.min(axis=0)
             maxs = pos_arr.max(axis=0)
-            extents = maxs - mins + 5.0  # 5 Å padding
+            extents = maxs - mins + 5.0
             atoms.set_cell(np.diag(extents))
             atoms.set_pbc(True)
-            # Shift positions to be non-negative inside the cell
             atoms.positions -= mins
 
-    # Velocities
     vx, vy, vz = getcol('vx'), getcol('vy'), getcol('vz')
     if vx is not None and vy is not None and vz is not None:
         atoms.set_velocities(np.array(list(zip(vx, vy, vz)), dtype=float))
 
-    # Forces
     fx, fy, fz = getcol('fx'), getcol('fy'), getcol('fz')
     if fx is not None and fy is not None and fz is not None:
         atoms.arrays['forces'] = np.array(list(zip(fx, fy, fz)), dtype=float)
 
-    # Charges
     q = getcol('q')
     if q is not None:
         atoms.set_initial_charges(np.array(q, dtype=float))
 
-    # Custom arrays
     for array_name, col_data in custom_cols.items():
         try:
             arr = np.array(col_data)

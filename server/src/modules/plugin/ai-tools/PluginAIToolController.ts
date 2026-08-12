@@ -105,9 +105,6 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<ListPluginsInput>()
     })
     async listPlugins(input: ListPluginsInput & AIToolScope) {
-        // typia validates but does not transform, so the documented defaults are
-        // applied here; an absent key does not override them on spread. The service
-        // falls back to limit 100, so the schema's 50 has to be spelled out.
         const { total, data } = await this.#service.listPlugins({
             page: 1,
             limit: 50,
@@ -239,8 +236,6 @@ export default class PluginAIToolController extends AIToolController {
     async executePipeline(input: ExecutePipelineInput & AIToolScope) {
         const { analysisIds } = await this.#service.executePipeline({
             ...input,
-            // typia validates but does not transform, so each stage's documented
-            // `config` default is applied here.
             stages: input.stages.map((stage) => ({
                 kind: 'plugin',
                 pluginId: stage.pluginId,

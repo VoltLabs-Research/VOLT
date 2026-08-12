@@ -28,7 +28,6 @@ interface ListingAggregation extends RowAggregation {
     listingName: string;
 }
 
-/** A listing is identified by its exposure; an unnamed exposure falls back to a stable literal. */
 const listingIdentityOf = (row: { exposureId?: string; exposureName?: string }) => {
     const listingId = row.exposureId || 'listing';
     const listingName = row.exposureName || listingId;
@@ -40,7 +39,6 @@ const listingIdentityOf = (row: { exposureId?: string; exposureName?: string }) 
     };
 };
 
-/** One option per distinct exposure the rows came from, so the client can pick what to export. */
 export const buildListingExportOptions = (rows: DaemonListingRow[]): ListingExportOption[] => {
     const listings = new Map<string, ListingExportOption>();
 
@@ -61,11 +59,6 @@ export const buildListingExportOptions = (rows: DaemonListingRow[]): ListingExpo
         .sort((left, right) => left.label.localeCompare(right.label));
 };
 
-/**
- * Folds the rows into one table per selected listing: the identity columns are
- * fixed and lead every row, and whatever else the row carried becomes a dynamic
- * column of that table.
- */
 export const aggregateListingTables = (
     analysisId: string,
     rows: DaemonListingRow[],

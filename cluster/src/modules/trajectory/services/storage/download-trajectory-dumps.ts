@@ -9,12 +9,6 @@ export interface TrajectoryDumpReference {
     objectKey: string;
 }
 
-/**
- * Materializes a trajectory's stored dump objects onto local disk, decompressing the
- * zstd-encoded ones, so the parquet ingest worker can hand plain files to the native
- * parsers. Sequential on purpose: the caller's temp directory holds every frame at
- * once, so parallel downloads would multiply peak disk usage.
- */
 export const downloadTrajectoryDumps = async (
     objectStore: ClusterObjectStore,
     ownerClusterId: string,

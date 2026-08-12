@@ -4,11 +4,6 @@ import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 
 type PayloadHandler = (payload: unknown) => unknown;
 
-/**
- * Instantiates an event group and subscribes every decorated method to the bus.
- * Handlers are labelled `<GroupClass>.<method>` so a subscription is identifiable
- * in the logs even when a dozen modules listen to the same event.
- */
 export const registerEventGroup = (GroupClass: new () => object): void => {
     const group = getEventGroup(GroupClass);
 

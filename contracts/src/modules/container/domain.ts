@@ -144,11 +144,6 @@ export interface ReadContainerFileResponse{
 
 
 
-/**
- * Progress frames the server emits on `container.deploy.progress` while a
- * container is being deployed on a cluster. Declared here because both the
- * emitter (server) and the consumer (client) need the same shape.
- */
 export interface ContainerDeployProgressEvent{
     operationId: string;
     teamClusterId: string;

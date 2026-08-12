@@ -27,7 +27,6 @@ interface RegisteredReverseChannelCommand {
     execute: ReverseChannelCommandExecutor;
 }
 
-/** A transport the daemon can both receive frames from and reply on. */
 interface ReverseChannelInboundTransport extends TunnelMessageTransport {
     onMessage(listener: (message: ReverseChannelInboundMessage) => void): void;
     onDisconnected?(listener: () => void): void;
@@ -35,11 +34,6 @@ interface ReverseChannelInboundTransport extends TunnelMessageTransport {
 
 const SESSION_IDLE_TTL_MS = 10 * 60 * 1000;
 
-/**
- * Owns the reverse channel's shared session bookkeeping — attach serialisation,
- * the idle-session TTL and command registration — and routes inbound frames to
- * the manager for their session kind.
- */
 export class ReverseChannelBridge {
     private readonly tunnelSessionManager: TunnelSessionManager;
     private readonly terminalSessionManager: TerminalSessionManager;

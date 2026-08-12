@@ -11,13 +11,11 @@ import { createHash } from 'node:crypto';
 const DASHBOARD_MAX_WIDTH = 960;
 const DASHBOARD_MAX_HEIGHT = 540;
 
-/** Raster preview as stored by the rasterizer, inlined as a data URL. */
 export const createPreviewOutput = (buffer: Buffer): TrajectoryPreviewResult => ({
     base64: `data:image/png;base64,${buffer.toString('base64')}`,
     etag: `"${createHash('sha256').update(buffer).digest('hex')}"`
 });
 
-/** Downscaled variant for dashboard cards, which never need the full frame. */
 const createDashboardPreviewOutput = async (buffer: Buffer): Promise<TrajectoryPreviewResult> => {
     const resized = await sharp(buffer)
         .resize(DASHBOARD_MAX_WIDTH, DASHBOARD_MAX_HEIGHT, {

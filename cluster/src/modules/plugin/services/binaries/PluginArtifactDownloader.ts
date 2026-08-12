@@ -9,7 +9,6 @@ import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { buildArtifactCacheKey } from '@modules/plugin/services/binaries/runtime-cache-keys';
 
-/** Downloads artifacts into the local bin cache, verifying the sha256 published with them. */
 
 const HASH_MARKER_FILENAME_SUFFIX = '.sha256';
 

@@ -9,10 +9,6 @@ import type {
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import logger from '@shared/infrastructure/logger';
 
-/**
- * Fan-out for stream frames the daemon initiates on its own (log chunks, artifact
- * batches) rather than as the body of a command the control plane asked for.
- */
 export default class TeamClusterReverseInboundStreams {
     #consumersByStreamId = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
 

@@ -60,11 +60,6 @@ const groupJobsByAnalysisId = (jobs: QueuedJobNotification[]): Map<string, Queue
     return jobsByAnalysisId;
 };
 
-/**
- * Sends a planned pipeline to the compute cluster's daemon and opens the
- * completion session for every stage that will actually run, so job progress can
- * be projected back to the client.
- */
 class PluginExecutionRouter {
     private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
 

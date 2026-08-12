@@ -7,13 +7,6 @@ import type {
     UpdatePasswordInput
 } from '@volt/contracts/modules/auth/http';
 
-/**
- * `@Body()` validators for the credential endpoints. Every other route validates
- * its body against the contracts type with typia and answers 400; these are
- * reachable by anyone on the internet and fail with the auth-specific 401 codes
- * below. A posted `{"password": {"$ne": null}}` has to be rejected here, before
- * it reaches bcrypt or the query builder.
- */
 
 const PASSWORD_MIN_LENGTH = 8;
 
@@ -46,7 +39,6 @@ const requirePassword = (raw: unknown): string => {
     return password;
 };
 
-/** Answers with the 401 sign-in already uses, so a malformed body reveals nothing extra. */
 export const signInBody = (raw: unknown): SignInInput => {
     const invalid = ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
 
@@ -71,7 +63,5 @@ export const signUpBody = (raw: unknown): SignUpInput => {
 
 export const updatePasswordBody = (raw: unknown): UpdatePasswordInput => ({
     password: requirePassword(raw),
-    // A non-string is treated as absent, so the service's "current password is
-    // required" rule answers instead of bcrypt throwing on an object.
     passwordCurrent: readText(raw, 'passwordCurrent')
 });

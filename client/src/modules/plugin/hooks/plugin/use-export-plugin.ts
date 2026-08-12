@@ -20,7 +20,6 @@ const useExportPlugin = () => {
                 }
             );
         } catch {
-            // showPromise already surfaced the failure as a toast.
         }
     }, [exportPluginMutationResult]);
 

@@ -10,10 +10,6 @@ export interface ObjectByteRange {
 const invalidRange = (message: string): ApplicationError =>
     new ApplicationError(ErrorCodes.OBJECT_GATEWAY_INVALID_RANGE, message, 416);
 
-/**
- * Resolves an HTTP `Range` header against a known object size. The header is raw
- * wire text, so it is parsed rather than trusted.
- */
 export const parseRangeHeader = (value: string | undefined, objectSize: number): ObjectByteRange | null => {
     if (!value) {
         return null;

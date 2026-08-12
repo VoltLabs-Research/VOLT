@@ -52,12 +52,6 @@ export class RuntimeRoleCoordinator {
     private roleOperationQueue: Promise<unknown> = Promise.resolve();
 
     async initialize(runtimeConfig: TeamClusterDaemonRuntimeConfig): Promise<TeamClusterDaemonRuntimeConfig> {
-        /*
-         * A daemon with no workers still accepts jobs and drains none of them,
-         * which is indistinguishable from a slow cluster until somebody reads the
-         * queue table by hand. Refusing to boot is the cheap way to keep that
-         * failure from being silent.
-         */
         if (DAEMON_WORKERS.length === 0) {
             throw new Error('No daemon workers are declared: check DAEMON_WORKERS in @core/bootstrap/workers');
         }

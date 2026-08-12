@@ -15,7 +15,6 @@ const notify = <TValue>(listeners: Set<(value: TValue) => void>, value: TValue):
         try {
             listener(value);
         } catch {
-            // Documented above: one bad listener must not silence the rest.
         }
     });
 };

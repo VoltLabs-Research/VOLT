@@ -2,7 +2,6 @@ import { logger } from '@shared/infrastructure/logger';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { Response } from 'express';
 
-/** Errors raised by express middleware (body-parser) carry their own status. */
 interface StatusCodeError extends Error {
     code?: string;
     statusCode: number;

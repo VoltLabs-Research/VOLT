@@ -23,7 +23,6 @@ export default class Workflow {
         public props: WorkflowProps
     ) {}
 
-    /** A workflow has at most one top-level entrypoint node; this is its runtime configuration. */
     get entrypoint(): EntrypointNodeData | undefined {
         return this.props.nodes
             .find((node) => node.type === WorkflowNodeType.Entrypoint)

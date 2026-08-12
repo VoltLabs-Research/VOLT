@@ -7,45 +7,11 @@ import type { JsonObject } from '@shared/contracts/types/json';
 import type { MeshParquetSource, SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
 import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 
-/**
- * Reads a `payload`-document exposure without ever holding an unbounded value in JS.
- *
- * Plugins may report an exposure as one JSON blob in a single `payload` column. Small
- * ones are parsed directly, but nothing bounds the big ones: a per-atom document for a
- * multi-million-atom frame, or a defect mesh over the same frame, runs past V8's
- * maximum string length (~512 MB) and the read fails outright with "Cannot create a
- * string longer than 0x1fffffe8 characters" — the value cannot be held, let alone
- * parsed. Splitting the document is not enough either, because a single section (the
- * mesh under `export`, the vertex list under `sub_listings`) is itself past the
- * ceiling.
- *
- * So every section is pulled out with DuckDB's JSON functions and only ever crosses
- * into JS in a bounded form:
- *
- *  - `main_listing` is a handful of counters, extracted whole, with a scalar-only
- *    fallback if a plugin ever puts something enormous there.
- *  - each `sub_listings` entry becomes a parquet of one JSON row per entry, streamed
- *    back to the caller in pages.
- *  - the per-atom array is flattened straight to a parquet that the columnar property
- *    path consumes.
- *  - the mesh and atomistic sections of `export` are flattened to parquet too, and the
- *    exporters read columns out of those files.
- *
- * The only sections still inlined are the ones the contract keeps aggregated (chart
- * series, exporter options), and those are size-checked before they are read.
- */
 
-/** Documents below this stay on the simple path; V8's own ceiling is ~512 MB. */
 const INLINE_PAYLOAD_LIMIT_BYTES = 64 * 1024 * 1024;
 
-/**
- * Ceiling for any single value still read as a string. Far below V8's limit so the
- * decoded string, the parsed objects and whatever the caller builds from them all fit
- * at once.
- */
 const INLINE_VALUE_LIMIT_BYTES = 32 * 1024 * 1024;
 
-/** Rows per sub-listing page. Each row is one small JSON object. */
 const SUB_LISTING_PAGE_ROWS = 20_000;
 
 const PER_ATOM_JSON_PATH = '$."per-atom-properties"';
@@ -53,7 +19,6 @@ const PER_ATOM_JSON_PATH = '$."per-atom-properties"';
 const MESH_EXPORTER = 'MeshExporter';
 const ATOMISTIC_EXPORTER = 'AtomisticExporter';
 
-/** Colour keys an atom may carry, matching the exporter's own precedence. */
 const ATOM_COLOR_KEYS = ['color', 'structure_color', 'rgb', 'base_color'] as const;
 
 interface LargePayloadDocument {
@@ -65,16 +30,6 @@ interface LargePayloadDocument {
 }
 
 export interface PayloadDocumentReadOptions {
-    /**
-     * Leaves `sub_listings` unread.
-     *
-     * A mesh describes its geometry twice: once under `export`, which the exporter turns
-     * into the GLB the viewer loads, and once under `sub_listings` as one row per vertex
-     * and one per facet. Reading the second copy is not cheap — it is the `unnestedArray`
-     * shape, and it ends as a row per entry in Postgres, which measured ~109 s for the
-     * 1.18M entries of a 2.5M-atom defect mesh. Nothing consumes those rows: the counts
-     * the listing shows come from `main_listing`, and the geometry comes from the GLB.
-     */
     skipSubListings?: boolean;
 }
 
@@ -87,12 +42,10 @@ const readSingleValue = async (
     return reader.getRowObjectsJS()[0]?.[column];
 };
 
-/** Byte size of the document, measured in the engine so nothing crosses into JS. */
 export const measurePayloadBytes = async (
     connection: DuckDBConnection,
     filePath: string
 ): Promise<number> => {
-    // `strlen` counts bytes for VARCHAR; `octet_length` only accepts BLOB here.
     const value = await readSingleValue(
         connection,
         `SELECT MAX(strlen(payload)) AS bytes FROM read_parquet(${sqlString(filePath)})`,
@@ -103,18 +56,6 @@ export const measurePayloadBytes = async (
 
 export const isPayloadTooLargeForJs = (bytes: number): boolean => bytes > INLINE_PAYLOAD_LIMIT_BYTES;
 
-/**
- * The document, decompressed once per read instead of once per query.
- *
- * Taking a document apart needs a dozen statements — measure, list the keys, ask each
- * section's type, count the flattened rows — and each one used to carry its own
- * `read_parquet(...)`, so the whole payload was decompressed again every time. On the
- * ~100 MB document a 2.5M-atom defect mesh produces that showed up as the 4 s and 11 s
- * gaps between the exposure starting and its flatten actually running.
- *
- * The table is per-connection, and the caller owns the connection, so it is created and
- * dropped inside a single read.
- */
 const PAYLOAD_TABLE = '__volt_payload_document';
 
 const materializePayloadDocument = async (
@@ -132,7 +73,6 @@ const escapeJsonPathSegment = (key: string): string => key.replace(/"/g, '\\"');
 const jsonPath = (...segments: string[]): string =>
     `$${segments.map((segment) => `."${escapeJsonPathSegment(segment)}"`).join('')}`;
 
-/** Byte size of one section, again measured inside the engine. */
 const measureJsonPathBytes = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -168,13 +108,6 @@ const extractJson = async (
     return parseExtracted(raw);
 };
 
-/**
- * Extracts a section only when it is small enough to survive the trip.
- *
- * Returns `null` and says so in the log when it is not, which keeps one oversized
- * section from taking the whole exposure down: everything with a columnar path is
- * handled elsewhere, and what is left is aggregated by contract.
- */
 const extractJsonIfSmall = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -203,8 +136,6 @@ const listJsonKeys = async (
     valuePath: string | null
 ): Promise<string[]> => {
     const target = valuePath === null ? 'payload' : `json_extract(payload, ${sqlString(valuePath)})`;
-    // `json_keys` yields a DuckDB LIST, which arrives as a JS array; casting it to
-    // VARCHAR would produce `[a, b]`, which is not JSON.
     const raw = await readSingleValue(
         connection,
         `SELECT json_keys(${target}) AS keys FROM ${PAYLOAD_TABLE}`,
@@ -239,34 +170,12 @@ const jsonArrayLength = async (
     return Number(raw ?? 0);
 };
 
-/**
- * Unnests a JSON array of the document into rows, ordinal first.
- *
- * `ROW_NUMBER() OVER ()` numbers the elements in the order `UNNEST` produced them,
- * which is the order they appear in the document.
- */
 const unnestedArray = (filePath: string, valuePath: string): string =>
     'WITH __items AS ('
     + `SELECT UNNEST(CAST(json_extract(payload, ${sqlString(valuePath)}) AS JSON[])) AS item `
     + `FROM ${PAYLOAD_TABLE}), `
     + '__ordered AS (SELECT ROW_NUMBER() OVER () - 1 AS ordinal, item FROM __items)';
 
-/**
- * Same rows as `unnestedArray`, but the element type is declared up front so the engine
- * parses the array once instead of per field, and the ordinal comes from the list
- * subscript instead of a window function.
- *
- * Measured on a 376 557-vertex / 711 776-facet mesh, the shapes are not close: the
- * `unnestedArray` projection takes 25.3 s for the vertices and 51.0 s for the facets,
- * this one 0.8 s and 0.9 s, with identical row counts and column checksums. Keeping
- * the single `from_json` parse but restoring `ROW_NUMBER() OVER ()` costs 26.5 s again,
- * so the window function — not the JSON work — is what the ordinal has to avoid here.
- *
- * The trade is strictness: a field that does not fit `itemSchema` lands as NULL, where
- * the `TRY_CAST(json_extract_string(...))` pair also accepted a quoted number. Every
- * element of a mesh section is emitted numeric by the exporter, so the two agree on
- * real payloads.
- */
 const typedArrayRows = (filePath: string, valuePath: string, itemSchema: string): string =>
     'WITH __parsed AS ('
     + `SELECT from_json(json_extract(payload, ${sqlString(valuePath)}), ${sqlString(`[${itemSchema}]`)}) AS items `
@@ -285,13 +194,6 @@ const countParquetRows = async (
     'total'
 ) ?? 0);
 
-/**
- * Flattens the document's per-atom array or column map into a parquet file.
- *
- * Both shapes the contract allows are handled: an array of one object per atom, and
- * an object of one array per property. Multiple `unnest` calls in the same projection
- * are aligned positionally by DuckDB, which is what makes the column-map form work.
- */
 const flattenPerAtomProperties = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -347,14 +249,6 @@ const flattenPerAtomProperties = async (
     } : null;
 };
 
-/**
- * Splits `export.MeshExporter` into a vertex table and a facet table.
- *
- * Only the ids are kept for facets; resolving them against the vertex table is the
- * exporter's job and stays inside DuckDB there, so no per-vertex map is ever built in
- * JS. A vertex whose own `index` is missing gets a null id and therefore matches no
- * facet, exactly as a `undefined` map key did before.
- */
 const flattenMesh = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -411,41 +305,15 @@ const flattenMesh = async (
     } : null;
 };
 
-/** One atom, declared up front so the section is parsed once instead of per field. */
 const ATOMISTIC_ITEM_SCHEMA =
     `[{"pos":"DOUBLE[]",${ATOM_COLOR_KEYS.map((key) => `"${key}":"DOUBLE[]"`).join(',')}}]`;
 
-/**
- * Flattens `export.AtomisticExporter` — an object of one atom array per bucket — into
- * the same columnar shape the exposure parquet has, so the atomistic exporter's
- * existing parquet path reads it unchanged.
- *
- * The whole section is read in one statement, and that is the difference between minutes
- * and hours. Walking the buckets in JS meant two queries per bucket, and every one of
- * them re-read the parquet and re-parsed the entire `payload` string to reach a single
- * key: measured on a coherent-regions document of 5166 buckets over 303 MB of JSON,
- * 2714 ms per bucket — for buckets holding one or two atoms — which is 234 minutes of
- * work whose cost had nothing to do with how many atoms were in it. The same document
- * now flattens in 4.8 s. Casting the section to `MAP(VARCHAR, JSON)` and unnesting
- * `map_entries` is what keeps it to a single parse.
- *
- * `atom_index` is still a single running counter over the buckets in document order,
- * which is what makes the exporter order buckets, and colour them by position, the way
- * the inline path did. It comes from a running sum of bucket lengths — a window over one
- * row per bucket — rather than `ROW_NUMBER()` over every atom, which on millions of rows
- * costs more than all the parsing. A bucket that is not an array parses to NULL, adds
- * zero to the running sum and contributes no rows, exactly as the skipped ones did.
- *
- * All four colour columns are always emitted: an absent key is a null list, which the
- * exporter already skips on its way down the precedence chain.
- */
 const flattenAtomisticExport = async (
     connection: DuckDBConnection,
     filePath: string,
     sectionPath: string,
     outputPath: string
 ): Promise<string | null> => {
-    /* The cast below needs an object; anything else is not an atomistic section. */
     if (await jsonTypeAt(connection, filePath, sectionPath) !== 'OBJECT') {
         return null;
     }
@@ -471,7 +339,6 @@ const flattenAtomisticExport = async (
         + 'SELECT bucket, atom_base, UNNEST(items) AS item, '
         + 'generate_subscripts(items, 1) - 1 AS row_ordinal '
         + 'FROM __based) '
-        /* BIGINT, as `ROW_NUMBER() - 1` used to be: the running sum widens to DOUBLE. */
         + 'SELECT bucket, CAST(atom_base + row_ordinal AS BIGINT) AS atom_index, '
         + 'item.pos[1] AS x, item.pos[2] AS y, item.pos[3] AS z, '
         + `${ATOM_COLOR_KEYS.map((key) => `item.${quoteIdentifier(key)} AS ${quoteIdentifier(key)}`).join(', ')} `
@@ -498,12 +365,6 @@ const flattenAtomisticExport = async (
     return rowCount > 0 ? outputPath : null;
 };
 
-/**
- * Reads one exporter's section, columnar where the entity count is unbounded.
- *
- * An exporter with no columnar path keeps the inline read, guarded by size — chart
- * series and exporter options are aggregates, not per-entity data.
- */
 const readExporterSection = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -529,12 +390,6 @@ const readExporterSection = async (
     return extractJsonIfSmall(connection, filePath, sectionPath, `export.${exporter}`);
 };
 
-/**
- * Rebuilds one `export`-like key of the document.
- *
- * The contract allows both an object of exporters and an array of such objects, and
- * `resolveExporterEntries` on the consuming side reads either.
- */
 const readExportKey = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -590,13 +445,6 @@ const readExportKey = async (
     return Object.keys(section).length > 0 ? section : null;
 };
 
-/**
- * Pages a flattened sub-listing back out of its parquet.
- *
- * The pages are cut on the ordinal rather than with `OFFSET` so each statement prunes
- * to the row groups it needs instead of rescanning the file, and the rows keep the
- * document's order — which is what makes the positional row ids stable across reruns.
- */
 const streamSubListingRows = (filePath: string, rowCount: number) =>
     async function* readBatches(): AsyncIterable<JsonObject[]> {
         const connection = await DuckDBConnection.create();
@@ -623,13 +471,6 @@ const streamSubListingRows = (filePath: string, rowCount: number) =>
         }
     };
 
-/**
- * Flattens one sub-listing to a parquet of one JSON row per entry.
- *
- * Each row stays a JSON string instead of being projected into columns: the entries
- * are small individually, their keys are the plugin's own, and this keeps the rows
- * byte-identical to what the inline path produced.
- */
 const flattenSubListing = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -640,7 +481,6 @@ const flattenSubListing = async (
     const kind = await jsonTypeAt(connection, filePath, entryPath);
 
     if (kind === 'OBJECT') {
-        /* A single object counts as a one-row sub-listing, as on the inline path. */
         const value = await extractJsonIfSmall(connection, filePath, entryPath, `sub_listings.${name}`);
         if (value === null || typeof value !== 'object' || Array.isArray(value)) {
             return null;
@@ -677,12 +517,6 @@ const flattenSubListing = async (
     };
 };
 
-/**
- * Falls back to reading `main_listing` one scalar at a time.
- *
- * Only reached if a plugin puts something enormous in there; the listing consumer
- * drops non-scalar entries anyway, so nothing it uses is lost.
- */
 const readMainListingScalars = async (
     connection: DuckDBConnection,
     filePath: string

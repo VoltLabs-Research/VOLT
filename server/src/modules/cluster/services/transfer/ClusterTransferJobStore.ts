@@ -25,9 +25,6 @@ import {
     OPEN_TRANSFER_JOB_STATES
 } from '@modules/cluster/services/transfer/cluster-transfer-constants';
 
-/**
- * Persistence and distributed claim leasing for cluster transfer jobs.
- */
 export default class ClusterTransferJobStore{
     async findById(jobId: string): Promise<ClusterTransferJob | null> {
         const entity = await ClusterTransferJobEntity.findOneBy({ id: jobId });

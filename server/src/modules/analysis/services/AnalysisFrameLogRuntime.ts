@@ -20,10 +20,6 @@ const frameKeyOf = (analysisId: string, timestep: number): string => {
     return `${analysisId}:${timestep}`;
 };
 
-/**
- * Holds the live frame log of every running analysis frame: it serializes concurrent mutations
- * per frame, keeps the record hot in memory and debounces writes to the object store.
- */
 class AnalysisFrameLogRuntime {
     private readonly mutationChains = new Map<string, Promise<void>>();
     private readonly states = new Map<string, FrameLogRuntimeState>();

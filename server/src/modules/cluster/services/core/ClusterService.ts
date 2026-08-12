@@ -57,7 +57,6 @@ const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobStateColumn[] = [
     ClusterTransferJobStateColumn.Cleaning
 ];
 
-/** Enrollment may only be re-issued while nothing is installed and talking to us yet. */
 const TOKEN_REGENERATION_STATUSES = new Set<TeamClusterStatus>([
     TeamClusterStatus.WaitingForConnection,
     TeamClusterStatus.HealthcheckReceived,
@@ -67,12 +66,6 @@ const TOKEN_REGENERATION_STATUSES = new Set<TeamClusterStatus>([
 
 const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, '\\$&');
 
-/**
- * Team-scoped lifecycle of a cluster registration: creating it, listing it with
- * its in-flight transfers, revealing or rotating its credentials, and removing it.
- * The runtime, remote-explorer and daemon-facing concerns live in their own
- * services next to this one.
- */
 export default class ClusterService {
     readonly #daemonCredentialGuard = new DaemonCredentialGuard();
 
@@ -356,7 +349,6 @@ export default class ClusterService {
         };
     }
 
-    /** A connected cluster must tear its own stack down before we forget about it. */
     async #requestRemoteUninstall(input: {
         teamId: string;
         teamClusterId: string;
@@ -395,7 +387,6 @@ export default class ClusterService {
         return updatedTeamCluster;
     }
 
-    /** Anything that was ever installed, or is not provably connected, may still be running. */
     #shouldRequireManualUninstall(entity: TeamClusterEntity): boolean {
         if (entity.status === TeamClusterStatus.WaitingForConnection) {
             return entity.installedVersion !== null || entity.services.daemon.port !== null;

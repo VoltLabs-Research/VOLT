@@ -147,11 +147,6 @@ export class TrajectoryIngestCommand {
         };
     }
 
-    /**
-     * Verifies the client actually delivered every staged byte and concatenates the
-     * parts. An incomplete or absent upload is the caller's problem, not ours, so it
-     * has to surface as 422 rather than a daemon-side internal error.
-     */
     private async materializeStagedObject(staged: TrajectoryIngestStagedObject): Promise<void> {
         const parts = (staged.parts ?? []).slice().sort((left, right) => left.partNumber - right.partNumber);
 

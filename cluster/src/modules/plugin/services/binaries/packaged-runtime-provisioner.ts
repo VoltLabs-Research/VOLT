@@ -5,7 +5,6 @@ import { ensureExtractedProject } from '@modules/plugin/services/binaries/zip-pr
 import { resolvePackagedEntrypoint } from '@modules/plugin/services/binaries/extracted-entrypoint-resolver';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
 
-/** Provisions a packaged executable plugin: extracted project plus its bundled library path. */
 
 const PACKAGED_PROJECT_DIRECTORY = 'packaged-project';
 const PACKAGED_ZIP_EXTRACTED_MARKER = '.packaged-zip-extracted';
@@ -13,7 +12,6 @@ const PACKAGED_ZIP_EXTRACTED_MARKER = '.packaged-zip-extracted';
 export const providePackagedRuntime = async (input: {
     runtimeKey: string;
     artifactPath: string;
-    /** Identity of the artifact revision the extracted project must match. */
     artifactRevision: string;
     entrypointScript: string;
 }): Promise<Omit<PluginExecutionRuntime, 'artifactPath' | 'binaryHash'>> => {

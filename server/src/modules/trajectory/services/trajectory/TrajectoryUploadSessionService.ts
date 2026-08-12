@@ -41,10 +41,6 @@ import type {
 import path from 'node:path';
 
 class TrajectoryUploadSessionService {
-    /**
-     * Creates the trajectory row up front so the client can upload against
-     * signed per-part URLs, then waits for an explicit commit.
-     */
     async create(input: CreateTrajectoryUploadSessionInput): Promise<CreateTrajectoryUploadSessionOutput> {
         const { teamId, userId, files } = input;
         const name = resolveTrajectoryName(input.name, files);
@@ -56,11 +52,6 @@ class TrajectoryUploadSessionService {
             );
         }
 
-        /*
-         * The declared size drives the part plan, so an out-of-range value would have us
-         * mint one signed URL per 64 MiB of a size the caller invented. Bound it before
-         * anything is created.
-         */
         const invalidSize = files.find((file) => file.size <= 0 || file.size > MAX_UPLOAD_FILE_SIZE);
         if (invalidSize) {
             throw ApplicationError.badRequest(
@@ -142,10 +133,6 @@ class TrajectoryUploadSessionService {
         };
     }
 
-    /**
-     * Hands the staged objects to the owning daemon for ingestion. A failed
-     * ingest discards the placeholder trajectory so no empty row survives.
-     */
     async commit(input: TrajectoryUploadSessionRequest): Promise<{ trajectoryId: string }> {
         const session = await this.#requireOwnedSession(input);
         const trajectoryId = session.resourceId;
@@ -234,11 +221,6 @@ class TrajectoryUploadSessionService {
         await Trajectory.update({ id: session.resourceId }, { status: TrajectoryStatus.Failed }).catch(() => {});
     }
 
-    /**
-     * Loads the addressed session and authorizes the caller. The session id is a
-     * bearer-ish handle, so the team/user match is authorization rather than input
-     * validation, and it gates every transition including a repeated commit.
-     */
     async #requireOwnedSession(input: TrajectoryUploadSessionRequest): Promise<TrajectoryUploadSession> {
         const session = await TrajectoryUploadSession.findOneBy({ id: input.uploadSessionId });
         if (!session) {

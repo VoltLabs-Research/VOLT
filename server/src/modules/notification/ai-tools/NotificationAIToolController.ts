@@ -15,8 +15,6 @@ export default class NotificationAIToolController extends AIToolController {
         validate: typia.createValidate<GetNotificationsInput>()
     })
     async getNotifications(input: GetNotificationsInput & AIToolScope) {
-        // typia validates but does not transform, so the documented defaults are
-        // applied here; an absent key does not override them on spread.
         const { data, total, page, limit, totalPages } = await this.#service.getMyNotifications({
             page: 1,
             limit: 20,

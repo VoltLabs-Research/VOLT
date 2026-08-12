@@ -27,11 +27,6 @@ export interface ClusterRebalancePlan {
     reason: ClusterTransferJobReason;
 }
 
-/**
- * Automatic storage rebalancing policy: decides which placements have to leave
- * a cluster that crossed its soft storage limit, and which cluster receives
- * them. It only plans — creating the transfer jobs is the coordinator's job.
- */
 export default class ClusterRebalancePlanner{
     #storagePlacementService = storagePlacementService;
     #systemMetricsRepository = systemMetricsRepository;
@@ -83,10 +78,6 @@ export default class ClusterRebalancePlanner{
         return plans;
     }
 
-    /**
-     * Picks the placement whose move frees the most space, preferring the least
-     * recently accessed one when two placements weigh the same.
-     */
     async #selectVictimPlacement(sourceCluster: TeamCluster): Promise<StoragePlacement | null> {
         const placements = await this.#storagePlacementService.resolveTransferPlacementsForCluster(
             sourceCluster.props.team,

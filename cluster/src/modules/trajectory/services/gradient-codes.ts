@@ -1,7 +1,3 @@
-/**
- * Colour-ramp identifiers understood by the native spatial assembler. The numeric
- * values are part of the native ABI and must not be reordered.
- */
 enum GradientCode {
     Viridis = 0,
     Plasma = 1,

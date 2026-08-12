@@ -88,14 +88,14 @@ const ClustersDrawer = () => {
 
     return (
         <div className='flex h-full min-h-0 flex-col'>
-            <header className='flex items-start justify-between gap-3 px-6 pt-5 pb-4'>
-                <div className='flex min-w-0 flex-col gap-1'>
-                    <h2 className='text-base font-semibold text-foreground'>Clusters</h2>
-                    <p className='text-sm text-muted'>{description}</p>
+            <header className='flex items-start justify-between gap-2 px-4 pt-4 pb-3'>
+                <div className='flex min-w-0 flex-col gap-0.5'>
+                    <h2 className='text-sm font-semibold text-foreground'>Clusters</h2>
+                    <p className='truncate text-xs text-muted'>{description}</p>
                 </div>
                 <CloseButton onPress={close} aria-label='Close clusters panel' />
             </header>
-            <div className='flex h-full min-h-0 flex-col'>
+            <div className='flex h-full min-h-0 flex-col px-3 pb-3'>
                 {clustersContent}
             </div>
         </div>

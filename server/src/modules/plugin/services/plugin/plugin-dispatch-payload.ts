@@ -29,11 +29,6 @@ export interface RoutePluginExecutionInput {
     timestep?: number;
 }
 
-/**
- * The daemon only needs the execution-relevant slice of an analysis, so the
- * heavier projections (stages, child analyses, artifact bookkeeping) are left out
- * of the dispatch payload on purpose.
- */
 type DaemonAnalysisPayload = { _id: string } & Pick<
     AnalysisProps,
     'plugin' | 'pluginDisplayName' | 'computeClusterId' | 'storageClusterId' | 'config'
@@ -41,10 +36,6 @@ type DaemonAnalysisPayload = { _id: string } & Pick<
     | 'team' | 'status' | 'createdAt' | 'updatedAt'
 >;
 
-/**
- * Both payload roots widen to `Record<string, unknown>` because that is the shape
- * the daemon command channel accepts.
- */
 interface PluginDispatchPayload extends Record<string, unknown> {
     analysis: DaemonAnalysisPayload;
     analysisId: string;
@@ -122,12 +113,6 @@ const pluginReferenceExecutionKey = (request: PluginReferenceExecutionRequest): 
     });
 };
 
-/**
- * Compresses the oversized sections of one plugin execution into the daemon wire
- * payload, and returns alongside it the binary syncs that must finish before the
- * payload may be dispatched — the compute cluster cannot run a plugin whose
- * binary it has not pulled from the owning cluster yet.
- */
 export const buildPluginDispatch = async (
     input: RoutePluginExecutionInput
 ): Promise<{ dispatchPayload: PluginDispatchPayload; syncTasks: Promise<void>[] }> => {

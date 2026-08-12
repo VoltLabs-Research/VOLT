@@ -11,12 +11,6 @@ const DTYPE_ID: Record<AtomColumnDType, number> = {
     i32: 4
 };
 
-/**
- * Serialises a columnar atoms page into the binary envelope the viewer decodes:
- * a 24-byte paging header, one descriptor per column (name length, utf8 name,
- * dtype id, byte length), a 4-byte trailing pad field that 4-byte aligns the
- * envelope, then every column buffer back to back.
- */
 export const encodeAtomsBinary = (result: GetAtomsColumnarOutput): Buffer => {
     const columns = result.columns;
     const nameBuffers = columns.map((column) => Buffer.from(column.name, 'utf8'));
@@ -25,8 +19,6 @@ export const encodeAtomsBinary = (result: GetAtomsColumnarOutput): Buffer => {
 
     for (let i = 0; i < columns.length; i += 1) {
         const nameBuffer = nameBuffers[i];
-        // The name length is a single wire byte, and atom property names come
-        // from user-supplied dump headers.
         if (nameBuffer.byteLength > 0xFF) {
             throw new Error(`Atom property name exceeds 255 bytes: ${columns[i].name}`);
         }

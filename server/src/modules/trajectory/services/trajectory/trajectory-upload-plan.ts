@@ -48,10 +48,6 @@ export const resolveTrajectoryName = (
     return firstFileName ? path.basename(firstFileName) : null;
 };
 
-/**
- * Files below the chunk threshold are signed straight to their final key; larger
- * ones are split into staged parts the daemon concatenates on commit.
- */
 const buildUploadParts = (
     trajectoryId: string,
     fileIndex: number,
@@ -101,7 +97,6 @@ export const planUploadFiles = (
     };
 });
 
-/** Mints one write-scoped signed URL per planned part for the client to PUT to. */
 export const signUploadFiles = (input: SignUploadFilesInput): TrajectoryUploadSessionFileView[] => (
     input.files.map((file) => ({
         index: file.index,

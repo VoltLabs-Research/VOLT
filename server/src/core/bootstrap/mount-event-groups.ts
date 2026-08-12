@@ -19,10 +19,6 @@ import WhiteboardEvents from '@modules/whiteboards/events/WhiteboardEvents';
 
 type EventGroupClass = new () => object;
 
-/**
- * Every module's event surface, registered explicitly. Subscriptions are not a
- * side effect of importing a handler file, so the wiring is greppable here.
- */
 const EVENT_GROUPS: Readonly<Record<string, readonly EventGroupClass[]>> = {
     ai: [AiEvents],
     analysis: [AnalysisEvents],

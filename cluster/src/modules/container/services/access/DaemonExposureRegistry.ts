@@ -79,13 +79,6 @@ export class DaemonExposureRegistry {
             logger.warn(`Daemon exposure startup sync failed: ${errorMessage(error)}`);
         });
 
-        /*
-         * Without this the server spends up to one sync interval after its own restart
-         * with an empty exposure registry, which silently costs every object read the
-         * fast path it would otherwise have taken. It has to hang off the event channel
-         * rather than the control plane: the control plane connects first, so a snapshot
-         * emitted on its connect is dropped for want of a transport.
-         */
         this.stopListeningForReconnect = this.eventTransport.onReady(() => {
             this.sync().catch((error) => {
                 logger.warn(`Daemon exposure sync on event channel reconnect failed: ${errorMessage(error)}`);
@@ -313,22 +306,10 @@ export class DaemonExposureRegistry {
             return;
         }
 
-        /*
-         * Bail before recording anything. The event channel drops what it cannot send,
-         * so marking this generation as published while the transport is down would
-         * make the checks below suppress every later retry and leave the server's
-         * registry empty until the exposure set happens to change.
-         */
         if (!this.eventTransport.isReady()) {
             return;
         }
 
-        /*
-         * The server keeps the exposure registry in memory, so it loses everything when
-         * it restarts. Re-sending has to be keyed on the connection generation: a
-         * restart can complete between two syncs, and then no poll ever observes the
-         * disconnect and the snapshot is never resent.
-         */
         const generation = this.voltCloudConnection.getConnectionGeneration();
         const reconnected = generation !== this.lastPublishedGeneration;
 

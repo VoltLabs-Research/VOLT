@@ -7,7 +7,6 @@ import type { AnalysisJobExecutionData } from '@shared/contracts/types/http-anal
 import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 
-/** The mutable slice of the analysis environment this module reads and appends to. */
 interface DumpLocalizationState {
     outputs: Map<string, WorkflowNodeOutput>;
     dumpTargets: WorkflowDumpTarget[];
@@ -17,7 +16,6 @@ interface DumpLocalizationState {
 export const dumpObjectKey = (trajectoryId: string, timestep: number): string =>
     toTrajectoryFrameDumpObjectKey(trajectoryId, timestep);
 
-/** Pulls one compressed frame onto local disk and registers it for cleanup. */
 export const downloadAnalysisDump = async (
     objectStore: ClusterObjectStore,
     state: DumpLocalizationState,
@@ -53,7 +51,6 @@ const parseFrameArgumentTimestep = (value: WorkflowNodeOutput[string]): number |
     return Number.isFinite(parsed) ? parsed : null;
 };
 
-/** Re-points the `--<argument> <value>` pairs of an already-rendered CLI token at the new paths. */
 const rewriteCliFrameArguments = (
     output: WorkflowNodeOutput,
     replacements: Map<string, string>
@@ -88,11 +85,6 @@ const rewriteCliFrameArguments = (
     output.as_str = encodeCliArgumentsToken(cliArgs);
 };
 
-/**
- * Turns every `frame` argument into the local path of the dump it names, in both the
- * arguments node output and the CLI token derived from it. Frames outside the window
- * this job already localized are downloaded on demand; `list` arguments recurse.
- */
 export const materializeFrameArgumentDumps = async (
     objectStore: ClusterObjectStore,
     state: DumpLocalizationState,

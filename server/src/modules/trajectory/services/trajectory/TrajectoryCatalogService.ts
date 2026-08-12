@@ -35,10 +35,6 @@ import type {
     UpdateTrajectoryByIdInput
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
-/**
- * Every catalog kind shares one folder tree, so these are the shared shapes
- * derived from the owning service rather than a copy that can drift out of sync.
- */
 export type TrajectoryFolderView = Awaited<ReturnType<CatalogFolderService['get']>>;
 export type TrajectoryFolderQuery = NonNullable<Parameters<CatalogFolderService['list']>[1]>;
 
@@ -56,11 +52,6 @@ const requireTrajectoryWithTeam = async (trajectoryId: string): Promise<Trajecto
     return trajectory;
 };
 
-/**
- * The trajectory catalog: the records themselves plus the folder tree that
- * organizes them. Deleting a folder cascades into the trajectories it holds,
- * which is why both live behind one service.
- */
 class TrajectoryCatalogService {
     #folders = new CatalogFolderService(CatalogFolderKind.Trajectory);
 
@@ -165,10 +156,6 @@ class TrajectoryCatalogService {
         return null;
     }
 
-    /**
-     * Removal is announced with the analyses that were running on it so each
-     * compute cluster can drop its own runtime state.
-     */
     async deleteById(input: { trajectoryId: string; teamId?: string; userId?: string }): Promise<{ success: boolean }> {
         const trajectory = await Trajectory.findOneBy({ id: input.trajectoryId });
         if (!trajectory) {

@@ -22,5 +22,4 @@ export interface UpdateAccountInput{
     lastName?: string;
     fullName?: string;
     email?: string;
-    // avatar is uploaded as multipart/form-data, not part of the JSON body.
 }

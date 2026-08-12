@@ -27,12 +27,6 @@ const getErrorStatusCode = (value: Record<string, unknown>): number | undefined 
     return getStatusCodeProperty(value, 'statusCode') ?? getStatusCodeProperty(value, 'status');
 };
 
-/**
- * Constraint violations are caused by the request, not by the server, so they
- * must not surface as 500s carrying the raw driver message (which would also
- * leak table and column names). Codes that signal a genuine server defect —
- * undefined column, syntax error — are deliberately absent so they stay 500.
- */
 const DATABASE_CONSTRAINT_ERRORS: Record<string, NormalizedError> = {
     '23502': {
         code: ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
@@ -71,11 +65,6 @@ const INTERNAL_SERVER_ERROR: NormalizedError = {
     statusCode: HttpStatus.InternalServerError
 };
 
-/**
- * Anything can reach the error middleware — our own `ApplicationError`, a
- * TypeORM/driver failure, or a third-party rejection value — so this is one of
- * the few places that genuinely has to inspect an `unknown` field by field.
- */
 export const normalizeError = (error: unknown): NormalizedError => {
     if (error instanceof ApplicationError) {
         return {
@@ -106,8 +95,6 @@ export const normalizeError = (error: unknown): NormalizedError => {
     const code = getStringProperty(error, 'code');
     const message = getStringProperty(error, 'message');
 
-    // A bare `Error` carries a message that is an implementation detail, so it
-    // only reaches the client when something else marks the failure as expected.
     if (statusCode === undefined && code === undefined && (message === undefined || error instanceof Error)) {
         return INTERNAL_SERVER_ERROR;
     }

@@ -2,26 +2,16 @@ import type { HeartbeatOptions } from './types';
 
 const DEFAULT_INTERVAL_MS = 30_000;
 
-/**
- * Manages a periodic heartbeat loop that sends `runtime.heartbeat` commands
- * to the Volt server.
- *
- * Individual heartbeat failures are logged and swallowed - the loop continues
- * regardless. Only a caller-initiated `stop()` terminates it.
- */
 export class HeartbeatManager {
     private timer: ReturnType<typeof setTimeout> | null = null;
     private running = false;
 
     constructor(
         private readonly options: HeartbeatOptions,
-        /** Performs the actual heartbeat send. Should not throw unless a fatal error occurs. */
         private readonly sendHeartbeat: (payload: object) => Promise<void>,
-        /** Called for non-fatal errors so consumers can log or observe failures. */
         private readonly onError: (error: unknown) => void
     ) {}
 
-    /** Starts the heartbeat loop and fires an initial heartbeat immediately. */
     start(): void {
         if (this.running) {
             return;
@@ -31,7 +21,6 @@ export class HeartbeatManager {
         this.scheduleNext(true);
     }
 
-    /** Stops the heartbeat loop. Any in-flight heartbeat is not cancelled. */
     stop(): void {
         this.running = false;
         if (this.timer !== null) {

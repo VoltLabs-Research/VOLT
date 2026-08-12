@@ -24,18 +24,9 @@ import {
     glbTerminalReceiptSetKey
 } from '@modules/jobs/services/JobRuntimeKeys';
 
-/* Retries daemon-backed team jobs, recovering GLB conversion jobs the daemon no
-   longer tracks by re-enqueuing them from their persisted frames. */
 
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 
-/**
- * Forgets that this job ever reported a terminal status.
- *
- * A retry has to clear the receipt as well as the status: the receipt is what
- * makes daemon reports idempotent, so leaving it behind would make the retried
- * run's own completion look like a duplicate and get dropped.
- */
 const clearRetryReceipts = async (job: TeamJobSummary): Promise<void> => {
     await getKeyValueStore().transaction(async (store) => {
         if (job.queueType === 'analysis_processing' && job.analysisId) {

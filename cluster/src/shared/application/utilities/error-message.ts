@@ -3,7 +3,6 @@ import { logger } from '@shared/infrastructure/logger';
 export const errorMessage = (error: unknown): string =>
     error instanceof Error ? error.message : String(error);
 
-/** Coerces an unknown throwable into an `Error`, for APIs that require one. */
 export const toError = (error: unknown): Error =>
     error instanceof Error ? error : new Error(String(error));
 

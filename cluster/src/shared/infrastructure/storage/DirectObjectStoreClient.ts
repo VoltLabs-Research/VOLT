@@ -65,7 +65,6 @@ const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): Clust
     };
 };
 
-/** The proxy answers errors with a JSON envelope, but a bare-text body is always possible. */
 const parseErrorPayload = (payloadText: string): ObjectStoreErrorPayload | null => {
     try {
         const parsed = JSON.parse(payloadText) as ObjectStoreErrorPayload;

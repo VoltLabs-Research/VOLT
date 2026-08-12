@@ -19,7 +19,6 @@ import {
     forwardLogChunk
 } from '@modules/plugin/services/runtime/process-log-sink';
 
-/** Owns one spawned plugin process: handshake, framed dispatch, stderr forwarding, teardown. */
 
 const PROCESS_READY_GRACE_PERIOD_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_READY_GRACE_MS') ?? 120_000;
 const MAX_STDERR_BYTES = 256 * 1024;

@@ -7,7 +7,6 @@ import type {
     TeamClusterObjectGatewayPutRequest
 } from '@shared/contracts/types/TeamClusterObjectGateway';
 
-/* Exposure identity, request paths and headers for the cluster object gateway. */
 
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';
 

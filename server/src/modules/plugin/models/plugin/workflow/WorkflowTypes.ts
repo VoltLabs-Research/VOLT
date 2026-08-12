@@ -16,13 +16,6 @@ export interface ModifierNodeData {
     description?: string;
 }
 
-/*
- * `ArgumentType` is a wire enum: the client sends it and the daemon executes on
- * it, so it is re-exported from `@volt/contracts` rather than declared again
- * here. There used to be a second `ArgumentType` enum in this file with the same
- * eight values under different member names, which meant adding an argument type
- * required editing two files with nothing to catch a mismatch.
- */
 export { ArgumentType };
 
 export const ArgumentVisibilityOperators = Object.values(ArgumentVisibilityOperator);

@@ -17,8 +17,6 @@ const main = async () => {
         ({ queue: Q, jobKey, payload: { jobId: jobKey, n: 1 } as never, maxAttempts: attempts, backoffType: backoff, backoffDelayMs: delay });
 
     console.log('\n== DaemonStateStore ==');
-    /* Every key the suite touches, cleared before and after: a suite that only
-       passes against a virgin database is not proving isolation, it is relying on it. */
     await s.deleteKeys(STATE_KEYS);
     check('setKeyIfAbsent en clave libre', await s.setKeyIfAbsent('k1', 'a', 60), true);
     check('setKeyIfAbsent bloqueado por clave viva', await s.setKeyIfAbsent('k1', 'b', 60), false);
@@ -64,7 +62,6 @@ const main = async () => {
     check('removeJobByKey', await store.removeJobByKey('qa-2'), true);
     check('removeJobByKey inexistente', await store.removeJobByKey('no-existe'), false);
 
-    // reintentos con backoff — la cola debe quedar vacia: claimNextJob coge el mas antiguo
     for (const k of JOB_KEYS) await store.removeJobByKey(k);
     await store.removeJobByKey('qa-retry');
     await store.insertJob(req('qa-retry', 3, 'exponential', 100));
@@ -75,7 +72,6 @@ const main = async () => {
     const scheduled = await store.claimNextJob(Q, 'w1', 60_000);
     check('el reintento no es reclamable todavia (backoff)', scheduled, null);
 
-    // reclamo de leases caducados — de nuevo con la cola limpia
     await store.removeJobByKey('qa-retry');
     await store.removeJobByKey('qa-stall');
     await store.insertJob(req('qa-stall'));

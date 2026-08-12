@@ -8,13 +8,6 @@ import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';
 const ANALYSIS_EXECUTION_DATA_TTL_SECONDS = 604_800;
 
-/**
- * Holds the compressed execution payload that every job of an analysis reads.
- *
- * It is stored once under a reference rather than copied into each job's payload:
- * a pipeline can fan out to thousands of jobs over the same configuration, and the
- * payload is far larger than the reference to it.
- */
 export class AnalysisDataStore {
     constructor(private readonly stateStore: DaemonStateStore) {}
 
@@ -47,12 +40,6 @@ export class AnalysisDataStore {
             );
         }
 
-        /*
-         * Reading extends the deadline so a long-running analysis cannot have its
-         * own configuration expire underneath its last jobs. Deliberately not
-         * awaited: the payload is already in hand and a failed refresh must not
-         * fail the read.
-         */
         this.stateStore
             .setValueWithTtl(reference.key, payload, ANALYSIS_EXECUTION_DATA_TTL_SECONDS)
             .catch(() => {});

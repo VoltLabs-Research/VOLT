@@ -25,10 +25,6 @@ import type {
 
 const accessGuard = new TrajectoryAccessGuard();
 
-/**
- * A caller may nominate a destination cluster, but it still has to be connected
- * and accept storage writes; otherwise the team's default placement wins.
- */
 const resolveDestinationStorageClusterId = async (teamId: string, requestedClusterId?: string): Promise<string> => {
     if (!requestedClusterId) {
         return teamClusterSelectionService.resolveStorageClusterId(teamId);
@@ -53,10 +49,6 @@ const resolveDestinationStorageClusterId = async (teamId: string, requestedClust
     return teamClusterSelectionService.resolveStorageClusterId(teamId, undefined, requestedCluster.id);
 };
 
-/**
- * Creates the destination trajectory synchronously so the client gets an id back
- * immediately, then queues a job that copies the dump objects cluster-to-cluster.
- */
 export const cloneTrajectory = async (input: CloneTrajectoryInput): Promise<CloneTrajectoryOutput> => {
     const source = await accessGuard.assertReadable(input.sourceTrajectoryId, input.userId);
     const destinationClusterId = await resolveDestinationStorageClusterId(input.teamId, input.targetClusterId);

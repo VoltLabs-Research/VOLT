@@ -27,10 +27,6 @@ export interface GetPluginExposureChartInput {
 
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
-/**
- * A GLB artifact belongs to exactly one exposure, so its params must name that
- * exposure and nothing else — a broader match would serve another exposure's model.
- */
 const matchesExposureParams = (params: SceneArtifactParams | null | undefined, exposureId: string): boolean => {
     const entries = Object.entries(params ?? {}).filter(([, value]) => value !== undefined);
 
@@ -39,11 +35,6 @@ const matchesExposureParams = (params: SceneArtifactParams | null | undefined, e
         && entries[0][1] === exposureId;
 };
 
-/**
- * Serves the artifacts a plugin exposure produced: the GLB model the canvas
- * renders, the chart PNG, and the downloadable bundle of everything an analysis
- * exposed.
- */
 export default class PluginExposureArtifactService {
     #exposureExportService: PluginExposureExportService;
     #objectGatewayClient: ITeamClusterObjectGatewayClient;
@@ -95,7 +86,6 @@ export default class PluginExposureArtifactService {
                     ...(response.contentEncoding === 'identity'
                         ? {}
                         : { 'X-Volt-Resource-Encoding': response.contentEncoding }),
-                    /* Negotiated upstream, so the browser can decode zstd natively. */
                     ...(response.negotiatedContentEncoding
                         ? {
                             'Content-Encoding': response.negotiatedContentEncoding,

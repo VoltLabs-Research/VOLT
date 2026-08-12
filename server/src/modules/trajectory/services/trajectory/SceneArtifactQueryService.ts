@@ -10,13 +10,8 @@ import type {
 
 const LIST_DEFAULT_LIMIT = 100;
 
-/** Exporters whose artifacts the canvas can actually render. */
 const RENDERABLE_SCENE_EXPORTERS = new Set(['AtomisticExporter', 'MeshExporter', 'LineExporter']);
 
-/**
- * Collapses plugin-exposure artifacts to the newest one per exposure and shapes
- * them as the renderable-layer descriptors the canvas consumes.
- */
 const projectRenderableExposures = (artifacts: SceneArtifact[]) => {
     const byExposureId = new Map<string, SceneArtifact>();
 
@@ -84,10 +79,6 @@ class SceneArtifactQueryService {
         return paginate([artifacts.map((artifact) => artifact.toJSON()), total], pageRequest);
     }
 
-    /**
-     * Team-wide listing. Joins through the trajectory both to scope by team and
-     * to expose the cluster names the storage column only references by id.
-     */
     async listByTeam(input: ListTeamSceneArtifactsInput): Promise<PaginatedResult<unknown>> {
         const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: LIST_DEFAULT_LIMIT });
 

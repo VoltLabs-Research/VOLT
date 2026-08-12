@@ -42,10 +42,6 @@ const normalizeBinaryFileName = (fileName: string): string => {
     return path.basename(fileName.trim()) || 'binary';
 };
 
-/**
- * Owns the lifecycle of a plugin's executable in cluster object storage: hand out
- * a signed upload target, accept the upload once it landed, and drop it again.
- */
 export default class PluginBinaryStorageService {
     constructor(
         private readonly storagePlacementService: IStoragePlacementService,
@@ -179,7 +175,6 @@ export default class PluginBinaryStorageService {
     async downloadBinary(pluginId: string, teamId: string): Promise<DownloadStreamOutput> {
         const plugin = await requirePlugin(pluginId);
 
-        // A plugin of another team is reported as missing rather than forbidden.
         if (plugin.props.team !== teamId) {
             throw ApplicationError.notFound(ErrorCodes.PLUGIN_NOT_FOUND, 'Plugin not found');
         }

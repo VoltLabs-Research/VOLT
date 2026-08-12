@@ -100,7 +100,6 @@ const ContainerDetailsLayout = () => {
                 })
             });
         }catch{
-            // Error handled by showPromise
         }
     }, [id, deleteContainerMutation, updateContainerMutation, navigate]);
 

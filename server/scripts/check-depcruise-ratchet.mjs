@@ -1,14 +1,4 @@
 #!/usr/bin/env node
-/**
- * Dependency-boundary ratchet.
- *
- * The cross-module and circular-import rules run at `warn`, so nothing fails
- * when a new cross-module import or cycle lands — which is how the count grew
- * to hundreds with no one noticing. This ratchet pins those warn-level
- * boundary violations in `depcruise-baseline.json` (same pattern as the
- * client's CSS baseline): the number may shrink, never grow. When you remove
- * violations, re-run with `--update` to lower the ceiling.
- */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

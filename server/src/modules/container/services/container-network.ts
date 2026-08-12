@@ -11,8 +11,6 @@ import type {
 export const PLACEHOLDER_INTERNAL_IP = '0.0.0.0';
 const BROWSER_ACCESSIBLE_PORTS = new Set([80, 81, 3000, 3001, 4173, 4200, 5000, 5173, 5174, 8000, 8080, 8081, 8088, 8888, 8889]);
 
-/* Port exposure and container IP resolution. Pure helpers: no persistence,
-   no runtime calls, so they can be reasoned about in isolation. */
 
 export const resolveAccessiblePorts = (ports: ContainerPortMapping[], containerStatus: string): ContainerAccessiblePort[] => {
     return ports.map((port) => ({
@@ -24,7 +22,6 @@ export const resolveAccessiblePorts = (ports: ContainerPortMapping[], containerS
     }));
 };
 
-/** Every published port of a container becomes one relay on the server. */
 export const toRelayTargets = (
     target: Omit<ContainerPortRelayTarget, 'privatePort' | 'publicPort'>,
     ports: ContainerPortMapping[]
@@ -38,7 +35,6 @@ export const toRelayTargets = (
         }));
 };
 
-/** Primary bridge address first, then every attached network, in declaration order. */
 const collectInternalIps = (runtimeContainer: RuntimeContainerInfo): string[] => {
     const networks = Object.values(runtimeContainer.NetworkSettings?.Networks ?? {});
     return [runtimeContainer.NetworkSettings?.IPAddress, ...networks.map((endpoint) => endpoint?.IPAddress)]

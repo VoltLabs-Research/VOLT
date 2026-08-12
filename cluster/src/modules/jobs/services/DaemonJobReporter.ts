@@ -24,11 +24,6 @@ import {
     RasterStartedEvent
 } from '@modules/trajectory/events/trajectory-events';
 
-/*
- * A construct signature with a `never` parameter is the one upper bound every
- * `DomainEventClass<P>` satisfies: constructor parameters are contravariant, so
- * `DomainEventClass<object>` is not a supertype of the concrete event classes.
- */
 type AnyDomainEventClass = new (payload: never) => IDomainEvent;
 
 interface ReporterEntry<TEvent extends AnyDomainEventClass> {

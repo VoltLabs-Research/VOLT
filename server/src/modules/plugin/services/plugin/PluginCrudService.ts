@@ -42,10 +42,6 @@ export interface UpdatePluginByIdInput {
 
 const LIST_PLUGINS_DEFAULT_LIMIT = 100;
 
-/**
- * Plugin lifecycle over the `plugins` table: listing, creating drafts, cloning,
- * reading, updating (including the publish transition) and deleting.
- */
 export default class PluginCrudService {
     #workflowValidator: WorkflowValidatorService;
 
@@ -171,10 +167,6 @@ export default class PluginCrudService {
         return mapPluginToRecord(plugin);
     }
 
-    /**
-     * A draft may be saved while still invalid; only publishing enforces the
-     * strict rules, so an unpublishable workflow is rejected outright there.
-     */
     async #assertPublishable(workflow: WorkflowProps, pluginId: string, status: PluginStatus): Promise<void> {
         const mode = status === PluginStatus.PUBLISHED
             ? WorkflowValidationMode.Strict
@@ -189,10 +181,6 @@ export default class PluginCrudService {
         }
     }
 
-    /**
-     * Binary fields are owned by the upload endpoints, so a workflow save coming
-     * from the editor must not be able to clear or repoint the stored binary.
-     */
     #carryOverBinaryFields(current: EntrypointNodeData | undefined, incoming: WorkflowProps): void {
         const incomingNode = incoming.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
 

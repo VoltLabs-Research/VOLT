@@ -35,18 +35,10 @@ export default class ApiError extends Error {
         return getErrorMessage(this.code, 'Unknown error');
     }
 
-    /**
-     * @deprecated Presentation state (whether a UI layer has surfaced this
-     * error) does not belong on the SDK error type. Track "handled" status in
-     * your UI layer instead. Retained for backwards compatibility.
-     */
     markHandled(): void {
         this.handled = true;
     }
 
-    /**
-     * @deprecated See {@link markHandled}. Track handled state in the UI layer.
-     */
     isHandled(): boolean {
         return this.handled;
     }

@@ -8,20 +8,6 @@ interface DynamicLightsProps {
     darkTheme: boolean;
 }
 
-/*
- * Illuminant colours do not follow the theme, deliberately.
- *
- * A light's colour is the light it casts, not a UI token, and these used to be set to the
- * active theme's foreground: `#1d1d1f` in light mode. With colour management on that is
- * 0.0123 in linear space, so the key light landed at 0.025 against 1.743 in dark — 70x
- * less — and the mesh was lit almost entirely by flat ambient, reading as a dark
- * silhouette on white. In light mode you change the background, not the strength of the
- * light.
- *
- * What legitimately differs per theme is indirect light: a white page bounces more back
- * onto the model than a near-black one. That is the ambient term below and the
- * hemisphere's ground colour — not the key or the fill.
- */
 const KEY_LIGHT_COLOR = '#f0f0f0';
 const TRAJECTORY_FILL_COLOR = '#f0f0f0';
 const DEFECT_FILL_COLOR = '#8e8e93';

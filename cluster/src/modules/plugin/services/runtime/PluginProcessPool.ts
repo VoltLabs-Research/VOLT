@@ -9,7 +9,6 @@ import {
 } from '@modules/plugin/services/runtime/PluginProcessChannel';
 import { PluginProcessMemoryGuard } from '@modules/plugin/services/runtime/plugin-process-memory-guard';
 
-/** Reuses warm plugin processes across jobs, bounded by CPU count and by the memory budget. */
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
 const SPAWN_IDLE_POOL_ACQUIRE_TIMEOUT_MS = 60_000;
@@ -55,7 +54,6 @@ export class PluginProcessPool {
         );
     }
 
-    /** The caller owns the returned channel until it passes it back to `release`. */
     async acquire(input: PooledProcessSpawnInput): Promise<PluginProcessChannel> {
         if (this.shuttingDown) {
             throw new Error('PluginProcessPool is shutting down');
@@ -95,8 +93,6 @@ export class PluginProcessPool {
         const group = this.groups.get(channel.poolKey);
         if (!group) return;
 
-        // A surplus trim always leaves at least one idle channel behind, so the drain check is
-        // only ever effective for the retire cases; sharing it keeps both paths in one branch.
         if (this.shuttingDown || channel.isClosed || group.retired
             || (group.idle.length >= this.minIdle && group.active.size > this.minIdle)) {
             group.active.delete(channel);
@@ -175,8 +171,6 @@ export class PluginProcessPool {
         try {
             await channel.waitUntilReady();
         } catch (error: unknown) {
-            // A readiness timeout leaves the child alive but untracked, so it would consume memory
-            // without ever counting against the concurrency budget. Reap it before propagating.
             await channel.destroy();
             throw error;
         }

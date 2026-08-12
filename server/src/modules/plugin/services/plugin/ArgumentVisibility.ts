@@ -6,11 +6,6 @@ import {
 
 type ArgumentValueMap = Record<string, unknown>;
 
-/**
- * Widened to `unknown[]` on purpose: the value being compared comes out of an
- * untyped config bag, so keeping the condition list at `unknown` lets
- * `includes`/`===` accept it without a cast at every comparison.
- */
 const getConditionValues = (condition: ArgumentVisibilityCondition): unknown[] => {
     return condition.values ?? (condition.value === undefined ? [] : [condition.value]);
 };

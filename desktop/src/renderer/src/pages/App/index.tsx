@@ -200,7 +200,6 @@ const App = () => {
             })
             .catch(() => { if(!cancelled) setMode('choose'); });
         return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {

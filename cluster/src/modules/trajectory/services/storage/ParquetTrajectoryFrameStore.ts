@@ -212,21 +212,11 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         }
     }
 
-    /** Cache-only lookup: lets a caller prefer a resident frame over any read. */
     public peekFrame(input: TrajectoryFrameLookupInput): TrajectoryFrameData | null {
         const cached = this.frameCache.get(this.frameCacheKey(input));
         return cached ? cached.frame : null;
     }
 
-    /**
-     * Reads one contiguous run of atoms instead of the whole frame.
-     *
-     * `atom_index` is dense and zero-based within a timestep, so a range predicate is
-     * exactly the slice the caller wants — and unlike `LIMIT/OFFSET` it needs no sort
-     * of the frame and lets DuckDB skip row groups outside the range. The result is
-     * deliberately not cached: it is a fragment, and storing it under the frame key
-     * would make later full-frame reads return a truncated frame.
-     */
     public async readFrameRange(
         input: TrajectoryFrameLookupInput,
         range: TrajectoryFrameRange
@@ -268,12 +258,6 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         }
     }
 
-    /**
-     * min/max without materialising the frame. DuckDB answers this from column
-     * statistics or a single scan, where the JS path had to build 10M objects first.
-     * Unknown columns come back as null rather than throwing: the caller has a
-     * correct, slower path and this is only an optimisation.
-     */
     public async readPropertyStats(
         input: TrajectoryFrameLookupInput,
         property: string
@@ -309,14 +293,12 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
                 dtype: INTEGER_TYPE_IDS.has(reader.columnTypeId(0)) ? 'i32' : 'f32'
             };
         } catch {
-            /* Any failure here just means the frame path answers instead. */
             return null;
         } finally {
             connection?.closeSync();
         }
     }
 
-    /** Parquet columns are matched case-insensitively, the way callers name properties. */
     private async resolveColumnName(
         connection: DuckDBConnection,
         parquetPath: string,
@@ -464,7 +446,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             if (existingSignature === signature) {
                 return filePath;
             }
-        } catch { /* no usable cache entry; fall through and re-download */ }
+        } catch { }
 
         const response = await this.objectStore.getStream(
             ownerClusterId,

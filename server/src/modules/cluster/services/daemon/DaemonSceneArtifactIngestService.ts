@@ -17,7 +17,6 @@ export type ProcessDaemonSceneArtifactUpsertInput = TeamClusterDaemonSceneArtifa
     daemonPassword: string;
 };
 
-/** One accepted artifact, with ownership already resolved against the database. */
 interface PreparedSceneArtifact {
     objectName: string;
     teamId: string;
@@ -47,11 +46,6 @@ const byKey = <T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> => {
     return groups;
 };
 
-/**
- * Ingests the scene artifacts a daemon reports after rendering: it authorises each
- * one against the trajectory/analysis it claims to belong to, upserts it by object
- * name, and advances the owning analysis towards `ready`.
- */
 class DaemonSceneArtifactIngestService {
     async processBatch(inputs: ProcessDaemonSceneArtifactUpsertInput[]): Promise<{ acknowledged: boolean }> {
         const artifacts = await this.#authorize(inputs);
@@ -64,10 +58,6 @@ class DaemonSceneArtifactIngestService {
         return { acknowledged: true };
     }
 
-    /**
-     * A daemon may only report artifacts for a trajectory (and analysis) whose
-     * storage — or, for plugin exposures, compute — it actually owns.
-     */
     async #authorize(inputs: ProcessDaemonSceneArtifactUpsertInput[]): Promise<PreparedSceneArtifact[]> {
         const [firstInput] = inputs;
         if (!firstInput) {

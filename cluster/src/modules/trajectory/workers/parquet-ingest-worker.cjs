@@ -23,10 +23,6 @@ const readPositiveIntegerEnv = (name, fallback) => {
     return Number.parseInt(value, 10);
 };
 
-// The native parsers throw (rather than return null) on a format mismatch, so try the
-// dump parser first and fall back to the data parser on its failure. A LAMMPS dump
-// always starts with `ITEM:`; a .data file never does — so the dump parser only throws
-// on genuine .data input, making the fallback exact.
 const readFrameFromFile = (filePath, includeProperties) => {
     try {
         return dumpParser.parseDump(filePath, {
@@ -59,9 +55,6 @@ const normalizeCustomPropertyNames = (properties) => {
     return result;
 };
 
-// DuckDB column DDL keyed by the daemon column dtype. i32 → INTEGER (signed 32-bit),
-// f32 → FLOAT (single precision). Schema v2 carries the per-column dtype; there is no
-// all-FLOAT v1 fallback.
 const duckdbColumnType = (dtype) => (dtype === 'i32' ? 'INTEGER' : 'FLOAT');
 
 const createFramesTable = async (connection, customProperties, columnDtypes) => {
@@ -118,9 +111,6 @@ const appendFrame = (appender, timestep, parsed, customProperties, columnDtypes)
     }
 };
 
-// Resolve a per-column dtype map across all frames. A column is i32 only when every
-// frame reports i32 for it; any frame that downgrades it to f32 wins (a later frame
-// may carry a fractional value the first frame lacked).
 const resolveColumnDtypes = (customProperties, frameDtypes) => {
     const result = {};
     for (const property of customProperties) {
@@ -155,8 +145,6 @@ const buildParquet = async (input) => {
             parsedFrames.map((entry) => entry.parsed.propertyDtypes)
         );
 
-        // Element table + units are derived once from the first frame's Masses /
-        // element hints (the per-type identity is constant across a trajectory).
         const firstParsed = parsedFrames[0]?.parsed;
         const typeCount = firstParsed ? maxType(firstParsed.types) : 0;
         const elementTable = buildElementTable({

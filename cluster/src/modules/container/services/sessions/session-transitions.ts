@@ -8,12 +8,6 @@ export interface SessionTransition {
     transitionId: number;
 }
 
-/**
- * Bookkeeping the ReverseChannelBridge owns on behalf of the per-kind session
- * managers: a session id may only be attaching once at a time, idle sessions
- * expire out of one shared activity cache, and every manager emits through the
- * same outbound channel.
- */
 export interface SessionTransitionCoordinator {
     beginSessionTransition(sessionId: string): SessionTransition | null;
     endSessionTransition(transition: SessionTransition): void;
@@ -26,7 +20,6 @@ export interface SessionTransitionCoordinator {
 }
 
 
-/** The envelope every failed `session.attach` answers with. */
 export const createSessionAttachFailureResult = (status: number, message: string): SessionCommandResult => ({
     status,
     data: {
@@ -35,7 +28,6 @@ export const createSessionAttachFailureResult = (status: number, message: string
     }
 });
 
-/** Tells the peer the session is over before answering the attach command with the same reason. */
 export const failSessionAttach = (
     coordinator: SessionTransitionCoordinator,
     sessionId: string,

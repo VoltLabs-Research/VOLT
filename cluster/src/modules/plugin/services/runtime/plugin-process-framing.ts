@@ -3,11 +3,9 @@ import type {
     PluginProcessResponse
 } from '@shared/contracts/types/plugin-batch';
 
-/** Protocol of the python stub: 8 byte LE header (op id, payload length) plus JSON payload. */
 
 const HEADER_BYTES = 8;
 
-/** Header and payload are returned separately to avoid copying large payloads. */
 export const encodePluginProcessFrame = (opId: number, request: PluginProcessRequest): Buffer[] => {
     const payload = Buffer.from(JSON.stringify(request), 'utf8');
     const header = Buffer.allocUnsafe(HEADER_BYTES);
@@ -21,7 +19,6 @@ export const decodePluginProcessResponse = (payload: Buffer): PluginProcessRespo
         ? JSON.parse(payload.toString('utf8')) as PluginProcessResponse
         : { ok: true };
 
-/** Reassembles framed responses out of the raw stdout byte stream. */
 export class PluginProcessFrameReader {
     private readonly header = Buffer.alloc(HEADER_BYTES);
     private headerCursor = 0;

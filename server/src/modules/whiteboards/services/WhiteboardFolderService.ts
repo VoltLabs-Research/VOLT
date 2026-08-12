@@ -17,7 +17,6 @@ const presentFolder = (folder: CatalogFolder) => ({
     updatedAt: folder.updatedAt
 });
 
-/** The whiteboard-kind slice of the shared catalog folder tree. */
 export default class WhiteboardFolderService{
     #whiteboards = new WhiteboardService();
 

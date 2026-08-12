@@ -32,16 +32,6 @@ const resolveZstdExit = (
     reject(new Error(stderr || `zstd exited with code ${code}`));
 };
 
-/**
- * Spawns the external `zstd` CLI on purpose, even though `PluginBinaryCache` and
- * `PluginCommands` use the native `node:zlib` zstd bindings. Benchmarked on a
- * 40.6 MB file under Node v25.9.0: the CLI compresses in 0.32 s with 2 threads
- * and decompresses in 0.16 s at 7 MB RSS, while native single-threaded needs
- * 1.43 s to compress and 0.55-0.68 s to decompress at ~60 MB RSS. Native
- * streaming compression also throws `ERR_STREAM_PUSH_AFTER_EOF` whenever
- * `ZSTD_c_nbWorkers` >= 1, so the multithreaded path does not exist natively
- * today. Do not "simplify" this onto `node:zlib`.
- */
 const createZstdStream = (args: string[], input: Readable | null = null): ZstdStreamResult => {
     const child = spawn('zstd', args, {
         stdio: ['pipe', 'pipe', 'pipe']
@@ -112,13 +102,6 @@ export const compressFileWithZstd = (sourcePath: string, outputPath: string): Pr
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
 
-/**
- * The trajectory object-key layout, in one place.
- *
- * These were hardcoded at 10 call sites across 4 modules, so changing the layout
- * meant finding every template literal. Keep new keys here next to the parquet
- * and exposure builders below.
- */
 export const toTrajectoryFrameDumpObjectKey = (trajectoryId: string, timestep: number): string =>
     `trajectory-${trajectoryId}/timestep-${timestep}.dump.zst`;
 

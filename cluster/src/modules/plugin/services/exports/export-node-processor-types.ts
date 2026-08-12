@@ -76,11 +76,6 @@ export interface AtomisticAtom {
     base_color?: [number, number, number] | [number, number, number, number];
 }
 
-/**
- * Key under which an atomistic payload carries the parquet it was derived from,
- * instead of an inline atom list. Lets the exporter stream positions columnar for
- * frames whose atom count makes a JS array untenable.
- */
 export const ATOMISTIC_PARQUET_SOURCE_KEY = PARQUET_SOURCE_KEY;
 
 interface AtomisticParquetSourcePayload {

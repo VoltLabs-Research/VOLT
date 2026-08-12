@@ -20,7 +20,6 @@ interface AnalysisFileRef {
     timestep: number;
 }
 
-/** Files arrive pre-sorted by object name, so grouping only has to preserve that order. */
 const groupAnalysisFilesByTimestep = (
     files: AnalysisFileRef[]
 ): Map<number, AnalysisFileRef[]> => {

@@ -63,13 +63,6 @@ import {
     type TeamClusterTunnelSessionStatus as SdkTunnelSessionStatus
 } from '@voltstack/daemon-cluster-client';
 
-/**
- * The reverse-channel transport contract is owned by `@voltstack/daemon-cluster-client`
- * (sdk/node/DaemonClusterClient); the server compiles it from source through the
- * `@voltstack/daemon-cluster-client` tsconfig path, the same way it consumes
- * `@volt/contracts`. This file re-exports those transport types under their
- * historical names and layers the server-specific, domain-typed frames on top.
- */
 export { TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL };
 export type {
     TeamClusterDaemonCommandMessage,
@@ -105,12 +98,9 @@ export type TeamClusterDaemonSessionKind = SdkSessionKind;
 export const TeamClusterTunnelSessionStatus = REVERSE_CHANNEL.TunnelSessionStatus;
 export type TeamClusterTunnelSessionStatus = SdkTunnelSessionStatus;
 
-/** Heartbeat metrics are the SDK wire contract, re-exported under the historical input name. */
 export type TeamClusterHeartbeatMetricsInput = TeamClusterDaemonHeartbeatMetrics;
 
-/** Lifecycle commands a daemon invokes on the control plane. */
 export interface ClusterRuntimeHeartbeatCommand extends TeamClusterDaemonHeartbeatCommand {
-    /* The server persists role config with `Date`, narrower than the wire's ISO string. */
     runtime?: {
         roleConfig: TeamClusterRuntimeRoleConfigProps;
     };
@@ -125,19 +115,10 @@ export interface ClusterRuntimeLifecycleCommand {
 
 export type ClusterRuntimeDeleteCompletedCommand = TeamClusterDaemonDeleteCompletedCommand;
 
-/**
- * The server narrows the generic `runtime-progress` payload to the container-create
- * shape it actually handles; the daemon is free to carry other payloads (e.g. trace
- * context) which this handler ignores.
- */
 export interface TeamClusterDaemonRuntimeProgressPayload extends Omit<SdkRuntimeProgressPayload, 'payload'> {
     payload?: TeamClusterDaemonContainerCreateProgress;
 }
 
-/**
- * Exposure frames are typed with the server's `TeamClusterServiceExposure` rather
- * than the SDK's `unknown[]`, so these local declarations stand in for the SDK's.
- */
 export interface TeamClusterDaemonExposureSnapshotPayload {
     type: 'exposure-snapshot';
     exposures: TeamClusterServiceExposure[];
@@ -180,7 +161,6 @@ export const TEAM_CLUSTER_DAEMON_STREAM_ID = {
     TrajectorySceneArtifactUpsertBatch: 'trajectory-scene-artifact-upsert-batch'
 } as const;
 
-/** Frames the daemon pushes as an inbound stream body rather than as a socket event. */
 export interface TeamClusterDaemonAnalysisLogChunkStream {
     teamClusterId: string;
     daemonPassword: string;
@@ -236,11 +216,6 @@ type SdkExposureFrames =
     | SdkExposureUpsertPayload
     | SdkExposureRemovePayload;
 
-/**
- * The full message union: the SDK transport frames (minus the `unknown[]`-typed
- * exposure frames and the generic runtime-progress frame), plus the server's
- * domain-typed stand-ins and the server-bound event messages.
- */
 export type TeamClusterDaemonMessage =
     | Exclude<SdkTeamClusterDaemonMessage, SdkExposureFrames | SdkRuntimeProgressPayload>
     | TeamClusterDaemonExposureSnapshotPayload

@@ -62,7 +62,6 @@ export type NodeExecutionOutcome =
     | { status: 'executed'; output: WorkflowNodeOutput; nestedTrace?: InlineWorkflowTraceNode[] }
     | { status: 'skipped'; reason: string };
 
-/** A workflow paused mid-graph, advanced one node at a time by the debug commands. */
 export interface DebugSession {
     sessionId: string;
     context: WorkflowExecutionContext;
@@ -146,10 +145,6 @@ export const describeDebugSession = (session: DebugSession, request: DebugSessio
         : (request.timestep !== undefined ? 1 : request.trajectoryFrames.length)
 });
 
-/**
- * Removes the dump and output directory the session materialised, plus the
- * `<outputDir>_*` siblings the export nodes wrote next to it.
- */
 export const cleanupDebugSessionArtifacts = async (session: DebugSession): Promise<void> => {
     await Promise.all([
         ...session.cleanupPaths.map((filePath) => safeRemovePath(filePath)),

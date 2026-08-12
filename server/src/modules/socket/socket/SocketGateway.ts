@@ -30,7 +30,6 @@ interface AuthenticatedSocket extends Socket{
 
 const resolveSocketTraceId = (socket: Socket): string => {
     const headerTraceId = socket.handshake.headers[TRACE_ID_HEADER];
-    // socket.io types `handshake.auth` values as `any`.
     const authTraceId: unknown = socket.handshake.auth?.traceId;
     const traceId = (Array.isArray(headerTraceId) ? headerTraceId[0] : headerTraceId)
         ?? (typeof authTraceId === 'string' ? authTraceId : undefined);
@@ -95,15 +94,6 @@ export class SocketGateway{
             maxHttpBufferSize: 512 * 1024 * 1024
         });
 
-        /*
-         * No cross-process adapter: rooms live in this process's memory.
-         *
-         * The adapter existed so a room emit on one replica reached sockets held
-         * by another. Domain events do not depend on it — they travel over the
-         * event bus, and every replica emits the ones it handles to its own
-         * sockets. A direct room emit, however, now stays local, so running more
-         * than one replica needs an adapter putting back.
-         */
         socketIOEmitter.setServer(this.io);
         socketIORoomManager.setServer(this.io);
 

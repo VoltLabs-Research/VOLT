@@ -10,9 +10,6 @@ import type {
     UpdateContainerFolderInput
 } from '@volt/contracts/modules/container/http';
 
-/* The container folder tree. Storage and traversal are generic (CatalogFolder);
-   what is container-specific is cascade deletion, since removing a folder has
-   to remove the containers it holds through the full container teardown path. */
 
 type ContainerFolderView = Awaited<ReturnType<CatalogFolderService['get']>>;
 

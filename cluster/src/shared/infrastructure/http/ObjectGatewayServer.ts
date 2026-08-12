@@ -35,7 +35,6 @@ interface ObjectGatewayRouteParams {
     bucket: string;
 }
 
-/** Body of `POST .../objects/compose`, sent only by the VOLT server. */
 type ObjectGatewayComposeRequest = Omit<LocalClusterObjectComposeInput, 'bucket'>;
 
 const OBJECT_GATEWAY_API_BASE_PATH = '/internal/object-gateway/v1';
@@ -49,13 +48,6 @@ const LOOPBACK_HOST = '127.0.0.1';
 const OBJECT_COLLECTION_ROUTE = `${OBJECT_GATEWAY_BUCKETS_PATH}:bucket/objects`;
 const OBJECT_COMPOSE_ROUTE = `${OBJECT_COLLECTION_ROUTE}/compose`;
 
-/*
- * The VOLT server pools keep-alive sessions over the reverse channel and holds
- * each one for TEAM_CLUSTER_OBJECT_GATEWAY_HTTP_SESSION_TTL_MS (30s by default).
- * Node would close an idle connection after 5s, so a pooled session reused after
- * that lands on a socket this side already reset — which the caller sees as a 500
- * `socket hang up`. Outliving the pool keeps the client the party that closes.
- */
 const KEEP_ALIVE_TIMEOUT_MS = 120_000;
 const HEADERS_TIMEOUT_MS = KEEP_ALIVE_TIMEOUT_MS + 10_000;
 
@@ -107,12 +99,6 @@ export class ObjectGatewayServer {
                 'volt.exposure.api-version': 'v1',
                 'volt.exposure.service': OBJECT_GATEWAY_EXPOSURE_NAME,
                 'volt.exposure.source-kind': TeamClusterServiceExposureSourceKind.Daemon,
-                /*
-                 * `targetHost` is rewritten to loopback above when we bind a wildcard,
-                 * which is meaningless to the server. This advertises an address the
-                 * server can actually dial so it can skip the reverse channel for bulk
-                 * reads; absent, the server tunnels exactly as before.
-                 */
                 ...(this.config.objectGatewayPublicBaseUrl
                     ? { 'volt.exposure.base-url': this.config.objectGatewayPublicBaseUrl }
                     : {})
@@ -355,7 +341,6 @@ export class ObjectGatewayServer {
         objectKey: string,
         response: Response
     ): Promise<void> {
-        // content-length is raw wire text; the store needs a real byte count up front.
         const contentLength = Number(request.get('content-length'));
         if (!Number.isInteger(contentLength) || contentLength < 0) {
             throw new ApplicationError(ErrorCodes.OBJECT_GATEWAY_MISSING_CONTENT_LENGTH, 'content-length header is required for uploads', 400);
@@ -388,7 +373,6 @@ export class ObjectGatewayServer {
             : this.objectStore.getObjectStream(bucket, objectKey)));
     }
 
-    /** Object-store clients report a missing key through their own error shapes, not a status. */
     private async withObjectNotFound<T>(bucket: string, objectKey: string, read: () => Promise<T>): Promise<T> {
         try {
             return await read();

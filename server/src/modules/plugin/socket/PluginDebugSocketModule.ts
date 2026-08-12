@@ -394,7 +394,6 @@ class PluginDebugSocketModule extends BaseSocketModule {
         });
     }
 
-    // Emits the rejection itself so callers only have to bail out on null.
     private resolveOwnedSessionTeamClusterId(socketId: string, sessionId: string): string | null {
         const entry = this.pluginDebugSessionRegistry.getSession(sessionId);
         if (!entry || entry.socketId !== socketId) {

@@ -88,7 +88,6 @@ class WhiteboardRealtimeStateService {
             const nextOrder = orderElementIds(room.elements, elementOrder, room.elementOrder, incomingOrder);
             if (!isSameOrder(room.elementOrder, nextOrder)) {
                 room.elementOrder = nextOrder;
-                // Only a client-supplied reordering is worth replaying to the other peers.
                 shouldBroadcastOrder = elementOrder.length > 0;
                 didChange = true;
             }
@@ -198,7 +197,6 @@ class WhiteboardRealtimeStateService {
         return room;
     }
 
-    /** Object storage hands us raw bytes, so an unparseable payload degrades to an empty scene. */
     private async readScene(storageClusterId: string, payloadKey: string): Promise<WhiteboardScene> {
         if (!await objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
             return EMPTY_WHITEBOARD_SCENE;

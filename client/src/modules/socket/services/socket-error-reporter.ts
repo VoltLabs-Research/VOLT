@@ -59,7 +59,6 @@ class SocketErrorReporterImpl {
         try {
             this.logger(report);
         } catch {
-            // The error reporter must never throw: it is the last line of defence.
         }
     }
 };

@@ -28,10 +28,6 @@ interface TrajectoryCloneResult {
 
 const TRAJECTORY_CLONE_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_CLONE_CONCURRENCY') ?? 8;
 
-/**
- * The cloud may send a timestep as a JSON string, so it is normalized once here
- * rather than letting a `string | number` leak into the object-key builder.
- */
 const readFrameTimestep = (frame: TrajectoryCloneFramePayload): number => {
     const timestep = typeof frame.timestep === 'string' ? Number(frame.timestep) : frame.timestep;
 

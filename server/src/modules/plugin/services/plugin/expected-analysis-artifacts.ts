@@ -8,11 +8,6 @@ const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'ChartExporter'
 ]);
 
-/**
- * The artifacts a plugin is expected to produce, so the UI can show placeholders
- * before the daemon reports them. A GLB artifact is the preferred primary
- * because it is the one the canvas renders; otherwise the first one wins.
- */
 export const resolveExpectedArtifacts = (plugin: Plugin): AnalysisExpectedArtifact[] => {
     const artifacts = (plugin.props.exposures ?? [])
         .filter((exposure) => EXPECTED_ARTIFACT_EXPORTERS.has(exposure.export?.exporter ?? ''))

@@ -46,7 +46,6 @@ interface ProcessPipelineJobDependencies {
     objectStore: ClusterObjectStore;
 }
 
-/** Everything the stages of one pipeline job share: the job, its services and the dump they pass along. */
 interface PipelineStageRun {
     payload: PipelineQueueJobPayload;
     deps: ProcessPipelineJobDependencies;
@@ -149,11 +148,6 @@ const readExpression = (config: AnalysisValueMap | undefined): string => {
     return expression;
 };
 
-/**
- * Restores a stage that a previous analysis already computed: its shared exposures come
- * back from the store, and the working dump either comes back with them or is rebuilt by
- * merging the per-atom exposures back in.
- */
 const runCacheHitStage = async (
     run: PipelineStageRun,
     stage: PipelinePlannedStage,
@@ -258,20 +252,6 @@ const runComputeStage = async (
                     logger.error(`Pipeline compute stage failed for jobId=${stageJobId}: ${error ?? 'Unknown error'}`);
                 }
 
-                /*
-                 * `started` used to return here, which meant a frame being computed was
-                 * never reported as running: the control plane's projection went straight
-                 * from `queued` to `completed`, so the timeline could only ever show a
-                 * frame as pending or finished while the analysis row beside it already
-                 * said running. `AnalysisStartedEvent` maps to a per-frame
-                 * `analysis-job-status` message whose dedupe key includes the timestep,
-                 * so this reports one `running` per frame rather than re-announcing the
-                 * analysis.
-                 *
-                 * Only terminal reports may enter `reportedAnalysisIds` — the outer catch
-                 * uses it to avoid double-reporting a failure, and marking an analysis on
-                 * `started` would suppress the real one.
-                 */
                 if (status !== 'started') {
                     run.reportedAnalysisIds.add(analysisId);
                 }
@@ -326,11 +306,6 @@ const runComputeStage = async (
     );
 };
 
-/**
- * Publishes what the stage produced to the rest of the pipeline: shared exposures by id,
- * and the working dump advanced either from the annotated dump the plugin wrote or by
- * merging its per-atom property tables back in.
- */
 const registerStageExposures = async (
     run: PipelineStageRun,
     executionData: AnalysisJobExecutionData,

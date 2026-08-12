@@ -14,16 +14,6 @@ import type {
 
 type NonCommandMessage = Exclude<TeamClusterDaemonMessage, TeamClusterDaemonCommandMessage>;
 
-/**
- * Listens on the control socket for inbound `team-cluster-daemon:message` events
- * and dispatches `command` type messages to registered handlers.
- *
- * All other message types (session-input, tunnel-open, etc.) are forwarded to
- * consumers via `onMessage()` callbacks - the bridge never interprets them.
- *
- * Handlers are registered once and survive socket reconnections because the
- * `ControlSocketManager` calls `bindToSocket()` on each new socket instance.
- */
 export class ReverseChannelBridge {
     private readonly handlers = new Map<string, ReverseChannelHandler>();
     private readonly messageListeners: Array<(message: NonCommandMessage) => void> = [];
@@ -45,15 +35,6 @@ export class ReverseChannelBridge {
         this.errorListeners.push(listener);
     }
 
-    /**
-     * Attaches this bridge to the provided socket.
-     * Called by `ControlSocketManager` on every (re)connect - the same handler
-     * registry is reused, so callers only register handlers once.
-     *
-     * @param socket - The newly created socket.io-client `Socket`.
-     * @param socketId - Sequence id of this socket; used to ignore stale events after reconnect.
-     * @param getActiveSocketId - Returns the current active socket id from `ControlSocketManager`.
-     */
     bindToSocket(
         socket: Socket,
         socketId: number,
@@ -73,10 +54,7 @@ export class ReverseChannelBridge {
         });
     }
 
-    /** Clears all session state. Called by `ControlSocketManager` on disconnect. */
     cleanup(): void {
-        // Handler registry is intentionally preserved across reconnections.
-        // Stateful session maps live in the daemon's ReverseChannelSocketBridge, not here.
     }
 
     private async handleCommand(socket: Socket, message: TeamClusterDaemonCommandMessage): Promise<void> {

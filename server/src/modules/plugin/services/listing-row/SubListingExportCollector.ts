@@ -54,11 +54,6 @@ const subListingSelectionId = (
     return [exposureId || 'exposure', timestep, subListingName || 'sub-listing'].join('::');
 };
 
-/**
- * A listing row advertises the sub-listings it drills down into, so the set of
- * exportable sub-listings is discovered from the rows themselves rather than
- * configured anywhere.
- */
 export const discoverSubListingReferences = (
     rows: DaemonListingRow[],
     selectedIds: Set<string> | null = null
@@ -95,11 +90,6 @@ export const discoverSubListingReferences = (
     });
 };
 
-/**
- * Materialises the discovered sub-listings: every reference is paged out of the
- * compute cluster's daemon in parallel and folded back into one table per
- * (exposure, timestep, sub-listing).
- */
 export class SubListingExportCollector {
     constructor(
         private readonly daemonClient: ITeamClusterDaemonClient

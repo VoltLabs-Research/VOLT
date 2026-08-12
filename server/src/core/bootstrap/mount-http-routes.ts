@@ -68,7 +68,6 @@ const mountHttpRoutes = (): Router => {
     const startedAt = Date.now();
     const router = Router();
 
-    /* Avatars, which the browser fetches by plain URL. */
     router.use(createUserFilesRouter());
 
     const mountable = collectMountable();

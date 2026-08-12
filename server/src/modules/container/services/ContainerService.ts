@@ -10,10 +10,6 @@ import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persi
 import { ILike, IsNull } from 'typeorm';
 import type { FindManyOptions, FindOptionsWhere } from 'typeorm';
 
-/* Reading containers back out and placing them in the folder tree. Mutating a
-   container lives in container-provisioning / container-runtime-updates, because
-   that is where the daemon and the port relays are involved; nothing here talks
-   to either beyond refreshing the status a caller is about to be shown. */
 
 const DEFAULT_LIST_LIMIT = 100;
 

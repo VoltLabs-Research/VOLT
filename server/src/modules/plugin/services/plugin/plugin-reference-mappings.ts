@@ -13,11 +13,6 @@ interface PluginReferenceMappingTarget {
     scopeValues: Record<string, unknown>;
 }
 
-/**
- * An explicitly supplied value wins, then the definition's pinned value, then its
- * default. Note this is the opposite precedence from argument *visibility*, which
- * lets a pinned value override what the user typed.
- */
 export const resolveArgumentExecutionValue = (
     definition: ArgumentDefinition,
     value: unknown
@@ -91,11 +86,6 @@ const resolveMappingSourceValue = (
     return value;
 };
 
-/**
- * Copies values from the referencing plugin's own arguments into the referenced
- * plugin's config, for the mappings whose plugin id / modifier key filter matches
- * the plugin that was actually selected.
- */
 export const applyPluginReferenceMappings = (
     target: PluginReferenceMappingTarget,
     referencedPlugin?: Plugin

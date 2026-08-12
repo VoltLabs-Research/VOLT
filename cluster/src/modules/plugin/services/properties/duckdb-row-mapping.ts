@@ -8,7 +8,6 @@ import {
     toFiniteNumber
 } from '@modules/plugin/services/properties/parquet-property-schema';
 
-/** Maps DuckDB result rows, which arrive untyped, into typed atom property shapes. */
 
 const normalizePropertyValue = (value: unknown): string | number | boolean | null | undefined => {
     if (value === null || value === undefined) return value;
@@ -50,7 +49,6 @@ export const rowsToAtomProperties = (rows: Record<string, unknown>[]): FlatAtomP
     });
 };
 
-/** Builds an atom-id indexed value array, leaving gaps as NaN. */
 export const rowsToFloat32ByAtomId = (rows: Record<string, unknown>[]): Float32Array | null => {
     const maxId = findMaxAtomId(rows);
     if (maxId <= 0) return null;
@@ -69,7 +67,6 @@ export const rowsToFloat32ByAtomId = (rows: Record<string, unknown>[]): Float32A
     return values;
 };
 
-/** Builds an atom-id indexed value array, leaving gaps as null. */
 export const rowsToStringByAtomId = (rows: Record<string, unknown>[]): Array<string | null> => {
     const maxId = findMaxAtomId(rows);
     if (maxId <= 0) return [];

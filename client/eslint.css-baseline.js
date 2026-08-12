@@ -1,14 +1,4 @@
-/**
- * Legacy per-component CSS imports, exempted from the boundary rule in
- * eslint.config.js. Generated — do not hand-edit.
- *
- *   node scripts/generate-css-baseline.mjs
- *
- * This list is a ratchet: it may shrink, never grow. A new entry means a new
- * component styled with a stylesheet instead of bravais style props.
- */
 
-/** @type {string[]} */
 export const cssBaseline = [
     'src/modules/ai/components/AIArtifactSpreadsheetPanel/index.tsx',
     'src/modules/ai/components/AIComposer/index.tsx',

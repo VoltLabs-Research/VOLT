@@ -25,8 +25,6 @@ const CONVERSATION_PAGE_OPTIONS = {
     maxLimit: 200
 };
 
-/* Parts are an open `Record<string, unknown>` bag, so the text payload has to be
-   narrowed before it can be joined. */
 const isTextPart = (part: AIMessagePart): part is AITextPart => (
     part.type === 'text' && typeof part.text === 'string'
 );

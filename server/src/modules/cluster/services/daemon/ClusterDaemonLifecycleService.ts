@@ -32,11 +32,6 @@ export interface GenerateInstallManifestInput {
     ports: TeamClusterInstallManifestPortsView;
 }
 
-/**
- * The RPC surface a cluster daemon calls on the control plane: enrollment,
- * heartbeat, lifecycle transitions and the job reports it produces. Each frame is
- * authenticated before it is routed to the service that owns the state it touches.
- */
 class ClusterDaemonLifecycleService {
     async processHealthcheck(input: ProcessHealthcheckInput): Promise<{
         teamCluster: TeamClusterView;
@@ -94,7 +89,6 @@ class ClusterDaemonLifecycleService {
         };
     }
 
-    /** A cluster already gone from the control plane is an acceptable end state. */
     async completeDeletion(input: ClusterRuntimeDeleteCompletedCommand): Promise<{ success: boolean }> {
         try {
             await teamClusterLifecycleService.completeDeletion(input.teamClusterId, input.daemonPassword);

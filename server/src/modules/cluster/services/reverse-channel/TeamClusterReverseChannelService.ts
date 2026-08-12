@@ -45,12 +45,6 @@ import teamClusterExposureRegistryService from '@modules/cluster/services/team-c
 const REQUEST_TIMEOUT_MS = 30_000;
 const DAEMON_CONNECTION_WAIT_TIMEOUT_MS = 30_000;
 
-/**
- * The daemon reverse channel: a cluster daemon dials us, and every subsequent
- * control-plane request rides back out over that socket. This service owns the
- * socket bookkeeping and the frame router, and delegates each frame family to the
- * collaborator that owns its state.
- */
 class TeamClusterReverseChannelService {
     readonly #connections = new TeamClusterDaemonConnectionRegistry();
     readonly #pending = new ReverseChannelPendingEntries();
@@ -212,7 +206,6 @@ class TeamClusterReverseChannelService {
         switch (payload.type) {
             case 'exposure-snapshot':
                 teamClusterExposureRegistryService.replaceTeamClusterExposures(teamClusterId, payload.exposures);
-                /* A daemon that just republished is worth dialling directly again. */
                 bytePlaneResolver.clearTeamCluster(teamClusterId);
                 return;
 
@@ -337,7 +330,6 @@ class TeamClusterReverseChannelService {
         });
     }
 
-    /** A chunk nobody is awaiting belongs to a stream the daemon opened on its own. */
     #handleStreamChunk(
         socketId: string,
         teamClusterId: string,

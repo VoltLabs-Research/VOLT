@@ -6,17 +6,11 @@ interface ResolvedListingSource {
     analysisId: string;
 }
 
-/** Listing rows only exist in the compute cluster that ran the analysis. */
 export const resolveAnalysisCluster = async (analysisId: string): Promise<string | undefined> => {
     const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
     return analysis?.computeClusterId ?? undefined;
 };
 
-/**
- * A listing can be addressed by analysis, or by plugin plus optional trajectory —
- * in which case any analysis of that plugin that still has a compute cluster
- * tells us where the rows live.
- */
 export const resolvePluginListingSource = async (
     input: { pluginId: string; teamId: string; analysisId?: string; trajectoryId?: string }
 ): Promise<ResolvedListingSource | null> => {

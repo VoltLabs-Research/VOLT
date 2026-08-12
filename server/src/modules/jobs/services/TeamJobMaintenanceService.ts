@@ -175,8 +175,6 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         };
     }
 
-    /* Stops whatever is still running on the daemons and forgets every projected
-       snapshot for the deleted scope, keeping no tombstones behind. */
     private async purgeJobScope(
         teamId: string,
         predicate: (job: TeamJobSummary) => boolean

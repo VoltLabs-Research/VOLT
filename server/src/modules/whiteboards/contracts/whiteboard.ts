@@ -1,11 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-/**
- * An Excalidraw element as it travels between the client, this server and object
- * storage. Only the fields the merge rules arbitrate on are named; the rest of the
- * payload is carried through untouched.
- */
 export interface WhiteboardElement{
     id: string;
     version?: number;

@@ -55,8 +55,6 @@ class DefaultArtifactUploadBatch implements ArtifactUploadBatch {
             uploads: this.uploads
         };
 
-        /* Retention is now a queue-wide policy rather than per job, so settled
-           jobs are kept long enough for a user-initiated retry either way. */
         await this.queueService.enqueue(ARTIFACT_UPLOAD_QUEUE_NAME, payload, {
             preserveExistingJob: true
         });

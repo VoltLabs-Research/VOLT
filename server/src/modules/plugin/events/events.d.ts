@@ -10,7 +10,6 @@ declare global {
         'plugin.created': PluginCreatedEventPayload;
         'plugin.deleted': PluginDeletedEventPayload;
         'plugin.published': PluginPublishedEventPayload;
-        // Legacy name kept as-is: this one predates the `namespace.action` convention.
         PluginExecutionRequest: PluginExecutionRequestPayload;
     }
 }

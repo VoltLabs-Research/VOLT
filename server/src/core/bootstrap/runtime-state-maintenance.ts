@@ -7,13 +7,6 @@ import { sweepExpiredKeyValues } from '@shared/infrastructure/keyvalue/KeyValueS
 
 const MAINTENANCE_INTERVAL_MS = 300_000;
 
-/**
- * How long a parked event body is kept.
- *
- * A spooled payload is read and deleted by the subscriber that handles it, so a
- * row only survives when nothing was listening for that event. Generous enough
- * that a subscriber restarting mid-delivery still finds its payload.
- */
 const SPOOL_RETENTION_MS = 600_000;
 
 let timer: NodeJS.Timeout | null = null;
@@ -41,26 +34,12 @@ const runOnce = async (): Promise<void> => {
             );
         }
     } catch (error: unknown) {
-        /* Housekeeping must never take the server down; the next pass retries. */
         logger.error(`@runtime-state-maintenance: pass failed: ${error}`);
     } finally {
         running = false;
     }
 };
 
-/**
- * Reclaims space from the runtime state tables.
- *
- * It lives in the composition root rather than `shared/` because it reaches
- * across owners — the key space and the event spool are infrastructure, the
- * metric samples belong to the `system` module — and only the bootstrap is
- * allowed to know about concrete modules.
- *
- * None of this is required for correctness — expired entries are already
- * invisible to readers, because every read filters on the deadline. It exists so
- * a long-lived deployment does not accumulate dead receipts, unread event bodies
- * and metric history indefinitely.
- */
 export const startRuntimeStateMaintenance = (): void => {
     if (timer) return;
 

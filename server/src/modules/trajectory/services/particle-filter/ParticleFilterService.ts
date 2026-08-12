@@ -323,10 +323,6 @@ class ParticleFilterService {
         };
     }
 
-    /**
-     * A condition without an exposure filters a raw dump property, so a missing
-     * analysis/exposure pair is a valid shape here and not an error.
-     */
     private async resolveRemoteModifierSource(
         analysisId: string | null,
         exposureId: string | undefined,

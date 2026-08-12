@@ -143,7 +143,6 @@ const ColorCodingStageEditor = ({
                 },
             });
         } catch {
-            /* el toast de showPromise ya informa del fallo */
         } finally {
             setIsApplying(false);
         }

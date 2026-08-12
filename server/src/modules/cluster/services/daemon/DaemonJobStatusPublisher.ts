@@ -9,10 +9,6 @@ const JOB_STATUS_PUBLISH_BATCH_SIZE = 50;
 const PROJECTED_JOB_SOURCE = 'projected';
 const PROJECTED_JOB_BACKING_SOURCE = 'daemon';
 
-/**
- * Queue type + job-cleanup scope always travel together, so they are declared
- * as a single pair per daemon job family instead of eight loose constants.
- */
 export const PROJECTED_JOB_KINDS = {
     analysis: {
         queueType: 'analysis_processing',
@@ -54,10 +50,6 @@ export interface ProjectedJobStatusInput {
 export type AnalysisStatusPublication = Omit<AnalysisStatusChangedEventPayload, 'trajectoryId'>
     & { trajectoryId?: string };
 
-/**
- * Publishes the domain events that daemon job reports project onto the event
- * bus: per-job status transitions plus analysis status / stage snapshots.
- */
 class DaemonJobStatusPublisher {
     private readonly eventBus = eventBus;
 

@@ -31,8 +31,6 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<ListAnalysesInput>()
     })
     async listAnalyses(input: ListAnalysesInput & AIToolScope) {
-        // typia validates but does not transform, so the documented defaults are
-        // applied here; an absent key does not override them on spread.
         const { total, data } = await this.#service.getAnalysesByTeamId({
             page: 1,
             limit: 50,

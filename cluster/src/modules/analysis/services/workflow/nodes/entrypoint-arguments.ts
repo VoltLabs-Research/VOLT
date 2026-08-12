@@ -30,10 +30,6 @@ const parseInlineArguments = (value: string): string[] => [...value.matchAll(INL
     .map((match) => match[1] ?? match[2] ?? match[3])
     .flatMap((token) => decodeCliArgumentsToken(token) ?? [token]);
 
-/**
- * Renders the entrypoint's argument template, splits it into an argv and appends the
- * `inferFromContext` arguments contributed by upstream pipeline stages.
- */
 export const resolveEntrypointArgs = ({
     context,
     node,

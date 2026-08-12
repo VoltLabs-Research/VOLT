@@ -88,11 +88,6 @@ export const buildListingExportColumns = (rows: DaemonListingRow[]): string[] =>
     ]));
 };
 
-/**
- * Daemon rows only carry ids, and may omit the analysis when the caller already
- * knows it. Each row is resolved to its analysis and trajectory once, then the
- * trajectory names are looked up in a single query and stamped onto the rows.
- */
 export const enrichDaemonListingRows = async ({
     rows,
     fallbackAnalysisId

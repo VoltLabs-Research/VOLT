@@ -45,25 +45,15 @@ import type {
 
 const DEFAULT_LIST_LIMIT = 100;
 
-/*
- * A pooled keep-alive session can be handed out just after its tunnel died, and
- * the failure only shows up when we write to it. Node reports that as a reset
- * before any response, which is precisely the case a fresh session can replay.
- */
 const isStaleSessionError = (error: unknown): boolean => {
     const code = (error as { code?: string }).code;
     return code === 'ECONNRESET' || code === 'EPIPE';
 };
 
-/* A stream body is consumed by the first attempt, so only these can be replayed. */
 const isReplayableBody = (body: ObjectGatewayRequestOptions['body']): boolean => (
     body === undefined || Buffer.isBuffer(body)
 );
 
-/*
- * Object storage verbs against a team cluster's daemon object gateway, spoken
- * over an authorised keep-alive session on the daemon reverse channel.
- */
 class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
     private readonly accessTokenProvider = new ObjectGatewayAccessTokenProvider();
     private readonly httpSessionPool = new ObjectGatewayHttpSessionPool();
@@ -251,7 +241,6 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
                 throw error;
             }
 
-            /* Every pooled session shares the reverse channel that just died. */
             this.httpSessionPool.discardCluster(teamClusterId);
             return this.attempt(teamClusterId, options, operation);
         }
@@ -275,16 +264,10 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
                     throw error;
                 }
 
-                /*
-                 * A pooled keep-alive socket can be handed out just after the gateway
-                 * closed it. That says nothing about reachability, so it is rethrown
-                 * for the caller's replay rather than demoting the whole cluster.
-                 */
                 if (isStaleSessionError(error.cause)) {
                     throw error.cause;
                 }
 
-                /* A stream body is already partly consumed, so there is nothing to replay onto the tunnel. */
                 if (!isReplayableBody(options.body)) {
                     throw error;
                 }
@@ -296,7 +279,6 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
         return this.attemptOverTunnel(teamClusterId, options, headers, operation);
     }
 
-    /* Straight to the daemon: no session to lease, so nothing to release. */
     private async attemptDirect(
         baseUrl: string,
         options: ObjectGatewayRequestOptions,
@@ -343,7 +325,6 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
     ): Promise<ApplicationError> {
         const payloadBuffer = await buffer(response.stream);
 
-        /* The error body is an untyped wire payload: a failing gateway may not answer JSON at all. */
         let payload: ObjectGatewayJsonError | undefined;
         try {
             payload = JSON.parse(payloadBuffer.toString('utf8')) as ObjectGatewayJsonError;
@@ -352,9 +333,6 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
         }
 
         return new ApplicationError(
-            // The code may come from a remote gateway, so it is narrowed to a
-            // registered one; `operation` belongs in the message, not in a
-            // template-built code that no error table could ever list.
             toErrorCode(payload?.code, ErrorCodes.CLUSTER_OBJECT_GATEWAY_FAILED),
             payload?.message
                 ?? `Object gateway ${operation} failed with status ${response.statusCode}`,

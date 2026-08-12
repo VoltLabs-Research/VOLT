@@ -1,17 +1,10 @@
 @import '@heroui/styles';
 
-/*
- * Overlay layering scale. Floating surfaces (context menus, popovers,
- * autocomplete) sit above app chrome; modals sit above floating surfaces.
- * Floating elements opened from inside a modal portal into the modal's top
- * layer (see ModalTopLayer), so they stack within the modal regardless.
- */
 :root {
     --z-floating: 500;
     --z-modal: 600;
 }
 
-/* heroui hardcodes z-50 on backdrops; the scale above puts modals over floating surfaces. */
 .modal__backdrop,
 .drawer__backdrop {
     z-index: var(--z-modal);
@@ -346,28 +339,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     --syntax-meta: #64748b;
 }
 
-/**
- * Touch targets, declared once for the whole app.
- *
- * bravais's Button carried
- * `@media (pointer: coarse) and (max-width: 1024px) { min-height: 2.75rem }`
- * on its small size, so a dense dashboard stayed usable with a thumb. HeroUI's
- * `.button--sm` is `h-9 md:h-8` (36px, then 32px) at every pointer type, so
- * deleting bravais's stylesheet silently took every small control below the 44px
- * touch target.
- *
- * Restated here rather than as a `pointer-coarse:` utility per call site for the
- * same reason as reduced motion below: a guarantee that depends on each author
- * remembering a modifier is not a guarantee. `min-height` (not `height`) so it
- * only ever grows a control.
- *
- * **In `@layer components` on purpose.** Unlayered, this rule outranked Tailwind's
- * `utilities` layer and silently overrode deliberately compact controls — the
- * canvas transport bar (`max-md:[&_button]:min-h-[1.875rem]`, 30px) and the
- * viewport floating column both express their size as utilities, and both grew to
- * 44px on a touch device. Inside `components` it becomes a floor that an explicit
- * utility can still opt out of, which is what a default should be.
- */
 @layer components {
     @media (pointer: coarse) and (width < 64rem) {
         .button--sm {
@@ -380,12 +351,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     }
 }
 
-/*
- * HeroUI portals modal/drawer backdrops to <body> with no z-index, so app chrome
- * that creates its own stacking context (sidebar z-100, mobile drawers z-120+,
- * canvas panels z-140) paints above the blur. Lift portaled overlays above all
- * app chrome but below the floating layer.
- */
 .modal-backdrop,
 .drawer-backdrop {
     z-index: 200;

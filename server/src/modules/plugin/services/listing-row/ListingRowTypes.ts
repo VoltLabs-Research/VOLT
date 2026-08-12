@@ -114,7 +114,6 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
-/** Listing pages are capped so a single request cannot pull a whole result set. */
 export const resolveListingPagination = (
     { page, limit }: { page?: number; limit?: number }
 ): { page: number; limit: number } => {

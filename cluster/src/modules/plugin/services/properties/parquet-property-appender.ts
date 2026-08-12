@@ -14,7 +14,6 @@ import {
 } from '@modules/plugin/services/properties/parquet-property-schema';
 import { quoteIdentifier } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 
-/** Writes per-atom plugin properties into the `plugin_properties` DuckDB table. */
 
 export const PROPERTIES_TABLE_NAME = 'plugin_properties';
 

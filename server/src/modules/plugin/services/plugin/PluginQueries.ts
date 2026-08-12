@@ -38,10 +38,6 @@ export const toPluginLike = (plugin: PluginEntity): Plugin => {
 export const mapPluginToRecord = (plugin: Plugin): PluginRecord =>
     mapPluginToRecordNeutral(plugin) as PluginRecord;
 
-/**
- * The workflow graph and the columns projected from it are always written
- * together: persisting one without the other leaves the plugin inconsistent.
- */
 export const projectWorkflowColumns = (workflow: Workflow, pluginId: string) => {
     const projection = WorkflowProjectionService.project(workflow, pluginId);
 
@@ -54,10 +50,6 @@ export const projectWorkflowColumns = (workflow: Workflow, pluginId: string) => 
     };
 };
 
-/**
- * Every plugin operation begins by loading the aggregate or 404-ing, so the
- * lookup lives here instead of being restated at each call site.
- */
 export const requirePluginEntity = async (pluginId: string): Promise<PluginEntity> => {
     const pluginEntity = await PluginEntity.findOneBy({ id: pluginId });
 

@@ -32,8 +32,8 @@ def _str_block(values):
 class AtomsDecoderTests(unittest.TestCase):
     def setUp(self) -> None:
         try:
-            import numpy as np  # noqa: F401
-            import pandas as pd  # noqa: F401
+            import numpy as np
+            import pandas as pd
         except ImportError:
             self.skipTest('numpy/pandas not installed')
 

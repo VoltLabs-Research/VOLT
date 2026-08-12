@@ -40,13 +40,6 @@ interface TeamClusterLifecycleUpdate {
     hostCapabilities?: TeamClusterHostCapabilitiesProps;
 }
 
-/**
- * One heartbeat, as the control plane receives it.
- *
- * A record rather than a positional list because every field after the identity
- * pair is optional and independent, and the daemon that sends them may be older
- * than the control plane that reads them.
- */
 export interface RecordHeartbeatInput {
     teamClusterId: string;
     daemonPassword: string;

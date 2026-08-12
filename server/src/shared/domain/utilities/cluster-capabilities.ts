@@ -21,11 +21,6 @@ const TEAM_CLUSTER_ROLE_CAPABILITIES: Record<TeamClusterRole, TeamClusterRoleCap
     }
 };
 
-/**
- * What a cluster may actually be asked to do: its role's capabilities, minus
- * whatever it is currently draining. A cluster that is draining storage still
- * serves reads, so residual downloads keep working while it empties.
- */
 export const resolveEffectiveCapabilitiesFromRoleConfig = (
     roleConfig: Pick<TeamClusterRuntimeRoleConfigProps, 'effectiveRole' | 'draining'>
 ): TeamClusterEffectiveCapabilitiesProps => {

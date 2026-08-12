@@ -75,16 +75,6 @@ export default class DaemonCredentialGuard {
         };
     }
 
-    /**
-     * Decrypts a stored credential, reporting a key mismatch as a recoverable
-     * conflict rather than letting it surface as a 500.
-     *
-     * A cluster row can outlive the encryption key it was written with — the
-     * database volume survives while `VOLT_SECRET_ENCRYPTION_KEY` is regenerated —
-     * and AES-GCM then fails authentication. That is a state the caller can act on
-     * (provision a fresh cluster), so it gets its own code instead of being
-     * indistinguishable from a server defect.
-     */
     async #decryptOrFail(value: string, teamClusterId: string): Promise<string> {
         try {
             return await decrypt(value);

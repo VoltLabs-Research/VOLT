@@ -5,27 +5,12 @@ import {
 } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import { BASE_COLUMNS } from '@modules/plugin/services/properties/parquet-property-schema';
 
-/**
- * Projects a plugin's per-atom parquet straight into the exposure parquet.
- *
- * The row-based writer in `parquet-property-appender` needs every atom as a JS
- * object, which is what made large frames unaffordable: a 4.45M-atom frame cost
- * ~22 GB of heap and killed the daemon. Nothing about the transformation needs
- * rows though — it is a projection, a rename and a cast — so it is expressed as
- * one DuckDB statement and the atoms never enter the JS heap.
- *
- * The output schema matches the appender's exactly (`timestep`, `atom_index`,
- * `id`, then property columns sorted by name), so readers cannot tell which path
- * produced a file.
- */
 
-/** Columns the reader treats as geometry or bookkeeping rather than properties. */
 const NON_PROPERTY_COLUMNS = new Set(['atom_index', 'x', 'y', 'z', 'bucket']);
 
 const isCosmeticColorColumn = (name: string): boolean =>
     name === 'color' || name.endsWith('_color');
 
-/** DuckDB types that cast to DOUBLE without inspecting any value. */
 const NUMERIC_TYPE_PATTERN = /^(BOOLEAN|[US]?TINYINT|[US]?SMALLINT|[US]?INTEGER|[US]?BIGINT|HUGEINT|UHUGEINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/;
 
 interface SourceColumn {
@@ -34,9 +19,7 @@ interface SourceColumn {
 }
 
 interface ProjectedColumn {
-    /** Output column name, e.g. `stress[0]`. */
     name: string;
-    /** SQL expression producing the value from the source row. */
     expression: string;
     isNumeric: boolean;
 }
@@ -44,7 +27,6 @@ interface ProjectedColumn {
 interface PropertyProjection {
     columnNames: string[];
     rowCount: number;
-    /** Runs the projection and writes the parquet at `outputPath`. */
     copyTo: (outputPath: string) => Promise<void>;
 }
 
@@ -67,7 +49,6 @@ const isListType = (type: string): boolean => type.endsWith('[]') || type.starts
 const listElementType = (type: string): string =>
     type.endsWith('[]') ? type.slice(0, -2) : type;
 
-/** Collapses the projections to one aggregate row, so no per-atom value crosses into JS. */
 const readAggregateRow = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -79,7 +60,6 @@ const readAggregateRow = async (
     return reader.getRowObjectsJS()[0];
 };
 
-/** Longest list per list-typed column, so vectors expand into the same fixed columns the flattener produced. */
 const measureListLengths = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -102,13 +82,6 @@ const measureListLengths = async (
     return lengths;
 };
 
-/**
- * Splits candidate columns into those that are safely numeric and those that are not.
- *
- * The row-based path typed a column by looking at its values, so a VARCHAR column
- * holding only numbers became DOUBLE. That is reproduced with one aggregate per
- * ambiguous column rather than a per-row inspection.
- */
 const resolveTextColumnNumeracy = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -139,12 +112,6 @@ const countRows = async (connection: DuckDBConnection, filePath: string): Promis
     return Number(row?.total ?? 0);
 };
 
-/**
- * Builds the projection for a plugin per-atom parquet.
- *
- * Returns `null` when the file carries no property columns, matching the row-based
- * path's "nothing worth storing" result.
- */
 export const buildPropertyProjection = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -172,7 +139,6 @@ export const buildPropertyProjection = async (
             const length = listLengths.get(column.name) ?? 0;
             const elementIsNumeric = NUMERIC_TYPE_PATTERN.test(listElementType(column.type));
             for (let index = 0; index < length; index += 1) {
-                // DuckDB lists are 1-indexed; the flattener named them from 0.
                 const expression = `${quoted}[${index + 1}]`;
                 const name = `${column.name}[${index}]`;
                 projected.push({
@@ -213,7 +179,6 @@ export const buildPropertyProjection = async (
 
     const hasSourceId = sourceColumns.some((column) => column.name === 'id');
     const hasSourceAtomIndex = sourceColumns.some((column) => column.name === 'atom_index');
-    // Without a source order there is nothing to preserve, so the window stays unordered.
     const rowNumberWindow = hasSourceAtomIndex
         ? `ROW_NUMBER() OVER (ORDER BY ${quoteIdentifier('atom_index')})`
         : 'ROW_NUMBER() OVER ()';
@@ -221,8 +186,6 @@ export const buildPropertyProjection = async (
     const selectList = [
         `CAST(${timestep} AS BIGINT) AS timestep`,
         `CAST(${rowNumberWindow} - 1 AS UINTEGER) AS atom_index`,
-        // A negative or non-integral id fails the cast and lands as NULL, exactly as
-        // `normalizeAtomId` rejected it.
         hasSourceId
             ? `TRY_CAST(${quoteIdentifier('id')} AS UBIGINT) AS id`
             : 'CAST(NULL AS UBIGINT) AS id',

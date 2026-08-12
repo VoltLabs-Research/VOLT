@@ -6,21 +6,8 @@ import type { EventName } from '@shared/events/EventGroup';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
 
-/**
- * One channel carries every event, with the name inside the envelope.
- *
- * Per-event channels would mean quoting names like `secret-key.deleted` into
- * Postgres identifiers and issuing a fresh LISTEN whenever a handler registers.
- * A single channel costs a name check on events nobody handles — negligible at
- * these volumes — and buys a listener whose subscription set never changes.
- */
 const CHANNEL = 'volt_domain_events';
 
-/**
- * NOTIFY payloads are capped at 8000 bytes and exceeding it raises at emit time.
- * Anything near the ceiling is parked in a table and announced by reference, so
- * a large event degrades to an extra round trip instead of an error.
- */
 const INLINE_PAYLOAD_LIMIT_BYTES = 6_000;
 
 const RECONNECT_DELAY_MS = 1_000;
@@ -30,7 +17,6 @@ interface EventEnvelope {
     name: string;
     eventId: string;
     occurredOn: string;
-    /** Present when the payload was parked; the body is then read from the spool. */
     spoolId?: string;
     payload?: unknown;
 }
@@ -38,17 +24,6 @@ interface EventEnvelope {
 const isPostgresUrl = (url: string | undefined): boolean =>
     Boolean(url) && !url!.startsWith('sqlite:');
 
-/**
- * Domain event bus over Postgres LISTEN/NOTIFY.
- *
- * The listener holds its own connection rather than borrowing from the pool: a
- * LISTEN is a property of one session, so a pooled connection would stop
- * delivering the moment it was recycled.
- *
- * When the configured database is not Postgres the bus dispatches in-process
- * instead. That is the correct behaviour for a single-process deployment, not a
- * degraded one — cross-process fan-out is the only thing NOTIFY was providing.
- */
 class PostgresEventBus {
     private readonly handlers = new Map<string, IEventHandler<IDomainEvent>[]>();
     private listener: Client | null = null;
@@ -82,8 +57,6 @@ class PostgresEventBus {
 
         let serialized = JSON.stringify(inline);
         if (Buffer.byteLength(serialized, 'utf8') > INLINE_PAYLOAD_LIMIT_BYTES) {
-            /* An opaque `jsonb` column does not survive TypeORM's deep-partial
-               mapping of the insert literal, so the shape is asserted here. */
             await DomainEventSpoolEntry.getRepository().insert({
                 id: event.eventId,
                 name,
@@ -98,10 +71,6 @@ class PostgresEventBus {
             } satisfies EventEnvelope);
         }
 
-        /*
-         * pg_notify rather than a NOTIFY statement: the channel and payload bind
-         * as parameters, so neither needs escaping into the statement text.
-         */
         await DomainEventSpoolEntry.getRepository().manager.query(
             'SELECT pg_notify($1, $2)',
             [CHANNEL, serialized]
@@ -118,10 +87,6 @@ class PostgresEventBus {
 
         logger.info(`@event-bus: ${handler.label ?? handler.constructor.name} registered for ${eventName}`);
 
-        /*
-         * Awaited so a handler registered during bootstrap cannot miss an event
-         * emitted immediately afterwards.
-         */
         if (this.distributed) {
             await this.ensureListener();
         }
@@ -157,10 +122,6 @@ class PostgresEventBus {
             void this.receive(message.payload);
         });
 
-        /*
-         * A dropped listener is silent — no error surfaces at the emit side — so
-         * reconnection is driven from here rather than left to the next publish.
-         */
         client.on('error', (error: Error) => {
             logger.error(`@event-bus: listener connection failed: ${error.message}`);
             this.scheduleReconnect();
@@ -205,7 +166,6 @@ class PostgresEventBus {
             return;
         }
 
-        /* Nothing here handles it, so the parked body can go without being read. */
         if (!this.handlers.has(envelope.name)) {
             if (envelope.spoolId) {
                 await DomainEventSpoolEntry.delete({ id: envelope.spoolId }).catch(() => undefined);
@@ -238,7 +198,6 @@ class PostgresEventBus {
         const handlers = this.handlers.get(event.name);
         if (!handlers || handlers.length === 0) return;
 
-        /* Snapshot: a handler may register another while this batch is running. */
         const snapshot = handlers.slice();
         const results = await Promise.allSettled(snapshot.map((handler) => handler.handle(event)));
 

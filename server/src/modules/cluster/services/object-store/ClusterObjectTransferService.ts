@@ -21,8 +21,6 @@ interface ClusterObjectTransferWriteInput {
     contentEncoding?: string;
 }
 
-/* Kept as an options bag only because ClusterObjectController (outside this
-   module) passes `{ rangeHeader }`; it carries a single optional field. */
 interface ClusterObjectTransferReadOptions {
     rangeHeader?: string;
 }

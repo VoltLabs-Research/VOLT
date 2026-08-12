@@ -5,11 +5,6 @@ import type { WorkflowNode } from '@shared/contracts/types/workflow.types';
 import type { DebugEnvironmentState } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import type { DebugSession, NodeExecutionOutcome } from '@modules/analysis/services/workflow/debug/debug-session';
 
-/**
- * Runs an export node against the exposure it is linked to, writing its artifacts to
- * a throwaway directory beside the session's output dir. Every reason the export
- * cannot run is reported as a skip so the debugger can keep stepping.
- */
 export const executeDebugExportNode = async (
     session: DebugSession,
     node: WorkflowNode,

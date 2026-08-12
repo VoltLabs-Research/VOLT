@@ -148,7 +148,6 @@ export default class AnalysisEvents{
         const terminalReceiptSetKey = `daemon-analysis:${analysisId}:terminal-keys`;
 
         await getKeyValueStore().transaction(async (store) => {
-            /* The indexes name the per-job keys, so they are read before being dropped. */
             const [jobIds, terminalKeys] = await Promise.all([
                 store.setMembers(projectedAnalysisJobsKey),
                 store.setMembers(terminalReceiptSetKey)

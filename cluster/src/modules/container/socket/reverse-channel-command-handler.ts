@@ -4,11 +4,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ReverseChannelCommandExecutor, ReverseChannelCommandPayloadView } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { ReverseChannelHandler } from '@voltstack/daemon-cluster-client';
 
-/**
- * Adapts a daemon command executor to the client's handler contract, turning
- * thrown errors into the response envelope the VOLT server expects:
- * `ApplicationError`s keep their status and code, anything else becomes a 500.
- */
 export const createReverseChannelCommandHandler = (
     commandName: string,
     execute: ReverseChannelCommandExecutor

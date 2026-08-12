@@ -5,7 +5,6 @@ interface PartitionedJobs {
     localJobs: TeamJobSummary[];
 }
 
-/* Pure grouping, partitioning and result-shaping helpers for job maintenance. */
 
 export const isDaemonJob = (job: TeamJobSummary): boolean => {
     return Boolean(job.teamClusterId) && job.backingSource === 'daemon';

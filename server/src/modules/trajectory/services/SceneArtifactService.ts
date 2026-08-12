@@ -46,11 +46,6 @@ interface SceneArtifactExecutionContext {
     storageClusterId: string;
 }
 
-/**
- * Raised whenever an operation needs a team cluster to run on and none could be
- * resolved. Shared by every scene-artifact producer (color coding, particle
- * filter, line style) so the three of them report the same failure.
- */
 export const buildClusterRequiredError = (): ApplicationError => {
     return new ApplicationError(
         ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND,

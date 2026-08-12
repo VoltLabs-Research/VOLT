@@ -17,23 +17,12 @@ const DIRECT_FAST_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv(
     45_000
 );
 
-/*
- * The tunnel pool was pinned to one socket per session because a reverse-channel
- * tunnel is a single stream. A real connection has no such constraint, so reads of
- * different objects stop queueing behind each other.
- */
 const DIRECT_MAX_SOCKETS = readPositiveIntegerEnv('TEAM_CLUSTER_OBJECT_GATEWAY_DIRECT_MAX_SOCKETS', 32);
 
-/* Metadata-only verbs must not sit behind the bulk transfer budget. */
 const isFastOperation = (operation: ObjectGatewayOperationName): boolean => (
     operation === 'head' || operation === 'list'
 );
 
-/**
- * Raised when the gateway was never reached. Kept distinct from a gateway that
- * answered an error status: only the former justifies retrying over the tunnel,
- * and treating a 404 as "unreachable" would hide real failures behind a slow path.
- */
 export class ObjectGatewayDialError extends Error {
     constructor(readonly cause: Error) {
         super(`Object gateway direct dial failed: ${cause.message}`);
@@ -41,14 +30,6 @@ export class ObjectGatewayDialError extends Error {
     }
 }
 
-/**
- * Speaks the object gateway protocol straight to a daemon over HTTP.
- *
- * Same request construction as the tunnel path — the only difference is that the
- * socket underneath is a real one, so bytes are not reframed onto the control
- * connection. Requests carry the same direct-access token, so the daemon's
- * authorization is unchanged and remains the single gate on these objects.
- */
 class ObjectGatewayDirectTransport {
     readonly #agentsByOrigin = new Map<string, http.Agent | https.Agent>();
 
@@ -58,11 +39,6 @@ class ObjectGatewayDirectTransport {
         headers: Headers,
         operation: ObjectGatewayOperationName
     ): Promise<RawHttpResponse> {
-        /*
-         * The gateway paths are absolute, so resolving them against the base URL
-         * would drop any path prefix an operator put there to route through an
-         * ingress. The prefix is preserved by appending instead.
-         */
         const target = new URL(baseUrl);
         const basePathPrefix = target.pathname.replace(/\/+$/, '');
         const requestTarget = `${basePathPrefix}${options.path}`;
@@ -89,12 +65,6 @@ class ObjectGatewayDirectTransport {
                 });
             });
 
-            /*
-             * A socket error before any response means the gateway was not reached,
-             * so it is reported as a dial failure and the caller may tunnel instead.
-             * Once headers have arrived the promise is already settled and this only
-             * surfaces on the response stream, where retrying would be wrong.
-             */
             request.once('error', (error: Error) => {
                 reject(new ObjectGatewayDialError(error));
             });

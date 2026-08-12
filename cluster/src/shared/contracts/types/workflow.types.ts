@@ -319,7 +319,6 @@ export class WorkflowGraph {
 };
 
 
-/** A trajectory dump materialised on local disk, ready to be handed to a plugin binary. */
 export interface WorkflowDumpTarget {
     localPath: string;
     originalPath?: string;

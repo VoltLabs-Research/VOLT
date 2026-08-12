@@ -39,8 +39,6 @@ const SDK_FACTORIES: Record<AIProvider, SdkFactory> = {
     [AIProvider.Ollama]: createOllama
 };
 
-/* The provider column is user-supplied configuration read back from the database, so
-   a row can still name a provider this build no longer ships. */
 export const buildLanguageModel = (provider: AIProvider, modelName: string, options: SdkOptions): LanguageModel => {
     const factory = SDK_FACTORIES[provider];
     if(!factory){

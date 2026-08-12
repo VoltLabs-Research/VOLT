@@ -25,12 +25,6 @@ const resolveOperatingSystem = (userAgent: string): string => {
     return 'Unknown OS';
 };
 
-/**
- * Derives browser, OS and form factor from a raw User-Agent string.
- *
- * Shared so the session list rendered by the client and the session records
- * written by the server cannot disagree about the same device.
- */
 export const parseUserAgent = (userAgent: string): ParsedUserAgent => {
     const normalized = userAgent.trim();
 

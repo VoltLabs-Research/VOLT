@@ -1,20 +1,7 @@
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
-/**
- * `const T` is load-bearing: without it TypeScript widens each property to
- * `string` and `ErrorCode` silently becomes `string`, which defeats every
- * `code: ErrorCode` parameter.
- */
 const createErrorCodes = <const T extends Record<string, string>>(errorCodes: T): Readonly<T> => Object.freeze(errorCodes);
 
-/**
- * Every code the daemon can put on the wire, in one place.
- *
- * The cloud maps a code to a user-facing message, so a code invented at the
- * throw site is untranslatable. All codes use the `Namespace::Code` convention;
- * some used to be written `SCREAMING_SNAKE` at the throw site and are normalized
- * here.
- */
 export const ErrorCodes = createErrorCodes({
     ANALYSIS_START_EMPTY_EXECUTION_PLAN: 'Analysis::Start::EmptyExecutionPlan',
     ANALYSIS_START_INVALID_ENTRYPOINT: 'Analysis::Start::InvalidEntrypoint',
@@ -47,7 +34,6 @@ export const ErrorCodes = createErrorCodes({
 
     WORKFLOW_TRACE: 'Workflow::Trace',
 
-    // Normalized from SCREAMING_SNAKE literals that were written at the throw site.
     FILTER_EMPTY_RESULT: 'Filter::EmptyResult',
     FILTER_MASK_LENGTH_MISMATCH: 'Filter::MaskLengthMismatch',
     FILTER_PROPERTY_NOT_FOUND: 'Filter::PropertyNotFound',

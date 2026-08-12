@@ -11,11 +11,6 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ContainerPortMapping } from '@shared/contracts/ports/ContainerRuntime';
 import type { UpdateContainerInput } from '@volt/contracts/modules/container/http';
 
-/* Mutating a live container. Two disjoint shapes of request arrive here: a
-   runtime action (start/stop/restart), which only reconciles state the daemon
-   owns, and an edit of the environment or the port mapping, which has to move
-   public port relays in step with the persisted row and unwind them if the
-   write fails. */
 
 const applyRuntimeAction = async (
     container: Container,

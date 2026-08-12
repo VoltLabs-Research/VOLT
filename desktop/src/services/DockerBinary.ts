@@ -50,7 +50,6 @@ export const dockerPath = async (): Promise<string | null> => {
             resolved = candidate;
             return candidate;
         }catch{
-            // Candidate paths are guesses; a miss is the normal case.
         }
     }
 

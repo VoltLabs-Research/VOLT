@@ -57,11 +57,6 @@ interface TeamClusterObjectStoreReadOptions {
 
 export type TeamClusterObjectStoreHeadResponse = TeamClusterObjectGatewayHeadResponse;
 
-/*
- * Symbol brands: the only way to obtain these values is through
- * `requireRequesterCredentials` / `authorizeOwner`, so "authorized" is proven by
- * the type system at every call site instead of re-checked at runtime.
- */
 const requesterCredentialsBrand = Symbol('TeamClusterObjectStoreRequesterCredentials');
 const authorizedAccessBrand = Symbol('TeamClusterObjectStoreAuthorizedAccess');
 
@@ -195,10 +190,6 @@ export default class TeamClusterObjectStoreProxyService {
         await this.#objectGatewayClient.deleteObject(access.ownerClusterId, bucket, objectKey);
     }
 
-    /*
-     * `content-length` arrives as a raw HTTP header string, so it still needs a
-     * real parse check before it becomes an upload size.
-     */
     #requireContentLength(contentLength: number | undefined): number {
         if (contentLength === undefined) {
             throw ApplicationError.badRequest(

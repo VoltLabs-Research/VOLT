@@ -18,16 +18,6 @@ interface ControlSocketManagerCallbacks {
     onError: (err: DaemonClientError) => void;
 };
 
-/**
- * Manages the socket.io-client control connection to the Volt server.
- *
- * Responsibilities:
- * - Establish and maintain the `socket.io` connection.
- * - Emit `team-cluster-daemon:register` on each (re)connect.
- * - Forward inbound `team-cluster-daemon:message` events to the bridge.
- * - Implement outbound `sendCommand` with request/response semantics and timeout.
- * - Emit arbitrary outbound messages via `emit`.
- */
 interface PendingCommand {
     command: string;
     resolve: (value: unknown) => void;
@@ -41,7 +31,6 @@ export class ControlSocketManager {
     private activeSocketId = 0;
     private bridge: ReverseChannelBridge | null = null;
 
-    /** In-flight request/response commands keyed by requestId (single dispatcher). */
     private readonly pending = new Map<string, PendingCommand>();
 
     constructor(
@@ -50,14 +39,6 @@ export class ControlSocketManager {
         private readonly callbacks: ControlSocketManagerCallbacks
     ) {}
 
-    /**
-     * Establishes the socket.io connection and waits for the server to
-     * acknowledge the `team-cluster-daemon:registered` event.
-     *
-     * @param teamClusterId - Cluster identifier sent in the register payload.
-     * @param daemonPassword - Current (possibly just-rotated) daemon password.
-     * @throws {DaemonClientError} with code `SOCKET_CONNECTION_FAILED` on initial connect error.
-     */
     connect(teamClusterId: string, daemonPassword: string): Promise<void> {
         this.registered = false;
         this.socket?.removeAllListeners();
@@ -78,8 +59,6 @@ export class ControlSocketManager {
 
         this.socket = socket;
 
-        // Single persistent response dispatcher: routes every inbound response
-        // to its waiting command by requestId, instead of one listener per call.
         socket.on(DaemonSocketEvent.TeamClusterDaemonMessage, (message: unknown) =>
             this.dispatchResponse(socketId, message)
         );
@@ -142,15 +121,10 @@ export class ControlSocketManager {
         });
     }
 
-    /**
-     * Registers the reverse-channel bridge so it is automatically rebound
-     * whenever a new socket is created (initial connect and reconnections).
-     */
     setBridge(bridge: ReverseChannelBridge): void {
         this.bridge = bridge;
     }
 
-    /** Gracefully disconnects the socket and clears internal state. */
     disconnect(): void {
         this.registered = false;
         this.socket?.removeAllListeners();
@@ -159,20 +133,6 @@ export class ControlSocketManager {
         this.rejectAllPending(DaemonClientError.socketNotReady());
     }
 
-    /**
-     * Sends a command to the server and waits for the corresponding response.
-     *
-     * Uses a UUID-keyed request/response pattern over the
-     * `team-cluster-daemon:message` event with an optional timeout.
-     *
-     * @param command - Command name, e.g. `"runtime.heartbeat"`.
-     * @param payload - Arbitrary command payload.
-     * @param timeoutMs - Override the per-call timeout in milliseconds.
-     * @returns The `data.data` field from the server response envelope.
-     * @throws {DaemonClientError} `SOCKET_NOT_READY` when not connected.
-     * @throws {DaemonClientError} `COMMAND_TIMEOUT` when no response arrives in time.
-     * @throws {DaemonClientError} `COMMAND_REJECTED` when the server returns `ok: false`.
-     */
     sendCommand<T>(command: string, payload?: object, timeoutMs?: number): Promise<T | undefined> {
         if (!this.socket || !this.registered) {
             return Promise.reject(DaemonClientError.socketNotReady());
@@ -204,7 +164,6 @@ export class ControlSocketManager {
         });
     }
 
-    /** Routes a single inbound message to the command waiting on its requestId. */
     private dispatchResponse(socketId: number, message: unknown): void {
         if (this.activeSocketId !== socketId) {
             return;
@@ -234,7 +193,6 @@ export class ControlSocketManager {
         entry.resolve(typed.data?.data);
     }
 
-    /** Rejects and clears every in-flight command (on disconnect / reconnect). */
     private rejectAllPending(error: DaemonClientError): void {
         for (const entry of this.pending.values()) {
             clearTimeout(entry.timer);
@@ -243,13 +201,6 @@ export class ControlSocketManager {
         this.pending.clear();
     }
 
-    /**
-     * Emits an arbitrary outbound message on the control socket without waiting
-     * for a response. Used for fire-and-forget notifications such as exposure
-     * snapshots and session data chunks.
-     *
-     * @throws {DaemonClientError} `EMIT_FAILED` when the socket is not connected.
-     */
     emit(message: TeamClusterDaemonMessage): void {
         if (!this.socket) {
             throw DaemonClientError.emitFailed();
@@ -258,7 +209,6 @@ export class ControlSocketManager {
         this.socket.emit(DaemonSocketEvent.TeamClusterDaemonMessage, message);
     }
 
-    /** Returns whether the socket is connected and the register ACK was received. */
     isReady(): boolean {
         return this.registered;
     }

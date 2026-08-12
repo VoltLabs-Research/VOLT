@@ -1,7 +1,3 @@
-/**
- * Extracts the filename from a Content-Disposition header, preferring the
- * RFC 5987 UTF-8 form over the quoted and bare variants.
- */
 export const readFilenameFromContentDisposition = (value: string | undefined): string | undefined => {
     if(!value) return undefined;
 

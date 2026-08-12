@@ -152,7 +152,6 @@ export default class PluginController extends Controller {
     ): Promise<void>{
         const input = {
             ...buildControllerParams(req) as unknown as GetPluginExposureGLBInput,
-            /* Route params carry no headers, and the contract's field stayed unfilled. */
             acceptEncoding: readAcceptEncoding(req)
         };
         const output = await this.#service.getPluginExposureGLB(input);

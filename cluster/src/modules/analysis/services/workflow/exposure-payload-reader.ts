@@ -15,20 +15,13 @@ import type { PayloadDocumentReadOptions } from '@modules/analysis/services/work
 interface WorkflowExposurePayloadReadResult {
     listing: JsonObject | null;
     subListingNames: string[];
-    /**
-     * One entry per named sub-listing, handed over as row batches. A payload document
-     * can describe tens of millions of entries, so no path here holds a whole
-     * sub-listing in one array.
-     */
     subListings: SubListingBatchSource[];
     perAtomProperties: PerAtomProperties | null;
-    /** Set instead of `perAtomProperties` when the atoms stay in the plugin's parquet. */
     perAtomSource: PerAtomParquetSource | null;
     entityKind: 'atoms' | 'lines';
     exportData: JsonObject | null;
 }
 
-/** Wraps rows already in memory in the batch contract the streaming path uses. */
 const inlineSubListing = (name: string, rows: JsonObject[]): SubListingBatchSource => ({
     name,
     rowCount: rows.length,
@@ -116,10 +109,6 @@ const extractFromDocument = (
     };
 };
 
-/**
- * Bond and line tables share a shape: a `points` column plus per-entity properties.
- * Only the listing counters and the exporter key differ.
- */
 const reconstructFromPointsTable = (
     rows: JsonObject[],
     kind: 'bonds' | 'lines',
@@ -157,19 +146,6 @@ const reconstructFromPointsTable = (
     };
 };
 
-/**
- * Summarises a plain atom table without materialising a single row.
- *
- * This replaced a loop over every atom that built five JS objects per atom — a row
- * copy, an atom, a position array, a property row and a cached flattened row — only
- * for both consumers to immediately reduce them back to columns. On a 4.45M-atom
- * frame that cost ~22 GB of heap and killed the daemon mid-analysis. The listing
- * counters are aggregates, the structure sub-listing is one row per bucket, and the
- * per-atom payload is handed on as a reference to the parquet the plugin wrote.
- *
- * Buckets keep the order in which they first appear by `atom_index`, because the
- * exporter derives a bucket's fallback colour from that position.
- */
 const summarizeAtomTable = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -238,11 +214,6 @@ export const readWorkflowExposurePayload = async (
 
         if (columnNames.length === 1 && columnNames[0] === 'payload') {
             const payloadBytes = await measurePayloadBytes(connection, filePath);
-            /*
-             * A document past V8's string ceiling cannot be read at all, so it is taken
-             * apart inside DuckDB instead. Smaller ones keep the direct parse, which is
-             * cheaper than a dozen extraction statements.
-             */
             if (isPayloadTooLargeForJs(payloadBytes)) {
                 const document = await readLargePayloadDocument(
                     connection,

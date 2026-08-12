@@ -78,22 +78,7 @@ export interface TeamClusterEffectiveCapabilities{
     servesArtifactDownloads: boolean;
 }
 
-/**
- * What the cluster's machine can do, observed by its daemon.
- *
- * Distinct from `TeamClusterEffectiveCapabilities`, which the control plane
- * derives from the role the user configured. These are facts about the host that
- * only the daemon can see, so they arrive on the heartbeat and change when the
- * machine changes.
- */
 export interface TeamClusterHostCapabilities{
-    /**
-     * Whether the daemon can reach a container runtime.
-     *
-     * False disables the features that create containers — the container explorer
-     * and notebook sessions — while everything else keeps working, so a machine
-     * without Docker runs the product rather than refusing to start.
-     */
     containerRuntime: boolean;
 }
 
@@ -158,7 +143,6 @@ export interface TeamCluster{
     queueScopeLimits: TeamClusterQueueScopeLimits;
     roleConfig: TeamClusterRuntimeRoleConfig;
     effectiveCapabilities: TeamClusterEffectiveCapabilities;
-    /** Null until the daemon's first heartbeat, which is not the same as "no runtime". */
     hostCapabilities: TeamClusterHostCapabilities | null;
     activeTransfers?: ClusterTransferJob[];
     createdAt: string;

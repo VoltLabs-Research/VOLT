@@ -2,9 +2,6 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import Container from '@modules/container/models/Container';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-/* Team-scoped container lookup. Every container operation starts by proving the
-   row exists and belongs to the calling team; anything that then has to reach a
-   daemon additionally needs the cluster the container was placed on. */
 
 interface ContainerRuntimeTarget{
     container: Container;

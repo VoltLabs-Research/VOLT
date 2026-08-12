@@ -27,12 +27,6 @@ export interface ExecutePipelineInput extends WireExecutePipelineInput {
     teamId: string;
 }
 
-/**
- * Turns a pipeline request into the ordered stage executions the daemon runs:
- * resolves the trajectory and its compute cluster once, hands every plugin stage
- * to the stage planner, then dispatches the whole pipeline. Any Analysis row the
- * planner created is marked failed if the dispatch itself throws.
- */
 export default class PipelineExecutionPlanner {
     #stagePlanner = new PluginStagePlanner();
     #teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
@@ -58,7 +52,6 @@ export default class PipelineExecutionPlanner {
         const trajectoryFramePayloads = trajectoryFrames.map((frame) => ({
             timestep: frame.timestep,
             natoms: frame.natoms,
-            // The relation is either an id or the hydrated frame document.
             simulationCell: (typeof frame.simulationCell === 'string'
                 ? frame.simulationCell
                 : frame.simulationCell?._id) ?? ''

@@ -1,4 +1,3 @@
-/** Escaping for values interpolated into DuckDB statements. */
 
 export const quoteIdentifier = (value: string): string =>
     `"${value.replace(/"/g, '""')}"`;

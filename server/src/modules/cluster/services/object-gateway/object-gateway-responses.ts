@@ -7,7 +7,6 @@ import type {
     TeamClusterObjectGatewayListEntry
 } from '@shared/contracts/types/TeamClusterObjectGateway';
 
-/* Wire <-> domain translation for cluster object gateway responses. */
 
 export interface ObjectGatewayJsonListEntry {
     key: string;
@@ -16,7 +15,6 @@ export interface ObjectGatewayJsonListEntry {
     lastModified?: string;
 }
 
-/* Mirrors the daemon's `ClusterObjectListResponse`: keys and objects always ship. */
 export interface ObjectGatewayJsonListResponse {
     keys: string[];
     objects: ObjectGatewayJsonListEntry[];
@@ -34,11 +32,6 @@ export interface RawHttpResponse {
     stream: NodeReadable;
 }
 
-/*
- * `IncomingHttpHeaders` values are declared `string | string[] | undefined` by
- * Node itself, so the shape checks below are real union narrowing and not
- * defensive revalidation of a trusted payload.
- */
 export const headersFromIncoming = (headers: IncomingHttpHeaders): Headers => {
     const normalized = new Headers();
 
@@ -58,12 +51,6 @@ export const headersFromIncoming = (headers: IncomingHttpHeaders): Headers => {
     return normalized;
 };
 
-/*
- * `Headers` already stores every name lower-cased, so this single pass serves
- * both as the outgoing request header bag and as the normalized headers of the
- * domain response. `normalizeMetadataHeaders` stays separate because it filters
- * on the gateway prefix and strips it from each name.
- */
 export const headersToObject = (headers: Headers): Record<string, string> => {
     const normalized: Record<string, string> = {};
     headers.forEach((headerValue, headerName) => {

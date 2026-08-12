@@ -17,10 +17,6 @@ export const resolveNonZeroExitMessage = (
     result: ProcessExecutionResult
 ): string => (typeof nonZeroExitMessage === 'function' ? nonZeroExitMessage(result) : nonZeroExitMessage);
 
-/**
- * The node output shared by both execution paths: the persistent plugin pool reports
- * its outcome as a synthetic `ProcessExecutionResult` so the record stays identical.
- */
 export const buildEntrypointNodeOutput = ({
     entrypoint,
     executionRuntime,

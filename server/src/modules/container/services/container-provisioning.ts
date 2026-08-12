@@ -13,11 +13,6 @@ import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
 import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
 import type { CreateContainerInput } from '@volt/contracts/modules/container/http';
 
-/* Provisioning and teardown: the two operations that own a container's whole
-   footprint — the daemon container, the persisted row and the public port
-   relays. Creation acquires all three, so a failure halfway has to give back
-   whatever it already took, which is the same teardown that deletion performs
-   deliberately. */
 
 const MB_PER_GB = 1024;
 const DEFAULT_MEMORY_IN_MEGABYTES = 512;
@@ -25,7 +20,6 @@ const DEFAULT_CPU_COUNT = 1;
 
 const folders = new CatalogFolderService(CatalogFolderKind.Container);
 
-/** A container may not ask for more than the cluster it lands on physically has. */
 const assertFitsClusterCapacity = async (
     teamClusterId: string,
     memoryInMegabytes: number,

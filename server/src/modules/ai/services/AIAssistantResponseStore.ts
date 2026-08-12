@@ -4,8 +4,6 @@ import { mapAssistantResponseParts, mergeAssistantParts } from '@modules/ai/serv
 import { toAIMessageView } from '@modules/ai/services/AIMessageViewMapper';
 import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 
-/* Persists the assistant reply produced by a finished chat stream, folding it into
-   the message already on record when the stream was a continuation. */
 
 export const persistAssistantResponse = async (
     conversationId: string,

@@ -3,20 +3,9 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS'
 export interface Endpoint<Input = never, Output = void>{
     readonly method: HttpMethod;
     readonly path: string;
-    /**
-     * Never assigned. Exists so `Input` and `Output` reach the structural type;
-     * without it every `Endpoint<A, B>` is assignable to every `Endpoint<C, D>`.
-     */
     readonly __io?: (input: Input) => Output;
 }
 
-/**
- * Fills the `:param` placeholders of an endpoint path. Route objects are the
- * single source of truth for paths; every caller that needs a concrete URL
- * goes through this instead of writing the path again.
- *
- * Throws when a placeholder is left unfilled.
- */
 export const buildPath = (endpoint: Endpoint<never, unknown> | Endpoint<unknown, unknown>, params: Record<string, string> = {}): string => {
     const path = endpoint.path.replace(/:([A-Za-z0-9_]+)/g, (_match, name: string) => {
         const value = params[name];

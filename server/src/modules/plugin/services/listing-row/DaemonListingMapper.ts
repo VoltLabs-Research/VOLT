@@ -47,17 +47,8 @@ const SYSTEM_KEYS = new Set([
     'row'
 ]);
 
-/**
- * Daemon rows carry a string `_id` built from their natural key. Anything else means
- * a row arrived without one, which the wire contract has no way to express, so it
- * degrades to empty rather than putting a non-string where a string is declared.
- */
 export const toListingRowId = (value: unknown): string => (typeof value === 'string' ? value : '');
 
-/**
- * A daemon row either nests its payload under `row` or spreads it next to the
- * system columns, depending on which daemon version produced it.
- */
 const readRowFields = (row: DaemonListingRow): Record<string, unknown> => {
     if (row.row) {
         return row.row;
@@ -96,7 +87,6 @@ export const mapDaemonRow = (row: DaemonListingRow): ListingRowData => {
     };
 };
 
-/** The same daemon row, keyed for the by-analysis listing views. */
 export const mapDaemonRowByAnalysis = (row: DaemonListingRow): ListingRowByAnalysisData => {
     return {
         _id: toListingRowId(row._id),

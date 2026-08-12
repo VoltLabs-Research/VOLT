@@ -5,9 +5,6 @@ import { resolveAccessiblePorts } from '@modules/container/services/container-ne
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ContainerAccessiblePort } from '@volt/contracts/modules/container/domain';
 
-/* Handing a browser a temporary URL onto one published container port. The port
-   has to be exposed, browser-reachable, live and publicly mapped before a grant
-   is worth issuing, and each failure is a different answer to the caller. */
 
 export const createContainerPortAccessUrl = async (
     teamId: string,

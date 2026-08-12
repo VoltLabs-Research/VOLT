@@ -20,7 +20,6 @@ interface RuntimeConfigMessage {
     runtimeConfig: TeamClusterDaemonRuntimeConfig | null;
 }
 
-/** What one heartbeat carries to the control plane. */
 interface HeartbeatPayload {
     teamClusterId: string;
     daemonPassword: string;

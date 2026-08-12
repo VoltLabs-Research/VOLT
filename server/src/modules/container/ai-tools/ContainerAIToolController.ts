@@ -39,8 +39,6 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<ListContainersInput>()
     })
     async listContainers(input: ListContainersInput & AIToolScope) {
-        // typia validates but does not transform, so the documented defaults are
-        // applied here; an absent key does not override them on spread.
         const { total, data } = await this.#service.list(input.teamId, {
             page: 1,
             limit: 50,
@@ -89,7 +87,6 @@ export default class ContainerAIToolController extends AIToolController {
         validate: typia.createValidate<ListContainerFilesInput>()
     })
     listContainerFiles(input: ListContainerFilesInput & AIToolScope) {
-        // `path` is positional here, so the documented default cannot ride along on a spread.
         return containerRuntimeInspectionService.getFiles(input.teamId, input.containerId, input.path ?? '/');
     }
 

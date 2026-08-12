@@ -4,16 +4,6 @@ import { logger } from '@shared/infrastructure/logger';
 
 let dataSource: DataSource | null = null;
 
-/**
- * The daemon's relational store.
- *
- * `synchronize` is on regardless of environment, which is not the posture a
- * control-plane database would take. It is defensible here because both tables hold
- * strictly derived data: every row is reproducible by re-running the analysis that
- * emitted it, so schema drift costs recomputation rather than user data. If either
- * table ever holds something authored rather than computed, this needs migrations
- * first.
- */
 export const getDaemonDataSource = (): DataSource => {
     if (!dataSource) {
         throw new Error('The daemon data source was read before connectDaemonDataSource ran');
@@ -22,15 +12,6 @@ export const getDaemonDataSource = (): DataSource => {
     return dataSource;
 };
 
-/**
- * Creates the daemon's database when it is missing.
- *
- * `synchronize` builds tables but never the database that holds them, and the
- * Postgres image only runs init scripts on a first-ever boot — so an existing
- * deployment adopting this would come up to a database that is simply not there.
- * Doing it here means one less thing a deployment has to have been set up correctly,
- * which matters most for the packaged single-machine install.
- */
 const ensureDatabaseExists = async (url: string): Promise<void> => {
     const target = new URL(url);
     const databaseName = decodeURIComponent(target.pathname.replace(/^\//, ''));
@@ -38,7 +19,6 @@ const ensureDatabaseExists = async (url: string): Promise<void> => {
         throw new Error('DATABASE_URL must name a database');
     }
 
-    /* `postgres` is the maintenance database every server is guaranteed to have. */
     const maintenanceUrl = new URL(url);
     maintenanceUrl.pathname = '/postgres';
 
@@ -52,11 +32,6 @@ const ensureDatabaseExists = async (url: string): Promise<void> => {
     try {
         const existing = await admin.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
         if (existing.length === 0) {
-            /*
-             * CREATE DATABASE takes no parameters, so the name is quoted rather than
-             * bound. It comes from our own deployment config, and the quoting keeps a
-             * name with unusual characters from changing the statement's shape.
-             */
             await admin.query(`CREATE DATABASE "${databaseName.replace(/"/g, '""')}"`);
             logger.info(`@daemon-datasource: created database ${databaseName}`);
         }
@@ -76,11 +51,6 @@ export const connectDaemonDataSource = async (entities: Function[]): Promise<Dat
         synchronize: true,
         entities,
         applicationName: 'volt-cluster-daemon',
-        /*
-         * Listing writes arrive in batches from the result processor rather than from
-         * concurrent requests, so a wide pool buys nothing and only competes with the
-         * control plane for connections on a single-node deployment.
-         */
         poolSize: 10
     });
 

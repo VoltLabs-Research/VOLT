@@ -9,13 +9,7 @@ type ToolHandler = (input: Record<string, unknown>) => unknown;
 
 type ValidationResult = { success: true; value: unknown } | { success: false; error: Error };
 
-/**
- * Base class for a module's AI tool surface. Subclasses declare one decorated
- * method per tool — the AI-facing sibling of `shared/http/Controller`, which
- * turns `@Route` methods into an Express router.
- */
 export default abstract class AIToolController {
-    /** Materializes every declared tool, bound to the calling team/user scope. */
     buildTools(scope: AIToolScope): ToolSet {
         const tools: ToolSet = {};
 
@@ -36,8 +30,6 @@ export default abstract class AIToolController {
             toolDefinition.execute = this.#bindHandler(definition, scope);
         }
 
-        // The AI SDK distinguishes an absent key from an explicit `false`, so the
-        // gate is only attached when the tool actually declares one.
         if (definition.needsApproval !== undefined) {
             toolDefinition.needsApproval = definition.needsApproval;
         }
@@ -70,8 +62,6 @@ export default abstract class AIToolController {
             throw new Error(`AI tool "${definition.name}" has no handler method on ${this.constructor.name}.`);
         }
 
-        // Scope is spread last so a model can never override teamId/userId by
-        // declaring them as tool inputs.
         return async (params: unknown) => handler.call(this, {
             ...(params as Record<string, unknown>),
             ...scope

@@ -93,17 +93,10 @@ export class VoltEventChannelConnection {
         this.bufferedEvents.clear();
     }
 
-    /** Whether a non-buffered event emitted right now would actually reach the server. */
     isReady(): boolean {
         return Boolean(this.channelClient) && this.registered;
     }
 
-    /**
-     * Fires once this channel can carry events. Publishers whose payload is a full
-     * snapshot rather than an increment need this: the control plane connects first,
-     * so anything they emit on *its* connect is dropped here before the transport for
-     * it exists.
-     */
     onReady(listener: () => void): () => void {
         this.readyListeners.add(listener);
         return () => this.readyListeners.delete(listener);

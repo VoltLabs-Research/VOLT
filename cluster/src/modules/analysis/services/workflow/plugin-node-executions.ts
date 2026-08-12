@@ -16,7 +16,6 @@ export interface WorkflowPluginReferenceValueWithSelections {
     selections: WorkflowPluginReferenceSelectionWithConfig[];
 }
 
-/** One plugin the node resolved to, with the config and timesteps to run it with. */
 export interface ResolvedPluginExecution {
     pluginId: string;
     config: WorkflowNodeOutput;
@@ -63,10 +62,6 @@ const resolveArgumentReferenceExecutions = (
     }));
 };
 
-/**
- * Expands a plugin node into the executions it implies: either the single plugin it
- * names, or one execution per selection of the arguments node it references.
- */
 export const resolvePluginExecutionsForNode = (
     workflow: WorkflowDefinition | undefined,
     pluginNodeData: WorkflowPluginNodeData | undefined,
@@ -108,11 +103,6 @@ export const createNestedExecutionResult = (items: WorkflowExposureArtifact[]): 
     }
 });
 
-/**
- * Folds every execution of one plugin node into a single node output. The JSON
- * projections are lazy so a workflow that never interpolates them never pays for
- * the serialisation.
- */
 export const buildAggregatedPluginOutput = (executions: PluginExecutionOutput[]): WorkflowNodeOutput => {
     const allExposureItems = executions.flatMap((execution) => (
         (execution.output.execution_result as { exposures: { items: WorkflowExposureArtifact[] } })

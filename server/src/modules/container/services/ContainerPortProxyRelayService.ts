@@ -13,10 +13,6 @@ import {
 import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
 import http from 'node:http';
 
-/* One local HTTP server per published container port: which ports are bound, and
- * to which container port on which cluster. Everything that happens to a request
- * once it arrives on a relay belongs to container-port-proxy-tunnel; this file
- * owns only the registry and the sockets. */
 
 export interface ContainerPortRelayTarget {
     teamId: string;
@@ -117,7 +113,6 @@ export class ContainerPortProxyRelayService {
                 );
             }
 
-            /* Refreshes the container's address, which changes across restarts. */
             Object.assign(existingRelay, input);
             return;
         }

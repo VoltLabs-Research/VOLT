@@ -6,7 +6,6 @@ import type { PluginListingRepository } from '@modules/plugin/models/PluginListi
 import type { PluginListingTransferRow } from '@modules/plugin/models/plugin-listing-repository-contract';
 import type { SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
 
-/** Flattens an exposure payload into the precomputed listing rows the UI reads. */
 
 export const precomputeListingRows = async (
     pluginListingRepository: PluginListingRepository,
@@ -63,13 +62,6 @@ export const precomputeListingRows = async (
     }]);
 };
 
-/**
- * Persists the sub-listings a batch at a time.
- *
- * The batches come from the reader, which never holds a whole sub-listing: a mesh over
- * a multi-million-atom frame describes tens of millions of entries, so both the read
- * and the write have to stay bounded.
- */
 export const precomputeSubListingRows = async (
     pluginListingRepository: PluginListingRepository,
     executionData: AnalysisJobExecutionData,

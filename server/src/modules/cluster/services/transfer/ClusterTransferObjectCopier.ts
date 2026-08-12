@@ -56,7 +56,6 @@ const compareObjectListingEntries = (
     return 'inconclusive';
 };
 
-/** `hashesMatch` is undefined when either side carries no sha256 metadata. */
 const compareObjectHeads = (
     sourceHead: TeamClusterObjectGatewayHeadResponse,
     destinationHead: TeamClusterObjectGatewayHeadResponse
@@ -72,11 +71,6 @@ const SKIPPED_OBJECT = {
     bytesTransferred: 0
 };
 
-/**
- * Object-level half of a cluster transfer: copies the authoritative objects of
- * a placement to the destination cluster, verifies the copy byte for byte and
- * removes the source copy once the destination is authoritative.
- */
 export default class ClusterTransferObjectCopier{
     #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClientSingleton;
     #jobStore = new ClusterTransferJobStore();
@@ -162,10 +156,6 @@ export default class ClusterTransferObjectCopier{
         return currentJob;
     }
 
-    /**
-     * Confirms every source object exists on the destination with the same size
-     * and sha256 metadata, and returns the total verified byte count.
-     */
     async verifyPlacement(
         job: ClusterTransferJob,
         placement: StoragePlacement
@@ -252,10 +242,6 @@ export default class ClusterTransferObjectCopier{
         return verifiedBytes;
     }
 
-    /**
-     * Drops the source copy of every placement bucket and returns how many
-     * objects were removed.
-     */
     async cleanupSourceCopy(
         sourceClusterId: string,
         buckets: StoragePlacementBucketRef[]
@@ -286,8 +272,6 @@ export default class ClusterTransferObjectCopier{
             return SKIPPED_OBJECT;
         }
 
-        /* A listing rarely proves equality across storage backends, so an
-           inconclusive comparison falls back to the far pricier HEAD pair. */
         if (listingComparison === 'inconclusive') {
             const sourceHead = await this.#objectGatewayClient.head(sourceClusterId, bucket, sourceEntry.key);
             const destinationHead = await this.#tryHeadObject(destinationClusterId, bucket, sourceEntry.key);

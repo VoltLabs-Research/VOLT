@@ -3,8 +3,6 @@ import containerPortProxyRelayService from '@modules/container/services/Containe
 import { toRelayTargets } from '@modules/container/services/container-network';
 import logger from '@shared/infrastructure/logger';
 
-/* Relays only exist in this process's memory, so every published port of every
-   surviving container has to be re-bound on boot and released on shutdown. */
 
 export class ContainerPortRelayLifecycleService{
     async start(): Promise<void>{

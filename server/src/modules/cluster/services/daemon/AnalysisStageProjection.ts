@@ -9,12 +9,6 @@ import type { AnalysisArtifactStatus, AnalysisStageStatus } from '@volt/contract
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type { DaemonAnalysisStageStatusInput } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
 
-/**
- * Stages and child analyses are persisted in a simple-json column, so their
- * dates come back from the database as ISO strings even though the type says
- * Date. Optional chaining does not help here: `?.getTime()` still throws on a
- * string, since the property exists but the method does not.
- */
 const toEpochMs = (value: Date | string | undefined): number | undefined => {
     if (!value) {
         return undefined;
@@ -28,21 +22,12 @@ const isTerminalStageStatus = (status: AnalysisStageStatus): boolean => {
     return status === 'completed' || status === 'failed' || status === 'cached';
 };
 
-/**
- * The progress fields shared by stages and child analyses, which advance under
- * the same staleness rule.
- */
 interface StageProgress {
     status: AnalysisStageStatus;
     startedAt?: Date;
     finishedAt?: Date;
 }
 
-/**
- * Pure projection rules for analysis stages, child analyses and expected
- * artifacts. Decides how a daemon stage report changes the stored analysis
- * without touching persistence or the event bus.
- */
 export default class AnalysisStageProjection {
     toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
         return {
@@ -91,10 +76,6 @@ export default class AnalysisStageProjection {
             && left.timestep === right.timestep;
     }
 
-    /**
-     * A terminal stage must not be reopened by a report that started before it
-     * finished, which happens when out-of-order frames land on the same key.
-     */
     shouldIgnoreStaleUpdate(previous: StageProgress, next: StageProgress): boolean {
         if (!isTerminalStageStatus(previous.status) || isTerminalStageStatus(next.status)) {
             return false;

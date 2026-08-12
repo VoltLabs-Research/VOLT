@@ -14,7 +14,7 @@ const candidateOrigins = (raw: string): string[] => {
         try{
             const url = new URL(candidate);
             if(url.protocol === 'http:' || url.protocol === 'https:') origins.push(url.origin);
-        }catch{ /* ignore malformed candidate */ }
+        }catch{ }
     }
     return origins;
 };
@@ -44,7 +44,7 @@ export const probeRemoteEndpoint = async (rawEndpoint: string): Promise<RemotePr
         if(!res.ok) continue;
 
         let body: HealthzResponse | null = null;
-        try{ body = await res.json() as HealthzResponse; }catch{ /* non-JSON body */ }
+        try{ body = await res.json() as HealthzResponse; }catch{ }
 
         if(body?.status !== 'ok'){
             reachedServer = true;

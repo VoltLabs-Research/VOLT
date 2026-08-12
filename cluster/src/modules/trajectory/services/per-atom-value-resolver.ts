@@ -11,7 +11,6 @@ interface PerAtomValueSource {
     property: string;
     analysisId?: string;
     exposureId?: string;
-    /* Reaches us over the reverse channel, so it is not necessarily a typed array yet. */
     externalValues?: InboundChunk;
 }
 

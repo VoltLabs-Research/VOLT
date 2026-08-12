@@ -2,10 +2,6 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { DAEMON_PATHS } from '@core/config/paths';
 
-/**
- * Cache identities of artifacts and of the runtimes provisioned from them. These keys
- * address on-disk state, so their composition must stay stable.
- */
 
 const digestOf = (ownerClusterId: string, binaryObjectPath: string, expectedHash?: string) => {
     const digest = createHash('sha256')
@@ -30,7 +26,6 @@ export const buildArtifactCacheKey = (
     return `${digest.digest('hex')}-${path.basename(binaryObjectPath)}`;
 };
 
-/** `variant` separates runtimes of the same artifact, e.g. requirements or entrypoint. */
 export const buildRuntimeCacheKey = (
     binaryObjectPath: string,
     ownerClusterId: string,

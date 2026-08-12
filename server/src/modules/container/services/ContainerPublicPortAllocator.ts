@@ -29,13 +29,6 @@ export class ContainerPublicPortAllocator{
         }
     }
 
-    /**
-     * Resolves every requested private port to a public one. `existingPorts` is
-     * the container's current mapping on an update: a private port that already
-     * owns a public port keeps it unless the caller asks for a different one, so
-     * editing environment variables does not silently renumber live relays.
-     * `containerId` excludes the container being updated from the in-use scan.
-     */
     async reservePortMappings(
         requestedPorts: ContainerPortMapping[] | undefined,
         existingPorts: ContainerPortMapping[] = [],
@@ -79,12 +72,6 @@ export class ContainerPublicPortAllocator{
         }
     }
 
-    /**
-     * Drops the in-memory hold, whatever the outcome: on success the persisted
-     * container row is what keeps the port taken, on failure it returns to the
-     * pool. The hold only exists to stop two concurrent allocations picking the
-     * same port before either is written.
-     */
     releaseReservations(publicPorts: number[]): void{
         publicPorts.forEach((port) => {
             this.reservedPorts.delete(port);

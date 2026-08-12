@@ -6,7 +6,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
 
-/** Unpacks an npm-style plugin registry package into the single binary the daemon stores. */
 
 interface RegistryEntrypoint {
     type?: string;
@@ -19,7 +18,6 @@ interface RegistryEntrypointNode {
     data?: { entrypoint?: RegistryEntrypoint };
 }
 
-/** archiver ships no typings for its ZipArchive export, so its surface is declared here. */
 interface ProjectArchive {
     pipe(destination: NodeJS.WritableStream): unknown;
     file(filepath: string, data: { name: string }): unknown;

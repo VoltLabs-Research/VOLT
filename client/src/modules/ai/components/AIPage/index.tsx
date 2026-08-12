@@ -249,10 +249,6 @@ const AIPageContent = () => {
     );
 };
 
-/*
- * Mounted under DashboardLayout the page inherits the layout's provider; on
- * any other mount path it provisions its own instead of crashing the tree.
- */
 const AIPage = () => {
     const hasChatContext = useAIChatContextOptional() !== null;
 

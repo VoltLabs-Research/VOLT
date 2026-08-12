@@ -4,12 +4,6 @@ import logger from '@shared/infrastructure/logger';
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type { Response } from 'express';
 
-/**
- * Answers a trajectory preview route: 304 while the client's ETag still matches,
- * otherwise the cached base64 thumbnail. A failure becomes an error response
- * unless the headers already went out, in which case there is nothing left to
- * decide and the error is rethrown.
- */
 export const respondWithTrajectoryPreview = async (
     res: Response,
     load: () => Promise<TrajectoryPreviewResult>

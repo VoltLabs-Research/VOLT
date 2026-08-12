@@ -39,11 +39,6 @@ interface TeamClusterReverseAttachedSessionsOptions {
     emitCommand: (socketId: string, requestId: string, command: string, payload: unknown) => void;
 }
 
-/**
- * The two long-lived attached sessions the daemon proxies for us: a container
- * terminal and an outbound websocket. Both are opened with an attach command and
- * then exchange framed chunks until either side ends them.
- */
 export default class TeamClusterReverseAttachedSessions {
     readonly #pending: ReverseChannelPendingEntries;
     readonly #requireSocketId: TeamClusterReverseAttachedSessionsOptions['requireSocketId'];
@@ -242,7 +237,6 @@ export default class TeamClusterReverseAttachedSessions {
         };
     }
 
-    /** The attach request correlates on the session id, so it doubles as the request id. */
     #emitAttach(socketId: string, sessionId: string, payload: TeamClusterDaemonSessionAttachPayload): void {
         this.#emitCommand(socketId, sessionId, 'session.attach', payload);
     }

@@ -63,7 +63,6 @@ import type { GetPluginExposureGLBOutput } from '@shared/contracts/operations/Ge
 import type { GetPluginListingDocumentsOutput } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { GetSubListingOutput } from '@shared/contracts/operations/GetSubListing';
 
-/** Every canvas call is trajectory-scoped; the viewer may be an anonymous guest. */
 interface PublicCanvasRequest{
     trajectoryId: string;
     userId?: string;
@@ -75,19 +74,11 @@ interface AnalysisScopedRequest extends PublicCanvasRequest{
     analysisId: string;
 }
 
-/**
- * Object-storage misses surface as driver errors; the canvas reports them as a
- * plain 404 rather than leaking a 500.
- */
 const notFound = (error: unknown, message: string): never => {
     if(error instanceof ApplicationError) throw error;
     throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, message, 404);
 };
 
-/**
- * Read-only canvas surface reachable without team membership. Every entry point
- * authorizes through TrajectoryAccessGuard and then delegates to the owning service.
- */
 export default class PublicCanvasService{
     #access = new TrajectoryAccessGuard();
     #trajectories = new TrajectoryService();
@@ -372,10 +363,6 @@ export default class PublicCanvasService{
         return isTeamMember(teamId, userId);
     }
 
-    /**
-     * Guards against reading one trajectory's analysis through another's canvas
-     * URL, and optionally against a plugin id that does not own that analysis.
-     */
     async #requireOwnedAnalysis(analysisId: string, trajectoryId: string, pluginId?: string): Promise<AnalysisEntity>{
         const analysis = await AnalysisEntity.findOneBy({ id: analysisId });
         if(!analysis) throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');

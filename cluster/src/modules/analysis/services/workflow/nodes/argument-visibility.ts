@@ -25,12 +25,6 @@ const matchesVisibilityCondition = (
     }
 };
 
-/**
- * A `visibleWhen` condition compares against the referenced argument's statically
- * configured value first and only then against the resolved runtime value. That
- * precedence is deliberately the inverse of the one used when feeding values to a
- * plugin (see `readEffectiveArgumentValue`): a pinned value drives the form layout.
- */
 export const isArgumentVisible = (
     definition: WorkflowArgumentDefinition,
     definitions: WorkflowArgumentDefinition[],

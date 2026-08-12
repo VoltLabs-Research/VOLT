@@ -57,13 +57,6 @@ const TUNNEL_FLOW_CONTROL_LOW_WATER_BYTES = Math.max(
 const TUNNEL_DRAIN_TIMEOUT_MS = readPositiveIntegerEnv('TEAM_CLUSTER_REVERSE_TUNNEL_DRAIN_TIMEOUT_MS')
     ?? 120_000;
 
-/**
- * Bridges a reverse-channel tunnel session onto a local TCP socket, applying a
- * byte window in both directions: outbound chunks are acknowledged with
- * `tunnel-drain` frames and the socket is paused once too many bytes are in
- * flight; inbound chunks that ask for an ack are only acknowledged once the
- * socket has actually drained them.
- */
 export class TunnelSessionManager {
     readonly tunnelStates = new Map<string, TunnelState>();
     private readonly transports = new Map<string, TunnelMessageTransport>();
@@ -156,7 +149,6 @@ export class TunnelSessionManager {
         this.emitState(payload.sessionId, REVERSE_CHANNEL.TunnelSessionStatus.Opening);
     }
 
-    /** Returns the socket target, or an error message explaining why it could not be resolved. */
     private resolveTarget(payload: TunnelOpenPayload): net.TcpNetConnectOpts | string {
         if ('targetHost' in payload) {
             return {
@@ -276,7 +268,6 @@ export class TunnelSessionManager {
         }
     }
 
-    /** Tears down every session routed through a transport that just disconnected. */
     releaseTransport(transport: TunnelMessageTransport): void {
         for (const [sessionId, sessionTransport] of this.transports.entries()) {
             if (sessionTransport === transport) {

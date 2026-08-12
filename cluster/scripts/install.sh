@@ -1,4 +1,3 @@
-    #!/usr/bin/env bash
     set -euo pipefail
 
     TEAM_CLUSTER_ID="${1:-}"
@@ -181,7 +180,6 @@ PY
         fi
 
         if [ -r /etc/os-release ]; then
-            # shellcheck disable=SC1091
             . /etc/os-release
             OS_ID="${ID:-unknown}"
             OS_ID_LIKE="${ID_LIKE:-}"
@@ -635,8 +633,6 @@ def materialize_build_context(install_dir: pathlib.Path, manifest: dict) -> None
     if not archive_b64:
         return
 
-    # The archive mirrors the repository layout (cluster/ + sdk/), which is the
-    # build context the daemon's Dockerfile expects, so it extracts verbatim.
     archive_bytes = gzip.decompress(base64.b64decode(archive_b64))
 
     with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:') as tar:

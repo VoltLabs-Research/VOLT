@@ -7,11 +7,6 @@ const readUserAgent = (req: AuthenticatedRequest): string => {
     return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
 };
 
-/**
- * `accept-encoding` is declared as a possibly repeated header, and route params
- * carry no headers, so any handler that negotiates a content encoding has to read
- * it explicitly. Shared because every such handler must agree on the parse.
- */
 export const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
     const header = req.headers['accept-encoding'];
 
@@ -55,9 +50,6 @@ export const buildControllerParams = (
         params: Record<string, unknown>
     ) => Record<string, unknown>
 ): Record<string, unknown> => {
-    // `req.body` is `any` and genuinely arbitrary (a JSON array/scalar body is
-    // legal), so it stays behind the record guard. `params` and `query` are
-    // always objects per Express' own types.
     const bodyPayload = isRecord(req.body) ? req.body : {};
     const paramsPayload = coerceNumericKeys(req.params);
     const queryPayload = coerceNumericKeys(req.query);

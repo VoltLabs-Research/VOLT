@@ -44,7 +44,6 @@ const DockerGate = ({ result, onRecheck, onOpenUrl, logs, onSwitchDeployment }: 
                 setTimeout(() => setCopied(false), 1500);
             })
             .catch(() => {
-                // Clipboard access can be denied; the command is on screen anyway.
             });
     };
 

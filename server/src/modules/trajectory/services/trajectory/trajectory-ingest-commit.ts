@@ -17,7 +17,6 @@ import type { TrajectoryUploadSessionRequest } from '@modules/trajectory/service
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const GLB_JOB_NAME = 'Preprocess trajectory frame';
 
-/** Shape the daemon answers `TrajectoryIngest` with. */
 export interface TrajectoryIngestResult {
     frames: Array<{
         timestep: number;
@@ -30,18 +29,10 @@ export interface TrajectoryIngestResult {
     };
 }
 
-/**
- * Raised by the daemon when none of the uploaded files parsed into frames. It
- * only reaches us as a message, so it is matched rather than typed.
- */
 export const isNoValidFramesError = (error: unknown): boolean => (
     /no valid trajectory frames/i.test(error instanceof Error ? error.message : '')
 );
 
-/**
- * Hands the staged objects to the owning daemon. Ingestion is unbounded work, so
- * the command deliberately waits without a timeout.
- */
 export const requestTrajectoryIngest = (
     session: TrajectoryUploadSession,
     teamId: string
@@ -65,7 +56,6 @@ export const requestTrajectoryIngest = (
     { timeoutMs: 0 }
 );
 
-/** Persists the cells the daemon parsed and links each frame to its row. */
 export const persistIngestedFrames = async (
     trajectoryId: string,
     teamId: string,
@@ -90,10 +80,6 @@ export const persistIngestedFrames = async (
     }));
 };
 
-/**
- * Every ingested frame still needs a GLB, so the queue projection is announced
- * up front. It is best-effort: a failed projection must not fail the commit.
- */
 export const projectQueuedGlbJobs = async (
     trajectoryId: string,
     trajectoryName: string,
@@ -119,7 +105,6 @@ export const projectQueuedGlbJobs = async (
     });
 };
 
-/** A failed ingest discards the placeholder trajectory so no empty row survives. */
 export const discardFailedCommit = async (
     sessionId: string,
     trajectoryId: string,

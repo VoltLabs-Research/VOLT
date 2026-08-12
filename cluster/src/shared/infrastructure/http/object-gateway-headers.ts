@@ -7,7 +7,6 @@ import type { Request, Response } from 'express';
 
 const S3_METADATA_HEADER_PREFIX = 'x-amz-meta-';
 
-/** The object store echoes metadata keys back with unspecified casing. */
 const readObjectMetadata = (stat: LocalClusterObjectStat): Record<string, string> => {
     const metadata: Record<string, string> = {};
     for (const [key, value] of Object.entries(stat.metaData)) {
@@ -73,7 +72,6 @@ export const writePartialObjectHeaders = (
     response.setHeader('content-range', `bytes ${range.start}-${range.end}/${stat.size}`);
 };
 
-/** Translates the daemon's metadata request headers into S3's `x-amz-meta-*` form. */
 export const readUploadMetadata = (request: Pick<Request, 'get' | 'headers'>): Record<string, string> | undefined => {
     const metadata: Record<string, string> = {};
     const contentType = request.get('content-type');

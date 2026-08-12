@@ -16,8 +16,6 @@ const isTerminalStatus = (status: TeamJobSnapshot['status']): boolean => {
     return status === JobStatus.Completed || status === JobStatus.Failed;
 };
 
-/* A projected snapshot never regresses: terminal statuses stick, and a late Queued
-   frame must not undo a Running or Retrying job. */
 const holdsPreviousStatus = (
     previousStatus: TeamJobSnapshot['status'],
     incomingStatus: JobStatusChangedEventPayload['status']
@@ -55,15 +53,6 @@ const resolveProjectedStatus = (
     };
 };
 
-/**
- * Maintains the projected view of a team's jobs that the UI reads.
- *
- * Merging a status change is read-decide-write, and the decision depends on the
- * value being written over, so the whole sequence is held under a lock named for
- * the job. The previous implementation could not lock and so compared-and-swapped
- * in a retry loop instead; holding the lock removes both the loop and the
- * possibility of exhausting it under contention.
- */
 class TeamJobProjectionService {
     async upsertFromStatusChangedEvent(payload: JobStatusChangedEventPayload): Promise<TeamJobSnapshot | null> {
         const {
@@ -87,8 +76,6 @@ class TeamJobProjectionService {
         const jobStatusKey = buildJobStatusKey(jobId);
 
         return getKeyValueStore().withLock(jobStatusKey, async (store) => {
-            /* A tombstoned job was deleted deliberately, so a late report must not
-               resurrect it into the projection. */
             if (await store.exists(jobTombstoneKey(jobId))) {
                 return null;
             }

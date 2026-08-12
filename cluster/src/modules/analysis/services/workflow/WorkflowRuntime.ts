@@ -54,16 +54,11 @@ interface WorkflowExecuteInput {
     pipelineContext?: PipelineContext;
 }
 
-/** The nested runs are keyed off the analysis itself, which carries no plugin document of its own. */
 const toAnalysisDocument = (identity: AnalysisExecutionIdentity): DaemonAnalysisDocument => ({
     _id: identity.analysisId,
     pluginDisplayName: identity.pluginId
 });
 
-/**
- * Executes an analysis workflow graph for one job, and expands the plugin nodes it
- * meets into nested workflow runs.
- */
 export class WorkflowRuntime {
     private readonly nodeExecutor: WorkflowNodeExecutor;
     private readonly nestedRunner: NestedPluginWorkflowRunner;
@@ -121,10 +116,6 @@ export class WorkflowRuntime {
         return { trace: walker.getTrace() };
     }
 
-    /**
-     * Runs every plugin the node resolves to as its own nested workflow and folds the
-     * results into a single node output.
-     */
     async executePluginNode(input: NestedPluginNodeInput): Promise<NestedPluginExecutionOutcome> {
         const executions = resolvePluginExecutionsForNode(
             input.workflow,

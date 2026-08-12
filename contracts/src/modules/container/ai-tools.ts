@@ -1,7 +1,6 @@
 import type { tags } from 'typia';
 import type { PortMapping } from './domain';
 
-// The AI surface always required both halves of the mapping, unlike the optional-`public` contract type.
 interface ContainerPortMappingInput extends Required<PortMapping>{}
 
 export interface ContainerRefInput{

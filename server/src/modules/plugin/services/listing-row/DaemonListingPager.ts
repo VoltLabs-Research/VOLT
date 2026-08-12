@@ -2,11 +2,6 @@ import type { DaemonPaginatedResult } from '@modules/plugin/services/listing-row
 import { DAEMON_PAGE_SIZE } from '@modules/plugin/services/plugin/listing-constants';
 import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 
-/**
- * Exports need every row, but the daemon only ever answers one page, so the same
- * command is replayed with an increasing page number until the page count it
- * reports is exhausted.
- */
 export const collectAllDaemonPages = async <TRow>(
     daemonClient: ITeamClusterDaemonClient,
     teamClusterId: string,

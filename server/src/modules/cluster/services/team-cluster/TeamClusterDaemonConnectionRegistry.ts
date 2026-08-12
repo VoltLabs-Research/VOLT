@@ -7,14 +7,9 @@ import logger from '@shared/infrastructure/logger';
 export interface ReleasedDaemonConnection {
     teamClusterId: string;
     channel: TeamClusterDaemonSocketChannel;
-    /** True when the released socket was still the one bound to the cluster. */
     wasBound: boolean;
 }
 
-/**
- * Which socket currently serves which team cluster, per daemon channel, plus the
- * waiters that a caller parks on while a daemon reconnects.
- */
 export default class TeamClusterDaemonConnectionRegistry {
     #channels = new Map<TeamClusterDaemonSocketChannel, DaemonChannelRegistry>();
     #teamClusterIdBySocketId = new Map<string, string>();
@@ -68,7 +63,6 @@ export default class TeamClusterDaemonConnectionRegistry {
         return this.#registryFor(channel).has(teamClusterId);
     }
 
-    /** Resolves with the live socket, waiting out a reconnection window if needed. */
     async requireSocketId(
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel,

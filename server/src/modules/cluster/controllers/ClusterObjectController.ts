@@ -19,7 +19,6 @@ const GATEWAY_FAILURE = {
     message: 'Object gateway request failed'
 };
 
-/** Express types route params as `string | string[]`, so the array form must be narrowed. */
 const readRouteParam = (request: Request, paramName: 'teamId' | 'token'): string | undefined => {
     const value = request.params[paramName];
     return Array.isArray(value) ? value[0] : value;
@@ -90,7 +89,6 @@ export default class ClusterObjectController extends Controller {
         }
     }
 
-    /** Once bytes are on the wire the only way to signal failure is to tear the socket down. */
     #failResponse(response: Response, error: unknown): void {
         if (!response.headersSent) {
             sendObjectError(response, error, GATEWAY_FAILURE);

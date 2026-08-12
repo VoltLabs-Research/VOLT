@@ -26,10 +26,6 @@ import type { ProjectedJobStatusInput } from '@modules/cluster/services/daemon/D
 
 type QueuedJobProjection = Omit<ProjectedJobStatusInput, 'teamId' | 'queueType' | 'cleanupScope'>;
 
-/**
- * Both queued-batch entry points disagree on who owns the team and the queue
- * kind, so those three fields stay at the call site rather than as parameters.
- */
 const toQueuedJobProjection = (job: QueuedDaemonJobNotification, teamClusterId: string): QueuedJobProjection => ({
     jobId: job.jobId,
     teamClusterId,

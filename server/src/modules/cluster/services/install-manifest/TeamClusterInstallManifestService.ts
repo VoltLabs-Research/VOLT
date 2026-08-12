@@ -26,11 +26,6 @@ import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 
-/*
- * The build context extracted on the host mirrors the repository layout the
- * daemon's Dockerfiles expect: `cluster/` (the daemon) plus `sdk/` (the
- * DaemonClusterClient package it links).
- */
 const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster/';
 const SDK_BUILD_CONTEXT_PREFIX = 'sdk/';
 const BUILD_CONTEXT_PREFIXES = [DAEMON_BUILD_CONTEXT_PREFIX, SDK_BUILD_CONTEXT_PREFIX];

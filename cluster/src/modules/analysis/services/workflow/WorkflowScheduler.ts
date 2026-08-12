@@ -3,11 +3,6 @@ import type { WorkflowEdge, WorkflowNode, WorkflowNodeOutput, WorkflowOutputs } 
 
 export type WorkflowExecutionStatus = 'executed' | 'pending' | 'failed' | 'skipped';
 
-/**
- * How a node — or the edge that reaches it — stands relative to the run: `active`
- * usable, `inactive` on a branch that was not taken, `unresolved` still waiting on
- * a parent, `failed` reachable but poisoned by its parent.
- */
 type WorkflowRuntimeNodeState = 'active' | 'inactive' | 'unresolved' | 'failed';
 
 interface WorkflowEdgeResolution {
@@ -15,7 +10,6 @@ interface WorkflowEdgeResolution {
     reason?: string;
 }
 
-/** Memoises node states for one traversal, and detects cycles while doing it. */
 interface WorkflowResolutionCache {
     stateByNodeId: Map<string, WorkflowRuntimeNodeState>;
     resolvingNodeIds: Set<string>;
@@ -158,7 +152,6 @@ export class WorkflowScheduler {
         return nodeState;
     }
 
-    /** A node inherits `inactive`/`unresolved`/`failed` from its parents; only a reachable node gets judged on its own status. */
     private computeNodeState(nodeId: string, cache: WorkflowResolutionCache): WorkflowRuntimeNodeState {
         const parentEdges = this.params.workflow.getParentEdges(nodeId);
         const parentStates = new Set(parentEdges.map((edge) => this.resolveEdge(edge, nodeId, cache).state));
@@ -179,7 +172,6 @@ export class WorkflowScheduler {
         return nodeStatus === 'pending' ? 'unresolved' : 'failed';
     }
 
-    /** Classifies one inbound edge: first by how its source stands, then by the branch it sits on. */
     private resolveEdge(
         edge: WorkflowEdge,
         targetNodeId: string,
@@ -210,7 +202,6 @@ export class WorkflowScheduler {
         };
     }
 
-    /** Decides whether an executed parent actually hands control to this particular child. */
     private resolveBranchEdge(edge: WorkflowEdge, targetNodeId: string): WorkflowEdgeResolution {
         const { workflow, outputs } = this.params;
         const parentNode = workflow.getNode(edge.source);

@@ -14,7 +14,6 @@ import type {
 } from '@modules/plugin/services/properties/PluginPropertyStore';
 import { sweepPluginParquetCache } from '@modules/plugin/services/properties/parquet-cache-eviction';
 
-/** Mirrors exposure parquet objects onto local disk, downloading once per signature change. */
 
 const pluginAnalysisPrefix = (trajectoryId: string, analysisId: string): string =>
     `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`;
@@ -39,7 +38,6 @@ export class ExposureParquetCache {
 
     public constructor(private readonly objectStore: ClusterObjectStore) {}
 
-    /** Resolves the local parquet file of an exposure, falling back to its line entities. */
     public async resolveExposureFile(request: PluginModifierAnalysisRequest): Promise<string> {
         const atomsKey = toPluginExposureParquetObjectKey(
             request.trajectoryId,
@@ -62,7 +60,6 @@ export class ExposureParquetCache {
         }
     }
 
-    /** Resolves any local parquet file of an exposure, used when no timestep is requested. */
     public async resolveAnyExposureFile(request: PluginPropertyNamesRequest): Promise<string | null> {
         const prefix = `${pluginAnalysisPrefix(request.trajectoryId, request.analysisId)}${request.exposureId}/`;
         const keys = await this.listObjectKeys(request.ownerClusterId, prefix);
@@ -79,7 +76,6 @@ export class ExposureParquetCache {
         return this.listObjectKeys(ownerClusterId, pluginAnalysisPrefix(trajectoryId, analysisId));
     }
 
-    /** Drops an in-flight download so readers do not join a download of superseded content. */
     public invalidate(ownerClusterId: string, objectKey: string): void {
         this.downloadsInFlight.delete(`${ownerClusterId}::${objectKey}`);
     }

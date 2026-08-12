@@ -47,11 +47,6 @@ export interface ReplaceSubListingRowsInput {
     exposureId: string;
     timestep: number;
     subListingName: string;
-    /**
-     * Rows in batches rather than one array: a single sub-listing can describe tens of
-     * millions of entries, so neither the reader that produces them nor the write below
-     * may hold them all at once.
-     */
     rowBatches: AsyncIterable<PluginListingTransferRow[]>;
 }
 

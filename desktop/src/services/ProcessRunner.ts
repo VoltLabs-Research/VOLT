@@ -32,14 +32,14 @@ const killTree = (child: ChildProcess, signal: NodeJS.Signals): void => {
             shell: false,
             windowsHide: true,
             stdio: 'ignore'
-        }).on('error', () => { /* the process may already be gone */ });
+        }).on('error', () => { });
         return;
     }
 
     try{
         process.kill(-pid, signal);
     }catch{
-        try{ child.kill(signal); }catch{ /* already dead */ }
+        try{ child.kill(signal); }catch{ }
     }
 };
 

@@ -8,10 +8,6 @@ import type { IStoragePlacementService } from '@shared/contracts/ports/IStorageP
 import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import logger from '@shared/infrastructure/logger';
 
-/**
- * Answers "which team cluster actually holds this plugin's binary?" and repairs
- * the storage placement record when the recorded owner no longer has the object.
- */
 class PluginBinaryOwnerResolver {
     private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
 

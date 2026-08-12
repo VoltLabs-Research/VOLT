@@ -50,7 +50,6 @@ const start = (activeChannel: string): void => {
             channel: activeChannel,
             label,
             notifyParent: true,
-            /* This plane relays object-gateway bytes, which are already compressed. */
             skipCompression: true
         },
         { onRegistered: drainBufferedMessages }

@@ -36,7 +36,6 @@ import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-fr
 import type { AnalysisStageStatus } from '@shared/contracts/channel/reverse-channel-analysis';
 import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 
-/** Everything a nested plugin workflow inherits from the workflow that invoked it. */
 interface NestedPluginWorkflowInput {
     nestedPlugins: NestedPluginDefinition[];
     outputs: WorkflowOutputs;
@@ -54,7 +53,6 @@ interface NestedPluginWorkflowInput {
     stageReporter?: AnalysisStageReporter;
 }
 
-/** One plugin node to expand, against the inherited context the nested run rebinds. */
 export interface NestedPluginNodeInput extends NestedPluginWorkflowInput {
     node: Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>;
     workflow?: WorkflowDefinition;
@@ -78,14 +76,11 @@ interface NestedPluginWorkflowRunnerDependencies {
     pluginBinaryCache: PluginRuntimeProvider;
     binaryExecutorService: BinaryExecutor;
     trajectoryFrameStore: TrajectoryFrameStore;
-    /** Recurses back into the runtime for plugin nodes found inside the nested workflow. */
     executePluginNode: (input: NestedPluginNodeInput) => Promise<NestedPluginExecutionOutcome>;
 }
 
-/** Reports every stage of one nested run under a single stage key. */
 type NestedStageReporter = (stageStatus: AnalysisStageStatus, detail?: string) => Promise<void> | undefined;
 
-/** What a planning hook contributes to a trace entry; the node and timing come from the hook event. */
 type PlanningTraceEntry = Omit<InlineWorkflowTraceNode, 'traceId' | 'pluginId' | 'nodeId' | 'nodeType' | 'durationMs'>;
 
 const toInlineDumpDescriptor = (dumpTarget: WorkflowDumpTarget): TrajectoryDumpDescriptor => ({
@@ -131,11 +126,6 @@ const collectExposureArtifacts = (session: WorkflowSession): WorkflowExposureArt
     return artifacts;
 };
 
-/**
- * Runs one plugin-reference target as a workflow of its own: a child session over
- * the nested plugin's graph, seeded with the parent's outputs and pinned to the
- * single dump the parent is currently processing.
- */
 export class NestedPluginWorkflowRunner {
     private readonly workflowPlanner: WorkflowPlanner;
 
@@ -267,7 +257,6 @@ export class NestedPluginWorkflowRunner {
         });
     }
 
-    /** Returns true when the nested workflow halted during planning and has nothing to run. */
     private async planNestedNodes(
         input: NestedPluginWorkflowInput,
         session: WorkflowSession,

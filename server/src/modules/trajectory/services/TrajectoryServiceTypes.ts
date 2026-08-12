@@ -13,10 +13,6 @@ import type {
     TrajectoryUploadFileInput
 } from '@volt/contracts/modules/trajectory/http';
 
-/**
- * Wire projection of a trajectory row. Every trajectory-returning endpoint
- * answers with this shape, so create/read/update share the single name.
- */
 export interface TrajectoryRecord extends TrajectoryProps {
     _id: string;
 }
@@ -126,17 +122,12 @@ export interface CreateTrajectoryUploadSessionOutput {
     };
 }
 
-/** Commit and cancel address an upload session the same way. */
 export interface TrajectoryUploadSessionRequest {
     teamId: string;
     userId: string;
     uploadSessionId: string;
 }
 
-/**
- * The trajectory/timestep pair every model derivation is scoped by, optionally
- * narrowed to one analysis exposure.
- */
 export interface TrajectoryExposureScope {
     trajectoryId: string;
     timestep: string;
@@ -214,7 +205,6 @@ export interface GetParticleFilterUniqueValuesOutput {
     values: Array<number | string>;
 }
 
-/** Line derivations always target one baked exposure, so both ids are required. */
 export interface LineExposureScope {
     trajectoryId: string;
     timestep: string;
@@ -283,7 +273,6 @@ export interface GetPublicCanvasGLBOutput {
     size?: number;
     objectName: string;
     contentEncoding: GlbContentEncoding;
-    /* Set only when the request advertised the codec; see `getClusterGlbStream`. */
     negotiatedContentEncoding: 'zstd' | null;
     etag?: string;
     lastModified?: Date;

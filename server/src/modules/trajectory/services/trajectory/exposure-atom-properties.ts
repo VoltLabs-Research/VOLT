@@ -11,7 +11,6 @@ import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import type { PluginLike, WorkflowNodeLike } from '@shared/contracts/types/Plugin';
 
-/** Results only ever consumed by another exposure, never published per atom. */
 const SHARED_ONLY_RESULTS_SUFFIX = 'neighbor_lattice.parquet';
 
 type PerAtomPropertyType = 'number' | 'string';
@@ -51,10 +50,6 @@ const requireAnalysisStorageClusterId = (analysis: Analysis): string => {
     return ownerClusterId;
 };
 
-/**
- * Where an analysis lives: the plugin that defines its exposures, the cluster
- * that holds its artifacts, and the cluster that computed them.
- */
 export const resolveAnalysisClusterContext = async (analysisId: string): Promise<AnalysisClusterContext> => {
     const analysisEntity = await AnalysisEntity.findOneBy({ id: analysisId });
     if (!analysisEntity) throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
@@ -71,7 +66,6 @@ export const resolveAnalysisClusterContext = async (analysisId: string): Promise
     };
 };
 
-/** Per-atom reads are served by the compute cluster, so it has to be known. */
 export const requireAnalysisExposureContext = async (analysisId: string): Promise<AnalysisExposureContext> => {
     const context = await resolveAnalysisClusterContext(analysisId);
     const { teamClusterId } = context;
@@ -99,7 +93,6 @@ export const requireExposureNode = (plugin: PluginLike, exposureId: string): Wor
     return exposureNode;
 };
 
-/** Line exposures publish per-entity properties, not per-atom ones. */
 export const getLineExposureIds = (plugin: PluginLike): Set<string> => {
     const ids = new Set<string>();
     for (const exposure of plugin.props.exposures ?? []) {
@@ -141,7 +134,6 @@ const getPerAtomPropertySchemas = async (
             return schemas;
         }
     } catch {
-        // Daemons that predate the schema command only expose property names.
     }
 
     const propertyNames = await teamClusterDaemonClient.command<string[]>(
@@ -156,7 +148,6 @@ const getPerAtomPropertySchemas = async (
     }));
 };
 
-/** What one exposure publishes per atom, named as the viewer labels it. */
 export const buildExposureAtomConfig = async (
     analysisId: string,
     context: AnalysisExposureContext,

@@ -1,8 +1,3 @@
-/**
- * `Sec-WebSocket-Protocol` arrives as a comma-separated list, possibly repeated
- * across several header lines. Returns `undefined` when the client asked for no
- * subprotocol, which is what the `ws` client expects in that case.
- */
 export const buildWebSocketProtocolList = (
     value: string | string[] | undefined
 ): string[] | undefined => {

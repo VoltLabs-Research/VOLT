@@ -20,8 +20,7 @@ export const ModalTopLayer = ({ root, children }: ModalTopLayerProps) => {
     return (
         <ModalTopLayerContext.Provider value={root}>
             <UNSAFE_PortalProvider getContainer={getContainer}>
-                {/* Floating-ui surfaces opened from inside the modal portal into its
-                    top layer, so they stack within the modal instead of behind it. */}
+                {}
                 <FloatingRootContext.Provider value={root ?? undefined}>
                     <TopLayerRootContext.Provider value={root ?? undefined}>
                         {children}

@@ -63,15 +63,11 @@ const canReuseTeamMembershipContext = (
 };
 
 const readRequestTeamId = (req: AuthenticatedRequest): string | undefined => {
-    // Express types a path param as `string | string[]`, so this narrowing is
-    // load-bearing rather than defensive.
     const fromPath = Array.isArray(req.params.teamId) ? req.params.teamId[0] : req.params.teamId;
     if (fromPath) {
         return fromPath;
     }
 
-    // `req.body` is the one genuinely arbitrary shape here: a JSON array or
-    // scalar body is legal, so it cannot be indexed without the record guard.
     const body: unknown = req.body;
 
     return isRecord(body) && typeof body.teamId === 'string' ? body.teamId : undefined;

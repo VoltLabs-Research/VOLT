@@ -32,7 +32,7 @@ import types
 from typing import Any, Callable, Dict, List, Optional
 
 try:
-    import numpy as _np  # type: ignore
+    import numpy as _np
 except ImportError:
     _np = None
 

@@ -8,10 +8,6 @@ const EXECUTION_STATUS_BY_NODE_STATUS = {
     error: 'failed'
 } as const satisfies Record<NonNullable<ReturnType<DebugSession['nodeStatuses']['get']>>, WorkflowExecutionStatus>;
 
-/**
- * A scheduler view over the session's own per-node statuses, so branch resolution
- * behaves the same as it does during a real run.
- */
 export const createSessionScheduler = (session: DebugSession): WorkflowScheduler => new WorkflowScheduler({
     workflow: session.context.workflow,
     outputs: session.context.outputs,
@@ -21,7 +17,6 @@ export const createSessionScheduler = (session: DebugSession): WorkflowScheduler
     }
 });
 
-/** Peeks the node the next `step` will run, dropping already-completed entries. */
 export const getNextPendingNode = (session: DebugSession): WorkflowNode | null => {
     while (session.pendingNodeIds.length > 0) {
         const nodeId = session.pendingNodeIds[session.pendingNodeIds.length - 1];
@@ -41,7 +36,6 @@ export const getNextPendingNode = (session: DebugSession): WorkflowNode | null =
     return null;
 };
 
-/** Queues the children a finished node unblocked, skipping those still waiting on a parent. */
 export const enqueueReadyNodeIds = (session: DebugSession, nodeIds: string[]): void => {
     const scheduler = createSessionScheduler(session);
 
