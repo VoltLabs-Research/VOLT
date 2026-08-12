@@ -59,6 +59,25 @@ import {
     mergeExposureRows
 } from '@modules/plugin/services/properties/exposure-property-merge';
 
+/** Temp table the per-atom scan joins against; per-connection, so it needs no cleanup. */
+const ATOM_ID_TABLE = '__volt_requested_atom_ids';
+
+/**
+ * The requested ids as a plain array, or `null` when the caller wants everything.
+ *
+ * Non-integer and negative ids are dropped the way `buildPluginIndexForAtomIds` drops
+ * them. An empty set is a request for no atoms, not for all of them, so it stays an empty
+ * array rather than collapsing to `null`.
+ */
+const normalizeRequestedAtomIds = (atomIds: Set<number> | undefined): number[] | null => {
+    if (!atomIds) return null;
+    const ids: number[] = [];
+    for (const id of atomIds) {
+        if (Number.isInteger(id) && id >= 0) ids.push(id);
+    }
+    return ids;
+};
+
 export class ParquetPluginPropertyStore implements PluginPropertyStore {
     private readonly parquetCache: ExposureParquetCache;
 
@@ -327,6 +346,21 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         );
     }
 
+    /**
+     * Reads the analysis's per-atom rows for the atoms actually asked for.
+     *
+     * The atom filter used to be applied in JS, after every row of every exposure had been
+     * read and turned into an object: a request for one page of 100 atoms still
+     * materialised the whole frame. On a 4.45M-atom frame with three per-atom exposures
+     * that is ~13.4M objects built and discarded, which took the daemon past the 30 s
+     * command timeout and past V8's string ceiling when the page was large — the caller
+     * saw a bare 500 either way. The ids now go into a temp table the parquet scan joins
+     * against, so the cost follows the page rather than the frame.
+     *
+     * A temp table rather than an inlined `IN (...)` list because the list is the page,
+     * and a page can hold millions of ids; `buildPluginIndexForAtomIds` inlines only
+     * because its targets are a handful of selected atoms.
+     */
     public async getAnalysisAllPerAtomData(
         request: PluginAnalysisAllAtomsRequest
     ): Promise<PluginAnalysisAllAtomsResponse> {
@@ -336,6 +370,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             request.analysisId
         );
         const exposures: ExposurePropertyRows[] = [];
+        const requestedIds = normalizeRequestedAtomIds(request.atomIds);
 
         for (const objectKey of keys) {
             if (!objectKey.endsWith(`/timestep-${request.timestep}.parquet`)) {
@@ -345,14 +380,12 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
             const exposureId = extractExposureId(request.trajectoryId, request.analysisId, objectKey);
             if (!exposureId) continue;
 
-            const rows = await this.queryExposure<FlatAtomProperties[] | null>(
+            const rows = await this.readExposureRowsForAtoms(
                 {
                     ...request,
                     exposureId
                 },
-                (parquetPath) => `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ORDER BY atom_index`,
-                rowsToAtomProperties,
-                null
+                requestedIds
             );
             if (!rows || rows.length === 0) continue;
 
@@ -374,6 +407,60 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         }
 
         return mergeExposureRows(exposures, request.atomIds);
+    }
+
+    /**
+     * One exposure's rows, restricted to the requested atoms inside DuckDB.
+     *
+     * With no ids the whole exposure is read, which is what a caller asking for the frame
+     * wants. Otherwise the ids are appended into a temp table on the same connection and
+     * the scan is filtered by a semi-join, so neither the statement text nor the JS heap
+     * grows with the page. A temp table rather than an inlined `IN (...)`: a page can hold
+     * millions of ids, and `buildPluginIndexForAtomIds` inlines only because its targets
+     * are a handful of selected atoms.
+     */
+    private async readExposureRowsForAtoms(
+        request: PluginModifierAnalysisRequest,
+        atomIds: number[] | null
+    ): Promise<FlatAtomProperties[] | null> {
+        let parquetPath: string;
+        try {
+            parquetPath = await this.parquetCache.resolveExposureFile(request);
+        } catch {
+            return null;
+        }
+
+        const connection = await DuckDBConnection.create();
+        try {
+            if (!atomIds) {
+                const reader = await connection.runAndReadAll(
+                    `SELECT * FROM read_parquet(${sqlString(parquetPath)}) ORDER BY atom_index`
+                );
+                return rowsToAtomProperties(reader.getRowObjectsJS());
+            }
+
+            await connection.run(`CREATE OR REPLACE TEMP TABLE ${ATOM_ID_TABLE} (id BIGINT)`);
+            const appender = await connection.createAppender(ATOM_ID_TABLE);
+            try {
+                for (const id of atomIds) {
+                    appender.appendBigInt(BigInt(id));
+                    appender.endRow();
+                }
+            } finally {
+                appender.closeSync();
+            }
+
+            const reader = await connection.runAndReadAll(
+                `SELECT source.* FROM read_parquet(${sqlString(parquetPath)}) source `
+                + `SEMI JOIN ${ATOM_ID_TABLE} ids ON ids.id = source.id `
+                + 'ORDER BY source.atom_index'
+            );
+            return rowsToAtomProperties(reader.getRowObjectsJS());
+        } catch {
+            return null;
+        } finally {
+            connection.closeSync();
+        }
     }
 
     private async isStringProperty(request: PluginModifierValuesRequest): Promise<boolean> {

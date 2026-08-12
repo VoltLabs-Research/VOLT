@@ -113,6 +113,7 @@ export const ErrorCodes = createErrorCodes({
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
     TRAJECTORY_ANALYSIS_MISMATCH: 'Trajectory::Analysis::Mismatch',
+    TRAJECTORY_ATOMS_PAGE_MISMATCH: 'Trajectory::Atoms::Page::Mismatch',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
     TRAJECTORY_DATA_PARSE_FAILED: 'Trajectory::Data::ParseFailed',
     TRAJECTORY_CLONE_JOB_NOT_FOUND: 'TrajectoryCloneJob::NotFound',

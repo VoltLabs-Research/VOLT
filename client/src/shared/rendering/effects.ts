@@ -54,6 +54,7 @@ export interface SSAOEffectSettings {
     worldDistanceFalloff: number;
     worldProximityThreshold: number;
     worldProximityFalloff: number;
+    userSet?: boolean;
 };
 
 export interface EffectsSettings {
@@ -186,11 +187,22 @@ export const getDefaultEffectsSettings = (): EffectsSettings => ({
     sepia: { ...SEPIA_EFFECT_DEFAULTS }
 });
 
+export const resolveSSAOEnabledState = (
+    settings: SSAOEffectSettings,
+    options: ResolveSSAOSettingsOptions
+): boolean => {
+    if (settings.userSet === true) {
+        return settings.enabled;
+    }
+
+    return settings.enabled || options.isDefectScene === true;
+};
+
 export const resolveSSAOSettings = (
     settings: SSAOEffectSettings,
     options: ResolveSSAOSettingsOptions
 ): SSAOEffectSettings | null => {
-    if (!settings.enabled) {
+    if (!resolveSSAOEnabledState(settings, options)) {
         return null;
     }
 
@@ -201,6 +213,6 @@ export const resolveSSAOSettings = (
     return {
         ...DEFECT_SSAO_EFFECT_PRESET,
         ...settings,
-        enabled: settings.enabled
+        enabled: true
     };
 };

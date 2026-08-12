@@ -9,8 +9,6 @@ import type { ExpressionSelectStageConfig } from '@/modules/canvas/store/canvas-
 
 const CLIENT_EVAL_ATOM_LIMIT = 1_000_000;
 
-const FULL_FRAME_LIMIT = 50_000_000;
-
 interface UseExpressionVisibilityMaskParams {
     trajectoryId?: string;
     analysisId?: string;
@@ -100,26 +98,55 @@ const useExpressionVisibilityMask = ({
         && Boolean(trajectoryId)
         && currentTimestep !== undefined;
 
+    /*
+     * The frame's size is asked for before the frame itself.
+     *
+     * The expression used to be decided against a full-frame fetch: every atom was
+     * downloaded and only then compared to `CLIENT_EVAL_ATOM_LIMIT`, so a frame over the
+     * limit was transferred in full and thrown away on the next line. On a 4.45M-atom
+     * frame that is ~170 MB moved to reach a single number, and it is the request that
+     * made the endpoint fail before it was chunked server-side. One row carries the same
+     * `total` in its header.
+     */
+    const { data: frameSize } = trajectoryAtomsQuery(
+        {
+            trajectoryId: trajectoryId ?? '',
+            analysisId,
+            timestep: currentTimestep ?? 0,
+            page: 1,
+            limit: 1
+        },
+        { enabled: queryEnabled }
+    );
+
+    const evaluableAtomCount = frameSize?.total;
+    const canEvaluateOnClient = evaluableAtomCount !== undefined
+        && evaluableAtomCount <= CLIENT_EVAL_ATOM_LIMIT;
+
     const { data: atomBuffer } = trajectoryAtomsQuery(
         {
             trajectoryId: trajectoryId ?? '',
             analysisId,
             timestep: currentTimestep ?? 0,
             page: 1,
-            limit: FULL_FRAME_LIMIT
+            /* The cap is the real bound, so it is also the request. */
+            limit: CLIENT_EVAL_ATOM_LIMIT
         },
-        { enabled: queryEnabled }
+        { enabled: queryEnabled && canEvaluateOnClient }
     );
 
     return useMemo<UseExpressionVisibilityMaskResult>(() => {
-        if (activeStages.length === 0 || !atomBuffer) {
+        if (activeStages.length === 0) {
             return EMPTY;
         }
-        if (atomBuffer.count > CLIENT_EVAL_ATOM_LIMIT) {
+        if (evaluableAtomCount !== undefined && !canEvaluateOnClient) {
             return {
                 ...EMPTY,
                 autoRoute: true
             };
+        }
+        if (!atomBuffer) {
+            return EMPTY;
         }
 
         const context = buildContext(atomBuffer, currentTimestep ?? 0);
@@ -171,7 +198,7 @@ const useExpressionVisibilityMask = ({
             highlightColor,
             autoRoute: false
         };
-    }, [activeStages, atomBuffer, currentTimestep]);
+    }, [activeStages, atomBuffer, canEvaluateOnClient, currentTimestep, evaluableAtomCount]);
 };
 
 export default useExpressionVisibilityMask;

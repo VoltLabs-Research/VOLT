@@ -14,7 +14,12 @@ const getInitialEffectsState = (): EffectsConfigState => getDefaultEffectsSettin
 export const createEffectsSlice: StateCreator<EditorStore, [], [], EffectsSlice> = (set) => ({
     effects: {
         ...getInitialEffectsState(),
-        setSSAOEffect: (config: Partial<SSAOEffectConfig>) => set((state) => mergeNestedSectionState(state, 'effects', 'ssao', config)),
+        setSSAOEffect: (config: Partial<SSAOEffectConfig>) => set((state) => mergeNestedSectionState(
+            state,
+            'effects',
+            'ssao',
+            'enabled' in config ? { ...config, userSet: true } : config
+        )),
         setBloomEffect: (config: Partial<BloomEffectConfig>) => set((state) => mergeNestedSectionState(state, 'effects', 'bloom', config)),
         setChromaticAberration: (config: Partial<ChromaticAberrationConfig>) => set((state) => mergeNestedSectionState(state, 'effects', 'chromaticAberration', config)),
         setVignette: (config: Partial<VignetteEffectConfig>) => set((state) => mergeNestedSectionState(state, 'effects', 'vignette', config)),

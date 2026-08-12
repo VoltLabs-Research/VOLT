@@ -1,3 +1,5 @@
+import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { AtomColumn, GetAtomsColumnarOutput } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
@@ -41,6 +43,82 @@ const isStringColumn = (values: unknown[]): boolean => values.some((value) => (
  * Turns a daemon atom page into the flat typed-array columns the viewer streams
  * straight into GPU buffers. Analysis per-atom values are merged in by atom id.
  */
+/**
+ * Joins the columnar pages of one logical request into a single response.
+ *
+ * A page crosses the daemon channel as row-shaped JSON, so asking for a whole
+ * multi-million-atom frame in one hop exceeds both the 30 s command timeout and V8's
+ * string ceiling — the caller got a bare 500. Read in chunks and stitched here, each hop
+ * stays small while the client still receives the one response it asked for.
+ *
+ * Concatenation is sound because of how the columns are encoded: the numeric ones are
+ * fixed-width arrays, and `encodeStringColumn` emits a headerless run of
+ * `[uint32 length][bytes]` entries that the decoder walks until the buffer ends. What is
+ * *not* sound is joining a property that came back `f32` in one chunk and `str` in
+ * another — `isStringColumn` decides per chunk — so a dtype that changes between chunks
+ * is refused rather than silently producing a corrupt column.
+ */
+export const concatAtomsColumnarOutputs = (
+    pages: GetAtomsColumnarOutput[],
+    page: number,
+    limit: number
+): GetAtomsColumnarOutput => {
+    if (pages.length === 1) {
+        return pages[0];
+    }
+
+    const [first] = pages;
+    const order: string[] = first.columns.map((column) => column.name);
+    const dtypes = new Map(first.columns.map((column) => [column.name, column.dtype]));
+    const buffers = new Map<string, Uint8Array[]>(order.map((name) => [name, []]));
+
+    let count = 0;
+    for (const current of pages) {
+        count += current.count;
+        for (const column of current.columns) {
+            const expected = dtypes.get(column.name);
+            if (expected === undefined) {
+                throw ApplicationError.internalServerError(
+                    `${ErrorCodes.TRAJECTORY_ATOMS_PAGE_MISMATCH}: column ${column.name} `
+                    + 'appeared only in part of the atoms range'
+                );
+            }
+            if (expected !== column.dtype) {
+                throw ApplicationError.internalServerError(
+                    `${ErrorCodes.TRAJECTORY_ATOMS_PAGE_MISMATCH}: column ${column.name} `
+                    + `changed type between atom chunks (${expected} then ${column.dtype})`
+                );
+            }
+            buffers.get(column.name)!.push(column.buffer);
+        }
+    }
+
+    return {
+        count,
+        total: first.total,
+        page,
+        limit,
+        totalPages: limit > 0 ? Math.ceil(first.total / limit) : 1,
+        columns: order.map((name) => ({
+            name,
+            dtype: dtypes.get(name)!,
+            buffer: concatBuffers(buffers.get(name)!)
+        })),
+        propertyNames: first.propertyNames
+    };
+};
+
+const concatBuffers = (parts: Uint8Array[]): Uint8Array => {
+    const total = parts.reduce((size, part) => size + part.byteLength, 0);
+    const joined = new Uint8Array(total);
+    let offset = 0;
+    for (const part of parts) {
+        joined.set(part, offset);
+        offset += part.byteLength;
+    }
+    return joined;
+};
+
 export const toAtomsColumnarOutput = (
     atomsPage: AtomPageResult,
     page: number,
