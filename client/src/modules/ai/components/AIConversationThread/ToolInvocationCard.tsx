@@ -48,7 +48,7 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
     };
 
     return (
-        <div className='flex flex-col gap-[0.35rem] border-l-2 border-border py-2 pr-0 pl-[0.7rem] transition-colors duration-200 [.ai-floating-assistant_&]:p-2'>
+        <div className='flex flex-col gap-1.5 border-l-2 border-border py-2 pr-0 pl-3 transition-colors duration-200 [.ai-floating-assistant_&]:p-2'>
             <div className='flex flex-row items-center gap-2 leading-[1.35]'>
                 <span
                     className={cn('size-2 shrink-0 rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]', {
@@ -65,7 +65,7 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
             </div>
 
             {phase === 'requested' && addToolApprovalResponse && (
-                <div className='mt-[0.1rem] flex flex-row items-center gap-1 [.ai-floating-assistant_&]:flex-wrap'>
+                <div className='mt-0.5 flex flex-row items-center gap-1 [.ai-floating-assistant_&]:flex-wrap'>
                     <Button
                         variant='secondary'
                         size='sm'
@@ -86,7 +86,7 @@ const ToolInvocationCard = ({ invocation, addToolApprovalResponse }: ToolInvocat
             )}
 
             {phase === 'running' && (
-                <div className='mt-[0.1rem] flex flex-row items-center gap-1 [.ai-floating-assistant_&]:flex-wrap'>
+                <div className='mt-0.5 flex flex-row items-center gap-1 [.ai-floating-assistant_&]:flex-wrap'>
                     <p className='text-xs text-muted'>
                         Running...
                     </p>

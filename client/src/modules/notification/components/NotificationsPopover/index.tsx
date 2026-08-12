@@ -47,7 +47,7 @@ const NotificationsPopover = () => {
             >
                 <Bell size={18} />
                 {unreadCount > 0 && (
-                    <span className='absolute top-0.5 right-0.5 flex flex-row items-center justify-center min-w-5 h-5 px-1.5 rounded-lg border border-surface-secondary bg-danger text-white text-[11px] leading-none font-semibold' aria-hidden='true'>
+                    <span className='absolute top-0.5 right-0.5 flex flex-row items-center justify-center min-w-5 h-5 px-1.5 rounded-lg border border-surface-secondary bg-danger text-white text-2xs leading-none font-semibold' aria-hidden='true'>
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}

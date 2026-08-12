@@ -131,7 +131,7 @@ const ArtifactTreeSection = ({
                 >
                     <ChevronIcon className={cn('transition-transform duration-150 ease-out', !isExpanded && '-rotate-90')} style={CHEVRON_STYLE} />
                     <span className='min-w-0 flex-1 truncate'>{timestep}</span>
-                    <span className='text-[11px] text-muted'>{group.length}</span>
+                    <span className='text-2xs text-muted'>{group.length}</span>
                 </button>
 
                 {isExpanded && (

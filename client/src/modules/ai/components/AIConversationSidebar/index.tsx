@@ -99,7 +99,7 @@ const AIConversationSidebar = ({
         if (editingConversationId === conversation._id) {
             content = (
                 <input
-                    className='w-full rounded-lg border border-border bg-transparent px-[0.45rem] py-[0.3rem] text-foreground'
+                    className='w-full rounded-lg border border-border bg-transparent px-2 py-1 text-foreground'
                     value={draftTitle}
                     autoFocus
                     onChange={(event) => setDraftTitle(event.target.value)}
@@ -144,7 +144,7 @@ const AIConversationSidebar = ({
         return (
             <div
                 key={conversation._id}
-                className={cn('group/conv flex w-full cursor-pointer appearance-none flex-col gap-1 rounded-xl border-0 bg-transparent px-[0.7rem] py-[0.6rem] text-left transition-colors duration-200 hover:bg-surface-hover focus-visible:bg-surface-hover', isActive && 'is-active bg-surface-hover')}
+                className={cn('group/conv flex w-full cursor-pointer appearance-none flex-col gap-1 rounded-xl border-0 bg-transparent px-3 py-2.5 text-left transition-colors duration-200 hover:bg-surface-hover focus-visible:bg-surface-hover', isActive && 'is-active bg-surface-hover')}
                 {...interactiveProps}
             >
                 <div className='flex flex-row items-center justify-between gap-2'>
@@ -261,7 +261,7 @@ const AIConversationSidebar = ({
                     />
                 )}
             </div>
-            <div className='flex flex-1 flex-col gap-[0.4rem] overflow-y-auto p-2'>
+            <div className='flex flex-1 flex-col gap-1.5 overflow-y-auto p-2'>
                 {listContent}
             </div>
         </div>

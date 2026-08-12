@@ -172,7 +172,7 @@ const ClusterResourceSelectionPanel = ({
                                             <Cpu size={16} /> CPU
                                         </span>
                                     </div>
-                                    <span className='rounded-full bg-surface-tertiary px-[0.6rem] py-[0.2rem] text-[0.8rem] font-semibold text-foreground'>{selectedCpuValue} vCPU</span>
+                                    <span className='rounded-full bg-surface-tertiary px-2.5 py-1 text-sm font-semibold text-foreground'>{selectedCpuValue} vCPU</span>
                                 </div>
                                 <Slider
                                     aria-label='CPU'
@@ -202,7 +202,7 @@ const ClusterResourceSelectionPanel = ({
                                             <HardDrive size={16} /> Memory
                                         </span>
                                     </div>
-                                    <span className='rounded-full bg-surface-tertiary px-[0.6rem] py-[0.2rem] text-[0.8rem] font-semibold text-foreground'>{selectedMemoryValue} MB</span>
+                                    <span className='rounded-full bg-surface-tertiary px-2.5 py-1 text-sm font-semibold text-foreground'>{selectedMemoryValue} MB</span>
                                 </div>
                                 <Slider
                                     aria-label='Memory'

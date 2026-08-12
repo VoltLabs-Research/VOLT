@@ -84,14 +84,14 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
                             <Skeleton animationType='pulse' className='h-3 w-20 rounded-md' />
                             <Skeleton animationType='pulse' className='h-3 w-10 rounded-md' />
                         </div>
-                        <Skeleton animationType='pulse' className='mt-2 h-2 w-full rounded-[4px]' />
+                        <Skeleton animationType='pulse' className='mt-2 h-2 w-full rounded-sm' />
                     </div>
                 ))}
         </div>
     );
 
     return (
-        <div className='flex flex-col h-full rounded-2xl border border-border p-6'>
+        <div className='flex flex-col h-full rounded-xl border border-border p-6'>
             <div className='flex flex-row items-start justify-between shrink-0 mb-6'>
                 <h3 className='text-base font-semibold text-foreground'>Resource Usage</h3>
             </div>

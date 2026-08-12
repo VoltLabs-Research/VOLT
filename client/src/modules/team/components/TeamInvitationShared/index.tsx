@@ -24,7 +24,7 @@ type TeamInvitationDetailItemProps = {
 export const TeamInvitationCard = ({ children }: TeamInvitationCardProps) => {
     return (
         <div className='flex flex-col items-center justify-center w-full h-dvh bg-background'>
-            <div className='flex flex-col items-center gap-6 rounded-2xl text-center max-w-[480px] p-10'>
+            <div className='flex flex-col items-center gap-6 rounded-xl text-center max-w-[480px] p-10'>
                 {children}
             </div>
         </div>

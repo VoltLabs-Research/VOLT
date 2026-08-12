@@ -19,7 +19,7 @@ const ErrorPage = () => {
     return (
         <main className='flex flex-row items-center justify-center w-full min-h-dvh bg-background'>
             <div className='flex flex-col items-center gap-6 text-center max-w-[560px] max-md:max-w-[90%]' role='alert' aria-live='assertive'>
-                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-2xl bg-danger-soft text-danger'>
+                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-xl bg-danger-soft text-danger'>
                     <AlertTriangle size={24} aria-hidden='true' />
                 </div>
 

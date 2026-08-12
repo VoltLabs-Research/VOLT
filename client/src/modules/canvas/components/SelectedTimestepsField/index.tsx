@@ -52,7 +52,7 @@ const SelectedTimestepsField = ({
 
     return (
         <div className='form-field-canvas flex min-h-6 flex-row items-center justify-between gap-2'>
-            <span className='canvas-form-label min-w-[130px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.7rem] leading-6 tracking-[0.01em] text-muted'>
+            <span className='canvas-form-label min-w-[130px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-2xs leading-6 tracking-[0.01em] text-muted'>
                 Selected Timesteps
             </span>
             <div className='render-input-container relative flex w-full min-w-0 max-w-[150px] items-center justify-end'>
@@ -65,8 +65,8 @@ const SelectedTimestepsField = ({
                     aria-label='Selected timesteps'
                     fullWidth
                 >
-                    <Autocomplete.Trigger className='h-6 min-h-6 rounded-lg px-[0.4rem] text-[0.7rem]'>
-                        <Autocomplete.Value className='truncate text-[0.7rem]'>{triggerLabel}</Autocomplete.Value>
+                    <Autocomplete.Trigger className='h-6 min-h-6 rounded-lg px-1.5 text-2xs'>
+                        <Autocomplete.Value className='truncate text-2xs'>{triggerLabel}</Autocomplete.Value>
                         <Autocomplete.Indicator />
                     </Autocomplete.Trigger>
                     <Autocomplete.Popover>

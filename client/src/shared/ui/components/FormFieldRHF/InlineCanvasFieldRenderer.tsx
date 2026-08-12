@@ -91,14 +91,14 @@ const InlineCanvasFieldRenderer = ({
                     aria-errormessage={errorMessageId}
                 >
                     <Select.Trigger className={{
-                        inline: 'w-full min-h-0 px-3 py-[0.4375rem] pe-7 border border-border rounded-lg bg-transparent text-foreground',
+                        inline: 'w-full min-h-0 px-3 py-1.5 pe-7 border border-border rounded-lg bg-transparent text-foreground',
                         section: 'w-full h-auto min-h-0 p-0 pe-6 border-0 bg-transparent shadow-none text-muted hover:text-foreground',
                         canvas: 'w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
                     }[surface]}>
                         <Select.Value className={{
                             inline: 'text-sm',
                             section: 'text-sm text-end tabular-nums',
-                            canvas: 'text-[0.7rem]'
+                            canvas: 'text-2xs'
                         }[surface]}>
                             {({ isPlaceholder, selectedText, defaultChildren }) => (
                                 isPlaceholder ? defaultChildren : selectedText
@@ -166,9 +166,9 @@ const InlineCanvasFieldRenderer = ({
                     id={fieldId}
                     name={fieldName}
                     className={cn(isCanvasVariant ? 'form-field-canvas-input form-field-canvas-textarea' : 'form-field-inline-input form-field-inline-textarea', {
-                        inline: 'flex-1 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent resize-y min-h-20',
+                        inline: 'flex-1 min-w-0 px-3 py-1.5 border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent resize-y min-h-20',
                         section: 'flex-1 min-w-0 px-0 py-1 border-0 bg-transparent text-muted text-sm text-left tabular-nums placeholder:text-muted placeholder:text-left focus:text-foreground resize-y min-h-20',
-                        canvas: 'flex-1 min-w-0 px-[0.4rem] border border-border rounded-lg bg-transparent text-foreground text-[0.7rem] transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-[0.7rem] resize-y min-h-[60px]'
+                        canvas: 'flex-1 min-w-0 px-1.5 border border-border rounded-lg bg-transparent text-foreground text-2xs transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-2xs resize-y min-h-[60px]'
                     }[surface])}
                     value={String(effectiveValue ?? '')}
                     onChange={handleValueChange}
@@ -199,9 +199,9 @@ const InlineCanvasFieldRenderer = ({
                     name={fieldName}
                     {...inputProps}
                     className={cn(isCanvasVariant ? 'form-field-canvas-input' : 'form-field-inline-input', 'labeled-input', {
-                        inline: 'flex-1 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent',
+                        inline: 'flex-1 min-w-0 px-3 py-1.5 border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent',
                         section: 'flex-1 min-w-0 px-0 py-1 border-0 bg-transparent text-muted text-sm text-right tabular-nums placeholder:text-muted placeholder:text-right focus:text-foreground',
-                        canvas: 'flex-1 min-w-0 h-6 px-[0.4rem] border border-border rounded-lg bg-transparent text-foreground text-[0.7rem] transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-[0.7rem]'
+                        canvas: 'flex-1 min-w-0 h-6 px-1.5 border border-border rounded-lg bg-transparent text-foreground text-2xs transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-2xs'
                     }[surface])}
                     value={String(effectiveValue ?? '')}
                     onChange={handleValueChange}
@@ -249,13 +249,13 @@ const InlineCanvasFieldRenderer = ({
                 <label id={labelId} htmlFor={labelTargetId} className={cn(
                     isCanvasVariant ? 'canvas-form-label' : 'form-field-inline-label labeled-input-label',
                     isCheckbox ? {
-                        inline: 'shrink-0 text-[0.95rem] font-normal',
-                        section: 'shrink-0 text-[0.8125rem] font-normal text-foreground',
-                        canvas: 'w-auto min-w-0 flex-1 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
+                        inline: 'shrink-0 text-base font-normal',
+                        section: 'shrink-0 text-sm font-normal text-foreground',
+                        canvas: 'w-auto min-w-0 flex-1 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
                     }[surface] : {
-                        inline: 'shrink-0 text-[0.95rem] font-normal',
-                        section: 'shrink-0 text-[0.8125rem] font-normal text-foreground',
-                        canvas: 'min-w-[130px] shrink-0 text-[0.7rem] text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
+                        inline: 'shrink-0 text-base font-normal',
+                        section: 'shrink-0 text-sm font-normal text-foreground',
+                        canvas: 'min-w-[130px] shrink-0 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
                     }[surface]
                 )}>
                     {label}
@@ -277,7 +277,7 @@ const InlineCanvasFieldRenderer = ({
                                 type='button'
                                 key={`${option.value}-${index}`}
                                 className={cn(
-                                    'form-field-autocomplete-option w-full flex flex-col items-start gap-0.5 min-h-10 px-2 py-[0.4375rem] border-0 bg-transparent text-foreground text-left cursor-pointer hover:bg-surface-hover',
+                                    'form-field-autocomplete-option w-full flex flex-col items-start gap-0.5 min-h-10 px-2 py-1.5 border-0 bg-transparent text-foreground text-left cursor-pointer hover:bg-surface-hover',
                                     index === tokenAutocomplete.activeIndex && 'is-active bg-surface-hover'
                                 )}
                                 onMouseDown={(event) => {
@@ -287,7 +287,7 @@ const InlineCanvasFieldRenderer = ({
                             >
                                 <span className='form-field-autocomplete-option-label text-xs leading-[1.2]'>{option.label}</span>
                                 {option.label !== option.value && (
-                                    <span className='form-field-autocomplete-option-value text-[0.65rem] leading-[1.1] text-muted'>{option.value}</span>
+                                    <span className='form-field-autocomplete-option-value text-2xs leading-[1.1] text-muted'>{option.value}</span>
                                 )}
                             </button>
                         ))}

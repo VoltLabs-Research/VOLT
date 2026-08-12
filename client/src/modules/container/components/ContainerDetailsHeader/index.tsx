@@ -102,9 +102,9 @@ const ContainerDetailsHeader = ({
                         </h1>
                         <ContainerStatusBadge status={container.status} />
                     </div>
-                    <div className='flex flex-row flex-wrap items-center text-[0.8125rem] leading-[1.4] text-muted'>
+                    <div className='flex flex-row flex-wrap items-center text-sm leading-[1.4] text-muted'>
                         <span className='max-w-[520px] truncate'>{container.image}</span>
-                        <span className='mx-[0.4rem] opacity-40' aria-hidden='true'>·</span>
+                        <span className='mx-1.5 opacity-40' aria-hidden='true'>·</span>
                         <span>Created {createdRelative}</span>
                     </div>
                 </div>

@@ -179,11 +179,11 @@ const PluginCompactTable = ({
                 ...compactTableInnerStyle,
                 minWidth: `${effectiveWidth}px`
             }}>
-                <div className='sticky top-0 z-10 flex flex-row justify-between border-b border-border pb-[5px]'>
+                <div className='sticky top-0 z-10 flex flex-row justify-between border-b border-border pb-1'>
                     {columns.map((col) => (
                         <div
                             key={getColumnKey(col)}
-                            className='overflow-hidden whitespace-nowrap text-ellipsis px-2 py-1 text-[0.6875rem] font-medium text-muted max-[768px]:px-1 max-[768px]:text-[0.625rem]'
+                            className='overflow-hidden whitespace-nowrap text-ellipsis px-2 py-1 text-2xs font-medium text-muted max-[768px]:px-1 max-[768px]:text-2xs'
                             style={resolveColumnStyle(col, columnWidthScale)}
                         >
                             {getColumnTitle(col)}

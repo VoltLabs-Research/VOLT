@@ -88,7 +88,7 @@ const AIConversationThread = ({
         <AutoScrollList
             items={normalizedMessages}
             isLoading={isLoading}
-            className='mx-auto w-[min(880px,100%)] gap-3 px-4 pt-[1.2rem] pb-3 max-md:px-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] [.ai-floating-assistant_&]:p-3'
+            className='mx-auto w-[min(880px,100%)] gap-3 px-4 pt-5 pb-3 max-md:px-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] [.ai-floating-assistant_&]:p-3'
             getItemKey={(message) => message.id}
             autoScrollDependency={autoScrollDependency}
             autoScrollDependencyEnabled={isResponding || showStandaloneTyping}

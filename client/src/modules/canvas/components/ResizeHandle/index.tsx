@@ -22,8 +22,8 @@ const ResizeHandle = ({ direction, isDragging, onPointerDown, onKeyDown, onDoubl
         className={cn(
             'relative z-[1] touch-none bg-transparent bg-clip-padding outline-none',
             direction === 'vertical'
-                ? 'h-[15px] -my-[7px] cursor-row-resize border-y-[7px] border-y-transparent pointer-coarse:h-6 pointer-coarse:-my-[11px] pointer-coarse:border-y-[11px]'
-                : 'w-[15px] -mx-[7px] cursor-col-resize border-x-[7px] border-x-transparent pointer-coarse:w-6 pointer-coarse:-mx-[11px] pointer-coarse:border-x-[11px]',
+                ? 'h-[15px] -my-1.5 cursor-row-resize border-y-[7px] border-y-transparent pointer-coarse:h-6 pointer-coarse:-my-2.5 pointer-coarse:border-y-[11px]'
+                : 'w-[15px] -mx-1.5 cursor-col-resize border-x-[7px] border-x-transparent pointer-coarse:w-6 pointer-coarse:-mx-2.5 pointer-coarse:border-x-[11px]',
             isDragging && 'canvas-resize-handle--active',
             className
         )}

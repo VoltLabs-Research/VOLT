@@ -6,7 +6,7 @@ interface PerKeyBreakdownTableProps {
 }
 
 const PerKeyBreakdownTable = ({ perKey }: PerKeyBreakdownTableProps) => (
-    <div className='bg-surface border border-border p-6 rounded-2xl'>
+    <div className='bg-surface border border-border p-6 rounded-xl'>
         <h3 className='text-base font-semibold text-foreground mb-6'>Per-Key Breakdown</h3>
         <div className='overflow-x-auto'>
             <table className='w-full border-collapse'>

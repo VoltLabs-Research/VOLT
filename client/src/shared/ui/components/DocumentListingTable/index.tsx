@@ -122,7 +122,7 @@ const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, 
         {Array.from({ length: count }).map((_, rowIndex) => (
             <div key={`${keyPrefix}-${rowIndex}`} className={cn({
                 default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
-                compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
+                compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-0.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
             }[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
                 {columns.map((col, colIdx) => {
                     const skeleton = col.skeleton ?? {
@@ -132,7 +132,7 @@ const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, 
 
                     return (
                         <div className={cn({
-                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm text-muted max-md:text-[0.8125rem]',
+                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm text-muted max-md:text-sm',
                             compact: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs text-muted'
                         }[density], col.numeric && 'justify-end text-right tabular-nums')} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
                             <span>
@@ -294,7 +294,7 @@ const DocumentListingTable = <T extends Identifiable>({
                             col.numeric && 'justify-end text-right tabular-nums'
                         );
                         const heading = (
-                            <h3 className={cn('text-[0.8125rem] text-muted', col.headerTitleClassName ?? 'font-medium')}>
+                            <h3 className={cn('text-sm text-muted', col.headerTitleClassName ?? 'font-medium')}>
                                 {getCellTitle(col)}
                             </h3>
                         );

@@ -301,20 +301,20 @@ const CanvasAnalysisDiscoveryTour = ({
         <div className='pointer-events-none fixed inset-0 z-[260]' aria-live='polite'>
             {layout && (
                 <div
-                    className='fixed rounded-xl border border-[color-mix(in_srgb,var(--accent)_72%,white_12%)] shadow-[0_0_0_9999px_rgba(0,0,0,0.22),0_0_0_5px_color-mix(in_srgb,var(--accent)_20%,transparent),0_12px_34px_rgba(0,0,0,0.28)] transition-[top,left,width,height] duration-[180ms] ease-out-fluid max-md:rounded-[10px] max-md:shadow-[0_0_0_9999px_rgba(0,0,0,0.16),0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent),0_10px_28px_rgba(0,0,0,0.22)]'
+                    className='fixed rounded-xl border border-[color-mix(in_srgb,var(--accent)_72%,white_12%)] shadow-[0_0_0_9999px_rgba(0,0,0,0.22),0_0_0_5px_color-mix(in_srgb,var(--accent)_20%,transparent),0_12px_34px_rgba(0,0,0,0.28)] transition-[top,left,width,height] duration-[180ms] ease-out-fluid max-md:rounded-xl max-md:shadow-[0_0_0_9999px_rgba(0,0,0,0.16),0_0_0_4px_color-mix(in_srgb,var(--accent)_18%,transparent),0_10px_28px_rgba(0,0,0,0.22)]'
                     style={layout.spotlightStyle}
                     aria-hidden='true'
                 />
             )}
 
             <section
-                className='pointer-events-auto fixed flex flex-col gap-2.5 rounded-[14px] border-0 bg-surface p-3.5 text-foreground shadow-[0_18px_48px_rgba(0,0,0,0.3)] max-md:max-w-[calc(100vw-1.5rem)] max-md:rounded-xl max-md:p-3'
+                className='pointer-events-auto fixed flex flex-col gap-2.5 rounded-xl border-0 bg-surface p-3.5 text-foreground shadow-[0_18px_48px_rgba(0,0,0,0.3)] max-md:max-w-[calc(100vw-1.5rem)] max-md:rounded-xl max-md:p-3'
                 style={cardStyle}
                 role='dialog'
                 aria-label='Analysis discovery tutorial'
             >
                 <div className='flex items-center justify-between gap-3'>
-                    <span className='inline-flex min-h-[1.35rem] items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] px-[0.45rem] text-[0.68rem] font-bold text-accent'>{stepIndex + 1} / {steps.length}</span>
+                    <span className='inline-flex min-h-[1.35rem] items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] px-2 text-2xs font-semibold text-accent'>{stepIndex + 1} / {steps.length}</span>
                     <button
                         type='button'
                         className='inline-flex size-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted hover:bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)] hover:text-foreground focus-visible:bg-[color-mix(in_srgb,var(--foreground)_10%,transparent)] focus-visible:text-foreground'
@@ -325,8 +325,8 @@ const CanvasAnalysisDiscoveryTour = ({
                         <X size={13} aria-hidden='true' />
                     </button>
                 </div>
-                <h2 className='m-0 text-[0.95rem] font-[650] leading-[1.2] tracking-normal'>{activeStep.title}</h2>
-                <p className='m-0 text-[0.8rem] leading-[1.45] text-muted'>{activeStep.description}</p>
+                <h2 className='m-0 text-base font-semibold leading-[1.2] tracking-normal'>{activeStep.title}</h2>
+                <p className='m-0 text-sm leading-[1.45] text-muted'>{activeStep.description}</p>
                 <div className='flex items-center justify-end gap-2 pt-0.5'>
                     <Button
                         variant='ghost'

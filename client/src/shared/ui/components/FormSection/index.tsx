@@ -22,7 +22,7 @@ const FormSection = ({ title, description, children, className = '' }: FormSecti
         <section className={rootClassName}>
             {(title || description) && (
                 <header className='form-section-header px-1 pb-2'>
-                    {title && <h3 className='form-section-title text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-muted'>{title}</h3>}
+                    {title && <h3 className='form-section-title text-2xs font-medium uppercase tracking-[0.05em] text-muted'>{title}</h3>}
                     {description && <p className='form-section-description mt-1 text-xs leading-[1.4] text-muted'>{description}</p>}
                 </header>
             )}

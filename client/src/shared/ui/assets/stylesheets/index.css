@@ -13,6 +13,35 @@
 @theme {
     --font-sans: 'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;
+
+    /*
+     * Closed UI type scale. Roles, not sizes:
+     *   2xs = metadata/timestamps (11px, the floor — nothing smaller)
+     *   xs  = labels/captions (12px)
+     *   sm  = app body (13px)
+     *   base = prose/forms (14px)
+     *   lg+ = page titles and empty states only
+     * Arbitrary text-[...] values are banned by the className ratchet in eslint.config.js.
+     */
+    --text-2xs: 0.6875rem;
+    --text-2xs--line-height: 1rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: 1rem;
+    --text-sm: 0.8125rem;
+    --text-sm--line-height: 1.125rem;
+    --text-base: 0.875rem;
+    --text-base--line-height: 1.25rem;
+
+    /*
+     * Radius roles: sm = tiny inline (4px), md = controls (6px),
+     * lg = surfaces/cards (8px), xl = overlays (10px).
+     * 2xl/3xl are capped to the overlay role because HeroUI overlays
+     * (modal/popover/dropdown/card/toast) read --radius-3xl internally;
+     * app code must stop at xl (ratchet-enforced).
+     */
+    --radius-xl: 0.625rem;
+    --radius-2xl: 0.625rem;
+    --radius-3xl: 0.625rem;
 }
 
 @theme inline {
@@ -20,6 +49,9 @@
     --color-info-foreground: var(--info-foreground);
     --color-info-soft: var(--info-soft);
     --color-info-soft-foreground: var(--info-soft-foreground);
+    --color-success-soft-foreground: var(--success-soft-foreground);
+    --color-warning-soft-foreground: var(--warning-soft-foreground);
+    --color-danger-soft-foreground: var(--danger-soft-foreground);
 }
 
 :root,
@@ -42,6 +74,13 @@
     --field-border-width: 1px;
     --field-border: var(--border);
     --field-background: transparent;
+
+    /*
+     * HeroUI radius knob (distinct from Tailwind's --radius-* scale).
+     * Fields derive calc(var(--radius) * 1.5) = 6px (control role) and
+     * overlay chrome derives ×2..×2.5 = 8-10px (surface/overlay roles).
+     */
+    --radius: 0.25rem;
 }
 
 :root,
@@ -64,8 +103,28 @@
 :root,
 .light,
 [data-theme='light'] {
+    /*
+     * Full light ladder, pinned to the HeroUI defaults it used to inherit.
+     * Both themes must define the same token set so they can't drift apart
+     * on a library update; dark is hand-tuned below, light is owned here.
+     */
+    --background: oklch(0.9702 0 0);
     --foreground: #28282b;
+
+    --surface: #ffffff;
+    --surface-secondary: oklch(0.9524 0.0013 286.37);
+    --surface-tertiary: oklch(0.9373 0.0013 286.37);
+
+    --overlay: #ffffff;
+
+    --default: oklch(94% 0.001 286.375);
+    --default-foreground: var(--foreground);
+
     --muted: #8e8e93;
+
+    --border: oklch(90% 0.004 286.32);
+    --separator: oklch(92% 0.004 286.32);
+    --border-secondary: oklch(87% 0.004 286.32);
 
     --success: #34c759;
     --warning: #ffcc00;
@@ -110,6 +169,16 @@
 [data-theme='dark'] {
     --info-soft: color-mix(in oklab, var(--info) 15%, transparent);
     --info-soft-foreground: color-mix(in oklab, var(--info) 70%, var(--foreground) 30%);
+
+    /*
+     * Readable status text for any background, one formula per tone.
+     * Replaces the hand-picked light-theme hex overrides that used to live
+     * inline in className ([[data-theme=light]_&]:text-[#0a5fbf] et al).
+     * Warning mixes deeper because yellow needs more contrast help.
+     */
+    --success-soft-foreground: color-mix(in oklab, var(--success) 70%, var(--foreground) 30%);
+    --warning-soft-foreground: color-mix(in oklab, var(--warning) 60%, var(--foreground) 40%);
+    --danger-soft-foreground: color-mix(in oklab, var(--danger) 70%, var(--foreground) 30%);
 }
 
 :where(a, button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus {

@@ -46,7 +46,7 @@ const FrameCombobox = ({ value, options, onChange, title, className, groupClassN
             aria-label={title ?? 'Select frame'}
         >
             <ComboBox.InputGroup className={cn('h-6 min-h-6 rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary', groupClassName)}>
-                <Input className='h-6 min-h-6 border-0 bg-transparent px-[0.4rem] text-[0.7rem] text-foreground shadow-none placeholder:text-[0.7rem] placeholder:text-muted' placeholder={placeholder} />
+                <Input className='h-6 min-h-6 border-0 bg-transparent px-1.5 text-2xs text-foreground shadow-none placeholder:text-2xs placeholder:text-muted' placeholder={placeholder} />
                 <ComboBox.Trigger />
             </ComboBox.InputGroup>
             <ComboBox.Popover>

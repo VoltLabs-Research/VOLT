@@ -51,7 +51,7 @@ const renderAvatarButton = (
         >
             <Avatar className='size-6'>
                 {user.avatar && <Avatar.Image src={user.avatar} alt={fullName} />}
-                <Avatar.Fallback className='text-[0.625rem] font-semibold'>{initials}</Avatar.Fallback>
+                <Avatar.Fallback className='text-2xs font-semibold'>{initials}</Avatar.Fallback>
             </Avatar>
         </button>
     );
@@ -79,7 +79,7 @@ const WorkspacePeerAvatars = ({
             }))}
             {overflow > 0 && (
                 <div className='ml-0.5 flex size-6 items-center justify-center overflow-hidden rounded-full bg-white/8 text-white/70'>
-                    <span className='text-[0.625rem] font-semibold'>+{overflow}</span>
+                    <span className='text-2xs font-semibold'>+{overflow}</span>
                 </div>
             )}
         </div>

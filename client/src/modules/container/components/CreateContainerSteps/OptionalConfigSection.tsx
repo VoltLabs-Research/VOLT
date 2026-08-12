@@ -35,7 +35,7 @@ const OptionalConfigSection = ({
             <Disclosure isExpanded={expanded} onExpandedChange={setIsExpanded}>
                 <Disclosure.Heading>
                     <Disclosure.Trigger className='flex w-full min-h-11 flex-1 select-none flex-row items-center justify-between gap-2 py-1 text-left'>
-                        <span className='text-[0.8125rem] font-semibold text-foreground'>{title}</span>
+                        <span className='text-sm font-semibold text-foreground'>{title}</span>
                         <span className='flex flex-row items-center gap-1'>
                             {hasError && (
                                 <Chip color='danger' variant='soft' size='sm'>

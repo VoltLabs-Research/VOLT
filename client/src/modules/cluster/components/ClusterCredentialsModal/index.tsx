@@ -130,7 +130,7 @@ const ClusterCredentialsModal = ({ teamCluster, credentials, onReveal }: Cluster
                             <label className='flex items-start gap-2'>
                                 <input
                                     type='checkbox'
-                                    className='mt-[0.2rem]'
+                                    className='mt-1'
                                     checked={hasAcknowledgedSensitiveCopy}
                                     onChange={(event) => setHasAcknowledgedSensitiveCopy(event.target.checked)}
                                 />

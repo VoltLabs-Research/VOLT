@@ -61,7 +61,7 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
             : 'flex flex-col overflow-hidden border border-border shadow-[var(--overlay-shadow)] w-[90vw] h-[80vh] max-[768px]:w-screen max-[768px]:h-[100dvh]'}>
             {!embedded && (
                 <div className='flex flex-row items-center justify-between border border-border px-4 py-3'>
-                    <div className='flex flex-row items-center gap-2 text-[0.9rem] text-foreground'>
+                    <div className='flex flex-row items-center gap-2 text-base text-foreground'>
                         <span>root@{container.name}:~</span>
                     </div>
                     <Tooltip>

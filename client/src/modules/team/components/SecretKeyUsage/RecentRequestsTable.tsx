@@ -48,7 +48,7 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                         <tr key={index} className='transition-colors hover:bg-surface-hover last:[&>td]:border-b-0'>
                             <td className='px-4 py-3 text-left border-b border-border text-sm'>
                                 <span
-                                    className='inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-transparent px-1.5 py-0.5 text-[0.65rem] font-medium leading-none font-mono'
+                                    className='inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-transparent px-1.5 py-0.5 text-2xs font-medium leading-none font-mono'
                                     style={{
                                         color: methodColor,
                                         background: `color-mix(in srgb, ${methodColor} 12%, transparent)`

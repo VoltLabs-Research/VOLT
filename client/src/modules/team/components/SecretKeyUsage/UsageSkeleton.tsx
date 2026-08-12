@@ -12,7 +12,7 @@ const UsageSkeleton = () => (
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
                 {CARD_SKELETON_KEYS.map((key) => (
-                    <div className='border border-border p-5 rounded-2xl transition-[all] duration-200 ease-out-fluid hover:bg-surface-hover hover:shadow-overlay' key={key}>
+                    <div className='border border-border p-5 rounded-xl transition-[all] duration-200 ease-out-fluid hover:bg-surface-hover hover:shadow-overlay' key={key}>
                         <Skeleton className='h-4 w-[100px] rounded-md' />
                         <Skeleton className='mt-2 h-10 w-20 rounded-sm' />
                     </div>

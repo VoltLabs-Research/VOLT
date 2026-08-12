@@ -44,8 +44,8 @@ const RegistryResultCard = ({ item, installedVersion, isInstalling, isAnyInstall
     const isInstalled = installedVersion !== undefined && !updatable;
 
     return (
-        <div className='flex flex-row items-center gap-3 rounded-[0.625rem] p-3 transition-colors duration-200 ease-out-fluid hover:bg-surface-tertiary'>
-            <span className='flex size-11 shrink-0 flex-row items-center justify-center rounded-[0.625rem] bg-[rgba(127,127,127,0.14)]'>
+        <div className='flex flex-row items-center gap-3 rounded-xl p-3 transition-colors duration-200 ease-out-fluid hover:bg-surface-tertiary'>
+            <span className='flex size-11 shrink-0 flex-row items-center justify-center rounded-xl bg-[rgba(127,127,127,0.14)]'>
                 <Package size={22} aria-hidden='true' />
             </span>
             <div className='min-w-0 flex-1'>

@@ -126,7 +126,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 key={col}
                 ref={registerCellRef(rowIndex, colIndex)}
                 className={cn(
-                    'relative min-w-[120px] cursor-default border-b border-border p-0 text-[0.8125rem] text-foreground',
+                    'relative min-w-[120px] cursor-default border-b border-border p-0 text-sm text-foreground',
                     isEdited && 'bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]',
                     isActive && 'outline-2 -outline-offset-2 outline-[color-mix(in_srgb,var(--accent)_32%,transparent)] bg-[color-mix(in_srgb,var(--accent)_6%,transparent)]'
                 )}
@@ -144,7 +144,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     <input
                         ref={inputRef}
                         type='text'
-                        className='h-full w-full rounded-none border-none bg-background px-[0.6rem] py-[0.4rem] text-[0.8125rem] leading-[1.4] text-foreground outline-2 -outline-offset-2 outline-accent focus:outline-2 focus:-outline-offset-2 focus:outline-accent'
+                        className='h-full w-full rounded-none border-none bg-background px-2.5 py-1.5 text-sm leading-[1.4] text-foreground outline-2 -outline-offset-2 outline-accent focus:outline-2 focus:-outline-offset-2 focus:outline-accent'
                         value={editBuffer}
                         onChange={(event) => setEditBuffer(event.target.value)}
                         onBlur={commitEdit}
@@ -152,7 +152,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                         aria-label={`Edit flex-row ${rowIndex + 1}, ${col}`}
                     />
                 ) : (
-                    <span className={cn('block max-w-[280px] overflow-hidden text-ellipsis whitespace-nowrap px-[0.65rem] py-[0.45rem]', isEdited && 'text-accent')}>
+                    <span className={cn('block max-w-[280px] overflow-hidden text-ellipsis whitespace-nowrap px-2.5 py-2', isEdited && 'text-accent')}>
                         {getCellValue(rowIndex, colIndex) || EMPTY_CELL_PLACEHOLDER}
                     </span>
                 )}
@@ -237,9 +237,9 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 >
                     <thead>
                         <tr role='row'>
-                            <th scope='col' className='sticky top-0 z-[1] w-12 min-w-12 max-w-12 whitespace-nowrap border-b border-border bg-surface-secondary px-[0.65rem] py-2 text-right text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted'>#</th>
+                            <th scope='col' className='sticky top-0 z-[1] w-12 min-w-12 max-w-12 whitespace-nowrap border-b border-border bg-surface-secondary px-2.5 py-2 text-right text-2xs font-medium uppercase tracking-[0.06em] text-muted'>#</th>
                             {columns.map((col) => (
-                                <th key={col} scope='col' className='sticky top-0 z-[1] whitespace-nowrap border-b border-border bg-surface-secondary px-[0.65rem] py-2 text-left text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted'>
+                                <th key={col} scope='col' className='sticky top-0 z-[1] whitespace-nowrap border-b border-border bg-surface-secondary px-2.5 py-2 text-left text-2xs font-medium uppercase tracking-[0.06em] text-muted'>
                                     {col}
                                 </th>
                             ))}
@@ -248,7 +248,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     <tbody>
                         {rows.map((_, rowIndex) => (
                             <tr key={rowIndex} role='row' className='hover:bg-surface-hover last:[&>td]:border-b-0 last:[&>th]:border-b-0'>
-                                <th scope='flex-row' className='w-12 min-w-12 max-w-12 border-b border-border bg-surface-secondary px-[0.65rem] py-[0.45rem] text-right text-[0.7rem] tabular-nums text-muted'>
+                                <th scope='flex-row' className='w-12 min-w-12 max-w-12 border-b border-border bg-surface-secondary px-2.5 py-2 text-right text-2xs tabular-nums text-muted'>
                                     {rowIndex + 1}
                                 </th>
                                 {columns.map((col, colIndex) => renderRowCell(rowIndex, col, colIndex))}

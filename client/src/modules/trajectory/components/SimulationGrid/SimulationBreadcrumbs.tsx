@@ -76,7 +76,7 @@ const SimulationBreadcrumbs = ({ items, onOpen, droppable = false }: SimulationB
     return (
         <div className='dashboard-simulations-breadcrumbs'>
             <nav className='min-w-0' aria-label='Folder breadcrumbs'>
-                <ol className='flex flex-row flex-wrap items-center gap-[0.15rem] m-0 min-w-0 list-none p-0'>
+                <ol className='flex flex-row flex-wrap items-center gap-0.5 m-0 min-w-0 list-none p-0'>
                     {items.map((item, index) => (
                         <li key={item.key} className='flex flex-row items-center gap-1'>
                             {index > 0 ? (

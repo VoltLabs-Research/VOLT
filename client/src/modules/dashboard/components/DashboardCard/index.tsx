@@ -17,7 +17,7 @@ const DashboardCard = ({
     return (
         <div
             className={cn(
-                'border border-border rounded-[1.25rem]',
+                'border border-border rounded-xl',
                 isRelative && 'relative',
                 overflowHidden && 'overflow-hidden',
                 className

@@ -102,7 +102,7 @@ const ExpressionSelectStageEditor = ({
                     <span className='text-xs text-muted'>Highlight color</span>
                     <input
                         type='color'
-                        className='h-5 w-7 cursor-pointer rounded border border-border bg-transparent p-0'
+                        className='h-5 w-7 cursor-pointer rounded-sm border border-border bg-transparent p-0'
                         value={color}
                         onChange={(e) => patch({ color: e.target.value })}
                         aria-label='Selection highlight color'

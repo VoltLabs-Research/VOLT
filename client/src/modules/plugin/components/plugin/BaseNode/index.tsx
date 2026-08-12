@@ -42,7 +42,7 @@ interface DebugActionButtonProps {
 const DebugActionButton = ({ icon, isActive, onClick, children }: DebugActionButtonProps) => (
     <button
         type='button'
-        className={cn('inline-flex cursor-pointer flex-row items-center gap-1 whitespace-nowrap rounded-full border border-border bg-surface-secondary/80 px-2 py-[0.15rem] font-[inherit] text-[0.6rem] text-muted transition-[color,border-color,background-color] duration-150 hover:border-border-secondary hover:text-inherit', isActive ? 'border-accent bg-accent/8 text-accent' : null)}
+        className={cn('inline-flex cursor-pointer flex-row items-center gap-1 whitespace-nowrap rounded-full border border-border bg-surface-secondary/80 px-2 py-0.5 font-[inherit] text-2xs text-muted transition-[color,border-color,background-color] duration-150 hover:border-border-secondary hover:text-inherit', isActive ? 'border-accent bg-accent/8 text-accent' : null)}
         onClick={(event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             onClick();
@@ -94,7 +94,7 @@ const BaseNode = ({
                     size='sm'
                     variant='soft'
                     color={BADGE_COLOR[overheadBadge.tone]}
-                    className='absolute top-0 left-1/2 -translate-x-1/2 z-[1] pointer-events-none whitespace-nowrap rounded-full px-[0.4rem] py-[0.05rem] text-[0.6rem] font-semibold'
+                    className='absolute top-0 left-1/2 -translate-x-1/2 z-[1] pointer-events-none whitespace-nowrap rounded-full px-1.5 py-px text-2xs font-semibold'
                 >
                     {overheadBadge.label}
                 </Chip>
@@ -117,10 +117,10 @@ const BaseNode = ({
                 })}
 
                 <div className='flex flex-row items-center gap-4'>
-                    <div className='flex flex-1 flex-col gap-[0.2rem]'>
+                    <div className='flex flex-1 flex-col gap-1'>
                         <h3 className='text-base font-medium text-foreground'>{nodeTitle ?? config.label}</h3>
                         {description && (
-                            <p className='line-clamp-2 overflow-hidden text-[0.8rem] text-muted'>
+                            <p className='line-clamp-2 overflow-hidden text-sm text-muted'>
                                 {description}
                             </p>
                         )}
@@ -131,7 +131,7 @@ const BaseNode = ({
             </div>
 
             {(hasInspectableOutput || hasLog) && (
-                <div className='absolute top-full left-1/2 z-[2] mt-[0.35rem] -translate-x-1/2 inline-flex flex-row items-center gap-[0.3rem]'>
+                <div className='absolute top-full left-1/2 z-[2] mt-1.5 -translate-x-1/2 inline-flex flex-row items-center gap-1'>
                     {hasInspectableOutput && (
                         <DebugActionButton
                             icon={<Database size={11} aria-hidden='true' />}

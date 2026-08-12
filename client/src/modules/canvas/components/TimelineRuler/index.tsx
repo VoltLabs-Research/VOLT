@@ -12,9 +12,9 @@ interface TimelineRulerTick {
 
 const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
     const labelToneClass = {
-        queued: 'text-warning [[data-theme=light]_&]:text-[#8a5300]',
-        running: 'text-accent [[data-theme=light]_&]:text-[#0a5fbf]',
-        completed: 'text-success [text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)] [[data-theme=light]_&]:text-[#0f7a34] [[data-theme=light]_&]:[text-shadow:0_0_10px_color-mix(in_srgb,#0f7a34_25%,transparent)]'
+        queued: 'text-warning-soft-foreground',
+        running: 'text-info-soft-foreground',
+        completed: 'text-success-soft-foreground [text-shadow:0_0_10px_color-mix(in_srgb,var(--success-soft-foreground)_30%,transparent)]'
     } as const;
 
     const markToneClass = {
@@ -28,7 +28,7 @@ const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
             {ticks.map((tick) => (
                 <div key={tick.frame} className={cn('canvas-ruler-tick flex h-full shrink-0 cursor-pointer flex-col items-center px-3 max-md:px-2', tick.dimmed && 'opacity-35 transition-opacity duration-[180ms] ease-out')}>
                     {tick.major && (
-                        <span className={cn('whitespace-nowrap text-xs leading-none text-muted transition-[color,text-shadow] duration-[180ms] max-md:text-[0.625rem]', tick.tone && labelToneClass[tick.tone])}>
+                        <span className={cn('whitespace-nowrap text-xs leading-none text-muted transition-[color,text-shadow] duration-[180ms] max-md:text-2xs', tick.tone && labelToneClass[tick.tone])}>
                             {tick.frame}
                         </span>
                     )}

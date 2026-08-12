@@ -90,7 +90,7 @@ const ClusterMonitoringPage = () => {
                 )}
 
                 {!vm.isLoading && !vm.hasClusters && (
-                    <div className='flex flex-col items-start gap-4 p-6 rounded-2xl border border-border bg-surface-secondary'>
+                    <div className='flex flex-col items-start gap-4 p-6 rounded-xl border border-border bg-surface-secondary'>
                         <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
                         <p className='text-sm text-muted'>
                             Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.

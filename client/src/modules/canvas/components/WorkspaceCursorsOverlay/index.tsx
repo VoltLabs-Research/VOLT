@@ -93,7 +93,7 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
                             />
                         </svg>
                         <span
-                            className='inline-flex max-w-[140px] translate-x-1.5 translate-y-2.5 items-center truncate rounded-[10px] px-1.5 py-0.5 text-[10px] font-semibold leading-[1.2] text-white shadow-[0_1px_2px_rgba(0,0,0,0.2)]'
+                            className='inline-flex max-w-[140px] translate-x-1.5 translate-y-2.5 items-center truncate rounded-xl px-1.5 py-0.5 text-2xs font-semibold leading-[1.2] text-white shadow-[0_1px_2px_rgba(0,0,0,0.2)]'
                             style={{ backgroundColor: color }}
                         >
                             {name}

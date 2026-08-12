@@ -94,7 +94,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                 ) : (
                     <span className='text-xs font-medium text-muted'>Record</span>
                 )}
-                <div className='flex shrink-0 flex-row gap-[0.15rem]'>
+                <div className='flex shrink-0 flex-row gap-0.5'>
                     <Button
                         isIconOnly
                         size='sm'
@@ -115,7 +115,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                     </Button>
                 </div>
             </header>
-            <div className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-[1.1rem] overflow-y-auto overflow-x-hidden p-3.5'>
+            <div className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-4 overflow-y-auto overflow-x-hidden p-3.5'>
                 {fields.map((field) => {
                     const copiedThisField = copiedKey === field.key;
 
@@ -124,16 +124,16 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                             key={field.key}
                             className={cn('group flex min-w-0 flex-col gap-1', field.isFullWidth ? 'col-span-full' : null)}
                         >
-                            <div className='flex min-w-0 flex-row items-center justify-between gap-[0.35rem]'>
+                            <div className='flex min-w-0 flex-row items-center justify-between gap-1.5'>
                                 <div
-                                    className='min-w-0 overflow-hidden whitespace-nowrap text-ellipsis text-[0.6875rem] font-medium text-muted'
+                                    className='min-w-0 overflow-hidden whitespace-nowrap text-ellipsis text-2xs font-medium text-muted'
                                     title={field.title}
                                 >
                                     {field.title}
                                 </div>
                                 <button
                                     type='button'
-                                    className='inline-flex size-4 shrink-0 cursor-pointer flex-row items-center justify-center rounded-[3px] border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-[120ms] ease-out hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
+                                    className='inline-flex size-4 shrink-0 cursor-pointer flex-row items-center justify-center rounded-sm border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-[120ms] ease-out hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
                                     onClick={() => handleCopy(field.key, field.value)}
                                     aria-label={copiedThisField ? 'Copied' : `Copy ${field.title}`}
                                     title={copiedThisField ? 'Copied' : 'Copy value'}

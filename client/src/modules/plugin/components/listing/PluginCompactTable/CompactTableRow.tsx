@@ -95,7 +95,7 @@ const CompactTableRow = ({
                 return (
                     <div
                         key={columnKey}
-                        className='flex flex-row items-center overflow-hidden whitespace-nowrap text-ellipsis px-2 py-[0.1875rem] text-xs text-muted max-[768px]:px-1 max-[768px]:text-[0.625rem]'
+                        className='flex flex-row items-center overflow-hidden whitespace-nowrap text-ellipsis px-2 py-0.5 text-xs text-muted max-[768px]:px-1 max-[768px]:text-2xs'
                         style={resolveColumnStyle(col, columnWidthScale)}
                         title={titleAttribute}
                     >

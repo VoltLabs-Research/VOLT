@@ -79,7 +79,7 @@ const RecoveryState = ({
                 </span>
 
                 {resolvedIcon && (
-                    <div className='flex flex-col items-center justify-center size-14 shrink-0 rounded-2xl bg-surface-tertiary text-muted'>
+                    <div className='flex flex-col items-center justify-center size-14 shrink-0 rounded-xl bg-surface-tertiary text-muted'>
                         {resolvedIcon}
                     </div>
                 )}

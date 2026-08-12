@@ -33,14 +33,14 @@ const renderPrimitive = (value: unknown): ReactNode => {
     if(value instanceof Date){
         return <span className='break-words tabular-nums lining-nums'>{value.toISOString()}</span>;
     }
-    return <span className='break-all font-mono text-[0.8125rem] text-muted'>{JSON.stringify(value)}</span>;
+    return <span className='break-all font-mono text-sm text-muted'>{JSON.stringify(value)}</span>;
 };
 
 const renderVector = (vector: number[]): ReactNode => {
     const magnitude = vectorMagnitude(vector);
     return (
-        <div className='flex flex-row flex-wrap items-baseline gap-[0.6rem]'>
-            <div className='inline-flex flex-row flex-wrap items-baseline gap-[0.2rem] tabular-nums lining-nums'>
+        <div className='flex flex-row flex-wrap items-baseline gap-2.5'>
+            <div className='inline-flex flex-row flex-wrap items-baseline gap-1 tabular-nums lining-nums'>
                 <span className='text-muted'>⟨</span>
                 {vector.map((component, index) => (
                     <Fragment key={index}>
@@ -50,7 +50,7 @@ const renderVector = (vector: number[]): ReactNode => {
                 ))}
                 <span className='text-muted'>⟩</span>
             </div>
-            <div className='inline-flex flex-row items-baseline gap-[0.3rem] text-xs text-muted'>
+            <div className='inline-flex flex-row items-baseline gap-1 text-xs text-muted'>
                 <span className='font-mono'>‖v‖</span>
                 <span className='tabular-nums'>{formatScientific(magnitude, NUMERIC_PRECISION).long}</span>
             </div>
@@ -65,19 +65,19 @@ const renderNumberArray = (values: number[]): ReactNode => {
     const capped = values.slice(0, MAX_ARRAY_ROWS);
     const overflow = values.length - capped.length;
     return (
-        <div className='flex flex-col gap-[0.4rem]'>
-            <div className='text-[0.6875rem] text-muted'>
+        <div className='flex flex-col gap-1.5'>
+            <div className='text-2xs text-muted'>
                 <span>{values.length} values</span>
             </div>
             <div className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 overflow-y-auto tabular-nums'>
                 {capped.map((value, index) => (
-                    <span key={index} className='text-[0.8125rem] text-foreground tabular-nums lining-nums'>
+                    <span key={index} className='text-sm text-foreground tabular-nums lining-nums'>
                         {formatScientific(value, NUMERIC_PRECISION).long}
                     </span>
                 ))}
             </div>
             {overflow > 0 && (
-                <div className='text-[0.6875rem] text-muted'>
+                <div className='text-2xs text-muted'>
                     +{overflow} more
                 </div>
             )}
@@ -96,15 +96,15 @@ const renderPoints = (points: number[][]): ReactNode => {
     const gridStyle = { '--points-dim': dim } as React.CSSProperties;
 
     return (
-        <div className='flex flex-col gap-[0.4rem]'>
-            <div className='text-[0.6875rem] text-muted'>
+        <div className='flex flex-col gap-1.5'>
+            <div className='text-2xs text-muted'>
                 <span>{points.length} points · dim {dim}</span>
             </div>
             <div className='flex max-h-[240px] flex-col overflow-auto'>
                 <div
                     className={cn(
-                        'grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-[0.3rem] text-[0.8125rem] tabular-nums lining-nums',
-                        'sticky top-0 z-[1] border-b border-border bg-surface backdrop-blur-md text-[0.6875rem] font-medium text-muted'
+                        'grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-1 text-sm tabular-nums lining-nums',
+                        'sticky top-0 z-[1] border-b border-border bg-surface backdrop-blur-md text-2xs font-medium text-muted'
                     )}
                     style={gridStyle}
                 >
@@ -119,7 +119,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                     {capped.map((point, rowIndex) => (
                         <div
                             key={rowIndex}
-                            className={cn('grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-[0.3rem] text-[0.8125rem] tabular-nums lining-nums', rowIndex > 0 ? 'border-t border-border' : null)}
+                            className={cn('grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-1 text-sm tabular-nums lining-nums', rowIndex > 0 ? 'border-t border-border' : null)}
                             style={gridStyle}
                         >
                             <span className='text-muted tabular-nums'>{rowIndex}</span>
@@ -133,7 +133,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                 </div>
             </div>
             {overflow > 0 && (
-                <div className='text-[0.6875rem] text-muted'>
+                <div className='text-2xs text-muted'>
                     +{overflow} more rows
                 </div>
             )}
@@ -147,15 +147,15 @@ const renderMatrix = (matrix: number[][]): ReactNode => {
     }
     const cols = matrix.reduce((acc, row) => Math.max(acc, row.length), 0);
     return (
-        <div className='flex flex-col gap-[0.4rem]'>
-            <div className='text-[0.6875rem] text-muted'>
+        <div className='flex flex-col gap-1.5'>
+            <div className='text-2xs text-muted'>
                 <span>{matrix.length}×{cols}</span>
             </div>
             <div className='flex max-h-[220px] flex-col overflow-auto tabular-nums'>
                 {matrix.map((row, rowIndex) => (
                     <div
                         key={rowIndex}
-                        className={cn('flex flex-row gap-4 py-[0.2rem]', rowIndex > 0 ? 'border-t border-border' : null)}
+                        className={cn('flex flex-row gap-4 py-1', rowIndex > 0 ? 'border-t border-border' : null)}
                     >
                         {row.map((cell, colIndex) => (
                             <span key={colIndex} className='min-w-[60px] text-foreground tabular-nums lining-nums'>
@@ -177,12 +177,12 @@ const renderObject = (value: Record<string, unknown>, depth = 0): ReactNode => {
 
     return (
         <div
-            className={cn('flex flex-col gap-[0.55rem]', depth === 0 ? 'pl-0' : 'border-l border-border pl-3')}
+            className={cn('flex flex-col gap-2', depth === 0 ? 'pl-0' : 'border-l border-border pl-3')}
             data-depth={depth}
         >
             {entries.map(([key, nested]) => (
-                <div key={key} className='flex flex-col gap-[0.2rem]'>
-                    <span className='font-mono text-[0.6875rem] font-medium text-muted'>{key}</span>
+                <div key={key} className='flex flex-col gap-1'>
+                    <span className='font-mono text-2xs font-medium text-muted'>{key}</span>
                     <div className='min-w-0 [overflow-wrap:anywhere]'>
                         {renderExpandedValue(nested, depth + 1)}
                     </div>
@@ -198,8 +198,8 @@ const renderHeterogeneousArray = (values: unknown[]): ReactNode => {
     }
     const capped = values.slice(0, MAX_ARRAY_ROWS);
     return (
-        <div className='flex flex-col gap-[0.4rem]'>
-            <div className='text-[0.6875rem] text-muted'>
+        <div className='flex flex-col gap-1.5'>
+            <div className='text-2xs text-muted'>
                 <span>{values.length} items</span>
             </div>
             <div className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 overflow-y-auto'>
@@ -207,11 +207,11 @@ const renderHeterogeneousArray = (values: unknown[]): ReactNode => {
                     <div
                         key={index}
                         className={cn(
-                            'flex w-full flex-col gap-[0.2rem] border-b border-border pb-2 text-[0.8125rem] text-foreground tabular-nums lining-nums',
+                            'flex w-full flex-col gap-1 border-b border-border pb-2 text-sm text-foreground tabular-nums lining-nums',
                             index === capped.length - 1 ? 'border-b-0 pb-0' : null
                         )}
                     >
-                        <span className='text-[0.6875rem] text-muted'>{index}</span>
+                        <span className='text-2xs text-muted'>{index}</span>
                         <div className='min-w-0'>
                             {renderExpandedValue(item, 1)}
                         </div>
@@ -249,6 +249,6 @@ export const renderExpandedValue = (value: unknown, depth = 0): ReactNode => {
             if(Array.isArray(value)){
                 return renderHeterogeneousArray(value);
             }
-            return <span className='break-all font-mono text-[0.8125rem] text-muted'>{JSON.stringify(value)}</span>;
+            return <span className='break-all font-mono text-sm text-muted'>{JSON.stringify(value)}</span>;
     }
 };

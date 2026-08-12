@@ -89,7 +89,7 @@ const InlineSubListingView = ({
                 >
                     <ArrowLeft size={14} aria-hidden='true' />
                 </Button>
-                <div className='flex min-w-0 flex-1 flex-row flex-nowrap gap-[0.2rem] overflow-x-auto' role='tablist'>
+                <div className='flex min-w-0 flex-1 flex-row flex-nowrap gap-1 overflow-x-auto' role='tablist'>
                     {subListingNames.map((name) => {
                         const isActive = name === activeName;
                         return (
@@ -99,7 +99,7 @@ const InlineSubListingView = ({
                                 role='tab'
                                 aria-selected={isActive}
                                 className={cn(
-                                    'cursor-pointer whitespace-nowrap rounded-[4px] border-0 bg-transparent px-[0.55rem] py-[0.2rem] text-[0.6875rem] font-medium transition-colors duration-[120ms] ease-out hover:bg-surface-hover hover:text-foreground',
+                                    'cursor-pointer whitespace-nowrap rounded-sm border-0 bg-transparent px-2 py-1 text-2xs font-medium transition-colors duration-[120ms] ease-out hover:bg-surface-hover hover:text-foreground',
                                     isActive ? 'bg-accent/14 text-foreground' : 'text-muted'
                                 )}
                                 onClick={() => onActiveNameChange(name)}

@@ -136,7 +136,7 @@ export default function SimulationCard({
                         alt={`Preview of ${trajectory.name}`}
                     />
                 ) : (
-                    <div className='flex flex-row items-center w-full h-full justify-center text-muted text-[1.8rem]'>
+                    <div className='flex flex-row items-center w-full h-full justify-center text-muted text-3xl'>
                         <Atom />
                     </div>
                 )}

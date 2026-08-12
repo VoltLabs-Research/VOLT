@@ -35,7 +35,7 @@ export const createTableArtifactComponents = (
             };
 
             return (
-                <div className='my-[0.4rem] overflow-hidden rounded-lg border border-border'>
+                <div className='my-1.5 overflow-hidden rounded-lg border border-border'>
                     <div className='overflow-x-auto'>
                         <table {...props} className={cn('m-0! rounded-none! border-0!', className)}>{children}</table>
                     </div>

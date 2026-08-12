@@ -20,7 +20,7 @@ const CanvasSearchInput = ({
     <div className={cn(
         variant === 'small'
             ? 'inline-flex w-auto min-h-[2.125rem] flex-none items-center gap-1 rounded-lg border border-border bg-transparent px-1.5 transition-colors duration-150 ease-out focus-within:border-accent'
-            : 'flex w-full min-h-10 items-center gap-2 rounded-2xl border border-border bg-transparent px-3 py-[0.4375rem] transition-colors duration-150 ease-out focus-within:border-accent',
+            : 'flex w-full min-h-10 items-center gap-2 rounded-xl border border-border bg-transparent px-3 py-1.5 transition-colors duration-150 ease-out focus-within:border-accent',
         containerClassName
     )}>
         <Search className='size-3.5 shrink-0 text-muted' aria-hidden='true' />

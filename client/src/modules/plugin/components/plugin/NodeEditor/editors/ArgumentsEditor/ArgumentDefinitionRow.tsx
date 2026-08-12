@@ -129,10 +129,10 @@ const ArgumentDefinitionRow = ({
                         className={cn('shrink-0 text-muted transition-transform duration-150 ease-out', isExpanded ? 'rotate-90' : null)}
                         aria-hidden='true'
                     />
-                    <span className={cn('min-w-0 flex-1 overflow-hidden whitespace-nowrap text-ellipsis text-[0.8125rem] font-medium', argumentLabel ? null : 'italic text-muted')}>
+                    <span className={cn('min-w-0 flex-1 overflow-hidden whitespace-nowrap text-ellipsis text-sm font-medium', argumentLabel ? null : 'italic text-muted')}>
                         {displayLabel}
                     </span>
-                    <Chip size='sm' variant='soft' className='shrink-0 rounded-full px-1.5 py-[0.05rem] text-[0.65rem] font-medium'>
+                    <Chip size='sm' variant='soft' className='shrink-0 rounded-full px-1.5 py-px text-2xs font-medium'>
                         {ARGUMENT_TYPE_SELECT_OPTIONS.find((option) => option.value === argument.type)?.title ?? argument.type}
                     </Chip>
                 </button>
@@ -305,7 +305,7 @@ const ArgumentDefinitionRow = ({
 
                     {argument.type === ArgumentType.SELECT && (
                         <>
-                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>Options</h4>
+                            <h4 className='mt-5 mb-2 ml-1 text-2xs font-semibold uppercase tracking-[0.05em] text-muted'>Options</h4>
                             <div className='p-1'>
                                 <ArgumentOptionsEditor
                                     options={argument.options ?? []}
@@ -317,7 +317,7 @@ const ArgumentDefinitionRow = ({
 
                     {isListLike && (
                         <>
-                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>
+                            <h4 className='mt-5 mb-2 ml-1 text-2xs font-semibold uppercase tracking-[0.05em] text-muted'>
                                 {argument.type === ArgumentType.TUPLE ? 'Tuple Components' : 'Nested Arguments'}
                             </h4>
                             <div className='p-1 mt-2'>
@@ -328,7 +328,7 @@ const ArgumentDefinitionRow = ({
 
                     {isPluginReference && (
                         <>
-                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>Allowed Plugins</h4>
+                            <h4 className='mt-5 mb-2 ml-1 text-2xs font-semibold uppercase tracking-[0.05em] text-muted'>Allowed Plugins</h4>
                             <div className='p-1'>
                                 <div className='flex flex-col gap-2'>
                                     <PluginMultiSelect
@@ -383,7 +383,7 @@ const ArgumentDefinitionRow = ({
                                     onChange={(event) => editField('showPluginConfiguration', event.target.value)}
                                 />
                             </FormSection>
-                            <h4 className='mt-5 mb-2 ml-1 text-[0.6875rem] font-semibold uppercase tracking-[0.05em] text-muted'>Argument Mappings</h4>
+                            <h4 className='mt-5 mb-2 ml-1 text-2xs font-semibold uppercase tracking-[0.05em] text-muted'>Argument Mappings</h4>
                             <div className='p-1'>
                                 <PluginReferenceMappingsEditor
                                     mappings={argument.pluginReferenceMappings ?? []}

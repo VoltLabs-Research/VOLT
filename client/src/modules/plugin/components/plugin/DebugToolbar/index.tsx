@@ -98,7 +98,7 @@ const DebugToolbar = () => {
     }
 
     return (
-        <div className='absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-[0.375rem]'>
+        <div className='absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5'>
             <div className='flex flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-4'>
                 <div className='flex flex-row items-center gap-2'>
                     <Bug size={14} className='text-muted' aria-hidden='true' />

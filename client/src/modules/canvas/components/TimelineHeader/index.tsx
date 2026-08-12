@@ -114,7 +114,7 @@ const TimelineHeader = ({
                 role='tab'
                 aria-selected={isActive}
                 className={cn(
-                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out',
+                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-sm font-medium leading-none select-none transition-colors duration-150 ease-out',
                     isActive ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
                 )}
                 onClick={() => onTabChange(tab.id)}
@@ -176,7 +176,7 @@ const TimelineHeader = ({
                         value={activeTab}
                         onChange={onTabChange}
                         placeholder='Tab'
-                        triggerClassName='max-md:pointer-events-auto max-md:h-auto max-md:min-h-[1.875rem] max-md:w-full max-md:rounded-[inherit] max-md:border-transparent max-md:bg-inherit max-md:px-2 max-md:py-1 max-md:text-[0.6875rem]'
+                        triggerClassName='max-md:pointer-events-auto max-md:h-auto max-md:min-h-[1.875rem] max-md:w-full max-md:rounded-[inherit] max-md:border-transparent max-md:bg-inherit max-md:px-2 max-md:py-1 max-md:text-2xs'
                     />
                 </div>
             </div>
@@ -197,14 +197,14 @@ const TimelineHeader = ({
                             options={availableTimesteps}
                             onChange={onRangeStartChange}
                             title='Start timestep'
-                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-[0.625rem]'
+                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-2xs'
                         />
                         <FrameCombobox
                             value={endFrame}
                             options={availableTimesteps}
                             onChange={onRangeEndChange}
                             title='End timestep'
-                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-[0.625rem]'
+                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-2xs'
                         />
                         <Separator orientation='vertical' className='h-4 shrink-0 max-md:hidden' />
                         <PresetPopover

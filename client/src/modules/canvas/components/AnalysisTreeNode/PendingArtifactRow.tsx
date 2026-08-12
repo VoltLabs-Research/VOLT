@@ -19,11 +19,11 @@ const STATUS_TITLE: Record<AnalysisArtifactStatus, string> = {
 
 const PendingArtifactRow = ({ artifact, fallbackName, isRecentlyReady }: PendingArtifactRowProps) => {
     const labelToneClass = {
-        pending: '[&>.truncate]:text-warning [[data-theme=light]_&]:[&>.truncate]:text-[#8a5300]',
-        generating: '[&>.truncate]:text-accent [[data-theme=light]_&]:[&>.truncate]:text-[#0a5fbf]',
-        uploading: '[&>.truncate]:text-accent [[data-theme=light]_&]:[&>.truncate]:text-[#0a5fbf]',
-        'ready-recent': '[&>.truncate]:text-success [&>.truncate]:[text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)] [[data-theme=light]_&]:[&>.truncate]:text-[#0f7a34]',
-        failed: '[&>.truncate]:text-danger [[data-theme=light]_&]:[&>.truncate]:text-[#c41e1e]'
+        pending: '[&>.truncate]:text-warning-soft-foreground',
+        generating: '[&>.truncate]:text-info-soft-foreground',
+        uploading: '[&>.truncate]:text-info-soft-foreground',
+        'ready-recent': '[&>.truncate]:text-success-soft-foreground [&>.truncate]:[text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)]',
+        failed: '[&>.truncate]:text-danger-soft-foreground'
     } as const;
 
     return (

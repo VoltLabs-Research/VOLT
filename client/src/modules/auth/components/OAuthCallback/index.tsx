@@ -107,7 +107,7 @@ const OAuthCallbackTemplate = () => {
                         opacity: 1,
                         scale: 1
                     }}
-                    className='z-10 max-w-[28rem] bg-surface border border-border rounded-3xl relative w-full text-center p-8'
+                    className='z-10 max-w-[28rem] bg-surface border border-border rounded-xl relative w-full text-center p-8'
                 >
                     <div className='flex flex-row items-center justify-center mb-6'>
                         {status === 'loading' && (
@@ -139,7 +139,7 @@ const OAuthCallbackTemplate = () => {
                             y: 0
                         }}
                     >
-                        <h3 className='mb-2 text-2xl font-bold text-foreground'>
+                        <h3 className='mb-2 text-2xl font-semibold text-foreground'>
                             {status === 'loading' && 'Authenticating...'}
                             {status === 'success' && 'Successfully Authenticated!'}
                         </h3>

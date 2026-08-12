@@ -24,7 +24,7 @@ const SecretKeyStatCard = ({
                         {icon}
                     </span>
                 )}
-                <span className='text-[0.7rem] font-semibold uppercase tracking-[0.05em] leading-none text-muted'>
+                <span className='text-2xs font-semibold uppercase tracking-[0.05em] leading-none text-muted'>
                     {label}
                 </span>
             </div>

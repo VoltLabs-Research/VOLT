@@ -175,13 +175,13 @@ const CreateContainerStepper = <K extends string>({
                                 onClick={() => handleIndicatorClick(indicator.key)}
                                 onKeyDown={(event) => handleIndicatorKeyDown(event, indicatorIndex)}
                             >
-                                <div className={cn('flex size-[26px] shrink-0 items-center justify-center rounded-full bg-border text-[0.8125rem] font-semibold text-muted transition-[background-color,color] duration-200 ease-out', isActive && 'bg-accent text-accent-foreground')}>
+                                <div className={cn('flex size-[26px] shrink-0 items-center justify-center rounded-full bg-border text-sm font-semibold text-muted transition-[background-color,color] duration-200 ease-out', isActive && 'bg-accent text-accent-foreground')}>
                                     {indicatorIndex + 1}
                                 </div>
                                 <div className='flex flex-col gap-1'>
                                     <span className='text-sm font-semibold'>{indicator.label}</span>
                                     {indicator.description && (
-                                        <small className='text-[0.7125rem] text-muted'>{indicator.description}</small>
+                                        <small className='text-2xs text-muted'>{indicator.description}</small>
                                     )}
                                 </div>
                             </button>

@@ -135,7 +135,7 @@ const Sidebar = ({
                 damping: 30
             }}
         >
-            <div className='flex h-full w-full max-w-full flex-col justify-between gap-0 overflow-hidden rounded-2xl border-0 bg-surface p-0 max-[768px]:z-[100] max-[768px]:rounded-md'>
+            <div className='flex h-full w-full max-w-full flex-col justify-between gap-0 overflow-hidden rounded-xl border-0 bg-surface p-0 max-[768px]:z-[100] max-[768px]:rounded-md'>
                 <div id={`${sidebarId}-content`} className='flex min-h-0 flex-1 flex-col overflow-hidden'>
                     {headerElement}
 

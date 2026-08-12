@@ -80,8 +80,8 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'reasoning') {
             segmentElements.push(
-                <div className='w-full rounded-none border-none bg-transparent px-0 pt-0 pb-[0.2rem] text-muted' key={`seg-${segmentIndex}`}>
-                    <span className='mb-[0.1rem] block text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
+                <div className='w-full rounded-none border-none bg-transparent px-0 pt-0 pb-1 text-muted' key={`seg-${segmentIndex}`}>
+                    <span className='mb-0.5 block text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
                         Thinking
                     </span>
                     <div className={cn(
@@ -89,29 +89,29 @@ const AIMessageItem = memo(({
                         'break-words',
                         'm-0 w-full overflow-x-auto leading-[1.55]',
                         '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-                        '[&_p]:my-[0.3rem] [&_p+p]:mt-[0.4rem]',
-                        '[&_ul]:my-[0.3rem] [&_ul]:pl-5 [&_ol]:my-[0.3rem] [&_ol]:pl-5',
-                        '[&_li]:m-0 [&_li]:pl-[0.15rem] [&_li+li]:mt-[0.1rem] [&_li>p]:m-0',
-                        '[&_li>ul]:mt-[0.1rem] [&_li>ul]:mb-0 [&_li>ol]:mt-[0.1rem] [&_li>ol]:mb-0',
-                        '[&_:is(h1,h2,h3,h4,h5,h6)]:mx-0 [&_:is(h1,h2,h3,h4,h5,h6)]:mt-[0.6rem] [&_:is(h1,h2,h3,h4,h5,h6)]:mb-1',
+                        '[&_p]:my-1 [&_p+p]:mt-1.5',
+                        '[&_ul]:my-1 [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:pl-5',
+                        '[&_li]:m-0 [&_li]:pl-0.5 [&_li+li]:mt-0.5 [&_li>p]:m-0',
+                        '[&_li>ul]:mt-0.5 [&_li>ul]:mb-0 [&_li>ol]:mt-0.5 [&_li>ol]:mb-0',
+                        '[&_:is(h1,h2,h3,h4,h5,h6)]:mx-0 [&_:is(h1,h2,h3,h4,h5,h6)]:mt-2.5 [&_:is(h1,h2,h3,h4,h5,h6)]:mb-1',
                         '[&_:is(h1,h2,h3,h4,h5,h6)]:leading-[1.3] [&_:is(h1,h2,h3,h4,h5,h6)]:font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:text-foreground',
                         '[&_h1]:text-[1.3em] [&_h2]:text-[1.15em] [&_h3]:text-[1.05em] [&_:is(h4,h5,h6)]:text-[1em]',
                         '[&_code]:font-mono [&_code]:text-[0.85em]',
-                        '[&_pre]:my-[0.4rem] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-background [&_pre]:px-3 [&_pre]:py-[0.6rem]',
-                        '[&_pre_code]:whitespace-pre [&_pre_code]:text-[0.74rem]',
-                        '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-surface-secondary [&_:not(pre)>code]:px-[0.3rem] [&_:not(pre)>code]:py-[0.1rem]',
+                        '[&_pre]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-background [&_pre]:px-3 [&_pre]:py-2.5',
+                        '[&_pre_code]:whitespace-pre [&_pre_code]:text-xs',
+                        '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-surface-secondary [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5',
                         '[&_a]:text-foreground [&_a]:underline',
-                        '[&_blockquote]:my-[0.4rem] [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-[0.15rem] [&_blockquote]:pr-0 [&_blockquote]:pl-3 [&_blockquote]:text-muted',
+                        '[&_blockquote]:my-1.5 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-0.5 [&_blockquote]:pr-0 [&_blockquote]:pl-3 [&_blockquote]:text-muted',
                         '[&_blockquote>*:first-child]:mt-0 [&_blockquote>*:last-child]:mb-0',
                         '[&_hr]:border-0 [&_hr]:border-t [&_hr]:border-border',
                         '[&_table]:w-full [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:border [&_table]:border-border [&_table]:border-collapse [&_table]:text-[0.82em]',
                         '[&_thead]:bg-surface-secondary',
-                        '[&_th]:border-b [&_th]:border-border [&_th]:px-[0.6rem] [&_th]:py-[0.4rem] [&_th]:text-left [&_th]:text-[0.9em] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.03em] [&_th]:text-muted',
-                        '[&_td]:border-b [&_td]:border-border [&_td]:px-[0.6rem] [&_td]:py-[0.35rem]',
+                        '[&_th]:border-b [&_th]:border-border [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:text-left [&_th]:text-[0.9em] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.03em] [&_th]:text-muted',
+                        '[&_td]:border-b [&_td]:border-border [&_td]:px-2.5 [&_td]:py-1.5',
                         '[&_tr:last-child_td]:border-b-0',
                         '[&_tbody_tr:hover]:bg-surface-hover',
                         '[&_strong]:font-semibold [&_strong]:text-foreground',
-                        'text-muted opacity-90 [&_p]:my-[0.15rem] [&_p+p]:mt-[0.15rem] [&_ul]:my-[0.15rem] [&_ol]:my-[0.15rem] [&_pre]:my-[0.15rem] [&_blockquote]:my-[0.15rem]'
+                        'text-muted opacity-90 [&_p]:my-0.5 [&_p+p]:mt-0.5 [&_ul]:my-0.5 [&_ol]:my-0.5 [&_pre]:my-0.5 [&_blockquote]:my-0.5'
                     )}>
                         <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
                             {segment.content}
@@ -127,35 +127,35 @@ const AIMessageItem = memo(({
             segmentElements.push(
                 <div
                     className={cn(
-                        'min-w-0 max-w-full overflow-hidden rounded-2xl px-[0.95rem] py-3 leading-[1.55] whitespace-normal',
+                        'min-w-0 max-w-full overflow-hidden rounded-xl px-4 py-3 leading-[1.55] whitespace-normal',
                         isUser ? 'bg-surface-secondary text-foreground' : 'border-none bg-transparent pl-0 text-foreground'
                     )}
                     key={`seg-${segmentIndex}`}
                 >
                     <div className={cn(
-                        'text-[0.95rem]',
+                        'text-base',
                         'break-words',
                         'm-0 w-full overflow-x-auto leading-[1.55]',
                         '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-                        '[&_p]:my-[0.3rem] [&_p+p]:mt-[0.4rem]',
-                        '[&_ul]:my-[0.3rem] [&_ul]:pl-5 [&_ol]:my-[0.3rem] [&_ol]:pl-5',
-                        '[&_li]:m-0 [&_li]:pl-[0.15rem] [&_li+li]:mt-[0.1rem] [&_li>p]:m-0',
-                        '[&_li>ul]:mt-[0.1rem] [&_li>ul]:mb-0 [&_li>ol]:mt-[0.1rem] [&_li>ol]:mb-0',
-                        '[&_:is(h1,h2,h3,h4,h5,h6)]:mx-0 [&_:is(h1,h2,h3,h4,h5,h6)]:mt-[0.6rem] [&_:is(h1,h2,h3,h4,h5,h6)]:mb-1',
+                        '[&_p]:my-1 [&_p+p]:mt-1.5',
+                        '[&_ul]:my-1 [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:pl-5',
+                        '[&_li]:m-0 [&_li]:pl-0.5 [&_li+li]:mt-0.5 [&_li>p]:m-0',
+                        '[&_li>ul]:mt-0.5 [&_li>ul]:mb-0 [&_li>ol]:mt-0.5 [&_li>ol]:mb-0',
+                        '[&_:is(h1,h2,h3,h4,h5,h6)]:mx-0 [&_:is(h1,h2,h3,h4,h5,h6)]:mt-2.5 [&_:is(h1,h2,h3,h4,h5,h6)]:mb-1',
                         '[&_:is(h1,h2,h3,h4,h5,h6)]:leading-[1.3] [&_:is(h1,h2,h3,h4,h5,h6)]:font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:text-foreground',
                         '[&_h1]:text-[1.3em] [&_h2]:text-[1.15em] [&_h3]:text-[1.05em] [&_:is(h4,h5,h6)]:text-[1em]',
                         '[&_code]:font-mono [&_code]:text-[0.85em]',
-                        '[&_pre]:my-[0.4rem] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-background [&_pre]:px-3 [&_pre]:py-[0.6rem]',
-                        '[&_pre_code]:whitespace-pre [&_pre_code]:text-[0.74rem]',
-                        '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-surface-secondary [&_:not(pre)>code]:px-[0.3rem] [&_:not(pre)>code]:py-[0.1rem]',
+                        '[&_pre]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-background [&_pre]:px-3 [&_pre]:py-2.5',
+                        '[&_pre_code]:whitespace-pre [&_pre_code]:text-xs',
+                        '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-surface-secondary [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5',
                         '[&_a]:text-foreground [&_a]:underline',
-                        '[&_blockquote]:my-[0.4rem] [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-[0.15rem] [&_blockquote]:pr-0 [&_blockquote]:pl-3 [&_blockquote]:text-muted',
+                        '[&_blockquote]:my-1.5 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-0.5 [&_blockquote]:pr-0 [&_blockquote]:pl-3 [&_blockquote]:text-muted',
                         '[&_blockquote>*:first-child]:mt-0 [&_blockquote>*:last-child]:mb-0',
                         '[&_hr]:border-0 [&_hr]:border-t [&_hr]:border-border',
                         '[&_table]:w-full [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:border [&_table]:border-border [&_table]:border-collapse [&_table]:text-[0.82em]',
                         '[&_thead]:bg-surface-secondary',
-                        '[&_th]:border-b [&_th]:border-border [&_th]:px-[0.6rem] [&_th]:py-[0.4rem] [&_th]:text-left [&_th]:text-[0.9em] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.03em] [&_th]:text-muted',
-                        '[&_td]:border-b [&_td]:border-border [&_td]:px-[0.6rem] [&_td]:py-[0.35rem]',
+                        '[&_th]:border-b [&_th]:border-border [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:text-left [&_th]:text-[0.9em] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.03em] [&_th]:text-muted',
+                        '[&_td]:border-b [&_td]:border-border [&_td]:px-2.5 [&_td]:py-1.5',
                         '[&_tr:last-child_td]:border-b-0',
                         '[&_tbody_tr:hover]:bg-surface-hover',
                         '[&_strong]:font-semibold [&_strong]:text-foreground'
@@ -207,7 +207,7 @@ const AIMessageItem = memo(({
             {segmentElements}
             {!isUser && message.segments.length === 0 && <ThinkingBubble />}
             {!isUser && message.preview.trim().length > 0 && (
-                <div className='mt-[0.15rem] flex flex-row items-center gap-1 opacity-0 transition-opacity duration-[120ms] group-hover/message:opacity-100 group-focus-within/message:opacity-100 [@media(hover:none)]:opacity-100'>
+                <div className='mt-0.5 flex flex-row items-center gap-1 opacity-0 transition-opacity duration-[120ms] group-hover/message:opacity-100 group-focus-within/message:opacity-100 [@media(hover:none)]:opacity-100'>
                     <CopyMessageButton text={message.preview} />
                 </div>
             )}

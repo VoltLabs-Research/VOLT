@@ -48,19 +48,19 @@ const JSON_TREE_STYLES = {
     ...darkStyles,
     container: 'font-[inherit] text-xs leading-normal',
     basicChildStyle: 'pl-0',
-    label: 'inline-flex items-center gap-[2px] select-none text-[var(--syntax-key)]',
-    clickableLabel: 'inline-flex items-center gap-[2px] select-none text-[var(--syntax-key)] cursor-pointer',
+    label: 'inline-flex items-center gap-0.5 select-none text-[var(--syntax-key)]',
+    clickableLabel: 'inline-flex items-center gap-0.5 select-none text-[var(--syntax-key)] cursor-pointer',
     nullValue: 'italic text-[var(--syntax-null)]',
     undefinedValue: 'italic text-[var(--syntax-null)]',
     numberValue: 'text-[var(--syntax-primitive)]',
     stringValue: 'break-all text-[var(--syntax-string)]',
     booleanValue: 'text-[var(--syntax-primitive)]',
     otherValue: 'text-[var(--syntax-primitive)]',
-    punctuation: 'text-[0.7rem] text-[var(--syntax-meta)]',
-    collapsedContent: 'text-[0.7rem] text-[var(--syntax-meta)]',
+    punctuation: 'text-2xs text-[var(--syntax-meta)]',
+    collapsedContent: 'text-2xs text-[var(--syntax-meta)]',
     expandIcon: 'inline-flex cursor-pointer select-none items-center',
     collapseIcon: 'inline-flex cursor-pointer select-none items-center',
-    childFieldsContainer: 'ml-[0.4rem] border-l border-border pl-4'
+    childFieldsContainer: 'ml-1.5 border-l border-border pl-4'
 };
 
 const JsonTree = ({ data, defaultExpanded = true }: JsonTreeProps) => {

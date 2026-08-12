@@ -99,7 +99,7 @@ const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: Con
                 <div className='flex flex-col gap-8'>
                     <EditableKeyValueCard<EnvVariableFormItem>
                         title='Environment Variables'
-                        titleClassName='mt-0 mb-2 text-[0.9375rem] font-semibold tracking-[-0.01em] text-foreground'
+                        titleClassName='mt-0 mb-2 text-base font-semibold tracking-[-0.01em] text-foreground'
                         items={envItems}
                         fields={[
                             {

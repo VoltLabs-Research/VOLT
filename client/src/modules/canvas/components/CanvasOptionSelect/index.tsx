@@ -46,8 +46,8 @@ const CanvasOptionSelect = ({
         fullWidth
         className={cn('min-w-0', className)}
     >
-        <Select.Trigger className={cn(size === 'compact' ? 'h-6 min-h-6 rounded-lg px-[0.4rem] text-[0.7rem]' : '', triggerClassName)}>
-            <Select.Value className={size === 'compact' ? 'text-[0.7rem]' : ''}>
+        <Select.Trigger className={cn(size === 'compact' ? 'h-6 min-h-6 rounded-lg px-1.5 text-2xs' : '', triggerClassName)}>
+            <Select.Value className={size === 'compact' ? 'text-2xs' : ''}>
                 {({ isPlaceholder, selectedText, defaultChildren }) => (
                     isPlaceholder ? defaultChildren : selectedText
                 )}

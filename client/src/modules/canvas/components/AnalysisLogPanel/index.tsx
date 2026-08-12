@@ -104,7 +104,7 @@ const AnalysisLogPanel = ({
                         <p className='text-xs text-muted'>{helperText}</p>
                     </div>
                 ) : (
-                    <pre className='m-0 whitespace-pre-wrap break-words px-4 pb-[1.1rem] pt-[0.85rem] font-mono text-[0.72rem] leading-[1.55] text-foreground'>
+                    <pre className='m-0 whitespace-pre-wrap break-words px-4 pb-4 pt-3.5 font-mono text-xs leading-[1.55] text-foreground'>
                         {segments.map((segment, index) => (
                             <span
                                 key={`${segment.occurredAt}-${index}`}

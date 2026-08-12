@@ -98,7 +98,7 @@ const ArgumentDefinitionSection = ({
     return (
         <div className='flex flex-col gap-1.5'>
             {argumentDefinitions.length === 0 && (
-                <div className='rounded-xl border border-dashed border-border px-4 py-5 text-center text-[0.8125rem] text-muted'>
+                <div className='rounded-xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted'>
                     No arguments yet. Add one to define user input.
                 </div>
             )}

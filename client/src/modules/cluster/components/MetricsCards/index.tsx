@@ -28,7 +28,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                 {LOADING_CARD_KEYS.map((key) => (
                     <div className='flex flex-col gap-3 rounded-xl border border-border p-6' key={key}>
                         <div className='flex flex-row items-center gap-2'>
-                            <span className='text-[0.7rem] font-semibold uppercase tracking-[0.05em] leading-none text-muted' />
+                            <span className='text-2xs font-semibold uppercase tracking-[0.05em] leading-none text-muted' />
                         </div>
                         <Skeleton animationType='pulse' className='h-[17px] w-[60%] rounded-md' />
                     </div>
@@ -76,7 +76,7 @@ const MetricsCards = ({ metrics }: MetricsCardsProps) => {
                 <div className='flex flex-col gap-3 rounded-xl border border-border p-6' key={card.title}>
                     <div className='flex flex-row items-center gap-2'>
                         <span className='text-muted' aria-hidden='true'>{card.icon}</span>
-                        <span className='text-[0.7rem] font-semibold uppercase tracking-[0.05em] leading-none text-muted'>{card.title}</span>
+                        <span className='text-2xs font-semibold uppercase tracking-[0.05em] leading-none text-muted'>{card.title}</span>
                     </div>
                     <div className='flex flex-row items-baseline gap-2 tabular-nums'>
                         <span className='text-3xl font-semibold leading-[1.15] text-foreground'>{card.value}</span>

@@ -34,7 +34,7 @@ const SectionTabs = <TId extends string>({
     const prefersReducedMotion = usePrefersReducedMotion();
 
     return (
-        <div className='flex w-full flex-row items-center gap-[2px] rounded-full border border-border bg-surface-secondary p-[3px]' role='tablist' aria-label={ariaLabel}>
+        <div className='flex w-full flex-row items-center gap-0.5 rounded-full border border-border bg-surface-secondary p-0.5' role='tablist' aria-label={ariaLabel}>
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
 
@@ -56,7 +56,7 @@ const SectionTabs = <TId extends string>({
                             />
                         )}
 
-                        <span className='relative z-[1] inline-flex flex-row items-center gap-1.5 text-[0.8125rem] font-medium leading-none'>
+                        <span className='relative z-[1] inline-flex flex-row items-center gap-1.5 text-sm font-medium leading-none'>
                             {tab.icon ? (
                                 <span className='flex flex-row items-center justify-center text-current'>{tab.icon}</span>
                             ) : null}

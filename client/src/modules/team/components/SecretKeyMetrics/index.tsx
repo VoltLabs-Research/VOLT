@@ -28,7 +28,7 @@ const loadingView = (
             </div>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
                 {CARD_SKELETON_KEYS.map((key) => (
-                    <div className='border border-border p-5 rounded-2xl transition-[all] duration-200 ease-out-fluid hover:bg-surface-hover hover:shadow-overlay' key={key}>
+                    <div className='border border-border p-5 rounded-xl transition-[all] duration-200 ease-out-fluid hover:bg-surface-hover hover:shadow-overlay' key={key}>
                         <div className='flex flex-row items-center gap-2 mb-3'>
                             <Skeleton className='size-4 rounded-full' />
                             <Skeleton className='h-5 w-[120px] rounded-md' />

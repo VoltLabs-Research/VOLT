@@ -89,7 +89,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
         >
             {menuOptions.length > 0 ? (
                 <div
-                    className='absolute top-[0.45rem] right-[0.45rem] z-[4] opacity-0 transition-[opacity,background-color] duration-[160ms] group-hover/card:opacity-100 group-focus-within/card:opacity-100'
+                    className='absolute top-2 right-2 z-[4] opacity-0 transition-[opacity,background-color] duration-[160ms] group-hover/card:opacity-100 group-focus-within/card:opacity-100'
                     data-row-click-ignore='true'
                 >
                     <ContextMenuPopover
@@ -113,7 +113,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                 </div>
             ) : null}
             <div className='flex min-h-full flex-col gap-6 h-full'>
-                <div className='flex size-[3.25rem] flex-row items-center justify-center rounded-[0.95rem] border-0 bg-surface-secondary text-muted'>
+                <div className='flex size-[3.25rem] flex-row items-center justify-center rounded-xl border-0 bg-surface-secondary text-muted'>
                     <Folder size={30} strokeWidth={1.75} />
                 </div>
                 <div className='flex flex-col gap-2 flex-1'>

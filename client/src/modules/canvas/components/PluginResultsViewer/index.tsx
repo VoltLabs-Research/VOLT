@@ -37,7 +37,7 @@ const ChartArtifactView = ({ artifact, pluginId, analysisId, trajectoryId }: {
         return (
             <figure className='m-0 grid gap-1'>
                 <span className='text-xs text-muted' style={{ padding: '8px' }}>No row data available for chart.</span>
-                <figcaption className='truncate text-[0.6875rem] text-muted'>{artifact.displayName}</figcaption>
+                <figcaption className='truncate text-2xs text-muted'>{artifact.displayName}</figcaption>
             </figure>
         );
     }
@@ -93,7 +93,7 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                                 role='tab'
                                 aria-selected={activeTab === index}
                                 className={cn(
-                                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-[0.8125rem] font-medium leading-none select-none transition-colors duration-150 ease-out',
+                                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-sm font-medium leading-none select-none transition-colors duration-150 ease-out',
                                     activeTab === index ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
                                 )}
                                 onClick={() => setActiveTab(index)}

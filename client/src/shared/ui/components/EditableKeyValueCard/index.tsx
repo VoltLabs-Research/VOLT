@@ -164,7 +164,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
                                             placeholder={field.placeholder}
                                             aria-label={field.label ?? field.placeholder}
                                             value={String(item[field.key] ?? '')}
-                                            className={cn('w-full rounded-md border border-border bg-background px-3 py-[0.6rem] text-foreground transition-[border-color] duration-200 focus:border-accent', 'text-sm')}
+                                            className={cn('w-full rounded-md border border-border bg-background px-3 py-2.5 text-foreground transition-[border-color] duration-200 focus:border-accent', 'text-sm')}
                                             onChange={(e) => handleChange(
                                                 i,
                                                 field.key,
@@ -225,7 +225,7 @@ const EditableKeyValueCard = <T extends Record<string, unknown>>({
     }
 
     return (
-        <div className={cn('p-6 border border-border rounded-2xl shadow-sm', className)} aria-labelledby={title ? headingId : undefined}>
+        <div className={cn('p-6 border border-border rounded-xl shadow-sm', className)} aria-labelledby={title ? headingId : undefined}>
             {content}
         </div>
     );

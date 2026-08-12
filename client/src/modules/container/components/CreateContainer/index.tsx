@@ -170,7 +170,7 @@ const CreateContainer = () => {
                     </Button>
                     <Tooltip.Content placement='bottom'>Back to containers</Tooltip.Content>
                 </Tooltip>
-                <div className='flex flex-col gap-[0.2rem]'>
+                <div className='flex flex-col gap-1'>
                     <h3 className='text-xl font-semibold text-foreground'>Create New Container</h3>
                 </div>
             </div>

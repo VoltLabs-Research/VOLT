@@ -142,9 +142,9 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     )}
 
                     {isUploading && (
-                        <div className='h-1 w-full overflow-hidden rounded-[2px] bg-[color-mix(in_srgb,var(--accent-indigo)_10%,transparent)]'>
+                        <div className='h-1 w-full overflow-hidden rounded-sm bg-[color-mix(in_srgb,var(--accent-indigo)_10%,transparent)]'>
                             <div
-                                className='h-full rounded-[2px] bg-[linear-gradient(90deg,var(--accent-indigo),color-mix(in_srgb,var(--accent-indigo)_70%,white))] transition-[width] duration-200 ease-out'
+                                className='h-full rounded-sm bg-[linear-gradient(90deg,var(--accent-indigo),color-mix(in_srgb,var(--accent-indigo)_70%,white))] transition-[width] duration-200 ease-out'
                                 style={{ width: `${uploadProgress}%` }}
                             />
                         </div>

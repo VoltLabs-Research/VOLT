@@ -67,7 +67,7 @@ const ContainerMetricTile = ({
     return (
         <div className='flex min-w-0 flex-col gap-3 rounded-xl border border-border p-6'>
             <div className='flex flex-row items-center gap-2'>
-                <span className='text-[0.7rem] font-semibold uppercase leading-none tracking-[0.05em] text-muted'>{label}</span>
+                <span className='text-2xs font-semibold uppercase leading-none tracking-[0.05em] text-muted'>{label}</span>
             </div>
             <div className='flex flex-row items-baseline gap-2 tabular-nums'>
                 <span className={cn('text-3xl leading-[1.15]', isIdle ? 'font-normal text-muted' : 'font-semibold text-foreground')}>
@@ -105,7 +105,7 @@ const ContainerMetricTile = ({
                     <div className='flex flex-row flex-wrap items-center text-xs leading-[1.2] lining-nums tabular-nums text-muted'>
                         {secondary.map((stat, index) => (
                             <span className='flex flex-row items-center' key={stat.label}>
-                                {index > 0 && <span className='mx-[0.4rem] opacity-40' aria-hidden='true'>·</span>}
+                                {index > 0 && <span className='mx-1.5 opacity-40' aria-hidden='true'>·</span>}
                                 <span>
                                     {stat.label} <span className='text-muted'>{stat.value}</span>
                                 </span>

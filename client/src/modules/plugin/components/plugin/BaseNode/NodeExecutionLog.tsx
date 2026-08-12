@@ -34,7 +34,7 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
 
     return (
         <div className='absolute left-1/2 top-[calc(100%+2rem)] z-[5] w-[300px] -translate-x-1/2 overflow-hidden rounded-md border border-border bg-surface-secondary nowheel' onClick={(event) => event.stopPropagation()}>
-            <div className='flex flex-row items-center gap-1 border-b border-border px-2 py-[0.4rem] text-muted'>
+            <div className='flex flex-row items-center gap-1 border-b border-border px-2 py-1.5 text-muted'>
                 <Terminal size={10} aria-hidden='true' />
                 <p className='text-xs font-semibold'>Execution Log</p>
                 {exitCode !== undefined && (
@@ -42,13 +42,13 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                         size='sm'
                         variant='soft'
                         color={exitCode === 0 ? 'success' : 'danger'}
-                        className='ml-auto rounded-full font-mono text-[0.55rem]'
+                        className='ml-auto rounded-full font-mono text-2xs'
                     >
                         exit {exitCode}
                     </Chip>
                 )}
             </div>
-            <pre className='m-0 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words p-2 font-mono text-[0.65rem] leading-[1.6]'>
+            <pre className='m-0 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words p-2 font-mono text-2xs leading-[1.6]'>
                 {logSegments.length > 0 ? (
                     logSegments.map((segment, index) => (
                         <span

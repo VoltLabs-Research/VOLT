@@ -43,9 +43,9 @@ export const CanvasTreeRow = ({
         data-tour-id={tourTargetId}
         className={cn(
             'flex select-none items-center gap-2 text-xs text-muted',
-            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
             indent === 'lg'
-                ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+                ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
                 : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
             isActive && 'text-accent',
             disabled ? 'cursor-default opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
@@ -85,9 +85,9 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
             {Array.from({ length: count }).map((_, i) => (
                 <div key={`canvas-tree-skel-${i}`} className={cn(
                     'flex items-center gap-8 text-muted',
-                    'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+                    'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
                     indent === 'lg'
-                        ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+                        ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
                         : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
                 )}>
                     <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />
@@ -106,9 +106,9 @@ interface CanvasTreeEmptyRowProps {
 export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRowProps) => (
     <div className={cn(
         'flex items-center gap-8 text-muted',
-        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
         indent === 'lg'
-            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
             : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
     )}>
         <span className='text-xs text-muted'>{label}</span>
@@ -123,9 +123,9 @@ interface AnalysisTreeRetryRowProps {
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
     <div className={cn(
         'flex items-center gap-8 text-muted',
-        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
         indent === 'lg'
-            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-[18px]'
+            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
             : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
     )}>
         <span className='text-xs text-muted'>Failed to load models</span>

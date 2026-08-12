@@ -50,7 +50,7 @@ const RightCollapsible = ({
         onExpandedChange?.(!expanded);
     };
 
-    const titleNode = <span className='min-w-0 flex-1 truncate text-xs text-muted [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]'>{title}</span>;
+    const titleNode = <span className='min-w-0 flex-1 truncate text-xs text-muted [.canvas-objects-panel--analysis-compact_&]:text-2xs'>{title}</span>;
     const actionsNode = <span className='flex shrink-0 flex-row items-center gap-0.5'>{headerAction}</span>;
 
     return (

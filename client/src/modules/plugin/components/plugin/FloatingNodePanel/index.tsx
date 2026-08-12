@@ -102,7 +102,7 @@ const FloatingNodePanel = () => {
         <AnimatePresence mode='wait'>
             {liveSelectedNode && config && position && (
                 <motion.div
-                    className='absolute z-[100] flex w-[400px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[var(--overlay-shadow)] max-[768px]:fixed! max-[768px]:inset-auto! max-[768px]:bottom-2! max-[768px]:left-2! max-[768px]:right-2! max-[768px]:top-auto! max-[768px]:w-auto! max-[768px]:max-w-[calc(100vw-1rem)]! max-[768px]:max-h-[min(70dvh,560px)] max-[768px]:rounded-xl'
+                    className='absolute z-[100] flex w-[400px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--overlay-shadow)] max-[768px]:fixed! max-[768px]:inset-auto! max-[768px]:bottom-2! max-[768px]:left-2! max-[768px]:right-2! max-[768px]:top-auto! max-[768px]:w-auto! max-[768px]:max-w-[calc(100vw-1rem)]! max-[768px]:max-h-[min(70dvh,560px)] max-[768px]:rounded-xl'
                     style={{
                         top: position.top,
                         right: position.right,

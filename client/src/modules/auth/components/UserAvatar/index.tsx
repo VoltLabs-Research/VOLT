@@ -26,10 +26,10 @@ const SIZE_CLASS_NAMES: Record<UserAvatarSize, string> = {
 };
 
 const INITIALS_CLASS_NAMES: Record<UserAvatarSize, string> = {
-    xs: 'text-[0.625rem]',
+    xs: 'text-2xs',
     sm: 'text-xs',
     md: 'text-sm',
-    lg: 'text-[1.125rem]'
+    lg: 'text-lg'
 };
 
 const UserAvatar = ({

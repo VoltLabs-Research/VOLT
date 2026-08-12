@@ -41,12 +41,12 @@ const WindowControls = () => {
                     {menuOpen && (
                         <>
                             <div className='fixed inset-0 z-40 [-webkit-app-region:no-drag]' onClick={() => setMenuOpen(false)} />
-                            <ul className='absolute right-0 top-8 z-[41] m-0 min-w-[188px] list-none rounded-[10px] border border-border bg-surface-secondary p-1.5 shadow-lg'>
-                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-[13px] text-foreground hover:bg-surface-hover' onClick={() => pick('devmode')}>Dev Mode</li>}
-                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-[13px] text-foreground hover:bg-surface-hover' onClick={() => pick('reset')}>Reset &amp; Redeploy</li>}
-                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-[13px] text-foreground hover:bg-surface-hover' onClick={() => pick('stop')}>Stop stack</li>}
-                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-[13px] text-foreground hover:bg-surface-hover' onClick={() => pick('switch')}>Switch deployment</li>
-                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-[13px] text-foreground hover:bg-surface-hover' onClick={openAbout}>About Volt</li>
+                            <ul className='absolute right-0 top-8 z-[41] m-0 min-w-[188px] list-none rounded-xl border border-border bg-surface-secondary p-1.5 shadow-lg'>
+                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('devmode')}>Dev Mode</li>}
+                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('reset')}>Reset &amp; Redeploy</li>}
+                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('stop')}>Stop stack</li>}
+                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('switch')}>Switch deployment</li>
+                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={openAbout}>About Volt</li>
                             </ul>
                         </>
                     )}

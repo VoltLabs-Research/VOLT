@@ -39,10 +39,10 @@ const isNumberMatrix = (input: unknown, requireNonEmptyRows = false): input is n
 
 const BooleanCell = ({ value }: CellProps) => {
     if (value === true) {
-        return <span className='inline-flex size-4 flex-row items-center justify-center rounded-[4px] bg-success/14 text-xs font-semibold leading-none' title='true' aria-label='true'>✓</span>;
+        return <span className='inline-flex size-4 flex-row items-center justify-center rounded-sm bg-success/14 text-xs font-semibold leading-none' title='true' aria-label='true'>✓</span>;
     }
     if (value === false) {
-        return <span className='inline-flex size-4 flex-row items-center justify-center rounded-[4px] bg-danger/12 text-xs font-semibold leading-none' title='false' aria-label='false'>✕</span>;
+        return <span className='inline-flex size-4 flex-row items-center justify-center rounded-sm bg-danger/12 text-xs font-semibold leading-none' title='false' aria-label='false'>✕</span>;
     }
     return EMPTY_CELL;
 };
@@ -80,9 +80,9 @@ const MatrixCell = ({ value }: CellProps) => {
     const cols = value.reduce((acc, row) => Math.max(acc, row.length), 0);
 
     return (
-        <span className='inline-flex flex-row items-baseline gap-[0.3rem] tabular-nums' title={JSON.stringify(value)}>
+        <span className='inline-flex flex-row items-baseline gap-1 tabular-nums' title={JSON.stringify(value)}>
             <span className='font-medium'>{rows}×{cols}</span>
-            <span className='text-[0.6875rem]'>matrix</span>
+            <span className='text-2xs'>matrix</span>
         </span>
     );
 };
@@ -100,8 +100,8 @@ const NumberArrayCell = ({ value }: CellProps) => {
     }
 
     return (
-        <span className='inline-flex flex-row items-center gap-[0.35rem] overflow-hidden whitespace-nowrap text-ellipsis tabular-nums' title={JSON.stringify(numbers)}>
-            <span className='text-[0.6875rem]'>[{numbers.length}]</span>
+        <span className='inline-flex flex-row items-center gap-1.5 overflow-hidden whitespace-nowrap text-ellipsis tabular-nums' title={JSON.stringify(numbers)}>
+            <span className='text-2xs'>[{numbers.length}]</span>
             <span>
                 {formatScientific(min, 3).short} … {formatScientific(max, 3).short}
             </span>
@@ -140,13 +140,13 @@ const ObjectCell = ({ value }: CellProps) => {
             <span>{'{'}</span>
             {visible.map(([key, raw], index) => (
                 <Fragment key={key}>
-                    {index > 0 && <span className='mr-[0.2rem]'>,</span>}
+                    {index > 0 && <span className='mr-1'>,</span>}
                     <span>{key}</span>
-                    <span className='mr-[0.2rem]'>:</span>
+                    <span className='mr-1'>:</span>
                     <span className='tabular-nums'>{summarizeScalar(raw)}</span>
                 </Fragment>
             ))}
-            {overflow > 0 && <span className='ml-[0.1rem] text-[0.6875rem]'>, +{overflow}</span>}
+            {overflow > 0 && <span className='ml-0.5 text-2xs'>, +{overflow}</span>}
             <span>{'}'}</span>
         </span>
     );

@@ -39,7 +39,7 @@ const renderMetricBars = (percentage: number, label: string): ReactNode => {
     const activeBars = Math.floor(percentage / 20);
     return (
         <div className='flex flex-row items-center gap-2'>
-            <div className='flex gap-[0.1rem]'>
+            <div className='flex gap-0.5'>
                 {[0, 1, 2, 3, 4].map((i) => (
                     <div key={i} className={cn('w-[4px] h-5 rounded-md transition-colors duration-200 ease-out', i < activeBars ? 'bg-accent' : 'bg-border')} />
                 ))}
@@ -294,7 +294,7 @@ const ClustersListing = () => {
                 defaultLimit={20}
                 emptyMessage='No clusters found.'
                 emptyIcon={(
-                    <div className='flex flex-col items-start gap-4 p-6 rounded-2xl border border-border bg-surface-secondary'>
+                    <div className='flex flex-col items-start gap-4 p-6 rounded-xl border border-border bg-surface-secondary'>
                         <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
                         <p className='text-sm text-muted'>
                             Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.

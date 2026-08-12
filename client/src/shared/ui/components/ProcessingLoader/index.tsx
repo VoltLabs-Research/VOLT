@@ -29,11 +29,11 @@ const ProcessingLoader = ({
     return (
         <div className={cn('flex flex-row items-center gap-3 py-2 animate-in fade-in-0 duration-300 ease-in', className)} role='status' aria-live='polite' aria-atomic='true'>
             <Loader size='sm' color='current' className='shrink-0' />
-            <div className='flex flex-col gap-[0.35rem] flex-1'>
-                <p className='text-muted text-[0.85rem] whitespace-nowrap text-ellipsis overflow-hidden' title={message}>{message}</p>
+            <div className='flex flex-col gap-1.5 flex-1'>
+                <p className='text-muted text-base whitespace-nowrap text-ellipsis overflow-hidden' title={message}>{message}</p>
                 <span className='sr-only hidden motion-reduce:inline'>{statusMessage}</span>
                 {showProgress && completionRate > 0 && (
-                    <div className='w-full overflow-hidden h-[3px] rounded-[2px] bg-border' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
+                    <div className='w-full overflow-hidden h-[3px] rounded-sm bg-border' role='progressbar' aria-label='Processing progress' aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressPercentage)}>
                         <div className='h-full bg-accent transition-[width] duration-300 ease-out' style={{
                             width: `${progressPercentage}%`,
                             transition: prefersReducedMotion ? 'none' : undefined

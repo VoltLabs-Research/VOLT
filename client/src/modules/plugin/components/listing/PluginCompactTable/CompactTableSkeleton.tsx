@@ -29,11 +29,11 @@ const CELL_SKELETON_WIDTHS = ['55%', '70%', '85%'] as const;
 const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
     <div className='flex h-full w-full flex-col overflow-hidden'>
         <div style={skeletonFrameStyle}>
-            <div className='sticky top-0 z-10 flex flex-row justify-between border-b border-border pb-[5px]'>
+            <div className='sticky top-0 z-10 flex flex-row justify-between border-b border-border pb-1'>
                 {SKELETON_COLUMNS.map((index) => (
                     <div
                         key={`skeleton-header-${index}`}
-                        className='overflow-hidden whitespace-nowrap text-ellipsis px-2 py-1 text-[0.6875rem] font-medium text-muted max-[768px]:px-1 max-[768px]:text-[0.625rem]'
+                        className='overflow-hidden whitespace-nowrap text-ellipsis px-2 py-1 text-2xs font-medium text-muted max-[768px]:px-1 max-[768px]:text-2xs'
                         style={skeletonCellStyle}
                     >
                         <Skeleton className='h-[18px] rounded-md' style={{ width: '70%' }} />
@@ -53,7 +53,7 @@ const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
                         {SKELETON_COLUMNS.map((cellIndex) => (
                             <div
                                 key={`skeleton-cell-${rowIndex}-${cellIndex}`}
-                                className='flex flex-row items-center overflow-hidden whitespace-nowrap text-ellipsis px-2 py-[0.1875rem] text-xs text-muted max-[768px]:px-1 max-[768px]:text-[0.625rem]'
+                                className='flex flex-row items-center overflow-hidden whitespace-nowrap text-ellipsis px-2 py-0.5 text-xs text-muted max-[768px]:px-1 max-[768px]:text-2xs'
                                 style={skeletonCellStyle}
                             >
                                 <Skeleton

@@ -149,7 +149,7 @@ const TableRow = <T extends Identifiable>({
             className={cn(
                 {
                     default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
-                    compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-[0.1875rem] transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
+                    compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-0.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
                 }[density],
                 isSelected && 'bg-accent-soft shadow-[inset_3px_0_0_var(--accent)]',
                 isDragging && 'opacity-65 shadow-[inset_0_0_0_1px_var(--accent)]',
@@ -184,7 +184,7 @@ const TableRow = <T extends Identifiable>({
                 return (
                     <div className={cn(
                         {
-                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm text-muted max-md:text-[0.8125rem]',
+                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm text-muted max-md:text-sm',
                             compact: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs text-muted'
                         }[density],
                         col.numeric && 'justify-end text-right tabular-nums'

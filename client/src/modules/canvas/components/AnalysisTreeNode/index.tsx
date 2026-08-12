@@ -144,10 +144,10 @@ const AnalysisTreeNode = ({
     ];
 
     const nameToneClass = {
-        queued: 'text-warning [[data-theme=light]_&]:text-[#8a5300]',
-        running: 'text-info [[data-theme=light]_&]:text-[#0a5fbf]',
-        completed: 'text-success [[data-theme=light]_&]:text-[#0f7a34]',
-        failed: 'text-danger [[data-theme=light]_&]:text-[#c41e1e]'
+        queued: 'text-warning-soft-foreground',
+        running: 'text-info-soft-foreground',
+        completed: 'text-success-soft-foreground',
+        failed: 'text-danger-soft-foreground'
     } as const;
 
     const nameClassName = cn(
@@ -168,7 +168,7 @@ const AnalysisTreeNode = ({
                     <Tooltip.Trigger
                         className={cn(
                             'flex cursor-pointer select-none items-center gap-2 text-xs text-muted',
-                            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-[0.6875rem]',
+                            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
                             'hover:rounded-md hover:bg-surface-hover',
                             'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
                             isSelectedAnalysis && 'text-accent'
@@ -184,7 +184,7 @@ const AnalysisTreeNode = ({
                                 {analysis.pluginDisplayName}
                             </span>
                             {inlineSummary && (
-                                <span className='truncate text-[0.7rem] leading-[1.2] text-muted opacity-90' title={inlineSummary}>
+                                <span className='truncate text-2xs leading-[1.2] text-muted opacity-90' title={inlineSummary}>
                                     {inlineSummary}
                                 </span>
                             )}

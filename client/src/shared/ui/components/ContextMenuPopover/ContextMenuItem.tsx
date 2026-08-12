@@ -58,7 +58,7 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             className={cn(
                 'relative flex w-full cursor-pointer select-none items-center justify-start font-medium transition-colors duration-150',
                 'disabled:cursor-not-allowed disabled:opacity-50',
-                { sm: 'min-h-[2.1rem] gap-2 rounded-md px-3.5 py-2 text-[0.8125rem]', md: 'min-h-[2.75rem] gap-2 rounded-[10px] px-3.5 text-sm' }[size],
+                { sm: 'min-h-[2.1rem] gap-2 rounded-md px-3.5 py-2 text-sm', md: 'min-h-[2.75rem] gap-2 rounded-xl px-3.5 text-sm' }[size],
                 { default: 'text-muted hover:bg-surface-hover hover:text-foreground', danger: 'text-danger hover:bg-danger/8' }[variant],
                 isLoading && 'pointer-events-none text-transparent'
             )}

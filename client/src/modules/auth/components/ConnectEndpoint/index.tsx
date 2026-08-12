@@ -58,7 +58,7 @@ const ConnectEndpointTemplate = () => {
             <section className='relative flex min-h-dvh flex-col justify-center bg-background p-6 max-sm:p-4' aria-labelledby='connect-form-title'>
                 <div className='mx-auto flex w-full max-w-[26rem] flex-col gap-8'>
                     <header className='flex flex-col gap-2'>
-                        <h1 className='text-[2rem] font-bold tracking-[-0.03em] text-foreground max-lg:text-[1.75rem]' id='connect-form-title'>Connect to a server</h1>
+                        <h1 className='text-3xl font-semibold tracking-[-0.03em] text-foreground max-lg:text-2xl' id='connect-form-title'>Connect to a server</h1>
                         <p>Enter the address of the VOLT deployment you want to work on.</p>
                     </header>
 

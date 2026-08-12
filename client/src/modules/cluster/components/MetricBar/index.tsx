@@ -17,7 +17,7 @@ const MetricBar = ({
 
     return (
 
-        <div className='flex gap-[0.1rem] rounded-full overflow-hidden'
+        <div className='flex gap-0.5 rounded-full overflow-hidden'
             style={{
                 height: 6,
                 backgroundColor: 'var(--border)'

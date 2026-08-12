@@ -213,14 +213,14 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {gridContent}
             <DragOverlay>
                 {activeDragItem ? (
-                    <div className='inline-flex min-w-[15rem] max-w-[22rem] items-center gap-3 rounded-xl px-4 py-[0.85rem] text-foreground bg-surface border border-border'>
+                    <div className='inline-flex min-w-[15rem] max-w-[22rem] items-center gap-3 rounded-xl px-4 py-3.5 text-foreground bg-surface border border-border'>
                         {showDragAffordance ? (
                             <span className='inline-flex size-8 items-center justify-center rounded-full text-foreground'>
                                 <GripVertical size={16} strokeWidth={1.8} />
                             </span>
                         ) : null}
                         <span className='flex min-w-0 flex-col'>
-                            <span className='max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-semibold'>
+                            <span className='max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold'>
                                 {getGridItemTitle(activeDragItem)}
                             </span>
                         </span>

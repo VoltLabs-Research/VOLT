@@ -35,8 +35,8 @@ const DashboardStatContent = ({ card, icon, isPositiveTrend, className }: Dashbo
             </div>
 
             <div className='flex flex-row items-end gap-3'>
-                <span className='text-[2rem] font-semibold leading-none tracking-[-0.02em] text-foreground'>{card.count}</span>
-                <div className={cn('flex flex-row items-center gap-1 mb-[0.3rem] text-xs font-semibold', isPositiveTrend ? 'text-success' : 'text-danger')}>
+                <span className='text-3xl font-semibold leading-none tracking-[-0.02em] text-foreground'>{card.count}</span>
+                <div className={cn('flex flex-row items-center gap-1 mb-1 text-xs font-semibold', isPositiveTrend ? 'text-success' : 'text-danger')}>
                     <TrendIcon size={10} />
                     <span>{Math.abs(card.lastMonthStatus)}%</span>
                 </div>
@@ -84,7 +84,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
                 >
                     <DashboardStatContent card={card} icon={icon} isPositiveTrend={isPositiveTrend} />
 
-                    <div className='absolute top-4 right-4 text-[1.15rem] text-foreground opacity-0 transition-opacity duration-200 ease-[ease] group-hover/card:opacity-100 group-focus-visible/statbtn:opacity-100'>
+                    <div className='absolute top-4 right-4 text-lg text-foreground opacity-0 transition-opacity duration-200 ease-[ease] group-hover/card:opacity-100 group-focus-visible/statbtn:opacity-100'>
                         <ArrowRight />
                     </div>
 

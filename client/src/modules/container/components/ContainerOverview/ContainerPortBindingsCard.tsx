@@ -79,7 +79,7 @@ const ContainerPortBindingsCard = ({ container, onUpdatePorts }: ContainerPortBi
     return (
         <EditableKeyValueCard<PortMappingFormItem>
             title='Port Bindings'
-            titleClassName='mt-0 mb-2 text-[0.9375rem] font-semibold tracking-[-0.01em] text-foreground'
+            titleClassName='mt-0 mb-2 text-base font-semibold tracking-[-0.01em] text-foreground'
             items={portItems}
             fields={PORT_FIELDS}
             emptyMessage='No ports exposed'

@@ -141,7 +141,7 @@ const CanvasPluginSearch = () => {
                 value={query}
                 variant='small'
                 containerClassName='flex w-full min-h-9 items-center gap-2 rounded-xl px-3 py-1.5'
-                className='text-[0.8125rem] leading-[1.25] m-0 h-auto p-0'
+                className='text-sm leading-[1.25] m-0 h-auto p-0'
                 aria-label='Search plugins'
                 role='combobox'
                 aria-autocomplete='list'

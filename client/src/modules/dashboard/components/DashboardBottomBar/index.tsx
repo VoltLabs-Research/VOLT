@@ -29,7 +29,7 @@ interface BottomBarSegmentProps {
 const BottomBarSegment = ({ label, icon, onClick, children }: BottomBarSegmentProps) => (
     <button
         type='button'
-        className='inline-flex h-full cursor-pointer items-center gap-[0.85rem] whitespace-nowrap rounded-lg border-0 bg-transparent px-3 text-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--focus)]'
+        className='inline-flex h-full cursor-pointer items-center gap-3.5 whitespace-nowrap rounded-lg border-0 bg-transparent px-3 text-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--focus)]'
         onClick={onClick}
         aria-label={`Open ${label}`}
     >
@@ -165,7 +165,7 @@ const DashboardBottomBar = () => {
                 {showPresence && (
                     <BottomBarSegment label='team presence' icon={<Users size={13} />} onClick={() => openModal(DASHBOARD_DRAWER_IDS.presence)}>
                         <span className='text-xs text-muted'>
-                            <span className={cn('inline-block size-1.5 rounded-full mr-[0.35rem] align-middle', presenceCounts.online > 0 ? 'bg-success' : 'bg-muted')} aria-hidden='true' />
+                            <span className={cn('inline-block size-1.5 rounded-full mr-1.5 align-middle', presenceCounts.online > 0 ? 'bg-success' : 'bg-muted')} aria-hidden='true' />
                             {presenceCounts.online} / {presenceCounts.total} online
                         </span>
                     </BottomBarSegment>

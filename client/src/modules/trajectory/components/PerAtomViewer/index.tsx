@@ -210,7 +210,7 @@ export default function PerAtomViewer() {
                     aria-label='Select timestep'
                 >
                     <ComboBox.InputGroup className='h-6 min-h-6 w-[clamp(3.25rem,17vw,4.5rem)] rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary'>
-                        <Input className='h-6 min-h-6 border-0 bg-transparent px-[0.4rem] text-[0.7rem] text-foreground shadow-none placeholder:text-[0.7rem] placeholder:text-muted' placeholder={String(timestep)} />
+                        <Input className='h-6 min-h-6 border-0 bg-transparent px-1.5 text-2xs text-foreground shadow-none placeholder:text-2xs placeholder:text-muted' placeholder={String(timestep)} />
                         <ComboBox.Trigger />
                     </ComboBox.InputGroup>
                     <ComboBox.Popover>

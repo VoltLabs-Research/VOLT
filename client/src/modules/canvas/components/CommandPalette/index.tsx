@@ -159,7 +159,7 @@ const CommandPalette = () => {
                                 {item.keys.map((key, keyIndex) => (
                                     <span className='flex flex-row items-center gap-1' key={key}>
                                         {keyIndex > 0 && <span className='text-xs text-muted'>+</span>}
-                                        <kbd className='inline-flex items-center rounded border border-white/10 bg-white/[0.03] px-[0.4rem] py-[0.15rem] font-mono text-xs leading-none text-muted'>{formatKeyName(key)}</kbd>
+                                        <kbd className='inline-flex items-center rounded-sm border border-white/10 bg-white/[0.03] px-1.5 py-0.5 font-mono text-xs leading-none text-muted'>{formatKeyName(key)}</kbd>
                                     </span>
                                 ))}
                             </div>

@@ -50,7 +50,7 @@ const ActivityDrawer = () => {
     };
 
     const loadingState: ReactNode = isInAppTab
-        ? <div className='flex items-center justify-center min-h-0 flex-1 overflow-hidden rounded-2xl border border-border' />
+        ? <div className='flex items-center justify-center min-h-0 flex-1 overflow-hidden rounded-xl border border-border' />
         : <ActivityTimelineSkeleton />;
 
     const accessDeniedState: ReactNode = (

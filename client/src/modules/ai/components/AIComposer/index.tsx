@@ -61,7 +61,7 @@ const AIComposer = ({
     }
 
     return (
-        <div className='ai-composer m-auto flex w-[min(880px,100%)] flex-col gap-2 border-t-0 bg-transparent px-4 pt-[0.8rem] pb-[calc(1.1rem+env(safe-area-inset-bottom,0px))] max-md:px-3 [.ai-floating-assistant_&]:p-3 [.ai-floating-assistant_&]:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'>
+        <div className='ai-composer m-auto flex w-[min(880px,100%)] flex-col gap-2 border-t-0 bg-transparent px-4 pt-3 pb-[calc(1.1rem+env(safe-area-inset-bottom,0px))] max-md:px-3 [.ai-floating-assistant_&]:p-3 [.ai-floating-assistant_&]:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'>
             {error && (
                 <p className='text-xs text-danger' role='alert' aria-live='assertive'>
                     {error}
@@ -74,7 +74,7 @@ const AIComposer = ({
             <span className='sr-only' id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
             </span>
-            <div className='flex min-h-12 flex-row items-center gap-2 rounded-full border border-border bg-[var(--field-background,var(--surface-secondary))] py-2 pr-[0.55rem] pl-3 transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_18%,transparent)] max-md:gap-[0.35rem] [.ai-floating-assistant_&]:overflow-hidden'>
+            <div className='flex min-h-12 flex-row items-center gap-2 rounded-full border border-border bg-[var(--field-background,var(--surface-secondary))] py-2 pr-2 pl-3 transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_18%,transparent)] max-md:gap-1.5 [.ai-floating-assistant_&]:overflow-hidden'>
                 <input
                     id={inputId}
                     value={value}
@@ -101,8 +101,8 @@ const AIComposer = ({
                     placeholder={modelPlaceholder}
                     aria-label='Select AI model'
                 >
-                    <Select.Trigger className='h-[1.9rem] min-h-0 w-full rounded-full border-0 bg-transparent px-[0.6rem] pe-6 text-[0.78rem] text-foreground shadow-none'>
-                        <Select.Value className='overflow-hidden text-ellipsis whitespace-nowrap text-[0.78rem]'>
+                    <Select.Trigger className='h-[1.9rem] min-h-0 w-full rounded-full border-0 bg-transparent px-2.5 pe-6 text-xs text-foreground shadow-none'>
+                        <Select.Value className='overflow-hidden text-ellipsis whitespace-nowrap text-xs'>
                             {({ isPlaceholder, selectedText, defaultChildren }) => (
                                 isPlaceholder ? defaultChildren : selectedText
                             )}

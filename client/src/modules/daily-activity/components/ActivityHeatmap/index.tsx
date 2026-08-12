@@ -25,14 +25,14 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
     return (
         <div className='flex flex-col gap-3 h-full w-full' role='group' aria-label='Daily activity heatmap'>
             <ScrollShadow orientation='horizontal' hideScrollBar className='flex w-full flex-col gap-1'>
-                <div className='grid grid-flow-col auto-cols-fr gap-[5px] min-w-[52rem] max-[768px]:min-w-[42rem]' aria-hidden='true'>
+                <div className='grid grid-flow-col auto-cols-fr gap-1 min-w-[52rem] max-[768px]:min-w-[42rem]' aria-hidden='true'>
                     {weeks.map((week) => (
-                        <span className='text-[11px] leading-none text-muted whitespace-nowrap' key={week.key}>
+                        <span className='text-2xs leading-none text-muted whitespace-nowrap' key={week.key}>
                             {week.monthLabel}
                         </span>
                     ))}
                 </div>
-                <div className='grid grid-rows-7 grid-flow-col auto-cols-fr gap-[5px] min-w-[52rem] max-[768px]:min-w-[42rem]'>
+                <div className='grid grid-rows-7 grid-flow-col auto-cols-fr gap-1 min-w-[52rem] max-[768px]:min-w-[42rem]'>
                     {cells.map((cell) => {
                         if (!cell.day) {
                             return <div className='aspect-square w-full' key={cell.key} aria-hidden='true' />;
@@ -43,7 +43,7 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
                                 <Tooltip.Trigger
                                     role='img'
                                     aria-label={getDayAriaLabel(cell.day)}
-                                    className={cn('aspect-square w-full rounded-xs cursor-pointer', levelClassNames[cell.day.level])}
+                                    className={cn('aspect-square w-full rounded-sm cursor-pointer', levelClassNames[cell.day.level])}
                                 />
                                 <Tooltip.Content className='max-w-[350px] min-w-[200px] p-3 break-normal'>
                                     <ActivityTooltipContent {...getDayTooltipState(cell.day)} />
@@ -53,7 +53,7 @@ const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
                     })}
                 </div>
             </ScrollShadow>
-            <div className='flex flex-row items-center flex-wrap gap-3 gap-y-[0.35rem]'>
+            <div className='flex flex-row items-center flex-wrap gap-3 gap-y-1.5'>
                 {legendItems.map((item) => (
                     <div className='flex flex-row items-center gap-2 min-w-fit' key={item.label}>
                         <span

@@ -276,24 +276,24 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                                     <table className='w-full border-collapse'>
                                         <thead>
                                             <tr>
-                                                <th scope='col' className='text-left px-4 py-2.5 text-[0.6875rem] font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Queue</th>
-                                                <th scope='col' className='text-left px-4 py-2.5 text-[0.6875rem] font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Max / trajectory</th>
+                                                <th scope='col' className='text-left px-4 py-2.5 text-2xs font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Queue</th>
+                                                <th scope='col' className='text-left px-4 py-2.5 text-2xs font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Max / trajectory</th>
                                             </tr>
                                         </thead>
                                         <tbody className='[&_tr:last-child_td]:border-b-0'>
                                             {QUEUE_SCOPE_FIELDS.map((row) => (
                                                 <tr className='hover:bg-surface-hover' key={row.key}>
-                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-[0.8125rem]'>
+                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-sm'>
                                                         <span className='text-xs font-medium'>{row.label}</span>
                                                     </td>
-                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-[0.8125rem]'>
+                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-sm'>
                                                         <input
                                                             type='number'
                                                             min={MIN_SCOPE_LIMIT}
                                                             step={1}
                                                             inputMode='numeric'
                                                             aria-label={`${row.label} max per trajectory`}
-                                                            className='w-20 min-w-0 px-3 py-[0.4375rem] border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent'
+                                                            className='w-20 min-w-0 px-3 py-1.5 border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent'
                                                             value={scopeValues[row.key].maxRunningPerTrajectory}
                                                             onChange={(e) => handleScopeFieldChange(row.key, e.target.value)}
                                                         />

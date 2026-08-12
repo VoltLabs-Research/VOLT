@@ -55,7 +55,7 @@ const CollapsibleSection = ({
                     <span
                         className={cn(
                             'min-w-0 flex-1 text-foreground',
-                            isCompact ? 'text-[0.7rem] font-normal' : 'text-[0.8125rem] font-[550]'
+                            isCompact ? 'text-2xs font-normal' : 'text-sm font-medium'
                         )}
                     >
                         {title}

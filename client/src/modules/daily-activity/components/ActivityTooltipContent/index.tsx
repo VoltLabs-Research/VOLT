@@ -39,7 +39,7 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
                     >
                         {ACTIVITY_ICON[item.type]}
                     </span>
-                    <div className='flex flex-col min-w-0 gap-[0.1rem]'>
+                    <div className='flex flex-col min-w-0 gap-0.5'>
                         <span className='text-xs text-muted'>
                             {item.userDisplayName} · {TIME_FORMATTER.format(new Date(item.createdAt))}
                         </span>

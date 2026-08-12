@@ -188,7 +188,7 @@ const ObjectsPanel = ({
                 headerAction={(
                     <button
                         type='button'
-                        className={cn('cursor-pointer rounded-full border border-transparent bg-transparent px-[0.55rem] py-[0.3rem] text-[11px] leading-none text-muted', isActive && 'border-border bg-surface-tertiary text-foreground')}
+                        className={cn('cursor-pointer rounded-full border border-transparent bg-transparent px-2 py-1 text-2xs leading-none text-muted', isActive && 'border-border bg-surface-tertiary text-foreground')}
                         onClick={() => onSetActiveRasterContainer?.(selection.id)}
                     >
                         {selection.label}

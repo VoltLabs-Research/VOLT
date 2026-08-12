@@ -95,15 +95,15 @@ const renderTooltip = ({ active, payload, label }: TooltipContentProps<ValueType
     }
 
     return (
-        <div className='min-w-[120px] rounded-lg border border-border bg-surface-secondary px-[0.65rem] py-2'>
-            <span className='block text-[0.7rem] font-medium text-muted mb-[0.35rem]'>{label}</span>
+        <div className='min-w-[120px] rounded-lg border border-border bg-surface-secondary px-2.5 py-2'>
+            <span className='block text-2xs font-medium text-muted mb-1.5'>{label}</span>
             {payload.map((entry, index) => {
                 const formattedValue = entry.dataKey === 'minutes' && typeof entry.value === 'number'
                     ? formatDuration(entry.value)
                     : entry.value;
 
                 return (
-                    <div key={index} className='flex items-center gap-[0.35rem] py-[0.1rem]'>
+                    <div key={index} className='flex items-center gap-1.5 py-0.5'>
                         <span className='size-1.5 shrink-0 rounded-full' style={{ background: entry.color }} />
                         <span className='flex-1 text-xs text-muted'>{entry.name}</span>
                         <span className='text-xs font-semibold text-foreground'>{formattedValue}</span>
@@ -130,7 +130,7 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
 
     return (
         <div className='flex flex-col gap-2 flex-1 min-h-0'>
-            <div className='min-h-0 flex-1 overflow-hidden rounded-2xl border border-border'>
+            <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-border'>
                 <ResponsiveContainer width='100%' height={250}>
                     <RadarChart
                         data={inAppActivity.radarData}
@@ -171,15 +171,15 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
                 </ResponsiveContainer>
             </div>
             <div className='flex items-center gap-6 mt-3 max-[768px]:flex-col max-[768px]:items-start max-[768px]:gap-3'>
-                <div className='flex flex-col gap-[0.1rem]'>
+                <div className='flex flex-col gap-0.5'>
                     <span className='text-base font-semibold text-foreground'>{formatDuration(inAppActivity.totalMinutes)}</span>
                     <span className='text-xs text-muted'>Total time</span>
                 </div>
-                <div className='flex flex-col gap-[0.1rem]'>
+                <div className='flex flex-col gap-0.5'>
                     <span className='text-base font-semibold text-foreground'>{inAppActivity.totalActions}</span>
                     <span className='text-xs text-muted'>Actions</span>
                 </div>
-                <div className='flex flex-col gap-[0.1rem] ml-auto max-[768px]:ml-0'>
+                <div className='flex flex-col gap-0.5 ml-auto max-[768px]:ml-0'>
                     <span className='text-sm font-medium text-foreground'>{inAppActivity.peakDay}</span>
                     <span className='text-xs text-muted'>Peak day</span>
                 </div>

@@ -61,7 +61,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
         >
             <Select.Trigger
                 onFocus={() => setTipTrigger((current) => current + 1)}
-                className='flex h-8 min-h-0 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-[0.875rem] font-medium text-foreground transition-colors duration-150 hover:bg-surface-hover'
+                className='flex h-8 min-h-0 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-base font-medium text-foreground transition-colors duration-150 hover:bg-surface-hover'
             >
                 <Select.Value>
                     {({ isPlaceholder, selectedText, defaultChildren }) => (

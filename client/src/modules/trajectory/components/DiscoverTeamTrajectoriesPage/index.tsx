@@ -28,7 +28,7 @@ export default function DiscoverTeamTrajectoriesPage() {
 
     if (!teamId) {
         return (
-            <main className='min-h-screen bg-background p-[2rem_1.5rem_3rem] text-foreground max-md:p-[1.25rem_1rem_2rem]'>
+            <main className='min-h-screen bg-background px-6 pt-8 pb-12 text-foreground max-md:px-4 max-md:pt-5 max-md:pb-8'>
                 <div className='mx-auto flex w-[min(100%,1180px)] min-h-[calc(100vh-5rem)] flex-col gap-6 max-md:min-h-[calc(100vh-3.25rem)] items-center justify-center'>
                     <RecoveryState
                         title='Team not found'
@@ -41,7 +41,7 @@ export default function DiscoverTeamTrajectoriesPage() {
     }
 
     return (
-        <main className='min-h-screen bg-background p-[2rem_1.5rem_3rem] text-foreground max-md:p-[1.25rem_1rem_2rem]'>
+        <main className='min-h-screen bg-background px-6 pt-8 pb-12 text-foreground max-md:px-4 max-md:pt-5 max-md:pb-8'>
             <div className='mx-auto flex w-[min(100%,1180px)] min-h-[calc(100vh-5rem)] flex-col gap-6 max-md:min-h-[calc(100vh-3.25rem)]'>
                 <section className='flex flex-row items-end justify-between gap-4 pt-2 pb-1 max-md:flex-col max-md:items-stretch' aria-labelledby='discover-team-trajectories-title'>
                     <div className='min-w-0'>
@@ -50,7 +50,7 @@ export default function DiscoverTeamTrajectoriesPage() {
                         >
                             Trajectories ({summary.total})
                         </h1>
-                        <p className='mt-[0.35rem] mb-0 text-xs text-muted'>
+                        <p className='mt-1.5 mb-0 text-xs text-muted'>
                             {`Public trajectories from ${summary.team?.name ?? 'this team'}.`}
                         </p>
                     </div>
