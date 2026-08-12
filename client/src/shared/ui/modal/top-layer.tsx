@@ -20,7 +20,6 @@ export const ModalTopLayer = ({ root, children }: ModalTopLayerProps) => {
     return (
         <ModalTopLayerContext.Provider value={root}>
             <UNSAFE_PortalProvider getContainer={getContainer}>
-                {}
                 <FloatingRootContext.Provider value={root ?? undefined}>
                     <TopLayerRootContext.Provider value={root ?? undefined}>
                         {children}
