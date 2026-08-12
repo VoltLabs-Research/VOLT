@@ -13,7 +13,7 @@ import { getTrajectoryPreview } from '@modules/trajectory/services/trajectory/Tr
 
 import ApplicationError from '@shared/application/errors/ApplicationError';
 
-import type { TeamMetricsSnapshot } from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
+import type { GetTeamMetricsInput, TeamMetricsSnapshot } from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
 import type {
     TrajectoryFolderQuery,
     TrajectoryFolderView
@@ -130,8 +130,8 @@ export default class TrajectoryService {
         return trajectoryCatalogService.deleteFolder(teamId, folderId);
     }
 
-    getTeamMetrics(input: { teamId: string }): Promise<TeamMetricsSnapshot> {
-        return teamMetricsQueryService.getTeamMetrics(input.teamId);
+    getTeamMetrics(input: GetTeamMetricsInput): Promise<TeamMetricsSnapshot> {
+        return teamMetricsQueryService.getTeamMetrics(input);
     }
 
     getPreview(input: { trajectoryId: string }): Promise<TrajectoryPreviewResult> {

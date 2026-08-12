@@ -17,6 +17,7 @@ import {
 } from '../../utils/tree-menus';
 
 import type { Analysis, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
+import type { CanvasTreeIndent } from '../CanvasTree';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -52,6 +53,7 @@ interface ExposureRowProps extends SceneRowActions {
     isRecentlyReady: boolean;
     isRasterSelectionMode: boolean;
     tourTargetId?: string;
+    indent?: CanvasTreeIndent;
 }
 
 const ExposureRow = ({
@@ -62,6 +64,7 @@ const ExposureRow = ({
     isRecentlyReady,
     isRasterSelectionMode,
     tourTargetId,
+    indent = 'lg',
     onSelectScene,
     isSceneActive,
     onAddScene,
@@ -96,7 +99,7 @@ const ExposureRow = ({
         pending: '[&>.truncate]:text-warning-soft-foreground',
         generating: '[&>.truncate]:text-info-soft-foreground',
         uploading: '[&>.truncate]:text-info-soft-foreground',
-        'ready-recent': '[&>.truncate]:text-success-soft-foreground [&>.truncate]:[text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)]',
+        'ready-recent': '[&>.truncate]:text-success-soft-foreground',
         failed: '[&>.truncate]:text-danger-soft-foreground'
     } as const;
 
@@ -135,7 +138,7 @@ const ExposureRow = ({
             options={exposureMenuOptions}
         >
             <CanvasTreeRow
-                indent='lg'
+                indent={indent}
                 isActive={isActive}
                 label={(
                     <span className={cn(

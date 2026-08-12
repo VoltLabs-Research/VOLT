@@ -18,6 +18,7 @@ import type {
     BinaryUploadTarget,
     ExecutePipelineResponse
 } from './plugin';
+import type { PipelineRun } from './pipeline-run';
 import type { SearchRegistryResponse } from './registry';
 import type {
     ListingRowData,
@@ -57,5 +58,6 @@ export const pluginRoutes = {
     get: get<Plugin>('/api/teams/:teamId/plugins/:pluginId'),
     update: patch<UpdatePluginInput, Plugin>('/api/teams/:teamId/plugins/:pluginId'),
     remove: del('/api/teams/:teamId/plugins/:pluginId'),
+    listPipelineRuns: get<PipelineRun>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-runs'),
     executePipeline: post<ExecutePipelineInput, ExecutePipelineResponse>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-executions')
 } as const;

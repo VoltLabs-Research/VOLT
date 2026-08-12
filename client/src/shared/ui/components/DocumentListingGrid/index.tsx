@@ -220,7 +220,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
                             </span>
                         ) : null}
                         <span className='flex min-w-0 flex-col'>
-                            <span className='max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold'>
+                            <span className='max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap text-base font-medium text-foreground'>
                                 {getGridItemTitle(activeDragItem)}
                             </span>
                         </span>

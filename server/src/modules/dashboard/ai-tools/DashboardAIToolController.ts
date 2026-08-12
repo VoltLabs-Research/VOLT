@@ -15,12 +15,13 @@ export default class DashboardAIToolController extends AIToolController {
     @AITool({
         name: 'get_dashboard_metrics',
         description: 'Get the dashboard overview metrics for the current team: total counts, last-month counts, '
-            + 'and weekly time-series for the main resources (trajectories, analyses, etc.).',
+            + 'and a zero-filled time-series per resource (trajectories, analyses, etc.) over the returned range. '
+            + 'series.labels holds the local ISO start date of every bucket, so empty buckets are present as 0.',
         parameters: typia.llm.parameters<GetDashboardMetricsInput>(),
         validate: typia.createValidate<GetDashboardMetricsInput>()
     })
     async getDashboardMetrics(input: GetDashboardMetricsInput & AIToolScope) {
-        const metrics = await teamMetricsQueryService.getTeamMetrics(input.teamId);
+        const metrics = await teamMetricsQueryService.getTeamMetrics({ teamId: input.teamId });
 
         const totalCount = Object.values(metrics.totals).reduce((sum, value) => sum + value, 0);
 

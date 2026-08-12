@@ -248,7 +248,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
     };
 
     return (
-        <div className='flex flex-col gap-4 h-full isolate text-muted'>
+        <div className='flex flex-col gap-4 h-full isolate'>
             <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {describeSortState(columns, sortConfig)}
             </span>

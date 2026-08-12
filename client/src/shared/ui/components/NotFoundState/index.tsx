@@ -16,7 +16,7 @@ const NotFoundState = () => {
             className='flex items-center justify-center h-dvh w-full min-h-full max-md:min-h-[300px]'
         >
             <div className='flex flex-col items-center gap-6 text-center max-w-96 max-md:max-w-[90%]'>
-                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-xl bg-surface-tertiary text-muted'>
+                <div className='flex flex-row items-center justify-center shrink-0 text-muted'>
                     <SearchX size={24} />
                 </div>
 

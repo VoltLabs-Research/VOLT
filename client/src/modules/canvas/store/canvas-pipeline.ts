@@ -95,7 +95,14 @@ interface CanvasPipelineStore {
     updateStageConfig: (id: string, config: Partial<StageConfig>, trajectoryId?: string) => void;
     toggleStageEnabled: (id: string, trajectoryId?: string) => void;
     markStagesExecuted: (ids: string[], trajectoryId?: string) => void;
+    replaceStages: (stages: NewStage[], trajectoryId?: string) => void;
     clearAll: (trajectoryId?: string) => void;
+}
+
+/** A stage to create: the store assigns the id and the initial flags. */
+export interface NewStage {
+    type: StageType;
+    config: StageConfig;
 }
 
 export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
@@ -206,6 +213,28 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                                     executed: true
                                 } : stage
                             )
+                        }
+                    }));
+                },
+
+                /**
+                 * Swaps the whole draft — used when restoring a past run. The new
+                 * stages start `executed: false` because this draft has not run:
+                 * the results on screen belong to the original run, not to it.
+                 */
+                replaceStages: (stages, trajectoryId) => {
+                    const target = resolveTrajectoryId(trajectoryId);
+                    if (!target) return;
+                    set((state) => ({
+                        byTrajectory: {
+                            ...state.byTrajectory,
+                            [target]: stages.map((stage) => ({
+                                id: uuidv4(),
+                                type: stage.type,
+                                config: stage.config,
+                                enabled: true,
+                                executed: false
+                            }))
                         }
                     }));
                 },

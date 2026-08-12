@@ -65,6 +65,8 @@ export interface AnalysisProps {
     trajectory: string;
     createdBy: string;
     pipelineStageHash?: string;
+    pipelineRunId?: string;
+    pipelineStageIndex?: number;
     totalFrames?: number;
     startedAt?: Date;
     finishedAt?: Date;

@@ -1,13 +1,17 @@
 import { createService, custom, get } from '@/app/core/http/utils/create-service';
 
-import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
-import type { EmptyParams } from '@voltstack/voltclient';
+import type { DashboardMetrics, DashboardMetricsBucket } from '@volt/contracts/modules/dashboard/domain';
 import type { GlobalSearchResponse } from '@volt/contracts/modules/dashboard/domain';
 import type { ApiResponse } from '@volt/contracts/shared/http';
 
 export interface GlobalSearchInput {
     query: string;
     limit?: number;
+}
+
+export interface GetDashboardMetricsInput {
+    days?: number;
+    bucket?: DashboardMetricsBucket;
 }
 
 export type GlobalSearchSectionKey = keyof GlobalSearchResponse;
@@ -23,8 +27,12 @@ export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResponse = {
 export const MIN_SEARCH_QUERY_LENGTH = 2;
 
 const endpoints = {
-    getMetrics: get<EmptyParams, DashboardMetrics>('/trajectory-metrics', {
-        client: 'metrics'
+    getMetrics: get<GetDashboardMetricsInput, DashboardMetrics>('/trajectory-metrics', {
+        client: 'metrics',
+        query: ({ days, bucket }) => ({
+            ...(days ? { days } : {}),
+            ...(bucket ? { bucket } : {})
+        })
     }),
     search: custom<GlobalSearchInput, GlobalSearchResponse>(
         async ({ getClient }, { query, limit = 5 }) => {

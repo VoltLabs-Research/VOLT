@@ -33,6 +33,18 @@
     --text-base--line-height: 1.25rem;
 
     /*
+     * Weights. Inter is a variable font, so these are real intermediate weights,
+     * not synthesised ones. 600 read as near-bold across the UI at 13px, which is
+     * why the whole app felt heavy: lowering the token softens every existing
+     * `font-semibold`/`font-bold` at once instead of editing hundreds of usages.
+     * Roles stay the same: normal = body, medium = emphasis/labels, semibold =
+     * section and page headings.
+     */
+    --font-weight-medium: 480;
+    --font-weight-semibold: 550;
+    --font-weight-bold: 620;
+
+    /*
      * Radius roles: sm = tiny inline (4px), md = controls (6px),
      * lg = surfaces/cards (8px), xl = overlays (10px).
      * 2xl/3xl are capped to the overlay role because HeroUI overlays

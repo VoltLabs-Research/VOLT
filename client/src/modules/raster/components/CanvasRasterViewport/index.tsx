@@ -160,7 +160,7 @@ const CanvasRasterViewport = ({
 
     if (!metadataVm.hasRasterData && !metadataVm.isLoading) {
         return (
-            <div className='flex flex-col flex-1 min-h-0 items-stretch pt-[var(--canvas-header-height,55px)] pr-[var(--canvas-right-overlay-size,0px)]'>
+            <div className='flex flex-col flex-1 min-h-0 items-stretch pt-[var(--canvas-header-height,55px)]'>
                 <RecoveryState
                     icon={<ImageOff size={24} />}
                     title='No rasterized frames available'
@@ -172,7 +172,7 @@ const CanvasRasterViewport = ({
 
     if (metadataVm.error) {
         return (
-            <div className='flex flex-col flex-1 min-h-0 items-stretch pt-[var(--canvas-header-height,55px)] pr-[var(--canvas-right-overlay-size,0px)]'>
+            <div className='flex flex-col flex-1 min-h-0 items-stretch pt-[var(--canvas-header-height,55px)]'>
                 <RecoveryState
                     title='Unable to load raster output'
                     description={metadataVm.error.message}
@@ -184,7 +184,7 @@ const CanvasRasterViewport = ({
     }
 
     return (
-        <div className='flex flex-row items-stretch flex-1 min-h-0 max-[1024px]:flex-col pt-[var(--canvas-header-height,55px)] pr-[var(--canvas-right-overlay-size,0px)]'>
+        <div className='flex flex-row items-stretch flex-1 min-h-0 max-[1024px]:flex-col pt-[var(--canvas-header-height,55px)]'>
             {orderedSelections.map((selection) => (
                 <RasterViewportPanel
                     key={selection.id}

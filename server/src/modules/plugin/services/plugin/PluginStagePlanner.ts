@@ -34,6 +34,16 @@ export interface PlannedStage {
     stageHash: string;
     execution: PipelineStageExecutionInput;
     createdAnalysis?: Analysis;
+    pluginDisplayName: string;
+    /** The analysis this stage resolved to, whether it computed or was cached. */
+    analysisId: string;
+    cacheHit: boolean;
+    /**
+     * The config that actually ran — visibility-sanitized, so it differs from the
+     * submitted one whenever a hidden argument was dropped. This is the copy the
+     * run records and the one a re-run must reproduce.
+     */
+    config: Record<string, unknown>;
 }
 
 export interface PlanPluginStageParams {
@@ -48,6 +58,8 @@ export interface PlanPluginStageParams {
     upstreamStageHashes: string[];
     selectedTimesteps: number[];
     timestep?: number;
+    pipelineRunId: string;
+    stageIndex: number;
 }
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
@@ -68,7 +80,9 @@ export default class PluginStagePlanner {
         computeClusterId,
         upstreamStageHashes,
         selectedTimesteps,
-        timestep
+        timestep,
+        pipelineRunId,
+        stageIndex
     }: PlanPluginStageParams): Promise<PlannedStage> {
         if (!stage.pluginId) {
             throw ApplicationError.badRequest(ErrorCodes.PLUGIN_NOT_FOUND, 'Pipeline plugin stage is missing a pluginId');
@@ -114,6 +128,10 @@ export default class PluginStagePlanner {
         if (cached) {
             return {
                 stageHash,
+                pluginDisplayName,
+                analysisId: cached.id,
+                cacheHit: true,
+                config,
                 execution: {
                     kind: 'plugin',
                     cacheHit: true,
@@ -139,6 +157,8 @@ export default class PluginStagePlanner {
                 [ANALYSIS_EXECUTION_METADATA_KEY]: { selectedTimesteps }
             },
             pipelineStageHash: stageHash,
+            pipelineRunId,
+            pipelineStageIndex: stageIndex,
             team: teamId,
             trajectory: trajectoryId,
             createdBy: userId,
@@ -170,6 +190,10 @@ export default class PluginStagePlanner {
 
         return {
             stageHash,
+            pluginDisplayName,
+            analysisId: analysis._id,
+            cacheHit: false,
+            config,
             execution: {
                 kind: 'plugin',
                 execution,

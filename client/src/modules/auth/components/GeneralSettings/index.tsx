@@ -87,7 +87,7 @@ const GeneralSettings = () => {
 
     return (
         <SettingsPage title="General Settings">
-            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
+            <div className='flex flex-col gap-4'>
                 <SettingsSectionHeader
                     title="Profile"
                     description="Update your personal information and profile picture" />
@@ -101,7 +101,7 @@ const GeneralSettings = () => {
                         onUpdate={handleProfileUpdate} />
                 </div>
             </div>
-            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
+            <div className='flex flex-col gap-4'>
                 <SettingsSectionHeader
                     title="Appearance"
                     description="Choose your preferred theme for the interface" />

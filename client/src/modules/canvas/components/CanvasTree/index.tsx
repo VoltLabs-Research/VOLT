@@ -5,7 +5,27 @@ import { RefreshCw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
-type CanvasTreeIndent = 'base' | 'lg';
+export type CanvasTreeIndent = 'base' | 'lg' | 'xl';
+
+/**
+ * Row chrome shared by every tree row, extracted so the four row components
+ * cannot drift apart when a level is added.
+ */
+export const TREE_ROW_CLASS = 'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs';
+
+const INDENT_CLASS: Record<CanvasTreeIndent, string> = {
+    base: 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
+    lg: 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4',
+    xl: 'pl-12 [.canvas-objects-panel--analysis-compact_&]:pl-6'
+};
+
+export const treeIndentClass = (indent: CanvasTreeIndent): string => INDENT_CLASS[indent];
+
+/** One level deeper, saturating at the deepest level the tree renders. */
+export const nextTreeIndent = (indent: CanvasTreeIndent): CanvasTreeIndent => {
+    if (indent === 'base') return 'lg';
+    return 'xl';
+};
 
 interface CanvasTreeRowProps {
     icon?: ReactNode;
@@ -43,10 +63,8 @@ export const CanvasTreeRow = ({
         data-tour-id={tourTargetId}
         className={cn(
             'flex select-none items-center gap-2 text-xs text-muted',
-            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
-            indent === 'lg'
-                ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
-                : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
+            TREE_ROW_CLASS,
+            treeIndentClass(indent),
             isActive && 'text-accent',
             disabled ? 'cursor-default opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
             !disabled && onClick && 'cursor-pointer',
@@ -85,10 +103,8 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
             {Array.from({ length: count }).map((_, i) => (
                 <div key={`canvas-tree-skel-${i}`} className={cn(
                     'flex items-center gap-8 text-muted',
-                    'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
-                    indent === 'lg'
-                        ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
-                        : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
+                    TREE_ROW_CLASS,
+                    treeIndentClass(indent)
                 )}>
                     <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />
                     <Skeleton className={compact ? 'h-2.5 w-20 rounded-md' : 'h-2.5 w-30 rounded-md'} />
@@ -106,10 +122,8 @@ interface CanvasTreeEmptyRowProps {
 export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRowProps) => (
     <div className={cn(
         'flex items-center gap-8 text-muted',
-        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
-        indent === 'lg'
-            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
-            : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
+        TREE_ROW_CLASS,
+        treeIndentClass(indent)
     )}>
         <span className='text-xs text-muted'>{label}</span>
     </div>
@@ -123,10 +137,8 @@ interface AnalysisTreeRetryRowProps {
 export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
     <div className={cn(
         'flex items-center gap-8 text-muted',
-        'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
-        indent === 'lg'
-            ? 'pl-8 [.canvas-objects-panel--analysis-compact_&]:pl-4'
-            : 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5'
+        TREE_ROW_CLASS,
+        treeIndentClass(indent)
     )}>
         <span className='text-xs text-muted'>Failed to load models</span>
         <span className='flex-1' />

@@ -169,6 +169,31 @@ export const toAnalysisFrameActivityStatus = (
     }
 };
 
+/**
+ * Status of a pipeline run, aggregated from the statuses of its stages.
+ *
+ * The precedence is `computeGroupStatus`' precedence, re-expressed over analysis
+ * statuses rather than job statuses: running beats queued beats all-completed,
+ * and a mix of failed and completed lands on `failed` exactly as
+ * `toAnalysisFrameActivityStatus` maps `Partial`. Do not reorder these branches
+ * independently of that function — a run disagreeing with its own rows is the
+ * class of bug this ordering exists to prevent.
+ *
+ * Unknown stage statuses are ignored rather than treated as incomplete; a run
+ * whose every status is unknown returns `undefined`.
+ */
+export const computeRunActivityStatus = (
+    statuses: readonly (CanvasAnalysisStatus | undefined)[]
+): CanvasAnalysisStatus | undefined => {
+    const known = statuses.filter((status): status is CanvasAnalysisStatus => status !== undefined);
+    if (known.length === 0) return undefined;
+
+    if (known.some((status) => status === AnalysisStatus.Running)) return AnalysisStatus.Running;
+    if (known.some((status) => status === AnalysisStatus.Pending)) return AnalysisStatus.Pending;
+    if (known.every((status) => status === AnalysisStatus.Completed)) return AnalysisStatus.Completed;
+    return AnalysisStatus.Failed;
+};
+
 export const buildJobStatusCounts = (
     groups: readonly TrajectoryJobGroup[],
     trajectoryId: string | undefined

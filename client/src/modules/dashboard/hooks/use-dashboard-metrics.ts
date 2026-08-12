@@ -1,65 +1,49 @@
 import { useDashboardMetricsQuery } from '@/modules/dashboard/hooks/queries';
+import { abbreviateNumber, buildDelta } from '@/modules/dashboard/utils/delta';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect, useMemo } from 'react';
 import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
-import type { DashboardCard, DashboardCardYDomain } from '@/modules/dashboard/contracts/cards';
+import type { DashboardCard } from '@/modules/dashboard/contracts/cards';
+import type { DashboardRangeOption } from '@/modules/dashboard/contracts/range';
 
-const abbreviateNumber = (value: number): string => {
-    if (value >= 1e9) return `${(value / 1e9).toFixed(1)}b`;
-    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}m`;
-    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}k`;
-    return String(value);
-};
+const readSeries = (data: DashboardMetrics, key: string): number[] => {
+    const series = data.series[key];
 
-const calculateYDomain = (values: number[]): DashboardCardYDomain => {
-    if (values.length === 0) {
-        return {
-            min: 0,
-            max: 1
-        };
+    if (!Array.isArray(series)) {
+        return [];
     }
 
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const padding = (max - min) * 0.1 || 1;
-    return {
-        min: min - padding,
-        max: max + padding
-    };
+    return series.filter((value): value is number => typeof value === 'number');
 };
 
 const buildCard = (
     data: DashboardMetrics,
     key: string,
-    defaultName: string,
-    defaultUrl?: string
+    name: string,
+    listingUrl?: string
 ): DashboardCard => {
-    let series: number[] = [];
-    const weeklySeries = data.weekly[key];
-
-    if (weeklySeries.every((value) => typeof value === 'number')) {
-        series = weeklySeries;
-    }
-
-    const total = data.totals[key];
+    const total = data.totals[key] ?? 0;
+    const series = readSeries(data, key);
+    const change = data.lastMonth[key];
 
     return {
         key,
-        name: defaultName,
-        listingUrl: defaultUrl,
+        name,
+        listingUrl,
         count: abbreviateNumber(total),
         rawCount: total,
-        lastMonthStatus: data.lastMonth[key],
-        series,
-        labels: data.weekly.labels,
-        yDomain: calculateYDomain(series)
+        delta: buildDelta(change?.current ?? 0, change?.previous ?? 0),
+        windowTotal: series.reduce((sum, value) => sum + value, 0)
     };
 };
 
-const useDashboardMetrics = (teamId?: string) => {
+const useDashboardMetrics = (teamId: string | undefined, range: DashboardRangeOption) => {
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
-    const metricsQuery = useDashboardMetricsQuery(undefined, {
+    const metricsQuery = useDashboardMetricsQuery({
+        days: range.days,
+        bucket: range.bucket
+    }, {
         enabled: !!teamId
     });
 
@@ -75,6 +59,7 @@ const useDashboardMetrics = (teamId?: string) => {
         }
 
         const data = metricsQuery.data;
+
         return [
             buildCard(data, 'trajectories', 'Trajectories', '/dashboard/trajectories/list'),
             buildCard(data, 'analysis', 'Analyses', '/dashboard/analysis-configs/list')

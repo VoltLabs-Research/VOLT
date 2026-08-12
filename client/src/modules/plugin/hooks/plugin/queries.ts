@@ -19,8 +19,9 @@ import type { PaginatedResponse } from '@voltstack/voltclient';
 import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
-import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
+import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPipelineRunsInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
 import type { InstallRegistryPluginInput } from '@volt/contracts/modules/plugin/http';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 
 const pluginBaseKeys = buildKeys<{
@@ -41,6 +42,10 @@ const registrySearchKeys = buildKeys<{
     list: SearchRegistryInput;
 }>(['plugins', 'registry', 'search']);
 
+const pipelineRunKeys = buildKeys<{
+    list: ListPipelineRunsInput;
+}>(['plugins', 'pipeline-runs']);
+
 export const PLUGIN_QUERY_KEYS = {
     all: pluginBaseKeys.all,
     byId: pluginBaseKeys.byId,
@@ -48,7 +53,9 @@ export const PLUGIN_QUERY_KEYS = {
     catalog: catalogKeys.prefix,
     catalogList: catalogKeys.list,
     teamClustersList: teamClusterKeys.list,
-    registrySearchList: registrySearchKeys.list
+    registrySearchList: registrySearchKeys.list,
+    pipelineRuns: pipelineRunKeys.prefix,
+    pipelineRunsList: pipelineRunKeys.list
 };
 
 const savePlugin = async (input: SavePluginInput): Promise<Plugin> => {
@@ -173,7 +180,22 @@ export const useInstallRegistryPluginMutation = managePluginEntityMutation<Insta
     syncPluginEntityCaches
 );
 
-export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineParams>(pluginService.executePipeline);
+export const usePipelineRunsQuery = createQuery<ListPipelineRunsInput, PaginatedResponse<PipelineRun>>(
+    (params) => PLUGIN_QUERY_KEYS.pipelineRunsList(params),
+    (params) => pluginService.listPipelineRuns(params)
+);
+
+/**
+ * A run is written before its jobs are dispatched, so the list is refetched on
+ * success rather than patched: the new run row is already on the server and the
+ * response carries no `createdAt` to fabricate one from.
+ */
+export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineParams>(
+    pluginService.executePipeline,
+    async () => {
+        await batchInvalidateQueries([PLUGIN_QUERY_KEYS.pipelineRuns()]);
+    }
+);
 
 export const useClonePluginMutation = managePluginEntityMutation<ClonePluginInput>(
     pluginService.clone,

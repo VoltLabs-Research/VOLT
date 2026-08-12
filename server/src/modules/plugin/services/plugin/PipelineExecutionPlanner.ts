@@ -1,6 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import { AnalysisStatus } from '@modules/analysis/contracts/analysis';
+import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import pluginExecutionRouter, {
     type PipelineStageExecutionInput
 } from '@modules/plugin/services/plugin/PluginExecutionRouter';
@@ -13,11 +14,14 @@ import teamClusterSelectionService from '@modules/container/services/TeamCluster
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
+import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
 import logger from '@shared/infrastructure/logger';
 import type {
     ExecutePipelineInput as WireExecutePipelineInput,
     ExecutePipelineStageInput
 } from '@volt/contracts/modules/plugin/http';
+import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
+import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 
 export type PipelineStageInput = ExecutePipelineStageInput;
 
@@ -31,7 +35,7 @@ export default class PipelineExecutionPlanner {
     #stagePlanner = new PluginStagePlanner();
     #teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
 
-    async executePipeline(input: ExecutePipelineInput): Promise<{ analysisIds: string[] }> {
+    async executePipeline(input: ExecutePipelineInput): Promise<ExecutePipelineResponse> {
         if (input.stages.length === 0) {
             throw cannotExecute('Pipeline has no stages to execute');
         }
@@ -71,14 +75,24 @@ export default class PipelineExecutionPlanner {
         const upstreamStageHashes: string[] = [];
         const stageExecutions: PipelineStageExecutionInput[] = [];
         const createdAnalyses: Analysis[] = [];
+        const runStages: PipelineRunStage[] = [];
+        // Minted before the loop so each analysis can be stamped with it as it is
+        // inserted; the run row itself is only written once every stage resolved.
+        const pipelineRunId = generateEntityId();
 
         try {
-            for (const stage of input.stages) {
+            for (const [stageIndex, stage] of input.stages.entries()) {
                 if (stage.kind !== 'plugin') {
                     upstreamStageHashes.push(computeDumpStageHash(stage.kind, stage.config));
                     stageExecutions.push({
                         kind: stage.kind,
                         config: stage.config
+                    });
+                    runStages.push({
+                        index: stageIndex,
+                        kind: stage.kind,
+                        config: stage.config,
+                        cacheHit: false
                     });
                     continue;
                 }
@@ -94,15 +108,41 @@ export default class PipelineExecutionPlanner {
                     computeClusterId,
                     upstreamStageHashes: [...upstreamStageHashes],
                     selectedTimesteps,
-                    timestep: input.timestep
+                    timestep: input.timestep,
+                    pipelineRunId,
+                    stageIndex
                 });
 
                 upstreamStageHashes.push(planned.stageHash);
                 stageExecutions.push(planned.execution);
+                runStages.push({
+                    index: stageIndex,
+                    kind: 'plugin',
+                    pluginId: stage.pluginId,
+                    pluginDisplayName: planned.pluginDisplayName,
+                    config: planned.config,
+                    cacheHit: planned.cacheHit,
+                    ...(planned.cacheHit
+                        ? { cachedFromAnalysisId: planned.analysisId }
+                        : { analysisId: planned.analysisId })
+                });
                 if (planned.createdAnalysis) {
                     createdAnalyses.push(planned.createdAnalysis);
                 }
             }
+
+            // Written before dispatch so a failed dispatch still leaves the run in
+            // history next to the analyses it marked failed.
+            await PipelineRunEntity.create({
+                id: pipelineRunId,
+                trajectory: input.trajectoryId,
+                team: input.teamId,
+                createdBy: input.userId,
+                computeClusterId,
+                storageClusterId: storageClusterId ?? null,
+                selectedTimesteps,
+                stages: runStages
+            }).save();
 
             await pluginExecutionRouter.routePipeline({
                 teamClusterId: computeClusterId,
@@ -120,7 +160,10 @@ export default class PipelineExecutionPlanner {
             throw error;
         }
 
-        return { analysisIds: createdAnalyses.map((analysis) => analysis._id) };
+        return {
+            runId: pipelineRunId,
+            stages: runStages
+        };
     }
 
     async #markAnalysesFailed(analyses: Analysis[]): Promise<void> {

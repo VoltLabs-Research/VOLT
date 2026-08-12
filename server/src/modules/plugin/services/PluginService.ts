@@ -23,6 +23,10 @@ import PipelineExecutionPlanner, {
     type ExecutePipelineInput,
     type PipelineStageInput
 } from '@modules/plugin/services/plugin/PipelineExecutionPlanner';
+import {
+    getPipelineRunsByTrajectoryId,
+    type GetPipelineRunsByTrajectoryIdInput
+} from '@modules/plugin/services/plugin/PipelineRunQueries';
 import PluginExposureArtifactService, {
     type GetPluginExposureChartInput
 } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
@@ -70,7 +74,12 @@ import type {
     CommitBinaryUploadInput as WireCommitBinaryUploadInput,
     UploadBinaryInput as WireUploadBinaryInput
 } from '@volt/contracts/modules/plugin/http';
-import type { BinaryUploadResult, BinaryUploadTarget } from '@volt/contracts/modules/plugin/plugin';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
+import type {
+    BinaryUploadResult,
+    BinaryUploadTarget,
+    ExecutePipelineResponse
+} from '@volt/contracts/modules/plugin/plugin';
 
 export type {
     ExecutePipelineInput,
@@ -300,8 +309,14 @@ export default class PluginService {
         return null;
     }
 
-    async executePipeline(input: ExecutePipelineInput): Promise<{ analysisIds: string[] }> {
+    async executePipeline(input: ExecutePipelineInput): Promise<ExecutePipelineResponse> {
         return this.#pipelinePlanner.executePipeline(input);
+    }
+
+    async getPipelineRunsByTrajectoryId(
+        input: GetPipelineRunsByTrajectoryIdInput
+    ): Promise<PaginatedResult<PipelineRun>> {
+        return getPipelineRunsByTrajectoryId(input);
     }
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInput): Promise<GetPluginExposureGLBOutput> {

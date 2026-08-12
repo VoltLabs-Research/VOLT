@@ -50,13 +50,15 @@ const RightCollapsible = ({
         onExpandedChange?.(!expanded);
     };
 
-    const titleNode = <span className='min-w-0 flex-1 truncate text-xs text-muted [.canvas-objects-panel--analysis-compact_&]:text-2xs'>{title}</span>;
+    // Weight and ink carry the section boundary, so the header no longer needs the
+    // 39px band to be read as a header: it was the same size and tone as body text.
+    const titleNode = <span className='min-w-0 flex-1 truncate text-xs font-medium text-foreground [.canvas-objects-panel--analysis-compact_&]:text-2xs'>{title}</span>;
     const actionsNode = <span className='flex shrink-0 flex-row items-center gap-0.5'>{headerAction}</span>;
 
     return (
         <div data-tour-id={tourId}>
             <div className={cn('flex flex-col', extraClassName)}>
-                <div className='flex h-[39px] flex-row items-center justify-between gap-2 px-3 max-md:h-auto max-md:min-h-[34px] [.canvas-objects-panel--analysis-compact_&]:h-[30px] [.canvas-objects-panel--analysis-compact_&]:min-h-[30px] [.canvas-objects-panel--analysis-compact_&]:px-2'>
+                <div className='flex min-h-8 flex-row items-center justify-between gap-2 px-3 max-md:h-auto max-md:min-h-[34px] [.canvas-objects-panel--analysis-compact_&]:h-[30px] [.canvas-objects-panel--analysis-compact_&]:min-h-[30px] [.canvas-objects-panel--analysis-compact_&]:px-2'>
                     <h3 id={headingId} className='m-0 min-w-0 flex-1'>
                         <span className='flex min-h-8 w-full min-w-0 flex-row items-center gap-2 max-md:min-h-[34px] [.canvas-objects-panel--analysis-compact_&]:min-h-7'>
                             {collapsible ? (

@@ -14,6 +14,7 @@ import TeamCluster from '@modules/cluster/models/TeamCluster';
 import Container from '@modules/container/models/Container';
 import DailyActivity from '@modules/daily-activity/models/DailyActivity';
 import Notification from '@modules/notification/models/Notification';
+import PipelineRun from '@modules/plugin/models/PipelineRun';
 import Plugin from '@modules/plugin/models/Plugin';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import Session from '@modules/session/models/Session';
@@ -60,6 +61,7 @@ const ENTITIES: readonly Function[] = [
     SceneArtifact,
     SimulationCell,
     Plugin,
+    PipelineRun,
     Analysis,
     AnalysisProvenance,
     Container,

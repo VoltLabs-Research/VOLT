@@ -43,7 +43,7 @@ export default function IntegrationsSettings() {
 
     return (
         <SettingsPage title='Integrations'>
-            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
+            <div className='flex flex-col gap-4'>
                 <SettingsSectionHeader
                     title='AI Providers'
                     description='Manage API keys and models shared across your team.'

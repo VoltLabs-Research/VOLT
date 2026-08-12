@@ -39,7 +39,7 @@ const AccessDenied = ({
             className={cn('flex flex-row items-center justify-center w-full h-full max-md:min-h-[300px]', className)}
         >
             <div className='flex flex-col items-center gap-6 text-center max-w-[360px] max-md:max-w-[90%]'>
-                <div className='flex flex-row items-center justify-center size-14 shrink-0 rounded-xl bg-danger-soft text-danger'>
+                <div className='flex flex-row items-center justify-center shrink-0 text-danger'>
                     <ShieldOff size={24} />
                 </div>
 
@@ -49,7 +49,7 @@ const AccessDenied = ({
                     </HeadingTag>
                     <span className='text-sm text-muted leading-normal'>{description}</span>
                     {hasPermissionHint && (
-                        <span className='text-xs text-muted leading-normal px-4 py-3 rounded-xl bg-danger-soft'>
+                        <span className='text-xs text-muted leading-normal'>
                             {`Permission${requiredPermissions!.length > 1 ? 's' : ''} needed: ${requiredPermissions!.join(', ')}.`}
                             {` Ask ${contactHint ?? 'a team administrator'} to grant access.`}
                         </span>

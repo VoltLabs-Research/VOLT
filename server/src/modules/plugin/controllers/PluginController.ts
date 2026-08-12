@@ -29,6 +29,7 @@ import type {
     ValidateWorkflowInput,
     GetPluginExposureChartInput
 } from '@modules/plugin/services/PluginService';
+import type { GetPipelineRunsByTrajectoryIdInput } from '@modules/plugin/services/plugin/PipelineRunQueries';
 import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type { GetPluginExposureGLBInput } from '@shared/contracts/operations/GetPluginExposureGLB';
@@ -340,6 +341,16 @@ export default class PluginController extends Controller {
         await this.#service.deletePluginById(input);
 
         res.status(HttpStatus.NoContent).send();
+    }
+
+    @Route(pluginRoutes.listPipelineRuns)
+    async listPipelineRuns(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
+        const input = buildControllerParams(req) as unknown as GetPipelineRunsByTrajectoryIdInput;
+        const value = await this.#service.getPipelineRunsByTrajectoryId(input);
+        BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.executePipeline)

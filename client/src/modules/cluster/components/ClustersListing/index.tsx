@@ -79,7 +79,7 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         width: 240,
         render: (_, row) => (
             <div className='flex flex-row items-center gap-2'>
-                <p className='text-sm text-muted'>{row.name}</p>
+                <p className='text-sm font-medium text-foreground'>{row.name}</p>
             </div>
         )
     },

@@ -25,7 +25,7 @@ const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
     resolveTitle: (row) => row.title,
     skeletonWidth: 180,
     wrapperClassName: 'min-w-0',
-    titleClassName: 'block truncate font-semibold text-muted',
+    titleClassName: 'block truncate font-medium text-foreground',
     getAriaLabel: (row) => row.hierarchyTitle,
     showTitleAttribute: true
 });

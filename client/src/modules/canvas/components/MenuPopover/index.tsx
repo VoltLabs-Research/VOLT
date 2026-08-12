@@ -68,9 +68,11 @@ const MenuPopover = ({ menu, openMenu, onOpenChange, idPrefix = 'menu', triggerC
             <Button
                 variant={isOpen ? 'secondary' : 'ghost'}
                 size='sm'
+                isIconOnly={Boolean(menu.icon)}
+                aria-label={menu.label}
                 className={cn('text-xs', triggerClassName)}
             >
-                {menu.label}
+                {menu.icon ?? menu.label}
             </Button>
             <Popover.Content placement='bottom start'>
                 <Popover.Dialog id={`${idPrefix}-${menu.label.toLowerCase()}`} aria-label={menu.label} className='flex min-w-40 max-w-80 flex-col p-1'>

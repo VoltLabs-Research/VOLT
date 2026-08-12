@@ -4,6 +4,7 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
+import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import PluginService from '@modules/plugin/services/PluginService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
@@ -122,5 +123,20 @@ export default class PluginEvents {
             trajectory: trajectoryId,
             sourceType: SceneArtifactSourceType.PluginExposure
         });
+    }
+
+    /**
+     * `PipelineRun` holds plain reference columns rather than relations, so these
+     * two handlers are what keeps run history from outliving its trajectory or
+     * team. The analyses a run produced are deleted by their own FK cascade.
+     */
+    @Event('trajectory.deleted')
+    async deleteTrajectoryPipelineRuns({ trajectoryId }: EventMap['trajectory.deleted']) {
+        await PipelineRunEntity.delete({ trajectory: trajectoryId });
+    }
+
+    @Event('team.deleted')
+    async deleteTeamPipelineRuns({ teamId }: EventMap['team.deleted']) {
+        await PipelineRunEntity.delete({ team: teamId });
     }
 }

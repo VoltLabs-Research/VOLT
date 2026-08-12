@@ -1,6 +1,7 @@
 import type { BaseEntity } from '../../shared/base';
 import type { TeamClusterRole } from '../cluster/domain';
 import type { IWorkflow, IModifierData } from './workflow';
+import type { PipelineRunStage } from './pipeline-run';
 import type { PluginStatus } from './enums';
 import type {
     IExposureComputed,
@@ -61,5 +62,12 @@ export interface BinaryUploadTarget extends BinaryUploadResult{
 }
 
 export interface ExecutePipelineResponse{
-    analysisIds: string[];
+    runId: string;
+    /**
+     * Every submitted stage, in order — including the ones served from cache
+     * and the ones that produce no analysis. Callers must read `analysisId` per
+     * stage instead of zipping a list of ids against their own stage array:
+     * cached stages create no analysis, so positions do not line up.
+     */
+    stages: PipelineRunStage[];
 }

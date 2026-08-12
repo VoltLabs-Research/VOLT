@@ -18,6 +18,7 @@ import type {
 @Index(['computeClusterId'])
 @Index(['storageClusterId'])
 @Index(['pipelineStageHash'])
+@Index(['pipelineRunId'])
 @Index(['team', 'createdAt'])
 @Index(['trajectory', 'createdAt'])
 @Index(['plugin', 'team', 'trajectory', 'computeClusterId'])
@@ -56,6 +57,21 @@ export default class Analysis extends BaseModel{
         nullable: true
     })
     pipelineStageHash!: string | null;
+
+    /**
+     * The pipeline execution this analysis was a stage of. Null on analyses
+     * created before runs were recorded, so readers must keep a path for
+     * ungrouped rows. Intentionally not a relation: deleting a run must never
+     * cascade into the results it produced.
+     */
+    @ReferenceColumn({ nullable: true })
+    pipelineRunId!: string | null;
+
+    @Column({
+        type: 'integer',
+        nullable: true
+    })
+    pipelineStageIndex!: number | null;
 
     @Column({
         type: 'integer',

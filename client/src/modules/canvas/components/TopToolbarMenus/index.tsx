@@ -1,4 +1,4 @@
-import { Upload, Download, Undo2, Redo2, Maximize, PanelBottom, Camera, BookOpen, FileText, Check } from 'lucide-react';
+import { Upload, Download, Undo2, Redo2, Maximize, PanelBottom, Camera, BookOpen, FileText, Check, Menu } from 'lucide-react';
 
 import type { ReactNode } from 'react';
 
@@ -34,6 +34,8 @@ export interface MenuItem {
 
 export interface MenuConfig {
     label: string;
+    /** When set, the trigger renders icon-only and `label` becomes its accessible name. */
+    icon?: ReactNode;
     items: MenuItem[];
 }
 
@@ -59,9 +61,12 @@ export const buildMenus = ({
         statusBarIcon = <Check size={ICON_SIZE} />;
     }
 
+    const separator = { type: MenuItemType.Separator } as const;
+
     return [
     {
-        label: 'File',
+        label: 'Canvas menu',
+        icon: <Menu size={ICON_SIZE} />,
         items: [
             {
                 type: MenuItemType.Item,
@@ -76,12 +81,8 @@ export const buildMenus = ({
                 icon: <Download size={ICON_SIZE} />,
                 action: onDownloadAnalyses,
                 disabled: !canDownloadAnalyses || !onDownloadAnalyses
-            }
-        ]
-    },
-    {
-        label: 'Edit',
-        items: [
+            },
+            separator,
             {
                 type: MenuItemType.Item,
                 label: 'Undo',
@@ -97,12 +98,15 @@ export const buildMenus = ({
                 shortcut: 'Ctrl+Shift+Z',
                 action: onRedo,
                 disabled: !canRedo
-            }
-        ]
-    },
-    {
-        label: 'Window',
-        items: [
+            },
+            separator,
+            {
+                type: MenuItemType.Item,
+                label: 'Screenshot',
+                icon: <Camera size={ICON_SIZE} />,
+                shortcut: 'Ctrl+S',
+                action: onScreenshot
+            },
             {
                 type: MenuItemType.Item,
                 label: 'Toggle Fullscreen',
@@ -118,18 +122,7 @@ export const buildMenus = ({
                 action: onToggleStatusBar,
                 disabled: !allowStatusBarToggle
             },
-            {
-                type: MenuItemType.Item,
-                label: 'Screenshot',
-                icon: <Camera size={ICON_SIZE} />,
-                shortcut: 'Ctrl+S',
-                action: onScreenshot
-            }
-        ]
-    },
-    {
-        label: 'Help',
-        items: [
+            separator,
             {
                 type: MenuItemType.Item,
                 label: 'Read the docs',

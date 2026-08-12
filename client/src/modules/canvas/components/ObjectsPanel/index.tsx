@@ -5,6 +5,7 @@ import useArtifactSections from './use-artifact-sections';
 import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
 import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
 import useCanvasSidebarState from '../../hooks/use-canvas-sidebar-state';
+import usePipelineRuns from '../../hooks/use-pipeline-runs';
 import useSceneArtifacts from '../../hooks/use-scene-artifacts';
 import CanvasPipeline from '../CanvasPipeline';
 import PipelineHeaderActions from '../CanvasPipeline/PipelineHeaderActions';
@@ -32,7 +33,7 @@ interface ObjectsPanelProps extends CanvasPanelActionProps {
     mode?: 'default' | 'analysis-compact';
 }
 
-type SharedSceneCollectionProps = Omit<ComponentProps<typeof SceneCollection>, 'filteredSections' | 'totalAnalyses'>;
+type SharedSceneCollectionProps = Omit<ComponentProps<typeof SceneCollection>, 'runSections' | 'totalAnalyses'>;
 
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
 
@@ -59,6 +60,7 @@ const ObjectsPanel = ({
         sceneCollectionSections,
         expandedSections,
         toggleSection,
+        expandSection,
         showSectionsSkeleton,
         activeScene,
         onSelectScene,
@@ -71,6 +73,14 @@ const ObjectsPanel = ({
     } = useCanvasSidebarState({
         trajectory,
         trajectoryId: trajectory?._id
+    });
+
+    const { runSections, onRestoreRun } = usePipelineRuns({
+        trajectoryId: trajectory?._id,
+        canMutateCanvas,
+        sections: sceneCollectionSections,
+        expandedSections,
+        expandSection
     });
 
     const { statusMap } = useCanvasAnalysisStatus({
@@ -117,6 +127,14 @@ const ObjectsPanel = ({
                 return;
             }
 
+            // The analysis row only exists in the DOM once its run is open, so the
+            // owning run has to be expanded before the analysis itself.
+            const owningRun = runSections.find((runSection) => runSection.analysisSections
+                .some((analysisSection) => analysisSection.analysis._id === section.analysis._id));
+            if (owningRun && !expandedSections.has(owningRun.runId)) {
+                toggleSection(owningRun.runId);
+            }
+
             if (!expandedSections.has(section.analysis._id)) {
                 toggleSection(section.analysis._id);
             }
@@ -142,7 +160,7 @@ const ObjectsPanel = ({
         return () => {
             window.removeEventListener(TOUR_SELECT_ANALYSIS_EVENT, selectFirstTourAnalysis);
         };
-    }, [activeScene, expandedSections, onRetryLoadExposures, onSelectScene, sceneCollectionSections, toggleSection]);
+    }, [activeScene, expandedSections, onRetryLoadExposures, onSelectScene, runSections, sceneCollectionSections, toggleSection]);
 
     const handleSelectRasterScene = (scene: RasterSelectableScene, label: string) => {
         onUpdateRasterContainerSelection?.(activeRasterContainerId, {
@@ -153,6 +171,7 @@ const ObjectsPanel = ({
     };
 
     const sharedSceneCollectionProps: SharedSceneCollectionProps = {
+        onRestoreRun,
         expandedSections,
         toggleSection,
         showSectionsSkeleton,
@@ -198,7 +217,7 @@ const ObjectsPanel = ({
                 {isActive && (
                     <SceneCollection
                         {...sharedSceneCollectionProps}
-                        filteredSections={sceneCollectionSections}
+                        runSections={runSections}
                         totalAnalyses={sceneCollectionTotalAnalyses}
                         showSimulationCell={showSimulationCell}
                         onToggleSimulationCell={handleToggleSimulationCell}
@@ -273,7 +292,7 @@ const ObjectsPanel = ({
                         ) : (
                             <SceneCollection
                                 {...sharedSceneCollectionProps}
-                                filteredSections={sceneCollectionSections}
+                                runSections={runSections}
                                 totalAnalyses={sceneCollectionTotalAnalyses}
                                 showDefaultScene={!isAnalysisCompact}
                                 showSimulationCell={!isAnalysisCompact && showSimulationCell}

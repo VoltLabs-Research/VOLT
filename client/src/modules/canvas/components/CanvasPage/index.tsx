@@ -47,7 +47,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { CSSProperties, RefObject } from 'react';
+import type { RefObject } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
 
 
@@ -232,11 +232,11 @@ const CanvasPage = () => {
      */
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
-        initialSize: 400,
-        minSize: 200,
+        initialSize: 320,
+        minSize: 240,
         maxSize: 460,
         growPositive: false,
-        storageKey: 'volt:canvas:right-panel-size:v4'
+        storageKey: 'volt:canvas:right-panel-size:v5'
     });
 
     const timelinePanel = useResizable({
@@ -303,11 +303,8 @@ const CanvasPage = () => {
         );
     }
 
-    const rightOverlaySize = !isLocalGlbViewer && !isNarrowViewport ? rightPanel.size : 0;
-
     return (
         <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
-            style={{ '--canvas-right-overlay-size': `${rightOverlaySize}px` } as CSSProperties}
         >
             <PreloadingOverlay
                 active={overlayActive}
@@ -347,6 +344,12 @@ const CanvasPage = () => {
                 )}
 
                 <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-stage'>
+                    {/*
+                      * The viewport stops where the docked right panel begins. The panel is an
+                      * absolute overlay, so without this the scene box stayed full-window and the
+                      * 3D model centred behind the panel — half a panel width right of every
+                      * other "centred" element on screen (toolbar cluster, transport controls).
+                      */}
                     <div className='flex flex-col absolute overflow-hidden inset-0 canvas-center-viewport' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
@@ -366,7 +369,6 @@ const CanvasPage = () => {
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
                                 analysisOverlay={analysisOverlay}
-                                hideGradient={isSceneSubstituted}
                                 renderScene={!isSceneSubstituted}
                                 showSceneActions={!isSceneSubstituted}
                             />
@@ -381,6 +383,12 @@ const CanvasPage = () => {
                         <CanvasTimelineDock
                             panel={timelinePanel}
                             isNarrowViewport={isNarrowViewport}
+                            statusBar={showStatusBar ? (
+                                <StatusBar
+                                    trajectory={trajectory}
+                                    currentTimestep={currentTimestep}
+                                />
+                            ) : undefined}
                             sceneRef={sceneRef}
                             trajectory={trajectory}
                             trajectoryId={trajectoryId}
@@ -401,12 +409,6 @@ const CanvasPage = () => {
                     )}
                 </div>
 
-                {!isLocalGlbViewer && showStatusBar && (
-                    <StatusBar
-                        trajectory={trajectory}
-                        currentTimestep={currentTimestep}
-                    />
-                )}
             </div>
 
             {!isLocalGlbViewer && (

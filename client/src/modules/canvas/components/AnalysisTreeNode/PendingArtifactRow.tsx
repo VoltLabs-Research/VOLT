@@ -2,11 +2,13 @@ import { CanvasTreeRow } from '../CanvasTree';
 import { cn } from '@heroui/react';
 
 import type { AnalysisArtifactStatus, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
+import type { CanvasTreeIndent } from '../CanvasTree';
 
 interface PendingArtifactRowProps {
     artifact?: AnalysisExpectedArtifact;
     fallbackName: string;
     isRecentlyReady: boolean;
+    indent?: CanvasTreeIndent;
 }
 
 const STATUS_TITLE: Record<AnalysisArtifactStatus, string> = {
@@ -17,18 +19,18 @@ const STATUS_TITLE: Record<AnalysisArtifactStatus, string> = {
     failed: 'This model failed to generate'
 };
 
-const PendingArtifactRow = ({ artifact, fallbackName, isRecentlyReady }: PendingArtifactRowProps) => {
+const PendingArtifactRow = ({ artifact, fallbackName, isRecentlyReady, indent = 'lg' }: PendingArtifactRowProps) => {
     const labelToneClass = {
         pending: '[&>.truncate]:text-warning-soft-foreground',
         generating: '[&>.truncate]:text-info-soft-foreground',
         uploading: '[&>.truncate]:text-info-soft-foreground',
-        'ready-recent': '[&>.truncate]:text-success-soft-foreground [&>.truncate]:[text-shadow:0_0_10px_color-mix(in_srgb,var(--success)_35%,transparent)]',
+        'ready-recent': '[&>.truncate]:text-success-soft-foreground',
         failed: '[&>.truncate]:text-danger-soft-foreground'
     } as const;
 
     return (
         <CanvasTreeRow
-            indent='lg'
+            indent={indent}
             disabled
             label={(
                 <span title={artifact ? STATUS_TITLE[artifact.status] : undefined} className={cn(

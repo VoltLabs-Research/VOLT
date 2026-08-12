@@ -98,7 +98,7 @@ const AnalysisLogPanel = ({
 
     return (
         <div className='flex h-full min-h-0 flex-1 flex-col'>
-            <div className='min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface)_86%,transparent)_0%,color-mix(in_srgb,var(--surface-secondary)_92%,transparent)_100%)]' ref={scrollRef}>
+            <div className='min-h-0 flex-1 overflow-y-auto bg-surface' ref={scrollRef}>
                 {helperText ? (
                     <div className='flex min-h-0 flex-1 flex-row items-center justify-center p-4'>
                         <p className='text-xs text-muted'>{helperText}</p>

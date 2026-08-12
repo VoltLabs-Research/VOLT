@@ -71,7 +71,7 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
     ];
 
     return (
-        <div className='flex h-7 w-[calc(100%-max(12px,var(--canvas-right-overlay-size,0px)))] flex-row items-center justify-between gap-3 overflow-scroll px-3'>
+        <div className='flex h-7 w-full flex-row items-center justify-between gap-3 overflow-scroll px-3'>
             <div className='flex flex-row items-center gap-2'>
                 <StatusGroup items={left} />
             </div>

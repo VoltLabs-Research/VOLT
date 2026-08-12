@@ -1,6 +1,9 @@
 import AnalysisTreeNode from '../AnalysisTreeNode';
+import PipelineRunTreeNode, { CachedBadge } from '../PipelineRunTreeNode';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { resolvePluginSceneRenderMetadata } from '../../utils/plugin-exposure-export';
+import { computeRunActivityStatus } from '../../utils/analysis-status-selectors';
+import { normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -18,16 +21,21 @@ import {
 } from '../../utils/tree-menus';
 
 import { Atom, Box } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
-import type { CanvasAnalysisStatusEntry } from '../../utils/analysis-status';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
+import type { PipelineRunSection } from '../../utils/pipeline-run-sections';
+import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../../utils/analysis-status';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 
 interface SceneCollectionProps {
-    filteredSections: AnalysisSectionData[];
+    /** Analyses already grouped by the run that produced them, newest run first. */
+    runSections: PipelineRunSection[];
+    onRestoreRun?: (run: PipelineRun) => void;
     expandedSections: Set<string>;
     toggleSection: (id: string) => void;
     showSectionsSkeleton: boolean;
@@ -67,7 +75,8 @@ interface SceneCollectionProps {
 const TREE_SCENE_ICON_COLOR = 'var(--accent)';
 
 const SceneCollection = ({
-    filteredSections,
+    runSections,
+    onRestoreRun,
     expandedSections,
     toggleSection,
     showSectionsSkeleton,
@@ -98,6 +107,59 @@ const SceneCollection = ({
     firstExposureTourTargetId
 }: SceneCollectionProps) => {
     const { pluginsById } = usePluginSelectors();
+
+    const resolveRunStatus = (runSection: PipelineRunSection): CanvasAnalysisStatus | undefined =>
+        computeRunActivityStatus(runSection.analysisSections.map((analysisSection) =>
+            statusMap.get(analysisSection.analysis._id)?.status
+            ?? normalizeCanvasAnalysisStatus(analysisSection.analysis.status)
+        ));
+
+    const firstAnalysisId = runSections
+        .flatMap((runSection) => runSection.analysisSections)[0]?.analysis._id;
+
+    const renderAnalysisNode = (
+        section: AnalysisSectionData,
+        { key, badge }: { key: string; badge?: ReactNode }
+    ) => {
+        const isFirstAnalysis = section.analysis._id === firstAnalysisId;
+
+        return (
+            <AnalysisTreeNode
+                key={key}
+                section={section}
+                indent='lg'
+                badge={badge}
+                status={statusMap.get(section.analysis._id)?.status}
+                tone={toneByAnalysisId?.get(section.analysis._id)}
+                isExpanded={expandedSections.has(section.analysis._id)}
+                onToggle={toggleSection}
+                onSelectScene={onSelectScene}
+                isSceneActive={isSceneInActiveScenes}
+                onAddScene={addScene}
+                onRemoveScene={removeScene}
+                onDeleteAnalysis={onDeleteAnalysis}
+                onDownloadAnalysis={onDownloadAnalysis}
+                onDownloadExposureListing={onDownloadExposureListing}
+                onRetryLoadExposures={onRetryLoadExposures}
+                sceneVisualOverrides={sceneVisualOverrides}
+                setSceneOpacity={setSceneOpacity ?? (() => undefined)}
+                setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
+                setSceneColor={setSceneColor ?? (() => undefined)}
+                setSceneEdges={setSceneEdges ?? (() => undefined)}
+                resolveSceneRenderMetadata={(pluginId, exposureId) => {
+                    return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
+                }}
+                plugin={pluginsById[resolveAnalysisPluginId(section.analysis)]}
+                pluginsById={pluginsById}
+                selectionMode={selectionMode}
+                selectedScene={selectedScene}
+                onSelectRasterScene={onSelectRasterScene}
+                tourTargetId={isFirstAnalysis ? firstAnalysisTourTargetId : undefined}
+                firstExposureTourTargetId={isFirstAnalysis ? firstExposureTourTargetId : undefined}
+            />
+        );
+    };
+
     const defaultScene = {
         sceneType: 'trajectory',
         source: 'default' as const
@@ -181,37 +243,18 @@ const SceneCollection = ({
                 <CanvasTreeSkeletonRows count={Math.min(Math.max(totalAnalyses, 1), 3)} />
             )}
 
-            {!showSectionsSkeleton && filteredSections.map((section: AnalysisSectionData, index) => (
-                <AnalysisTreeNode
-                    key={section.analysis._id}
-                    section={section}
-                    status={statusMap.get(section.analysis._id)?.status}
-                    tone={toneByAnalysisId?.get(section.analysis._id)}
-                    isExpanded={expandedSections.has(section.analysis._id)}
+            {!showSectionsSkeleton && runSections.map((runSection) => (
+                <PipelineRunTreeNode
+                    key={runSection.runId}
+                    section={runSection}
+                    isExpanded={expandedSections.has(runSection.runId)}
                     onToggle={toggleSection}
-                    onSelectScene={onSelectScene}
-                    isSceneActive={isSceneInActiveScenes}
-                    onAddScene={addScene}
-                    onRemoveScene={removeScene}
-                    onDeleteAnalysis={onDeleteAnalysis}
-                    onDownloadAnalysis={onDownloadAnalysis}
-                    onDownloadExposureListing={onDownloadExposureListing}
-                    onRetryLoadExposures={onRetryLoadExposures}
-                    sceneVisualOverrides={sceneVisualOverrides}
-                    setSceneOpacity={setSceneOpacity ?? (() => undefined)}
-                    setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
-                    setSceneColor={setSceneColor ?? (() => undefined)}
-                    setSceneEdges={setSceneEdges ?? (() => undefined)}
-                    resolveSceneRenderMetadata={(pluginId, exposureId) => {
-                        return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
-                    }}
-                    plugin={pluginsById[resolveAnalysisPluginId(section.analysis)]}
-                    pluginsById={pluginsById}
-                    selectionMode={selectionMode}
-                    selectedScene={selectedScene}
-                    onSelectRasterScene={onSelectRasterScene}
-                    tourTargetId={index === 0 ? firstAnalysisTourTargetId : undefined}
-                    firstExposureTourTargetId={index === 0 ? firstExposureTourTargetId : undefined}
+                    status={resolveRunStatus(runSection)}
+                    onRestore={onRestoreRun}
+                    renderAnalysisRow={(row) => renderAnalysisNode(row.section, {
+                        key: row.key,
+                        badge: row.cacheHit ? <CachedBadge /> : undefined
+                    })}
                 />
             ))}
         </div>

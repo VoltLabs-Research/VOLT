@@ -2,7 +2,9 @@ import DashboardCard from '@/modules/dashboard/components/DashboardCard';
 import DashboardOverviewCard from '@/modules/dashboard/components/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/components/DashboardOverviewSkeleton';
 import DashboardActivityTile from '@/modules/dashboard/components/DashboardActivityTile';
+import TeamActivityChart from '@/modules/dashboard/components/TeamActivityChart';
 import useDashboardMetrics from '@/modules/dashboard/hooks/use-dashboard-metrics';
+import { DEFAULT_DASHBOARD_RANGE_KEY, resolveDashboardRange } from '@/modules/dashboard/contracts/range';
 import { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
@@ -16,7 +18,9 @@ import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { FlaskConical, FolderPlus, Server, Upload } from 'lucide-react';
+import { useState } from 'react';
 import type { DashboardCard as DashboardMetricsCard } from '@/modules/dashboard/contracts/cards';
+import type { DashboardRangeKey } from '@/modules/dashboard/contracts/range';
 import type { ReactNode } from 'react';
 
 const CARD_ICONS: Record<string, ReactNode> = {
@@ -32,7 +36,16 @@ const DashboardPage = () => {
     const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
     const { currentFolderId } = useFolderSearchParam();
     const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(undefined, currentFolderId);
-    const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id);
+
+    /*
+     * One window for the whole view. The tiles and the chart both read it, so a
+     * tile's context line can never describe a different stretch of time than
+     * the shape sitting underneath it.
+     */
+    const [rangeKey, setRangeKey] = useState<DashboardRangeKey>(DEFAULT_DASHBOARD_RANGE_KEY);
+    const range = resolveDashboardRange(rangeKey);
+
+    const { loading, error, cards, accessDenied, accessDeniedMessage } = useDashboardMetrics(selectedTeam?._id, range);
 
     useTip('dashboard-drag-upload', {
         enabled: Boolean(selectedTeam)
@@ -43,11 +56,12 @@ const DashboardPage = () => {
             key={`${card.key}-${index}`}
             card={card}
             icon={CARD_ICONS[card.key]}
+            range={range}
         />
     ));
 
     if (!accessDenied && !error && !loading) {
-        statCards.push(<DashboardActivityTile key='activity-tile' />);
+        statCards.push(<DashboardActivityTile key='activity-tile' range={range} />);
     }
 
     if (accessDenied) {
@@ -96,6 +110,10 @@ const DashboardPage = () => {
     return (
         <div className='grid w-full max-w-[1440px] mx-auto grid-cols-12 auto-rows-[minmax(0,auto)] gap-4 p-4 max-[768px]:gap-3 max-[768px]:p-3'>
             {statCards}
+
+            {!accessDenied && !error && (
+                <TeamActivityChart range={range} onRangeChange={setRangeKey} />
+            )}
 
             <div className='col-span-12 flex flex-col gap-4 my-8'>
                 <div className='flex flex-row items-center justify-between gap-4 min-w-0 max-[768px]:gap-2'>

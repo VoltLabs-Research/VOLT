@@ -228,13 +228,13 @@ export default class PluginAIToolController extends AIToolController {
 
     @AITool({
         name: 'execute_pipeline',
-        description: 'Run an analysis pipeline on a trajectory: an ORDERED list of plugin stages executed sequentially on the team cluster. This is the ONLY way to run analysis — there is no single-plugin path. To run just one plugin, pass a one-stage pipeline. Stages run in array order against one evolving frame, so a stage that requiresExposures (see list_plugins) must come AFTER a stage whose producesExposures includes those ids (e.g. a reconstruction stage that emits a cluster table before a dislocation stage that consumes it). Call describe_plugin_arguments per plugin first to build each stage config. Returns the analysisId of every computed stage, in order, to track with get_analysis.',
+        description: 'Run an analysis pipeline on a trajectory: an ORDERED list of plugin stages executed sequentially on the team cluster. This is the ONLY way to run analysis — there is no single-plugin path. To run just one plugin, pass a one-stage pipeline. Stages run in array order against one evolving frame, so a stage that requiresExposures (see list_plugins) must come AFTER a stage whose producesExposures includes those ids (e.g. a reconstruction stage that emits a cluster table before a dislocation stage that consumes it). Call describe_plugin_arguments per plugin first to build each stage config. Returns a runId plus one entry per stage, in order: `analysisId` when the stage computed, `cachedFromAnalysisId` when an identical stage had already run. Track computed stages with get_analysis.',
         parameters: typia.llm.parameters<ExecutePipelineInput>(),
         validate: typia.createValidate<ExecutePipelineInput>(),
         needsApproval: true
     })
     async executePipeline(input: ExecutePipelineInput & AIToolScope) {
-        const { analysisIds } = await this.#service.executePipeline({
+        const { runId, stages } = await this.#service.executePipeline({
             ...input,
             stages: input.stages.map((stage) => ({
                 kind: 'plugin',
@@ -243,12 +243,20 @@ export default class PluginAIToolController extends AIToolController {
             }))
         });
 
-        const summary = analysisIds.length
-            ? `Started a ${input.stages.length}-stage pipeline. Computed analyses (in order): ${analysisIds.join(', ')}. Track each with get_analysis.`
-            : 'Every pipeline stage was served from cache; no new analysis was created.';
+        const computedAnalysisIds = stages
+            .map((stage) => stage.analysisId)
+            .filter((analysisId): analysisId is string => analysisId !== undefined);
+        const cachedCount = stages.filter((stage) => stage.cacheHit).length;
+
+        const summary = computedAnalysisIds.length
+            ? `Started a ${input.stages.length}-stage pipeline (run ${runId}). Computed analyses (in order): ${computedAnalysisIds.join(', ')}.${cachedCount ? ` ${cachedCount} stage${cachedCount === 1 ? ' was' : 's were'} served from cache.` : ''} Track each computed analysis with get_analysis.`
+            : `Every stage of run ${runId} was served from cache; no new analysis was created.`;
         return {
             summary,
-            data: { analysisIds }
+            data: {
+                runId,
+                stages
+            }
         };
     }
 

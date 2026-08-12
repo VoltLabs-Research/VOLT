@@ -70,7 +70,7 @@ const IntegrationModelList = ({
                 </Button>
             </div>
             {models.length > 0 && (
-                <div className='max-h-[200px] overflow-y-auto border border-border rounded-lg'>
+                <div className='max-h-[200px] overflow-y-auto'>
                     {models.map((model) => {
                         const modelSummary = defaultModel === model.id ? `${model.id} · default` : model.id;
 

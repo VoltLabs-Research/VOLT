@@ -90,7 +90,7 @@ export const createFolderedTitleColumn = <TRow,>({
     resolveTitle,
     skeletonWidth,
     wrapperClassName,
-    titleClassName = 'font-semibold text-muted',
+    titleClassName = 'font-medium text-foreground',
     getAriaLabel,
     showTitleAttribute = false
 }: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow> => {

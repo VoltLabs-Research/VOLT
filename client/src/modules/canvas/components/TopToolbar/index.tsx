@@ -9,14 +9,16 @@ import WorkspaceTabs from '../WorkspaceTabs';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import WindowControls from '@/shared/ui/components/WindowControls';
+import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { memo, useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useShortcutDiscovery from '@/shared/tips/use-shortcut-discovery';
-import { ChevronLeft } from 'lucide-react';
-import { Button, cn } from '@heroui/react';
+import { ChevronLeft, Sparkles } from 'lucide-react';
+import { Button, Tooltip, cn } from '@heroui/react';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
@@ -60,6 +62,7 @@ const TopToolbar = ({
     contextualActions
 }: TopToolbarProps) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
+    const toggleVoltAi = useChatSurfaceStore((s) => s.toggleWidget);
     const navigate = useNavigate();
     const user = useCurrentUser();
     const { searchParams, updateSearchParams } = useCanvasUrlState();
@@ -162,10 +165,16 @@ const TopToolbar = ({
     );
 
     return (
-        <header className='absolute left-0 top-0 z-[4] block select-none bg-background right-[var(--canvas-right-overlay-size,0px)] min-h-[var(--canvas-header-height,55px)] max-md:h-[var(--canvas-header-height,40px)] max-md:min-h-[var(--canvas-header-height,40px)] max-md:overflow-hidden canvas-top-toolbar flex items-stretch'>
+        <header className='absolute left-0 top-0 z-[4] block select-none bg-background px-4 max-md:px-3 right-0 min-h-[var(--canvas-header-height,55px)] max-md:h-[var(--canvas-header-height,40px)] max-md:min-h-[var(--canvas-header-height,40px)] max-md:overflow-hidden canvas-top-toolbar flex items-stretch'>
             {isMobileViewport && renderToolbarOptions(true, 'mobile-menu')}
 
-            <div className='relative grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-stretch max-md:hidden'>
+            {/*
+              * Three real columns: the search sits in the middle cell, so 1fr on each
+              * side centres it against its actual neighbours. It used to be absolutely
+              * positioned at calc(50% + panel/2), which knew nothing about the menus to
+              * its left and overlapped them once the window got narrow.
+              */}
+            <div className='relative grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,420px)_minmax(0,1fr)] items-stretch gap-2 max-md:hidden'>
                 <input
                     ref={fileInputRef}
                     type='file'
@@ -173,10 +182,10 @@ const TopToolbar = ({
                     hidden
                     onChange={handlePickerChange}
                 />
-                <div className={cn('flex min-w-0 flex-1 flex-row flex-nowrap items-center overflow-x-auto overflow-y-hidden max-w-[calc(100%-clamp(120px,16vw,220px)+var(--canvas-right-overlay-size,0px)/2)] [&>*]:shrink-0', useGuestMobileNavigation && 'max-md:hidden')}>
+                <div className={cn('flex min-w-0 flex-row flex-nowrap items-center overflow-hidden', useGuestMobileNavigation && 'max-md:hidden')}>
                     {renderBackButton()}
                     {trajectory && (
-                        <div className='flex max-w-[260px] flex-row items-center justify-start px-3 max-md:hidden'
+                        <div className='flex min-w-0 max-w-[200px] flex-row items-center justify-start px-3 max-md:hidden'
                             title={trajectory.name}
                         >
                             <EditableTrajectoryName
@@ -189,11 +198,24 @@ const TopToolbar = ({
 
                     {!isMobileViewport && renderToolbarOptions(false)}
                 </div>
-                <div className='pointer-events-none absolute inset-y-0 left-[calc(50%+var(--canvas-right-overlay-size,0px)/2)] flex flex-1 -translate-x-1/2 flex-row items-center justify-center [&>*]:pointer-events-auto'>
+                <div className='flex min-w-0 flex-row items-center justify-center'>
                     {canMutateCanvas && <CanvasPluginSearch />}
                 </div>
-                <div className='flex flex-1 flex-row items-center justify-end gap-1 pr-3 max-md:hidden'>
+                <div className='flex min-w-0 flex-row items-center justify-end gap-1 max-md:hidden'>
                     {contextualActions}
+                    <Tooltip>
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            isIconOnly
+                            aria-label='Open Volt AI'
+                            onPress={toggleVoltAi}
+                        >
+                            <Sparkles size={14} />
+                        </Button>
+                        <Tooltip.Content placement='bottom'>Volt AI</Tooltip.Content>
+                    </Tooltip>
+                    <ThemeToggleButton />
                     {canShowPeers && onSelectWorkspacePeer && (
                         <WorkspacePeerAvatars
                             peers={workspacePeers ?? []}

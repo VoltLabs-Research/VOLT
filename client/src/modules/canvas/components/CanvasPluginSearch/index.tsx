@@ -133,7 +133,7 @@ const CanvasPluginSearch = () => {
         : undefined;
 
     return (
-        <div className='w-[clamp(240px,32vw,440px)] min-w-0' ref={refs.setReference} {...getReferenceProps()}>
+        <div className='w-full min-w-0' ref={refs.setReference} {...getReferenceProps()}>
             <CanvasSearchInput
                 ref={inputRef}
                 id={searchInputId}

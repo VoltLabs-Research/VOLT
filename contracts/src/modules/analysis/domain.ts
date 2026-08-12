@@ -68,6 +68,13 @@ export interface Analysis extends BaseEntity{
     pluginDisplayName: string;
     config: Record<string, unknown>;
     trajectory: AnalysisTrajectory;
+    /**
+     * The pipeline execution this analysis was a stage of. Absent on analyses
+     * created before runs were recorded, which is why every consumer must keep
+     * a path for ungrouped rows.
+     */
+    pipelineRunId?: string;
+    pipelineStageIndex?: number;
     teamCluster?: Ref<TeamCluster> | null;
     createdBy?: Ref<User>;
     totalFrames: number;

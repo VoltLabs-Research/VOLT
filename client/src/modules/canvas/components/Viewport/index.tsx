@@ -32,7 +32,6 @@ interface ViewportProps {
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
     analysisOverlay?: ReactNode;
-    hideGradient?: boolean;
     renderScene?: boolean;
     showSceneActions?: boolean;
 }
@@ -70,7 +69,6 @@ const Viewport = ({
     sceneRef,
     bodyContent,
     analysisOverlay,
-    hideGradient = false,
     renderScene = true,
     showSceneActions = true
 }: ViewportProps) => {
@@ -223,7 +221,6 @@ const Viewport = ({
                     </div>
                 )}
 
-                {!hideGradient && <div className='pointer-events-none absolute inset-0 bg-none [[data-theme=dark]_&]:bg-[radial-gradient(60%_60%_at_50%_50%,transparent_0%,color-mix(in_srgb,var(--background)_25%,transparent)_100%)] motion-reduce:bg-none' />}
 
                 {analysisOverlay}
 

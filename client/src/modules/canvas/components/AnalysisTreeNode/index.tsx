@@ -3,7 +3,10 @@ import {
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
     CanvasTreeSkeletonRows,
-    MaybeContextMenu
+    MaybeContextMenu,
+    TREE_ROW_CLASS,
+    nextTreeIndent,
+    treeIndentClass
 } from '../CanvasTree';
 import { Tooltip, cn } from '@heroui/react';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, isCanvasAnalysisSettled, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
@@ -16,9 +19,11 @@ import ExposureRow from './ExposureRow';
 import PendingArtifactRow from './PendingArtifactRow';
 import useRecentlyReadyArtifacts from './use-recently-ready-artifacts';
 
+import type { ReactNode } from 'react';
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
+import type { CanvasTreeIndent } from '../CanvasTree';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
@@ -38,6 +43,10 @@ interface AnalysisTreeNodeProps extends SceneRowActions {
     selectionMode?: 'default' | 'raster';
     tourTargetId?: string;
     firstExposureTourTargetId?: string;
+    /** Depth of the analysis row itself; its exposures render one level deeper. */
+    indent?: CanvasTreeIndent;
+    /** Rendered between the chevron and the name — used to mark a cached stage. */
+    badge?: ReactNode;
 }
 
 const TRAJECTORY_SCENE: SceneObjectType = {
@@ -64,8 +73,11 @@ const AnalysisTreeNode = ({
     selectionMode = 'default',
     tourTargetId,
     firstExposureTourTargetId,
+    indent = 'base',
+    badge,
     ...sceneActions
 }: AnalysisTreeNodeProps) => {
+    const childIndent = nextTreeIndent(indent);
     const { analysis, entry, isCurrentAnalysis } = section;
     const { onSelectScene, selectedScene } = sceneActions;
     const isRasterSelectionMode = selectionMode === 'raster';
@@ -168,9 +180,9 @@ const AnalysisTreeNode = ({
                     <Tooltip.Trigger
                         className={cn(
                             'flex cursor-pointer select-none items-center gap-2 text-xs text-muted',
-                            'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs',
+                            TREE_ROW_CLASS,
                             'hover:rounded-md hover:bg-surface-hover',
-                            'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
+                            treeIndentClass(indent),
                             isSelectedAnalysis && 'text-accent'
                         )}
                         onClick={handleSelectAnalysis}
@@ -180,8 +192,11 @@ const AnalysisTreeNode = ({
                         data-tour-id={tourTargetId}
                     >
                         <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
-                            <span className={nameClassName} title={analysis.pluginDisplayName}>
-                                {analysis.pluginDisplayName}
+                            <span className='flex min-w-0 items-center gap-1.5'>
+                                <span className={nameClassName} title={analysis.pluginDisplayName}>
+                                    {analysis.pluginDisplayName}
+                                </span>
+                                {badge}
                             </span>
                             {inlineSummary && (
                                 <span className='truncate text-2xs leading-[1.2] text-muted opacity-90' title={inlineSummary}>
@@ -206,7 +221,7 @@ const AnalysisTreeNode = ({
                         </button>
                     </Tooltip.Trigger>
                     {tooltipContent && (
-                        <Tooltip.Content placement='right' className='pointer-events-auto w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] whitespace-normal border border-border bg-surface p-0 shadow-[0_0_0_1px_var(--border)]'>
+                        <Tooltip.Content placement='right' className='pointer-events-auto w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] whitespace-normal border border-border bg-surface p-0'>
                             {tooltipContent}
                         </Tooltip.Content>
                     )}
@@ -214,11 +229,11 @@ const AnalysisTreeNode = ({
             </MaybeContextMenu>
 
             {isExpanded && entry.state === 'loading' && !analysis.expectedArtifacts?.length && (
-                <CanvasTreeSkeletonRows count={1} compact indent='lg' />
+                <CanvasTreeSkeletonRows count={1} compact indent={childIndent} />
             )}
 
             {isExpanded && entry.state === 'error' && onRetryLoadExposures && (
-                <AnalysisTreeRetryRow onRetry={() => onRetryLoadExposures(analysis._id)} />
+                <AnalysisTreeRetryRow onRetry={() => onRetryLoadExposures(analysis._id)} indent={childIndent} />
             )}
 
             {isExpanded && artifactRows.map(({ key, artifact, exposure }) => {
@@ -231,6 +246,7 @@ const AnalysisTreeNode = ({
                             artifact={artifact}
                             fallbackName={key}
                             isRecentlyReady={isRecentlyReady}
+                            indent={childIndent}
                         />
                     );
                 }
@@ -246,12 +262,13 @@ const AnalysisTreeNode = ({
                         isRecentlyReady={isRecentlyReady}
                         isRasterSelectionMode={isRasterSelectionMode}
                         tourTargetId={key === firstExposureRowKey ? firstExposureTourTargetId : undefined}
+                        indent={childIndent}
                     />
                 );
             })}
 
             {isExpanded && entry.state === 'loaded' && artifactRows.length === 0 && (
-                <CanvasTreeEmptyRow label='No models' indent='lg' />
+                <CanvasTreeEmptyRow label='No models' indent={childIndent} />
             )}
         </>
     );

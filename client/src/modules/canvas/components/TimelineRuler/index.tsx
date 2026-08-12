@@ -14,13 +14,13 @@ const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
     const labelToneClass = {
         queued: 'text-warning-soft-foreground',
         running: 'text-info-soft-foreground',
-        completed: 'text-success-soft-foreground [text-shadow:0_0_10px_color-mix(in_srgb,var(--success-soft-foreground)_30%,transparent)]'
+        completed: 'text-success-soft-foreground'
     } as const;
 
     const markToneClass = {
         queued: 'bg-warning',
         running: 'bg-accent',
-        completed: 'bg-success shadow-[0_0_8px_color-mix(in_srgb,var(--success)_35%,transparent)]'
+        completed: 'bg-success'
     } as const;
 
     return (

@@ -31,7 +31,7 @@ const CanvasBanners = ({
     }
 
     return (
-        <div className='flex flex-col z-[4] mt-[var(--canvas-header-height,55px)] mr-[var(--canvas-right-overlay-size,0px)] border-b border-border' role='region' aria-label='Canvas notifications'>
+        <div className='flex flex-col z-[4] mt-[var(--canvas-header-height,55px)] border-b border-border' role='region' aria-label='Canvas notifications'>
             {showCollabBanner && collaborationOwner && (
                 <div className='flex flex-row items-center w-full gap-3 border-b border-border px-3.5 py-2 text-sm leading-[1.35] last:border-b-0 bg-[color-mix(in_srgb,var(--accent)_14%,var(--background))] text-foreground' role='status'>
                     <span className='inline-flex shrink-0 items-center justify-center' aria-hidden='true'>

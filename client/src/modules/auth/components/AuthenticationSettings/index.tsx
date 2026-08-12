@@ -42,7 +42,7 @@ const AuthenticationSettings = () => {
 
     return (
         <SettingsPage title="Authentication Settings">
-            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
+            <div className='flex flex-col gap-4'>
                 <SettingsSectionHeader
                     title="Password"
                     description="Manage your password and security settings" />
@@ -70,7 +70,7 @@ const AuthenticationSettings = () => {
                 </div>
             </div>
 
-            <div className='flex flex-col gap-4 p-6 rounded-xl border border-border'>
+            <div className='flex flex-col gap-4'>
                 <SettingsSectionHeader
                     title="Login Activity"
                     description="Monitor recent login sessions and devices" />

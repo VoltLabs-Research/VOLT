@@ -157,7 +157,7 @@ const PipelineRunControl = ({
         }
 
         try {
-            const { analysisIds } = await executePipelineMutation.mutateAsync({
+            const { stages } = await executePipelineMutation.mutateAsync({
                 trajectoryId,
                 teamClusterId: resolvedClusterId || undefined,
                 selectedTimesteps,
@@ -170,23 +170,26 @@ const PipelineRunControl = ({
             const pendingStore = usePendingPluginExecutionsStore.getState();
             const viewTimestep = selectedTimesteps?.[0]
                 ?? getNearestTimestep(currentTimestep, availableTimesteps);
-            analysisIds.forEach((analysisId, index) => {
-                const stage = pluginStages[index];
+
+            // Each stage carries its own analysisId and name. Zipping the response
+            // against `pluginStages` by position would mislabel every stage after
+            // the first cache hit, since a cached stage creates no analysis.
+            const computedStages = stages.filter((stage) => stage.analysisId !== undefined);
+            computedStages.forEach((stage) => {
                 pendingStore.register({
-                    analysisId,
+                    analysisId: stage.analysisId as string,
                     trajectoryId,
-                    pluginName: stage
-                        ? pluginStageName((stage.config as AnalysisPluginStageConfig).pluginId)
-                        : 'Analysis',
+                    pluginName: stage.pluginDisplayName
+                        ?? (stage.pluginId ? pluginStageName(stage.pluginId) : 'Analysis'),
                     timestep: viewTimestep,
                     autoSelect: true
                 });
             });
 
             sileo.success({
-                title: analysisIds.length > 0 ? 'Pipeline is running' : 'Pipeline complete',
-                description: analysisIds.length > 0
-                    ? `${analysisIds.length} analysis stage${analysisIds.length === 1 ? '' : 's'} computing.`
+                title: computedStages.length > 0 ? 'Pipeline is running' : 'Pipeline complete',
+                description: computedStages.length > 0
+                    ? `${computedStages.length} analysis stage${computedStages.length === 1 ? '' : 's'} computing.`
                     : 'All stages were served from cache.'
             });
             onClose();

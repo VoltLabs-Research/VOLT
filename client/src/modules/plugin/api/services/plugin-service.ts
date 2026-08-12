@@ -8,6 +8,7 @@ import type { PluginTeamClusterOption } from '@volt/contracts/modules/plugin/plu
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
 import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type {
     CreatePluginInput,
     ExecutePipelineInput,
@@ -67,6 +68,12 @@ export interface ListPluginTeamClustersInput {
     teamId: string;
     page: number;
     limit: number;
+}
+
+export interface ListPipelineRunsInput {
+    trajectoryId: string;
+    page?: number;
+    limit?: number;
 }
 
 export type ListPluginTeamClustersResponse = PaginatedResponse<PluginTeamClusterOption>;
@@ -179,6 +186,9 @@ const endpoints = {
     }),
     installRegistryPlugin: routes.route<InstallRegistryPluginInput, Plugin>(pluginRoutes.installRegistry),
     executePipeline: routes.route<ExecutePipelineParams, ExecutePipelineResponse>(pluginRoutes.executePipeline),
+    listPipelineRuns: paginated<ListPipelineRunsInput, PaginatedResponse<PipelineRun>>(
+        routes.path(pluginRoutes.listPipelineRuns)
+    ),
     listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),

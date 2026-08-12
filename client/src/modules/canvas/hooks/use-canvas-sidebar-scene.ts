@@ -363,6 +363,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         isSceneInActiveScenes,
 
         toggleSection,
+        expandSection,
         onDeleteAnalysis: deleteAnalysis,
         onRetryLoadExposures: loadExposuresForAnalysis
     };
