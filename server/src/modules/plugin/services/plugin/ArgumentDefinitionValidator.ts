@@ -3,7 +3,8 @@ import {
     ArgumentType,
     ArgumentVisibilityOperators,
     WorkflowNodeType,
-    type ArgumentDefinition
+    type ArgumentDefinition,
+    type ArgumentVisibilityCondition
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 
 export const readArgumentDefinitions = (workflow: WorkflowProps): ArgumentDefinition[] => {
@@ -25,6 +26,76 @@ export const containsPluginReferenceArgument = (definition: ArgumentDefinition):
     return definition.listArguments.some((nestedDefinition) => containsPluginReferenceArgument(nestedDefinition));
 };
 
+/**
+ * Shared shape checks for a condition that selects on an argument's value.
+ *
+ * `field` names the property in the emitted messages so the same checks can serve an
+ * argument's `visibleWhen` and an exposure's `exportWhen`. `selfArgument` is only supplied
+ * for the former, where depending on yourself is the error; an exposure has no such notion.
+ */
+const validateArgumentCondition = (
+    condition: ArgumentVisibilityCondition,
+    definitions: ArgumentDefinition[],
+    scope: string,
+    field: string,
+    errors: string[],
+    selfArgument?: string
+): void => {
+    const controllingArgument = condition.argument?.trim() || '';
+    if (!controllingArgument) {
+        errors.push(`${scope} ${field}.argument is required`);
+    } else if (selfArgument !== undefined && controllingArgument === selfArgument) {
+        errors.push(`${scope} cannot depend on itself`);
+    } else if (!definitions.some((candidate) => candidate.argument === controllingArgument)) {
+        errors.push(`${scope} references unknown ${field} argument "${controllingArgument}"`);
+    }
+
+    if (!ArgumentVisibilityOperators.includes(condition.operator)) {
+        errors.push(`${scope} uses unsupported ${field} operator "${condition.operator}"`);
+    }
+
+    if (
+        (condition.operator === 'equals' || condition.operator === 'notEquals')
+        && condition.value === undefined
+    ) {
+        errors.push(`${scope} requires ${field}.value for operator "${condition.operator}"`);
+    }
+
+    if (
+        (condition.operator === 'in' || condition.operator === 'notIn')
+        && (!Array.isArray(condition.values) || condition.values.length === 0)
+    ) {
+        errors.push(`${scope} requires ${field}.values for operator "${condition.operator}"`);
+    }
+};
+
+/**
+ * Validates every exposure's `exportWhen` gate.
+ *
+ * This matters more than it looks: a gate pointing at a misspelled argument resolves to no
+ * value at all, which compares false and silently drops the export from the run. Catching it
+ * at publish turns a mystery ("why is my mesh gone?") into an error message.
+ */
+export const validateExposureExportConditions = (
+    workflow: WorkflowProps,
+    errors: string[]
+): void => {
+    const definitions = readArgumentDefinitions(workflow);
+
+    for (const node of workflow.nodes) {
+        if (node.type !== WorkflowNodeType.Exposure) {
+            continue;
+        }
+
+        const exportWhen = node.data.exposure?.exportWhen;
+        if (!exportWhen) {
+            continue;
+        }
+
+        validateArgumentCondition(exportWhen, definitions, `exposure ${node.id}`, 'exportWhen', errors);
+    }
+};
+
 const validateVisibilityCondition = (
     definition: ArgumentDefinition,
     definitions: ArgumentDefinition[],
@@ -36,32 +107,14 @@ const validateVisibilityCondition = (
         return;
     }
 
-    const controllingArgument = visibleWhen.argument?.trim() || '';
-    if (!controllingArgument) {
-        errors.push(`${argumentScope} visibleWhen.argument is required`);
-    } else if (controllingArgument === definition.argument) {
-        errors.push(`${argumentScope} cannot depend on itself`);
-    } else if (!definitions.some((candidate) => candidate.argument === controllingArgument)) {
-        errors.push(`${argumentScope} references unknown visibility argument "${controllingArgument}"`);
-    }
-
-    if (!ArgumentVisibilityOperators.includes(visibleWhen.operator)) {
-        errors.push(`${argumentScope} uses unsupported visibility operator "${visibleWhen.operator}"`);
-    }
-
-    if (
-        (visibleWhen.operator === 'equals' || visibleWhen.operator === 'notEquals')
-        && visibleWhen.value === undefined
-    ) {
-        errors.push(`${argumentScope} requires visibleWhen.value for operator "${visibleWhen.operator}"`);
-    }
-
-    if (
-        (visibleWhen.operator === 'in' || visibleWhen.operator === 'notIn')
-        && (!Array.isArray(visibleWhen.values) || visibleWhen.values.length === 0)
-    ) {
-        errors.push(`${argumentScope} requires visibleWhen.values for operator "${visibleWhen.operator}"`);
-    }
+    validateArgumentCondition(
+        visibleWhen,
+        definitions,
+        argumentScope,
+        'visibleWhen',
+        errors,
+        definition.argument
+    );
 };
 
 const validatePluginReferenceMappings = (

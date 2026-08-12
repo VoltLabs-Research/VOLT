@@ -1,4 +1,4 @@
-import type { IArgumentDefinition } from './workflow';
+import type { IArgumentDefinition, IArgumentVisibilityCondition } from './workflow';
 
 export interface IComputedArgumentOption{
     key: string;
@@ -26,6 +26,8 @@ export interface IExposureComputed{
     hasListing?: boolean;
     properties?: IExposureProperty[];
     export: IExposureExport | null;
+    /** Carried through from the workflow node so the run can gate this exposure. */
+    exportWhen?: IArgumentVisibilityCondition;
 }
 
 export interface IComputedArgumentDefinition extends Omit<IArgumentDefinition, 'options' | 'listArguments'>{

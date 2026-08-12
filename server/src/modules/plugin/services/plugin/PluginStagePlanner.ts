@@ -144,7 +144,7 @@ export default class PluginStagePlanner {
             createdBy: userId,
             startedAt: new Date(),
             artifactStatus: AnalysisArtifactStatus.Pending,
-            expectedArtifacts: resolveExpectedArtifacts(plugin),
+            expectedArtifacts: resolveExpectedArtifacts(plugin, config),
             stages: [],
             childAnalyses: []
         }).save();

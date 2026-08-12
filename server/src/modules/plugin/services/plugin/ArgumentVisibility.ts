@@ -64,23 +64,34 @@ const matchesVisibilityCondition = (
     return true;
 };
 
-export const isArgumentVisible = (
-    definition: ArgumentDefinition,
+/**
+ * Evaluates a standalone condition against a set of argument values. Exposed for exposure
+ * `exportWhen` gates, which share the operator semantics of an argument's `visibleWhen` but
+ * are declared on an exposure node instead of an argument definition.
+ */
+export const matchesArgumentCondition = (
+    condition: ArgumentVisibilityCondition | undefined,
     definitions: ArgumentDefinition[],
     values: ArgumentValueMap
 ): boolean => {
-    if (!definition.visibleWhen) {
+    if (!condition) {
         return true;
     }
 
-    const controllingArgumentKey = definition.visibleWhen.argument.trim();
+    const controllingArgumentKey = condition.argument?.trim();
     if (!controllingArgumentKey) {
         return true;
     }
 
     const currentValue = resolveComparisonSourceValue(definitions, values, controllingArgumentKey);
-    return matchesVisibilityCondition(definition.visibleWhen, currentValue);
+    return matchesVisibilityCondition(condition, currentValue);
 };
+
+export const isArgumentVisible = (
+    definition: ArgumentDefinition,
+    definitions: ArgumentDefinition[],
+    values: ArgumentValueMap
+): boolean => matchesArgumentCondition(definition.visibleWhen, definitions, values);
 
 export const sanitizeVisibleArgumentConfig = (
     definitions: ArgumentDefinition[],

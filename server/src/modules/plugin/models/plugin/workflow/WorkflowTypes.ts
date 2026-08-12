@@ -70,6 +70,12 @@ export interface ArgumentDefinition {
     max?: number;
     step?: number;
     visibleWhen?: ArgumentVisibilityCondition;
+    /**
+     * How a boolean reaches the binary's command line. `presence` (the default) emits the
+     * flag only when true; `explicit` always emits `--flag true` / `--flag false`, needed
+     * for flags the binary enables by default.
+     */
+    cliValueStyle?: 'presence' | 'explicit';
 }
 
 interface ArgumentsNodeData {
@@ -140,6 +146,11 @@ interface ExposureNodeData {
     hasListing?: boolean;
     properties?: ExposureProperty[];
     id?: string;
+    /**
+     * Gates the exposure on one of the plugin's arguments, using the same condition shape
+     * as an argument's `visibleWhen`.
+     */
+    exportWhen?: ArgumentVisibilityCondition;
 }
 
 export enum Exporter {

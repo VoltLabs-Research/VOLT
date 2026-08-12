@@ -1,4 +1,8 @@
-import type { ExportNodeData, ExposureProperty } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import type {
+    ArgumentVisibilityCondition,
+    ExportNodeData,
+    ExposureProperty
+} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginProjection } from '@modules/plugin/services/plugin/WorkflowProjection';
@@ -14,6 +18,12 @@ export interface PluginExposureProps{
     hasListing: boolean;
     properties: ExposureProperty[];
     export: ExportNodeData | null;
+    /**
+     * Gates the exposure on one of the plugin's arguments. Kept on the persisted props
+     * because the analysis planner needs it before any daemon is involved, to decide which
+     * artifacts a run is even expected to produce.
+     */
+    exportWhen?: ArgumentVisibilityCondition;
 }
 
 export interface PluginProps extends Partial<PluginProjection>{

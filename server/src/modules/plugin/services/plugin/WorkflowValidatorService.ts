@@ -9,7 +9,8 @@ import {
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import {
     readArgumentDefinitions,
-    validateArgumentDefinitions
+    validateArgumentDefinitions,
+    validateExposureExportConditions
 } from '@modules/plugin/services/plugin/ArgumentDefinitionValidator';
 import {
     buildWorkflowTopologyIndex,
@@ -63,6 +64,7 @@ export class WorkflowValidatorService {
         }
 
         validateArgumentDefinitions(readArgumentDefinitions(workflow), errors);
+        validateExposureExportConditions(workflow, errors);
 
         if (!Array.isArray(workflow.edges)) {
             errors.push('Workflow must have edges array');

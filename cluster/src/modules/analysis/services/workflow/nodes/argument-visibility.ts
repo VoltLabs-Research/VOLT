@@ -25,25 +25,48 @@ const matchesVisibilityCondition = (
     }
 };
 
+/*
+ * Precedence matters: a definition pinned to a literal `value` wins over whatever the run
+ * supplied, and an argument the run never mentioned falls back to its declared `default`.
+ * That last step is what makes a condition work for an argument the user never touched.
+ */
+const readConditionSourceValue = (
+    argumentKey: string,
+    definitions: WorkflowArgumentDefinition[],
+    values: WorkflowNodeOutput
+): WorkflowValue => {
+    const referenced = definitions.find((candidate) => candidate.argument === argumentKey);
+    if (referenced?.value !== undefined) {
+        return referenced.value;
+    }
+
+    if (values[argumentKey] !== undefined) {
+        return values[argumentKey];
+    }
+
+    return referenced?.default;
+};
+
+/**
+ * Evaluates a standalone condition against a run's argument values. Used for exposure
+ * `exportWhen` gates, which share the operator semantics of argument `visibleWhen` but hang
+ * off an exposure node rather than an argument definition.
+ */
+export const matchesArgumentCondition = (
+    condition: WorkflowArgumentVisibilityCondition | undefined,
+    definitions: WorkflowArgumentDefinition[],
+    values: WorkflowNodeOutput
+): boolean => {
+    const argumentKey = condition?.argument;
+    if (!condition || !argumentKey) {
+        return true;
+    }
+
+    return matchesVisibilityCondition(condition, readConditionSourceValue(argumentKey, definitions, values));
+};
+
 export const isArgumentVisible = (
     definition: WorkflowArgumentDefinition,
     definitions: WorkflowArgumentDefinition[],
     values: WorkflowNodeOutput
-): boolean => {
-    const condition = definition.visibleWhen;
-    if (!condition?.argument) {
-        return true;
-    }
-
-    const referenced = definitions.find((candidate) => candidate.argument === condition.argument);
-    let currentValue: WorkflowValue;
-    if (referenced?.value !== undefined) {
-        currentValue = referenced.value;
-    } else if (values[condition.argument] !== undefined) {
-        currentValue = values[condition.argument];
-    } else {
-        currentValue = referenced?.default;
-    }
-
-    return matchesVisibilityCondition(condition, currentValue);
-};
+): boolean => matchesArgumentCondition(definition.visibleWhen, definitions, values);

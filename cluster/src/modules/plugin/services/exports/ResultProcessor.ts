@@ -66,6 +66,14 @@ class DefaultResultProcessor implements ResultProcessorService {
                 },
                 'Exposure output file not found, skipping'
             );
+
+            // Opt-in exports write no file when they are switched off, which is
+            // the normal outcome rather than a fault. Close the exposure out, or
+            // its expected artifact waits forever on an upload nobody will send.
+            if (exposure.export) {
+                await reportStage('completed', 'No output file for this exposure', false);
+            }
+
             return;
         }
 

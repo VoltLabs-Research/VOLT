@@ -7,8 +7,10 @@ import type {
     NestedPluginDefinition,
     TrajectoryDumpDescriptor,
     TrajectoryFrame,
+    WorkflowArgumentDefinition,
     WorkflowDefinition
 } from '@shared/contracts/types/http-workflow';
+import { matchesArgumentCondition } from '@modules/analysis/services/workflow/nodes/argument-visibility';
 import type {
     WorkflowExecutionOptions,
     WorkflowExecutionContext,
@@ -212,10 +214,16 @@ export class WorkflowSession {
         };
     }
 
-    static buildExposureMaps(workflowInput: WorkflowDefinition): WorkflowExposureMaps {
+    static buildExposureMaps(
+        workflowInput: WorkflowDefinition,
+        argumentValues?: WorkflowValueMap
+    ): WorkflowExposureMaps {
         const workflow = new WorkflowGraph(workflowInput);
         const exposuresByNodeId = new Map<string, AnalysisExposureDefinition>();
         const exportNodeToExposureNodeId = new Map<string, string>();
+        const argumentDefinitions = argumentValues === undefined
+            ? []
+            : WorkflowSession.readArgumentDefinitions(workflow);
 
         for (const node of workflow.nodes) {
             if (node.type !== WorkflowNodeType.Exposure) {
@@ -224,6 +232,18 @@ export class WorkflowSession {
 
             const exposureData = node.data.exposure;
             if (!exposureData || !exposureData.results) {
+                continue;
+            }
+
+            /*
+             * Without argument values this stays a pure structural scan, which is what the
+             * callers that only need the node topology rely on. A run passes its values and
+             * gets the gated view instead.
+             */
+            if (
+                argumentValues !== undefined
+                && !matchesArgumentCondition(exposureData.exportWhen, argumentDefinitions, argumentValues)
+            ) {
                 continue;
             }
 
@@ -247,8 +267,18 @@ export class WorkflowSession {
         };
     }
 
-    static collectExposureDefinitions(workflowInput: WorkflowDefinition): AnalysisExposureDefinition[] {
-        return Array.from(WorkflowSession.buildExposureMaps(workflowInput).exposuresByNodeId.values());
+    private static readArgumentDefinitions(workflow: WorkflowGraph): WorkflowArgumentDefinition[] {
+        const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+        return argumentsNode?.data.arguments?.arguments ?? [];
+    }
+
+    static collectExposureDefinitions(
+        workflowInput: WorkflowDefinition,
+        argumentValues?: WorkflowValueMap
+    ): AnalysisExposureDefinition[] {
+        return Array.from(
+            WorkflowSession.buildExposureMaps(workflowInput, argumentValues).exposuresByNodeId.values()
+        );
     }
 
     constructor(readonly context: WorkflowExecutionContext) {}

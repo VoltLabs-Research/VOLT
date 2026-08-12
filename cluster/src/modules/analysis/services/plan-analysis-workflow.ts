@@ -95,7 +95,14 @@ export const planAnalysisWorkflow = async (
             definition: workflow,
             nestedPlugins: input.nestedPlugins,
             pluginReferenceExecutions: input.pluginReferenceExecutions,
-            exposures: WorkflowSession.collectExposureDefinitions(workflow),
+            /*
+             * Passing the run's config gates exposures whose `exportWhen` is false. This is
+             * the only exposure list the daemon consumes downstream — registration, the
+             * working-dump merge and the export dispatch all read it — so filtering here is
+             * what makes "do not export this" mean nothing gets computed, persisted or
+             * listed for it.
+             */
+            exposures: WorkflowSession.collectExposureDefinitions(workflow, input.config),
             forEachNodeId: plan.forEachNodeId,
             trajectoryWindowNodeId: plan.trajectoryWindowNodeId,
             nodeOutputSnapshots: plan.nodeOutputSnapshots

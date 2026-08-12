@@ -1,5 +1,6 @@
 import {
     ArgumentDefinition,
+    ArgumentVisibilityCondition,
     ExportNodeData,
     ExposureProperty,
     ModifierNodeData,
@@ -17,6 +18,7 @@ interface ComputedExposure {
     hasListing: boolean;
     properties: ExposureProperty[];
     export: ExportNodeData | null;
+    exportWhen?: ArgumentVisibilityCondition;
 }
 
 interface ListingExposureEntry {
@@ -60,7 +62,8 @@ export default class WorkflowProjectionService {
                 icon: exposure?.icon,
                 results: exposure?.results ?? '',
                 hasListing: exposure?.hasListing !== false,
-                properties: exposure?.properties ?? []
+                properties: exposure?.properties ?? [],
+                exportWhen: exposure?.exportWhen
             };
         });
 
