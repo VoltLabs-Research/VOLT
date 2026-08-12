@@ -1,4 +1,5 @@
-import { Button, Label, ListBox, Select, Spinner, Switch } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, Label, ListBox, Select, Switch } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -112,7 +113,7 @@ const IntegrationFormModal = ({
                         isPending={isSaving}
                         isDisabled={isSaving || !provider}
                     >
-                        {isSaving && <Spinner size='sm' color='current' />}
+                        {isSaving && <Loader size='sm' color='current' />}
                         Save
                     </Button>
                 </>

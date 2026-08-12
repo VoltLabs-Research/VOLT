@@ -1,4 +1,5 @@
-import { Button, EmptyStateRoot, SearchField, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, EmptyStateRoot, SearchField } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { useInstallRegistryPluginMutation, usePluginsCatalogQuery, useRegistrySearchQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { runAction } from '@/shared/ui/actions/run-action';
@@ -140,7 +141,7 @@ const RegistryBrowserModal = ({ isOpen, onClose }: RegistryBrowserModalProps) =>
                 <div className='h-[460px] overflow-y-auto'>
                     {isFetching && (
                         <div className='flex flex-row items-center justify-center p-8' role='status'>
-                            <Spinner />
+                            <Loader />
                             <span className='sr-only'>Loading registry results</span>
                         </div>
                     )}

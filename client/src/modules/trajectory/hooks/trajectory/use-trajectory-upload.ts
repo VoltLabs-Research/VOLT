@@ -1,7 +1,6 @@
 import { createTrajectoryUploadSessionMutation } from './queries';
 import { ErrorSurface } from '@/shared/contracts/errors';
-import { isApiError, reportError } from '@/shared/errors/core/report-error';
-import { useTrajectoryUploadProgressStore } from '@/modules/trajectory/store/use-trajectory-upload-progress-store';
+import { isApiError, markApiErrorHandled, reportError } from '@/shared/errors/core/report-error';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { tokenStorage } from '@/shared/auth/token-storage';
@@ -9,6 +8,7 @@ import { sileo } from 'sileo';
 import { useCallback, useRef, useState } from 'react';
 import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
 import type { FileWithPath } from '@/shared/utils/file';
+import type { SileoOptions } from 'sileo';
 
 const UPLOAD_SUCCESS_TITLE = 'Upload received, processing started';
 const UPLOAD_ERROR_TITLE = 'Failed to upload trajectory';
@@ -26,6 +26,14 @@ interface UseTrajectoryUploadResult {
     uploadTrajectory: (files: FileWithPath[], folderName: string) => Promise<void>;
     isUploading: boolean;
 }
+
+type UploadToastOptions = SileoOptions & { id: string };
+
+const showUploadToast = (options: UploadToastOptions): string => sileo.show(options);
+const succeedUploadToast = (options: UploadToastOptions): string => sileo.success(options);
+const failUploadToast = (options: UploadToastOptions): string => sileo.error(options);
+
+const buildUploadingTitle = (name: string, percent: number): string => `Uploading ${name} (${percent}%)`;
 
 const createUploadId = (): string => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -68,10 +76,6 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
     const [isUploading, setIsUploading] = useState(false);
     const activeUploadsRef = useRef(0);
     const createTrajectoryMutation = createTrajectoryUploadSessionMutation();
-    const addUpload = useTrajectoryUploadProgressStore((state) => state.addUpload);
-    const updateUploadProgress = useTrajectoryUploadProgressStore((state) => state.updateUploadProgress);
-    const failUpload = useTrajectoryUploadProgressStore((state) => state.failUpload);
-    const removeUpload = useTrajectoryUploadProgressStore((state) => state.removeUpload);
 
     const uploadTrajectory = useCallback(async (files: FileWithPath[], folderName: string) => {
         if (files.length === 0) return;
@@ -82,11 +86,11 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
 
         activeUploadsRef.current += 1;
         setIsUploading(true);
-        addUpload({
+        showUploadToast({
             id: uploadId,
-            name: displayName,
-            fileCount: files.length,
-            totalBytes
+            type: 'loading',
+            title: buildUploadingTitle(displayName, 0),
+            duration: null
         });
 
         let session: CreateTrajectoryUploadSessionResponse | null = null;
@@ -104,6 +108,7 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 }))
             });
             let uploadedBytes = 0;
+            let lastReportedPercent = 0;
 
             await Promise.all(session.uploadSession.files.map(async (sessionFile) => {
                 const sourceFile = files[sessionFile.index]?.file;
@@ -117,7 +122,20 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                     scopeId: uploadId,
                     onProgress: (delta) => {
                         uploadedBytes = Math.min(totalBytes, uploadedBytes + delta);
-                        updateUploadProgress(uploadId, totalBytes > 0 ? uploadedBytes / totalBytes : 1);
+                        const percent = totalBytes > 0
+                            ? Math.min(100, Math.floor((uploadedBytes / totalBytes) * 100))
+                            : 100;
+                        if (percent === lastReportedPercent) {
+                            return;
+                        }
+
+                        lastReportedPercent = percent;
+                        showUploadToast({
+                            id: uploadId,
+                            type: 'loading',
+                            title: buildUploadingTitle(displayName, percent),
+                            duration: null
+                        });
                     }
                 });
             }));
@@ -148,9 +166,11 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
                 throw commitError;
             }
 
-            updateUploadProgress(uploadId, 1);
-            sileo.success({ title: UPLOAD_SUCCESS_TITLE });
-            removeUpload(uploadId);
+            succeedUploadToast({
+                id: uploadId,
+                title: UPLOAD_SUCCESS_TITLE,
+                description: displayName
+            });
         } catch (error) {
             if (session && !commitStarted) {
                 await trajectoryService.cancelUploadSession({
@@ -160,17 +180,22 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
             }
 
             const userError = reportError(error, {
-                surface: ErrorSurface.Toast,
+                surface: ErrorSurface.Silent,
                 fallbackTitle: UPLOAD_ERROR_TITLE,
                 fallbackDescription: UPLOAD_ERROR_DESCRIPTION
             });
+            markApiErrorHandled(error);
 
-            failUpload(uploadId, userError.description || userError.title || UPLOAD_ERROR_DESCRIPTION);
+            failUploadToast({
+                id: uploadId,
+                title: userError.title || UPLOAD_ERROR_TITLE,
+                description: userError.description || UPLOAD_ERROR_DESCRIPTION
+            });
         } finally {
             activeUploadsRef.current = Math.max(0, activeUploadsRef.current - 1);
             setIsUploading(activeUploadsRef.current > 0);
         }
-    }, [addUpload, createTrajectoryMutation, failUpload, folderId, removeUpload, updateUploadProgress]);
+    }, [createTrajectoryMutation, folderId]);
 
     return {
         uploadTrajectory,

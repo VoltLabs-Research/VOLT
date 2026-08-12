@@ -1,7 +1,8 @@
+import Loader from '@/shared/ui/components/Loader';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import UserAvatar from '@/modules/auth/components/UserAvatar';
 import UserInfo from '@/modules/auth/components/UserInfo';
-import { DropdownItem, DropdownMenu, DropdownPopover, DropdownRoot, DropdownTrigger, Spinner } from '@heroui/react';
+import { DropdownItem, DropdownMenu, DropdownPopover, DropdownRoot, DropdownTrigger } from '@heroui/react';
 import { EllipsisVertical, Settings, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -48,7 +49,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
                         Account Settings
                     </DropdownItem>
                     <DropdownItem onAction={onSignOut} isDisabled={isSigningOut}>
-                        {isSigningOut ? <Spinner size='sm' color='current' /> : <X aria-hidden='true' />}
+                        {isSigningOut ? <Loader size='sm' color='current' /> : <X aria-hidden='true' />}
                         Sign Out
                     </DropdownItem>
                 </DropdownMenu>

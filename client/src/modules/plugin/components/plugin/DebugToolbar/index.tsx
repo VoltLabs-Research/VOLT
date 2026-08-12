@@ -1,4 +1,5 @@
-import { Button, Separator, Spinner, Tooltip } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, Separator, Tooltip } from '@heroui/react';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
@@ -132,7 +133,7 @@ const DebugToolbar = () => {
                 <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
                 <div className='flex flex-row items-center gap-1'>
                     <DebugControlButton tooltip={startTooltip} onPress={handlePlayClick} isDisabled={!canStart}>
-                        {isStarting ? <Spinner size='sm' color='current' /> : <Play size={14} aria-hidden='true' />}
+                        {isStarting ? <Loader size='sm' color='current' /> : <Play size={14} aria-hidden='true' />}
                     </DebugControlButton>
                     <DebugControlButton tooltip='Step to next node' onPress={step} isDisabled={!canAdvance}>
                         <StepForward size={14} aria-hidden='true' />

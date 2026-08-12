@@ -1,8 +1,9 @@
+import Loader from '@/shared/ui/components/Loader';
 import { canAccessByPermissions } from '@/modules/team/utils/team/permission-evaluator';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
-import { Spinner } from '@heroui/react';
+
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
@@ -22,7 +23,7 @@ const renderRouteLoader = (label?: string, fillParent = false) => (
         aria-label={label ?? 'Loading'}
     >
         <div className='flex flex-col items-center gap-8'>
-            <Spinner size='lg' />
+            <Loader size='lg' />
             {label && <span className='text-sm text-muted text-center leading-normal'>{label}</span>}
         </div>
     </div>

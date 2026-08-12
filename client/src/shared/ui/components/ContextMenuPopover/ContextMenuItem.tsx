@@ -1,4 +1,5 @@
-import { Spinner, cn } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { cn } from '@heroui/react';
 import { forwardRef } from 'react';
 import type { FocusEventHandler, KeyboardEventHandler, MouseEventHandler, ReactNode } from 'react';
 
@@ -78,7 +79,7 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
         >
             {isLoading && (
                 <span className='absolute inset-0 flex items-center justify-center text-muted'>
-                    <Spinner size='sm' />
+                    <Loader size='sm' />
                 </span>
             )}
 

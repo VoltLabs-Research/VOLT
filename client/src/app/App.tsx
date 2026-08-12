@@ -17,7 +17,6 @@ import queryClient from '@/shared/query/query-client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import NotFoundState from '@/shared/ui/components/NotFoundState';
 import EndpointGuard from '@/app/routes/EndpointGuard';
-import TrajectoryUploadProgressPanel from '@/modules/trajectory/components/TrajectoryUploadProgressPanel';
 import { useThemeInitialization } from '@/shared/ui/hooks/use-theme';
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -78,7 +77,6 @@ const AppChrome = () => {
     const appContent = (
         <>
             <AppRoutes />
-            <TrajectoryUploadProgressPanel />
             <AppToaster />
         </>
     );

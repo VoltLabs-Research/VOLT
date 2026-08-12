@@ -1,4 +1,5 @@
-import { Button, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button } from '@heroui/react';
 import { getAvatarColorFromString, getInitialsFromEmail } from '@/shared/utils/user';
 import { format } from 'date-fns';
 
@@ -41,7 +42,7 @@ export const InvitationRow = ({
                     isDisabled={isLoading}
                     isPending={isLoading}
                 >
-                    {isLoading && <Spinner size='sm' color='current' />}
+                    {isLoading && <Loader size='sm' color='current' />}
                     Cancel
                 </Button>
             </div>

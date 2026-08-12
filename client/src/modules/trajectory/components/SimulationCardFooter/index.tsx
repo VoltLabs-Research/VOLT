@@ -1,3 +1,4 @@
+import Loader from '@/shared/ui/components/Loader';
 import EditableTrajectoryName from '../EditableTrajectoryName';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
@@ -8,7 +9,7 @@ import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-dow
 import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
-import { Spinner } from '@heroui/react';
+
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
@@ -292,7 +293,7 @@ export default function SimulationCardFooter({
                 <div className='flex flex-row flex-wrap items-center gap-3 text-sm text-muted'>
                     {isProcessing ? (
                         <>
-                            <Spinner size='sm' className='ml-2 shrink-0 pr-2' />
+                            <Loader size='sm' className='ml-2 shrink-0 pr-2' />
                             <p className='m-0 leading-[1.35]' title={processingMessage}>
                                 {processingMessage}
                             </p>

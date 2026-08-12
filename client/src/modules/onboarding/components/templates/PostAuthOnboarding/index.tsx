@@ -1,3 +1,4 @@
+import Loader from '@/shared/ui/components/Loader';
 import {
     getClusterOnboardingRedirectPath,
     resolvePostAuthDestination
@@ -13,7 +14,7 @@ import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button, Spinner } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -101,7 +102,7 @@ const PostAuthOnboarding = () => {
                     aria-live='polite'
                     aria-atomic='true'
                 >
-                    <Spinner size='lg' />
+                    <Loader size='lg' />
                     <span className='text-sm text-muted text-center leading-normal'>
                         Loading onboarding
                     </span>

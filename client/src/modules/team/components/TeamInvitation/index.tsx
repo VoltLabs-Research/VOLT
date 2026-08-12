@@ -1,4 +1,5 @@
-import { Button, Chip, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, Chip } from '@heroui/react';
 import {
     TeamInvitationCard,
     TeamInvitationStateCard
@@ -194,7 +195,7 @@ export default function TeamInvitationTemplate() {
                     isPending={actionLoading}
                 >
                     {actionLoading
-                        ? <Spinner size='sm' color='current' />
+                        ? <Loader size='sm' color='current' />
                         : <CheckCircle size={20} aria-hidden='true' />}
                     Accept Invitation
                 </Button>

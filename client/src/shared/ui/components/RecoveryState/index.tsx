@@ -1,5 +1,6 @@
+import Loader from '@/shared/ui/components/Loader';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
-import { Button, EmptyStateRoot, Spinner, cn } from '@heroui/react';
+import { Button, EmptyStateRoot, cn } from '@heroui/react';
 import { AlertTriangle, CircleHelp, FileText } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
@@ -100,7 +101,7 @@ const RecoveryState = ({
                         isPending={isRetrying}
                         onPress={onRetry}
                     >
-                        {isRetrying && <Spinner size='sm' color='current' />}
+                        {isRetrying && <Loader size='sm' color='current' />}
                         {retryLabel}
                     </Button>
                 )}

@@ -1,4 +1,6 @@
-import { Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+
+
 
 const WhiteboardEditorLoader = () => (
     <div
@@ -7,7 +9,7 @@ const WhiteboardEditorLoader = () => (
         aria-live='polite'
         aria-label='Loading whiteboard workspace'
     >
-        <Spinner size='lg' />
+        <Loader size='lg' />
     </div>
 );
 

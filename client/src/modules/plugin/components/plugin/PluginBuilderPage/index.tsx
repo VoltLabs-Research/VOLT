@@ -1,9 +1,10 @@
+import Loader from '@/shared/ui/components/Loader';
 import { lazy, Suspense, useEffect } from 'react';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
-import { Spinner } from '@heroui/react';
+
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 const PluginBuilder = lazy(() => import('@/modules/plugin/components/plugin/PluginBuilder'));
@@ -11,7 +12,7 @@ const ReactFlowProvider = lazy(() => import('@xyflow/react').then((module) => ({
 
 const BuilderSkeleton = () => (
     <div className='flex w-screen h-dvh flex-row items-center justify-center'>
-        <Spinner size='lg' />
+        <Loader size='lg' />
     </div>
 );
 
@@ -55,7 +56,7 @@ const PluginBuilderPage = () => {
     if (isLoading) {
         return (
             <div className='fixed inset-0 flex flex-row items-center justify-center'>
-                <Spinner size='lg' />
+                <Loader size='lg' />
             </div>
         );
     }

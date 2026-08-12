@@ -120,7 +120,6 @@ export const cssBaseline = [
     'src/modules/trajectory/components/SimulationCardFooter/index.tsx',
     'src/modules/trajectory/components/SimulationFolderCard/index.tsx',
     'src/modules/trajectory/components/SimulationGrid/index.tsx',
-    'src/modules/trajectory/components/TrajectoryUploadProgressPanel/index.tsx',
     'src/modules/whiteboards/components/WhiteboardEditorPage/index.tsx',
     'src/modules/whiteboards/components/WhiteboardsListing/index.tsx',
     'src/shared/tips/tip-defaults.tsx',

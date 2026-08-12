@@ -1,4 +1,5 @@
-import { CloseButton, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { CloseButton } from '@heroui/react';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
 import useClusterMetrics from '@/modules/cluster/hooks/use-cluster-metrics';
 import { resolveClusterMetricId } from '@/modules/cluster/utils/resolve-cluster-metric-id';
@@ -38,7 +39,7 @@ const ClustersDrawer = () => {
 
     const clustersLoadingState = (
         <div className='flex items-center justify-center min-h-0 flex-1'>
-            <Spinner size='md' aria-label='Loading clusters' />
+            <Loader size='md' aria-label='Loading clusters' />
         </div>
     );
 

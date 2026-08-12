@@ -1,3 +1,4 @@
+import Loader from '@/shared/ui/components/Loader';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { reportHotspotDuration } from '@/app/core/http/utils/client-instrumentation';
 import {
@@ -17,7 +18,7 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import ProtectedRouteRealtimeEffects from '@/app/routes/ProtectedRouteRealtimeEffects';
 import ConfirmActionModal from '@/shared/ui/components/ConfirmActionModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
-import { Spinner } from '@heroui/react';
+
 import { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -31,7 +32,7 @@ const renderRouteLoader = (label?: string, fillParent = false) => (
         aria-label={label ?? 'Loading'}
     >
         <div className='flex flex-col items-center gap-8'>
-            <Spinner size='lg' />
+            <Loader size='lg' />
             {label && <span className='text-sm text-muted text-center leading-normal'>{label}</span>}
         </div>
     </div>

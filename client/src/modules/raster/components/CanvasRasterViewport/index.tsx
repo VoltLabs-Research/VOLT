@@ -1,6 +1,7 @@
+import Loader from '@/shared/ui/components/Loader';
 import { useRasterWorkspace } from '@/modules/raster/hooks/use-raster-workspace';
 import { createDefaultRasterContainerSelection, createInitialRasterContainerSelections } from '@/modules/raster/contracts/container-selection';
-import { Spinner } from '@heroui/react';
+
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { ImageOff } from 'lucide-react';
@@ -98,7 +99,7 @@ const RasterViewportPanel = ({
                 )}
                 {vm.isLoading ? (
                     <div className='flex flex-row items-center justify-center flex-1 min-h-0 bg-surface rounded-lg p-4'>
-                        <Spinner size='sm' className='text-muted' />
+                        <Loader size='sm' className='text-muted' />
                     </div>
                 ) : vm.error ? (
                     <div className='flex flex-row items-center justify-center flex-1 min-h-0 bg-surface rounded-lg p-4'>

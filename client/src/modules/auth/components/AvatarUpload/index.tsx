@@ -1,4 +1,5 @@
-import { Spinner } from '@heroui/react';
+
+import Loader from '@/shared/ui/components/Loader';
 import { Camera, User } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
@@ -60,7 +61,7 @@ const AvatarUpload = ({
     let overlayContent = <Camera size={24} />;
 
     if (isUploading) {
-        overlayContent = <Spinner size='sm' color='current' />;
+        overlayContent = <Loader size='sm' color='current' />;
     }
 
     return (

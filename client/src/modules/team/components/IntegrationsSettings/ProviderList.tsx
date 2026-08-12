@@ -1,4 +1,5 @@
-import { Button, Skeleton, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, Skeleton } from '@heroui/react';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { Settings2, Trash2 } from 'lucide-react';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
@@ -98,7 +99,7 @@ const ProviderList = ({
                         >
                             <span className='flex items-center justify-center' title={`Remove ${integration.providerName}`}>
                                 {busyProvider === integration.provider
-                                    ? <Spinner size='sm' color='current' />
+                                    ? <Loader size='sm' color='current' />
                                     : <Trash2 size={14} aria-hidden='true' />}
                             </span>
                         </Button>

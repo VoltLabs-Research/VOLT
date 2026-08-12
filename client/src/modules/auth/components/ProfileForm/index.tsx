@@ -1,5 +1,6 @@
+import Loader from '@/shared/ui/components/Loader';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Spinner } from '@heroui/react';
+
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -116,7 +117,7 @@ const ProfileForm = ({
         saveFeedback = (
             <div className='flex flex-row items-center gap-2 text-sm' role='status' aria-live='polite' aria-atomic='true'>
                 <span className='flex items-center' aria-hidden='true'>
-                    <Spinner size='sm' color='current' />
+                    <Loader size='sm' color='current' />
                 </span>
                 <span className='text-sm text-muted'>Saving changes...</span>
             </div>

@@ -1,4 +1,5 @@
-import { Button, Spinner, Tooltip } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, Tooltip } from '@heroui/react';
 import { RefreshCw } from 'lucide-react';
 import type { ButtonVariants } from '@heroui/react';
 
@@ -38,7 +39,7 @@ const RefreshButton = ({
 }: RefreshButtonProps) => {
     const buttonVariant = BUTTON_VARIANTS[`${variant}-${intent}`];
     const icon = isLoading
-        ? <Spinner size='sm' color='current' />
+        ? <Loader size='sm' color='current' />
         : <RefreshCw size={size === 'sm' ? 14 : 16} />;
 
     if(label){

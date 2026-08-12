@@ -1,4 +1,5 @@
-import { EmptyStateRoot, SearchField, Spinner, cn } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { EmptyStateRoot, SearchField, cn } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
@@ -205,7 +206,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
                         {isLoading && (
                             <div className='flex items-center justify-center p-8'>
-                                <Spinner size='md' aria-label='Loading' />
+                                <Loader size='md' aria-label='Loading' />
                             </div>
                         )}
 

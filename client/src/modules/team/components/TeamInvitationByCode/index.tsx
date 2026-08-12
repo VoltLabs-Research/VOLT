@@ -1,4 +1,5 @@
-import { Button, Chip, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, Chip } from '@heroui/react';
 import {
     TeamInvitationCard,
     TeamInvitationDetailItem,
@@ -103,7 +104,7 @@ const TeamInvitationByCodeTemplate = () => {
             <TeamInvitationStateCard
                 icon={(
                     <div className='flex size-16 items-center justify-center rounded-full text-accent bg-accent/10'>
-                        <Spinner size='lg' color='current' />
+                        <Loader size='lg' color='current' />
                     </div>
                 )}
                 title={isJoining ? 'Joining team...' : 'Reviewing invite...'}

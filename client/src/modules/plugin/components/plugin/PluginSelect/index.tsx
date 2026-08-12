@@ -1,13 +1,5 @@
-import {
-    Autocomplete,
-    Description,
-    Label,
-    ListBox,
-    SearchField,
-    Select,
-    Spinner,
-    cn
-} from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Autocomplete, Description, Label, ListBox, SearchField, Select, cn } from '@heroui/react';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import type { UIEvent } from 'react';
@@ -55,7 +47,7 @@ const SelectOptionList = ({ options, ariaLabel, onScrollEnd }: SelectOptionListP
 
 const PendingRow = () => (
     <div className='flex flex-row items-center justify-center p-2'>
-        <Spinner size='sm' />
+        <Loader size='sm' />
     </div>
 );
 

@@ -1,4 +1,5 @@
-import { Spinner, buttonVariants } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { buttonVariants } from '@heroui/react';
 import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
@@ -24,7 +25,7 @@ const renderDeferredVisualizationsFallback = () => (
         aria-atomic='true'
     >
         <div className='flex flex-col items-center gap-8'>
-            <Spinner size='sm' />
+            <Loader size='sm' />
             <span className='text-sm text-muted text-center leading-normal'>Loading live charts</span>
         </div>
     </div>
@@ -85,7 +86,7 @@ const ClusterMonitoringPage = () => {
         <div className='h-full! overflow-auto text-foreground'>
             <div className='flex flex-col gap-6 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
                 {vm.isLoading && !vm.hasClusters && (
-                    <Spinner />
+                    <Loader />
                 )}
 
                 {!vm.isLoading && !vm.hasClusters && (

@@ -1,3 +1,4 @@
+import Loader from '@/shared/ui/components/Loader';
 import { fetchCurrentUser } from '@/modules/auth/hooks/queries';
 import {
     clearPostAuthDestination,
@@ -7,7 +8,7 @@ import {
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { resolveErrorTitle } from '@/shared/errors/core/report-error';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { Spinner } from '@heroui/react';
+
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -110,7 +111,7 @@ const OAuthCallbackTemplate = () => {
                 >
                     <div className='flex flex-row items-center justify-center mb-6'>
                         {status === 'loading' && (
-                            <Spinner size='lg' color='current' />
+                            <Loader size='lg' color='current' />
                         )}
 
                         {status === 'success' && (

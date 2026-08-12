@@ -1,4 +1,5 @@
-import { Button, Spinner } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button } from '@heroui/react';
 import { Check, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -42,7 +43,7 @@ export const InviteButton = ({
             isPending={isLoading}
             type={type}
         >
-            {isLoading ? <Spinner size='sm' color='current' /> : icon}
+            {isLoading ? <Loader size='sm' color='current' /> : icon}
             {text}
         </Button>
     );

@@ -1,12 +1,5 @@
-import {
-    Button,
-    DropdownItem,
-    DropdownMenu,
-    DropdownPopover,
-    DropdownRoot,
-    DropdownTrigger,
-    Spinner
-} from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Button, DropdownItem, DropdownMenu, DropdownPopover, DropdownRoot, DropdownTrigger } from '@heroui/react';
 import { Copy, EllipsisVertical, RefreshCw, Trash2 } from 'lucide-react';
 
 interface InviteCodeSectionProps {
@@ -69,7 +62,7 @@ export const InviteCodeSection = ({
                                         onAction={onGenerate}
                                     >
                                         {isGenerating
-                                            ? <Spinner size='sm' color='current' />
+                                            ? <Loader size='sm' color='current' />
                                             : <RefreshCw size={14} aria-hidden='true' />}
                                         Regenerate
                                     </DropdownItem>
@@ -83,7 +76,7 @@ export const InviteCodeSection = ({
                                         onAction={onDelete}
                                     >
                                         {isDeleting
-                                            ? <Spinner size='sm' color='current' />
+                                            ? <Loader size='sm' color='current' />
                                             : <Trash2 size={14} aria-hidden='true' />}
                                         Delete
                                     </DropdownItem>
@@ -106,7 +99,7 @@ export const InviteCodeSection = ({
                             isPending={isGenerating}
                         >
                             {isGenerating
-                                ? <Spinner size='sm' color='current' />
+                                ? <Loader size='sm' color='current' />
                                 : <RefreshCw size={14} aria-hidden='true' />}
                             Generate Invite Code
                         </Button>

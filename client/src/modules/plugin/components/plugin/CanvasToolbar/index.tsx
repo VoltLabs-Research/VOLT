@@ -1,4 +1,5 @@
-import { Alert, Button, Separator, Spinner, Tooltip, cn } from '@heroui/react';
+import Loader from '@/shared/ui/components/Loader';
+import { Alert, Button, Separator, Tooltip, cn } from '@heroui/react';
 import type { SaveStatus } from '@/modules/plugin/hooks/plugin/use-workflow-save-status';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { useReactFlow } from '@xyflow/react';
@@ -26,7 +27,7 @@ const SaveStatusIndicator = ({ status, className }: { status: SaveStatus; classN
                 className
             )}
         >
-            {status === 'saving' && <Spinner size='sm' color='current' />}
+            {status === 'saving' && <Loader size='sm' color='current' />}
             {status === 'saved' && <Check size={12} aria-hidden='true' />}
             {status === 'error' && <AlertCircle size={12} aria-hidden='true' />}
 

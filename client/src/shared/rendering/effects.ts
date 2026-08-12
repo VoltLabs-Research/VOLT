@@ -1,3 +1,5 @@
+import { BlendFunction } from 'postprocessing';
+
 export interface ChromaticAberrationSettings {
     enabled: boolean;
     offset: [number, number];
@@ -104,7 +106,7 @@ export const EFFECT_SECTION_TITLES: Record<EffectSectionId, string> = {
 const CHROMATIC_ABERRATION_DEFAULTS: ChromaticAberrationSettings = {
     enabled: false,
     offset: [0.005, 0.005],
-    blendFunction: 0
+    blendFunction: BlendFunction.NORMAL
 };
 
 const DEPTH_OF_FIELD_DEFAULTS: DepthOfFieldSettings = {
@@ -112,7 +114,7 @@ const DEPTH_OF_FIELD_DEFAULTS: DepthOfFieldSettings = {
     focusDistance: 0,
     focalLength: 0.02,
     bokehScale: 2,
-    blendFunction: 0,
+    blendFunction: BlendFunction.NORMAL,
     height: 480
 };
 
@@ -122,13 +124,13 @@ const BLOOM_EFFECT_DEFAULTS: BloomSettings = {
     luminanceThreshold: 0.9,
     luminanceSmoothing: 0.025,
     kernelSize: 3,
-    blendFunction: 0
+    blendFunction: BlendFunction.SCREEN
 };
 
 const NOISE_EFFECT_DEFAULTS: NoiseSettings = {
     enabled: false,
     opacity: 0.1,
-    blendFunction: 0,
+    blendFunction: BlendFunction.SCREEN,
     premultiply: false
 };
 
@@ -136,14 +138,14 @@ const VIGNETTE_EFFECT_DEFAULTS: VignetteSettings = {
     enabled: false,
     darkness: 0.5,
     offset: 0.5,
-    blendFunction: 0,
+    blendFunction: BlendFunction.NORMAL,
     eskil: false
 };
 
 const SEPIA_EFFECT_DEFAULTS: SepiaSettings = {
     enabled: false,
     intensity: 1.0,
-    blendFunction: 0
+    blendFunction: BlendFunction.NORMAL
 };
 
 const SSAO_EFFECT_DEFAULTS: SSAOEffectSettings = {
@@ -151,7 +153,7 @@ const SSAO_EFFECT_DEFAULTS: SSAOEffectSettings = {
     samples: 16,
     radius: 0.5,
     intensity: 1.0,
-    blendFunction: 0,
+    blendFunction: BlendFunction.MULTIPLY,
     luminanceInfluence: 0.7,
     worldDistanceThreshold: 0.5,
     worldDistanceFalloff: 0.1,
