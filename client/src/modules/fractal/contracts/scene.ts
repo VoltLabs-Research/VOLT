@@ -38,6 +38,7 @@ interface SceneVisualOverride {
     opacity?: number;
     lineWidth?: number;
     color?: string;
+    edges?: boolean;
 }
 
 export type SceneVisualOverrides = Record<string, SceneVisualOverride>;

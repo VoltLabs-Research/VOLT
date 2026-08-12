@@ -38,7 +38,7 @@ const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
     ));
 
     return (
-        <div className='mb-2' role='listitem'>
+        <div role='listitem'>
             <JobGroupMenu
                 trajectoryId={group.trajectoryId}
                 loadingAction={loadingAction}
@@ -53,7 +53,7 @@ const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
                     />
                 )}
             />
-            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='pt-1 pl-4' duration={0.25} ease='easeInOut'>
+            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='pt-1 pl-3' duration={0.25} ease='easeInOut'>
                 {content}
             </CollapsibleJobContent>
         </div>

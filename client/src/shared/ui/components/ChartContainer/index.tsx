@@ -60,9 +60,15 @@ const ChartContainer = ({
         );
     };
 
+    /*
+     * The spacing overrides below are `max-sm:`, not `sm:`. Tailwind's `sm:` is a
+     * min-width breakpoint, so `sm:p-1` applied from 640px upwards and beat `p-6` on
+     * every desktop: the cards rendered with 0.25rem of padding, which is what made them
+     * look cramped. The intent was the opposite — keep the tight spacing for phones.
+     */
     return (
-        <div className='flex flex-col p-6 rounded-2xl h-full max-h-[400px] border border-border bg-surface sm:p-1'>
-            <div className='flex justify-between mb-6 sm:gap-1'>
+        <div className='flex flex-col p-6 rounded-2xl h-full max-h-[400px] border border-border bg-surface max-sm:p-1'>
+            <div className='flex justify-between mb-6 max-sm:gap-1'>
                 <div className='flex flex-row items-center gap-3'>
                     {renderIcon()}
                     <h3 className='text-base font-semibold text-foreground'>
@@ -70,7 +76,7 @@ const ChartContainer = ({
                     </h3>
                 </div>
                 {stats && (
-                    <div className='flex flex-row items-end flex-wrap gap-6 sm:w-max sm:gap-1'>
+                    <div className='flex flex-row items-end flex-wrap gap-6 max-sm:w-max max-sm:gap-1'>
                         {stats.map(renderStat)}
                     </div>
                 )}

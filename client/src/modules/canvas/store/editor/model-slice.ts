@@ -251,6 +251,18 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         return get().sceneVisualOverrides[sceneKey]?.color;
     },
 
+    setSceneEdges(sceneKey: string, edges: boolean) {
+        set((state) => ({
+            sceneVisualOverrides: {
+                ...state.sceneVisualOverrides,
+                [sceneKey]: {
+                    ...state.sceneVisualOverrides[sceneKey],
+                    edges
+                }
+            }
+        }));
+    },
+
     setShowSimulationCell(show: boolean) {
         set({ showSimulationCell: show });
     },

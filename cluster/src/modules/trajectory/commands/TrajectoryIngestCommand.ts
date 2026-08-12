@@ -10,6 +10,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import unzipper from 'unzipper';
+import type { File as ZipEntry } from 'unzipper';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import { logger } from '@shared/infrastructure/logger';
@@ -97,17 +98,13 @@ export class TrajectoryIngestCommand {
             `@trajectory-ingest: starting metadata parse for trajectoryId=${trajectoryId}, files=${stagedObjects.length}`
         );
 
-        await mapLimited(
-            stagedObjects,
-            INGEST_FRAME_CONCURRENCY,
-            (staged) => this.materializeStagedObject(staged)
-        );
+        const readyObjects = await this.materializeStagedObjects(stagedObjects);
 
         const parsedFrames = await withNativeProcessingTempDir(
             'trajectory-ingest',
             async (tempDirectory) => {
                 const frameGroups = await mapLimited(
-                    stagedObjects,
+                    readyObjects,
                     INGEST_FRAME_CONCURRENCY,
                     (staged, index) => this.parseStagedObject(staged, index, trajectoryId, tempDirectory)
                 );
@@ -145,6 +142,49 @@ export class TrajectoryIngestCommand {
                 totalSize
             }
         };
+    }
+
+    /**
+     * Stages every uploaded object and keeps the ones that landed intact. A single
+     * missing or truncated file must not discard the rest of the upload, but if none
+     * of them can be staged the original failure is surfaced instead of the much less
+     * helpful "no valid trajectory frames".
+     */
+    private async materializeStagedObjects(
+        stagedObjects: TrajectoryIngestStagedObject[]
+    ): Promise<TrajectoryIngestStagedObject[]> {
+        const outcomes = await mapLimited(
+            stagedObjects,
+            INGEST_FRAME_CONCURRENCY,
+            async (staged) => {
+                try {
+                    await this.materializeStagedObject(staged);
+                    return {
+                        staged,
+                        error: null as unknown
+                    };
+                } catch (error) {
+                    logger.warn(
+                        {
+                            file: staged.originalName,
+                            err: errorMessage(error)
+                        },
+                        '@trajectory-ingest: skipping staged file that could not be materialized'
+                    );
+                    return {
+                        staged,
+                        error
+                    };
+                }
+            }
+        );
+
+        const ready = outcomes.filter((outcome) => outcome.error === null);
+        if (ready.length === 0) {
+            throw outcomes[0].error;
+        }
+
+        return ready.map((outcome) => outcome.staged);
     }
 
     private async materializeStagedObject(staged: TrajectoryIngestStagedObject): Promise<void> {
@@ -233,19 +273,22 @@ export class TrajectoryIngestCommand {
         trajectoryId: string,
         tempDirectory: string
     ): Promise<TrajectoryIngestFrame[]> {
-        if (staged.originalName.toLowerCase().endsWith('.zip') || staged.objectKey.toLowerCase().endsWith('.zip')) {
-            return this.expandZipAndParseFrames(staged, index, trajectoryId, tempDirectory);
-        }
+        const isArchive = staged.originalName.toLowerCase().endsWith('.zip') ||
+            staged.objectKey.toLowerCase().endsWith('.zip');
 
         try {
-            return [await this.parseFrameMetadata(staged, index, tempDirectory)];
+            return isArchive
+                ? await this.expandZipAndParseFrames(staged, index, trajectoryId, tempDirectory)
+                : [await this.parseFrameMetadata(staged, index, tempDirectory)];
         } catch (error) {
             logger.warn(
                 {
                     file: staged.originalName,
                     err: errorMessage(error)
                 },
-                '@trajectory-ingest: skipping unparseable staged file'
+                isArchive
+                    ? '@trajectory-ingest: skipping unreadable ZIP archive'
+                    : '@trajectory-ingest: skipping unparseable staged file'
             );
             await this.removeIgnoredStagedObject(staged.objectKey);
             return [];
@@ -295,37 +338,24 @@ export class TrajectoryIngestCommand {
                 continue;
             }
 
-            await fs.mkdir(path.dirname(resolvedOutputPath), { recursive: true });
-            await pipeline(entry.stream(), createWriteStream(resolvedOutputPath));
-
-            const stat = await fs.stat(resolvedOutputPath);
-            if (stat.size === 0) {
-                continue;
-            }
-
-            const metadata = await parseTrajectoryMetadata(resolvedOutputPath).catch((error) => {
+            const frame = await this.extractZipEntryFrame(
+                entry,
+                resolvedOutputPath,
+                `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`
+            ).catch((error) => {
                 logger.warn(
                     {
                         entry: entry.path,
                         err: errorMessage(error)
                     },
-                    '@trajectory-ingest: skipping unparseable ZIP entry'
+                    '@trajectory-ingest: skipping unreadable ZIP entry'
                 );
                 return null;
             });
-            if (!metadata) {
-                continue;
+
+            if (frame) {
+                frames.push(frame);
             }
-
-            const expandedObjectKey = `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`;
-            await this.objectStore.putObjectStream({
-                bucket: INGEST_BUCKET,
-                objectKey: expandedObjectKey,
-                stream: createReadStream(resolvedOutputPath),
-                size: stat.size
-            });
-
-            frames.push(toIngestFrame(metadata, stat.size, expandedObjectKey));
         }
 
         if (frames.length === 0) {
@@ -342,6 +372,36 @@ export class TrajectoryIngestCommand {
         );
 
         return frames;
+    }
+
+    /**
+     * Extracts a single archive entry and promotes it to its own staged object.
+     * Returns null for entries that hold no data; anything unreadable throws so the
+     * caller can drop that entry and keep the rest of the archive.
+     */
+    private async extractZipEntryFrame(
+        entry: ZipEntry,
+        outputPath: string,
+        expandedObjectKey: string
+    ): Promise<TrajectoryIngestFrame | null> {
+        await fs.mkdir(path.dirname(outputPath), { recursive: true });
+        await pipeline(entry.stream(), createWriteStream(outputPath));
+
+        const stat = await fs.stat(outputPath);
+        if (stat.size === 0) {
+            return null;
+        }
+
+        const metadata = await parseTrajectoryMetadata(outputPath);
+
+        await this.objectStore.putObjectStream({
+            bucket: INGEST_BUCKET,
+            objectKey: expandedObjectKey,
+            stream: createReadStream(outputPath),
+            size: stat.size
+        });
+
+        return toIngestFrame(metadata, stat.size, expandedObjectKey);
     }
 
     private async removeIgnoredStagedObject(objectKey: string): Promise<void> {

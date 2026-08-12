@@ -5,6 +5,7 @@ import {
     DepthOfField,
     EffectComposer,
     Noise,
+    SMAA,
     SSAO,
     Sepia,
     Vignette
@@ -16,11 +17,10 @@ import type { EffectsConfigState } from '@/modules/fractal/contracts/editor/visu
 
 interface DynamicEffectsProps {
     settings: EffectsConfigState;
-    isDefectScene?: boolean;
     darkTheme: boolean;
 }
 
-const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsProps) => {
+const DynamicEffects = ({ settings, darkTheme }: DynamicEffectsProps) => {
     const {
         bloom,
         chromaticAberration,
@@ -31,8 +31,8 @@ const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsPr
     } = settings;
 
     const ssao = useMemo(() => {
-        return resolveSSAOSettings(settings.ssao, { isDefectScene });
-    }, [isDefectScene, settings.ssao]);
+        return resolveSSAOSettings(settings.ssao);
+    }, [settings.ssao]);
 
     const hasAnyEffect = Boolean(
         ssao ||
@@ -125,6 +125,7 @@ const DynamicEffects = ({ settings, isDefectScene, darkTheme }: DynamicEffectsPr
                             premultiply={noise.premultiply}
                         />
                     )}
+                    <SMAA />
                 </EffectComposer>
             )}
         </>

@@ -152,8 +152,8 @@ const RENDERER_CREATE_DEFAULTS: RendererCreateSettings = {
 };
 
 const RENDERER_RUNTIME_DEFAULTS: RendererRuntimeSettings = {
-    toneMapping: ToneMappingMode.None,
-    toneMappingExposure: 5,
+    toneMapping: ToneMappingMode.Neutral,
+    toneMappingExposure: 1,
     outputColorSpace: OutputCS.SRGB,
     shadowEnabled: false,
     shadowType: ShadowType.PCF,

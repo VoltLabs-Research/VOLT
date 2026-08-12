@@ -1,9 +1,17 @@
 import JobsDrawer from '@/modules/dashboard/components/JobsDrawer';
 import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
+import { SIDE_PANEL_WIDTH_CLASS } from '@/modules/dashboard/utils/sidebar-width';
 import { cn } from '@heroui/react';
 
-const PANEL_WIDTH_CLASS = 'w-[280px] min-[1024.05px]:w-60';
+/*
+ * Applied to both the <aside> and its inner column: the aside animates between this and
+ * `w-0` to open/close, so the content needs its own copy of the width to keep from
+ * reflowing while that transition runs.
+ *
+ * The value is shared with the left rail, which matches it while this panel is open.
+ */
+const PANEL_WIDTH_CLASS = SIDE_PANEL_WIDTH_CLASS;
 
 const DashboardSidePanel = () => {
     const openPanel = useDashboardSidePanelStore((state) => state.openPanel);

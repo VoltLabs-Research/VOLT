@@ -21,6 +21,9 @@ const OPTIMIZED_MATERIAL_DEFAULTS: THREE.MeshStandardMaterialParameters = {
     depthTest: true
 };
 
+const MAX_MESH_ROUGHNESS = 0.75;
+const MESH_ENV_MAP_INTENSITY = 0.7;
+
 const TYPE_COLOR_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
     [0.5, 0.5, 0.5],
     [1.0, 0.267, 0.267],
@@ -263,8 +266,9 @@ export class MaterialPipeline {
                 metalnessMap: base.metalnessMap,
                 emissiveMap: base.emissiveMap,
                 emissive: base.emissive,
-                roughness: base.roughness,
+                roughness: Math.min(base.roughness, MAX_MESH_ROUGHNESS),
                 metalness: base.metalness,
+                envMapIntensity: MESH_ENV_MAP_INTENSITY,
                 opacity: base.opacity,
                 vertexColors: base.vertexColors
             });
@@ -273,6 +277,8 @@ export class MaterialPipeline {
                 ...OPTIMIZED_MATERIAL_DEFAULTS,
                 color: base.color,
                 map: base.map,
+                roughness: MAX_MESH_ROUGHNESS,
+                envMapIntensity: MESH_ENV_MAP_INTENSITY,
                 opacity: base.opacity,
                 vertexColors: base.vertexColors
             });

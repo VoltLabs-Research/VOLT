@@ -207,7 +207,8 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         const stages = this.stageProjection.upsertStage(currentStages, stage);
         const expectedArtifacts = this.stageProjection.updateExpectedArtifactsForStage(
             analysis.props.expectedArtifacts ?? [],
-            stage
+            stage,
+            input.producedArtifacts
         );
         const childAnalyses = this.stageProjection.upsertChildAnalysisForStage(
             analysis.props.childAnalyses ?? [],

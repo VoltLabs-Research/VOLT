@@ -1,11 +1,9 @@
 import { checkbox, valueRow } from '../../../CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { isMeshScene } from '@/modules/fractal/utils/scene-utils';
 import {
     EFFECT_SECTION_ORDER,
     EFFECT_SECTION_TITLES,
-    EffectSectionId,
-    resolveSSAOEnabledState
+    EffectSectionId
 } from '@/shared/rendering/effects';
 
 import { useMemo } from 'react';
@@ -17,17 +15,13 @@ import type { RenderGroup } from '@/modules/canvas/contracts/render-sections';
 const useEffectsGroup = (): RenderGroup => {
     const effects = useEditorStore(useShallow((state) => state.effects));
     const isPointCloudScene = useEditorStore((s) => s.isPointCloudScene);
-    const isDefectScene = useEditorStore(
-        (s) => s.activeScene?.sceneType === 'defect' || isMeshScene(s.activeScene)
-    );
-    const ssaoEnabled = resolveSSAOEnabledState(effects.ssao, { isDefectScene });
 
     return useMemo(() => {
         const sectionsById = {
             [EffectSectionId.SSAO]: {
                 key: EffectSectionId.SSAO,
                 title: EFFECT_SECTION_TITLES[EffectSectionId.SSAO],
-                enabled: ssaoEnabled,
+                enabled: effects.ssao.enabled,
                 onToggle: (enabled: boolean) => effects.setSSAOEffect({ enabled }),
                 rows: [
                     valueRow({
@@ -217,7 +211,7 @@ const useEffectsGroup = (): RenderGroup => {
             icon: <WandSparkles size={12} />,
             subsections
         };
-    }, [effects, isPointCloudScene, ssaoEnabled]);
+    }, [effects, isPointCloudScene]);
 };
 
 export default useEffectsGroup;

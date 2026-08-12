@@ -96,14 +96,16 @@ const ObjectsPanel = ({
         sceneVisualOverrides,
         setSceneOpacity,
         setSceneLineWidth,
-        setSceneColor
+        setSceneColor,
+        setSceneEdges
     } = useEditorStore(useShallow((s) => ({
         showSimulationCell: s.showSimulationCell,
         setShowSimulationCell: s.setShowSimulationCell,
         sceneVisualOverrides: s.sceneVisualOverrides,
         setSceneOpacity: s.setSceneOpacity,
         setSceneLineWidth: s.setSceneLineWidth,
-        setSceneColor: s.setSceneColor
+        setSceneColor: s.setSceneColor,
+        setSceneEdges: s.setSceneEdges
     })));
 
     const handleToggleSimulationCell = () => setShowSimulationCell(!showSimulationCell);
@@ -168,7 +170,8 @@ const ObjectsPanel = ({
         sceneVisualOverrides,
         setSceneOpacity,
         setSceneLineWidth,
-        setSceneColor
+        setSceneColor,
+        setSceneEdges
     };
 
     const renderRasterContainerPanel = (selection: RasterContainerSelection) => {

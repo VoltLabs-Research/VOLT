@@ -93,16 +93,16 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         <button
             ref={ref}
             type='button'
-            className='w-full min-h-[3.25rem] border-0 bg-transparent text-left select-none rounded-xl transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
+            className='w-full min-h-10 border-0 bg-transparent text-left select-none rounded-lg transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
             onClick={onToggle}
             aria-expanded={isExpanded}
             aria-controls={contentId}
             aria-label={`${group.trajectoryName}. ${statusLabel}. ${summaryLabel}`}
             {...buttonProps}
         >
-            <div className='flex flex-row items-center justify-between gap-3 px-3 py-3 w-full'>
+            <div className='flex flex-row items-center justify-between gap-2 px-2 py-1.5 w-full'>
                 <div className='flex min-w-0 flex-col gap-0.5'>
-                    <h3 className={cn('text-sm font-medium text-foreground truncate [transition:color_140ms_ease,text-shadow_180ms_ease]', nameToneClassName)}>
+                    <h3 className={cn('text-xs font-semibold text-foreground truncate [transition:color_140ms_ease,text-shadow_180ms_ease]', nameToneClassName)}>
                         {group.trajectoryName}
                     </h3>
                     <p className='text-xs text-muted tabular-nums'>
@@ -116,7 +116,7 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
                         transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
                         aria-hidden='true'
                     >
-                        <ChevronRight />
+                        <ChevronRight size={14} />
                     </motion.i>
                 </div>
             </div>

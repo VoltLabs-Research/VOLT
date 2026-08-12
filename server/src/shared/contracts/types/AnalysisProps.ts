@@ -22,6 +22,7 @@ export interface AnalysisExpectedArtifact {
     isPrimary?: boolean;
     objectName?: string;
     readyAt?: Date;
+    produced?: boolean;
 }
 
 export interface AnalysisStage {

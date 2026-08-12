@@ -1,4 +1,4 @@
-import { Droplet, Eye, Minus, Plus, SlidersHorizontal } from 'lucide-react';
+import { Droplet, Eye, Frame, Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import { Button, Label, Slider } from '@heroui/react';
 
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -83,6 +83,12 @@ export const lineSettingsOption = (submenuContent: React.ReactNode): MenuOption 
     label: 'Line Settings',
     icon: SlidersHorizontal,
     submenuContent
+});
+
+export const buildEdgesOption = (enabled: boolean, onToggle: () => void): MenuOption => ({
+    label: enabled ? 'Hide Feature Edges' : 'Show Feature Edges',
+    icon: Frame,
+    onClick: onToggle
 });
 
 interface ColorSubmenuProps {

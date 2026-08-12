@@ -28,6 +28,7 @@ export interface AnalysisStageStatusPayload extends BaseAnalysisEventData {
     startedAt?: string;
     finishedAt?: string;
     durationMs?: number;
+    producedArtifacts?: boolean;
 }
 
 export interface AnalysisLogChunkPayload {

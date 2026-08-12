@@ -8,6 +8,11 @@ import DashboardHeader from '@/modules/dashboard/components/DashboardHeader';
 import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBar';
 import SettingsNav from '@/modules/dashboard/components/SettingsNav';
 import DashboardSidePanel from '@/modules/dashboard/components/DashboardSidePanel';
+import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
+import {
+    SIDEBAR_MATCHED_WIDTH_CLASS,
+    SIDEBAR_RESTING_WIDTH_CLASS
+} from '@/modules/dashboard/utils/sidebar-width';
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
@@ -89,6 +94,19 @@ const DashboardLayout = () => {
         rail = 'collapsed';
     }
 
+    /*
+     * While the right-hand panel is open the expanded rail grows to the same width, so the
+     * content sits between two equal columns instead of a narrow rail and a wide panel.
+     *
+     * Only the expanded rail follows: `collapsed` and `hidden` are deliberate choices by
+     * the user (or by a route asking for chrome-free layout), and widening either of those
+     * would override that choice rather than balance anything.
+     */
+    const sidePanelOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);
+    const expandedRailWidthClass = sidePanelOpen
+        ? SIDEBAR_MATCHED_WIDTH_CLASS
+        : SIDEBAR_RESTING_WIDTH_CLASS;
+
     useTip('dashboard-sidebar-collapse', {
         enabled: !headerHidden
     });
@@ -146,7 +164,7 @@ const DashboardLayout = () => {
                     className={cn(
                         'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent pt-5 transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',
                         {
-                            expanded: 'w-[280px] min-[1024.05px]:w-60',
+                            expanded: cn('w-[280px]', expandedRailWidthClass),
                             collapsed: 'w-[280px] min-[1024.05px]:w-16',
                             hidden: 'w-[280px] min-[1024.05px]:w-0'
                         }[rail],

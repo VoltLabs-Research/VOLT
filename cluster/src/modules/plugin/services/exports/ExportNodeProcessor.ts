@@ -46,23 +46,59 @@ const isChartExportOptions = (
 const isEnabledOctreeOptions = (value: unknown): value is OctreeExportOptions =>
     isRecord(value) && value.enabled === true;
 
+const exportContext = (input: ExportExecutionInput, exporter: ExporterName) => ({
+    analysisId: input.executionData.analysisId,
+    exposure: input.exposure.name,
+    exposureId: input.exposure.nodeId,
+    timestep: input.timestep,
+    exporter
+});
+
+/**
+ * Resolves to `true` when at least one artifact was staged for upload. Every
+ * exporter can legitimately produce nothing (no geometry, no chart points), and
+ * the caller has to know: an exposure that emitted nothing has no upload coming,
+ * so its expected artifact would otherwise wait forever.
+ */
 const runEntries = async <TExportData>(
     input: ExportExecutionInput,
     exporter: ExporterName,
     type: string,
-    run: (exportData: TExportData, objectPath: string) => Promise<unknown>
-): Promise<void> => {
+    run: (exportData: TExportData, objectPath: string) => Promise<boolean>
+): Promise<boolean> => {
     const entries = resolveExporterEntries(input.decodedPayload, exporter);
+    if (entries.length === 0) {
+        logger.warn(
+            exportContext(input, exporter),
+            'Export node produced nothing: payload carries no data for this exporter'
+        );
+        return false;
+    }
+
+    let produced = false;
     for (const { exportData, arrayIndex } of entries) {
         const objectPath = buildObjectPath(input, exporter, type, arrayIndex);
-        await run(exportData as TExportData, objectPath);
+        if (await run(exportData as TExportData, objectPath)) {
+            produced = true;
+            continue;
+        }
+
+        logger.warn(
+            {
+                ...exportContext(input, exporter),
+                arrayIndex
+            },
+            'Export node entry produced nothing: exporter found no exportable data'
+        );
     }
+
+    return produced;
 };
 
-export const processExportNode = async (input: ExportExecutionInput): Promise<void> => {
+export const processExportNode = async (input: ExportExecutionInput): Promise<boolean> => {
     const exportConfig = input.exposure.export;
     if (!exportConfig) {
-        return;
+        return false;
     }
 
     const ownerClusterId = input.storageClusterId;
@@ -76,49 +112,46 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<vo
     switch (exporter) {
         case 'ChartExporter': {
             if (!isChartExportOptions(options)) {
-                return;
+                logger.warn(exportContext(input, exporter), 'ChartExporter: invalid or missing options');
+                return false;
             }
 
-            await runEntries<JsonObject>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+            return runEntries<JsonObject>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportChartArtifact({
                     ...input,
                     decodedPayload: exportData
                 }, objectPath, ownerClusterId, options)
             ));
-            return;
         }
         case 'AtomisticExporter': {
             const octreeOptions = isEnabledOctreeOptions(options.octree) ? options.octree : undefined;
-            await runEntries<AtomisticExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+            return runEntries<AtomisticExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportAtomisticArtifact(input, exportData, objectPath, ownerClusterId, octreeOptions)
             ));
-            return;
         }
         case 'MeshExporter':
-            await runEntries<MeshInput>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+            return runEntries<MeshInput>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportMeshArtifact(input, exportData, objectPath, ownerClusterId, options as MeshExportOptions)
             ));
-            return;
         case 'LineExporter':
-            await runEntries<LineExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+            return runEntries<LineExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportLineArtifact(input, exportData, objectPath, ownerClusterId, options as LineExportOptions)
             ));
-            return;
         case 'BondExporter':
-            await runEntries<BondExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+            return runEntries<BondExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportBondArtifact(input, exportData, objectPath, ownerClusterId, options as BondExportOptions)
             ));
-            return;
         case 'ConfigurationExporter': {
             if (!isConfigurationExporterOptions(options)) {
-                logger.warn({ analysisId: input.executionData.analysisId }, 'ConfigurationExporter: invalid or missing options');
-                return;
+                logger.warn(exportContext(input, exporter), 'ConfigurationExporter: invalid or missing options');
+                return false;
             }
             const objectPath = buildObjectPath(input, exporter, exportConfig.type, undefined);
             await exportConfigurationArtifact(input, options, objectPath, ownerClusterId);
-            return;
+            return true;
         }
         default:
             logger.warn(`Unsupported export node exporter on daemon: exporter=${exporter}`);
+            return false;
     }
 };

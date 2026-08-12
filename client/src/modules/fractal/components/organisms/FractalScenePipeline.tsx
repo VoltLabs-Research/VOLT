@@ -5,6 +5,7 @@ import ScreenshotCapture from '@/modules/fractal/components/atoms/ScreenshotCapt
 import PipelineSlicePlaneHelpers from '@/modules/canvas/components/PipelineSlicePlaneHelpers';
 import DynamicEffects from '@/modules/fractal/components/molecules/DynamicEffects';
 import DynamicEnvironment from '@/modules/fractal/components/molecules/DynamicEnvironment';
+import DynamicEnvironmentMap from '@/modules/fractal/components/molecules/DynamicEnvironmentMap';
 import DynamicLights from '@/modules/fractal/components/molecules/DynamicLights';
 import DynamicRenderer from '@/modules/fractal/components/molecules/DynamicRenderer';
 import { LightingPreset } from '@/shared/rendering/lights';
@@ -101,12 +102,15 @@ const FractalScenePipeline = ({
                 onStart={() => markInteracting(true)}
                 onEnd={() => markInteracting(false)}
             />
-            <DynamicEffects settings={config.effects} isDefectScene={isDefectScene} darkTheme={darkTheme} />
+            <DynamicEffects settings={config.effects} darkTheme={darkTheme} />
             <DynamicLights
                 preset={isDefectScene ? LightingPreset.Defect : LightingPreset.Trajectory}
                 darkTheme={darkTheme}
             />
             <DynamicEnvironment settings={config.environment} darkTheme={darkTheme} />
+            {isDefectScene && (
+                <DynamicEnvironmentMap settings={config.lights.global} darkTheme={darkTheme} />
+            )}
             {showGizmo && (
                 <GizmoHelper alignment='top-left' renderPriority={1} margin={isMobile ? [48, 88] : [80, 110]}>
                     <directionalLight position={[5, 5, 5]} intensity={1} />

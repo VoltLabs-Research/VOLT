@@ -6,7 +6,7 @@ import {
     MaybeContextMenu
 } from '../CanvasTree';
 import { Tooltip, cn } from '@heroui/react';
-import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
+import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, isCanvasAnalysisSettled, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
 import { hasPluginWorkflowNodes } from './config-columns';
@@ -69,11 +69,15 @@ const AnalysisTreeNode = ({
     const { analysis, entry, isCurrentAnalysis } = section;
     const { onSelectScene, selectedScene } = sceneActions;
     const isRasterSelectionMode = selectionMode === 'raster';
-    const artifactRows = buildArtifactRows(analysis.expectedArtifacts, entry.exposures);
-    const firstExposureRowKey = artifactRows.find((row) => row.exposure)?.key;
-    const recentlyReadyArtifactIds = useRecentlyReadyArtifacts(analysis.expectedArtifacts);
     const resolvedStatus = status ?? normalizeCanvasAnalysisStatus(analysis.status);
     const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
+    const artifactRows = buildArtifactRows(
+        analysis.expectedArtifacts,
+        entry.exposures,
+        isCanvasAnalysisSettled(resolvedStatus)
+    );
+    const firstExposureRowKey = artifactRows.find((row) => row.exposure)?.key;
+    const recentlyReadyArtifactIds = useRecentlyReadyArtifacts(analysis.expectedArtifacts);
     const isSelectedAnalysis = isRasterSelectionMode
         ? selectedScene?.source === 'plugin' && selectedScene.analysisId === analysis._id
         : isCurrentAnalysis;

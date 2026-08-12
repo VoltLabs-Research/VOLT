@@ -56,7 +56,6 @@ export interface SSAOEffectSettings {
     worldDistanceFalloff: number;
     worldProximityThreshold: number;
     worldProximityFalloff: number;
-    userSet?: boolean;
 };
 
 export interface EffectsSettings {
@@ -67,10 +66,6 @@ export interface EffectsSettings {
     depthOfField: DepthOfFieldSettings;
     noise: NoiseSettings;
     sepia: SepiaSettings;
-};
-
-interface ResolveSSAOSettingsOptions {
-    isDefectScene?: boolean;
 };
 
 export enum EffectSectionId {
@@ -161,14 +156,6 @@ const SSAO_EFFECT_DEFAULTS: SSAOEffectSettings = {
     worldProximityFalloff: 0.1
 };
 
-const DEFECT_SSAO_EFFECT_PRESET: SSAOEffectSettings = {
-    ...SSAO_EFFECT_DEFAULTS,
-    enabled: true,
-    samples: 32,
-    worldDistanceFalloff: 0.3,
-    worldProximityFalloff: 0.3
-};
-
 const getDefaultSSAOEffectSettings = (): SSAOEffectSettings => ({
     ...SSAO_EFFECT_DEFAULTS
 });
@@ -189,32 +176,12 @@ export const getDefaultEffectsSettings = (): EffectsSettings => ({
     sepia: { ...SEPIA_EFFECT_DEFAULTS }
 });
 
-export const resolveSSAOEnabledState = (
-    settings: SSAOEffectSettings,
-    options: ResolveSSAOSettingsOptions
-): boolean => {
-    if (settings.userSet === true) {
-        return settings.enabled;
-    }
-
-    return settings.enabled || options.isDefectScene === true;
-};
-
 export const resolveSSAOSettings = (
-    settings: SSAOEffectSettings,
-    options: ResolveSSAOSettingsOptions
+    settings: SSAOEffectSettings
 ): SSAOEffectSettings | null => {
-    if (!resolveSSAOEnabledState(settings, options)) {
+    if (!settings.enabled) {
         return null;
     }
 
-    if (options.isDefectScene !== true) {
-        return { ...settings };
-    }
-
-    return {
-        ...DEFECT_SSAO_EFFECT_PRESET,
-        ...settings,
-        enabled: true
-    };
+    return { ...settings };
 };

@@ -65,7 +65,8 @@ export const createAnalysisStageReporter = (
                 detail: input.detail,
                 startedAt: timing.startedAt?.toISOString(),
                 finishedAt: timing.finishedAt?.toISOString(),
-                durationMs: timing.durationMs
+                durationMs: timing.durationMs,
+                producedArtifacts: input.producedArtifacts
             };
 
             await daemonJobReporter.reportAnalysisStageStatus(payload);

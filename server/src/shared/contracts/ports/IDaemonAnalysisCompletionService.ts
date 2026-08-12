@@ -49,6 +49,11 @@ export interface DaemonAnalysisStageStatusInput {
     startedAt?: string;
     finishedAt?: string;
     durationMs?: number;
+    /**
+     * Reported by exposure stages that own an export node. `false` means the
+     * export emitted nothing, so no artifact upload will follow for it.
+     */
+    producedArtifacts?: boolean;
 }
 
 export interface DaemonRasterJobStatusInput {

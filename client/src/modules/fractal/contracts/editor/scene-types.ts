@@ -81,6 +81,7 @@ interface ModelActions {
     getSceneLineWidth: (sceneKey: string) => number | undefined;
     setSceneColor: (sceneKey: string, color: string | undefined) => void;
     getSceneColor: (sceneKey: string) => string | undefined;
+    setSceneEdges: (sceneKey: string, edges: boolean) => void;
     setShowSimulationCell: (show: boolean) => void;
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;

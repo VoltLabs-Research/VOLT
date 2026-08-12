@@ -1,6 +1,10 @@
 import { createTrajectoryUploadSessionMutation } from './queries';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { isApiError, markApiErrorHandled, reportError } from '@/shared/errors/core/report-error';
+import {
+    describeSkippedUploadFiles,
+    filterUploadableTrajectoryFiles
+} from '@/modules/trajectory/utils/upload-file-filter';
 import trajectoryService from '@/modules/trajectory/api/services/trajectory-service';
 import { uploadClusterObjectParts } from '@/shared/api/cluster-object-upload';
 import { tokenStorage } from '@/shared/auth/token-storage';
@@ -13,6 +17,9 @@ import type { SileoOptions } from 'sileo';
 const UPLOAD_SUCCESS_TITLE = 'Upload received, processing started';
 const UPLOAD_ERROR_TITLE = 'Failed to upload trajectory';
 const UPLOAD_ERROR_DESCRIPTION = 'Please check your files and try again.';
+const NOTHING_TO_UPLOAD_TITLE = 'Nothing to upload';
+const NOTHING_TO_UPLOAD_DESCRIPTION = 'Every selected file was empty or a system file.';
+const SKIPPED_FILES_TITLE = 'Some files were skipped';
 const COMMIT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000];
 const RETRIABLE_COMMIT_ERROR_CODES = new Set([
     'Network::Timeout',
@@ -77,8 +84,27 @@ export default function useTrajectoryUpload(folderId?: string | null): UseTrajec
     const activeUploadsRef = useRef(0);
     const createTrajectoryMutation = createTrajectoryUploadSessionMutation();
 
-    const uploadTrajectory = useCallback(async (files: FileWithPath[], folderName: string) => {
-        if (files.length === 0) return;
+    const uploadTrajectory = useCallback(async (selectedFiles: FileWithPath[], folderName: string) => {
+        if (selectedFiles.length === 0) return;
+
+        const filtered = filterUploadableTrajectoryFiles(selectedFiles);
+        const files = filtered.files;
+        const skippedNotice = describeSkippedUploadFiles(filtered);
+
+        if (files.length === 0) {
+            sileo.error({
+                title: NOTHING_TO_UPLOAD_TITLE,
+                description: NOTHING_TO_UPLOAD_DESCRIPTION
+            });
+            return;
+        }
+
+        if (skippedNotice) {
+            sileo.warning({
+                title: SKIPPED_FILES_TITLE,
+                description: skippedNotice
+            });
+        }
 
         const uploadId = createUploadId();
         const totalBytes = getTotalBytes(files);

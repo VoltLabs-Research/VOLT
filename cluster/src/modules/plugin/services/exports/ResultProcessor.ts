@@ -41,7 +41,8 @@ class DefaultResultProcessor implements ResultProcessorService {
         const startedAt = Date.now();
         const reportStage = (
             stageStatus: 'running' | 'completed' | 'failed',
-            detail?: string
+            detail?: string,
+            producedArtifacts?: boolean
         ): Promise<void> | undefined => stageReporter?.report({
             stageKey: `${executionData.identity.analysisId}:${timestep}:exposure:${exposure.nodeId}`,
             label: `Process ${exposure.name}`,
@@ -51,7 +52,8 @@ class DefaultResultProcessor implements ResultProcessorService {
             pluginId: executionData.identity.pluginId,
             nodeId: exposure.nodeId,
             exposureId: exposure.nodeId,
-            detail
+            detail,
+            producedArtifacts
         });
 
         try {
@@ -141,26 +143,43 @@ class DefaultResultProcessor implements ResultProcessorService {
             perAtomProperties = null;
             perAtomSource = null;
 
-            if (exposure.export && exportPayload) {
-                await processExportNode({
-                    executionData: {
-                        analysisId,
-                        trajectoryId,
-                        pluginId,
-                        storageClusterId: storageOwnerClusterId
-                    },
-                    exposure,
-                    decodedPayload: exportPayload,
-                    outputFilePath,
-                    timestep,
-                    storageClusterId: storageOwnerClusterId,
-                    artifactUploadBatch
-                });
+            let producedArtifacts: boolean | undefined;
+            if (exposure.export) {
+                producedArtifacts = exportPayload
+                    ? await processExportNode({
+                        executionData: {
+                            analysisId,
+                            trajectoryId,
+                            pluginId,
+                            storageClusterId: storageOwnerClusterId
+                        },
+                        exposure,
+                        decodedPayload: exportPayload,
+                        outputFilePath,
+                        timestep,
+                        storageClusterId: storageOwnerClusterId,
+                        artifactUploadBatch
+                    })
+                    : false;
+
+                if (!producedArtifacts) {
+                    logger.warn(
+                        {
+                            analysisId,
+                            exposure: exposure.name,
+                            exposureId: exposure.nodeId,
+                            timestep,
+                            exporter: exposure.export.exporter,
+                            hasExportPayload: Boolean(exportPayload)
+                        },
+                        'Exposure declares an export but produced no artifact'
+                    );
+                }
             }
 
             exportPayload = null;
 
-            await reportStage('completed');
+            await reportStage('completed', undefined, producedArtifacts);
         } catch (error) {
             await reportStage('failed', error instanceof Error ? error.message : undefined);
             throw error;

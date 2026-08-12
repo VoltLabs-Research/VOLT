@@ -56,6 +56,7 @@ interface SceneCollectionProps {
     setSceneOpacity?: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth?: (sceneKey: string, lineWidth: number) => void;
     setSceneColor?: (sceneKey: string, color: string | undefined) => void;
+    setSceneEdges?: (sceneKey: string, edges: boolean) => void;
     selectionMode?: 'default' | 'raster';
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
@@ -89,6 +90,7 @@ const SceneCollection = ({
     setSceneOpacity,
     setSceneLineWidth,
     setSceneColor,
+    setSceneEdges,
     selectionMode = 'default',
     selectedScene,
     onSelectRasterScene,
@@ -199,6 +201,7 @@ const SceneCollection = ({
                     setSceneOpacity={setSceneOpacity ?? (() => undefined)}
                     setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
                     setSceneColor={setSceneColor ?? (() => undefined)}
+                    setSceneEdges={setSceneEdges ?? (() => undefined)}
                     resolveSceneRenderMetadata={(pluginId, exposureId) => {
                         return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
                     }}

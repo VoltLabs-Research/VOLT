@@ -105,6 +105,10 @@ export default function useGlbScene(
                         );
                         engine.updateLineWidth(paramsRef.current.lineSettings);
                         engine.updateDepthOverlay(Boolean(paramsRef.current.renderOnTop));
+                        engine.updateEdges(
+                            paramsRef.current.sceneKey,
+                            paramsRef.current.sceneVisualOverrides
+                        );
                         engine.setVisibilityMask(paramsRef.current.visibilityMask ?? null);
                         engine.setSelectionHighlight(
                             paramsRef.current.selectionHighlightMask ?? null,
@@ -155,6 +159,10 @@ export default function useGlbScene(
         );
         engine.updateLineWidth(paramsRef.current.lineSettings);
         engine.updateDepthOverlay(Boolean(params.renderOnTop));
+        engine.updateEdges(
+            paramsRef.current.sceneKey,
+            paramsRef.current.sceneVisualOverrides
+        );
     }, [
         params.renderOnTop,
         params.url,

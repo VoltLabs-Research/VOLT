@@ -25,6 +25,7 @@ import {
     UPLOAD_SESSION_TTL_SECONDS,
     planUploadFiles,
     resolveTrajectoryName,
+    selectUploadableFiles,
     signUploadFiles
 } from '@modules/trajectory/services/trajectory/trajectory-upload-plan';
 
@@ -43,20 +44,28 @@ import path from 'node:path';
 class TrajectoryUploadSessionService {
     async create(input: CreateTrajectoryUploadSessionInput): Promise<CreateTrajectoryUploadSessionOutput> {
         const { teamId, userId, files } = input;
-        const name = resolveTrajectoryName(input.name, files);
 
-        if (!name || files.length === 0) {
+        const oversized = files.find((file) => file.size > MAX_UPLOAD_FILE_SIZE);
+        if (oversized) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
-                'At least one uploaded trajectory file is required'
+                `Uploaded file "${oversized.name}" declares a size of ${oversized.size} bytes; it must not exceed ${MAX_UPLOAD_FILE_SIZE} bytes`
             );
         }
 
-        const invalidSize = files.find((file) => file.size <= 0 || file.size > MAX_UPLOAD_FILE_SIZE);
-        if (invalidSize) {
+        const uploadableFiles = selectUploadableFiles(files);
+        const name = resolveTrajectoryName(input.name, uploadableFiles.map(({ file }) => file));
+
+        if (!name || uploadableFiles.length === 0) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
-                `Uploaded file "${invalidSize.name}" declares a size of ${invalidSize.size} bytes; it must be between 1 and ${MAX_UPLOAD_FILE_SIZE} bytes`
+                'At least one uploaded trajectory file with content is required'
+            );
+        }
+
+        if (uploadableFiles.length < files.length) {
+            logger.warn(
+                `[TrajectoryUploadSessionService] Dropping ${files.length - uploadableFiles.length} empty file(s) from upload teamId=${teamId} name=${name}`
             );
         }
 
@@ -95,7 +104,7 @@ class TrajectoryUploadSessionService {
         await storagePlacementService.ensurePlacement('trajectory', trajectory.id);
 
         const expiresAt = new Date(Date.now() + UPLOAD_SESSION_TTL_SECONDS * 1000);
-        const sessionFiles = planUploadFiles(trajectory.id, files);
+        const sessionFiles = planUploadFiles(trajectory.id, uploadableFiles);
 
         const uploadSession = await TrajectoryUploadSession.create({
             team: teamId,

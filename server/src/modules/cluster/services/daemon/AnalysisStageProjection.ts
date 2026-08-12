@@ -6,6 +6,7 @@ import type {
     AnalysisStage
 } from '@shared/contracts/types/AnalysisProps';
 import type { AnalysisArtifactStatus, AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
+import { areArtifactsSettled } from '@modules/cluster/services/daemon/analysis-artifact-state';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type { DaemonAnalysisStageStatusInput } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
 
@@ -95,7 +96,8 @@ export default class AnalysisStageProjection {
 
     updateExpectedArtifactsForStage(
         artifacts: AnalysisExpectedArtifact[],
-        stage: AnalysisStage
+        stage: AnalysisStage,
+        producedArtifacts?: boolean
     ): AnalysisExpectedArtifact[] {
         if (stage.type !== 'exposure' || !stage.exposureId) {
             return artifacts;
@@ -113,14 +115,38 @@ export default class AnalysisStageProjection {
             return artifacts;
         }
 
-        return artifacts.map((artifact) => artifact.exposureId === stage.exposureId
-            ? {
-                ...artifact,
-                status: artifact.status === 'ready' && nextStatus !== 'failed'
-                    ? artifact.status
-                    : nextStatus
+        // `uploading` promises an upload is on its way. When the exporter told us
+        // it emitted nothing, nothing is coming: record that instead of leaving
+        // the artifact waiting on a transfer that will never arrive.
+        const nothingProduced = producedArtifacts === false && nextStatus === 'uploading';
+
+        return artifacts.map((artifact) => {
+            if (artifact.exposureId !== stage.exposureId) {
+                return artifact;
             }
-            : artifact);
+
+            if (artifact.status === 'ready' && nextStatus !== 'failed') {
+                return artifact;
+            }
+
+            if (nothingProduced) {
+                return {
+                    ...artifact,
+                    status: 'pending' as const,
+                    produced: false
+                };
+            }
+
+            return {
+                ...artifact,
+                status: nextStatus,
+                // A stage that just started invalidates any earlier verdict; a
+                // terminal one without a report leaves it unknown.
+                produced: nextStatus === 'generating'
+                    ? undefined
+                    : (producedArtifacts ?? artifact.produced)
+            };
+        });
     }
 
     upsertChildAnalysisForStage(
@@ -183,13 +209,13 @@ export default class AnalysisStageProjection {
             return 'generating';
         }
         if (stage.type === 'exposure' && (stage.status === 'completed' || stage.status === 'cached')) {
-            return this.#areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
+            return this.#areArtifactsSettled(expectedArtifacts) ? 'ready' : 'uploading';
         }
         if (stage.type === 'artifact-upload' && stage.status === 'running') {
             return 'uploading';
         }
         if (stage.type === 'artifact-upload' && stage.status === 'completed') {
-            return this.#areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
+            return this.#areArtifactsSettled(expectedArtifacts) ? 'ready' : 'uploading';
         }
         return currentStatus;
     }
@@ -202,14 +228,13 @@ export default class AnalysisStageProjection {
             return 'failed';
         }
         if (status === JobStatus.Queued || status === JobStatus.Running || status === JobStatus.Completed) {
-            return this.#areArtifactsReady(expectedArtifacts) ? 'ready' : 'uploading';
+            return this.#areArtifactsSettled(expectedArtifacts) ? 'ready' : 'uploading';
         }
         return 'pending';
     }
 
-    #areArtifactsReady(expectedArtifacts: AnalysisExpectedArtifact[]): boolean {
-        return expectedArtifacts.length > 0
-            && expectedArtifacts.every((artifact) => artifact.status === 'ready');
+    #areArtifactsSettled(expectedArtifacts: AnalysisExpectedArtifact[]): boolean {
+        return areArtifactsSettled(expectedArtifacts);
     }
 
     #parseDate(value: string | undefined): Date | undefined {

@@ -6,6 +6,7 @@ import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like';
 import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
+import { areArtifactsSettled } from '@modules/cluster/services/daemon/analysis-artifact-state';
 import type { TeamClusterDaemonSceneArtifactUpsertItem } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/application/errors/ApplicationError';
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events/SceneArtifactBatchUpsertedPayload';
@@ -222,7 +223,7 @@ class DaemonSceneArtifactIngestService {
             const expectedArtifacts = this.#applyReadyArtifacts(analysis.expectedArtifacts ?? [], group);
             const updated = await Object.assign(analysis, {
                 expectedArtifacts,
-                artifactStatus: expectedArtifacts.length > 0 && expectedArtifacts.every((artifact) => artifact.status === 'ready')
+                artifactStatus: areArtifactsSettled(expectedArtifacts)
                     ? AnalysisArtifactStatus.Ready
                     : (analysis.artifactStatus ?? AnalysisArtifactStatus.Uploading)
             }).save();
@@ -268,6 +269,9 @@ class DaemonSceneArtifactIngestService {
             return {
                 ...expected,
                 status: isReady ? 'ready' : 'failed',
+                // An artifact landing overrides any earlier "produced nothing":
+                // another frame of the same exposure may well have data.
+                produced: true,
                 objectName: artifact.objectName,
                 readyAt: isReady ? new Date() : expected.readyAt
             };

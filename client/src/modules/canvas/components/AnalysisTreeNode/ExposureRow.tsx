@@ -8,6 +8,7 @@ import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import {
     buildAddRemoveOption,
     buildColorSubmenu,
+    buildEdgesOption,
     buildLineWidthSubmenu,
     buildTransparencySubmenu,
     colorOption,
@@ -37,6 +38,7 @@ export interface SceneRowActions {
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
     setSceneColor: (sceneKey: string, color: string | undefined) => void;
+    setSceneEdges: (sceneKey: string, edges: boolean) => void;
     resolveSceneRenderMetadata?: (pluginId: string, exposureId: string) => SceneRenderMetadata | undefined;
     selectedScene?: RasterSelectableScene | null;
     onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
@@ -69,6 +71,7 @@ const ExposureRow = ({
     setSceneOpacity,
     setSceneLineWidth,
     setSceneColor,
+    setSceneEdges,
     resolveSceneRenderMetadata,
     selectedScene,
     onSelectRasterScene
@@ -86,6 +89,7 @@ const ExposureRow = ({
     const sceneKey = getSceneKey(scene);
     const sceneOverride = sceneVisualOverrides[sceneKey];
     const isLineExposure = sceneRenderMetadata?.exporter === Exporter.LINE;
+    const isMeshExposure = sceneRenderMetadata?.exporter === Exporter.MESH;
     const defaultLineWidth = sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_LINE_WIDTH;
 
     const labelToneClass = {
@@ -118,6 +122,9 @@ const ExposureRow = ({
         colorOption(buildColorSubmenu(sceneOverride?.color, (value) => setSceneColor(sceneKey, value))),
         ...(isLineExposure
             ? [lineSettingsOption(buildLineWidthSubmenu(sceneOverride?.lineWidth ?? defaultLineWidth, defaultLineWidth, (value) => setSceneLineWidth(sceneKey, value)))]
+            : []),
+        ...(isMeshExposure
+            ? [buildEdgesOption(sceneOverride?.edges ?? false, () => setSceneEdges(sceneKey, !(sceneOverride?.edges ?? false)))]
             : [])
     ];
 

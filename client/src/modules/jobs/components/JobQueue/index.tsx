@@ -84,8 +84,8 @@ const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
     return (
         <div
             className={cn(
-                'flex flex-row items-center justify-between gap-3 min-h-[3.25rem] p-3 rounded-2xl focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_28%,transparent)]',
-                isChild && 'ml-3 border-l border-border rounded-none'
+                'flex flex-row items-center justify-between gap-3 min-h-10 px-2 py-1.5 rounded-lg focus-within:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_28%,transparent)]',
+                isChild && 'ml-2 border-l border-border rounded-none'
             )}
         >
             <div className='flex flex-col gap-1 flex-1 min-w-0'>

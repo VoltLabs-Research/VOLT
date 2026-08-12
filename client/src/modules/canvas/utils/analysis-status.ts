@@ -14,6 +14,14 @@ export const isCanvasAnalysisInProgress = (status?: CanvasAnalysisStatus): boole
     return status === AnalysisStatus.Pending || status === AnalysisStatus.Running;
 };
 
+/**
+ * Terminal states only. An unknown status is not settled, so callers that gate
+ * on this stay on the "still working" side when the status is missing.
+ */
+export const isCanvasAnalysisSettled = (status?: CanvasAnalysisStatus): boolean => {
+    return status === AnalysisStatus.Completed || status === AnalysisStatus.Failed;
+};
+
 export const normalizeCanvasAnalysisStatus = (status?: string | null): CanvasAnalysisStatus | undefined => {
     if (!status) {
         return undefined;

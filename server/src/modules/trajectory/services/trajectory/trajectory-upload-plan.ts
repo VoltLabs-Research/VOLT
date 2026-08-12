@@ -37,6 +37,29 @@ interface SignUploadFilesInput {
     files: TrajectoryUploadSessionFileProps[];
 }
 
+/**
+ * An uploadable file paired with its position in the original request. The client
+ * resolves each local file by that index, so dropping unusable files must never
+ * renumber the ones that survive.
+ */
+export interface PlannedUploadFile {
+    file: TrajectoryUploadFileInput;
+    index: number;
+};
+
+/**
+ * Keeps files the cluster can actually stage. Empty files carry no frame and make
+ * the staging upload fail, so they are dropped instead of rejecting the whole batch.
+ */
+export const selectUploadableFiles = (files: TrajectoryUploadFileInput[]): PlannedUploadFile[] => (
+    files
+        .map((file, index) => ({
+            file,
+            index
+        }))
+        .filter(({ file }) => file.size > 0)
+);
+
 export const resolveTrajectoryName = (
     requestedName: string | undefined,
     files: TrajectoryUploadFileInput[]
@@ -84,8 +107,8 @@ const buildUploadParts = (
 
 export const planUploadFiles = (
     trajectoryId: string,
-    files: TrajectoryUploadFileInput[]
-): TrajectoryUploadSessionFileProps[] => files.map((file, index) => {
+    files: PlannedUploadFile[]
+): TrajectoryUploadSessionFileProps[] => files.map(({ file, index }) => {
     const finalObjectKey = `trajectory-staging/${trajectoryId}/${index}-${path.basename(file.name || 'upload')}`;
     return {
         index,

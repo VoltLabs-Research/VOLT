@@ -23,6 +23,13 @@ export interface AnalysisExpectedArtifact{
     isPrimary?: boolean;
     objectName?: string;
     readyAt?: string;
+    /**
+     * `false` once an exposure's export node ran and emitted nothing (no data,
+     * or options it could not use), so no upload is coming. `undefined` means
+     * the exporter has not reported yet. `status` still describes the transfer,
+     * which is why this is a separate fact rather than another status value.
+     */
+    produced?: boolean;
 }
 
 export interface AnalysisStage{

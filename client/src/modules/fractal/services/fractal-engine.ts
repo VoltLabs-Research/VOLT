@@ -17,6 +17,7 @@ import {
     applyPointCloudVisibilityMask
 } from '@/modules/fractal/utils/point-cloud-vertex-overrides';
 import { applyMeshColorOverride, applyMeshDepthOverlay, applyMeshOpacity } from '@/modules/fractal/utils/mesh-visual-overrides';
+import { applyMeshEdgesOverlay, syncMeshEdgesClippingPlanes } from '@/modules/fractal/utils/mesh-edges-overlay';
 import { applyLineWidth } from '@/modules/fractal/utils/line-geometry-styling';
 import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
@@ -124,6 +125,8 @@ export class FractalEngine {
     private lastOpacityValue: number = 1;
     private lastPointOpacityValue: number = 1;
     private lastDepthOverlay: boolean | undefined = undefined;
+    private lastEdgesSceneKey: string | undefined = undefined;
+    private lastEdgesEnabled = false;
     private lastColorSceneKey: string | undefined = undefined;
     private lastColorValue: string | undefined = undefined;
     private lastBaseLineWidth: number | undefined = undefined;
@@ -253,6 +256,8 @@ export class FractalEngine {
             this.lastColorValue = undefined;
             this.lastBaseLineWidth = undefined;
             this.lastLineWidth = undefined;
+            this.lastEdgesSceneKey = undefined;
+            this.lastEdgesEnabled = false;
             this.mortonPermutation = null;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
@@ -334,6 +339,20 @@ export class FractalEngine {
         if (!this.model || overlay === this.lastDepthOverlay) return;
         this.lastDepthOverlay = overlay;
         applyMeshDepthOverlay(this.traversalCache.meshes, overlay);
+        this.surface.invalidate();
+    }
+
+    updateEdges(
+        sceneKey: string | undefined,
+        sceneVisualOverrides: SceneVisualOverrides
+    ) {
+        if (!this.model || !sceneKey) return;
+        const enabled = sceneVisualOverrides[sceneKey]?.edges ?? false;
+        if (sceneKey === this.lastEdgesSceneKey && enabled === this.lastEdgesEnabled) return;
+        this.lastEdgesSceneKey = sceneKey;
+        this.lastEdgesEnabled = enabled;
+
+        applyMeshEdgesOverlay(this.traversalCache.meshes, enabled, this.params.sliceClippingPlanes);
         this.surface.invalidate();
     }
 
@@ -433,6 +452,7 @@ export class FractalEngine {
                 material.needsUpdate = true;
             });
         });
+        syncMeshEdgesClippingPlanes(traversalCache.meshes, planes);
         this.surface.invalidate();
     }
 

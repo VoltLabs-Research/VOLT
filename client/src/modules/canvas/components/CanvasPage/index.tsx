@@ -215,13 +215,28 @@ const CanvasPage = () => {
         && !analysisDiscoveryTourActive
     );
 
+    /*
+     * The panel's width is an inline style driven by this hook, so a utility class on the
+     * element would just be overridden — this default is the only place the docked width
+     * can be set.
+     *
+     * This only governs viewports wider than the narrow breakpoint (1199px). Below it the
+     * panel becomes an overlay drawer whose width is pinned by an `!important` utility in
+     * CanvasRightPanelRegion, which beats this inline style; both have to move together
+     * for a width change to be visible on a laptop-sized window.
+     *
+     * The storage key carries a version suffix because a persisted size shadows the
+     * default: anyone who had ever dragged the divider would keep their old width and
+     * never see this one. Bumping the suffix discards those saved widths, which is the
+     * intended reset.
+     */
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
-        initialSize: 268,
+        initialSize: 400,
         minSize: 200,
-        maxSize: 420,
+        maxSize: 460,
         growPositive: false,
-        storageKey: 'volt:canvas:right-panel-size'
+        storageKey: 'volt:canvas:right-panel-size:v4'
     });
 
     const timelinePanel = useResizable({

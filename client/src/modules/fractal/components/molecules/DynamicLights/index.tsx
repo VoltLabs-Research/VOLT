@@ -79,18 +79,27 @@ const DynamicLights: FC<DynamicLightsProps> = ({ preset, darkTheme }) => {
     if (isDefectPreset) {
         return (
             <>
-                <ambientLight intensity={darkTheme ? 0.15 : 0.22} />
+                <ambientLight intensity={darkTheme ? 0.45 : 0.5} />
                 <directionalLight
                     ref={dirLightRef}
                     castShadow
                     position={[10, 15, -5]}
-                    intensity={2.0}
+                    intensity={1.6}
                     color={KEY_LIGHT_COLOR}
                 />
                 <directionalLight
                     position={[-10, 5, 10]}
-                    intensity={0.2}
+                    intensity={0.9}
                     color={DEFECT_FILL_COLOR}
+                />
+                <directionalLight
+                    position={[0, -12, -8]}
+                    intensity={0.35}
+                    color={DEFECT_FILL_COLOR}
+                />
+                <hemisphereLight
+                    groundColor={darkTheme ? '#1D1D20' : '#d1d1d6'}
+                    intensity={0.5}
                 />
             </>
         );
