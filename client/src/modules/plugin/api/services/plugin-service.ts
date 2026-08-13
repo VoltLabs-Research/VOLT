@@ -82,6 +82,11 @@ export type UpdatePipelineRunParams = {
     pipelineRunId: string;
 } & UpdatePipelineRunInput;
 
+export interface DeletePipelineRunParams {
+    trajectoryId: string;
+    pipelineRunId: string;
+}
+
 export type ListPluginTeamClustersResponse = PaginatedResponse<PluginTeamClusterOption>;
 
 export interface SavePluginInput {
@@ -196,6 +201,7 @@ const endpoints = {
         routes.path(pluginRoutes.listPipelineRuns)
     ),
     updatePipelineRun: routes.route<UpdatePipelineRunParams, PipelineRun>(pluginRoutes.updatePipelineRun),
+    deletePipelineRun: routes.route<DeletePipelineRunParams, void>(pluginRoutes.deletePipelineRun, { unwrap: 'void' }),
     listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),

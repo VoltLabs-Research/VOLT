@@ -1,6 +1,7 @@
 import type {
     ArgumentVisibilityCondition,
     ExportNodeData,
+    ExposurePanel,
     ExposureProperty
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
@@ -24,6 +25,8 @@ export interface PluginExposureProps{
      * artifacts a run is even expected to produce.
      */
     exportWhen?: ArgumentVisibilityCondition;
+    /** Declared results tables for the analysis panel; passed through untouched. */
+    panel?: ExposurePanel;
 }
 
 export interface PluginProps extends Partial<PluginProjection>{

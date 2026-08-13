@@ -61,5 +61,6 @@ export const pluginRoutes = {
     remove: del('/api/teams/:teamId/plugins/:pluginId'),
     listPipelineRuns: get<PipelineRun>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-runs'),
     updatePipelineRun: patch<UpdatePipelineRunInput, PipelineRun>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-runs/:pipelineRunId'),
+    deletePipelineRun: del('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-runs/:pipelineRunId'),
     executePipeline: post<ExecutePipelineInput, ExecutePipelineResponse>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-executions')
 } as const;

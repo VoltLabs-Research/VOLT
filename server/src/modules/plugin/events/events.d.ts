@@ -1,4 +1,5 @@
 import type {
+    PipelineRunDeletedEventPayload,
     PluginCreatedEventPayload,
     PluginDeletedEventPayload,
     PluginExecutionRequestPayload,
@@ -7,6 +8,7 @@ import type {
 
 declare global {
     interface EventMap {
+        'pipelineRun.deleted': PipelineRunDeletedEventPayload;
         'plugin.created': PluginCreatedEventPayload;
         'plugin.deleted': PluginDeletedEventPayload;
         'plugin.published': PluginPublishedEventPayload;

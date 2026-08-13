@@ -30,7 +30,6 @@ import {
     toClusterTransferJobViewFromEntity,
     toTeamClusterViewFromEntity,
     type ClusterTransferJobView,
-    type TeamClusterCredentialServicesView,
     type TeamClusterView
 } from '@modules/cluster/services/team-cluster/TeamClusterView';
 import {
@@ -246,36 +245,6 @@ export default class ClusterService {
             sourceClusterId: sourceCluster.id,
             destinationClusterId: destinationCluster.id,
             requestedJobs: requestedJobs.map(toClusterTransferJobViewFromDomain)
-        };
-    }
-
-    async revealCredentials(input: {
-        teamId: string;
-        teamClusterId: string;
-        userId: string;
-        password: string;
-    }): Promise<{ teamClusterId: string; services: TeamClusterCredentialServicesView }> {
-        const entity = await requireOwnedTeamCluster(input.teamClusterId, input.teamId);
-        await requireConfirmedPassword(input.userId, input.password);
-
-        const services = entity.services;
-        const decrypted = await this.#daemonCredentialGuard.getDecryptedServiceCredentials(toTeamClusterLike(entity));
-
-        logger.info(`Team cluster credentials revealed teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
-
-        return {
-            teamClusterId: input.teamClusterId,
-            services: {
-                postgres: {
-                    port: services.postgres.port,
-                    username: decrypted.postgresUsername,
-                    password: decrypted.postgresPassword
-                },
-                daemon: {
-                    port: services.daemon.port,
-                    password: decrypted.daemonPassword
-                }
-            }
         };
     }
 

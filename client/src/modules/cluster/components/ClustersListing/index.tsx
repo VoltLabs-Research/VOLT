@@ -4,7 +4,6 @@ import ClusterQueueConcurrencyModal, {
 } from '@/modules/cluster/components/ClusterQueueConcurrencyModal';
 import ClusterRoleModal, { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/components/ClusterRoleModal';
 import ClusterTransferModal, { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/components/ClusterTransferModal';
-import ClusterCredentialsModal, { CLUSTER_CREDENTIALS_MODAL_ID } from '@/modules/cluster/components/ClusterCredentialsModal';
 import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
 import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';
@@ -25,7 +24,7 @@ import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-waiting';
 import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { ArrowRightLeft, KeyRound, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
@@ -154,11 +153,6 @@ const ClustersListing = () => {
     const [installCommandToken, setInstallCommandToken] = useState<string | null>(null);
     const regenerateTokenMutation = useRegenerateTeamClusterEnrollmentTokenMutation();
 
-    const handleRevealCredentials = (cluster: TeamCluster) => {
-        state.setCredentialsCluster(cluster);
-        openModal(CLUSTER_CREDENTIALS_MODAL_ID);
-    };
-
     const handleDeleteCluster = (cluster: TeamCluster) => {
         state.setDeleteTarget(cluster);
         openModal(DELETE_CLUSTER_MODAL_ID);
@@ -220,11 +214,6 @@ const ClustersListing = () => {
             onClick: () => handleShowInstallCommand(row.teamCluster)
         },
         {
-            label: 'Reveal credentials',
-            icon: KeyRound,
-            onClick: () => handleRevealCredentials(row.teamCluster)
-        },
-        {
             label: 'Edit queue concurrency',
             icon: Settings2,
             onClick: () => handleQueueConcurrency(row.teamCluster)
@@ -250,11 +239,6 @@ const ClustersListing = () => {
 
     return (
         <>
-            <ClusterCredentialsModal
-                teamCluster={state.credentialsCluster}
-                credentials={state.credentials}
-                onReveal={state.revealCredentials}
-            />
             <DeleteClusterModal
                 teamCluster={state.deleteTarget}
                 onDelete={state.deleteCluster}

@@ -28,7 +28,9 @@ import {
     type GetPipelineRunsByTrajectoryIdInput
 } from '@modules/plugin/services/plugin/PipelineRunQueries';
 import {
+    deletePipelineRun,
     updatePipelineRun,
+    type DeletePipelineRunInput,
     type UpdatePipelineRunInput
 } from '@modules/plugin/services/plugin/PipelineRunCommands';
 import PluginExposureArtifactService, {
@@ -325,6 +327,10 @@ export default class PluginService {
 
     async updatePipelineRun(input: UpdatePipelineRunInput): Promise<PipelineRun> {
         return updatePipelineRun(input);
+    }
+
+    async deletePipelineRun(input: DeletePipelineRunInput): Promise<{ success: boolean }> {
+        return deletePipelineRun(input);
     }
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInput): Promise<GetPluginExposureGLBOutput> {

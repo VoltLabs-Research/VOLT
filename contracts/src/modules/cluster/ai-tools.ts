@@ -43,7 +43,3 @@ export interface GenerateClusterInstallManifestInput{
     ports: TeamClusterInstallManifestPorts;
 }
 
-export interface RevealClusterCredentialsInput{
-    teamClusterId: string;
-    password: string;
-}

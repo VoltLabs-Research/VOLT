@@ -11,7 +11,6 @@ import type {
     CreateTeamClusterTransferRequestResponse,
     DeleteTeamClusterResponse,
     RegenerateTeamClusterEnrollmentTokenResponse,
-    RevealTeamClusterCredentialsResponse,
     TeamCluster,
     UpdateTeamClusterQueueConcurrencyResponse,
     UpdateTeamClusterRoleResponse
@@ -20,7 +19,6 @@ import type {
     CreateTeamClusterInput,
     CreateTeamClusterTransferRequestInput,
     DeleteTeamClusterInput,
-    RevealTeamClusterCredentialsInput,
     UpdateTeamClusterQueueConcurrencyInput,
     UpdateTeamClusterRoleInput
 } from '@volt/contracts/modules/cluster/http';
@@ -32,8 +30,6 @@ interface TeamClusterScopedParams extends TeamScopedParams{
 export type CreateTeamClusterParams = TeamScopedParams & CreateTeamClusterInput;
 
 export type DeleteTeamClusterParams = TeamClusterScopedParams & DeleteTeamClusterInput;
-
-export type RevealTeamClusterCredentialsParams = TeamClusterScopedParams & RevealTeamClusterCredentialsInput;
 
 export type CreateTeamClusterTransferRequestParams = TeamClusterScopedParams & CreateTeamClusterTransferRequestInput;
 
@@ -66,9 +62,6 @@ const teamClusterEndpoints = {
     deleteById: post<DeleteTeamClusterParams, DeleteTeamClusterResponse>('/:teamId/clusters/:teamClusterId/delete-requests'),
     getResourceLimits: get<TeamClusterScopedParams, ClusterResourceLimitsResponse>(
         '/:teamId/clusters/:teamClusterId/resource-limits'
-    ),
-    revealCredentials: post<RevealTeamClusterCredentialsParams, RevealTeamClusterCredentialsResponse>(
-        '/:teamId/clusters/:teamClusterId/credential-reveals'
     ),
     listTransferJobs: get<ListTeamClusterTransferJobsParams, ListTeamClusterTransferJobsResponse>(
         '/:teamId/clusters/:teamClusterId/transfers'

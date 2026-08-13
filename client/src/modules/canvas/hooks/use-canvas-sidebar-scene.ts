@@ -365,6 +365,12 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         toggleSection,
         expandSection,
         onDeleteAnalysis: deleteAnalysis,
+        /*
+         * Exposed for deletions this hook does not perform itself: deleting a pipeline
+         * run takes its analyses down server side, and the scenes, selection and
+         * section state pointing at them still have to be cleaned up here.
+         */
+        applyDeletedAnalysisLocally,
         onRetryLoadExposures: loadExposuresForAnalysis
     };
 };

@@ -2,6 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import { toWireRun } from '@modules/plugin/services/plugin/PipelineRunQueries';
 import ApplicationError from '@shared/application/errors/ApplicationError';
+import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 
 const NAME_MAX_LENGTH = 120;
@@ -10,6 +11,12 @@ export interface UpdatePipelineRunInput{
     teamId: string;
     pipelineRunId: string;
     name: string;
+}
+
+export interface DeletePipelineRunInput{
+    teamId: string;
+    pipelineRunId: string;
+    userId?: string;
 }
 
 /**
@@ -46,4 +53,43 @@ export const updatePipelineRun = async (input: UpdatePipelineRunInput): Promise<
     run.name = name || null;
 
     return toWireRun(await run.save());
+};
+
+/**
+ * Deletes a run *and* the analyses it produced.
+ *
+ * The analyses are not deleted here: this module cannot reach the analysis module
+ * without adding a cross-module import edge, so it emits `pipelineRun.deleted` and
+ * `AnalysisEvents` cascades — the same route `team.deleted` and `trajectory.deleted`
+ * already take.
+ *
+ * The event deliberately carries no analysis ids. Resolving them belongs to the
+ * subscriber, via `Analysis.pipelineRunId`, because a run's stage list holds two
+ * different kinds of id: `analysisId` for a stage it computed and
+ * `cachedFromAnalysisId` for one it replayed from an earlier run. Deleting the
+ * latter would destroy a result that another run still owns and renders. Filtering
+ * on `pipelineRunId` cannot make that mistake — a replayed analysis still carries
+ * the id of the run that actually computed it.
+ */
+export const deletePipelineRun = async (input: DeletePipelineRunInput): Promise<{ success: boolean }> => {
+    const run = await PipelineRunEntity.findOneBy({
+        id: input.pipelineRunId,
+        team: input.teamId
+    });
+
+    if(!run){
+        throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Pipeline run not found');
+    }
+
+    const trajectoryId = run.trajectory;
+    await PipelineRunEntity.delete({ id: input.pipelineRunId });
+
+    await eventBus.emit('pipelineRun.deleted', {
+        pipelineRunId: input.pipelineRunId,
+        trajectoryId,
+        teamId: input.teamId,
+        userId: input.userId
+    });
+
+    return { success: true };
 };

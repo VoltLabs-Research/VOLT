@@ -3,7 +3,7 @@ import {
     useCreateTeamClusterTransferRequestMutation,
     useCreateTeamClusterMutation,
     useDeleteTeamClusterMutation,
-    useRevealTeamClusterCredentialsMutation,
+    
     useTeamClustersQuery,
     useUpdateTeamClusterQueueConcurrencyMutation,
     useUpdateTeamClusterRoleMutation
@@ -27,12 +27,6 @@ const CREATE_CLUSTER_TOAST_OPTIONS: ClusterCreateToastOptions = {
     loading: { title: 'Creating cluster...' },
     success: { title: 'Cluster created' },
     error: { title: 'Failed to create cluster' }
-};
-
-const REVEAL_CREDENTIALS_TOAST_OPTIONS: ClusterCreateToastOptions = {
-    loading: { title: 'Revealing credentials...' },
-    success: { title: 'Credentials revealed' },
-    error: { title: 'Failed to reveal credentials' }
 };
 
 const DELETE_CLUSTER_TOAST_OPTIONS = {
@@ -83,7 +77,6 @@ const useClusterManagement = () => {
         }
     });
     const createMutation = useCreateTeamClusterMutation();
-    const revealCredentialsMutation = useRevealTeamClusterCredentialsMutation();
     const deleteMutation = useDeleteTeamClusterMutation();
     const updateQueueConcurrencyMutation = useUpdateTeamClusterQueueConcurrencyMutation();
     const updateRoleMutation = useUpdateTeamClusterRoleMutation();
@@ -107,16 +100,6 @@ const useClusterManagement = () => {
 
         setSelectedClusterId(result.teamCluster._id);
         return result;
-    };
-
-    const revealCredentials = async (teamClusterId: string, password: string) => {
-        const result = await showPromise(revealCredentialsMutation.mutateAsync({
-            teamId: requireSelectedTeamId(),
-            teamClusterId,
-            password
-        }), REVEAL_CREDENTIALS_TOAST_OPTIONS);
-
-        return result.services;
     };
 
     const deleteCluster = async (teamClusterId: string, password: string) => {
@@ -171,7 +154,6 @@ const useClusterManagement = () => {
         isLoading: teamClustersQuery.isLoading,
         error: teamClustersQuery.error,
         createCluster,
-        revealCredentials,
         deleteCluster,
         updateQueueConcurrency,
         updateRole,

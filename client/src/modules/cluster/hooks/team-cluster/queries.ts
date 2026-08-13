@@ -15,11 +15,10 @@ import type {
     ListTeamClustersParams,
     ListTeamClustersResponse,
     RegenerateTeamClusterEnrollmentTokenParams,
-    RevealTeamClusterCredentialsParams,
     UpdateTeamClusterQueueConcurrencyParams,
     UpdateTeamClusterRoleParams
 } from '@/modules/cluster/api/service';
-import type { CreateTeamClusterResponse, CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, RegenerateTeamClusterEnrollmentTokenResponse, RevealTeamClusterCredentialsResponse, UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
+import type { CreateTeamClusterResponse, CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, RegenerateTeamClusterEnrollmentTokenResponse,  UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster, TeamClusterLifecycleEvent } from '@volt/contracts/modules/cluster/domain';
 
 interface TeamClusterQueryKeyMap {
@@ -150,14 +149,6 @@ export const useCreateTeamClusterMutation = (options?: MutationOptions<CreateTea
             upsertTeamClusterQueryData(variables.teamId, data.teamCluster);
         }, options)
     });
-};
-
-export const useRevealTeamClusterCredentialsMutation = (
-    options?: MutationOptions<RevealTeamClusterCredentialsResponse, RevealTeamClusterCredentialsParams>
-) => {
-    return createMutation<RevealTeamClusterCredentialsResponse, RevealTeamClusterCredentialsParams>(
-        teamClusterService.revealCredentials
-    )(options);
 };
 
 export const useDeleteTeamClusterMutation = (options?: MutationOptions<DeleteTeamClusterResponse, DeleteTeamClusterParams>) => {

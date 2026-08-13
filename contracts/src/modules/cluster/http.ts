@@ -44,8 +44,6 @@ export interface PasswordConfirmedInput{
     password: string;
 }
 
-export type RevealTeamClusterCredentialsInput = PasswordConfirmedInput;
-
 export type DeleteTeamClusterInput = PasswordConfirmedInput;
 
 export interface CreateTeamClusterRemoteAccessSessionInput extends PasswordConfirmedInput{

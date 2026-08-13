@@ -13,7 +13,6 @@ import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, isCanvasAnalysisS
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
 import { hasPluginWorkflowNodes } from './config-columns';
-import { toInlineConfigSummary } from './config-values';
 import ExecutionConfigSummary from './ExecutionConfigSummary';
 import ExposureRow from './ExposureRow';
 import PendingArtifactRow from './PendingArtifactRow';
@@ -91,7 +90,6 @@ const AnalysisTreeNode = ({
 
     const hasConfig = Object.keys(analysis.config).length > 0;
     const hasWorkflowPluginNodes = hasPluginWorkflowNodes(plugin);
-    const inlineSummary = toInlineConfigSummary(analysis.config);
 
     const tooltipContent = isAnalysisInProgress || hasConfig || hasWorkflowPluginNodes ? (
         <div className='flex flex-col'>
@@ -186,18 +184,11 @@ const AnalysisTreeNode = ({
                         tabIndex={0}
                         data-tour-id={tourTargetId}
                     >
-                        <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
-                            <span className='flex min-w-0 items-center gap-1.5'>
-                                <span className={nameClassName} title={analysis.pluginDisplayName}>
-                                    {analysis.pluginDisplayName}
-                                </span>
-                                {badge}
+                        <span className='flex min-w-0 flex-[0_1_auto] items-center gap-1.5'>
+                            <span className={nameClassName} title={analysis.pluginDisplayName}>
+                                {analysis.pluginDisplayName}
                             </span>
-                            {inlineSummary && (
-                                <span className='truncate text-2xs leading-[1.2] text-muted opacity-90' title={inlineSummary}>
-                                    {inlineSummary}
-                                </span>
-                            )}
+                            {badge}
                         </span>
                         <span className='flex-1' />
                         <button

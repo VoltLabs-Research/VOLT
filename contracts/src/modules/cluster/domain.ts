@@ -256,11 +256,6 @@ export interface RegenerateTeamClusterEnrollmentTokenResponse{
     enrollmentToken: string;
 }
 
-export interface RevealTeamClusterCredentialsResponse{
-    teamClusterId: string;
-    services: TeamClusterCredentialServices;
-}
-
 export type ClusterResourceStatus = 'Healthy' | 'Warning' | 'Critical';
 
 export interface ClusterResourceLimits{

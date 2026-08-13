@@ -35,6 +35,7 @@ interface SceneCollectionProps {
     runSections: PipelineRunSection[];
     onRestoreRun?: (run: PipelineRun) => void;
     onRenameRun?: (run: PipelineRun, name: string) => void;
+    onDeleteRun?: (run: PipelineRun) => void;
     expandedSections: Set<string>;
     toggleSection: (id: string) => void;
     showSectionsSkeleton: boolean;
@@ -74,6 +75,7 @@ const SceneCollection = ({
     runSections,
     onRestoreRun,
     onRenameRun,
+    onDeleteRun,
     expandedSections,
     toggleSection,
     showSectionsSkeleton,
@@ -234,6 +236,7 @@ const SceneCollection = ({
                     status={resolveRunStatus(runSection)}
                     onRestore={onRestoreRun}
                     onRename={onRenameRun}
+                    onDelete={onDeleteRun}
                     renderAnalysisRow={(row) => renderAnalysisNode(row.section, {
                         key: row.key,
                         badge: row.cacheHit ? <CachedBadge /> : undefined

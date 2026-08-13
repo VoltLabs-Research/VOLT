@@ -11,9 +11,11 @@ import CanvasPipeline from '../CanvasPipeline';
 import PipelineHeaderActions from '../CanvasPipeline/PipelineHeaderActions';
 import SceneCollection from '../SceneCollection';
 
+import AnalysisResultsSection from '../AnalysisResultsSection';
+
 import { Layers } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useShallow } from 'zustand/react/shallow';
@@ -60,6 +62,7 @@ const ObjectsPanel = ({
         addScene,
         removeScene,
         onDeleteAnalysis,
+        applyDeletedAnalysisLocally,
         onRetryLoadExposures,
         sceneCollectionTotalAnalyses
     } = useCanvasSidebarState({
@@ -67,12 +70,13 @@ const ObjectsPanel = ({
         trajectoryId: trajectory?._id
     });
 
-    const { runSections, onRestoreRun, onRenameRun } = usePipelineRuns({
+    const { runSections, onRestoreRun, onRenameRun, onDeleteRun } = usePipelineRuns({
         trajectoryId: trajectory?._id,
         canMutateCanvas,
         sections: sceneCollectionSections,
         expandedSections,
-        expandSection
+        expandSection,
+        applyDeletedAnalysisLocally
     });
 
     const { statusMap } = useCanvasAnalysisStatus({
@@ -158,6 +162,7 @@ const ObjectsPanel = ({
     const sharedSceneCollectionProps: SharedSceneCollectionProps = {
         onRestoreRun,
         onRenameRun,
+        onDeleteRun,
         expandedSections,
         toggleSection,
         showSectionsSkeleton,
@@ -220,6 +225,15 @@ const ObjectsPanel = ({
         </RightCollapsible>
     );
 
+    // The results panel follows whatever analysis the user is looking at: the active
+    // plugin scene if there is one, otherwise the canvas' current analysis.
+    const resultsAnalysisId = activeScene?.source === 'plugin' ? activeScene.analysisId : analysisId;
+    const resultsPluginId = useMemo(() => {
+        if (!resultsAnalysisId) return undefined;
+        return sceneCollectionSections
+            .find((section) => section.analysis._id === resultsAnalysisId)?.analysis.plugin;
+    }, [resultsAnalysisId, sceneCollectionSections]);
+
     const populatedSections = artifactSections.filter((section) => section.timesteps.length > 0);
     const showSceneCollection = !isAnalysisCompact || sceneCollectionSections.length > 0;
 
@@ -247,6 +261,12 @@ const ObjectsPanel = ({
                         />
                     </RightCollapsible>
                 )}
+                <AnalysisResultsSection
+                    analysisId={resultsAnalysisId}
+                    pluginId={resultsPluginId}
+                    currentTimestep={currentTimestep}
+                />
+
                 {pipelineSection}
 
                 {isAnalysisCompact && populatedSections.map(renderArtifactSection)}

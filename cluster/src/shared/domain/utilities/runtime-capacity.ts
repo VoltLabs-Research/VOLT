@@ -61,15 +61,29 @@ interface SystemMemorySample {
     free?: number;
 }
 
-export const selectAvailableMemoryMb = (sample: SystemMemorySample): number => {
+/*
+ * `available` (MemAvailable) before `free`, because on Linux `free` is not the
+ * memory a new workload can have: the kernel lends every idle page to the page
+ * cache, so `free` collapses on any busy host while that cache stays reclaimable.
+ * systeminformation's own `used` is `total - free`, which is why deriving from it
+ * reports a nearly-full machine that is in fact nearly empty.
+ *
+ * `free` is only the fallback for platforms or si versions that leave `available`
+ * unset — a pessimistic answer beats no answer for a spawn decision.
+ */
+export const selectAvailableMemoryBytes = (sample: SystemMemorySample): number => {
     const { available, free } = sample;
     if (available !== undefined && available > 0) {
-        return available / BYTES_PER_MB;
+        return available;
     }
 
     if (free !== undefined && free > 0) {
-        return free / BYTES_PER_MB;
+        return free;
     }
 
     return 0;
+};
+
+export const selectAvailableMemoryMb = (sample: SystemMemorySample): number => {
+    return selectAvailableMemoryBytes(sample) / BYTES_PER_MB;
 };

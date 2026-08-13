@@ -1,7 +1,7 @@
 import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
-import { Body, Param, Req, Res, schemaBody } from '@shared/http/params';
+import { Body, CurrentUser, Param, Req, Res, schemaBody } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -372,6 +372,22 @@ export default class PluginController extends Controller {
             name: body.name
         });
         BaseResponse.success(res, value, HttpStatus.OK);
+    }
+
+    @Route(pluginRoutes.deletePipelineRun)
+    async deletePipelineRun(
+        @Param('teamId') teamId: string,
+        @Param('pipelineRunId') pipelineRunId: string,
+        @CurrentUser() userId: string,
+        @Res() res: Response
+    ): Promise<void>{
+        await this.#service.deletePipelineRun({
+            teamId,
+            pipelineRunId,
+            userId
+        });
+
+        res.status(HttpStatus.NoContent).send();
     }
 
     @Route(pluginRoutes.executePipeline)

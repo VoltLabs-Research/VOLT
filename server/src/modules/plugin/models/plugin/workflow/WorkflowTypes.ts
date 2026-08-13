@@ -139,6 +139,25 @@ export interface ExposureProperty {
     type?: string;
 }
 
+export interface PanelColumn {
+    column: string;
+    label: string;
+    format?: 'integer' | 'decimal' | 'percent';
+}
+
+export interface PanelTable {
+    source: string;
+    title: string;
+    label: string;
+    columns: PanelColumn[];
+    colorBy?: string;
+    colors?: Record<string, [number, number, number, number]>;
+}
+
+export interface ExposurePanel {
+    tables: PanelTable[];
+}
+
 interface ExposureNodeData {
     name: string;
     icon?: string;
@@ -146,6 +165,12 @@ interface ExposureNodeData {
     hasListing?: boolean;
     properties?: ExposureProperty[];
     id?: string;
+    /**
+     * Declares compact results tables for the analysis panel. Purely descriptive: the
+     * plugin says which sub-listings to summarise, how to label them and what colour
+     * each category has, and the server passes it through untouched.
+     */
+    panel?: ExposurePanel;
     /**
      * Gates the exposure on one of the plugin's arguments, using the same condition shape
      * as an argument's `visibleWhen`.

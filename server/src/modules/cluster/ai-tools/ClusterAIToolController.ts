@@ -12,12 +12,9 @@ import type {
     ListClusterTransferJobsInput,
     ListClustersInput,
     ListRemoteClusterFilesInput,
-    RevealClusterCredentialsInput,
     UpdateClusterQueueConcurrencyInput,
     UpdateClusterRoleInput
 } from '@volt/contracts/modules/cluster/ai-tools';
-
-const MASKED = '••••••••';
 
 export default class ClusterAIToolController extends AIToolController {
     #service = new ClusterService();
@@ -194,33 +191,4 @@ export default class ClusterAIToolController extends AIToolController {
         };
     }
 
-    @AITool({
-        name: 'reveal_cluster_credentials',
-        description: 'Reveal which service credentials a cluster holds. Requires the requesting user\'s account password for confirmation. Secret values are NEVER returned in plaintext — only key names and masked references.',
-        parameters: typia.llm.parameters<RevealClusterCredentialsInput>(),
-        validate: typia.createValidate<RevealClusterCredentialsInput>(),
-        needsApproval: true
-    })
-    async revealClusterCredentials(input: RevealClusterCredentialsInput & AIToolScope) {
-        const { teamClusterId, services } = await this.#service.revealCredentials(input);
-
-        return {
-            summary: 'Cluster credentials confirmed for postgres and daemon (values masked).',
-            data: {
-                teamClusterId,
-                credentialKeys: ['postgres.username', 'postgres.password', 'daemon.password'],
-                services: {
-                    postgres: {
-                        port: services.postgres.port,
-                        username: MASKED,
-                        password: MASKED
-                    },
-                    daemon: {
-                        port: services.daemon.port,
-                        password: MASKED
-                    }
-                }
-            }
-        };
-    }
 }

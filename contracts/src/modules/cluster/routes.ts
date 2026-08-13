@@ -5,7 +5,6 @@ import type {
     UpdateTeamClusterRoleInput,
     UpdateTeamClusterQueueConcurrencyInput,
     CreateTeamClusterTransferRequestInput,
-    RevealTeamClusterCredentialsInput,
     DeleteTeamClusterInput,
     CreateTeamClusterRemoteAccessSessionInput,
     ProcessTeamClusterHealthcheckInput,
@@ -19,7 +18,6 @@ import type {
     UpdateTeamClusterRoleResponse,
     UpdateTeamClusterQueueConcurrencyResponse,
     RegenerateTeamClusterEnrollmentTokenResponse,
-    RevealTeamClusterCredentialsResponse,
     ClusterResourceLimitsResponse,
     GetTeamClusterRuntimeSnapshotResponse,
     CreateTeamClusterTransferRequestResponse,
@@ -55,7 +53,6 @@ export const teamClusterRoutes = {
 
     getResourceLimits: get<ClusterResourceLimitsResponse>('/api/teams/:teamId/clusters/:teamClusterId/resource-limits'),
 
-    revealCredentials: post<RevealTeamClusterCredentialsInput, RevealTeamClusterCredentialsResponse>('/api/teams/:teamId/clusters/:teamClusterId/credential-reveals'),
     createRemoteAccessSession: post<CreateTeamClusterRemoteAccessSessionInput, CreateTeamClusterRemoteAccessSessionResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/sessions'),
     listRemoteExplorerEntries: get<ListTeamClusterRemoteExplorerEntriesResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/entries'),
     getRemoteExplorerNode: get<GetTeamClusterRemoteExplorerNodeResponse>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/node'),

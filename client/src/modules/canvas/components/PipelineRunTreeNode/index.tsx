@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Layers, RotateCcw, Scissors, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronRight, Layers, RotateCcw, Scissors, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { cn } from '@heroui/react';
 import {
     CanvasTreeRow,
@@ -33,6 +33,11 @@ interface PipelineRunTreeNodeProps {
      * derived label.
      */
     onRename?: (run: PipelineRun, name: string) => void;
+    /**
+     * Absent when the caller cannot mutate the canvas, which hides the action.
+     * Deleting a run also deletes the analyses it produced.
+     */
+    onDelete?: (run: PipelineRun) => void;
     /**
      * Renders one analysis stage. A render prop rather than a forwarded prop bag:
      * the parent already wires every `AnalysisTreeNode` prop, and duplicating
@@ -70,6 +75,7 @@ const PipelineRunTreeNode = ({
     status,
     onRestore,
     onRename,
+    onDelete,
     renderAnalysisRow
 }: PipelineRunTreeNodeProps) => {
     const { run, rows, isUngrouped } = section;
@@ -100,13 +106,22 @@ const PipelineRunTreeNode = ({
         status !== undefined && status !== CanvasAnalysisStatusEnum.Completed ? status : undefined
     ].filter((part): part is string => part !== undefined).join(' · ');
 
-    const menuOptions: MenuOption[] = run && onRestore
-        ? [{
+    const menuOptions: MenuOption[] = [];
+    if (run && onRestore) {
+        menuOptions.push({
             label: 'Restore into pipeline',
             icon: RotateCcw,
             onClick: () => onRestore(run)
-        }]
-        : [];
+        });
+    }
+    if (run && onDelete) {
+        menuOptions.push({
+            label: 'Delete',
+            icon: Trash2,
+            onClick: () => onDelete(run),
+            destructive: true
+        });
+    }
 
     const canRename = Boolean(run && onRename);
 

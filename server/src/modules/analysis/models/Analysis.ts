@@ -61,8 +61,17 @@ export default class Analysis extends BaseModel{
     /**
      * The pipeline execution this analysis was a stage of. Null on analyses
      * created before runs were recorded, so readers must keep a path for
-     * ungrouped rows. Intentionally not a relation: deleting a run must never
-     * cascade into the results it produced.
+     * ungrouped rows.
+     *
+     * Intentionally not a relation, so the database never cascades on its own.
+     * Deleting a run *does* delete the results it produced, but only as an
+     * explicit user action, routed through `pipelineRun.deleted` and
+     * `AnalysisEvents.deletePipelineRunAnalyses` so each analysis goes down the
+     * normal deletion path and cleans up its jobs, artifacts and storage.
+     *
+     * This column is also the only safe way to answer "which analyses did this run
+     * produce": a run's stage list additionally points at analyses it replayed from
+     * cache, which belong to the run that computed them and must survive.
      */
     @ReferenceColumn({ nullable: true })
     pipelineRunId!: string | null;

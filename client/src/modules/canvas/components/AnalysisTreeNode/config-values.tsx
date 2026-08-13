@@ -1,5 +1,4 @@
 import { isRecord } from '@/shared/utils/type-guards';
-import { ANALYSIS_EXECUTION_METADATA_KEY } from '@/modules/canvas/utils/selected-timestep-analysis';
 import type { ReactNode } from 'react';
 
 const ACRONYMS = new Set(['id', 'url', 'api', 'ui', 'sdk', 'rdf', 'rms', 'pbc', 'xyz']);
@@ -102,16 +101,3 @@ export const toConfigRows = (source: Record<string, unknown>): ConfigRow[] => {
     }));
 };
 
-export const toInlineConfigSummary = (config: Record<string, unknown>): string | null => {
-    const parts: string[] = [];
-
-    for (const [key, value] of Object.entries(config)) {
-        if (key === ANALYSIS_EXECUTION_METADATA_KEY) continue;
-        if (parts.length >= 3) break;
-        if (typeof value === 'string' && value) parts.push(value);
-        else if (typeof value === 'number') parts.push(String(value));
-        else if (typeof value === 'boolean') parts.push(value ? 'Yes' : 'No');
-    }
-
-    return parts.length > 0 ? parts.join(' · ') : null;
-};

@@ -1,7 +1,6 @@
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DASHBOARD_NAVIGATION_ICONS } from '@/app/routes/navigation-icons';
 import { DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
-import ClusterCredentialsModal from '@/modules/cluster/components/ClusterCredentialsModal';
 import NavTreeSection from '@/modules/dashboard/components/AppNav/NavTreeSection';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
@@ -123,10 +122,6 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                 {
                     label: 'Monitor',
                     onClick: () => sidebarClusters.handleMonitor(cluster)
-                },
-                {
-                    label: 'Reveal Credentials',
-                    onClick: () => sidebarClusters.handleRevealCredentials(cluster)
                 }
             ]
         }))
@@ -273,13 +268,6 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                 />
             ))}
 
-            {!sidebarClusters.isOnClustersRoute && (
-                <ClusterCredentialsModal
-                    teamCluster={sidebarClusters.credentialsCluster}
-                    credentials={sidebarClusters.credentials}
-                    onReveal={sidebarClusters.revealCredentials}
-                />
-            )}
         </SidebarPanel>
     );
 };

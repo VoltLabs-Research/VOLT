@@ -101,16 +101,6 @@ export default class ClusterController extends ClusterControllerBase {
     }
 
     @Middleware(RATE_LIMIT_POLICIES.passwordConfirmedClusterAction)
-    @Route(teamClusterRoutes.revealCredentials)
-    async revealCredentials(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await this.#service.revealCredentials(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    }
-
-    @Middleware(RATE_LIMIT_POLICIES.passwordConfirmedClusterAction)
     @Route(teamClusterRoutes.createRemoteAccessSession)
     async createRemoteAccessSession(
         @Req() req: AuthenticatedRequest,
