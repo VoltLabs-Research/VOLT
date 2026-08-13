@@ -1,99 +1,61 @@
-import { Button } from '@heroui/react';
-import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
+import { cn } from '@heroui/react';
 import { resolveInstallState } from '@/modules/plugin/components/marketplace/registry-version';
 
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
 
-const compactCount = (value: number): string => {
-    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}m`;
-    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}k`;
-    return String(value);
-};
-
 interface MarketplaceRowProps {
     item: RegistryPackageSummary;
     installedVersion?: string;
-    isInstalling: boolean;
-    /** Installs land on a cluster one at a time. */
-    isAnyInstalling: boolean;
-    canInstall: boolean;
-    onInstall: (item: RegistryPackageSummary) => void;
+    isSelected: boolean;
+    onSelect: (item: RegistryPackageSummary) => void;
 }
 
 /*
- * One package, as a row.
+ * A row in the left pane: it selects, it does not act.
  *
- * Everything the registry knows about a package sits on two lines: the name and
- * the action on the first, the rest as one muted line under it. No card, no icon
- * tile, no keyword chips — for a list you scan top to bottom, that chrome only
- * competes with the names.
+ * The Install button used to live here, which made every row a place where an
+ * irreversible cluster operation could be triggered while scanning. Installing is
+ * now the detail pane's single primary action, so this row carries only what you
+ * choose by: the name, its version, and whether you already have it.
  *
- * Facts the registry did not return are omitted rather than filled in: a zero
- * download count would read as a measurement.
+ * The description is gone from the row too — it is read in the detail pane, in
+ * full, instead of being clipped into a line that ends mid-sentence.
  */
-const MarketplaceRow = ({
-    item,
-    installedVersion,
-    isInstalling,
-    isAnyInstalling,
-    canInstall,
-    onInstall
-}: MarketplaceRowProps) => {
+const MarketplaceRow = ({ item, installedVersion, isSelected, onSelect }: MarketplaceRowProps) => {
     const state = resolveInstallState(item.latest, installedVersion);
-    const downloads = item.downloads?.last30d ?? item.downloads?.total;
-    const updated = item.updatedAt ? formatCompactRelativeTime(item.updatedAt) : undefined;
-
-    const meta = [
-        item.description,
-        `@${item.username}`,
-        downloads === undefined ? undefined : `${compactCount(downloads)} downloads`,
-        updated === undefined ? undefined : `updated ${updated}`
-    ].filter((part): part is string => Boolean(part)).join(' · ');
 
     return (
-        <div className='flex flex-row items-center gap-4 border-b border-border py-3'>
-            <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                <span className='flex min-w-0 flex-row items-baseline gap-2'>
-                    <span className='truncate text-sm font-medium text-foreground' title={item.name}>
-                        {item.name}
-                    </span>
-                    {item.latest && (
-                        <span className='tabular-nums lining-nums shrink-0 text-2xs text-muted'>
-                            {`v${item.latest}`}
-                        </span>
-                    )}
-                </span>
-                <span className='truncate text-2xs text-muted' title={meta}>{meta}</span>
-            </div>
-
-            {state === 'installed' ? (
-                <span
-                    className='shrink-0 text-2xs text-muted'
-                    title={installedVersion ? `Installed v${installedVersion}` : 'Installed'}
-                >
-                    Installed
-                </span>
-            ) : (
-                // A disabled control needs a reason, and the two reasons differ.
-                <span
-                    className='inline-flex shrink-0'
-                    title={canInstall
-                        ? (isAnyInstalling && !isInstalling ? 'Another install is running' : undefined)
-                        : 'You do not have permission to install plugins.'}
-                >
-                    <Button
-                        size='sm'
-                        variant={state === 'update' ? 'primary' : 'ghost'}
-                        onPress={() => onInstall(item)}
-                        isPending={isInstalling}
-                        isDisabled={!canInstall || isAnyInstalling}
-                        aria-label={`${state === 'update' ? 'Update' : 'Install'} ${item.name}`}
-                    >
-                        {state === 'update' ? 'Update' : 'Install'}
-                    </Button>
-                </span>
+        <button
+            type='button'
+            role='option'
+            aria-selected={isSelected}
+            onClick={() => onSelect(item)}
+            className={cn(
+                'flex w-full cursor-pointer flex-row items-center gap-2 rounded-md border-0 px-3 py-2 text-left',
+                isSelected ? 'bg-surface-hover' : 'bg-transparent hover:bg-surface-hover/60'
             )}
-        </div>
+        >
+            <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+                <span className='truncate text-sm text-foreground' title={item.name}>
+                    {item.name}
+                </span>
+                <span className='truncate text-2xs text-muted'>
+                    {`@${item.username}`}
+                </span>
+            </span>
+
+            <span className='flex shrink-0 flex-col items-end gap-0.5'>
+                {item.latest && (
+                    <span className='text-2xs text-muted tabular-nums lining-nums'>{`v${item.latest}`}</span>
+                )}
+                {/*
+                 * Only "installed" and "update" are marked. Marking the third state too
+                 * would put a label on every row, which says nothing about any of them.
+                 */}
+                {state === 'installed' && <span className='text-2xs text-muted'>Installed</span>}
+                {state === 'update' && <span className='text-2xs text-accent'>Update</span>}
+            </span>
+        </button>
     );
 };
 

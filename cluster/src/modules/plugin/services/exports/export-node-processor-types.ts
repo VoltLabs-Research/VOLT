@@ -6,7 +6,7 @@ import type { GeometryBudget } from '@shared/domain/octree';
 import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 
-export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'LineExporter' | 'BondExporter' | 'ChartExporter' | 'ConfigurationExporter';
+export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'LineExporter' | 'BondExporter' | 'ChartExporter' | 'ConfigurationExporter' | 'PanelExporter';
 
 export type ConfigurationExportFormat = 'lammps-dump' | 'lammps-data' | 'extxyz' | 'poscar' | 'cif';
 
@@ -150,6 +150,83 @@ export interface ChartExportOptions {
     fillColor?: string;
     showLegend?: boolean;
     showGrid?: boolean;
+}
+
+/*
+ * Panel blocks, transcribed from `contracts/src/modules/plugin/panel.ts`, which is the
+ * source of truth. The daemon cannot import the contracts package — its tsconfig resolves
+ * only @core/@modules/@shared — so it re-declares wire shapes, as everything under
+ * `shared/contracts/` already does. Keep the field names identical; the resolved document
+ * this produces is parsed on the server against the contract version.
+ */
+export type PanelRgba = [number, number, number, number];
+export type PanelScalar = string | number | boolean | null;
+export type PanelColumnFormat = 'integer' | 'decimal' | 'percent';
+
+/** Either a literal, or a dotted path to a number the plugin computes per frame. */
+export type PanelNumber = number | { source: string };
+
+export interface PanelColumnDeclaration {
+    column: string;
+    label: string;
+    format?: PanelColumnFormat;
+}
+
+export interface PanelTableBlockDeclaration {
+    kind: 'table';
+    title: string;
+    source: string;
+    label: string;
+    columns: PanelColumnDeclaration[];
+    colorBy?: string;
+    colors?: Record<string, PanelRgba>;
+}
+
+export interface PanelCategoricalAxisDeclaration {
+    kind: 'categories';
+    source: string;
+}
+
+export interface PanelIntervalAxisDeclaration {
+    kind: 'interval';
+    start: PanelNumber;
+    end: PanelNumber;
+}
+
+export interface PanelChartMarkerDeclaration {
+    value: PanelNumber;
+    label?: string;
+    style?: 'line' | 'zone';
+}
+
+export interface PanelChartBlockDeclaration {
+    kind: 'chart';
+    title: string;
+    chartType: 'bar' | 'line';
+    values: string;
+    x: PanelCategoricalAxisDeclaration | PanelIntervalAxisDeclaration;
+    xAxisLabel?: string;
+    yAxisLabel?: string;
+    valueFormat?: PanelColumnFormat;
+    markers?: PanelChartMarkerDeclaration[];
+}
+
+export interface PanelStatBlockDeclaration {
+    kind: 'stat';
+    title: string;
+    source: string;
+    format?: PanelColumnFormat;
+    unit?: string;
+}
+
+export type PanelBlockDeclaration =
+    | PanelTableBlockDeclaration
+    | PanelChartBlockDeclaration
+    | PanelStatBlockDeclaration;
+
+export interface PanelExportOptions {
+    blocks: PanelBlockDeclaration[];
+    title?: string;
 }
 
 export interface OctreeExportOptions {

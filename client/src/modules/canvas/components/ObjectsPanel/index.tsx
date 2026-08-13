@@ -225,9 +225,27 @@ const ObjectsPanel = ({
         </RightCollapsible>
     );
 
-    // The results panel follows whatever analysis the user is looking at: the active
-    // plugin scene if there is one, otherwise the canvas' current analysis.
-    const resultsAnalysisId = activeScene?.source === 'plugin' ? activeScene.analysisId : analysisId;
+    /*
+     * Which analysis the results panel describes, most specific source first.
+     *
+     * The first two were the whole rule, and between them they left the common case
+     * uncovered: run a plugin without clicking into its exposure and the primary active
+     * scene is still the simulation cell, so `activeScene.source` is not `'plugin'`; if
+     * the URL carries no `analysisId` either, this was `undefined` and the panel removed
+     * itself entirely. The plugin had run, its tables were on disk, and the sidebar showed
+     * nothing — with no way for the reader to tell those two states apart.
+     *
+     * So the last fallback is the tree's newest analysis. When exactly one analysis is
+     * listed, "the analysis the user is looking at" is not ambiguous, and showing its
+     * summary beats showing nothing.
+     */
+    const resultsAnalysisId = useMemo(() => {
+        if (activeScene?.source === 'plugin') return activeScene.analysisId;
+        if (analysisId) return analysisId;
+
+        return sceneCollectionSections[0]?.analysis._id;
+    }, [activeScene, analysisId, sceneCollectionSections]);
+
     const resultsPluginId = useMemo(() => {
         if (!resultsAnalysisId) return undefined;
         return sceneCollectionSections

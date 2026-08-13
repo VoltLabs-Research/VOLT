@@ -59,6 +59,7 @@ import type { GetPluginByIdOutput } from '@shared/contracts/operations/GetPlugin
 import type { GetPluginExposureGLBOutput } from '@shared/contracts/operations/GetPluginExposureGLB';
 import type { GetPluginListingDocumentsOutput } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { GetSubListingOutput } from '@shared/contracts/operations/GetSubListing';
+import type { GetPluginExposurePanelsResponse } from '@volt/contracts/modules/plugin/panel';
 
 interface PublicCanvasRequest{
     trajectoryId: string;
@@ -278,6 +279,22 @@ export default class PublicCanvasService{
             page: input.page,
             limit: input.limit,
             sortAsc: input.sortAsc
+        });
+    }
+
+    /*
+     * Reachable on a shared canvas, unlike the legacy panel path: a panel needs only the
+     * analysis and the frame, where the legacy tables were declared on the plugin and so
+     * depended on the team-scoped plugin catalogue.
+     */
+    async exposurePanels(input: AnalysisScopedRequest & { timestep: number }): Promise<GetPluginExposurePanelsResponse>{
+        await this.#access.assertReadable(input.trajectoryId, input.userId);
+        const analysis = await this.#requireOwnedAnalysis(input.analysisId, input.trajectoryId);
+
+        return this.#plugins.getPluginExposurePanels({
+            analysisId: input.analysisId,
+            timestep: input.timestep,
+            teamId: analysis.team
         });
     }
 

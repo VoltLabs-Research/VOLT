@@ -62,12 +62,15 @@ export enum Exporter{
     LINE = 'LineExporter',
     BOND = 'BondExporter',
     CHART = 'ChartExporter',
-    CONFIGURATION = 'ConfigurationExporter'
+    CONFIGURATION = 'ConfigurationExporter',
+    /** Resolves declared blocks into a panel document for the canvas right sidebar. */
+    PANEL = 'PanelExporter'
 }
 
 export enum WorkflowExportType{
     GLB = 'glb',
-    CHART_PNG = 'chart-png'
+    CHART_PNG = 'chart-png',
+    PANEL_JSON = 'panel-json'
 }
 
 export enum ConditionType{

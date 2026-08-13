@@ -1,6 +1,5 @@
 import Loader from '@/shared/ui/components/Loader';
 import { buttonVariants } from '@heroui/react';
-import MetricsCards from '@/modules/cluster/components/MetricsCards';
 import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
@@ -10,9 +9,9 @@ import useTip from '@/shared/tips/use-tip';
 import { Link } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 
+const ClusterResourceReadout = lazy(() => import('@/modules/cluster/components/ClusterResourceReadout'));
 const CpuDistribution = lazy(() => import('@/modules/cluster/components/CpuDistribution'));
 const DiskOperations = lazy(() => import('@/modules/cluster/components/DiskOperations'));
-const ResourceUsage = lazy(() => import('@/modules/cluster/components/ResourceUsage'));
 const NetworkChart = lazy(() => import('@/shared/ui/components/NetworkChart'));
 
 const DEFERRED_VISUALIZATIONS_IDLE_TIMEOUT_MS = 200;
@@ -114,25 +113,26 @@ const ClusterMonitoringPage = () => {
 
                 {vm.hasClusters && vm.metrics && (
                     <>
-                        <MetricsCards metrics={vm.metrics} />
-
                         {shouldShowProgressiveVisualizationLoader && renderDeferredVisualizationsFallback()}
 
                         {shouldRenderVisualizations && (
                             <Suspense fallback={renderDeferredVisualizationsFallback()}>
+                                {/*
+                                 * Current state first, as one readout; shape over time below it.
+                                 * The readout states each measure once, so the panels under it are
+                                 * only the measures that split into series worth comparing.
+                                 */}
+                                <ClusterResourceReadout metrics={vm.metrics} history={vm.history} />
+
+                                <CpuDistribution history={vm.history} metrics={vm.metrics} />
+
                                 <div className='md:grid md:grid-cols-2 md:gap-6 min-[1440px]:gap-8'>
-                                    <ResourceUsage metrics={vm.metrics} />
-                                    <CpuDistribution history={vm.history} metrics={vm.metrics} />
-                                </div>
-                                <div className='md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3 min-[1440px]:gap-8'>
-                                    <div className='lg:col-span-2'>
-                                        <NetworkChart
-                                            data={networkData}
-                                            isLoading={!vm.metrics}
-                                            calculateDelta={false}
-                                            title='Network Traffic'
-                                            height={300} />
-                                    </div>
+                                    <NetworkChart
+                                        data={networkData}
+                                        isLoading={!vm.metrics}
+                                        calculateDelta={false}
+                                        title='Network Traffic'
+                                        height={260} />
                                     <DiskOperations history={vm.history} metrics={vm.metrics} />
                                 </div>
                             </Suspense>

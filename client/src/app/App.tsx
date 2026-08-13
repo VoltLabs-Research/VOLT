@@ -22,39 +22,12 @@ import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
+
 ensureApplicationStoreCleanupsRegistered();
 
-const TARGET_DESKTOP_VIEWPORT_WIDTH = 1800;
-const TARGET_DESKTOP_VIEWPORT_HEIGHT = 960;
-const DESKTOP_BREAKPOINT = 1024;
-const DEFAULT_ROOT_FONT_SIZE = 16;
-const MINIMUM_PAGE_SCALE = 0.75;
 
 const shouldMountWorkspaceGlobals = (pathname: string): boolean => {
     return pathname !== '/error' && pathname !== '/connect' && !pathname.startsWith('/auth/');
-};
-
-const getPageScale = () => {
-    if (window.innerWidth < DESKTOP_BREAKPOINT) {
-        return 1;
-    }
-
-    const scale = Math.min(
-        window.innerWidth / TARGET_DESKTOP_VIEWPORT_WIDTH,
-        window.innerHeight / TARGET_DESKTOP_VIEWPORT_HEIGHT,
-        1
-    );
-
-    return Number.isFinite(scale) ? Math.max(scale, MINIMUM_PAGE_SCALE) : 1;
-};
-
-const syncPageScale = () => {
-    const pageScale = getPageScale();
-    document.documentElement.style.setProperty('--volt-root-font-size', `${(DEFAULT_ROOT_FONT_SIZE * pageScale).toFixed(2)}px`);
-};
-
-const resetPageScale = () => {
-    document.documentElement.style.removeProperty('--volt-root-font-size');
 };
 
 const AppChrome = () => {
@@ -136,33 +109,6 @@ const AppRoutes = () => {
 
 export default function App() {
     useThemeInitialization();
-
-    useEffect(() => {
-        let frameReference = 0;
-
-        const handleResize = () => {
-            if (frameReference) {
-                cancelAnimationFrame(frameReference);
-            }
-
-            frameReference = window.requestAnimationFrame(() => {
-                syncPageScale();
-                frameReference = 0;
-            });
-        };
-
-        handleResize();
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            if (frameReference) {
-                cancelAnimationFrame(frameReference);
-            }
-
-            window.removeEventListener('resize', handleResize);
-            resetPageScale();
-        };
-    }, []);
 
     return (
         <QueryClientProvider client={queryClient}>

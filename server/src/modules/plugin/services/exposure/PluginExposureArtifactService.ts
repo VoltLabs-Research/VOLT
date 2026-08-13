@@ -19,6 +19,17 @@ import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/dom
 import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
 import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
 import logger from '@shared/infrastructure/logger';
+import type {
+    GetPluginExposurePanelsResponse,
+    PanelDocument,
+    ResolvedPanelBlock
+} from '@volt/contracts/modules/plugin/panel';
+
+export interface GetPluginExposurePanelsInput {
+    teamId: string;
+    analysisId: string;
+    timestep: number;
+}
 
 export interface GetPluginExposureChartInput {
     teamId: string;
@@ -26,6 +37,18 @@ export interface GetPluginExposureChartInput {
 }
 
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+const PANEL_EXPORTER = 'PanelExporter';
+const SUPPORTED_PANEL_DOCUMENT_VERSION = 1;
+
+/*
+ * Ceilings on what one frame can hand the sidebar. A panel is a summary, so these sit far
+ * above any honest use and exist only so a malformed run cannot make this endpoint expensive.
+ */
+const MAX_PANEL_DOCUMENTS = 32;
+const MAX_PANEL_TOTAL_BYTES = 4 * 1024 * 1024;
+
+const PANEL_BLOCK_KINDS = new Set(['table', 'chart', 'stat', 'omitted']);
 
 const matchesExposureParams = (params: SceneArtifactParams | null | undefined, exposureId: string): boolean => {
     const entries = Object.entries(params ?? {}).filter(([, value]) => value !== undefined);
@@ -176,6 +199,114 @@ export default class PluginExposureArtifactService {
             trajectoryId: analysis.trajectory,
             pluginName
         });
+    }
+
+
+    async getExposurePanels(input: GetPluginExposurePanelsInput): Promise<GetPluginExposurePanelsResponse>{
+        const analysis = await this.#requireTeamAnalysis(input.analysisId, input.teamId);
+
+        const artifacts = await SceneArtifactEntity.findBy({
+            trajectory: analysis.trajectory,
+            analysis: analysis.id,
+            sourceType: SceneArtifactSourceType.PluginExposure,
+            timestep: input.timestep
+        });
+
+        /*
+         * Filtered on the exporter, not on `params`. The two existing artifact lookups match
+         * `params` exactly — one requires it to hold a single entry — which would exclude any
+         * artifact that ever gains another param.
+         */
+        const panelArtifacts = artifacts
+            .filter((artifact) => artifact.metadata?.exporter === PANEL_EXPORTER)
+            .slice(0, MAX_PANEL_DOCUMENTS);
+
+        const panels: PanelDocument[] = [];
+        const unreadable: { exposureId: string; reason: string }[] = [];
+        let totalBytes = 0;
+
+        for(const artifact of panelArtifacts){
+            const exposureId = artifact.metadata?.exposureId ?? artifact.objectName;
+
+            if(!artifact.storageClusterId){
+                unreadable.push({
+                    exposureId,
+                    reason: 'The artifact has no storage cluster'
+                });
+                continue;
+            }
+
+            try{
+                const buffer = await this.#objectGatewayClient.getBuffer(
+                    artifact.storageClusterId,
+                    artifact.storageBucket,
+                    artifact.objectName
+                );
+
+                totalBytes += buffer.byteLength;
+                if(totalBytes > MAX_PANEL_TOTAL_BYTES){
+                    unreadable.push({
+                        exposureId,
+                        reason: 'Panel documents for this frame exceed the size limit'
+                    });
+                    break;
+                }
+
+                panels.push(this.#parseDocument(buffer, exposureId));
+            }catch(error){
+                /*
+                 * One unreadable panel is reported and the rest are still served: a frame
+                 * whose second table failed to upload should still show its first.
+                 */
+                logger.warn(`Panel document unreadable analysisId=${analysis.id} exposureId=${exposureId}: ${String(error)}`);
+                unreadable.push({
+                    exposureId,
+                    reason: error instanceof ApplicationError ? error.message : 'The panel document could not be read'
+                });
+            }
+        }
+
+        return {
+            analysisId: analysis.id,
+            timestep: input.timestep,
+            panels,
+            ...(unreadable.length > 0 ? { unreadable } : {})
+        };
+    }
+
+    #parseDocument(buffer: Buffer, exposureId: string): PanelDocument{
+        const parsed = JSON.parse(buffer.toString('utf8')) as Partial<PanelDocument>;
+
+        if(parsed.version !== SUPPORTED_PANEL_DOCUMENT_VERSION){
+            throw ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_EXPOSURE_PANEL_UNSUPPORTED_VERSION,
+                `Panel document version ${String(parsed.version)} is not supported`
+            );
+        }
+
+        if(!Array.isArray(parsed.blocks)){
+            throw ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_EXPOSURE_PANEL_UNSUPPORTED_VERSION,
+                'Panel document declares no blocks'
+            );
+        }
+
+        /*
+         * A block kind this server does not know is dropped rather than forwarded: the
+         * client switches exhaustively on kind, and an unknown one would reach its default.
+         */
+        const blocks = parsed.blocks.filter((block): block is ResolvedPanelBlock => {
+            return Boolean(block) && PANEL_BLOCK_KINDS.has((block as ResolvedPanelBlock).kind);
+        });
+
+        return {
+            version: SUPPORTED_PANEL_DOCUMENT_VERSION,
+            exposureId: parsed.exposureId ?? exposureId,
+            exposureName: parsed.exposureName ?? '',
+            timestep: parsed.timestep ?? 0,
+            ...(parsed.title ? { title: parsed.title } : {}),
+            blocks
+        };
     }
 
     async #requireTeamAnalysis(analysisId: string, teamId: string): Promise<AnalysisEntity> {

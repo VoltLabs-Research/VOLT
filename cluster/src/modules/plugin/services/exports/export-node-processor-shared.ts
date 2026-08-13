@@ -31,8 +31,14 @@ export const buildObjectPath = (
 ): string => {
     const isChart = exporter === 'ChartExporter' || type === 'chart-png';
     const isSim = exporter === 'ConfigurationExporter';
-    const folder = isChart ? 'charts' : isSim ? 'simulation' : 'glb';
-    const extension = isChart ? 'png' : type;
+    const isPanel = exporter === 'PanelExporter' || type === 'panel-json';
+    const folder = isChart ? 'charts' : isSim ? 'simulation' : isPanel ? 'panels' : 'glb';
+    /*
+     * The extension defaults to the declared export type, which only reads as a file
+     * extension for the formats named here; a panel would otherwise be written as
+     * `glb/<ts>/<node>.panel-json`.
+     */
+    const extension = isChart ? 'png' : isPanel ? 'json' : type;
     const suffix = arrayIndex != null ? `_${arrayIndex}` : '';
 
     return `trajectory-${input.executionData.trajectoryId}/analysis-${input.executionData.analysisId}/${folder}/${input.timestep}/${input.exposure.nodeId}${suffix}.${extension}`;

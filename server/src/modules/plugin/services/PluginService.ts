@@ -34,8 +34,11 @@ import {
     type UpdatePipelineRunInput
 } from '@modules/plugin/services/plugin/PipelineRunCommands';
 import PluginExposureArtifactService, {
-    type GetPluginExposureChartInput
+    type GetPluginExposureChartInput,
+    type GetPluginExposurePanelsInput
 } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
+import type { GetPluginExposurePanelsResponse } from '@volt/contracts/modules/plugin/panel';
+
 import { PluginExposureExportService } from '@modules/plugin/services/exposure/PluginExposureExportService';
 import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import {
@@ -339,6 +342,10 @@ export default class PluginService {
 
     async getPluginExposureChart(input: GetPluginExposureChartInput): Promise<DownloadStreamOutput> {
         return this.#exposureArtifactService.getExposureChart(input);
+    }
+
+    async getPluginExposurePanels(input: GetPluginExposurePanelsInput): Promise<GetPluginExposurePanelsResponse> {
+        return this.#exposureArtifactService.getExposurePanels(input);
     }
 
     async getPluginExposureExport(input: GetPluginExposureExportInput): Promise<DownloadStreamOutput> {

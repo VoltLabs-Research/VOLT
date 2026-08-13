@@ -20,6 +20,7 @@ import type {
     ExecutePipelineResponse
 } from './plugin';
 import type { PipelineRun } from './pipeline-run';
+import type { GetPluginExposurePanelsResponse } from './panel';
 import type { SearchRegistryResponse } from './registry';
 import type {
     ListingRowData,
@@ -41,6 +42,8 @@ export const pluginRoutes = {
     getPluginExposureGLB: get<Blob>('/api/teams/:teamId/plugins/exposures/:trajectoryId/:analysisId/:exposureId/:timestep/glb'),
     getPluginExposureChart: get<Blob>('/api/teams/:teamId/plugins/exposures/artifacts/:artifactId/chart'),
     getPluginExposureExport: get<Blob>('/api/teams/:teamId/plugins/exposures/analyses/:analysisId/export'),
+    /* Every panel document of an analysis at one timestep, parsed. One request per frame. */
+    getPluginExposurePanels: get<GetPluginExposurePanelsResponse>('/api/teams/:teamId/plugins/exposures/analyses/:analysisId/panels/:timestep'),
 
     
     getNodeTypesSchema: get<GetNodeTypesSchemaResponse>('/api/teams/:teamId/plugins/node-types/schema'),

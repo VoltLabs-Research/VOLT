@@ -15,6 +15,7 @@ import { toTrajectoryRecord } from '@modules/trajectory/services/trajectory/traj
 import {
     discardFailedCommit,
     isNoValidFramesError,
+    isUnreadableStagedObjectError,
     persistIngestedFrames,
     projectQueuedGlbJobs,
     requestTrajectoryIngest
@@ -193,10 +194,22 @@ class TrajectoryUploadSessionService {
             logger.error(error, `[TrajectoryUploadSessionService] Commit failed for uploadSessionId=${session.id}`);
             await discardFailedCommit(session.id, trajectoryId, input);
 
+            /*
+             * Checked before the no-frames case, and never folded into it: an object we
+             * failed to read is our failure, and reporting it as an unsupported upload
+             * sends the user to re-export a trajectory that was never the problem.
+             */
+            if (isUnreadableStagedObjectError(error)) {
+                throw ApplicationError.unprocessableEntity(
+                    ErrorCodes.TRAJECTORY_CREATION_STAGED_OBJECT_UNREADABLE,
+                    'The upload reached the storage cluster but one of its files could not be read back for ingestion. This is a problem on our side, not with the file — retry the upload, and if it keeps failing the cluster logs carry the reason.'
+                );
+            }
+
             if (isNoValidFramesError(error)) {
                 throw ApplicationError.unprocessableEntity(
                     ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES,
-                    'The uploaded file does not contain any readable trajectory frames. Upload a supported trajectory dump (e.g. a LAMMPS dump, XYZ, or a ZIP of frames).'
+                    'None of the uploaded files contain readable trajectory frames. Upload a supported trajectory dump (e.g. a LAMMPS dump, XYZ, or a ZIP of frames).'
                 );
             }
 

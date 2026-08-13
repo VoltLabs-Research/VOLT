@@ -67,6 +67,8 @@ export const ErrorCodes = createErrorCodes({
 
     TRAJECTORY_CREATION_NO_VALID_FILES: 'Trajectory::Creation::NoValidFiles',
 
+    TRAJECTORY_CREATION_STAGED_OBJECT_UNREADABLE: 'Trajectory::Creation::StagedObjectUnreadable',
+
     ANALYSIS_NOT_FOUND: 'Analysis::NotFound',
 
     PLUGIN_NOT_FOUND: 'Plugin::NotFound',
@@ -175,6 +177,7 @@ export const ErrorCodes = createErrorCodes({
     CLUSTER_TRANSFER_VERIFICATION_MISMATCH: 'ClusterTransfer::VerificationMismatch',
     CLUSTER_TRANSFER_VERIFICATION_MISSING_DESTINATION_OBJECT: 'ClusterTransfer::VerificationMissingDestinationObject',
     CLUSTER_TRANSFER_VERIFICATION_SIZE_MISMATCH: 'ClusterTransfer::VerificationSizeMismatch',
+    PLUGIN_EXPOSURE_PANEL_UNSUPPORTED_VERSION: 'Plugin::Exposure::Panel::UnsupportedVersion',
     PLUGIN_EXPOSURE_CHART_UNSUPPORTED_ARTIFACT: 'PluginExposureChart::UnsupportedArtifact',
     REGISTRY_INVALID_PACKAGE_NAME: 'Registry::InvalidPackageName',
     STORAGE_PLACEMENT_ANALYSIS_STORAGE_CLUSTER_REQUIRED: 'StoragePlacement::AnalysisStorageClusterRequired',

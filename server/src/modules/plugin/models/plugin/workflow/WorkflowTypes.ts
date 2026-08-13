@@ -1,7 +1,8 @@
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 import {
     ArgumentType,
-    ArgumentVisibilityOperator
+    ArgumentVisibilityOperator,
+    Exporter as WireExporter
 } from '@volt/contracts/modules/plugin/enums';
 
 export { WorkflowNodeType };
@@ -139,24 +140,23 @@ export interface ExposureProperty {
     type?: string;
 }
 
-export interface PanelColumn {
-    column: string;
-    label: string;
-    format?: 'integer' | 'decimal' | 'percent';
-}
+/*
+ * Re-exported rather than re-declared. These were a hand-copy of the contract types, and
+ * a copy of a wire shape is a copy that drifts.
+ *
+ * @deprecated with the shapes themselves: superseded by the `PanelExporter` export node
+ * (`@volt/contracts/modules/plugin/panel`).
+ */
+export type {
+    IPanelColumn as PanelColumn,
+    IPanelTable as PanelTable,
+    IExposurePanel as ExposurePanel
+} from '@volt/contracts/modules/plugin/exposure';
 
-export interface PanelTable {
-    source: string;
-    title: string;
-    label: string;
-    columns: PanelColumn[];
-    colorBy?: string;
-    colors?: Record<string, [number, number, number, number]>;
-}
+export type { IPanelExportOptions } from '@volt/contracts/modules/plugin/panel';
 
-export interface ExposurePanel {
-    tables: PanelTable[];
-}
+// Also imported locally, because a re-export does not put the name in this file's scope.
+import type { IExposurePanel } from '@volt/contracts/modules/plugin/exposure';
 
 interface ExposureNodeData {
     name: string;
@@ -170,7 +170,7 @@ interface ExposureNodeData {
      * plugin says which sub-listings to summarise, how to label them and what colour
      * each category has, and the server passes it through untouched.
      */
-    panel?: ExposurePanel;
+    panel?: IExposurePanel;
     /**
      * Gates the exposure on one of the plugin's arguments, using the same condition shape
      * as an argument's `visibleWhen`.
@@ -184,18 +184,31 @@ export enum Exporter {
     Line = 'LineExporter',
     Chart = 'ChartExporter',
     Bond = 'BondExporter',
-    Configuration = 'ConfigurationExporter'
+    Configuration = 'ConfigurationExporter',
+    Panel = 'PanelExporter'
 }
 
 export enum ExportType {
     GLB = 'glb',
     ChartPNG = 'chart-png',
+    PanelJSON = 'panel-json',
     LammpsDump = 'lammps-dump',
     LammpsData = 'lammps-data',
     ExtXYZ = 'extxyz',
     POSCAR = 'poscar',
     CIF = 'cif'
 }
+
+/*
+ * This enum duplicates `Exporter` in the contracts package (their member *names* differ,
+ * which is why they are not simply re-exported). The guard below fails the build if their
+ * *values* ever diverge — the only property anything at runtime depends on.
+ */
+type ExporterValuesMatch = `${Exporter}` extends `${WireExporter}`
+    ? (`${WireExporter}` extends `${Exporter}` ? true : never)
+    : never;
+const exporterValuesMatch: ExporterValuesMatch = true;
+void exporterValuesMatch;
 
 export interface ExportNodeData {
     exporter: Exporter;

@@ -32,9 +32,13 @@ export interface IPanelColumn{
  * tables OVITO shows next to a modifier ("Structure analysis results").
  *
  * The plugin owns everything semantic here: which sub-listing to read, which column is
- * the row label, and the colour of each category. VOLT resolves nothing by name -- a
- * category the plugin does not declare a colour for simply gets a generated one, so a
- * plugin can add a category without any change on this side.
+ * the row label, and the colour of each category. VOLT resolves nothing by name, and a
+ * category with no declared colour gets **no swatch** rather than a generated one: an
+ * invented colour would disagree with the colour that category carries in the viewport.
+ *
+ * @deprecated Superseded by the `PanelExporter` export node (see ./panel.ts), which also
+ * expresses charts and scalars. Kept so plugins declaring `panel` keep working until they
+ * migrate; delete this together with the client's legacy panel path.
  */
 export interface IPanelTable{
     /** Name of the sub-listing this table reads, as emitted in the payload. */

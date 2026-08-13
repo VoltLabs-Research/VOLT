@@ -1,12 +1,10 @@
 import ChartContainer from '@/shared/ui/components/ChartContainer';
-import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { useMemo } from 'react';
 import {
     LineChart,
     Line,
     YAxis,
     CartesianGrid,
-    Tooltip,
     ResponsiveContainer
 } from 'recharts';
 import { Cpu } from 'lucide-react';
@@ -21,11 +19,21 @@ interface CpuCoreDataPoint {
     [key: string]: number;
 }
 
-const BASE_CORE_COLORS = [
-    '#0A84FF', '#30D158', '#FF9F0A', '#FF453A',
-    '#BF5AF2', '#64D2FF', '#FFD60A', '#FF375F',
-    '#AC8E68', '#5E5CE6', '#32D74B', '#FF6482'
-];
+/*
+ * Every core is drawn in the same hue at low opacity, so the panel reads as what it
+ * is named: a distribution, dense where cores agree and frayed where one diverges.
+ *
+ * It used to cycle twelve saturated colours, which on a 160-core host meant each
+ * colour stood for thirteen different cores — identity that could not be recovered
+ * from the picture. Those hues also fail as a categorical palette for CVD readers,
+ * which is why charts in this client carry identity by label and never by hue.
+ *
+ * There is no tooltip: hovering a 160-series chart produced a list of 160 rows,
+ * and a single core's number is not what this panel is for. The summary above it
+ * carries the average and the core count.
+ */
+const CORE_STROKE = 'var(--accent)';
+const CORE_OPACITY = 0.28;
 
 const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
     const chartData = useMemo<CpuCoreDataPoint[]>(() => {
@@ -43,8 +51,8 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
             return Math.max(maxCores, point.cpu.coresUsage.length, point.cpu.cores);
         }, metrics?.cpu.cores ?? 0);
     }, [history, metrics?.cpu.cores]);
-    const coreColors = useMemo(() => {
-        return Array.from({ length: numCores }, (_, i) => BASE_CORE_COLORS[i % BASE_CORE_COLORS.length]);
+    const coreKeys = useMemo(() => {
+        return Array.from({ length: numCores }, (_, index) => `core${index}`);
     }, [numCores]);
 
     const avgUsage = useMemo(() => {
@@ -75,20 +83,6 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
             </ChartContainer>
         );
     }
-
-    const renderTooltip = ({ active, payload }: Record<string, unknown>) => {
-        if (!active || !Array.isArray(payload) || payload.length < 1) return null;
-
-        return (
-            <ChartTooltip
-                items={payload.map((entry: Record<string, unknown>) => ({
-                    label: String(entry.name ?? ''),
-                    value: `${Number(entry.value).toFixed(1)}%`,
-                    color: String(entry.color ?? '')
-                }))}
-            />
-        );
-    };
 
     return (
         <ChartContainer
@@ -125,18 +119,18 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
                         vertical={false}
                     />
                     <YAxis domain={[0, 100]} hide />
-                    <Tooltip content={renderTooltip} />
-                    {coreColors.map((color, coreIndex) => (
+                    {coreKeys.map((coreKey, coreIndex) => (
                         <Line
-                            key={`core${coreIndex}`}
+                            key={coreKey}
                             type='monotone'
-                            dataKey={`core${coreIndex}`}
-                            stroke={color}
-                            strokeWidth={1.5}
+                            dataKey={coreKey}
+                            stroke={CORE_STROKE}
+                            strokeWidth={1}
                             dot={false}
+                            activeDot={false}
                             name={`Core ${coreIndex}`}
                             isAnimationActive={false}
-                            opacity={0.85}
+                            opacity={CORE_OPACITY}
                         />
                     ))}
                 </LineChart>

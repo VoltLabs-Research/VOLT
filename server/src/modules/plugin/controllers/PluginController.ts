@@ -34,6 +34,7 @@ import type { GetPipelineRunsByTrajectoryIdInput } from '@modules/plugin/service
 import type { UpdatePipelineRunInput } from '@volt/contracts/modules/plugin/http';
 import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
+import type { GetPluginExposurePanelsInput } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
 import type { GetPluginExposureGLBInput } from '@shared/contracts/operations/GetPluginExposureGLB';
 import type {
     GetAnalysisListingExportOptionsInput,
@@ -160,6 +161,19 @@ export default class PluginController extends Controller {
         const output = await this.#service.getPluginExposureGLB(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
+    }
+
+    @Route(pluginRoutes.getPluginExposurePanels)
+    async getPluginExposurePanels(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
+        const input = buildControllerParams(req) as unknown as GetPluginExposurePanelsInput;
+        const value = await this.#service.getPluginExposurePanels({
+            ...input,
+            timestep: Number(input.timestep)
+        });
+        BaseResponse.success(res, value, HttpStatus.OK);
     }
 
     @Route(pluginRoutes.getPluginExposureChart)

@@ -69,6 +69,24 @@ const toIngestFrame = (
     objectKey
 });
 
+/**
+ * Separates "this file is not a trajectory" from "this file could not be read".
+ *
+ * Both used to be skipped identically, which meant a staged object that never landed
+ * on disk — a wrong key, a failed reassembly, a permissions problem — was reported to
+ * the user as an unsupported upload. It is the difference between a mistake the user
+ * can fix and one only we can, and the whole upload failing for the second reason
+ * while blaming the first is what made this class of bug invisible.
+ *
+ * The strings come from the native reader (`@voltstack/lammps-io`): it throws
+ * `Unsupported trajectory format: <path>` once it has read the file and does not
+ * recognise it, and `Failed to open file: <path>` when it never got that far — which
+ * it also does for a zero byte file.
+ */
+const isUnsupportedContentError = (error: unknown): boolean => (
+    /unsupported trajectory format/i.test(error instanceof Error ? error.message : '')
+);
+
 @CommandGroup('trajectory')
 export class TrajectoryIngestCommand {
     constructor(
@@ -108,7 +126,18 @@ export class TrajectoryIngestCommand {
         const frames = this.deduplicateFrames(parsedFrames, trajectoryId);
 
         if (frames.length === 0) {
-            throw new Error(`No valid trajectory frames found in upload (trajectoryId=${trajectoryId})`);
+            /*
+             * Reaching here now means every staged object was readable and none of them
+             * was a trajectory — an object we could not read raises its own error inside
+             * `parseStagedObject`. The counts are in the message because this error is
+             * remapped to user-facing copy by the API, and without them "no valid frames"
+             * for a 100 file upload says nothing about which part went wrong.
+             */
+            throw new Error(
+                `No valid trajectory frames found in upload (trajectoryId=${trajectoryId}, ` +
+                `staged=${stagedObjects.length}, readable=${readyObjects.length}, ` +
+                'none of which contained a recognised trajectory format)'
+            );
         }
 
         await this.enqueueFrameProcessingJobs(trajectoryId, teamId, this.config.teamClusterId, frames);
@@ -323,6 +352,28 @@ export class TrajectoryIngestCommand {
                 ? await this.expandZipAndParseFrames(staged, index, trajectoryId, tempDirectory)
                 : await this.splitStagedObjectIntoFrames(staged, index, trajectoryId);
         } catch (error) {
+            /*
+             * Only content we cannot make sense of is skipped. Anything else means the
+             * staged object itself is unreadable, which is our problem and not the
+             * upload's — so it propagates instead of being counted as "not a
+             * trajectory", and the object is left on disk for diagnosis rather than
+             * deleted along with the evidence.
+             */
+            if (!isUnsupportedContentError(error)) {
+                logger.error(
+                    {
+                        file: staged.originalName,
+                        objectKey: staged.objectKey,
+                        err: errorMessage(error)
+                    },
+                    '@trajectory-ingest: staged object could not be read'
+                );
+
+                throw new Error(
+                    `Unreadable staged object "${staged.originalName}" (objectKey=${staged.objectKey}): ${errorMessage(error)}`
+                );
+            }
+
             logger.warn(
                 {
                     file: staged.originalName,
@@ -330,7 +381,7 @@ export class TrajectoryIngestCommand {
                 },
                 isArchive
                     ? '@trajectory-ingest: skipping unreadable ZIP archive'
-                    : '@trajectory-ingest: skipping unparseable staged file'
+                    : '@trajectory-ingest: skipping file that is not a readable trajectory'
             );
             await this.removeIgnoredStagedObject(staged.objectKey);
             return [];

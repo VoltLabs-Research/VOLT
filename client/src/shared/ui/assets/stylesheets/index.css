@@ -222,7 +222,18 @@ input[type='number'] {
 }
 
 html {
-    font-size: var(--volt-root-font-size, 16px);
+    /*
+     * Fixed, and deliberately not a variable. This used to read
+     * `var(--volt-root-font-size, 16px)`, which App.tsx rewrote on every window
+     * resize: it divided the viewport by a target of 1800x960 and scaled the root
+     * font size down to 0.75 of it, so every rem-based size in the app — type,
+     * spacing, radii, control heights — shrank as the window got smaller. Resizing
+     * did not reflow the layout, it zoomed it.
+     *
+     * 16px is what that mechanism produced at or above its target viewport, so this
+     * is the size the design was drawn at.
+     */
+    font-size: 16px;
     max-width: var(--volt-app-max-width, 2560px);
     margin-inline: auto;
     background-color: var(--background);

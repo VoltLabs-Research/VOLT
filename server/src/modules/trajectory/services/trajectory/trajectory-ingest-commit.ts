@@ -33,6 +33,17 @@ export const isNoValidFramesError = (error: unknown): boolean => (
     /no valid trajectory frames/i.test(error instanceof Error ? error.message : '')
 );
 
+/**
+ * The daemon could not read an object the upload had already staged, which is an
+ * infrastructure failure rather than a bad upload. Kept distinct from
+ * `isNoValidFramesError` so the two never share a message: telling a user their file
+ * has no readable frames when the truth is that we lost track of it sends them off to
+ * re-export a trajectory that was fine.
+ */
+export const isUnreadableStagedObjectError = (error: unknown): boolean => (
+    /unreadable staged object/i.test(error instanceof Error ? error.message : '')
+);
+
 export const requestTrajectoryIngest = (
     session: TrajectoryUploadSession,
     teamId: string

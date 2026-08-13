@@ -6,6 +6,7 @@ import { exportChartArtifact } from '@modules/plugin/services/exports/chart-expo
 import { exportConfigurationArtifact } from '@modules/plugin/services/exports/configuration-exporter';
 import { exportBondArtifact, exportLineArtifact } from '@modules/plugin/services/exports/tube-artifact-exporter';
 import { exportMeshArtifact } from '@modules/plugin/services/exports/mesh-exporter';
+import { exportPanelArtifact } from '@modules/plugin/services/exports/panel-exporter';
 import type {
     AtomisticExportData,
     AtomisticExportOptions,
@@ -20,7 +21,8 @@ import type {
     LineExportOptions,
     MeshExportOptions,
     MeshInput,
-    OctreeExportOptions
+    OctreeExportOptions,
+    PanelExportOptions
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject } from '@shared/contracts/types/json';
 import { isRecord } from '@shared/domain/utilities/is-record';
@@ -42,6 +44,21 @@ const isChartExportOptions = (
     options: Record<string, unknown>
 ): options is NarrowedOptions<ChartExportOptions> => (
     typeof options.chartType === 'string' && CHART_TYPES.has(options.chartType)
+);
+
+/*
+ * The only validation a panel declaration ever gets. Nothing upstream checks an export
+ * node's `options`: the install reader only asserts that `nodes` and `edges` are arrays,
+ * and the workflow validator has no export-node rules at all. So this guard, and the
+ * per-block reasons the exporter logs, are the whole safety net between a malformed
+ * manifest and a silently missing panel.
+ */
+const isPanelExportOptions = (
+    options: Record<string, unknown>
+): options is NarrowedOptions<PanelExportOptions> => (
+    Array.isArray(options.blocks)
+    && options.blocks.length > 0
+    && options.blocks.every((block) => isRecord(block) && typeof block.kind === 'string')
 );
 
 const isEnabledOctreeOptions = (value: unknown): value is OctreeExportOptions =>
@@ -122,6 +139,16 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<bo
                     ...input,
                     decodedPayload: exportData
                 }, objectPath, ownerClusterId, options)
+            ));
+        }
+        case 'PanelExporter': {
+            if (!isPanelExportOptions(options)) {
+                logger.warn(exportContext(input, exporter), 'PanelExporter: options declare no usable blocks');
+                return false;
+            }
+
+            return runEntries<JsonObject>(input, exporter, exportConfig.type, (exportData, objectPath) => (
+                exportPanelArtifact(input, exportData, objectPath, ownerClusterId, options)
             ));
         }
         case 'AtomisticExporter': {

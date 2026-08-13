@@ -204,6 +204,19 @@ export default class CanvasController extends TrajectoryControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
+    @Route(trajectoryRoutes.canvasExposurePanels)
+    async canvasExposurePanels(
+        @Req() req: AuthenticatedRequest,
+        @Res() res: Response
+    ): Promise<void>{
+        const params = this.params(req, this.withOptionalUserId) as { timestep: unknown };
+        const value = await this.#canvas.exposurePanels({
+            ...(params as Parameters<PublicCanvasService['exposurePanels']>[0]),
+            timestep: Number(params.timestep)
+        });
+        BaseResponse.success(res, value, HttpStatus.OK);
+    }
+
     @Route(trajectoryRoutes.canvasExposureGlb)
     async canvasExposureGlb(
         @Req() req: AuthenticatedRequest,
