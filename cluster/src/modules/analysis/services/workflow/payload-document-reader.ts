@@ -4,7 +4,7 @@ import { logger } from '@shared/infrastructure/logger';
 import { quoteIdentifier, sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import type { PerAtomParquetSource } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';
-import type { MeshParquetSource, SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
+import type { MeshDomain, MeshParquetSource, SubListingBatchSource } from '@shared/contracts/types/workflow-exposure';
 import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 
 
@@ -249,6 +249,48 @@ const flattenPerAtomProperties = async (
     } : null;
 };
 
+const isVec3 = (value: unknown): value is [number, number, number] =>
+    Array.isArray(value) && value.length === 3 && value.every((entry) => Number.isFinite(entry));
+
+const readMeshDomain = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    sectionPath: string
+): Promise<MeshDomain | null> => {
+    if (await jsonTypeAt(connection, filePath, `${sectionPath}.cell`) !== 'OBJECT') {
+        return null;
+    }
+
+    const raw = await extractJson(connection, filePath, `${sectionPath}.cell`);
+    if (typeof raw !== 'object' || raw === null) {
+        return null;
+    }
+
+    const candidate = raw as Partial<MeshDomain>;
+    const matrix = candidate.matrix;
+    if (!Array.isArray(matrix) || matrix.length !== 3 || !matrix.every(isVec3)) {
+        logger.warn({
+ path: filePath, jsonPath: `${sectionPath}.cell` 
+}, 'Mesh domain has no usable cell matrix; skipping it');
+        return null;
+    }
+    if (!isVec3(candidate.origin)) {
+        logger.warn({
+ path: filePath, jsonPath: `${sectionPath}.cell` 
+}, 'Mesh domain has no usable origin; skipping it');
+        return null;
+    }
+
+    const pbc = candidate.pbc;
+    const hasPbcFlags = Array.isArray(pbc) && pbc.length === 3 && pbc.every((flag) => typeof flag === 'boolean');
+
+    return {
+        matrix: matrix as MeshDomain['matrix'],
+        origin: candidate.origin,
+        pbc: hasPbcFlags ? pbc as MeshDomain['pbc'] : [false, false, false]
+    };
+};
+
 const flattenMesh = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -299,10 +341,20 @@ const flattenMesh = async (
         'Flattened payload mesh section to parquet'
     );
 
-    return vertexCount > 0 && facetCount > 0 ? {
+    if (vertexCount === 0 || facetCount === 0) {
+        return null;
+    }
+
+    // A handful of numbers next to two multi-million-row arrays, so it rides along
+    // as JSON instead of getting its own parquet file. Absent for plugins that do
+    // not report a domain; the exporter treats that as "no periodic rewrite".
+    const cell = await readMeshDomain(connection, filePath, sectionPath);
+
+    return {
         vertices: verticesPath,
-        facets: facetsPath
-    } : null;
+        facets: facetsPath,
+        ...(cell ? { cell } : {})
+    };
 };
 
 const ATOMISTIC_ITEM_SCHEMA =

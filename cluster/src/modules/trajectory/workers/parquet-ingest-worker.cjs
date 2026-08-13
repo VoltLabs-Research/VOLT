@@ -1,12 +1,12 @@
 'use strict';
 
 const { parentPort, workerData } = require('node:worker_threads');
+const path = require('node:path');
 const { DuckDBConnection } = require('@duckdb/node-api');
 const { dataParser, dumpParser } = require('@voltstack/lammps-io');
 const {
     buildElementTable,
-    DEFAULT_UNITS,
-    asLammpsUnits
+    DEFAULT_UNITS
 } = require('./element-table.cjs');
 
 const BASE_COLUMNS = ['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z'];
@@ -23,11 +23,15 @@ const readPositiveIntegerEnv = (name, fallback) => {
     return Number.parseInt(value, 10);
 };
 
-const readFrameFromFile = (filePath, includeProperties) => {
+// '*' asks the dump parser for every non-base column present in the file, so the
+// parquet schema follows the dump instead of a list the caller has to know up
+// front. Nothing upstream knows those column names, which is why the old
+// caller-supplied list was always empty and every extra column was dropped.
+const readFrameFromFile = (filePath) => {
     try {
         return dumpParser.parseDump(filePath, {
             includeIds: true,
-            properties: includeProperties ?? []
+            properties: ['*']
         });
     } catch (dumpError) {
         try {
@@ -41,18 +45,23 @@ const readFrameFromFile = (filePath, includeProperties) => {
     }
 };
 
-const normalizeCustomPropertyNames = (properties) => {
+// The parquet schema is the union of the per-atom columns the frames actually
+// carry, in first-seen order. Frames are allowed to disagree — a restarted run can
+// introduce a new compute mid-trajectory — and a column absent from a given frame
+// is written as NULL for that frame's rows.
+const collectCustomPropertyNames = (parsedFrames) => {
     const seen = new Set();
-    const result = [];
+    const names = [];
 
-    for (const property of properties ?? []) {
-        const name = property.trim();
-        if (!name || BASE_COLUMN_SET.has(name) || seen.has(name)) continue;
-        seen.add(name);
-        result.push(name);
+    for (const { parsed } of parsedFrames) {
+        for (const name of Object.keys(parsed.properties ?? {})) {
+            if (!name || BASE_COLUMN_SET.has(name) || seen.has(name)) continue;
+            seen.add(name);
+            names.push(name);
+        }
     }
 
-    return result;
+    return names;
 };
 
 const duckdbColumnType = (dtype) => (dtype === 'i32' ? 'INTEGER' : 'FLOAT');
@@ -127,19 +136,23 @@ const resolveColumnDtypes = (customProperties, frameDtypes) => {
 };
 
 const buildParquet = async (input) => {
-    const customProperties = normalizeCustomPropertyNames(input.customProperties);
-    const units = asLammpsUnits(input.units) ?? DEFAULT_UNITS;
     const connection = await DuckDBConnection.create();
 
     try {
         await connection.run(`SET threads TO ${readPositiveIntegerEnv('TRAJECTORY_PARQUET_DUCKDB_THREADS', DEFAULT_DUCKDB_THREADS)}`);
+        // An in-memory DuckDB with no temp_directory cannot spill, so the whole
+        // trajectory has to fit in RAM before the parquet is written. Point it at the
+        // output directory — a caller-owned temp dir — so large trajectories spill to
+        // disk and get cleaned up with everything else.
+        await connection.run(`SET temp_directory TO ${sqlString(path.dirname(input.outputPath))}`);
 
         const sortedFrames = [...input.frames].sort((a, b) => a.timestep - b.timestep);
         const parsedFrames = sortedFrames.map((frame) => ({
             timestep: frame.timestep,
-            parsed: readFrameFromFile(frame.dumpPath, customProperties)
+            parsed: readFrameFromFile(frame.dumpPath)
         }));
 
+        const customProperties = collectCustomPropertyNames(parsedFrames);
         const columnDtypes = resolveColumnDtypes(
             customProperties,
             parsedFrames.map((entry) => entry.parsed.propertyDtypes)
@@ -163,14 +176,19 @@ const buildParquet = async (input) => {
             appender.closeSync();
         }
 
+        // No ORDER BY: frames are appended in ascending timestep and atom_index ascends
+        // within each frame, so the table is already in (timestep, atom_index) order.
+        // Sorting here would re-sort the entire trajectory for nothing.
         await connection.run(
-            `COPY (SELECT * FROM frames ORDER BY timestep, atom_index) TO ${sqlString(input.outputPath)} ` +
-            '(FORMAT PARQUET, COMPRESSION ZSTD)'
+            `COPY frames TO ${sqlString(input.outputPath)} (FORMAT PARQUET, COMPRESSION ZSTD)`
         );
 
         return {
             columnDtypes,
-            units,
+            // LAMMPS files do not record the unit style — it is a setting in the input
+            // script, not in the dump — so this is fixed until something upstream can
+            // actually ask the user for it.
+            units: DEFAULT_UNITS,
             elementTable
         };
     } finally {

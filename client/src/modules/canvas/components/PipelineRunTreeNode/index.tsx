@@ -6,10 +6,10 @@ import {
     TREE_ROW_CLASS,
     treeIndentClass
 } from '../CanvasTree';
+import { CanvasAnalysisStatusEnum } from '../../utils/analysis-status';
 import { UNGROUPED_RUN_ID, countRunStagesByKind } from '../../utils/pipeline-run-sections';
-import { describePipelineRunStage } from './stage-labels';
+import { describePipelineRunStage, describeRunChain } from './stage-labels';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
-import { resolveStatusTone, statusDotClass } from '@/shared/ui/components/StatusPill';
 
 import type { ReactNode } from 'react';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
@@ -65,9 +65,12 @@ const PipelineRunTreeNode = ({
     const { run, rows, isUngrouped } = section;
     const counts = countRunStagesByKind(rows);
 
-    const label = isUngrouped
-        ? 'Ungrouped'
-        : `Run #${section.ordinal ?? 1}`;
+    /*
+     * Named after what it ran, not by an ordinal: "PTM → Grain Segmentation"
+     * identifies a run on sight, while "Run #4" only says how many came before
+     * it — and that number shifts as soon as the fetched window moves.
+     */
+    const label = isUngrouped ? 'Ungrouped' : describeRunChain(rows);
 
     // Ungrouped rows have no run behind them, so there is no single time to show.
     const timeLabel = isUngrouped || !run
@@ -77,7 +80,13 @@ const PipelineRunTreeNode = ({
     const stageSummary = [
         `${counts.analyses} ${counts.analyses === 1 ? 'stage' : 'stages'}`,
         counts.context > 0 ? `${counts.context} transform${counts.context === 1 ? '' : 's'}` : undefined,
-        counts.cached > 0 ? `${counts.cached} cached` : undefined
+        counts.cached > 0 ? `${counts.cached} cached` : undefined,
+        /*
+         * The status dot is gone, so an unfinished or failed run says so in
+         * words here. Nothing is shown for a completed run: that is the common
+         * case, and a marker on every row carries no information.
+         */
+        status !== undefined && status !== CanvasAnalysisStatusEnum.Completed ? status : undefined
     ].filter((part): part is string => part !== undefined).join(' · ');
 
     const menuOptions: MenuOption[] = run && onRestore
@@ -103,14 +112,8 @@ const PipelineRunTreeNode = ({
                 'hover:rounded-md hover:bg-surface-hover'
             )}
         >
-            {status !== undefined && (
-                <span
-                    className={cn('size-1.5 shrink-0 rounded-full', statusDotClass(resolveStatusTone(status)))}
-                    aria-hidden='true'
-                />
-            )}
             <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
-                <span className='truncate font-medium text-foreground'>{label}</span>
+                <span className='truncate font-medium text-foreground' title={label}>{label}</span>
                 <span className='truncate text-2xs leading-[1.2] text-muted opacity-90'>
                     {timeLabel ? `${timeLabel} · ${stageSummary}` : stageSummary}
                 </span>

@@ -58,3 +58,37 @@ export const describePipelineRunStage = (stage: PipelineRunStage): string => {
 };
 
 export const pipelineRunStageKindLabel = (kind: PipelineRunStage['kind']): string => KIND_LABELS[kind];
+
+const CHAIN_SEPARATOR = ' → ';
+
+/** Beyond this the chain stops being a name and starts being a paragraph. */
+const MAX_CHAIN_PARTS = 3;
+
+/**
+ * A run's name: the plugins it ran, in order.
+ *
+ * Only plugin stages appear. A slice or expression stage describes *how* the
+ * frame was prepared, which the expanded rows already say; putting it in the
+ * title would push the plugin names — the part that identifies the run — out of
+ * a narrow sidebar.
+ */
+export const describeRunChain = (
+    rows: readonly { kind: string; stage?: PipelineRunStage }[]
+): string => {
+    const names = rows
+        .filter((row) => row.stage?.kind === 'plugin')
+        .map((row) => row.stage?.pluginDisplayName?.trim())
+        .filter((name): name is string => Boolean(name));
+
+    if (names.length === 0) {
+        // Every stage was a transform, or none carried a name.
+        return 'Pipeline run';
+    }
+
+    if (names.length <= MAX_CHAIN_PARTS) {
+        return names.join(CHAIN_SEPARATOR);
+    }
+
+    const shown = names.slice(0, MAX_CHAIN_PARTS).join(CHAIN_SEPARATOR);
+    return `${shown} +${names.length - MAX_CHAIN_PARTS}`;
+};

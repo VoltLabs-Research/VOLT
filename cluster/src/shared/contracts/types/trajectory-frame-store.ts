@@ -25,7 +25,6 @@ export interface TrajectoryFrameStoreIngestInput {
     trajectoryId: string;
     ownerClusterId: string;
     frames: TrajectoryFrameSource[];
-    customProperties?: string[];
 }
 
 export interface TrajectoryFrameStoreIngestResult {

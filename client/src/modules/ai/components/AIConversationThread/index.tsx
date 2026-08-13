@@ -4,7 +4,7 @@ import ThinkingBubble from '@/modules/ai/components/AIConversationThread/Thinkin
 import useNormalizedMessages from '@/modules/ai/components/AIConversationThread/use-normalized-messages';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
-import { Skeleton, cn } from '@heroui/react';
+import { Skeleton } from '@heroui/react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { NormalizedConversationMessage } from '@/modules/ai/utils/message-segments';
 import type { UIMessage } from 'ai';
@@ -23,9 +23,12 @@ interface AIConversationThreadProps {
 }
 
 const renderPromptStarter = () => (
-    <div className='flex flex-1 flex-col items-center justify-center gap-4 px-4 py-6'>
-        <p className='text-center text-3xl font-medium text-foreground'>
+    <div className='flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-6'>
+        <p className='text-center text-lg font-medium text-foreground'>
             Ready when you are.
+        </p>
+        <p className='max-w-80 text-center text-xs text-muted'>
+            Ask about a trajectory, run an analysis pipeline, or have Volt AI drive the viewer for you.
         </p>
     </div>
 );
@@ -75,7 +78,7 @@ const AIConversationThread = ({
     let autoScrollDependency = '';
     if (showStandaloneTyping) {
         renderAfter = (
-            <div className={cn('group/message flex min-w-0 max-w-full flex-col gap-4 max-md:max-w-[90%] [.ai-floating-assistant_&]:max-w-[92%] mr-auto items-start', 'gap-1')}>
+            <div className='flex min-w-0 flex-col items-start'>
                 <ThinkingBubble />
             </div>
         );
@@ -88,7 +91,8 @@ const AIConversationThread = ({
         <AutoScrollList
             items={normalizedMessages}
             isLoading={isLoading}
-            className='mx-auto w-[min(880px,100%)] gap-3 px-4 pt-5 pb-3 max-md:px-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] [.ai-floating-assistant_&]:p-3'
+            /* Same max width as the composer, so the column reads as one surface. */
+            className='mx-auto w-full max-w-[46rem] gap-6 px-4 pt-6 pb-3 max-md:px-3 [.ai-floating-assistant_&]:gap-4 [.ai-floating-assistant_&]:p-3'
             getItemKey={(message) => message.id}
             autoScrollDependency={autoScrollDependency}
             autoScrollDependencyEnabled={isResponding || showStandaloneTyping}

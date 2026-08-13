@@ -1,8 +1,11 @@
-import { Button, Description, Label, ListBox, Select, Tooltip } from '@heroui/react';
-import { useId } from 'react';
+import { Button, Description, Label, ListBox, Select, Tooltip, cn } from '@heroui/react';
+import { useEffect, useId, useRef } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 import type { AISelectOption } from '@/modules/ai/utils/model-options';
 import type { KeyboardEvent } from 'react';
+
+/* Roughly six lines; past that the composer would crowd out the transcript. */
+const MAX_TEXTAREA_HEIGHT_PX = 168;
 
 interface AIComposerProps {
     value: string;
@@ -30,10 +33,24 @@ const AIComposer = ({
     onStop
 }: AIComposerProps) => {
     const inputId = useId();
-    const inputLabelId = useId();
     const statusId = useId();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    /*
+     * Grow with the content up to a ceiling. Measured from the element rather than
+     * counted from the string, because wrapping depends on the rendered width.
+     */
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT_PX)}px`;
+    }, [value]);
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+        // Enter sends; Shift+Enter is a newline, which a single-line input could
+        // not offer even though the old handler pretended to check for it.
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             onSend();
@@ -41,114 +58,109 @@ const AIComposer = ({
     };
 
     const canStop = isSending && Boolean(onStop);
+    const canSend = !disabled && !isSending && value.trim().length > 0;
 
-    let modelPlaceholder = 'No models';
-    if (modelOptions.length) {
-        modelPlaceholder = 'Select model';
-    }
+    const modelPlaceholder = modelOptions.length ? 'Select model' : 'No models';
 
     let statusMessage = 'Composer ready.';
-    if (disabled) {
-        statusMessage = 'Composer unavailable.';
-    }
-
-    if (isSending) {
-        statusMessage = 'Sending message.';
-    }
-
-    if (error) {
-        statusMessage = error;
-    }
+    if (disabled) statusMessage = 'Composer unavailable.';
+    if (isSending) statusMessage = 'Sending message.';
+    if (error) statusMessage = error;
 
     return (
-        <div className='ai-composer m-auto flex w-[min(880px,100%)] flex-col gap-2 border-t-0 bg-transparent px-4 pt-3 pb-[calc(1.1rem+env(safe-area-inset-bottom,0px))] max-md:px-3 [.ai-floating-assistant_&]:p-3 [.ai-floating-assistant_&]:pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'>
+        <div className='ai-composer mx-auto flex w-full max-w-[46rem] flex-col gap-1.5 px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] max-md:px-3 [.ai-floating-assistant_&]:px-3 [.ai-floating-assistant_&]:pb-3'>
             {error && (
-                <p className='text-xs text-danger' role='alert' aria-live='assertive'>
+                <p className='px-1 text-xs text-danger' role='alert' aria-live='assertive'>
                     {error}
                 </p>
             )}
 
-            <label id={inputLabelId} htmlFor={inputId} className='sr-only'>
-                Message to Volt AI
-            </label>
+            <label htmlFor={inputId} className='sr-only'>Message to Volt AI</label>
             <span className='sr-only' id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
             </span>
-            <div className='flex min-h-12 flex-row items-center gap-2 rounded-full border border-border bg-[var(--field-background,var(--surface-secondary))] py-2 pr-2 pl-3 transition-[border-color,box-shadow,background-color] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_18%,transparent)] max-md:gap-1.5 [.ai-floating-assistant_&]:overflow-hidden'>
-                <input
+
+            <div className='flex flex-col gap-1 rounded-xl border border-border bg-surface-secondary px-3 py-2.5 transition-[border-color,box-shadow] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_14%,transparent)]'>
+                <textarea
                     id={inputId}
+                    ref={textareaRef}
+                    rows={1}
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
-                    onKeyDown={handleInputKeyDown}
+                    onKeyDown={handleKeyDown}
                     placeholder='Ask anything'
-                    className='min-h-8 flex-1 border-none bg-transparent p-0 leading-[1.45] text-foreground outline-none [font-family:inherit] placeholder:text-muted focus-visible:outline-none'
+                    className='max-h-42 w-full resize-none border-none bg-transparent p-0 text-sm leading-[1.5] text-foreground outline-none [font-family:inherit] placeholder:text-muted focus-visible:outline-none'
                     disabled={disabled}
-                    autoComplete='off'
                     enterKeyHint='send'
-                    aria-labelledby={inputLabelId}
                     aria-describedby={statusId}
                     aria-invalid={Boolean(error)}
                 />
-                <Select
-                    className='min-w-[132px] max-w-[180px] shrink-0 max-md:max-w-[132px] [.ai-floating-assistant_&]:min-w-0 [.ai-floating-assistant_&]:max-w-[120px]'
-                    selectedKey={selectedModel}
-                    onSelectionChange={(key) => {
-                        if (key === null) return;
 
-                        onModelChange(String(key));
-                    }}
-                    isDisabled={disabled || modelOptions.length === 0}
-                    placeholder={modelPlaceholder}
-                    aria-label='Select AI model'
-                >
-                    <Select.Trigger className='h-[1.9rem] min-h-0 w-full rounded-full border-0 bg-transparent px-2.5 pe-6 text-xs text-foreground shadow-none'>
-                        <Select.Value className='overflow-hidden text-ellipsis whitespace-nowrap text-xs'>
-                            {({ isPlaceholder, selectedText, defaultChildren }) => (
-                                isPlaceholder ? defaultChildren : selectedText
+                <div className='flex flex-row items-center justify-between gap-2'>
+                    <Select
+                        className='min-w-0 max-w-50'
+                        selectedKey={selectedModel}
+                        onSelectionChange={(key) => {
+                            if (key === null) return;
+                            onModelChange(String(key));
+                        }}
+                        isDisabled={disabled || modelOptions.length === 0}
+                        placeholder={modelPlaceholder}
+                        aria-label='Select AI model'
+                    >
+                        <Select.Trigger className='h-6 min-h-0 w-full rounded-md border-0 bg-transparent px-1 pe-5 text-2xs text-muted shadow-none hover:text-foreground'>
+                            <Select.Value className='overflow-hidden text-ellipsis whitespace-nowrap text-2xs'>
+                                {({ isPlaceholder, selectedText, defaultChildren }) => (
+                                    isPlaceholder ? defaultChildren : selectedText
+                                )}
+                            </Select.Value>
+                            <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                            <ListBox>
+                                {modelOptions.map((option) => (
+                                    <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
+                                        <ListBox.ItemIndicator />
+                                        <Label>{option.title}</Label>
+                                        {option.description && <Description>{option.description}</Description>}
+                                    </ListBox.Item>
+                                ))}
+                            </ListBox>
+                        </Select.Popover>
+                    </Select>
+
+                    {canStop ? (
+                        <Tooltip>
+                            <Button
+                                isIconOnly
+                                className='flex size-7 min-h-7 min-w-7 shrink-0 items-center justify-center rounded-full border-none bg-danger-soft p-0 text-danger'
+                                onPress={onStop}
+                                aria-label='Stop generating'
+                            >
+                                <Square size={13} />
+                            </Button>
+                            <Tooltip.Content>Stop generating</Tooltip.Content>
+                        </Tooltip>
+                    ) : (
+                        <Button
+                            isIconOnly
+                            className={cn(
+                                'flex size-7 min-h-7 min-w-7 shrink-0 items-center justify-center rounded-full border-none p-0 transition-opacity duration-200',
+                                'bg-foreground text-background hover:bg-foreground hover:text-background disabled:opacity-40'
                             )}
-                        </Select.Value>
-                        <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                        <ListBox>
-                            {modelOptions.map((option) => (
-                                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                    <ListBox.ItemIndicator />
-                                    <Label>{option.title}</Label>
-                                    {option.description && <Description>{option.description}</Description>}
-                                </ListBox.Item>
-                            ))}
-                        </ListBox>
-                    </Select.Popover>
-                </Select>
-
-                {canStop ? (
-                    <Tooltip>
-                        <Button
-                            isIconOnly
-                            className='flex size-8 min-h-8 min-w-8 max-w-8 shrink-0 items-center justify-center rounded-full border-none p-0 transition-opacity duration-200 disabled:opacity-50 bg-danger-soft text-danger animate-pulse animation-duration-[1400ms]'
-                            onPress={onStop}
-                            aria-label='Stop generating'
-                        >
-                            <Square size={18} />
-                        </Button>
-                        <Tooltip.Content>Stop generating</Tooltip.Content>
-                    </Tooltip>
-                ) : (
-                    <Tooltip>
-                        <Button
-                            isIconOnly
-                            className='flex size-8 min-h-8 min-w-8 max-w-8 shrink-0 items-center justify-center rounded-full border-none p-0 transition-opacity duration-200 disabled:opacity-50 bg-foreground text-background hover:bg-foreground hover:text-background'
-                            isDisabled={disabled || isSending || !value.trim()}
+                            isDisabled={!canSend}
                             onPress={onSend}
                             aria-label='Send message'
                         >
-                            <ArrowUp size={18} />
+                            <ArrowUp size={14} />
                         </Button>
-                        <Tooltip.Content>Send message</Tooltip.Content>
-                    </Tooltip>
-                )}
+                    )}
+                </div>
             </div>
+
+            <p className='px-1 text-2xs text-muted max-md:hidden'>
+                Enter to send · Shift + Enter for a new line
+            </p>
         </div>
     );
 };

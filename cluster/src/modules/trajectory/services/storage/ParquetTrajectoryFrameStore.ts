@@ -86,7 +86,6 @@ interface ParquetFrameRow {
 interface ParquetBuildWorkerInput {
     outputPath: string;
     frames: TrajectoryFrameSource[];
-    customProperties?: string[];
 }
 
 interface ParquetBuildWorkerMessage {
@@ -143,8 +142,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
             const outputPath = path.join(tempDirectory, `${input.trajectoryId}.parquet`);
             const built = await runParquetBuildWorker({
                 outputPath,
-                frames: input.frames,
-                customProperties: input.customProperties
+                frames: input.frames
             });
 
             const stat = await fs.stat(outputPath);

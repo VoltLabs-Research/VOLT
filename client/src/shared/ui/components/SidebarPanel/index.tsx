@@ -2,7 +2,7 @@ import { useFocusOnActivate } from '@/shared/ui/hooks/use-focus-on-activate';
 import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
-export type SidebarPanelName = 'app' | 'settings';
+export type SidebarPanelName = 'app' | 'settings' | 'ai';
 
 interface SidebarPanelProps {
     name: SidebarPanelName;
@@ -22,7 +22,11 @@ const SidebarPanel = ({ name, label, active, children }: SidebarPanelProps) => {
             data-state={active ? 'active' : 'idle'}
             className={cn(
                 'sidebar-panel flex min-h-0 flex-col gap-0.5 overflow-x-hidden overflow-y-auto',
-                { app: 'sidebar-panel--app', settings: 'sidebar-panel--settings' }[name]
+                {
+                    app: 'sidebar-panel--app',
+                    settings: 'sidebar-panel--settings',
+                    ai: 'sidebar-panel--ai'
+                }[name]
             )}
         >
             {children}

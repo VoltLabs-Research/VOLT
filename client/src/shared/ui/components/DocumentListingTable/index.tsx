@@ -98,7 +98,8 @@ interface DocumentListingTableProps<T extends Identifiable> {
     isFetchingMore?: boolean;
     onLoadMore?: () => void;
     skeletonRowsCount?: number;
-    scrollContainerRef?: React.RefObject<HTMLElement | null> | null;
+    /** Attached to the row group, which is the element that actually scrolls. */
+    scrollContainerRef?: React.RefObject<HTMLDivElement | null> | null;
     emptyButtonText?: string;
     onEmptyButtonClick?: () => void;
     errorMessage?: string | null;
@@ -121,8 +122,8 @@ const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, 
     <>
         {Array.from({ length: count }).map((_, rowIndex) => (
             <div key={`${keyPrefix}-${rowIndex}`} className={cn({
-                default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
-                compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-0.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
+                default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover/50 max-md:px-4 max-md:py-3',
+                compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-0.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover/50'
             }[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
                 {columns.map((col, colIdx) => {
                     const skeleton = col.skeleton ?? {
@@ -277,8 +278,15 @@ const DocumentListingTable = <T extends Identifiable>({
         />
     ));
 
+    /*
+     * Two scrollers, one axis each: this root scrolls horizontally so the header
+     * travels with its columns, while the row group below scrolls vertically so the
+     * header — a sibling outside it — cannot scroll away. Vertical overflow is pinned
+     * to hidden because `overflow-x: auto` alone would promote it to `auto` and give
+     * the header a second, competing scroll container.
+     */
     return (
-        <div className='flex h-full flex-col max-md:overflow-x-auto max-md:[-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
+        <div className='flex h-full min-h-0 flex-col overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (
                 <div className={{
                     default: 'sticky top-0 z-[2] flex rounded-t-xl bg-surface-secondary px-6 py-3 max-md:px-4 max-md:py-3',
@@ -316,9 +324,9 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div className={{
-                default: 'relative flex flex-1 flex-col min-h-[400px]',
-                compact: 'relative flex flex-1 flex-col min-h-0'
+            <div ref={scrollContainerRef} className={{
+                default: 'relative flex min-h-0 flex-1 flex-col overflow-y-auto rounded-b-xl border border-surface-secondary',
+                compact: 'relative flex min-h-0 flex-1 flex-col overflow-y-auto'
             }[density]} role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
                 {dragAndDrop ? (
                     <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
@@ -383,7 +391,6 @@ const DocumentListingTable = <T extends Identifiable>({
                     </div>
                 )}
             </div>
-            <div className={{ default: 'py-4 max-md:px-4 max-md:py-3', compact: 'py-1' }[density]} />
         </div>
     );
 };

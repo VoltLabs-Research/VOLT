@@ -16,6 +16,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useMemo, useEffect, useRef } from 'react';
 import type { SimulationCellTransforms } from '@/modules/fractal/components/molecules/SimulationCellBox';
+import type { SurfaceShadingModel } from '@/modules/fractal/services/material-pipeline';
 import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
 import type { ModelLoadingState, Pos3D } from '@/modules/fractal/contracts/model';
 import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
@@ -184,8 +185,16 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     );
 
     const sceneKey = getSceneKey(sceneConfig);
-    const renderOnTop = sceneConfig.source === 'plugin'
-        && sceneConfig.sceneRenderMetadata?.exporter === Exporter.LINE;
+    const exporter = sceneConfig.source === 'plugin'
+        ? sceneConfig.sceneRenderMetadata?.exporter
+        : undefined;
+    const depthBias = exporter === Exporter.LINE;
+    // Surfaces and tubes coming out of a structural analysis are the ones users
+    // read side by side with OVITO (defect mesh, interface mesh, dislocation
+    // network), so they get OVITO's shading model rather than the house PBR look.
+    const surfaceShading: SurfaceShadingModel = exporter === Exporter.MESH || exporter === Exporter.LINE
+        ? 'ovito'
+        : 'pbr';
 
     const {
         mask: expressionVisibilityMask,
@@ -249,8 +258,9 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         pointSizeMultiplier,
         pointCloudSettings,
         lineSettings,
-        renderOnTop,
-            sceneVisualOverrides,
+        depthBias,
+        surfaceShading,
+        sceneVisualOverrides,
         visibilityMask: expressionVisibilityMask,
         selectionHighlightMask: expressionHighlightMask,
         selectionHighlightColor: expressionHighlightColor,

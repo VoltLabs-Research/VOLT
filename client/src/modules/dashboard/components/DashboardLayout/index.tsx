@@ -9,15 +9,13 @@ import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBa
 import SettingsNav from '@/modules/dashboard/components/SettingsNav';
 import DashboardSidePanel from '@/modules/dashboard/components/DashboardSidePanel';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
-import {
-    SIDEBAR_MATCHED_WIDTH_CLASS,
-    SIDEBAR_RESTING_WIDTH_CLASS
-} from '@/modules/dashboard/utils/sidebar-width';
+import { SIDEBAR_RESTING_WIDTH_CLASS } from '@/modules/dashboard/utils/sidebar-width';
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
+import AINav from '@/modules/ai/components/AINav';
 import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
 import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/TrajectoryUploaderContainer';
@@ -87,28 +85,27 @@ const DashboardLayout = () => {
         || sidebarCollapsedPreference;
     const collapsed = collapseRequested && isRailViewport;
 
+    const sidePanelOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);
+
+    /*
+     * The two side columns are mutually exclusive: opening the right-hand panel
+     * hides the left rail rather than squeezing the content between two 320px
+     * columns. Scoped to the rail viewport because below it the left rail is an
+     * overlay drawer, not a column — there is nothing to make room for, and the
+     * drawer must stay openable while the panel is up.
+     */
+    const railHidden = headerHidden || (sidePanelOpen && isRailViewport);
+
     let rail: SidebarRailState = 'expanded';
-    if (headerHidden) {
+    if (railHidden) {
         rail = 'hidden';
     } else if (collapsed) {
         rail = 'collapsed';
     }
 
-    /*
-     * While the right-hand panel is open the expanded rail grows to the same width, so the
-     * content sits between two equal columns instead of a narrow rail and a wide panel.
-     *
-     * Only the expanded rail follows: `collapsed` and `hidden` are deliberate choices by
-     * the user (or by a route asking for chrome-free layout), and widening either of those
-     * would override that choice rather than balance anything.
-     */
-    const sidePanelOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);
-    const expandedRailWidthClass = sidePanelOpen
-        ? SIDEBAR_MATCHED_WIDTH_CLASS
-        : SIDEBAR_RESTING_WIDTH_CLASS;
-
+    /* Don't advise collapsing a rail that is not currently on screen. */
     useTip('dashboard-sidebar-collapse', {
-        enabled: !headerHidden
+        enabled: !railHidden
     });
 
     const expandSidebar = useCallback(() => {
@@ -160,11 +157,12 @@ const DashboardLayout = () => {
 
                 <aside
                     data-rail={rail}
-                    inert={headerHidden || (!isRailViewport && !sidebarOpen)}
+                    /* A zero-width rail must not keep its nav in the tab order. */
+                    inert={railHidden || (!isRailViewport && !sidebarOpen)}
                     className={cn(
                         'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent pt-5 transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',
                         {
-                            expanded: cn('w-[280px]', expandedRailWidthClass),
+                            expanded: cn('w-[280px]', SIDEBAR_RESTING_WIDTH_CLASS),
                             collapsed: 'w-[280px] min-[1024.05px]:w-16',
                             hidden: 'w-[280px] min-[1024.05px]:w-0'
                         }[rail],
@@ -192,11 +190,12 @@ const DashboardLayout = () => {
                             onExpandSidebar={expandSidebar}
                         />
                         <SettingsNav active={panel === 'settings'} collapsed={collapsed} />
+                        <AINav active={panel === 'ai'} collapsed={collapsed} />
                     </div>
 
                     <div
                         className={cn(
-                            'flex flex-col gap-2 border-t border-border p-0',
+                            'flex flex-col gap-2 p-0',
                             collapsed && 'items-center'
                         )}
                     >

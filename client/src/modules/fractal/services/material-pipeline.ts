@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import pointCloudVertexSource from '@/modules/fractal/assets/shaders/point-cloud.vert?raw';
 import pointCloudFragmentSource from '@/modules/fractal/assets/shaders/point-cloud.frag?raw';
+import ovitoSurfaceVertexSource from '@/modules/fractal/assets/shaders/ovito-surface.vert?raw';
+import ovitoSurfaceFragmentSource from '@/modules/fractal/assets/shaders/ovito-surface.frag?raw';
 import { debugFractal } from '@/modules/fractal/utils/debug-log';
 import { disposeMaterialResources } from '@/modules/fractal/utils/resource-disposal';
 import { sharedShaderRegistry } from '@/modules/fractal/services/shader-registry';
@@ -12,17 +14,41 @@ interface PointCloudColorInfo {
     injectedFallbackColor: boolean;
 }
 
+// `side` is deliberately absent: it has to be carried over from the loaded
+// material so the exporter's glTF `doubleSided` flag survives. Forcing FrontSide
+// here culled the outward faces of any mesh whose winding points inward (the DXA
+// defect mesh among them), which read as looking straight through the surface.
 const OPTIMIZED_MATERIAL_DEFAULTS: THREE.MeshStandardMaterialParameters = {
     clipShadows: true,
     transparent: false,
     alphaTest: 0.1,
-    side: THREE.FrontSide,
     depthWrite: true,
     depthTest: true
 };
 
 const MAX_MESH_ROUGHNESS = 0.75;
 const MESH_ENV_MAP_INTENSITY = 0.7;
+
+/**
+ * How a GLB surface is lit.
+ *
+ * `pbr` is the house look: MeshStandardMaterial fed by the scene lights, the
+ * environment map and shadow maps.
+ *
+ * `ovito` reproduces OVITO's single shading model verbatim (see
+ * assets/shaders/ovito-surface.frag). Scenes that exist to be compared against
+ * OVITO -- the DXA defect mesh, the interface mesh, dislocation tubes -- use it so
+ * the finish matches instead of merely resembling: no reflections, no shadows, no
+ * tone mapping, and two-sided lighting so an open surface never goes black inside.
+ */
+export type SurfaceShadingModel = 'pbr' | 'ovito';
+
+const readMaterialColor = (material: THREE.Material): THREE.Color => {
+    const candidate = material as THREE.Material & { color?: THREE.Color };
+    return candidate.color instanceof THREE.Color
+        ? candidate.color.clone()
+        : new THREE.Color(1, 1, 1);
+};
 
 const TYPE_COLOR_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
     [0.5, 0.5, 0.5],
@@ -247,8 +273,35 @@ export class MaterialPipeline {
         return pointClouds;
     }
 
-    optimizeMaterial(base: THREE.Material, clippingPlanes: THREE.Plane[]): THREE.Material {
-        const key = base.uuid;
+    private createOvitoSurfaceMaterial(base: THREE.Material): THREE.ShaderMaterial {
+        const program = sharedShaderRegistry.compile({
+            vertex: ovitoSurfaceVertexSource,
+            fragment: ovitoSurfaceFragmentSource
+        });
+
+        return new THREE.ShaderMaterial({
+            vertexShader: program.vertex,
+            fragmentShader: program.fragment,
+            uniforms: {
+                uColor: { value: readMaterialColor(base) },
+                uOpacity: { value: base.opacity }
+            },
+            vertexColors: base.vertexColors,
+            side: base.side,
+            transparent: base.transparent,
+            opacity: base.opacity,
+            depthTest: true,
+            depthWrite: true,
+            clipping: true
+        });
+    }
+
+    optimizeMaterial(
+        base: THREE.Material,
+        clippingPlanes: THREE.Plane[],
+        shading: SurfaceShadingModel = 'pbr'
+    ): THREE.Material {
+        const key = `${shading}:${base.uuid}`;
         const cached = this.cache.get(key);
         if (cached) {
             cached.clippingPlanes = clippingPlanes;
@@ -256,9 +309,12 @@ export class MaterialPipeline {
         }
 
         let material: THREE.Material;
-        if (base instanceof THREE.MeshStandardMaterial) {
+        if (shading === 'ovito') {
+            material = this.createOvitoSurfaceMaterial(base);
+        } else if (base instanceof THREE.MeshStandardMaterial) {
             material = new THREE.MeshStandardMaterial({
                 ...OPTIMIZED_MATERIAL_DEFAULTS,
+                side: base.side,
                 color: base.color,
                 map: base.map,
                 normalMap: base.normalMap,
@@ -275,6 +331,7 @@ export class MaterialPipeline {
         } else if (base instanceof THREE.MeshBasicMaterial) {
             material = new THREE.MeshStandardMaterial({
                 ...OPTIMIZED_MATERIAL_DEFAULTS,
+                side: base.side,
                 color: base.color,
                 map: base.map,
                 roughness: MAX_MESH_ROUGHNESS,
@@ -293,15 +350,20 @@ export class MaterialPipeline {
         return material;
     }
 
-    configureGeometry(root: THREE.Group, clippingPlanes: THREE.Plane[]): THREE.Mesh | null {
+    configureGeometry(
+        root: THREE.Group,
+        clippingPlanes: THREE.Plane[],
+        shading: SurfaceShadingModel = 'pbr'
+    ): THREE.Mesh | null {
         let mainMesh: THREE.Mesh | null = null;
         root.traverse((child) => {
-            if (child instanceof THREE.Mesh && !mainMesh) {
+            if (!(child instanceof THREE.Mesh)) return;
+            if (!mainMesh) {
                 mainMesh = child;
-                child.frustumCulled = true;
-                child.visible = true;
-                child.material = this.optimizeMaterial(child.material, clippingPlanes);
             }
+            child.frustumCulled = true;
+            child.visible = true;
+            child.material = this.optimizeMaterial(child.material, clippingPlanes, shading);
         });
         return mainMesh;
     }

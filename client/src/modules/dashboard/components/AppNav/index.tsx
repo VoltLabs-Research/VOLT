@@ -11,7 +11,7 @@ import NavItem from '@/shared/ui/components/NavItem';
 import SidebarPanel from '@/shared/ui/components/SidebarPanel';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import { Tooltip } from '@heroui/react';
-import { BarChart3, BookOpen, Box as CubeIcon, Server, Settings } from 'lucide-react';
+import { BarChart3, BookOpen, Box as CubeIcon, Server, Settings, Workflow } from 'lucide-react';
 import { useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
@@ -132,12 +132,33 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
         }))
     ], [pathname, sidebarClusters]);
 
+    const pluginsItems = useMemo<NavTreeNode[]>(() => [
+        {
+            label: 'Installed',
+            to: '/dashboard/plugins/list',
+            isSelected: pathname === '/dashboard/plugins/list'
+        },
+        {
+            label: 'Marketplace',
+            to: '/dashboard/plugins/marketplace',
+            isSelected: pathname === '/dashboard/plugins/marketplace'
+        }
+    ], [pathname]);
+
     const canAccessTrajectories = canAccessPermissions(['trajectory:read']);
     const canAccessAnalysis = canAccessPermissions(['analysis:read']);
+    const canAccessPlugins = canAccessPermissions(['plugin:read']);
 
     const trajectoriesActive = pathname.includes('/trajectories') || pathname.includes('/simulation-cells');
     const analysisActive = pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute;
     const clustersActive = pathname.includes('/dashboard/clusters');
+    /*
+     * Excludes the per-plugin listing routes: those belong to Analysis (that tree
+     * lists them), and lighting up two sections for one page tells the reader the
+     * page lives in both.
+     */
+    const pluginsActive = (pathname.startsWith('/dashboard/plugins') && !isAnalysisPluginListingRoute)
+        || pathname.startsWith('/plugins/builder');
 
     const settingsItems = visibleNavigationItems(SETTINGS_NAVIGATION_ITEMS);
     const defaultSettingsPath = settingsItems[0]?.path ?? '/dashboard/settings/general';
@@ -203,6 +224,18 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                 isDisabled={!canAccessAnalysis}
                 tooltip={canAccessAnalysis ? 'Analysis' : 'You do not have permission to view analysis.'}
                 isTooltipDisabled={canAccessAnalysis && !collapsed}
+                onRequestExpand={onExpandSidebar}
+            />
+
+            <NavTreeSection
+                label='Plugins'
+                icon={Workflow}
+                isActive={pluginsActive}
+                items={pluginsItems}
+                collapsed={collapsed}
+                isDisabled={!canAccessPlugins}
+                tooltip={canAccessPlugins ? 'Plugins' : 'You do not have permission to view plugins.'}
+                isTooltipDisabled={canAccessPlugins && !collapsed}
                 onRequestExpand={onExpandSidebar}
             />
 

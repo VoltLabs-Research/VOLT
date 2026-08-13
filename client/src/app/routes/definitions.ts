@@ -158,17 +158,22 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/simulation-cell/components/SimulationCellsListing'),
         requiredPermissions: ['simulation-cell:read']
     },
+    /*
+     * No `navigation` entry: Plugins is a nav tree in AppNav (Installed +
+     * Marketplace), and a metadata entry here would render a second, flat row
+     * beside it.
+     */
     {
         path: '/dashboard/plugins/list',
         title: 'Plugins',
         loader: () => import('@/modules/plugin/components/listing/PluginsListing'),
-        requiredPermissions: ['plugin:read'],
-        navigation: {
-            section: DashboardNavigationSection.Secondary,
-            label: 'Plugins',
-            icon: DashboardNavigationIconKey.Plugins,
-            disabledReason: 'You do not have permission to view plugins.'
-        }
+        requiredPermissions: ['plugin:read']
+    },
+    {
+        path: '/dashboard/plugins/marketplace',
+        title: 'Marketplace',
+        loader: () => import('@/modules/plugin/components/marketplace/MarketplacePage'),
+        requiredPermissions: ['plugin:read']
     },
     {
         path: '/plugins/builder',
@@ -270,9 +275,9 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['ai-conversation:read'],
         navigation: {
             section: DashboardNavigationSection.Secondary,
-            label: 'Volt AI',
+            label: 'VOLT AI',
             icon: DashboardNavigationIconKey.AI,
-            disabledReason: 'You do not have permission to access Volt AI.'
+            disabledReason: 'You do not have permission to access VOLT AI.'
         }
     },
     {

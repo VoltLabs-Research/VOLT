@@ -1,10 +1,8 @@
 import { Button } from '@heroui/react';
-import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
-import { Ban, Check, Copy, Download, FilePen, Pencil, Store, Upload } from 'lucide-react';
+import { Ban, Check, Copy, Download, FilePen, Pencil, Upload } from 'lucide-react';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
 import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plugin/hooks/plugin/queries';
-import RegistryBrowserModal, { REGISTRY_BROWSER_MODAL_ID } from '@/modules/plugin/components/listing/RegistryBrowserModal';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
@@ -15,7 +13,7 @@ import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/ui/utils/column-presets';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import type { ComponentType } from 'react';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
@@ -128,7 +126,6 @@ const PluginsListing = () => {
 
     const navigate = useNavigate();
     const importInputRef = useRef<HTMLInputElement>(null);
-    const [isRegistryOpen, setIsRegistryOpen] = useState(false);
     const selectedTeam = useSelectedTeam()!;
     const { canAccess } = useTeamPermissions();
     const canCreate = canAccess(['plugin:create']);
@@ -263,7 +260,7 @@ const PluginsListing = () => {
                             style={{ display: 'none' }}
                         />
                         <Button
-                            variant='secondary'
+                            variant='ghost'
                             className='transition-colors duration-150 ease-out-fluid'
                             onPress={() => importInputRef.current?.click()}
                             isDisabled={importPluginMutation.isPending}
@@ -272,30 +269,10 @@ const PluginsListing = () => {
                             <Upload size={18} aria-hidden='true' />
                             Import
                         </Button>
-                        <Button
-                            variant='secondary'
-                            className='transition-colors duration-150 ease-out-fluid'
-                            onPress={() => {
-                                setIsRegistryOpen(true);
-                                openModal(REGISTRY_BROWSER_MODAL_ID);
-                            }}
-                        >
-                            <Store size={18} aria-hidden='true' />
-                            Browse registry
-                        </Button>
                     </>
                 )}
                 socketInvalidation={SOCKET_INVALIDATION}
             />
-            {canCreate && (
-                <RegistryBrowserModal
-                    isOpen={isRegistryOpen}
-                    onClose={() => {
-                        setIsRegistryOpen(false);
-                        closeModal(REGISTRY_BROWSER_MODAL_ID);
-                    }}
-                />
-            )}
         </>
     );
 };

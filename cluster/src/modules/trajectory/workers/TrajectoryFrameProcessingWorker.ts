@@ -34,10 +34,43 @@ import {
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { compressFileWithZstd, toTrajectoryFrameDumpObjectKey, toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
-import { dumpParser, dataParser } from '@voltstack/lammps-io';
+import { dumpParser, dataParser, type NativeParseResult } from '@voltstack/lammps-io';
 import spatialAssembler from '@voltstack/spatial-assembler';
+import { errorMessage } from '@shared/application/utilities/error-message';
 
 const SESSION_KEY_PREFIX = 'trajectory-frame-session';
+
+/**
+ * Reads a staged frame as either a LAMMPS dump or a LAMMPS data file.
+ *
+ * `parseDump` *throws* on a non-dump file rather than returning null, so the `??`
+ * chain this replaces never reached the data-file branch — uploading a LAMMPS data
+ * file failed the whole GLB job. Mirrors the fallback in parquet-ingest-worker.cjs.
+ */
+const parseFrameForGlb = (filePath: string): NativeParseResult => {
+    let dumpFailure: unknown = new Error('parser returned no frame');
+
+    try {
+        const parsed = dumpParser.parseDump(filePath, { includeIds: false });
+        if (parsed) return parsed;
+    } catch (error) {
+        dumpFailure = error;
+    }
+
+    let dataFailure: unknown = new Error('parser returned no frame');
+
+    try {
+        const parsed = dataParser.parseData(filePath, { includeIds: false });
+        if (parsed) return parsed;
+    } catch (error) {
+        dataFailure = error;
+    }
+
+    throw new Error(
+        `Unsupported trajectory format: ${filePath} ` +
+        `(dump: ${errorMessage(dumpFailure)}; data: ${errorMessage(dataFailure)})`
+    );
+};
 
 export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQueueJobPayload> {
     protected readonly queueName = TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME;
@@ -172,12 +205,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         localRawPath: string,
         tempDirectory: string
     ): Promise<void> {
-        const parsed = dumpParser.parseDump(localRawPath, { includeIds: false }) ??
-            dataParser.parseData(localRawPath, { includeIds: false });
-
-        if (!parsed) {
-            throw new Error(`Failed to parse dump file for GLB generation: trajectoryId=${trajectoryId} timestep=${timestep}`);
-        }
+        const parsed = parseFrameForGlb(localRawPath);
 
         const glbPath = path.join(tempDirectory, `${timestep}.glb`);
         const glbCompressedPath = `${glbPath}.zst`;

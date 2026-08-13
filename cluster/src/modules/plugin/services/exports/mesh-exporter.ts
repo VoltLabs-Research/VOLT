@@ -4,9 +4,10 @@ import { logger } from '@shared/infrastructure/logger';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
 import { readMeshParquetSource } from '@modules/plugin/services/exports/export-node-processor-types';
+import { clipMeshToPeriodicCell } from '@modules/plugin/services/exports/mesh-periodic-clipping';
 import { sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import type { ExportExecutionInput, ExportMaterial, InlineMeshInput, MeshExportOptions, MeshInput } from '@modules/plugin/services/exports/export-node-processor-types';
-import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
+import type { MeshDomain, MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 const computeBounds = (positions: Float32Array) => {
@@ -88,6 +89,8 @@ interface ProcessedMesh {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
+    /** Present only when cap polygons were generated, to tint them apart. */
+    colors?: Float32Array;
     bounds: {
         minX: number;
         minY: number;
@@ -98,26 +101,146 @@ interface ProcessedMesh {
     };
 }
 
-const finishMesh = (
+/** OVITO's SurfaceMeshVis.capColor default, the lavender it fills cell cuts with. */
+const CAP_COLOR: readonly [number, number, number, number] = [0.8, 0.8, 1.0, 1.0];
+
+const SURFACE_COLOR: readonly [number, number, number, number] = [1, 1, 1, 1];
+
+/**
+ * Moves the cap triangles onto their own copies of their vertices.
+ *
+ * Two things need this. A vertex colour is per-vertex, and the rim vertices are
+ * shared with the surface, so without the copy the cap tint would bleed into the
+ * surrounding surface. And normals are averaged per vertex: a shared rim vertex would
+ * blend the surface normal with the cap's, rounding off the hard edge that OVITO
+ * shows where a mesh meets the cell boundary.
+ *
+ * The copies are exactly coincident, so nothing cracks open visually.
+ */
+export const separateCapVertices = (
     positions: Float32Array,
     indices: Uint32Array,
-    smoothIterations: number | undefined
-): ProcessedMesh => {
-    if (smoothIterations && smoothIterations > 0) {
-        spatialAssembler.taubinSmooth(positions, indices, smoothIterations);
+    surfaceTriangleCount: number
+): { positions: Float32Array; indices: Uint32Array; colors: Float32Array } => {
+    const surfaceIndexCount = surfaceTriangleCount * 3;
+    const capIndexCount = indices.length - surfaceIndexCount;
+    const baseVertexCount = positions.length / 3;
+
+    const nextPositions = new Float32Array(positions.length + capIndexCount * 3);
+    nextPositions.set(positions);
+    const nextIndices = new Uint32Array(indices.length);
+    nextIndices.set(indices.subarray(0, surfaceIndexCount));
+    const colors = new Float32Array((baseVertexCount + capIndexCount) * 4);
+
+    for (let vertex = 0; vertex < baseVertexCount; vertex += 1) {
+        colors.set(SURFACE_COLOR, vertex * 4);
+    }
+
+    for (let offset = 0; offset < capIndexCount; offset += 1) {
+        const source = indices[surfaceIndexCount + offset];
+        const target = baseVertexCount + offset;
+        nextPositions[target * 3] = positions[source * 3];
+        nextPositions[target * 3 + 1] = positions[source * 3 + 1];
+        nextPositions[target * 3 + 2] = positions[source * 3 + 2];
+        colors.set(CAP_COLOR, target * 4);
+        nextIndices[surfaceIndexCount + offset] = target;
     }
 
     return {
-        positions,
-        normals: computeNormals(positions, indices),
-        indices,
-        bounds: computeBounds(positions)
+        positions: nextPositions,
+        indices: nextIndices,
+        colors
+    };
+};
+
+/**
+ * Turns the surface inside out, the way OVITO's SurfaceMeshVis.reverseOrientation
+ * does (mesh/surface/SurfaceMeshVis.cpp -> TriangleMesh::flipFaces). Swapping two
+ * corners of every triangle reverses the winding, and since computeNormals derives
+ * the normals from that winding, they follow automatically.
+ *
+ * The DXA needs this: its interface mesh is built single-sided with the facets
+ * oriented toward the bad-crystal region, so left as-is the outward faces are the
+ * ones that get culled and you look straight through the mesh into its interior.
+ * OVITO's DislocationAnalysisModifier carries the same correction as
+ * `defect_vis = SurfaceMeshVis(reverse_orientation=True, ...)`.
+ */
+const reverseWinding = (indices: Uint32Array): void => {
+    for (let index = 0; index + 2 < indices.length; index += 3) {
+        const second = indices[index + 1];
+        indices[index + 1] = indices[index + 2];
+        indices[index + 2] = second;
+    }
+};
+
+interface FinishMeshOptions {
+    smoothIterations: number | undefined;
+    reverseOrientation: boolean;
+    cell: MeshDomain | null;
+}
+
+const finishMesh = (
+    positions: Float32Array,
+    indices: Uint32Array,
+    options: FinishMeshOptions
+): ProcessedMesh => {
+    // Smoothing runs first, on the geometry as the plugin exported it. Note that the
+    // plugin's facets are PBC-unwrapped with duplicated seam vertices, so the one-ring
+    // is broken along every periodic face and the smoothing there differs from
+    // OVITO's, which walks the half-edge structure with wrapped edge vectors
+    // (SurfaceMeshBuilder.cpp -> smoothMesh). Closing that gap needs a PBC-aware
+    // taubinSmooth in @voltstack/spatial-assembler.
+    if (options.smoothIterations && options.smoothIterations > 0) {
+        spatialAssembler.taubinSmooth(positions, indices, options.smoothIterations);
+    }
+
+    if (options.reverseOrientation) {
+        reverseWinding(indices);
+    }
+
+    // Then contain it in the cell and cap the cuts, which is the order OVITO uses:
+    // the modifier smooths, the vis element splits and caps.
+    let workingPositions = positions;
+    let workingIndices = indices;
+    let colors: Float32Array | undefined;
+
+    if (options.cell) {
+        const clipped = clipMeshToPeriodicCell(positions, indices, options.cell);
+        if (clipped) {
+            workingPositions = clipped.positions;
+            workingIndices = clipped.indices;
+            if (clipped.capTriangleCount > 0) {
+                const separated = separateCapVertices(
+                    clipped.positions,
+                    clipped.indices,
+                    clipped.surfaceTriangleCount
+                );
+                workingPositions = separated.positions;
+                workingIndices = separated.indices;
+                colors = separated.colors;
+            }
+            logger.info(
+                {
+                    surfaceTriangles: clipped.surfaceTriangleCount,
+                    capTriangles: clipped.capTriangleCount
+                },
+                'Contained surface mesh inside its periodic cell'
+            );
+        }
+    }
+
+    return {
+        positions: workingPositions,
+        normals: computeNormals(workingPositions, workingIndices),
+        indices: workingIndices,
+        colors,
+        bounds: computeBounds(workingPositions)
     };
 };
 
 const processMeshFromParquet = async (
     source: MeshParquetSource,
-    smoothIterations: number | undefined
+    finishOptions: FinishMeshOptions
 ): Promise<ProcessedMesh | null> => {
     const connection = await DuckDBConnection.create();
 
@@ -210,7 +333,7 @@ const processMeshFromParquet = async (
         return finishMesh(
             positions,
             indexOffset < indices.length ? indices.subarray(0, indexOffset) : indices,
-            smoothIterations
+            finishOptions
         );
     } finally {
         connection.closeSync();
@@ -219,7 +342,7 @@ const processMeshFromParquet = async (
 
 const processMesh = (
     mesh: InlineMeshInput,
-    smoothIterations: number | undefined
+    finishOptions: FinishMeshOptions
 ): ProcessedMesh | null => {
     if (mesh.vertices.length === 0 || mesh.facets.length === 0) {
         return null;
@@ -267,13 +390,17 @@ const processMesh = (
         indices[base + 2] = facet[2];
     });
 
-    return finishMesh(positions, indices, smoothIterations);
+    return finishMesh(positions, indices, finishOptions);
 };
 
+// Mirrors OVITO's SurfaceMeshVis defaults: an opaque white, fully matte surface
+// (mesh/surface/SurfaceMeshVis.h -> surfaceColor = {1,1,1}). OVITO shades meshes
+// with a flat ambient + headlight term and no reflections, so any metalness here
+// only shows up as a highlight OVITO does not have.
 const DEFAULT_MESH_MATERIAL: ExportMaterial = {
-    baseColor: [0.8, 0.8, 0.85, 1],
-    metallic: 0.05,
-    roughness: 0.9,
+    baseColor: [1, 1, 1, 1],
+    metallic: 0,
+    roughness: 1,
     emissive: [0, 0, 0]
 };
 
@@ -302,11 +429,15 @@ export const exportMeshArtifact = async (
         ...DEFAULT_MESH_MATERIAL,
         ...options.material
     };
-    const smoothIterations = resolveSmoothIterations(options.smoothIterations);
     const parquetSource = readMeshParquetSource(exportData);
+    const finishOptions: FinishMeshOptions = {
+        smoothIterations: resolveSmoothIterations(options.smoothIterations),
+        reverseOrientation: options.reverseOrientation ?? false,
+        cell: parquetSource?.cell ?? null
+    };
     const processed = parquetSource
-        ? await processMeshFromParquet(parquetSource, smoothIterations)
-        : processMesh(exportData as InlineMeshInput, smoothIterations);
+        ? await processMeshFromParquet(parquetSource, finishOptions)
+        : processMesh(exportData as InlineMeshInput, finishOptions);
     if (!processed) {
         await stageExportBufferUpload(input, {
             exporter: 'MeshExporter',
@@ -319,12 +450,15 @@ export const exportMeshArtifact = async (
         return true;
     }
 
+    // Vertex colours ride along only when caps exist, to tint them OVITO's lavender
+    // against the white surface. The renderer multiplies them into the base colour,
+    // so a mesh without caps stays a plain single-material surface.
     const buffer = spatialAssembler.generateMeshGLB(
         processed.positions,
         processed.normals,
         processed.indices,
-        false,
-        undefined,
+        Boolean(processed.colors),
+        processed.colors,
         processed.bounds,
         {
             ...material,

@@ -24,8 +24,6 @@ export type PipelineRunStageRow =
 export interface PipelineRunSection {
     runId: string;
     run?: PipelineRun;
-    /** 1-based, oldest run is #1 — stable as long as the fetched window is. */
-    ordinal?: number;
     rows: PipelineRunStageRow[];
     analysisSections: AnalysisSectionData[];
     isUngrouped: boolean;
@@ -93,13 +91,9 @@ export const buildPipelineRunSections = ({
     const sectionsByAnalysisId = new Map(sections.map((section) => [section.analysis._id, section]));
     const knownRunIds = new Set(runs.map((run) => run._id));
     const groupedAnalysisIds = new Set<string>();
-
-    // `runs` arrives newest-first; the ordinal counts from the oldest so the
-    // numbers read like a history rather than a countdown.
-    const totalRuns = runs.length;
     const runSections: PipelineRunSection[] = [];
 
-    runs.forEach((run, index) => {
+    runs.forEach((run) => {
         const rows = buildRunRows(run, sectionsByAnalysisId);
         const analysisSections = rows
             .filter((row): row is Extract<PipelineRunStageRow, { kind: 'analysis' }> => row.kind === 'analysis')
@@ -120,7 +114,6 @@ export const buildPipelineRunSections = ({
         runSections.push({
             runId: run._id,
             run,
-            ordinal: totalRuns - index,
             rows,
             analysisSections,
             isUngrouped: false

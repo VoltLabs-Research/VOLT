@@ -1185,17 +1185,7 @@ const PERIODIC_TABLE = {
 };
 
 
-const LAMMPS_UNITS = ['lj', 'real', 'metal', 'si', 'cgs', 'electron', 'micro', 'nano'];
-
 const DEFAULT_UNITS = 'metal';
-
-const LAMMPS_UNITS_SET = new Set(LAMMPS_UNITS);
-
-const asLammpsUnits = (value) => {
-    if (!value) return null;
-    const lowered = value.trim().toLowerCase();
-    return LAMMPS_UNITS_SET.has(lowered) ? lowered : null;
-};
 
 
 
@@ -1283,6 +1273,5 @@ const buildElementTable = (input) => {
 
 module.exports = {
     DEFAULT_UNITS,
-    asLammpsUnits,
     buildElementTable
 };

@@ -1,7 +1,5 @@
-import { cn } from '@heroui/react';
 import AIArtifactSpreadsheetPanel from '@/modules/ai/components/AIArtifactSpreadsheetPanel';
 import AIComposer from '@/modules/ai/components/AIComposer';
-import AIConversationSidebar from '@/modules/ai/components/AIConversationSidebar';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import ResizeHandle from '@/modules/canvas/components/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
@@ -41,14 +39,11 @@ const AIPageContent = () => {
         selectedTeam,
         availableModelsForProvider,
         selectedModel,
-        conversations,
         messages,
-        isConversationsLoading,
         isMessagesLoading,
         isProviderCatalogLoading,
         isSendingMessage,
         noProviderConfigured,
-        conversationsError,
         messagesError,
         providerCatalogError,
         sendMessageError,
@@ -57,10 +52,6 @@ const AIPageContent = () => {
         accessDeniedMessage,
         loadProviderCatalog,
         setSelectedModel,
-        handleSelectConversation,
-        handleCreateConversation,
-        handleDeleteConversation,
-        handleRenameConversation,
         addToolApprovalResponse,
         loadConversationMessages,
         activeConversationId,
@@ -90,8 +81,6 @@ const AIPageContent = () => {
     }, [conversationId, activeConversationId, navigate, setActiveConversationId]);
 
     const canCreate = canAccess(['ai-conversation:create']);
-    const canUpdate = canAccess(['ai-conversation:update']);
-    const canDelete = canAccess(['ai-conversation:delete']);
 
     const modelOptions = useMemo(() => toAIModelSelectOptions(availableModelsForProvider), [availableModelsForProvider]);
 
@@ -121,11 +110,7 @@ const AIPageContent = () => {
         handleCloseArtifactPanel();
     }, [conversationId, handleCloseArtifactPanel]);
 
-    const handleCreate = () => {
-        handleCreateConversation().catch(console.warn);
-    };
 
-    const isWorkspaceEmpty = !isMessagesLoading && messages.length === 0;
 
     const handleRetry = () => {
         if (conversationId) {
@@ -144,7 +129,11 @@ const AIPageContent = () => {
     }
 
     let workspaceContent: ReactNode = (
-        <div className={cn('flex min-h-0 flex-1 flex-row max-md:flex-col', isWorkspaceEmpty ? 'items-center' : 'items-stretch')}>
+        /*
+         * Always stretched: the thread centres its own empty state, and letting the
+         * row shrink to content pinned the composer to the middle of the page.
+         */
+        <div className='flex min-h-0 flex-1 flex-row items-stretch max-md:flex-col'>
             <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
                 <AIConversationThread
                     conversationId={conversationId}
@@ -214,37 +203,26 @@ const AIPageContent = () => {
         );
     }
 
+    /*
+     * No conversation list here: it owns the left rail while this route is open
+     * (see AINav), so the page is only the thread and its composer.
+     */
     return (
-        <div className='flex h-full flex-row items-center overflow-hidden border-t border-border pb-[env(safe-area-inset-bottom,0px)] max-md:flex-col max-md:gap-2 max-md:p-2'>
-            <AIConversationSidebar
-                conversations={conversations}
-                activeConversationId={conversationId}
-                isLoading={isConversationsLoading}
-                error={conversationsError}
-                onCreateConversation={handleCreate}
-                onSelectConversation={handleSelectConversation}
-                onDeleteConversation={handleDeleteConversation}
-                onRenameConversation={handleRenameConversation}
-                canCreate={canCreate}
-                canUpdate={canUpdate}
-                canDelete={canDelete}
-            />
-            <div className='flex h-full min-w-0 flex-1 flex-col overflow-hidden'>
-                {providerCatalogError && (
-                    <div className='border-b border-danger/24 bg-danger-soft px-4 py-2'>
-                        <RecoveryState
-                            title='Unable to load AI providers'
-                            description={providerCatalogError}
-                            tone={RecoveryStateTone.Error}
-                            onRetry={() => {
-                                loadProviderCatalog().catch(() => undefined);
-                            }}
-                        />
-                    </div>
-                )}
+        <div className='flex h-full min-w-0 flex-col overflow-hidden'>
+            {providerCatalogError && (
+                <div className='border-b border-danger/24 bg-danger-soft px-4 py-2'>
+                    <RecoveryState
+                        title='Unable to load AI providers'
+                        description={providerCatalogError}
+                        tone={RecoveryStateTone.Error}
+                        onRetry={() => {
+                            loadProviderCatalog().catch(() => undefined);
+                        }}
+                    />
+                </div>
+            )}
 
-                {workspaceContent}
-            </div>
+            {workspaceContent}
         </div>
     );
 };

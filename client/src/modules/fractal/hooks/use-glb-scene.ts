@@ -26,7 +26,8 @@ function extractEngineParams(params: UseGlbSceneParams): FractalParams {
         sceneKey: params.sceneKey,
         pointCloudSettings: params.pointCloudSettings,
         lineSettings: params.lineSettings,
-        renderOnTop: params.renderOnTop,
+        depthBias: params.depthBias,
+        surfaceShading: params.surfaceShading,
     };
 }
 
@@ -104,7 +105,7 @@ export default function useGlbScene(
                             paramsRef.current.sceneVisualOverrides
                         );
                         engine.updateLineWidth(paramsRef.current.lineSettings);
-                        engine.updateDepthOverlay(Boolean(paramsRef.current.renderOnTop));
+                        engine.updateMeshDepthBias(Boolean(paramsRef.current.depthBias));
                         engine.updateEdges(
                             paramsRef.current.sceneKey,
                             paramsRef.current.sceneVisualOverrides
@@ -158,13 +159,13 @@ export default function useGlbScene(
             paramsRef.current.sceneVisualOverrides
         );
         engine.updateLineWidth(paramsRef.current.lineSettings);
-        engine.updateDepthOverlay(Boolean(params.renderOnTop));
+        engine.updateMeshDepthBias(Boolean(params.depthBias));
         engine.updateEdges(
             paramsRef.current.sceneKey,
             paramsRef.current.sceneVisualOverrides
         );
     }, [
-        params.renderOnTop,
+        params.depthBias,
         params.url,
         params.resourceKey,
         params.sliceClippingPlanes,

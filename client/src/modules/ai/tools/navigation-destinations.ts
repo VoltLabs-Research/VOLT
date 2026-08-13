@@ -54,6 +54,11 @@ const NAVIGATION_DESTINATIONS = {
         requiredParams: [],
         description: 'Installed plugins'
     },
+    plugin_marketplace: {
+        pathTemplate: '/dashboard/plugins/marketplace',
+        requiredParams: [],
+        description: 'Plugin marketplace — search the registry and install plugins'
+    },
     plugin_builder: {
         pathTemplate: '/plugins/builder',
         requiredParams: [],

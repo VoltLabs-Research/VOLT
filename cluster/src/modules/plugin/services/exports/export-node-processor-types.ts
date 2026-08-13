@@ -98,6 +98,8 @@ export interface ExportMaterial {
 
 export interface MeshExportOptions {
     enableDoubleSided?: boolean;
+    /** Flips the winding, matching OVITO's SurfaceMeshVis.reverseOrientation. */
+    reverseOrientation?: boolean;
     smoothIterations?: number;
     material?: ExportMaterial;
 }

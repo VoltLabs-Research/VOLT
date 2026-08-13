@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Pos3D, ModelLoadingState } from '@/modules/fractal/contracts/model';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
+import type { SurfaceShadingModel } from '@/modules/fractal/services/material-pipeline';
 import { MortonSortScheduler } from '@/modules/fractal/services/morton-sort-scheduler';
 import { disposeObject3DResources } from '@/modules/fractal/utils/resource-disposal';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
@@ -16,9 +17,10 @@ import {
     applyPointCloudSelectionHighlight,
     applyPointCloudVisibilityMask
 } from '@/modules/fractal/utils/point-cloud-vertex-overrides';
-import { applyMeshColorOverride, applyMeshDepthOverlay, applyMeshOpacity } from '@/modules/fractal/utils/mesh-visual-overrides';
+import { applyMeshColorOverride, applyMeshDepthBias, applyMeshOpacity } from '@/modules/fractal/utils/mesh-visual-overrides';
 import { applyMeshEdgesOverlay, syncMeshEdgesClippingPlanes } from '@/modules/fractal/utils/mesh-edges-overlay';
 import { applyLineWidth } from '@/modules/fractal/utils/line-geometry-styling';
+import { applyBoundedMeshRaycast } from '@/modules/fractal/utils/mesh-raycast-bounds';
 import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
@@ -43,7 +45,8 @@ export type FractalParams = {
     sceneKey?: string;
     pointCloudSettings?: PointCloudSceneSettings;
     lineSettings?: LineSceneSettings;
-    renderOnTop?: boolean;
+    depthBias?: boolean;
+    surfaceShading?: SurfaceShadingModel;
 };
 
 export type EngineCallbacks = {
@@ -124,7 +127,7 @@ export class FractalEngine {
     private lastOpacitySceneKey: string | undefined = undefined;
     private lastOpacityValue: number = 1;
     private lastPointOpacityValue: number = 1;
-    private lastDepthOverlay: boolean | undefined = undefined;
+    private lastDepthBias: boolean | undefined = undefined;
     private lastEdgesSceneKey: string | undefined = undefined;
     private lastEdgesEnabled = false;
     private lastColorSceneKey: string | undefined = undefined;
@@ -211,8 +214,14 @@ export class FractalEngine {
                     this.materialPipeline.configurePointCloud(pointCloud);
                 });
             } else {
-                this.materialPipeline.configureGeometry(loadedModel, this.params.sliceClippingPlanes);
+                this.materialPipeline.configureGeometry(
+                    loadedModel,
+                    this.params.sliceClippingPlanes,
+                    this.params.surfaceShading
+                );
             }
+
+            applyBoundedMeshRaycast(nextTraversalCache.meshes);
 
             this.applyClipping(nextTraversalCache, this.params.sliceClippingPlanes);
             const bounds = this.modelTransform.apply(loadedModel, {
@@ -335,10 +344,10 @@ export class FractalEngine {
         this.surface.invalidate();
     }
 
-    updateDepthOverlay(overlay: boolean) {
-        if (!this.model || overlay === this.lastDepthOverlay) return;
-        this.lastDepthOverlay = overlay;
-        applyMeshDepthOverlay(this.traversalCache.meshes, overlay);
+    updateMeshDepthBias(biased: boolean) {
+        if (!this.model || biased === this.lastDepthBias) return;
+        this.lastDepthBias = biased;
+        applyMeshDepthBias(this.traversalCache.meshes, biased);
         this.surface.invalidate();
     }
 

@@ -2,17 +2,14 @@ import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import { createTableArtifactComponents } from '@/modules/ai/components/AIConversationThread/markdown-table-artifact';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
 import ToolInvocationCard from '@/modules/ai/components/AIConversationThread/ToolInvocationCard';
+import Prose from '@/shared/ui/components/Prose';
 import { Button, Tooltip, cn } from '@heroui/react';
-import { Check, Copy } from 'lucide-react';
+import { Check, ChevronRight, Copy } from 'lucide-react';
 import { memo, useState } from 'react';
-import remarkGfm from 'remark-gfm';
-import ReactMarkdown from 'react-markdown';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { NormalizedConversationMessage, ToolInvocation } from '@/modules/ai/utils/message-segments';
 import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
 import type { ReactNode } from 'react';
-
-const REMARK_PLUGINS = [remarkGfm];
 
 const COPY_FEEDBACK_MS = 1600;
 
@@ -49,6 +46,34 @@ const CopyMessageButton = ({ text }: CopyMessageButtonProps) => {
     );
 };
 
+/*
+ * Reasoning is collapsed by default. It is context for the answer, not the
+ * answer, and left expanded it pushed the reply below the fold on every turn.
+ */
+const ReasoningSegment = ({ content }: { content: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className='flex w-full flex-col gap-1'>
+            <button
+                type='button'
+                onClick={() => setIsOpen((value) => !value)}
+                aria-expanded={isOpen}
+                className='flex w-fit cursor-pointer flex-row items-center gap-1 rounded-md border-none bg-transparent p-0 text-2xs text-muted hover:text-foreground'
+            >
+                <ChevronRight size={11} aria-hidden='true' className={cn('transition-transform duration-200', isOpen && 'rotate-90')} />
+                {isOpen ? 'Hide reasoning' : 'Show reasoning'}
+            </button>
+
+            {isOpen && (
+                <div className='border-l-2 border-border pl-3'>
+                    <Prose size='sm'>{content}</Prose>
+                </div>
+            )}
+        </div>
+    );
+};
+
 interface AIMessageItemProps {
     message: NormalizedConversationMessage;
     messageIndex: number;
@@ -67,10 +92,9 @@ const AIMessageItem = memo(({
     const isUser = message.role === AIMessageRole.User;
     const messageLabel = isUser ? 'You' : 'Assistant';
 
-    let markdownComponents = {};
-    if (!isUser && onOpenTableArtifact) {
-        markdownComponents = createTableArtifactComponents(message.id, onOpenTableArtifact);
-    }
+    const markdownComponents = !isUser && onOpenTableArtifact
+        ? createTableArtifactComponents(message.id, onOpenTableArtifact)
+        : undefined;
 
     const segmentElements: ReactNode[] = [];
     let segmentIndex = 0;
@@ -80,90 +104,29 @@ const AIMessageItem = memo(({
 
         if (segment.type === 'reasoning') {
             segmentElements.push(
-                <div className='w-full rounded-none border-none bg-transparent px-0 pt-0 pb-1 text-muted' key={`seg-${segmentIndex}`}>
-                    <span className='mb-0.5 block text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
-                        Thinking
-                    </span>
-                    <div className={cn(
-                        'text-xs',
-                        'break-words',
-                        'm-0 w-full overflow-x-auto leading-[1.55]',
-                        '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-                        '[&_p]:my-1 [&_p+p]:mt-1.5',
-                        '[&_ul]:my-1 [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:pl-5',
-                        '[&_li]:m-0 [&_li]:pl-0.5 [&_li+li]:mt-0.5 [&_li>p]:m-0',
-                        '[&_li>ul]:mt-0.5 [&_li>ul]:mb-0 [&_li>ol]:mt-0.5 [&_li>ol]:mb-0',
-                        '[&_:is(h1,h2,h3,h4,h5,h6)]:mx-0 [&_:is(h1,h2,h3,h4,h5,h6)]:mt-2.5 [&_:is(h1,h2,h3,h4,h5,h6)]:mb-1',
-                        '[&_:is(h1,h2,h3,h4,h5,h6)]:leading-[1.3] [&_:is(h1,h2,h3,h4,h5,h6)]:font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:text-foreground',
-                        '[&_h1]:text-[1.3em] [&_h2]:text-[1.15em] [&_h3]:text-[1.05em] [&_:is(h4,h5,h6)]:text-[1em]',
-                        '[&_code]:font-mono [&_code]:text-[0.85em]',
-                        '[&_pre]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-background [&_pre]:px-3 [&_pre]:py-2.5',
-                        '[&_pre_code]:whitespace-pre [&_pre_code]:text-xs',
-                        '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-surface-secondary [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5',
-                        '[&_a]:text-foreground [&_a]:underline',
-                        '[&_blockquote]:my-1.5 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-0.5 [&_blockquote]:pr-0 [&_blockquote]:pl-3 [&_blockquote]:text-muted',
-                        '[&_blockquote>*:first-child]:mt-0 [&_blockquote>*:last-child]:mb-0',
-                        '[&_hr]:border-0 [&_hr]:border-t [&_hr]:border-border',
-                        '[&_table]:w-full [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:border [&_table]:border-border [&_table]:border-collapse [&_table]:text-[0.82em]',
-                        '[&_thead]:bg-surface-secondary',
-                        '[&_th]:border-b [&_th]:border-border [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:text-left [&_th]:text-[0.9em] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.03em] [&_th]:text-muted',
-                        '[&_td]:border-b [&_td]:border-border [&_td]:px-2.5 [&_td]:py-1.5',
-                        '[&_tr:last-child_td]:border-b-0',
-                        '[&_tbody_tr:hover]:bg-surface-hover',
-                        '[&_strong]:font-semibold [&_strong]:text-foreground',
-                        'text-muted opacity-90 [&_p]:my-0.5 [&_p+p]:mt-0.5 [&_ul]:my-0.5 [&_ol]:my-0.5 [&_pre]:my-0.5 [&_blockquote]:my-0.5'
-                    )}>
-                        <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
-                            {segment.content}
-                        </ReactMarkdown>
-                    </div>
-                </div>
+                <ReasoningSegment key={`seg-${segmentIndex}`} content={segment.content} />
             );
             segmentIndex += 1;
             continue;
         }
 
         if (segment.type === 'text') {
+            /*
+             * Only the user gets a bubble. The assistant's turn is the page's main
+             * text — boxing it would add a frame around nearly everything on screen
+             * and cap the width of tables and code blocks that need the room.
+             */
             segmentElements.push(
                 <div
-                    className={cn(
-                        'min-w-0 max-w-full overflow-hidden rounded-xl px-4 py-3 leading-[1.55] whitespace-normal',
-                        isUser ? 'bg-surface-secondary text-foreground' : 'border-none bg-transparent pl-0 text-foreground'
-                    )}
                     key={`seg-${segmentIndex}`}
+                    className={cn(
+                        'min-w-0',
+                        isUser
+                            ? 'max-w-[80%] rounded-xl bg-surface-secondary px-4 py-2.5 max-md:max-w-[88%]'
+                            : 'w-full'
+                    )}
                 >
-                    <div className={cn(
-                        'text-base',
-                        'break-words',
-                        'm-0 w-full overflow-x-auto leading-[1.55]',
-                        '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-                        '[&_p]:my-1 [&_p+p]:mt-1.5',
-                        '[&_ul]:my-1 [&_ul]:pl-5 [&_ol]:my-1 [&_ol]:pl-5',
-                        '[&_li]:m-0 [&_li]:pl-0.5 [&_li+li]:mt-0.5 [&_li>p]:m-0',
-                        '[&_li>ul]:mt-0.5 [&_li>ul]:mb-0 [&_li>ol]:mt-0.5 [&_li>ol]:mb-0',
-                        '[&_:is(h1,h2,h3,h4,h5,h6)]:mx-0 [&_:is(h1,h2,h3,h4,h5,h6)]:mt-2.5 [&_:is(h1,h2,h3,h4,h5,h6)]:mb-1',
-                        '[&_:is(h1,h2,h3,h4,h5,h6)]:leading-[1.3] [&_:is(h1,h2,h3,h4,h5,h6)]:font-semibold [&_:is(h1,h2,h3,h4,h5,h6)]:text-foreground',
-                        '[&_h1]:text-[1.3em] [&_h2]:text-[1.15em] [&_h3]:text-[1.05em] [&_:is(h4,h5,h6)]:text-[1em]',
-                        '[&_code]:font-mono [&_code]:text-[0.85em]',
-                        '[&_pre]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-background [&_pre]:px-3 [&_pre]:py-2.5',
-                        '[&_pre_code]:whitespace-pre [&_pre_code]:text-xs',
-                        '[&_:not(pre)>code]:rounded-md [&_:not(pre)>code]:border [&_:not(pre)>code]:border-border [&_:not(pre)>code]:bg-surface-secondary [&_:not(pre)>code]:px-1 [&_:not(pre)>code]:py-0.5',
-                        '[&_a]:text-foreground [&_a]:underline',
-                        '[&_blockquote]:my-1.5 [&_blockquote]:border-l-[3px] [&_blockquote]:border-border [&_blockquote]:py-0.5 [&_blockquote]:pr-0 [&_blockquote]:pl-3 [&_blockquote]:text-muted',
-                        '[&_blockquote>*:first-child]:mt-0 [&_blockquote>*:last-child]:mb-0',
-                        '[&_hr]:border-0 [&_hr]:border-t [&_hr]:border-border',
-                        '[&_table]:w-full [&_table]:overflow-hidden [&_table]:rounded-lg [&_table]:border [&_table]:border-border [&_table]:border-collapse [&_table]:text-[0.82em]',
-                        '[&_thead]:bg-surface-secondary',
-                        '[&_th]:border-b [&_th]:border-border [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:text-left [&_th]:text-[0.9em] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.03em] [&_th]:text-muted',
-                        '[&_td]:border-b [&_td]:border-border [&_td]:px-2.5 [&_td]:py-1.5',
-                        '[&_tr:last-child_td]:border-b-0',
-                        '[&_tbody_tr:hover]:bg-surface-hover',
-                        '[&_strong]:font-semibold [&_strong]:text-foreground'
-                    )}>
-                        <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={markdownComponents}>
-                            {segment.content}
-                        </ReactMarkdown>
-                    </div>
+                    <Prose components={markdownComponents}>{segment.content}</Prose>
                 </div>
             );
             segmentIndex += 1;
@@ -196,18 +159,19 @@ const AIMessageItem = memo(({
     return (
         <article
             className={cn(
-                'group/message flex min-w-0 max-w-full flex-col gap-4 max-md:max-w-[90%] [.ai-floating-assistant_&]:max-w-[92%]',
-                isUser ? 'ml-auto items-end' : 'mr-auto items-start'
+                'group/message flex min-w-0 flex-col gap-2',
+                isUser ? 'items-end' : 'items-start'
             )}
             aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
         >
-            <span className='sr-only'>
-                {messageLabel}
-            </span>
+            <span className='sr-only'>{messageLabel}</span>
+
             {segmentElements}
+
             {!isUser && message.segments.length === 0 && <ThinkingBubble />}
+
             {!isUser && message.preview.trim().length > 0 && (
-                <div className='mt-0.5 flex flex-row items-center gap-1 opacity-0 transition-opacity duration-[120ms] group-hover/message:opacity-100 group-focus-within/message:opacity-100 [@media(hover:none)]:opacity-100'>
+                <div className='flex flex-row items-center gap-1 opacity-0 transition-opacity duration-[120ms] group-hover/message:opacity-100 group-focus-within/message:opacity-100 [@media(hover:none)]:opacity-100'>
                     <CopyMessageButton text={message.preview} />
                 </div>
             )}

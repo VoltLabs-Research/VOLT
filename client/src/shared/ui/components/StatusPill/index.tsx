@@ -50,12 +50,6 @@ export const resolveStatusTone = (status: string): StatusTone => (
     STATUS_TO_TONE[status.toLowerCase()] ?? 'muted'
 );
 
-/**
- * The dot half of a pill, for places too tight for the pill itself (tree rows).
- * Exported so those callers reuse this tone mapping rather than restating it.
- */
-export const statusDotClass = (tone: StatusTone): string => TONE_CLASSES[tone].dot;
-
 interface StatusPillProps {
     status: string;
     tone?: StatusTone;
