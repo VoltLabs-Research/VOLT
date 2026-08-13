@@ -268,6 +268,33 @@ export const removeJobByKey = async (jobKey: string): Promise<boolean> => {
     return rows.length > 0;
 };
 
+/**
+ * Counts jobs in `queue` whose key starts with `jobKeyPrefix` and that still have a
+ * run ahead of them — waiting, delayed, or mid-flight.
+ *
+ * This is how a fan-out member learns it is the last one standing without a separate
+ * counter: the queue table already holds the answer. `excludeJobKey` skips the
+ * caller's own job, which stays 'active' for as long as its handler runs. A job that
+ * failed permanently is simply no longer live, so a dead sibling can't wedge the
+ * group.
+ */
+export const countLiveJobsByKeyPrefix = async (
+    queue: string,
+    jobKeyPrefix: string,
+    excludeJobKey?: string
+): Promise<number> => {
+    const rows = await manager().query<{ total: string }[]>(
+        `SELECT count(*)::text AS total FROM queue_jobs
+         WHERE queue = $1
+           AND starts_with("jobKey", $2)
+           AND state IN ('waiting', 'delayed', 'active')
+           AND ($3::text IS NULL OR "jobKey" <> $3::text)`,
+        [queue, jobKeyPrefix, excludeJobKey ?? null]
+    );
+
+    return Number(rows[0]?.total ?? 0);
+};
+
 export const countJobsByState = async (queue: string): Promise<QueueJobCounts> => {
     const rows = await manager().query<{ state: QueueJobState; total: string }[]>(
         'SELECT state, count(*)::text AS total FROM queue_jobs WHERE queue = $1 GROUP BY state',

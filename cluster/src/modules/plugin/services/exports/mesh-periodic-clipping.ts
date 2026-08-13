@@ -141,6 +141,51 @@ const toAbsolute = (frame: ReducedFrame, reduced: Float64Array, count: number): 
     return positions;
 };
 
+/**
+ * A growable flat triangle-index list.
+ *
+ * Deliberately not `number[][]`: a defect mesh from a multi-million-atom cell carries
+ * millions of facets, and one small JS array per triangle -- rebuilt once per periodic
+ * direction -- costs hundreds of megabytes for nothing.
+ */
+class TriangleBuffer {
+    private data: Uint32Array;
+
+    private length = 0;
+
+    constructor(capacity: number) {
+        this.data = new Uint32Array(Math.max(capacity, 3));
+    }
+
+    get count(): number {
+        return this.length / 3;
+    }
+
+    get(triangle: number, corner: number): number {
+        return this.data[triangle * 3 + corner];
+    }
+
+    push(a: number, b: number, c: number): void {
+        if (this.length + 3 > this.data.length) {
+            const grown = new Uint32Array(Math.max(this.data.length * 2, this.length + 3));
+            grown.set(this.data.subarray(0, this.length));
+            this.data = grown;
+        }
+        this.data[this.length] = a;
+        this.data[this.length + 1] = b;
+        this.data[this.length + 2] = c;
+        this.length += 3;
+    }
+
+    reset(): void {
+        this.length = 0;
+    }
+
+    indices(): Uint32Array {
+        return this.data.subarray(0, this.length);
+    }
+}
+
 /** A growable reduced-coordinate vertex list; the split appends to it. */
 class ReducedVertexBuffer {
     private data: Float64Array;
@@ -198,8 +243,8 @@ const splitTriangle = (
     triangle: [number, number, number],
     dim: number,
     pbc: [boolean, boolean, boolean],
-    vertexPairCache: Map<string, [number, number]>,
-    emitted: number[][]
+    vertexPairCache: Map<number, [number, number]>,
+    emitted: TriangleBuffer
 ): boolean => {
     const z = [
         vertices.get(triangle[0], dim),
@@ -209,7 +254,7 @@ const splitTriangle = (
     const zd = [z[1] - z[0], z[2] - z[1], z[0] - z[2]];
 
     if (Math.abs(zd[0]) < 0.5 && Math.abs(zd[1]) < 0.5 && Math.abs(zd[2]) < 0.5) {
-        emitted.push([triangle[0], triangle[1], triangle[2]]);
+        emitted.push(triangle[0], triangle[1], triangle[2]);
         return true;
     }
 
@@ -247,7 +292,7 @@ const splitTriangle = (
             highSlot = 0;
         }
 
-        const cacheKey = `${first}:${second}`;
+        const cacheKey = first * 0x100000000 + second;
         const cached = vertexPairCache.get(cacheKey);
         const pair: [number, number] = [0, 0];
 
@@ -307,9 +352,9 @@ const splitTriangle = (
 
     // The short edge's two corners stay together on one side; the third corner and
     // its two cut points form the piece on the other side.
-    emitted.push([triangle[shortEdge], triangle[previousEdge], nextSplit[1]]);
-    emitted.push([triangle[previousEdge], previousSplit[0], nextSplit[1]]);
-    emitted.push([previousSplit[1], triangle[nextEdge], nextSplit[0]]);
+    emitted.push(triangle[shortEdge], triangle[previousEdge], nextSplit[1]);
+    emitted.push(triangle[previousEdge], previousSplit[0], nextSplit[1]);
+    emitted.push(previousSplit[1], triangle[nextEdge], nextSplit[0]);
 
     return true;
 };
@@ -322,24 +367,37 @@ interface BoundaryEdge {
 }
 
 /**
- * Collects the directed edges that only one triangle claims, i.e. the rim of every
- * opening in the surface.
+ * Collects the directed edges that only one triangle claims -- the rim of every
+ * opening -- restricted to edges lying flat on the cell face `(dim, plane)`.
  *
  * Deriving the openings from the finished mesh rather than recording them during the
  * split is what makes this correct for a surface that crosses more than one boundary:
  * a cut made while splitting along x can itself be subdivided when splitting along y,
  * at which point any segment list captured earlier no longer describes real edges.
+ *
+ * The plane test is applied before indexing, not after. A defect mesh from a large
+ * cell has millions of interior edges and only a rim's worth on any cell face, so
+ * filtering first keeps this map proportional to the opening rather than to the mesh.
  */
-const collectBoundaryEdges = (triangles: number[][]): BoundaryEdge[] => {
+const collectBoundaryEdgesOnPlane = (
+    triangles: TriangleBuffer,
+    triangleCount: number,
+    vertices: ReducedVertexBuffer,
+    dim: number,
+    plane: 0 | 1
+): BoundaryEdge[] => {
+    const onPlane = (vertex: number): boolean =>
+        Math.abs(vertices.get(vertex, dim) - plane) < PLANE_EPSILON;
+
     const seen = new Map<number, BoundaryEdge>();
     const key = (from: number, to: number): number => from * 0x100000000 + to;
 
-    for (const triangle of triangles) {
+    for (let triangle = 0; triangle < triangleCount; triangle += 1) {
         for (let corner = 0; corner < 3; corner += 1) {
-            const from = triangle[corner];
-            const to = triangle[(corner + 1) % 3];
-            const oppositeKey = key(to, from);
-            if (seen.delete(oppositeKey)) continue;
+            const from = triangles.get(triangle, corner);
+            const to = triangles.get(triangle, (corner + 1) % 3);
+            if (!onPlane(from) || !onPlane(to)) continue;
+            if (seen.delete(key(to, from))) continue;
             seen.set(key(from, to), {
                 from,
                 to
@@ -532,24 +590,12 @@ interface CapStats {
 const appendCaps = (
     frame: ReducedFrame,
     vertices: ReducedVertexBuffer,
-    surfaceTriangles: number[][],
-    emitted: number[][]
+    emitted: TriangleBuffer,
+    surfaceTriangleCount: number
 ): CapStats => {
-    const boundaryEdges = collectBoundaryEdges(surfaceTriangles);
-    if (boundaryEdges.length === 0) {
-        return {
-            capTriangleCount: 0,
-            unclosedLoops: 0,
-            nestedLoops: 0
-        };
-    }
-
     let capTriangleCount = 0;
     let unclosedLoops = 0;
     let nestedLoops = 0;
-
-    const onPlane = (vertex: number, dim: number, plane: 0 | 1): boolean =>
-        Math.abs(vertices.get(vertex, dim) - plane) < PLANE_EPSILON;
 
     for (let dim = 0; dim < 3; dim += 1) {
         if (!frame.pbc[dim]) continue;
@@ -558,8 +604,17 @@ const appendCaps = (
         const axisV = (dim + 2) % 3;
 
         for (const plane of [0, 1] as const) {
-            const edgesOnPlane = boundaryEdges.filter((edge) =>
-                onPlane(edge.from, dim, plane) && onPlane(edge.to, dim, plane));
+            // Only the surface is scanned, never the caps appended for an earlier
+            // face. A cap laid on the x face can have edges sitting on a y face, and
+            // treating those as part of the y opening's rim would close the y cap
+            // against the x cap instead of against the surface.
+            const edgesOnPlane = collectBoundaryEdgesOnPlane(
+                emitted,
+                surfaceTriangleCount,
+                vertices,
+                dim,
+                plane
+            );
             if (edgesOnPlane.length === 0) continue;
 
             const { loops, danglingEdges } = buildLoops(edgesOnPlane);
@@ -594,7 +649,7 @@ const appendCaps = (
                 }
 
                 for (const [a, b, c] of triangles) {
-                    emitted.push([capLoop[a], capLoop[b], capLoop[c]]);
+                    emitted.push(capLoop[a], capLoop[b], capLoop[c]);
                     capTriangleCount += 1;
                 }
             }
@@ -635,41 +690,45 @@ export const clipMeshToPeriodicCell = (
     }
 
     const vertices = new ReducedVertexBuffer(toReducedAndWrap(frame, positions));
-    let triangles: number[][] = [];
-    for (let offset = 0; offset + 2 < indices.length; offset += 3) {
-        triangles.push([indices[offset], indices[offset + 1], indices[offset + 2]]);
-    }
 
+    // Two buffers swapped between directions, so at most one extra copy of the index
+    // data is alive at a time instead of one per direction.
+    let triangles = new TriangleBuffer(indices.length);
+    for (let offset = 0; offset + 2 < indices.length; offset += 3) {
+        triangles.push(indices[offset], indices[offset + 1], indices[offset + 2]);
+    }
+    let scratch = new TriangleBuffer(indices.length);
+
+    const triangle: [number, number, number] = [0, 0, 0];
     let rejectedTriangles = 0;
 
     for (let dim = 0; dim < 3; dim += 1) {
         if (!frame.pbc[dim]) continue;
 
-        const vertexPairCache = new Map<string, [number, number]>();
-        const emitted: number[][] = [];
-        for (const triangle of triangles) {
-            if (!splitTriangle(
-                vertices,
-                triangle as [number, number, number],
-                dim,
-                frame.pbc,
-                vertexPairCache,
-                emitted
-            )) {
+        const vertexPairCache = new Map<number, [number, number]>();
+        scratch.reset();
+        const triangleCount = triangles.count;
+        for (let index = 0; index < triangleCount; index += 1) {
+            triangle[0] = triangles.get(index, 0);
+            triangle[1] = triangles.get(index, 1);
+            triangle[2] = triangles.get(index, 2);
+            if (!splitTriangle(vertices, triangle, dim, frame.pbc, vertexPairCache, scratch)) {
                 rejectedTriangles += 1;
             }
         }
-        triangles = emitted;
+        const swap = triangles;
+        triangles = scratch;
+        scratch = swap;
     }
 
-    const surfaceTriangleCount = triangles.length;
+    const surfaceTriangleCount = triangles.count;
     let capStats: CapStats = {
         capTriangleCount: 0,
         unclosedLoops: 0,
         nestedLoops: 0
     };
     if (options.generateCaps !== false) {
-        capStats = appendCaps(frame, vertices, triangles.slice(), triangles);
+        capStats = appendCaps(frame, vertices, triangles, surfaceTriangleCount);
     }
 
     if (rejectedTriangles > 0 || capStats.unclosedLoops > 0 || capStats.nestedLoops > 0) {
@@ -683,17 +742,9 @@ export const clipMeshToPeriodicCell = (
         );
     }
 
-    const outputIndices = new Uint32Array(triangles.length * 3);
-    triangles.forEach((triangle, index) => {
-        const offset = index * 3;
-        outputIndices[offset] = triangle[0];
-        outputIndices[offset + 1] = triangle[1];
-        outputIndices[offset + 2] = triangle[2];
-    });
-
     return {
         positions: toAbsolute(frame, vertices.view(), vertices.count),
-        indices: outputIndices,
+        indices: triangles.indices().slice(),
         surfaceTriangleCount,
         capTriangleCount: capStats.capTriangleCount
     };
