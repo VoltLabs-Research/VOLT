@@ -268,32 +268,33 @@ export const removeJobByKey = async (jobKey: string): Promise<boolean> => {
     return rows.length > 0;
 };
 
+export interface LiveQueueJobRef {
+    jobKey: string;
+    state: Extract<QueueJobState, 'waiting' | 'delayed' | 'active'>;
+}
+
 /**
- * Counts jobs in `queue` whose key starts with `jobKeyPrefix` and that still have a
+ * Lists the jobs in `queue` whose key starts with `jobKeyPrefix` and that still have a
  * run ahead of them — waiting, delayed, or mid-flight.
  *
- * This is how a fan-out member learns it is the last one standing without a separate
- * counter: the queue table already holds the answer. `excludeJobKey` skips the
- * caller's own job, which stays 'active' for as long as its handler runs. A job that
- * failed permanently is simply no longer live, so a dead sibling can't wedge the
- * group.
+ * This is how a member of a fan-out group finds out what its siblings are still
+ * doing, so the group needs no separate counter: the queue table already knows. A job
+ * that failed permanently is no longer live, so a dead sibling cannot wedge the group.
+ * The caller's own job is included, because the queue marks a job complete only after
+ * its handler returns.
  */
-export const countLiveJobsByKeyPrefix = async (
+export const listLiveJobsByKeyPrefix = async (
     queue: string,
-    jobKeyPrefix: string,
-    excludeJobKey?: string
-): Promise<number> => {
-    const rows = await manager().query<{ total: string }[]>(
-        `SELECT count(*)::text AS total FROM queue_jobs
+    jobKeyPrefix: string
+): Promise<LiveQueueJobRef[]> => (
+    manager().query<LiveQueueJobRef[]>(
+        `SELECT "jobKey", state FROM queue_jobs
          WHERE queue = $1
            AND starts_with("jobKey", $2)
-           AND state IN ('waiting', 'delayed', 'active')
-           AND ($3::text IS NULL OR "jobKey" <> $3::text)`,
-        [queue, jobKeyPrefix, excludeJobKey ?? null]
-    );
-
-    return Number(rows[0]?.total ?? 0);
-};
+           AND state IN ('waiting', 'delayed', 'active')`,
+        [queue, jobKeyPrefix]
+    )
+);
 
 export const countJobsByState = async (queue: string): Promise<QueueJobCounts> => {
     const rows = await manager().query<{ state: QueueJobState; total: string }[]>(

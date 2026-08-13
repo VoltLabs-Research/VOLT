@@ -45,7 +45,15 @@ const FrameCombobox = ({ value, options, onChange, title, className, groupClassN
             isDisabled={options.length === 0}
             aria-label={title ?? 'Select frame'}
         >
-            <ComboBox.InputGroup className={cn('h-6 min-h-6 rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary', groupClassName)}>
+            {/*
+              * w-24 is load-bearing. Neither `.input` nor `.combo-box__input-group` declares
+              * a width, so without it the group is an inline-flex shrinking to fit the input's
+              * default intrinsic size — `size=20`, i.e. twenty characters — and measured 195px
+              * to render a timestep of "0". 96px leaves 60px of text box once the 1px borders,
+              * px-1.5 and HeroUI's 28px `pe-7` chevron reserve are paid: nine digits, so no
+              * realistic timestep truncates. Narrower gets tight fast — w-20 holds only six.
+              */}
+            <ComboBox.InputGroup className={cn('h-6 min-h-6 w-24 rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary', groupClassName)}>
                 <Input className='h-6 min-h-6 border-0 bg-transparent px-1.5 text-2xs text-foreground shadow-none placeholder:text-2xs placeholder:text-muted' placeholder={placeholder} />
                 <ComboBox.Trigger />
             </ComboBox.InputGroup>

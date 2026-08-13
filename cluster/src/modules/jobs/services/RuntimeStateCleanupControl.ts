@@ -1,5 +1,9 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import {
+    toAutoPreviewRasterClaimKey,
+    toParquetDrainClaimKey
+} from '@shared/infrastructure/persistence/daemon-state-keys';
 import type {
     AnalysisRuntimeCleanupRequest,
     RuntimeStateCleanupResponse
@@ -27,9 +31,8 @@ export class RuntimeStateCleanupControl {
         input: TrajectoryRuntimeCleanupRequest
     ): Promise<RuntimeStateCleanupResponse> {
         const deletedKeys = await this.stateStore.deleteKeys(this.distinctKeys([
-            this.trajectoryFrameRemainingKey(input.trajectoryId),
-            this.trajectoryFrameSessionFramesKey(input.trajectoryId),
-            this.trajectoryAutoPreviewKey(input.trajectoryId),
+            toParquetDrainClaimKey(input.trajectoryId),
+            toAutoPreviewRasterClaimKey(input.trajectoryId),
             ...(input.analysisIds ?? []).map((analysisId) => this.analysisPendingJobsKey(analysisId)),
             ...this.removedAnalysisJobKeys(input.jobIds)
         ]));
@@ -43,18 +46,6 @@ export class RuntimeStateCleanupControl {
 
     private analysisPendingJobsKey(analysisId: string): string {
         return `analysis:${analysisId}:pending-jobs`;
-    }
-
-    private trajectoryFrameRemainingKey(trajectoryId: string): string {
-        return `trajectory-frame-session:${trajectoryId}:remaining`;
-    }
-
-    private trajectoryFrameSessionFramesKey(trajectoryId: string): string {
-        return `trajectory-frame-session:${trajectoryId}:frames`;
-    }
-
-    private trajectoryAutoPreviewKey(trajectoryId: string): string {
-        return `trajectory:${trajectoryId}:auto-preview-raster`;
     }
 
     private distinctKeys(keys: string[]): string[] {

@@ -228,6 +228,26 @@ class ReducedVertexBuffer {
 const SPLIT_EPSILON = 1e-9;
 
 /**
+ * Vertex-pair keys are packed into one number as `a * VERTEX_KEY_STRIDE + b`, which
+ * only stays exact while the product fits a double's 53-bit mantissa. 2^26 leaves
+ * 2^52 of headroom and allows 67M vertices, far past anything a defect mesh reaches;
+ * a stride of 2^32 would have started colliding at 2M, which such a mesh does reach.
+ */
+const VERTEX_KEY_STRIDE = 0x4000000;
+
+const MAX_KEYABLE_VERTICES = VERTEX_KEY_STRIDE;
+
+const vertexPairKey = (from: number, to: number): number => from * VERTEX_KEY_STRIDE + to;
+
+/**
+ * Rings larger than this are left uncapped. Ear clipping is quadratic in the ring
+ * size in the common case and worse on strongly concave rings, so an unbounded ring
+ * could stall an export; an opening this large is also well past the small
+ * cross-sections caps exist for.
+ */
+const MAX_CAP_LOOP_VERTICES = 4096;
+
+/**
  * Port of OVITO's SurfaceMeshVis::RenderableSurfaceBuilder::splitFace.
  *
  * A triangle whose vertices were wrapped independently shows up as an edge jumping
@@ -292,7 +312,7 @@ const splitTriangle = (
             highSlot = 0;
         }
 
-        const cacheKey = first * 0x100000000 + second;
+        const cacheKey = vertexPairKey(first, second);
         const cached = vertexPairCache.get(cacheKey);
         const pair: [number, number] = [0, 0];
 
@@ -390,15 +410,14 @@ const collectBoundaryEdgesOnPlane = (
         Math.abs(vertices.get(vertex, dim) - plane) < PLANE_EPSILON;
 
     const seen = new Map<number, BoundaryEdge>();
-    const key = (from: number, to: number): number => from * 0x100000000 + to;
 
     for (let triangle = 0; triangle < triangleCount; triangle += 1) {
         for (let corner = 0; corner < 3; corner += 1) {
             const from = triangles.get(triangle, corner);
             const to = triangles.get(triangle, (corner + 1) % 3);
             if (!onPlane(from) || !onPlane(to)) continue;
-            if (seen.delete(key(to, from))) continue;
-            seen.set(key(from, to), {
+            if (seen.delete(vertexPairKey(to, from))) continue;
+            seen.set(vertexPairKey(from, to), {
                 from,
                 to
             });
@@ -633,6 +652,11 @@ const appendCaps = (
             }
 
             for (const loop of loops) {
+                if (loop.length > MAX_CAP_LOOP_VERTICES) {
+                    unclosedLoops += 1;
+                    continue;
+                }
+
                 // Reverse the rim: the cap has to traverse it the other way round.
                 const capLoop = [...loop].reverse();
                 const u = new Float64Array(capLoop.length);
@@ -686,6 +710,19 @@ export const clipMeshToPeriodicCell = (
     const frame = buildReducedFrame(cell);
     if (!frame) {
         logger.warn('Mesh domain is degenerate; leaving the surface unclipped');
+        return null;
+    }
+
+    // The split only adds vertices, so bounding the input bounds the whole run.
+    const inputVertexCount = positions.length / 3;
+    if (inputVertexCount * 2 >= MAX_KEYABLE_VERTICES) {
+        logger.warn(
+            {
+                vertexCount: inputVertexCount,
+                limit: MAX_KEYABLE_VERTICES
+            },
+            'Surface mesh is too large to index for periodic clipping; leaving it unclipped'
+        );
         return null;
     }
 

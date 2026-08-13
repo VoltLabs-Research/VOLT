@@ -1,10 +1,8 @@
 import { errorMessage } from '@shared/application/utilities/error-message';
-import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { getConfig } from '@core/config/daemon';
 import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -18,8 +16,7 @@ import type { DaemonConfig } from '@core/config/daemon';
 import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
-import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME } from '@core/constants/queue-names';
+import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, toTrajectoryFrameJobKey } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import { parseTrajectoryMetadata, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
@@ -30,7 +27,6 @@ const INGEST_FRAME_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_INGEST_CONCU
 const METADATA_READ_BYTES = readPositiveIntegerEnv('TRAJECTORY_METADATA_READ_BYTES') ?? 4 * 1024 * 1024;
 const DEFAULT_FRAME_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_FRAME_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_BACKOFF_MS') ?? 2000;
-const SESSION_TTL_SECONDS = 86400;
 const INGEST_BUCKET = ObjectBucketName.Dumps;
 const ZIP_ENTRY_JUNK_BASENAMES = new Set(['__MACOSX', '.DS_Store', 'Thumbs.db']);
 
@@ -79,8 +75,7 @@ export class TrajectoryIngestCommand {
     constructor(
         private readonly config: DaemonConfig,
         private readonly objectStore: LocalClusterObjectStoreGateway,
-        private readonly queueService: QueueService,
-        private readonly stateStore: DaemonStateStore
+        private readonly queueService: QueueService
     ) {}
 
     @Command('ingest')
@@ -116,15 +111,6 @@ export class TrajectoryIngestCommand {
         if (frames.length === 0) {
             throw new Error(`No valid trajectory frames found in upload (trajectoryId=${trajectoryId})`);
         }
-
-        const sessionPrefix = `trajectory-frame-session:${trajectoryId}`;
-        const framesForParquet = frames.map((f) => ({
-            timestep: f.timestep,
-            objectKey: toTrajectoryFrameDumpObjectKey(trajectoryId, f.timestep)
-        }));
-
-        await this.stateStore.setValueWithTtl(`${sessionPrefix}:remaining`, frames.length.toString(), SESSION_TTL_SECONDS);
-        await this.stateStore.setValueWithTtl(`${sessionPrefix}:frames`, JSON.stringify(framesForParquet), SESSION_TTL_SECONDS);
 
         await this.enqueueFrameProcessingJobs(trajectoryId, teamId, this.config.teamClusterId, frames);
 
@@ -416,7 +402,7 @@ export class TrajectoryIngestCommand {
     ): Promise<void> {
         const timestamp = new Date().toISOString();
         const jobsToEnqueue: FrameProcessingQueueJobPayload[] = frames.map((frame) => ({
-            jobId: `trajectory-glb:${trajectoryId}:${frame.timestep}`,
+            jobId: toTrajectoryFrameJobKey(trajectoryId, frame.timestep),
             teamId,
             trajectoryId,
             timestep: frame.timestep,
@@ -465,4 +451,4 @@ export class TrajectoryIngestCommand {
     }
 }
 
-export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getFilesystemObjectStore(), getQueueService(), getDaemonStateStore()));
+export const getTrajectoryIngestCommand = commandGroupFactory(TrajectoryIngestCommand, () => new TrajectoryIngestCommand(getConfig(), getFilesystemObjectStore(), getQueueService()));

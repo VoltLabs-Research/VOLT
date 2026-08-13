@@ -22,11 +22,12 @@
 
 #include <clipping_planes_pars_vertex>
 
+// `color` itself is not declared here on purpose: three's own vertex prefix already
+// emits `attribute vec4/vec3 color` under these same defines (WebGLProgram.js), and a
+// second declaration fails to compile.
 #ifdef USE_COLOR_ALPHA
-attribute vec4 color;
 varying vec4 vSurfaceColor;
 #elif defined( USE_COLOR )
-attribute vec3 color;
 varying vec3 vSurfaceColor;
 #endif
 
