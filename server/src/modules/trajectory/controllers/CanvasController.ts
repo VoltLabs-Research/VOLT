@@ -82,16 +82,6 @@ export default class CanvasController extends TrajectoryControllerBase {
         }));
     }
 
-    @Route(trajectoryRoutes.canvasRasterFrame)
-    async canvasRasterFrame(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const output = await this.#canvas.rasterFrame(this.params(req, this.withOptionalUserId));
-        await output.prepare?.();
-        await pipeStreamToResponse(res, output.stream, output.headers);
-    }
-
     @Route(trajectoryRoutes.canvasAtoms)
     async canvasAtomsBinary(
         @Req() req: AuthenticatedRequest,
@@ -230,15 +220,6 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const value = await this.#canvas.analysisFrameLog(this.params(req, this.withOptionalUserId));
-        BaseResponse.success(res, value, HttpStatus.OK);
-    }
-
-    @Route(trajectoryRoutes.canvasRasterMetadata)
-    async canvasRasterMetadata(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const value = await this.#canvas.rasterMetadata(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 }

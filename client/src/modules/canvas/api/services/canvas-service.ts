@@ -45,8 +45,6 @@ import type {
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
 } from '@/modules/analysis/api/service';
-import type { GetRasterMetadataParams } from '@/modules/raster/api/service';
-import type { GetRasterMetadataResponse } from '@volt/contracts/modules/raster/domain';
 import type {
     GetPreviewInput,
     GetPreviewResponse
@@ -97,13 +95,6 @@ interface ListCanvasAnalysesParams {
     limit?: number;
 }
 
-interface GetCanvasRasterFrameParams {
-    trajectoryId: string;
-    timestep: number;
-    analysisId?: string;
-    model?: string;
-}
-
 interface GetCanvasDumpParams {
     trajectoryId: string;
     timestep: number | string;
@@ -145,7 +136,6 @@ const endpoints = {
             ...(limit !== undefined ? { limit } : {})
         })
     }),
-    getRasterFrame: download<GetCanvasRasterFrameParams>('GET', routes.path(trajectoryRoutes.canvasRasterFrame)),
     getDump: download<GetCanvasDumpParams>('GET', routes.path(trajectoryRoutes.canvasDump)),
     getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
     getSimulationCell: routes.route<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
@@ -217,8 +207,7 @@ const endpoints = {
             omit: ['trajectoryId', 'analysisId', 'timestep'],
             query: ({ afterCursor }) => afterCursor === undefined ? undefined : { afterCursor }
         }
-    ),
-    getRasterMetadata: routes.route<GetRasterMetadataParams, GetRasterMetadataResponse>(trajectoryRoutes.canvasRasterMetadata)
+    )
 };
 
 export default createService({

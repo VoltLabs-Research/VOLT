@@ -1,12 +1,7 @@
 import Loader from '@/shared/ui/components/Loader';
 import EditableTrajectoryName from '../EditableTrajectoryName';
-import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import { useTriggerRasterizationMutation } from '@/modules/raster/hooks/queries';
-import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
-import useTeamJobsStore from '@/modules/jobs/store/use-team-jobs-store';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 
@@ -15,11 +10,9 @@ import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { formatDistanceToNow } from 'date-fns';
-import { Crosshair, Download, EllipsisVertical, FolderInput, ListChecks, Play, ScanSearch, Trash2 } from 'lucide-react';
-import { sileo } from 'sileo';
-import { useCallback, useMemo, useState } from 'react';
+import { Crosshair, Download, EllipsisVertical, FolderInput, ListChecks, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
-import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 import { useNavigate } from 'react-router-dom';
 
 interface SimulationCardFooterProps {
@@ -34,95 +27,10 @@ interface SimulationCardFooterProps {
     readOnly?: boolean;
 }
 
-interface RasterizeTrajectoryToastResult {
-    queuedJobs: number;
-    duplicateJobs: number;
-    skippedJobs: number;
-    alreadyRasterizedJobs: number;
-}
-
-interface RasterizationJobStatusCounts {
-    pending: number;
-}
-
-const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
-
 const DELETE_TRAJECTORY_TOAST: PromiseToastOptions<void> = {
     loading: { title: 'Deleting trajectory...' },
     success: { title: 'Trajectory deleted' },
     error: { title: 'Failed to delete trajectory' }
-};
-
-const getRasterizeSuccessTitle = (data: RasterizeTrajectoryToastResult): string => {
-    if (data.queuedJobs > 0) {
-        return data.queuedJobs === 1
-            ? 'Rasterization queued for 1 frame'
-            : `Rasterization queued for ${data.queuedJobs} frames`;
-    }
-
-    if (data.alreadyRasterizedJobs > 0 && data.duplicateJobs === 0) {
-        return data.alreadyRasterizedJobs === 1
-            ? '1 frame was already rasterized'
-            : `${data.alreadyRasterizedJobs} frames were already rasterized`;
-    }
-
-    return 'Rasterization request processed';
-};
-
-const getRasterizeSuccessDescription = (data: RasterizeTrajectoryToastResult): string | undefined => {
-    if (data.queuedJobs > 0 && data.skippedJobs > 0) {
-        const skippedReason = data.duplicateJobs > 0
-            ? `${data.duplicateJobs} already queued/running`
-            : `${data.alreadyRasterizedJobs} already rasterized`;
-
-        return `${data.skippedJobs} frame${data.skippedJobs === 1 ? ' was' : 's were'} skipped (${skippedReason}).`;
-    }
-
-    if (data.alreadyRasterizedJobs > 0 && data.duplicateJobs === 0) {
-        return 'No new worker jobs were enqueued.';
-    }
-
-    return undefined;
-};
-
-const RASTERIZE_TRAJECTORY_TOAST: PromiseToastOptions<RasterizeTrajectoryToastResult> = {
-    loading: { title: 'Queueing rasterization...' },
-    success: (data) => ({
-        title: getRasterizeSuccessTitle(data),
-        description: getRasterizeSuccessDescription(data)
-    }),
-    error: { title: 'Failed to rasterize trajectory' }
-};
-
-const isPendingRasterJobStatus = (status: JobStatus): boolean => {
-    return status !== JobStatus.Completed && status !== JobStatus.Failed;
-};
-
-const getRasterizationJobStatusCounts = (
-    groups: TrajectoryJobGroup[],
-    trajectoryId: string
-): RasterizationJobStatusCounts => {
-    let pending = 0;
-
-    for (const group of groups) {
-        if (group.trajectoryId !== trajectoryId) {
-            continue;
-        }
-
-        for (const frameGroup of group.frameGroups) {
-            for (const job of frameGroup.jobs) {
-                if (job.queueType !== RASTER_QUEUE_TYPE || !isPendingRasterJobStatus(job.status)) {
-                    continue;
-                }
-
-                pending += 1;
-            }
-        }
-    }
-
-    return {
-        pending
-    };
 };
 
 export default function SimulationCardFooter({
@@ -137,36 +45,18 @@ export default function SimulationCardFooter({
     readOnly = false
 }: SimulationCardFooterProps) {
     const navigate = useNavigate();
-    const teamId = useSelectedTeamId();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
-    const triggerRasterizationMutation = useTriggerRasterizationMutation();
     const { downloadTrajectory, isDownloading: isExporting } = useDownloadTrajectory();
-    const { data: jobGroups = [] } = teamJobsGroups();
-    const requestedRasterTrajectoryIds = useTeamJobsStore((state) => state.requestedRasterTrajectoryIds);
     const setJobsScope = useJobsDrawerStore((state) => state.setScope);
     const openSidePanel = useDashboardSidePanelStore((state) => state.open);
     const [isDeleting, setIsDeleting] = useState(false);
     const updatedLabel = `Edited ${formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}`;
-    const isRasterizing = triggerRasterizationMutation.isPending;
-    const rasterizationJobStatusCounts = useMemo(() => {
-        return getRasterizationJobStatusCounts(jobGroups, trajectoryId);
-    }, [jobGroups, trajectoryId]);
-    const hasPendingRasterization = rasterizationJobStatusCounts.pending > 0;
-    const hasRequestedRasterization = requestedRasterTrajectoryIds.has(trajectoryId);
-    const isRasterizeDisabled = !teamId || isRasterizing || isProcessing || hasPendingRasterization || hasRequestedRasterization;
 
     const handleViewScene = useCallback(() => {
         if (!isNavigable) {
             return;
         }
         navigate(`/canvas/${trajectoryId}`);
-    }, [isNavigable, navigate, trajectoryId]);
-
-    const handleViewRaster = useCallback(() => {
-        if (!isNavigable) {
-            return;
-        }
-        navigate(`/canvas/${trajectoryId}?workspace=raster`);
     }, [isNavigable, navigate, trajectoryId]);
 
     const handleOpenComputeJobs = useCallback(() => {
@@ -211,37 +101,10 @@ export default function SimulationCardFooter({
         }
     }, [deleteTrajectoryMutation, trajectoryId, name, onDelete]);
 
-    const handleRasterizeTrajectory = useCallback(async () => {
-        if (!teamId || isRasterizing || isProcessing) {
-            return;
-        }
-
-        if (hasPendingRasterization || hasRequestedRasterization) {
-            sileo.info({
-                title: 'Rasterization already in progress',
-                description: 'Wait for the current worker jobs to finish before queueing the same trajectory again.'
-            });
-            return;
-        }
-
-        await showPromise(
-            triggerRasterizationMutation.mutateAsync({
-                teamId,
-                trajectoryId
-            }),
-            RASTERIZE_TRAJECTORY_TOAST
-        );
-    }, [hasPendingRasterization, hasRequestedRasterization, isProcessing, isRasterizing, teamId, trajectoryId, triggerRasterizationMutation]);
-
     const popoverItems: MenuOption[] = readOnly ? [] : [{
         onClick: handleViewScene,
         label: 'View scene',
         icon: Crosshair,
-        disabled: !isNavigable
-    }, {
-        onClick: handleViewRaster,
-        label: 'Open raster workspace',
-        icon: ScanSearch,
         disabled: !isNavigable
     }, {
         onClick: handleOpenComputeJobs,
@@ -257,11 +120,6 @@ export default function SimulationCardFooter({
         label: 'Move to folder',
         icon: FolderInput
     }] : []), {
-        onClick: handleRasterizeTrajectory,
-        label: 'Rasterize trajectory',
-        icon: Play,
-        disabled: isRasterizeDisabled
-    }, {
         onClick: handleDelete,
         label: 'Delete',
         icon: Trash2,

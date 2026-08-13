@@ -20,10 +20,6 @@ const RightPanel = ({
     canMutateCanvas,
     onDownloadAnalysis,
     onDownloadExposureListing,
-    rasterContainerSelections,
-    activeRasterContainerId,
-    onSetActiveRasterContainer,
-    onUpdateRasterContainerSelection,
     compactAnalysisOnly = false
 }: RightPanelProps) => (
     <ObjectsPanel
@@ -34,10 +30,6 @@ const RightPanel = ({
         canMutateCanvas={canMutateCanvas}
         onDownloadAnalysis={onDownloadAnalysis}
         onDownloadExposureListing={onDownloadExposureListing}
-        rasterContainerSelections={rasterContainerSelections}
-        activeRasterContainerId={activeRasterContainerId}
-        onSetActiveRasterContainer={onSetActiveRasterContainer}
-        onUpdateRasterContainerSelection={onUpdateRasterContainerSelection}
         mode={compactAnalysisOnly ? 'analysis-compact' : 'default'}
     />
 );

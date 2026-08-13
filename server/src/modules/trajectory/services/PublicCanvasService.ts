@@ -7,7 +7,6 @@ import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import PluginService from '@modules/plugin/services/PluginService';
-import RasterService from '@modules/raster/services/RasterService';
 import SimulationCellService from '@modules/simulation-cell/services/SimulationCellService';
 import { isTeamMember } from '@modules/team/services/team/team-membership-guard';
 
@@ -45,7 +44,6 @@ import type {
     GetPublicCanvasBootstrapOutput,
     GetPublicCanvasGLBInput,
     GetPublicCanvasGLBOutput,
-    GetPublicCanvasRasterFrameInput,
     ListTrajectorySceneArtifactsInput,
     PreviewParticleFilterInput,
     PreviewParticleFilterOutput,
@@ -56,7 +54,6 @@ import type {
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operations/GetAnalysesByTrajectoryId';
 import type { GetAnalysisFrameLogOutput } from '@shared/contracts/operations/GetAnalysisFrameLog';
-import type { GetRasterMetadataOutput } from '@shared/contracts/operations/GetRasterMetadata';
 import type { GetSimulationCellByTrajectoryOutput } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
 import type { GetPluginByIdOutput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureGLBOutput } from '@shared/contracts/operations/GetPluginExposureGLB';
@@ -83,7 +80,6 @@ export default class PublicCanvasService{
     #access = new TrajectoryAccessGuard();
     #trajectories = new TrajectoryService();
     #plugins = new PluginService();
-    #raster = new RasterService();
     #simulationCells = new SimulationCellService();
 
     async bootstrap(input: PublicCanvasRequest): Promise<GetPublicCanvasBootstrapOutput>{
@@ -118,25 +114,6 @@ export default class PublicCanvasService{
         if(!preview) throw new ApplicationError(ErrorCodes.RESOURCE_NOT_FOUND, 'No preview available for this trajectory', 404);
 
         return preview;
-    }
-
-    async rasterFrame(input: GetPublicCanvasRasterFrameInput): Promise<DownloadStreamOutput>{
-        const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
-        return this.#raster.getRasterFramePNG({
-            trajectoryId: input.trajectoryId,
-            teamId: trajectory.team,
-            timestep: input.timestep,
-            analysisId: input.analysisId,
-            model: input.model
-        });
-    }
-
-    async rasterMetadata(input: PublicCanvasRequest): Promise<GetRasterMetadataOutput>{
-        const trajectory = await this.#access.assertReadable(input.trajectoryId, input.userId);
-        return this.#raster.getRasterMetadata({
-            trajectoryId: input.trajectoryId,
-            teamId: trajectory.team
-        });
     }
 
     async dump(input: PublicCanvasRequest & { timestep: string }): Promise<DownloadStreamOutput>{

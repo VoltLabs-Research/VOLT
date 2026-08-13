@@ -23,7 +23,6 @@ import DiscoverController from '@modules/trajectory/controllers/DiscoverControll
 import PluginController from '@modules/plugin/controllers/PluginController';
 import ScriptingController from '@modules/scripting/controllers/ScriptingController';
 import JobsController from '@modules/jobs/controllers/JobsController';
-import RasterController from '@modules/raster/controllers/RasterController';
 import SimulationCellController from '@modules/simulation-cell/controllers/SimulationCellController';
 import WhiteboardController from '@modules/whiteboards/controllers/WhiteboardController';
 import AiController from '@modules/ai/controllers/AiController';
@@ -53,7 +52,6 @@ const CONTROLLERS: Readonly<Record<string, readonly RouterProviderClass[]>> = {
     plugin: [PluginController],
     scripting: [ScriptingController],
     jobs: [JobsController],
-    raster: [RasterController],
     'simulation-cell': [SimulationCellController],
     whiteboards: [WhiteboardController],
     ai: [AiController],

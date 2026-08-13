@@ -92,3 +92,16 @@ export const describeRunChain = (
     const shown = names.slice(0, MAX_CHAIN_PARTS).join(CHAIN_SEPARATOR);
     return `${shown} +${names.length - MAX_CHAIN_PARTS}`;
 };
+
+/**
+ * The title to show for a run: the user's own name when it has one, the plugin
+ * chain otherwise.
+ *
+ * The chain stays a fallback computed on read rather than a value copied into the
+ * run at creation, so renaming a plugin re-labels the runs that used it instead of
+ * leaving them quoting a name that no longer exists.
+ */
+export const resolveRunLabel = (
+    run: { name?: string | null } | undefined,
+    rows: readonly { kind: string; stage?: PipelineRunStage }[]
+): string => run?.name?.trim() || describeRunChain(rows);

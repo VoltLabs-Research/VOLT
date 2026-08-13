@@ -3,7 +3,7 @@
 const { parentPort, workerData } = require('node:worker_threads');
 const path = require('node:path');
 const { DuckDBConnection } = require('@duckdb/node-api');
-const { dataParser, dumpParser } = require('@voltstack/lammps-io');
+const { readFrame } = require('@voltstack/lammps-io');
 const {
     buildElementTable,
     DEFAULT_UNITS
@@ -23,33 +23,14 @@ const readPositiveIntegerEnv = (name, fallback) => {
     return Number.parseInt(value, 10);
 };
 
-// '*' asks the dump parser for every non-base column present in the file, so the
-// parquet schema follows the dump instead of a list the caller has to know up
+// '*' asks for every per-atom column present in the file beyond id/type/position, so
+// the parquet schema follows the dump instead of a list the caller has to know up
 // front. Nothing upstream knows those column names, which is why the old
 // caller-supplied list was always empty and every extra column was dropped.
-//
-// Known wart in 1.0.2: the parser excludes base columns by *name* ('id','type',
-// 'x','y','z'), so a scaled dump also reports its 'xs'/'ys'/'zs' columns as extras
-// even though they were already consumed as positions. Harmless — the positions
-// themselves are correct — but it adds redundant columns to the schema. Fixed in
-// 2.0.0 by excluding whichever column indices the mapping actually consumed.
-const readFrameFromFile = (filePath) => {
-    try {
-        return dumpParser.parseDump(filePath, {
-            includeIds: true,
-            properties: ['*']
-        });
-    } catch (dumpError) {
-        try {
-            return dataParser.parseData(filePath, { includeIds: true });
-        } catch (dataError) {
-            throw new Error(
-                `Unsupported trajectory format: ${filePath} ` +
-                `(dump: ${dumpError.message}; data: ${dataError.message})`
-            );
-        }
-    }
-};
+const readFrameFromFile = (filePath) => readFrame(filePath, {
+    includeIds: true,
+    properties: ['*']
+});
 
 // The parquet schema is the union of the per-atom columns the frames actually
 // carry, in first-seen order. Frames are allowed to disagree — a restarted run can

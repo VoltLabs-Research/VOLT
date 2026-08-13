@@ -16,12 +16,10 @@ import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
 
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import useCanvasUrlState, { CanvasWorkspace } from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { ArtifactSection } from './use-artifact-sections';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import type { RasterContainerSelection, RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
 
 interface ObjectsPanelProps extends CanvasPanelActionProps {
@@ -45,15 +43,9 @@ const ObjectsPanel = ({
     canMutateCanvas,
     onDownloadAnalysis,
     onDownloadExposureListing,
-    rasterContainerSelections = [],
-    activeRasterContainerId = 'container-1',
-    onSetActiveRasterContainer,
-    onUpdateRasterContainerSelection,
     mode = 'default'
 }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
-    const { activeWorkspace } = useCanvasUrlState();
-    const isRasterWorkspace = activeWorkspace === CanvasWorkspace.Raster;
     const isAnalysisCompact = mode === 'analysis-compact';
 
     const {
@@ -75,7 +67,7 @@ const ObjectsPanel = ({
         trajectoryId: trajectory?._id
     });
 
-    const { runSections, onRestoreRun } = usePipelineRuns({
+    const { runSections, onRestoreRun, onRenameRun } = usePipelineRuns({
         trajectoryId: trajectory?._id,
         canMutateCanvas,
         sections: sceneCollectionSections,
@@ -162,16 +154,10 @@ const ObjectsPanel = ({
         };
     }, [activeScene, expandedSections, onRetryLoadExposures, onSelectScene, runSections, sceneCollectionSections, toggleSection]);
 
-    const handleSelectRasterScene = (scene: RasterSelectableScene, label: string) => {
-        onUpdateRasterContainerSelection?.(activeRasterContainerId, {
-            scene,
-            label,
-            model: scene.source === 'plugin' ? scene.exposureId : undefined
-        });
-    };
 
     const sharedSceneCollectionProps: SharedSceneCollectionProps = {
         onRestoreRun,
+        onRenameRun,
         expandedSections,
         toggleSection,
         showSectionsSkeleton,
@@ -193,42 +179,6 @@ const ObjectsPanel = ({
         setSceneEdges
     };
 
-    const renderRasterContainerPanel = (selection: RasterContainerSelection) => {
-        const isActive = selection.id === activeRasterContainerId;
-
-        return (
-            <RightCollapsible
-                key={selection.id}
-                title={selection.title}
-                icon={<Layers style={PANEL_ICON_STYLE} />}
-                expanded={isActive}
-                onExpandedChange={(next) => { if (next) onSetActiveRasterContainer?.(selection.id); }}
-                extraClassName={isActive ? 'rounded-lg border border-border' : ''}
-                headerAction={(
-                    <button
-                        type='button'
-                        className={cn('cursor-pointer rounded-full border border-transparent bg-transparent px-2 py-1 text-2xs leading-none text-muted', isActive && 'border-border bg-surface-tertiary text-foreground')}
-                        onClick={() => onSetActiveRasterContainer?.(selection.id)}
-                    >
-                        {selection.label}
-                    </button>
-                )}
-            >
-                {isActive && (
-                    <SceneCollection
-                        {...sharedSceneCollectionProps}
-                        runSections={runSections}
-                        totalAnalyses={sceneCollectionTotalAnalyses}
-                        showSimulationCell={showSimulationCell}
-                        onToggleSimulationCell={handleToggleSimulationCell}
-                        selectionMode="raster"
-                        selectedScene={selection.scene}
-                        onSelectRasterScene={handleSelectRasterScene}
-                    />
-                )}
-            </RightCollapsible>
-        );
-    };
 
     const renderArtifactSection = (section: ArtifactSection) => (
         <ArtifactTreeSection
@@ -245,7 +195,7 @@ const ObjectsPanel = ({
 
     const resolvedTrajectoryId = trajectoryId ?? trajectory?._id;
 
-    const pipelineSection = !isRasterWorkspace ? (
+    const pipelineSection = (
         <RightCollapsible
             title="Pipeline"
             icon={<Layers style={PANEL_ICON_STYLE} />}
@@ -268,7 +218,7 @@ const ObjectsPanel = ({
                 canMutateCanvas={canMutateCanvas}
             />
         </RightCollapsible>
-    ) : null;
+    );
 
     const populatedSections = artifactSections.filter((section) => section.timesteps.length > 0);
     const showSceneCollection = !isAnalysisCompact || sceneCollectionSections.length > 0;
@@ -285,22 +235,16 @@ const ObjectsPanel = ({
                         collapsible={!isAnalysisCompact || populatedSections.length > 0}
                         tourId='canvas-analyses-section'
                     >
-                        {isRasterWorkspace && !isAnalysisCompact ? (
-                            <div className='flex flex-col gap-2 px-1.5 pb-3 pt-1.5'>
-                                {rasterContainerSelections.map(renderRasterContainerPanel)}
-                            </div>
-                        ) : (
-                            <SceneCollection
-                                {...sharedSceneCollectionProps}
-                                runSections={runSections}
-                                totalAnalyses={sceneCollectionTotalAnalyses}
-                                showDefaultScene={!isAnalysisCompact}
-                                showSimulationCell={!isAnalysisCompact && showSimulationCell}
-                                onToggleSimulationCell={handleToggleSimulationCell}
-                                firstAnalysisTourTargetId="canvas-first-analysis-row"
-                                firstExposureTourTargetId="canvas-first-exposure-row"
-                            />
-                        )}
+                        <SceneCollection
+                            {...sharedSceneCollectionProps}
+                            runSections={runSections}
+                            totalAnalyses={sceneCollectionTotalAnalyses}
+                            showDefaultScene={!isAnalysisCompact}
+                            showSimulationCell={!isAnalysisCompact && showSimulationCell}
+                            onToggleSimulationCell={handleToggleSimulationCell}
+                            firstAnalysisTourTargetId="canvas-first-analysis-row"
+                            firstExposureTourTargetId="canvas-first-exposure-row"
+                        />
                     </RightCollapsible>
                 )}
                 {pipelineSection}

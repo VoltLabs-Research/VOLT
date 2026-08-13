@@ -2,22 +2,9 @@ import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-export enum CanvasWorkspace {
-    Scene = 'scene',
-    Raster = 'raster'
-}
-
 interface UpdateOptions {
     replace?: boolean;
 }
-
-const resolveCanvasWorkspace = (workspace: string | null): CanvasWorkspace => {
-    if (workspace === CanvasWorkspace.Raster) {
-        return CanvasWorkspace.Raster;
-    }
-
-    return CanvasWorkspace.Scene;
-};
 
 const parseNumberParam = (value: string | null): number | undefined => {
     if (value === null) {
@@ -40,7 +27,6 @@ const useCanvasUrlState = () => {
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') === 'true';
     const showGizmo = searchParams.get('gizmo') !== 'false';
-    const activeWorkspace = resolveCanvasWorkspace(searchParams.get('workspace'));
 
     const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, options?: UpdateOptions) => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), {
@@ -64,10 +50,6 @@ const useCanvasUrlState = () => {
         updateSearchParams({ notebook: value ?? null }, options);
     }, [updateSearchParams]);
 
-    const setActiveWorkspace = useCallback((id: CanvasWorkspace, options?: UpdateOptions) => {
-        updateSearchParams({ workspace: id === CanvasWorkspace.Scene ? null : id }, options);
-    }, [updateSearchParams]);
-
     return {
         searchParams,
         updateSearchParams,
@@ -80,12 +62,10 @@ const useCanvasUrlState = () => {
         showWidgets,
         showGrid,
         showGizmo,
-        activeWorkspace,
         setAnalysisId,
         setResultsPluginId,
         setTimelineExposureId,
-        setSelectedNotebookId,
-        setActiveWorkspace
+        setSelectedNotebookId
     };
 };
 

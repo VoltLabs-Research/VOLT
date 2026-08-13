@@ -1,5 +1,4 @@
 import { cn } from '@heroui/react';
-import CanvasRasterViewport from '@/modules/raster/components/CanvasRasterViewport';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { EmptyState, Typography } from '@heroui/react';
 import { useCallback, useMemo } from 'react';
@@ -7,20 +6,16 @@ import { useNavigate } from 'react-router-dom';
 
 import type { ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import type { RasterContainerId, RasterContainerSelection } from '@/modules/raster/contracts/container-selection';
 
 interface ViewportBodyContentParams {
     trajectory: Trajectory | null;
     trajectoryId: string;
     currentTimestep: number | undefined;
-    isRasterWorkspace: boolean;
     isLocalGlbViewer: boolean;
     isLocalManifestLoading: boolean;
     localManifestError: string | null;
     forcedGlbUrl: string | null;
     showNoFramesState: boolean;
-    rasterContainerSelections: RasterContainerSelection[];
-    onUpdateRasterContainerSelection: (containerId: RasterContainerId, updates: Partial<RasterContainerSelection>) => void;
 }
 
 const centeredViewportState = (children: ReactNode, className?: string): ReactNode => (
@@ -43,14 +38,11 @@ const useViewportBodyContent = ({
     trajectory,
     trajectoryId,
     currentTimestep,
-    isRasterWorkspace,
     isLocalGlbViewer,
     isLocalManifestLoading,
     localManifestError,
     forcedGlbUrl,
-    showNoFramesState,
-    rasterContainerSelections,
-    onUpdateRasterContainerSelection
+    showNoFramesState
 }: ViewportBodyContentParams): ReactNode | undefined => {
     const navigate = useNavigate();
 
@@ -59,18 +51,6 @@ const useViewportBodyContent = ({
     }, [navigate]);
 
     return useMemo(() => {
-        if (isRasterWorkspace) {
-            return (
-                <CanvasRasterViewport
-                    trajectoryId={trajectoryId}
-                    trajectory={trajectory}
-                    currentTimestep={currentTimestep}
-                    containerSelections={rasterContainerSelections}
-                    onUpdateContainerSelection={onUpdateRasterContainerSelection}
-                />
-            );
-        }
-
         if (isLocalGlbViewer) {
             if (isLocalManifestLoading) {
                 return emptyViewportState('Loading scene manifest', 'Resolving local viewer frames.');
@@ -116,11 +96,8 @@ const useViewportBodyContent = ({
         forcedGlbUrl,
         isLocalGlbViewer,
         isLocalManifestLoading,
-        isRasterWorkspace,
-        localManifestError,
-        onUpdateRasterContainerSelection,
-        rasterContainerSelections,
-        showNoFramesState,
+            localManifestError,
+                showNoFramesState,
         trajectory,
         trajectoryId
     ]);

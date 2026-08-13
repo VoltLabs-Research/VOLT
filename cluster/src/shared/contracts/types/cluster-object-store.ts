@@ -93,6 +93,11 @@ export interface LocalClusterObjectStoreGateway extends ScopedClusterObjectStore
     composeObject(input: LocalClusterObjectComposeInput): Promise<void>;
     removeObject(bucket: string, objectKey: string): Promise<void>;
     deleteByPrefix(bucket: string, prefix: string): Promise<number>;
+    /**
+     * Where an object sits on this host's disk, for readers that can memory-map a file
+     * rather than stream a copy of it. Local store only, by definition.
+     */
+    resolveLocalPath(bucket: string, objectKey: string): string;
 }
 
 export interface RemoteClusterObjectPutBufferRequest {

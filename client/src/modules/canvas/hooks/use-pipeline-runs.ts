@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { sileo } from 'sileo';
-import { usePipelineRunsQuery } from '@/modules/plugin/hooks/plugin/queries';
+import { ErrorSurface } from '@/shared/contracts/errors';
+import { reportError } from '@/shared/errors/core/report-error';
+import { usePipelineRunsQuery, useUpdatePipelineRunMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 import { buildPipelineRunSections } from '../utils/pipeline-run-sections';
@@ -39,6 +41,7 @@ const usePipelineRuns = ({
     const mode = useCanvasAccessMode();
     const isRbac = mode !== 'public';
     const replaceStages = useCanvasPipelineStore((state) => state.replaceStages);
+    const renameMutation = useUpdatePipelineRunMutation();
 
     const { data } = usePipelineRunsQuery(
         {
@@ -95,10 +98,33 @@ const usePipelineRuns = ({
         });
     }, [replaceStages, trajectoryId]);
 
+    /*
+     * No success toast: the new name appears in the row that was just edited, so a
+     * toast would only repeat what the user is already looking at. A failure has no
+     * such tell — the row silently snaps back on refetch — so that one is surfaced.
+     */
+    const renameRun = useCallback(async (run: PipelineRun, name: string) => {
+        if (!trajectoryId) return;
+
+        try {
+            await renameMutation.mutateAsync({
+                trajectoryId,
+                pipelineRunId: run._id,
+                name
+            });
+        } catch (error: unknown) {
+            reportError(error, {
+                surface: ErrorSurface.Toast,
+                fallbackTitle: 'Failed to rename run'
+            });
+        }
+    }, [renameMutation, trajectoryId]);
+
     return {
         runSections,
         // Restoring writes to the draft, so it follows the same gate as editing it.
-        onRestoreRun: canMutateCanvas ? restoreRun : undefined
+        onRestoreRun: canMutateCanvas ? restoreRun : undefined,
+        onRenameRun: canMutateCanvas ? renameRun : undefined
     };
 };
 

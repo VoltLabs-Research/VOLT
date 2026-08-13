@@ -46,9 +46,8 @@ import {
     toTrajectoryObjectKeyPrefix
 } from '@shared/infrastructure/storage/storage-codec';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
-import { dumpParser, dataParser, type NativeParseResult } from '@voltstack/lammps-io';
+import { readFrame } from '@voltstack/lammps-io';
 import spatialAssembler from '@voltstack/spatial-assembler';
-import { errorMessage } from '@shared/application/utilities/error-message';
 
 /**
  * Long enough that a slow parquet build is never raced by a straggler frame, short
@@ -58,38 +57,6 @@ import { errorMessage } from '@shared/application/utilities/error-message';
 const DRAIN_CLAIM_TTL_SECONDS = 30 * 60;
 
 const DUMP_LIST_PAGE_SIZE = 1_000;
-
-/**
- * Reads a staged frame as either a LAMMPS dump or a LAMMPS data file.
- *
- * `parseDump` *throws* on a non-dump file rather than returning null, so the `??`
- * chain this replaces never reached the data-file branch — uploading a LAMMPS data
- * file failed the whole GLB job. Mirrors the fallback in parquet-ingest-worker.cjs.
- */
-const parseFrameForGlb = (filePath: string): NativeParseResult => {
-    let dumpFailure: unknown = new Error('parser returned no frame');
-
-    try {
-        const parsed = dumpParser.parseDump(filePath, { includeIds: false });
-        if (parsed) return parsed;
-    } catch (error) {
-        dumpFailure = error;
-    }
-
-    let dataFailure: unknown = new Error('parser returned no frame');
-
-    try {
-        const parsed = dataParser.parseData(filePath, { includeIds: false });
-        if (parsed) return parsed;
-    } catch (error) {
-        dataFailure = error;
-    }
-
-    throw new Error(
-        `Unsupported trajectory format: ${filePath} ` +
-        `(dump: ${errorMessage(dumpFailure)}; data: ${errorMessage(dataFailure)})`
-    );
-};
 
 export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQueueJobPayload> {
     protected readonly queueName = TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME;
@@ -329,7 +296,9 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         localRawPath: string,
         tempDirectory: string
     ): Promise<void> {
-        const parsed = parseFrameForGlb(localRawPath);
+        // No format fallback to get wrong: the reader identifies the file itself, which is
+        // what a LAMMPS data upload used to die on here.
+        const parsed = readFrame(localRawPath);
 
         const glbPath = path.join(tempDirectory, `${timestep}.glb`);
         const glbCompressedPath = `${glbPath}.zst`;

@@ -40,7 +40,6 @@ interface AnalysisTreeNodeProps extends SceneRowActions {
     onRetryLoadExposures?: (analysisId: string) => void;
     plugin?: Plugin;
     pluginsById?: Record<string, Plugin>;
-    selectionMode?: 'default' | 'raster';
     tourTargetId?: string;
     firstExposureTourTargetId?: string;
     /** Depth of the analysis row itself; its exposures render one level deeper. */
@@ -70,7 +69,6 @@ const AnalysisTreeNode = ({
     onRetryLoadExposures,
     plugin,
     pluginsById,
-    selectionMode = 'default',
     tourTargetId,
     firstExposureTourTargetId,
     indent = 'base',
@@ -79,8 +77,7 @@ const AnalysisTreeNode = ({
 }: AnalysisTreeNodeProps) => {
     const childIndent = nextTreeIndent(indent);
     const { analysis, entry, isCurrentAnalysis } = section;
-    const { onSelectScene, selectedScene } = sceneActions;
-    const isRasterSelectionMode = selectionMode === 'raster';
+    const { onSelectScene } = sceneActions;
     const resolvedStatus = status ?? normalizeCanvasAnalysisStatus(analysis.status);
     const isAnalysisInProgress = isCanvasAnalysisInProgress(resolvedStatus);
     const artifactRows = buildArtifactRows(
@@ -90,9 +87,7 @@ const AnalysisTreeNode = ({
     );
     const firstExposureRowKey = artifactRows.find((row) => row.exposure)?.key;
     const recentlyReadyArtifactIds = useRecentlyReadyArtifacts(analysis.expectedArtifacts);
-    const isSelectedAnalysis = isRasterSelectionMode
-        ? selectedScene?.source === 'plugin' && selectedScene.analysisId === analysis._id
-        : isCurrentAnalysis;
+    const isSelectedAnalysis = isCurrentAnalysis;
 
     const hasConfig = Object.keys(analysis.config).length > 0;
     const hasWorkflowPluginNodes = hasPluginWorkflowNodes(plugin);
@@ -120,7 +115,7 @@ const AnalysisTreeNode = ({
     ) : null;
 
     const handleSelectAnalysis = () => {
-        if (isRasterSelectionMode || isAnalysisInProgress) {
+        if (isAnalysisInProgress) {
             onToggle(analysis._id);
             return;
         }
@@ -172,7 +167,7 @@ const AnalysisTreeNode = ({
     return (
         <>
             <MaybeContextMenu
-                enabled={!isRasterSelectionMode}
+                enabled
                 id={`canvas-ctx-analysis-${analysis._id}`}
                 options={analysisMenuOptions}
             >
@@ -260,7 +255,6 @@ const AnalysisTreeNode = ({
                         exposure={exposure}
                         pluginId={resolveAnalysisPluginId(analysis)}
                         isRecentlyReady={isRecentlyReady}
-                        isRasterSelectionMode={isRasterSelectionMode}
                         tourTargetId={key === firstExposureRowKey ? firstExposureTourTargetId : undefined}
                         indent={childIndent}
                     />

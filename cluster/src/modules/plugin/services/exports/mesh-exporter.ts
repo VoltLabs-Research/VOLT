@@ -4,6 +4,7 @@ import { logger } from '@shared/infrastructure/logger';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
 import { readMeshParquetSource } from '@modules/plugin/services/exports/export-node-processor-types';
+import { dropEnclosingComponent } from '@modules/plugin/services/exports/mesh-component-filter';
 import { clipMeshToPeriodicCell } from '@modules/plugin/services/exports/mesh-periodic-clipping';
 import { sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import type { ExportExecutionInput, ExportMaterial, InlineMeshInput, MeshExportOptions, MeshInput } from '@modules/plugin/services/exports/export-node-processor-types';
@@ -176,6 +177,7 @@ const reverseWinding = (indices: Uint32Array): void => {
 interface FinishMeshOptions {
     smoothIterations: number | undefined;
     reverseOrientation: boolean;
+    interiorOnly: boolean;
     cell: MeshDomain | null;
 }
 
@@ -198,14 +200,23 @@ const finishMesh = (
         reverseWinding(indices);
     }
 
-    // Then contain it in the cell and cap the cuts, which is the order OVITO uses:
-    // the modifier smooths, the vis element splits and caps.
     let workingPositions = positions;
     let workingIndices = indices;
     let colors: Float32Array | undefined;
 
+    // Shell removal has to precede the clipping: clipping cuts a wrapped surface at
+    // the cell boundary, turning one physical shell into several components, and the
+    // containment test would then be comparing fragments instead of bodies.
+    if (options.interiorOnly) {
+        const filtered = dropEnclosingComponent(workingPositions, workingIndices);
+        workingPositions = filtered.positions;
+        workingIndices = filtered.indices;
+    }
+
+    // Then contain it in the cell and cap the cuts, which is the order OVITO uses:
+    // the modifier smooths, the vis element splits and caps.
     if (options.cell) {
-        const clipped = clipMeshToPeriodicCell(positions, indices, options.cell);
+        const clipped = clipMeshToPeriodicCell(workingPositions, workingIndices, options.cell);
         if (clipped) {
             workingPositions = clipped.positions;
             workingIndices = clipped.indices;
@@ -433,6 +444,7 @@ export const exportMeshArtifact = async (
     const finishOptions: FinishMeshOptions = {
         smoothIterations: resolveSmoothIterations(options.smoothIterations),
         reverseOrientation: options.reverseOrientation ?? false,
+        interiorOnly: options.interiorOnly ?? false,
         cell: parquetSource?.cell ?? null
     };
     const processed = parquetSource

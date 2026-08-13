@@ -12,7 +12,7 @@ export interface GetPipelineRunsByTrajectoryIdInput{
     limit?: number;
 }
 
-const toWireRun = (run: PipelineRunEntity): PipelineRun => run.toJSON() as unknown as PipelineRun;
+export const toWireRun = (run: PipelineRunEntity): PipelineRun => run.toJSON() as unknown as PipelineRun;
 
 /**
  * Newest-first, paginated **by run** rather than by analysis: a page boundary

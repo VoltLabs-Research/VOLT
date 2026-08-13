@@ -8,8 +8,11 @@ import {
 } from '../CanvasTree';
 import { CanvasAnalysisStatusEnum } from '../../utils/analysis-status';
 import { UNGROUPED_RUN_ID, countRunStagesByKind } from '../../utils/pipeline-run-sections';
-import { describePipelineRunStage, describeRunChain } from './stage-labels';
+import { describePipelineRunStage, resolveRunLabel } from './stage-labels';
+import EditableTag from '@/shared/ui/components/EditableTag';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
+
+import { useState } from 'react';
 
 import type { ReactNode } from 'react';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
@@ -24,6 +27,12 @@ interface PipelineRunTreeNodeProps {
     status?: CanvasAnalysisStatus;
     /** Absent when the caller cannot mutate the canvas, which hides the action. */
     onRestore?: (run: PipelineRun) => void;
+    /**
+     * Absent when the caller cannot mutate the canvas, which renders the title as
+     * plain text. An empty `name` clears the override and returns the run to its
+     * derived label.
+     */
+    onRename?: (run: PipelineRun, name: string) => void;
     /**
      * Renders one analysis stage. A render prop rather than a forwarded prop bag:
      * the parent already wires every `AnalysisTreeNode` prop, and duplicating
@@ -60,17 +69,19 @@ const PipelineRunTreeNode = ({
     onToggle,
     status,
     onRestore,
+    onRename,
     renderAnalysisRow
 }: PipelineRunTreeNodeProps) => {
     const { run, rows, isUngrouped } = section;
     const counts = countRunStagesByKind(rows);
+    const [isEditingName, setIsEditingName] = useState(false);
 
     /*
      * Named after what it ran, not by an ordinal: "PTM → Grain Segmentation"
      * identifies a run on sight, while "Run #4" only says how many came before
      * it — and that number shifts as soon as the fetched window moves.
      */
-    const label = isUngrouped ? 'Ungrouped' : describeRunChain(rows);
+    const label = isUngrouped ? 'Ungrouped' : resolveRunLabel(run, rows);
 
     // Ungrouped rows have no run behind them, so there is no single time to show.
     const timeLabel = isUngrouped || !run
@@ -97,14 +108,57 @@ const PipelineRunTreeNode = ({
         }]
         : [];
 
+    const canRename = Boolean(run && onRename);
+
+    /*
+     * `truncate` is dropped while editing: it pins white-space to nowrap and hides
+     * the overflow, so in a sidebar this narrow the caret would run off the clipped
+     * edge of the text it is editing.
+     */
+    const titleClassName = cn('font-medium text-foreground', !isEditingName && 'truncate');
+
+    const title = canRename && run
+        ? (
+            <EditableTag
+                as='span'
+                className={titleClassName}
+                title={label}
+                /*
+                 * Single click still reaches the row and toggles it; a double click
+                 * starts editing. Without this the title would swallow the click
+                 * that expands the run.
+                 */
+                allowSingleClickPropagation
+                // Clearing the name is an edit, not a discard: it restores the derived label.
+                allowEmpty
+                onEditingChange={setIsEditingName}
+                onSave={(next) => onRename?.(run, next)}
+            >
+                {label}
+            </EditableTag>
+        )
+        : <span className={titleClassName} title={label}>{label}</span>;
+
+    /*
+     * A `div` rather than the `<button>` this used to be. The title is now a
+     * contentEditable, which cannot legally nest inside a button and misbehaves
+     * there; `role='treeitem'` was always the accurate role anyway, and it is the
+     * button that was the anomaly.
+     */
     const runRow = (
-        <button
-            type='button'
+        <div
             role='treeitem'
             aria-selected={false}
             aria-expanded={isExpanded}
             tabIndex={0}
             onClick={() => onToggle(section.runId)}
+            onKeyDown={(event) => {
+                // The title stops propagation of these keys, so they only land here
+                // when the row itself has focus.
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                onToggle(section.runId);
+            }}
             className={cn(
                 'flex cursor-pointer select-none items-center gap-2 text-xs',
                 TREE_ROW_CLASS,
@@ -113,7 +167,7 @@ const PipelineRunTreeNode = ({
             )}
         >
             <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
-                <span className='truncate font-medium text-foreground' title={label}>{label}</span>
+                {title}
                 <span className='truncate text-2xs leading-[1.2] text-muted opacity-90'>
                     {timeLabel ? `${timeLabel} · ${stageSummary}` : stageSummary}
                 </span>
@@ -122,7 +176,7 @@ const PipelineRunTreeNode = ({
             <span className='flex items-center text-muted' aria-hidden='true'>
                 {isExpanded ? <ChevronDown style={CHEVRON_STYLE} /> : <ChevronRight style={CHEVRON_STYLE} />}
             </span>
-        </button>
+        </div>
     );
 
     const renderStageRow = (row: PipelineRunStageRow): ReactNode => {

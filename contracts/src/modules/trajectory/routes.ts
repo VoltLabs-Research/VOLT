@@ -32,7 +32,6 @@ import type {
     CanvasPluginResponse,
     CanvasSubListingResponse,
     CanvasFrameLogResponse,
-    CanvasRasterMetadataResponse
 } from './domain';
 
 export const trajectoryRoutes = {
@@ -89,7 +88,6 @@ export const trajectoryRoutes = {
     canvasAnalyses: get<unknown>('/api/public/trajectories/:trajectoryId/analyses'),
     canvasDump: get<unknown>('/api/public/trajectories/:trajectoryId/dumps/:timestep'),
     canvasGlb: get<unknown>('/api/public/trajectories/:trajectoryId/frames/:timestep/glb'),
-    canvasRasterFrame: get<unknown>('/api/public/trajectories/:trajectoryId/frames/:timestep/raster'),
     canvasAtoms: get<unknown>('/api/public/trajectories/:trajectoryId/frames/:timestep/atoms'),
     canvasSimulationCell: get<CanvasSimulationCellResponse>('/api/public/trajectories/:trajectoryId/simulation-cell'),
     canvasSceneArtifacts: get<SceneArtifact>('/api/public/trajectories/:trajectoryId/scene-artifacts'),
@@ -107,6 +105,5 @@ export const trajectoryRoutes = {
     canvasPluginListing: get<unknown>('/api/public/trajectories/:trajectoryId/plugins/:pluginId/listings'),
     canvasSubListing: get<CanvasSubListingResponse>('/api/public/trajectories/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'),
     canvasExposureGlb: get<unknown>('/api/public/trajectories/:trajectoryId/exposures/:analysisId/:exposureId/:timestep/glb'),
-    canvasFrameLog: get<CanvasFrameLogResponse>('/api/public/trajectories/:trajectoryId/analyses/:analysisId/logs/:timestep'),
-    canvasRasterMetadata: get<CanvasRasterMetadataResponse>('/api/public/trajectories/:trajectoryId/raster-metadata')
+    canvasFrameLog: get<CanvasFrameLogResponse>('/api/public/trajectories/:trajectoryId/analyses/:analysisId/logs/:timestep')
 } as const;

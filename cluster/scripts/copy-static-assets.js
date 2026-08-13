@@ -35,7 +35,6 @@ const copyFile = async (from, to) => {
 
 const ASSETS = [
     'modules/plugin/services/python/volt_plugin_stub.py',
-    'modules/trajectory/services/parsing/ase_import_bridge.py',
     'modules/trajectory/services/parsing/ase_export_bridge.py',
     'modules/trajectory/workers/parquet-ingest-worker.cjs',
     'modules/trajectory/workers/element-table.cjs'

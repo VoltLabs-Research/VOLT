@@ -4,7 +4,6 @@ import { DEFAULT_LINE_WIDTH, buildPluginScene, buildSceneRenderMetadata } from '
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import { cn } from '@heroui/react';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
-import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import {
     buildAddRemoveOption,
     buildColorSubmenu,
@@ -19,7 +18,6 @@ import {
 import type { Analysis, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
 import type { CanvasTreeIndent } from '../CanvasTree';
 import type { MenuOption } from '@/shared/contracts/menu';
-import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { SceneObjectType, SceneRenderMetadata, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 
@@ -41,8 +39,6 @@ export interface SceneRowActions {
     setSceneColor: (sceneKey: string, color: string | undefined) => void;
     setSceneEdges: (sceneKey: string, edges: boolean) => void;
     resolveSceneRenderMetadata?: (pluginId: string, exposureId: string) => SceneRenderMetadata | undefined;
-    selectedScene?: RasterSelectableScene | null;
-    onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
 }
 
 interface ExposureRowProps extends SceneRowActions {
@@ -51,7 +47,6 @@ interface ExposureRowProps extends SceneRowActions {
     exposure: RenderableExposure;
     pluginId: string;
     isRecentlyReady: boolean;
-    isRasterSelectionMode: boolean;
     tourTargetId?: string;
     indent?: CanvasTreeIndent;
 }
@@ -62,7 +57,6 @@ const ExposureRow = ({
     exposure,
     pluginId,
     isRecentlyReady,
-    isRasterSelectionMode,
     tourTargetId,
     indent = 'lg',
     onSelectScene,
@@ -75,9 +69,7 @@ const ExposureRow = ({
     setSceneLineWidth,
     setSceneColor,
     setSceneEdges,
-    resolveSceneRenderMetadata,
-    selectedScene,
-    onSelectRasterScene
+    resolveSceneRenderMetadata
 }: ExposureRowProps) => {
     const sceneRenderMetadata = buildSceneRenderMetadata(exposure.export)
         ?? resolveSceneRenderMetadata?.(pluginId, exposure.exposureId);
@@ -86,9 +78,7 @@ const ExposureRow = ({
         exposureId: exposure.exposureId,
         sceneRenderMetadata
     });
-    const isActive = isRasterSelectionMode
-        ? isSameScene(selectedScene, scene)
-        : isSceneActive(scene);
+    const isActive = isSceneActive(scene);
     const sceneKey = getSceneKey(scene);
     const sceneOverride = sceneVisualOverrides[sceneKey];
     const isLineExposure = sceneRenderMetadata?.exporter === Exporter.LINE;
@@ -133,7 +123,7 @@ const ExposureRow = ({
 
     return (
         <MaybeContextMenu
-            enabled={!isRasterSelectionMode}
+            enabled
             id={`canvas-ctx-exposure-${exposure.analysisId}-${exposure.exposureId}`}
             options={exposureMenuOptions}
         >
@@ -150,13 +140,7 @@ const ExposureRow = ({
                         <span className='truncate'>{exposure.name}</span>
                     </span>
                 )}
-                onClick={() => {
-                    if (isRasterSelectionMode) {
-                        onSelectRasterScene?.(scene, exposure.name);
-                        return;
-                    }
-                    onSelectScene(scene, analysis);
-                }}
+                onClick={() => onSelectScene(scene, analysis)}
                 tourTargetId={tourTargetId}
             />
         </MaybeContextMenu>

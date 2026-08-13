@@ -177,4 +177,3 @@ export type CanvasSimulationCellResponse = unknown;
 export type CanvasPluginResponse = unknown;
 export type CanvasSubListingResponse = unknown;
 export type CanvasFrameLogResponse = unknown;
-export type CanvasRasterMetadataResponse = unknown;

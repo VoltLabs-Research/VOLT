@@ -24,6 +24,12 @@ export interface PipelineRunStage{
 }
 
 export interface PipelineRun extends BaseEntity{
+    /**
+     * User-supplied override for the run's title. Left unset the run is labelled
+     * by its plugin chain in execution order, derived on read — so the default
+     * tracks the plugins instead of freezing a copy of their names at run time.
+     */
+    name?: string | null;
     trajectory: string;
     team: string;
     createdBy?: Ref<User>;

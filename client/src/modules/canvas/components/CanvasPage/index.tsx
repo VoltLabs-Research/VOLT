@@ -3,7 +3,7 @@ import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-st
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import useCanvasCleanup from '../../hooks/use-canvas-cleanup';
 import useCanvasCoordinator from '../../hooks/use-canvas-coordinator';
-import useCanvasUrlState, { CanvasWorkspace } from '../../hooks/use-canvas-url-state';
+import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
 import useKeyboardShortcuts from '../../hooks/use-keyboard-shortcuts';
 import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
@@ -16,7 +16,6 @@ import useCanvasCollaboration from './use-canvas-collaboration';
 import useCanvasDownloads from './use-canvas-downloads';
 import useCanvasScrollLock from './use-canvas-scroll-lock';
 import useLocalGlbViewer from './use-local-glb-viewer';
-import useRasterContainerSelections from './use-raster-container-selections';
 import useTrajectoryShareInfo from './use-trajectory-share-info';
 import useViewportBodyContent from './use-viewport-body-content';
 import CanvasRightPanelRegion from './CanvasRightPanelRegion';
@@ -143,14 +142,10 @@ const CanvasPage = () => {
         resultsPluginId,
         showWidgets,
         searchParams,
-        activeWorkspace,
-        setActiveWorkspace
     } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
-    const isRasterWorkspace = !isLocalGlbViewer && activeWorkspace === CanvasWorkspace.Raster;
 
     const localGlbViewer = useLocalGlbViewer(isLocalGlbViewer);
-    const raster = useRasterContainerSelections();
     const {
         isDownloading,
         downloadListing,
@@ -177,17 +172,6 @@ const CanvasPage = () => {
         }
     }, [isNarrowViewport]);
 
-    useEffect(() => {
-        if (activeWorkspace === CanvasWorkspace.Scene) {
-            return;
-        }
-
-        if (!isLocalGlbViewer) {
-            return;
-        }
-
-        setActiveWorkspace(CanvasWorkspace.Scene, { replace: true });
-    }, [activeWorkspace, isLocalGlbViewer, setActiveWorkspace]);
 
     useEffect(() => {
         const editorState = useEditorStore.getState();
@@ -199,11 +183,10 @@ const CanvasPage = () => {
     const trajectoryMissing = Boolean(!trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
     const showNoFramesState = Boolean(
         !isLocalGlbViewer
-        && !isRasterWorkspace
         && trajectory
         && !hasFrames
     );
-    const isSceneSubstituted = isRasterWorkspace || showNoFramesState;
+    const isSceneSubstituted = showNoFramesState;
     const showsTrajectoryScene = !isLocalGlbViewer && !isSceneSubstituted;
     const isTrajectoryLoading = trajectoryLoading
         || !trajectory
@@ -272,14 +255,11 @@ const CanvasPage = () => {
         trajectory,
         trajectoryId,
         currentTimestep,
-        isRasterWorkspace,
         isLocalGlbViewer,
         isLocalManifestLoading: localGlbViewer.isManifestLoading,
         localManifestError: localGlbViewer.manifestError,
         forcedGlbUrl: localGlbViewer.forcedGlbUrl,
         showNoFramesState,
-        rasterContainerSelections: raster.selections,
-        onUpdateRasterContainerSelection: raster.updateSelection
     });
 
     const analysisOverlay = useMemo(() => (
@@ -424,10 +404,6 @@ const CanvasPage = () => {
                     canMutateCanvas={canMutateCanvas}
                     onDownloadAnalysis={openAnalysisDownloadModal}
                     onDownloadExposureListing={downloadListing}
-                    rasterContainerSelections={raster.selections}
-                    activeRasterContainerId={raster.activeContainerId}
-                    onSetActiveRasterContainer={raster.setActiveContainerId}
-                    onUpdateRasterContainerSelection={raster.updateSelection}
                 />
             )}
             {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (

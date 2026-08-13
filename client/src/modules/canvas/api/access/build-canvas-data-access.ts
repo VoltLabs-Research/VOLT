@@ -7,7 +7,6 @@ import particleFilterService from '@/modules/trajectory/api/services/particle-fi
 import pluginService from '@/modules/plugin/api/services/plugin-service';
 import listingService from '@/modules/plugin/api/services/listing-service';
 import analysisService from '@/modules/analysis/api/service';
-import rasterService from '@/modules/raster/api/service';
 import type { CanvasAccessState } from '@/modules/canvas/contracts/data-access';
 import type { GetAtomsInput, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 import type { PaginatedResponse } from '@voltstack/voltclient';
@@ -47,8 +46,6 @@ import type {
     GetAnalysisFrameLogParams,
     GetAnalysisFrameLogResponse
 } from '@/modules/analysis/api/service';
-import type { GetRasterMetadataParams } from '@/modules/raster/api/service';
-import type { GetRasterMetadataResponse } from '@volt/contracts/modules/raster/domain';
 
 interface TrajectoryScopedParams {
     trajectoryId: string;
@@ -68,7 +65,6 @@ export interface CanvasDataAccess {
     getSubListing: (params: TrajectoryScopedParams & GetSubListingInput) => Promise<GetSubListingResponse>;
     getAnalysesByTrajectory: (params: GetAnalysesByTrajectoryParams) => Promise<PaginatedResponse<Analysis>>;
     getAnalysisFrameLog: (params: TrajectoryScopedParams & GetAnalysisFrameLogParams) => Promise<GetAnalysisFrameLogResponse>;
-    getRasterMetadata: (params: GetRasterMetadataParams) => Promise<GetRasterMetadataResponse>;
 }
 
 const buildPublic = (): CanvasDataAccess => ({
@@ -92,7 +88,6 @@ const buildPublic = (): CanvasDataAccess => ({
         limit
     }),
     getAnalysisFrameLog: (params) => canvasService.getFrameLog(params),
-    getRasterMetadata: (params) => canvasService.getRasterMetadata(params)
 });
 
 const buildRbac = (): CanvasDataAccess => ({
@@ -109,7 +104,6 @@ const buildRbac = (): CanvasDataAccess => ({
     getSubListing: ({ trajectoryId: _trajectoryId, ...rest }) => listingService.getSubListing(rest),
     getAnalysesByTrajectory: (params) => analysisService.getByTrajectoryId(params),
     getAnalysisFrameLog: ({ trajectoryId: _trajectoryId, ...rest }) => analysisService.getFrameLog(rest),
-    getRasterMetadata: (params) => rasterService.getMetadata(params)
 });
 
 export const buildCanvasDataAccess = (state: CanvasAccessState): CanvasDataAccess => {

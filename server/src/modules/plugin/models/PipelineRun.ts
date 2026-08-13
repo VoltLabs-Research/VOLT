@@ -24,6 +24,20 @@ import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-r
 @Index(['team', 'createdAt'])
 @Index(['trajectory', 'createdAt'])
 export default class PipelineRun extends BaseModel{
+    /*
+     * Null means "no override": the client labels the run by its plugin chain in
+     * execution order. Storing the derived label at creation instead would freeze
+     * a copy of the plugin names, so renaming a plugin would leave every past run
+     * quoting a name that no longer exists.
+     *
+     * Not a `ReferenceColumn` — that one is varchar(24) for entity ids.
+     */
+    @Column({
+        type: 'varchar',
+        nullable: true
+    })
+    name!: string | null;
+
     @ReferenceColumn()
     trajectory!: string;
 

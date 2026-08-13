@@ -21,6 +21,12 @@ export const applyMeshOpacity = (meshes: ReadonlyArray<THREE.Mesh>, opacity: num
         forEachMaterial(mesh, (material) => {
             material.transparent = opacity < 1.0;
             material.opacity = opacity;
+            // A semi-transparent surface must stop writing depth, the same way
+            // applyPointCloudOpacity handles it. Left on, a closed surface occludes
+            // itself: whichever of its near and far sheets happens to be drawn first
+            // wins, so a shell that should read as two faint layers comes out patchy
+            // and still hides whatever sits inside it.
+            material.depthWrite = opacity >= 1.0;
             const opacityUniform = resolveUniform(material, 'uOpacity');
             if (opacityUniform) {
                 opacityUniform.value = opacity;

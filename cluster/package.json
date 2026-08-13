@@ -18,7 +18,7 @@
     "@isaacs/ttlcache": "^2.1.4",
     "@voltstack/daemon-cluster-client": "file:../sdk/node/DaemonClusterClient",
     "@voltstack/headless-rasterizer": "^1.0.0",
-    "@voltstack/lammps-io": "^1.0.2",
+    "@voltstack/lammps-io": "^2.0.0",
     "@voltstack/spatial-assembler": "^1.0.0",
     "archiver": "^8.0.0",
     "bottleneck": "^2.19.5",

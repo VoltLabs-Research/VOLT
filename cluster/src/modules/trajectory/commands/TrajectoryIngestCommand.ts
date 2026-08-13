@@ -18,13 +18,12 @@ import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, toTrajectoryFrameJobKey } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
-import { parseTrajectoryMetadata, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
+import { scanTrajectoryFrames, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
 import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
 import { mapLimited } from '@shared/application/utilities/map-limited';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 const INGEST_FRAME_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_INGEST_CONCURRENCY') ?? 8;
-const METADATA_READ_BYTES = readPositiveIntegerEnv('TRAJECTORY_METADATA_READ_BYTES') ?? 4 * 1024 * 1024;
 const DEFAULT_FRAME_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_FRAME_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_BACKOFF_MS') ?? 2000;
 const INGEST_BUCKET = ObjectBucketName.Dumps;
@@ -117,14 +116,17 @@ export class TrajectoryIngestCommand {
         const totalSize = frames.reduce((sum, frame) => sum + frame.size, 0);
 
         logger.info(
-            `@trajectory-ingest: metadata parsed and jobs enqueued for trajectoryId=${trajectoryId}, frames=${frames.length}, totalSize=${totalSize}`
+            `@trajectory-ingest: headers read and jobs enqueued for trajectoryId=${trajectoryId}, ` +
+            `files=${readyObjects.length}, frames=${frames.length}, totalSize=${totalSize}`
         );
 
         return {
             trajectoryId,
             frames,
             stats: {
-                totalFiles: frames.length,
+                // Files as uploaded, which is no longer the same as the frame count: one
+                // multi-frame dump is a single file holding many frames.
+                totalFiles: readyObjects.length,
                 totalSize
             }
         };
@@ -231,26 +233,80 @@ export class TrajectoryIngestCommand {
             })));
     }
 
-    private async parseFrameMetadata(
+    /**
+     * Turns one local file into one staged object per frame it contains.
+     *
+     * A single-frame file keeps the staged object it arrived in — the common case, where
+     * copying it would double the upload's I/O for no gain. A multi-frame file is cut
+     * along the byte ranges the scan reports, which reproduces each frame byte for byte
+     * without reserializing anything, and leaves every timestep with a dump file of its
+     * own. That last part is the contract the analysis plugins are written against: they
+     * are handed one dump per timestep.
+     */
+    private async promoteFramesToStagedObjects(
+        localPath: string,
+        expandedKeyPrefix: string,
+        reusable: { objectKey: string; size: number } | null
+    ): Promise<TrajectoryIngestFrame[]> {
+        const frames = scanTrajectoryFrames(localPath);
+
+        if (frames.length === 1 && reusable) {
+            return [toIngestFrame(frames[0].metadata, reusable.size, reusable.objectKey)];
+        }
+
+        const promoted: TrajectoryIngestFrame[] = [];
+
+        for (const frame of frames) {
+            const framePath = `${localPath}.frame-${frame.index}`;
+            const objectKey = `${expandedKeyPrefix}-${frame.metadata.timestep}.dump`;
+
+            await pipeline(
+                createReadStream(localPath, {
+                    start: frame.byteOffset,
+                    end: frame.byteOffset + frame.byteLength - 1
+                }),
+                createWriteStream(framePath)
+            );
+
+            await this.objectStore.putObjectStream({
+                bucket: INGEST_BUCKET,
+                objectKey,
+                stream: createReadStream(framePath),
+                size: frame.byteLength
+            });
+
+            await fs.unlink(framePath).catch(() => {});
+            promoted.push(toIngestFrame(frame.metadata, frame.byteLength, objectKey));
+        }
+
+        return promoted;
+    }
+
+    private async splitStagedObjectIntoFrames(
         staged: TrajectoryIngestStagedObject,
         index: number,
-        tempDirectory: string
-    ): Promise<TrajectoryIngestFrame> {
-        const safeOriginalName = path.basename(staged.originalName || 'trajectory-frame.dump');
-        const localMetadataPath = path.join(tempDirectory, `frame-${index}-${safeOriginalName}`);
-        const metadataReadLength = staged.size > 0
-            ? Math.min(staged.size, METADATA_READ_BYTES)
-            : METADATA_READ_BYTES;
+        trajectoryId: string
+    ): Promise<TrajectoryIngestFrame[]> {
+        // Read in place: the staged object is already a file on this host, and the reader
+        // memory-maps it. Streaming a copy somewhere else first would mean copying a
+        // multi-gigabyte trajectory to look at its frame boundaries.
+        const localPath = this.objectStore.resolveLocalPath(INGEST_BUCKET, staged.objectKey);
 
-        const stream = await this.objectStore.getObjectRangeStream(
-            INGEST_BUCKET,
-            staged.objectKey,
-            0,
-            metadataReadLength
+        const frames = await this.promoteFramesToStagedObjects(
+            localPath,
+            `trajectory-staging/${trajectoryId}/expanded-${index}`,
+            {
+                objectKey: staged.objectKey,
+                size: staged.size
+            }
         );
-        await pipeline(stream, createWriteStream(localMetadataPath));
 
-        return toIngestFrame(await parseTrajectoryMetadata(localMetadataPath), staged.size, staged.objectKey);
+        // A file that turned into several frames has been superseded by its parts.
+        if (frames.length > 0 && frames[0].objectKey !== staged.objectKey) {
+            await this.removeIgnoredStagedObject(staged.objectKey);
+        }
+
+        return frames;
     }
 
     private async parseStagedObject(
@@ -265,7 +321,7 @@ export class TrajectoryIngestCommand {
         try {
             return isArchive
                 ? await this.expandZipAndParseFrames(staged, index, trajectoryId, tempDirectory)
-                : [await this.parseFrameMetadata(staged, index, tempDirectory)];
+                : await this.splitStagedObjectIntoFrames(staged, index, trajectoryId);
         } catch (error) {
             logger.warn(
                 {
@@ -324,7 +380,7 @@ export class TrajectoryIngestCommand {
                 continue;
             }
 
-            const frame = await this.extractZipEntryFrame(
+            const entryFrames = await this.extractZipEntryFrames(
                 entry,
                 resolvedOutputPath,
                 `trajectory-staging/${trajectoryId}/expanded-${archiveIndex}-${entryIndex}-${basename}`
@@ -336,12 +392,10 @@ export class TrajectoryIngestCommand {
                     },
                     '@trajectory-ingest: skipping unreadable ZIP entry'
                 );
-                return null;
+                return [];
             });
 
-            if (frame) {
-                frames.push(frame);
-            }
+            frames.push(...entryFrames);
         }
 
         if (frames.length === 0) {
@@ -361,33 +415,28 @@ export class TrajectoryIngestCommand {
     }
 
     /**
-     * Extracts a single archive entry and promotes it to its own staged object.
-     * Returns null for entries that hold no data; anything unreadable throws so the
-     * caller can drop that entry and keep the rest of the archive.
+     * Extracts a single archive entry and promotes its frames to staged objects.
+     *
+     * Returns an empty list for entries that hold no data; anything unreadable throws so
+     * the caller can drop that entry and keep the rest of the archive. An entry may itself
+     * be multi-frame — a ZIP of multi-frame dumps is a perfectly ordinary upload.
      */
-    private async extractZipEntryFrame(
+    private async extractZipEntryFrames(
         entry: ZipEntry,
         outputPath: string,
-        expandedObjectKey: string
-    ): Promise<TrajectoryIngestFrame | null> {
+        expandedKeyPrefix: string
+    ): Promise<TrajectoryIngestFrame[]> {
         await fs.mkdir(path.dirname(outputPath), { recursive: true });
         await pipeline(entry.stream(), createWriteStream(outputPath));
 
         const stat = await fs.stat(outputPath);
         if (stat.size === 0) {
-            return null;
+            return [];
         }
 
-        const metadata = await parseTrajectoryMetadata(outputPath);
-
-        await this.objectStore.putObjectStream({
-            bucket: INGEST_BUCKET,
-            objectKey: expandedObjectKey,
-            stream: createReadStream(outputPath),
-            size: stat.size
-        });
-
-        return toIngestFrame(metadata, stat.size, expandedObjectKey);
+        // No reusable staged object here: the entry only ever existed inside the archive,
+        // so every frame it yields has to be promoted on its own.
+        return this.promoteFramesToStagedObjects(outputPath, expandedKeyPrefix, null);
     }
 
     private async removeIgnoredStagedObject(objectKey: string): Promise<void> {

@@ -9,7 +9,6 @@ import DashboardAIToolController from '@modules/dashboard/ai-tools/DashboardAITo
 import JobsAIToolController from '@modules/jobs/ai-tools/JobsAIToolController';
 import NotificationAIToolController from '@modules/notification/ai-tools/NotificationAIToolController';
 import PluginAIToolController from '@modules/plugin/ai-tools/PluginAIToolController';
-import RasterAIToolController from '@modules/raster/ai-tools/RasterAIToolController';
 import ScriptingAIToolController from '@modules/scripting/ai-tools/ScriptingAIToolController';
 import SessionAIToolController from '@modules/session/ai-tools/SessionAIToolController';
 import SimulationCellAIToolController from '@modules/simulation-cell/ai-tools/SimulationCellAIToolController';
@@ -28,7 +27,6 @@ export const AI_TOOL_CONTROLLERS: readonly (new () => AIToolController)[] = [
     JobsAIToolController,
     NotificationAIToolController,
     PluginAIToolController,
-    RasterAIToolController,
     ScriptingAIToolController,
     SessionAIToolController,
     SimulationCellAIToolController,

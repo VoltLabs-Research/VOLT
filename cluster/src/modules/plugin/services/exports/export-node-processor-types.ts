@@ -100,6 +100,12 @@ export interface MeshExportOptions {
     enableDoubleSided?: boolean;
     /** Flips the winding, matching OVITO's SurfaceMeshVis.reverseOrientation. */
     reverseOrientation?: boolean;
+    /**
+     * Drops the connected component that encloses all others -- the sample's outer
+     * shell -- so interior defects are not hidden behind it. Removes real geometry,
+     * so it is meant for a companion artifact rather than the primary one.
+     */
+    interiorOnly?: boolean;
     smoothIterations?: number;
     material?: ExportMaterial;
 }

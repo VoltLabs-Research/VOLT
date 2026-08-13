@@ -5,7 +5,6 @@ import CanvasPluginSearch from '../CanvasPluginSearch';
 import MenuPopover from '../MenuPopover';
 import TrajectorySharePanelPopover from '../TrajectorySharePanelPopover';
 import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
-import WorkspaceTabs from '../WorkspaceTabs';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import WindowControls from '@/shared/ui/components/WindowControls';
@@ -160,7 +159,6 @@ const TopToolbar = ({
                     />
                 ))}
             </nav>
-            <WorkspaceTabs disableAuxWorkspaces={localGlbMode} compact={isMobile} />
         </div>
     );
 

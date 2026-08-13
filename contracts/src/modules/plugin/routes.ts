@@ -6,7 +6,8 @@ import type {
     InstallRegistryPluginInput,
     UploadBinaryInput,
     CommitBinaryUploadInput,
-    ExecutePipelineInput
+    ExecutePipelineInput,
+    UpdatePipelineRunInput
 } from './http';
 import type {
     Plugin,
@@ -59,5 +60,6 @@ export const pluginRoutes = {
     update: patch<UpdatePluginInput, Plugin>('/api/teams/:teamId/plugins/:pluginId'),
     remove: del('/api/teams/:teamId/plugins/:pluginId'),
     listPipelineRuns: get<PipelineRun>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-runs'),
+    updatePipelineRun: patch<UpdatePipelineRunInput, PipelineRun>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-runs/:pipelineRunId'),
     executePipeline: post<ExecutePipelineInput, ExecutePipelineResponse>('/api/teams/:teamId/plugins/trajectories/:trajectoryId/pipeline-executions')
 } as const;

@@ -65,11 +65,14 @@ const namesFor = (config?: WorkflowValueMap): string[] => (
 
 /* ---- 1. no config at all keeps the pre-gating behaviour ---- */
 
+// Counted from the workflow rather than hardcoded: the invariant is "no config gates
+// nothing out", which must keep holding as exposures are added or removed.
+const declaredExposureCount = workflow.nodes.filter((node) => node.type === 'exposure').length;
 const ungated = namesFor();
 check(
-    'sin config se conservan las 8 exposures (compatibilidad)',
-    ungated.length === 8,
-    `${ungated.length} exposures`
+    'sin config se conservan todas las exposures declaradas (compatibilidad)',
+    ungated.length === declaredExposureCount,
+    `${ungated.length} de ${declaredExposureCount} exposures`
 );
 
 /* ---- 2. defaults: only what opendxa writes by default ---- */

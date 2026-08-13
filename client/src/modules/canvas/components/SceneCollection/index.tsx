@@ -4,7 +4,6 @@ import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin
 import { resolvePluginSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 import { computeRunActivityStatus } from '../../utils/analysis-status-selectors';
 import { normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
-import { isSameScene } from '@/modules/canvas/utils/scene-identity';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import {
@@ -30,12 +29,12 @@ import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../../util
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
-import type { RasterSelectableScene } from '@/modules/raster/contracts/container-selection';
 
 interface SceneCollectionProps {
     /** Analyses already grouped by the run that produced them, newest run first. */
     runSections: PipelineRunSection[];
     onRestoreRun?: (run: PipelineRun) => void;
+    onRenameRun?: (run: PipelineRun, name: string) => void;
     expandedSections: Set<string>;
     toggleSection: (id: string) => void;
     showSectionsSkeleton: boolean;
@@ -65,9 +64,6 @@ interface SceneCollectionProps {
     setSceneLineWidth?: (sceneKey: string, lineWidth: number) => void;
     setSceneColor?: (sceneKey: string, color: string | undefined) => void;
     setSceneEdges?: (sceneKey: string, edges: boolean) => void;
-    selectionMode?: 'default' | 'raster';
-    selectedScene?: RasterSelectableScene | null;
-    onSelectRasterScene?: (scene: RasterSelectableScene, label: string) => void;
     firstAnalysisTourTargetId?: string;
     firstExposureTourTargetId?: string;
 }
@@ -77,6 +73,7 @@ const TREE_SCENE_ICON_COLOR = 'var(--accent)';
 const SceneCollection = ({
     runSections,
     onRestoreRun,
+    onRenameRun,
     expandedSections,
     toggleSection,
     showSectionsSkeleton,
@@ -100,9 +97,6 @@ const SceneCollection = ({
     setSceneLineWidth,
     setSceneColor,
     setSceneEdges,
-    selectionMode = 'default',
-    selectedScene,
-    onSelectRasterScene,
     firstAnalysisTourTargetId,
     firstExposureTourTargetId
 }: SceneCollectionProps) => {
@@ -151,9 +145,6 @@ const SceneCollection = ({
                 }}
                 plugin={pluginsById[resolveAnalysisPluginId(section.analysis)]}
                 pluginsById={pluginsById}
-                selectionMode={selectionMode}
-                selectedScene={selectedScene}
-                onSelectRasterScene={onSelectRasterScene}
                 tourTargetId={isFirstAnalysis ? firstAnalysisTourTargetId : undefined}
                 firstExposureTourTargetId={isFirstAnalysis ? firstExposureTourTargetId : undefined}
             />
@@ -164,10 +155,7 @@ const SceneCollection = ({
         sceneType: 'trajectory',
         source: 'default' as const
     };
-    const isRasterSelectionMode = selectionMode === 'raster';
-    const isDefaultActive = isRasterSelectionMode
-        ? isSameScene(selectedScene, defaultScene)
-        : activeScene?.source === 'default';
+    const isDefaultActive = activeScene?.source === 'default';
 
     const defaultSceneKey = getSceneKey(defaultScene);
     const defaultOpacity = sceneVisualOverrides[defaultSceneKey]?.opacity ?? 1;
@@ -202,13 +190,7 @@ const SceneCollection = ({
                 color: TREE_SCENE_ICON_COLOR
             }} />}
             label='Trajectory'
-            onClick={() => {
-                if (isRasterSelectionMode) {
-                    onSelectRasterScene?.(defaultScene, 'Trajectory');
-                } else {
-                    onSelectScene(defaultScene);
-                }
-            }}
+            onClick={() => onSelectScene(defaultScene)}
         />
     );
 
@@ -228,12 +210,12 @@ const SceneCollection = ({
     return (
         <div className='canvas-tree-container flex flex-col gap-1 overflow-auto px-2 pb-2.5 pt-1.5' role='tree' aria-label='Scene hierarchy'>
             {showDefaultScene && (
-                <MaybeContextMenu enabled={!isRasterSelectionMode} id='canvas-ctx-default-scene' options={defaultSceneOptions}>
+                <MaybeContextMenu enabled id='canvas-ctx-default-scene' options={defaultSceneOptions}>
                     {trajectoryRow}
                 </MaybeContextMenu>
             )}
 
-            {showDefaultScene && !isRasterSelectionMode && (
+            {showDefaultScene && (
                 <MaybeContextMenu enabled={true} id='canvas-ctx-simulation-cell' options={simulationCellOptions}>
                     {simulationCellRow}
                 </MaybeContextMenu>
@@ -251,6 +233,7 @@ const SceneCollection = ({
                     onToggle={toggleSection}
                     status={resolveRunStatus(runSection)}
                     onRestore={onRestoreRun}
+                    onRename={onRenameRun}
                     renderAnalysisRow={(row) => renderAnalysisNode(row.section, {
                         key: row.key,
                         badge: row.cacheHit ? <CachedBadge /> : undefined

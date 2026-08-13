@@ -14,7 +14,8 @@ import type {
     ExecutePipelineInput,
     InstallRegistryPluginInput,
     PipelineStageKind,
-    UpdatePluginInput
+    UpdatePluginInput,
+    UpdatePipelineRunInput
 } from '@volt/contracts/modules/plugin/http';
 
 export interface ClonePluginInput {
@@ -75,6 +76,11 @@ export interface ListPipelineRunsInput {
     page?: number;
     limit?: number;
 }
+
+export type UpdatePipelineRunParams = {
+    trajectoryId: string;
+    pipelineRunId: string;
+} & UpdatePipelineRunInput;
 
 export type ListPluginTeamClustersResponse = PaginatedResponse<PluginTeamClusterOption>;
 
@@ -189,6 +195,7 @@ const endpoints = {
     listPipelineRuns: paginated<ListPipelineRunsInput, PaginatedResponse<PipelineRun>>(
         routes.path(pluginRoutes.listPipelineRuns)
     ),
+    updatePipelineRun: routes.route<UpdatePipelineRunParams, PipelineRun>(pluginRoutes.updatePipelineRun),
     listTeamClusters: paginated<ListPluginTeamClustersInput, ListPluginTeamClustersResponse>('/:teamId/clusters', {
         client: 'teamClusters'
     }),

@@ -27,6 +27,10 @@ import {
     getPipelineRunsByTrajectoryId,
     type GetPipelineRunsByTrajectoryIdInput
 } from '@modules/plugin/services/plugin/PipelineRunQueries';
+import {
+    updatePipelineRun,
+    type UpdatePipelineRunInput
+} from '@modules/plugin/services/plugin/PipelineRunCommands';
 import PluginExposureArtifactService, {
     type GetPluginExposureChartInput
 } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
@@ -317,6 +321,10 @@ export default class PluginService {
         input: GetPipelineRunsByTrajectoryIdInput
     ): Promise<PaginatedResult<PipelineRun>> {
         return getPipelineRunsByTrajectoryId(input);
+    }
+
+    async updatePipelineRun(input: UpdatePipelineRunInput): Promise<PipelineRun> {
+        return updatePipelineRun(input);
     }
 
     async getPluginExposureGLB(input: GetPluginExposureGLBInput): Promise<GetPluginExposureGLBOutput> {

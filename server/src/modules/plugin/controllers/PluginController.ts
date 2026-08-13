@@ -1,6 +1,7 @@
+import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
-import { Req, Res } from '@shared/http/params';
+import { Body, Param, Req, Res, schemaBody } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
@@ -30,6 +31,7 @@ import type {
     GetPluginExposureChartInput
 } from '@modules/plugin/services/PluginService';
 import type { GetPipelineRunsByTrajectoryIdInput } from '@modules/plugin/services/plugin/PipelineRunQueries';
+import type { UpdatePipelineRunInput } from '@volt/contracts/modules/plugin/http';
 import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type { GetPluginExposureGLBInput } from '@shared/contracts/operations/GetPluginExposureGLB';
@@ -350,6 +352,25 @@ export default class PluginController extends Controller {
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetPipelineRunsByTrajectoryIdInput;
         const value = await this.#service.getPipelineRunsByTrajectoryId(input);
+        BaseResponse.success(res, value, HttpStatus.OK);
+    }
+
+    /*
+     * Validated body rather than the module's usual `buildControllerParams` cast:
+     * this is the one plugin endpoint whose payload is free text typed by a user.
+     */
+    @Route(pluginRoutes.updatePipelineRun)
+    async updatePipelineRun(
+        @Param('teamId') teamId: string,
+        @Param('pipelineRunId') pipelineRunId: string,
+        @Body(schemaBody(typia.createValidate<UpdatePipelineRunInput>())) body: UpdatePipelineRunInput,
+        @Res() res: Response
+    ): Promise<void>{
+        const value = await this.#service.updatePipelineRun({
+            teamId,
+            pipelineRunId,
+            name: body.name
+        });
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 

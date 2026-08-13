@@ -19,7 +19,7 @@ import type { PaginatedResponse } from '@voltstack/voltclient';
 import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
-import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPipelineRunsInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
+import type { ClonePluginInput, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPipelineRunsInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePipelineRunParams, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
 import type { InstallRegistryPluginInput } from '@volt/contracts/modules/plugin/http';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
@@ -192,6 +192,17 @@ export const usePipelineRunsQuery = createQuery<ListPipelineRunsInput, Paginated
  */
 export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineParams>(
     pluginService.executePipeline,
+    async () => {
+        await batchInvalidateQueries([PLUGIN_QUERY_KEYS.pipelineRuns()]);
+    }
+);
+
+/**
+ * Invalidated by prefix, not by the exact list key: the runs list is paginated and
+ * a renamed run can be sitting on any fetched page.
+ */
+export const useUpdatePipelineRunMutation = createMutation<PipelineRun, UpdatePipelineRunParams>(
+    pluginService.updatePipelineRun,
     async () => {
         await batchInvalidateQueries([PLUGIN_QUERY_KEYS.pipelineRuns()]);
     }

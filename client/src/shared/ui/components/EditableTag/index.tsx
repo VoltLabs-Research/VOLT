@@ -9,6 +9,15 @@ interface EditableTagProps {
     className?: string;
     title?: string;
     allowSingleClickPropagation?: boolean;
+    /**
+     * Lets an emptied field commit as `onSave('')` instead of being discarded.
+     *
+     * Off by default because for most names empty is simply invalid, and silently
+     * reverting is the right answer. Turn it on where the value is an override
+     * over some derived default, so that clearing it is a meaningful edit — the
+     * gesture that hands the name back to the default.
+     */
+    allowEmpty?: boolean;
     editing?: boolean;
     onEditingChange?: (isEditing: boolean) => void;
 };
@@ -22,7 +31,7 @@ const getTextValue = (children: React.ReactNode): string => {
     return '';
 };
 
-const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false, editing, onEditingChange }, ref) => {
+const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false, allowEmpty = false, editing, onEditingChange }, ref) => {
     const [internalEditing, setInternalEditing] = useState(false);
     const elementRef = useRef<HTMLElement>(null);
     const textValue = getTextValue(children);
@@ -88,7 +97,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
 
         const newText = elementRef.current?.innerText.trim();
 
-        if (newText && newText !== textValue) {
+        if (newText !== undefined && newText !== textValue && (newText || allowEmpty)) {
             onSave(newText);
             return;
         }
