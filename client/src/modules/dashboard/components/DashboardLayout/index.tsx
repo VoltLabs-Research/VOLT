@@ -11,7 +11,6 @@ import DashboardSidePanel from '@/modules/dashboard/components/DashboardSidePane
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { SIDEBAR_RESTING_WIDTH_CLASS } from '@/modules/dashboard/utils/sidebar-width';
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
-import PresenceDrawer from '@/modules/dashboard/components/PresenceDrawer';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
@@ -239,7 +238,6 @@ const DashboardLayout = () => {
                 <DashboardSidePanel />
 
                 <ActivityDrawer />
-                <PresenceDrawer />
             </main>
         </AIChatProvider>
     );

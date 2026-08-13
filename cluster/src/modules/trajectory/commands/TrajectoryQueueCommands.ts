@@ -1,10 +1,8 @@
-import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import { getQueueService } from '@shared/infrastructure/queues/QueueService';
 import type {
     EnqueuePreprocessingRequest,
     EnqueuePreprocessingResponse,
     GlbConversionQueueJobPayload,
-    RasterizeTrajectoryRequest,
     TrajectoryRuntimeCleanupRequest
 } from '@shared/contracts/types/queue-trajectory';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
@@ -12,7 +10,6 @@ import { logger } from '@shared/infrastructure/logger';
 import type { QueueService } from '@shared/infrastructure/queues/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
-import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
 const DEFAULT_TRAJECTORY_GLB_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_ATTEMPTS') ?? 3;
@@ -21,15 +18,9 @@ const DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY
 @CommandGroup('trajectory')
 export class TrajectoryQueueCommands {
     constructor(
-        private readonly trajectoryRasterQueue: TrajectoryRasterQueue,
         private readonly queueService: QueueService,
         private readonly runtimeStateCleanupControl: RuntimeStateCleanupControl
     ) {}
-
-    @Command('rasterize')
-    rasterize(payload: RasterizeTrajectoryRequest) {
-        return this.trajectoryRasterQueue.queueRasterizationJobs(payload);
-    }
 
     @Command('enqueue-preprocessing')
     async enqueuePreprocessing(payload: EnqueuePreprocessingRequest) {
@@ -95,4 +86,4 @@ export class TrajectoryQueueCommands {
     }
 }
 
-export const getTrajectoryQueueCommands = commandGroupFactory(TrajectoryQueueCommands, () => new TrajectoryQueueCommands(getTrajectoryRasterQueue(), getQueueService(), getRuntimeStateCleanupControl()));
+export const getTrajectoryQueueCommands = commandGroupFactory(TrajectoryQueueCommands, () => new TrajectoryQueueCommands(getQueueService(), getRuntimeStateCleanupControl()));

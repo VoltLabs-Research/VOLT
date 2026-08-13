@@ -3,102 +3,36 @@ import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { quoteIdentifier, sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { exportOctreeMetadata } from '@modules/plugin/services/exports/octree-exporter';
-import { hueToRgb } from '@modules/plugin/services/exports/category-colors';
+import { resolveCategoryColors } from '@modules/plugin/services/exports/category-colors';
+import type { CategoryColor } from '@modules/plugin/services/exports/category-colors';
 import {
     type AtomisticAtom,
     type AtomisticExportData,
+    type AtomisticExportOptions,
     type ExportExecutionInput,
     type OctreeExportOptions,
     readAtomisticParquetSource
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
-const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-    if (s === 0) {
-        return [l, l, l];
+/**
+ * Colour per category name, from whatever the plugin declared, falling back to a
+ * generated colour. The daemon does not know what any category means -- see
+ * category-colors.ts.
+ */
+const buildCategoryPalette = (
+    categories: Iterable<string>,
+    declaredColors: Record<string, CategoryColor> | undefined
+): Map<string, [number, number, number]> => {
+    const resolved = resolveCategoryColors(categories, declaredColors);
+    const palette = new Map<string, [number, number, number]>();
+    for (const [category, [red, green, blue]] of resolved) {
+        palette.set(category, [red, green, blue]);
     }
-
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    return [
-        hueToRgb(p, q, h + 1 / 3),
-        hueToRgb(p, q, h),
-        hueToRgb(p, q, h - 1 / 3)
-    ];
+    return palette;
 };
 
-const EXTENDED_PALETTE: [number, number, number][] = [
-    [0.91, 0.30, 0.24],
-    [0.20, 0.60, 0.86],
-    [0.18, 0.80, 0.44],
-    [0.95, 0.77, 0.06],
-    [0.61, 0.35, 0.71],
-    [1.00, 0.50, 0.00],
-    [0.00, 0.81, 0.82],
-    [0.85, 0.20, 0.53],
-    [0.55, 0.76, 0.22],
-    [0.36, 0.25, 0.60],
-    [1.00, 0.62, 0.47],
-    [0.00, 0.50, 0.50],
-    [0.80, 0.68, 0.00],
-    [0.44, 0.68, 0.28],
-    [0.69, 0.19, 0.38],
-    [0.30, 0.75, 0.93],
-    [0.90, 0.56, 0.67],
-    [0.50, 0.50, 0.00],
-    [0.00, 0.39, 0.74],
-    [0.75, 0.94, 0.27],
-    [0.58, 0.00, 0.83],
-    [0.94, 0.42, 0.31],
-    [0.27, 0.94, 0.94],
-    [0.66, 0.47, 0.33]
-];
-
-const CLUSTER_NAME_RE = /^Cluster\s+(\d+)$/i;
-
-const generateColor = (index: number): [number, number, number] => {
-    if (index < EXTENDED_PALETTE.length) {
-        return EXTENDED_PALETTE[index];
-    }
-
-    const goldenRatio = 0.618033988749895;
-    const hue = ((index - EXTENDED_PALETTE.length) * goldenRatio) % 1.0;
-    const saturation = 0.65 + (index % 3) * 0.1;
-    const lightness = 0.45 + (index % 2) * 0.12;
-    return hslToRgb(hue, saturation, lightness);
-};
-
-const colorForType = (typeName: string, typeIndex: number): [number, number, number] => {
-    const predefined: Record<string, [number, number, number]> = {
-        bcc: [102 / 255, 102 / 255, 1],
-        fcc: [102 / 255, 1, 102 / 255],
-        hcp: [1, 102 / 255, 102 / 255],
-        dislocation: [1, 0.2, 0.2],
-        ico: [1, 165 / 255, 0],
-        sc: [160 / 255, 20 / 255, 254 / 255],
-        cubic_diamond: [19 / 255, 160 / 255, 254 / 255],
-        cubic_diamond_first_neigh: [0, 254 / 255, 245 / 255],
-        cubic_diamond_second_neigh: [126 / 255, 254 / 255, 181 / 255],
-        hex_diamond: [254 / 255, 137 / 255, 0],
-        hex_diamond_first_neigh: [254 / 255, 220 / 255, 0],
-        hex_diamond_second_neigh: [204 / 255, 229 / 255, 81 / 255],
-        graphene: [50 / 255, 205 / 255, 50 / 255],
-        unknown: [128 / 255, 128 / 255, 128 / 255],
-        other: [242 / 255, 242 / 255, 242 / 255]
-    };
-
-    const normalized = typeName.trim().toLowerCase().replace(/[\s-]+/g, '_');
-    if (predefined[normalized]) {
-        return predefined[normalized];
-    }
-
-    const clusterMatch = CLUSTER_NAME_RE.exec(typeName);
-    if (clusterMatch) {
-        return generateColor(Number.parseInt(clusterMatch[1], 10));
-    }
-
-    return generateColor(typeIndex);
-};
+const NEUTRAL_COLOR: [number, number, number] = [0.5, 0.5, 0.5];
 
 const normalizeExplicitColor = (value: AtomisticAtom['color']): [number, number, number] | null => {
     if (!value) {
@@ -132,13 +66,16 @@ interface PointCloudData {
 }
 
 const buildPointCloudDataDirect = async (
-    exportData: Record<string, AtomisticAtom[]>
+    exportData: Record<string, AtomisticAtom[]>,
+    declaredColors: Record<string, CategoryColor> | undefined
 ): Promise<PointCloudData | null> => {
     const entries = Object.entries(exportData);
     const totalAtoms = entries.reduce((sum, [, atoms]) => sum + atoms.length, 0);
     if (totalAtoms === 0) {
         return null;
     }
+
+    const palette = buildCategoryPalette(entries.map(([typeName]) => typeName), declaredColors);
 
     const positions = new Float32Array(totalAtoms * 3);
     const colors = new Float32Array(totalAtoms * 3);
@@ -149,7 +86,7 @@ const buildPointCloudDataDirect = async (
 
     for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
         const [typeName, atoms] = entries[entryIndex];
-        const fallbackColor = colorForType(typeName, entryIndex);
+        const fallbackColor = palette.get(typeName) ?? NEUTRAL_COLOR;
 
         for (const atom of atoms) {
             const [x, y, z] = atom.pos;
@@ -235,7 +172,10 @@ const toNullableNumber = (value: unknown): number | null => {
     return Number.isFinite(numeric) ? numeric : null;
 };
 
-const buildPointCloudFromParquet = async (filePath: string): Promise<PointCloudData | null> => {
+const buildPointCloudFromParquet = async (
+    filePath: string,
+    declaredColors: Record<string, CategoryColor> | undefined
+): Promise<PointCloudData | null> => {
     const connection = await DuckDBConnection.create();
 
     try {
@@ -281,10 +221,8 @@ const buildPointCloudFromParquet = async (filePath: string): Promise<PointCloudD
         const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
         let offset = 0;
 
-        const fallbackColors = new Map(
-            buckets.map((bucket, bucketIndex) => [bucket.name, colorForType(bucket.name, bucketIndex)])
-        );
-        const firstBucketColor = fallbackColors.get(buckets[0].name) ?? colorForType(buckets[0].name, 0);
+        const fallbackColors = buildCategoryPalette(buckets.map((bucket) => bucket.name), declaredColors);
+        const firstBucketColor = fallbackColors.get(buckets[0].name) ?? NEUTRAL_COLOR;
 
         const result = await connection.stream(
             'SELECT '
@@ -373,12 +311,13 @@ export const exportAtomisticArtifact = async (
     exportData: AtomisticExportData,
     objectPath: string,
     ownerClusterId: string,
-    octreeOptions?: OctreeExportOptions
+    octreeOptions?: OctreeExportOptions,
+    options?: AtomisticExportOptions
 ): Promise<boolean> => {
     const parquetSource = readAtomisticParquetSource(exportData);
     const pointCloud = parquetSource
-        ? await buildPointCloudFromParquet(parquetSource)
-        : await buildPointCloudDataDirect(exportData as Record<string, AtomisticAtom[]>);
+        ? await buildPointCloudFromParquet(parquetSource, options?.propertyColors)
+        : await buildPointCloudDataDirect(exportData as Record<string, AtomisticAtom[]>, options?.propertyColors);
     if (!pointCloud) {
         return false;
     }

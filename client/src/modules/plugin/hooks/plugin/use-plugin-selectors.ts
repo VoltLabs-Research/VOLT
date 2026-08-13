@@ -14,7 +14,6 @@ export interface RenderableExposure {
     icon?: string;
     results: string;
     canvas: boolean;
-    raster: boolean;
     export?: {
         exporter?: string;
         type?: string;

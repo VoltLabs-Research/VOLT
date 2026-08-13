@@ -46,7 +46,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const setLoading = useTeamJobsStore((state) => state.setLoading);
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
     const setLatestAppliedRevision = useTeamJobsStore((state) => state.setLatestAppliedRevision);
-    const setRequestedRasterTrajectoryIds = useTeamJobsStore((state) => state.setRequestedRasterTrajectoryIds);
     const reset = useTeamJobsStore((state) => state.reset);
 
     const { data: groups = [] } = teamJobsGroups();
@@ -91,18 +90,12 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
         if (queued.length === 0) return;
         pendingJobUpdatesRef.current = [];
 
-        const currentIds = useTeamJobsStore.getState().requestedRasterTrajectoryIds;
-        let nextRasterIds: Set<string> | null = null;
         let hasTerminalNonRaster = false;
         const rasterCompletedTrajectoryIds = new Set<string>();
 
         for (const event of queued) {
             const isRasterUpdate = event.queueType === RASTER_QUEUE_TYPE;
             if (isRasterUpdate) {
-                if (currentIds.has(event.trajectoryId)) {
-                    if (!nextRasterIds) nextRasterIds = new Set(currentIds);
-                    nextRasterIds.delete(event.trajectoryId);
-                }
                 if (event.status === JobStatus.Completed) {
                     rasterCompletedTrajectoryIds.add(event.trajectoryId);
                 }
@@ -111,9 +104,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
             }
         }
 
-        if (nextRasterIds) {
-            setRequestedRasterTrajectoryIds(nextRasterIds);
-        }
 
         updateTeamJobsGroupsQueryData((currentGroups) => {
             let groups = currentGroups;
@@ -149,7 +139,7 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
                 queryClient.invalidateQueries({ queryKey: TRAJECTORY_QUERY_KEYS.trajectories() });
             }, 500);
         }
-    }, [setLatestAppliedRevision, setRequestedRasterTrajectoryIds]);
+    }, [setLatestAppliedRevision]);
 
     const handleJobUpdate = useCallback((event: Job) => {
         if (currentTeamId && event.teamId !== currentTeamId) {

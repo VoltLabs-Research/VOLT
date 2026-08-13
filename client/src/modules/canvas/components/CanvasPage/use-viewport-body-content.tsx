@@ -9,8 +9,6 @@ import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface ViewportBodyContentParams {
     trajectory: Trajectory | null;
-    trajectoryId: string;
-    currentTimestep: number | undefined;
     isLocalGlbViewer: boolean;
     isLocalManifestLoading: boolean;
     localManifestError: string | null;
@@ -36,8 +34,6 @@ const emptyViewportState = (title: string, description: string, className?: stri
 
 const useViewportBodyContent = ({
     trajectory,
-    trajectoryId,
-    currentTimestep,
     isLocalGlbViewer,
     isLocalManifestLoading,
     localManifestError,
@@ -92,14 +88,12 @@ const useViewportBodyContent = ({
         return undefined;
     }, [
         backToTrajectories,
-        currentTimestep,
         forcedGlbUrl,
         isLocalGlbViewer,
         isLocalManifestLoading,
-            localManifestError,
-                showNoFramesState,
-        trajectory,
-        trajectoryId
+        localManifestError,
+        showNoFramesState,
+        trajectory
     ]);
 };
 

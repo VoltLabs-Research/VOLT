@@ -65,7 +65,6 @@ export const ChannelCommands = Object.freeze({
 
     TrajectoryIngest: 'trajectory.ingest',
     TrajectoryClone: 'trajectory.clone',
-    TrajectoryRasterize: 'trajectory.rasterize',
     TrajectoryEnqueuePreprocessing: 'trajectory.enqueue-preprocessing',
     TrajectoryCleanupRuntimeState: 'trajectory.cleanup-runtime-state',
     TrajectoryNativeMetadata: 'trajectory.native.metadata',

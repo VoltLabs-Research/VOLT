@@ -253,8 +253,6 @@ const CanvasPage = () => {
 
     const viewportBodyContent = useViewportBodyContent({
         trajectory,
-        trajectoryId,
-        currentTimestep,
         isLocalGlbViewer,
         isLocalManifestLoading: localGlbViewer.isManifestLoading,
         localManifestError: localGlbViewer.manifestError,

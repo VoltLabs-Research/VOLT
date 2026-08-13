@@ -1,5 +1,4 @@
 import JobsDrawer from '@/modules/dashboard/components/JobsDrawer';
-import ClustersDrawer from '@/modules/dashboard/components/ClustersDrawer';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { SIDE_PANEL_WIDTH_CLASS } from '@/modules/dashboard/utils/sidebar-width';
 import { cn } from '@heroui/react';
@@ -13,11 +12,14 @@ import { cn } from '@heroui/react';
  */
 const PANEL_WIDTH_CLASS = SIDE_PANEL_WIDTH_CLASS;
 
+/*
+ * Jobs is the only panel left, so there is nothing to switch on: the drawer stays
+ * mounted and the <aside> animates its width. Keeping it mounted while closed is
+ * deliberate — unmounting it would blank the panel the moment the close animation
+ * starts, instead of sliding away with its content still in it.
+ */
 const DashboardSidePanel = () => {
-    const openPanel = useDashboardSidePanelStore((state) => state.openPanel);
-    const lastPanel = useDashboardSidePanelStore((state) => state.lastPanel);
-    const isOpen = openPanel !== null;
-    const shownPanel = openPanel ?? lastPanel;
+    const isOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);
 
     return (
         <aside
@@ -28,11 +30,8 @@ const DashboardSidePanel = () => {
             aria-hidden={!isOpen}
         >
             <div className={cn('flex h-full flex-col overflow-hidden', PANEL_WIDTH_CLASS)}>
-                <div className={cn('h-full min-h-0', shownPanel === 'jobs' ? '' : 'hidden')}>
+                <div className='h-full min-h-0'>
                     <JobsDrawer />
-                </div>
-                <div className={cn('h-full min-h-0', shownPanel === 'clusters' ? '' : 'hidden')}>
-                    <ClustersDrawer />
                 </div>
             </div>
         </aside>

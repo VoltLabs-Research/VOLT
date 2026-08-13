@@ -153,8 +153,14 @@ const PipelineRunTreeNode = ({
             tabIndex={0}
             onClick={() => onToggle(section.runId)}
             onKeyDown={(event) => {
-                // The title stops propagation of these keys, so they only land here
-                // when the row itself has focus.
+                /*
+                 * The title stops propagation while editing, so these keys normally
+                 * only land here when the row itself has focus. The explicit check is
+                 * belt-and-braces: this handler calls preventDefault, so a single key
+                 * escaping the title would both swallow the character and toggle the
+                 * row under the caret — which is exactly how Space used to break.
+                 */
+                if (isEditingName) return;
                 if (event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();
                 onToggle(section.runId);

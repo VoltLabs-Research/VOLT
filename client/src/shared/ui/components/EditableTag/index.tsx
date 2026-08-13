@@ -115,16 +115,31 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
             return;
         }
 
+        /*
+         * Not editing: everything else — Tab, arrows — belongs to whatever contains
+         * this tag, so it must keep bubbling.
+         */
+        if (!isEditing) {
+            return;
+        }
+
+        /*
+         * Editing: every key belongs to the field, not just the ones handled below.
+         * Ancestors of an editable tag routinely treat Space and Enter as "activate"
+         * (a tree row toggling its accordion, a card navigating), and a bubbled Space
+         * reached one of those, which then called preventDefault: the space never made
+         * it into the text *and* the row toggled underneath the caret. Stopping here is
+         * what makes those ancestors' assumption true.
+         */
+        event.stopPropagation();
+
         if (event.key === 'Enter') {
             event.preventDefault();
-            event.stopPropagation();
             handleSave();
             return;
         }
 
         if (event.key === 'Escape') {
-            event.stopPropagation();
-
             if (elementRef.current) {
                 elementRef.current.innerText = textValue;
             }

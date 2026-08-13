@@ -96,6 +96,15 @@ export interface ExportMaterial {
     emissive: [number, number, number];
 }
 
+export interface AtomisticExportOptions {
+    /**
+     * Colour per category name, declared by the plugin. Categories the plugin does not
+     * declare fall back to a generated colour; the daemon never interprets the names.
+     */
+    propertyColors?: Record<string, [number, number, number, number]>;
+    octree?: OctreeExportOptions;
+}
+
 export interface MeshExportOptions {
     enableDoubleSided?: boolean;
     /** Flips the winding, matching OVITO's SurfaceMeshVis.reverseOrientation. */

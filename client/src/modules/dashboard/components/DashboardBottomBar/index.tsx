@@ -1,5 +1,5 @@
 import { Separator, cn } from '@heroui/react';
-import { openModal } from '@/shared/ui/modal/use-modal-store';
+import { useNavigate } from 'react-router-dom';
 import StatusCounts from '@/modules/canvas/components/StatusCounts';
 import useJobStatusCounts from '@/modules/canvas/hooks/use-job-status-counts';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
@@ -11,7 +11,7 @@ import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
-import { DASHBOARD_DRAWER_IDS, useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
+import { useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { useMemo } from 'react';
 import { ArrowDown, ArrowUp, Cpu, HardDrive, MemoryStick, Users } from 'lucide-react';
@@ -19,24 +19,50 @@ import type { ReactNode } from 'react';
 
 const CRITICAL_CPU_THRESHOLD = 85;
 
+const SEGMENT_LAYOUT_CLASS = 'inline-flex h-full items-center gap-3.5 whitespace-nowrap px-3 text-muted';
+
 interface BottomBarSegmentProps {
     label: string;
     icon?: ReactNode;
-    onClick: () => void;
+    /**
+     * Omitted for a read-only segment, which then renders as a labelled group
+     * rather than a button — a button that does nothing still takes a tab stop and
+     * still tells the user it can be pressed.
+     */
+    onClick?: () => void;
     children: ReactNode;
 }
 
-const BottomBarSegment = ({ label, icon, onClick, children }: BottomBarSegmentProps) => (
-    <button
-        type='button'
-        className='inline-flex h-full cursor-pointer items-center gap-3.5 whitespace-nowrap rounded-lg border-0 bg-transparent px-3 text-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--focus)]'
-        onClick={onClick}
-        aria-label={`Open ${label}`}
-    >
-        {icon && <span className='inline-flex items-center text-muted' aria-hidden='true'>{icon}</span>}
-        {children}
-    </button>
-);
+const BottomBarSegment = ({ label, icon, onClick, children }: BottomBarSegmentProps) => {
+    const content = (
+        <>
+            {icon && <span className='inline-flex items-center text-muted' aria-hidden='true'>{icon}</span>}
+            {children}
+        </>
+    );
+
+    if (!onClick) {
+        return (
+            <span className={SEGMENT_LAYOUT_CLASS} role='group' aria-label={label}>
+                {content}
+            </span>
+        );
+    }
+
+    return (
+        <button
+            type='button'
+            className={cn(
+                SEGMENT_LAYOUT_CLASS,
+                'cursor-pointer rounded-lg border-0 bg-transparent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--focus)]'
+            )}
+            onClick={onClick}
+            aria-label={`Open ${label}`}
+        >
+            {content}
+        </button>
+    );
+};
 
 interface BottomBarMetricProps {
     icon: ReactNode;
@@ -54,6 +80,7 @@ const BottomBarMetric = ({ icon, value, critical }: BottomBarMetricProps) => (
 );
 
 const DashboardBottomBar = () => {
+    const navigate = useNavigate();
     const selectedTeam = useSelectedTeam();
     const singleTenant = useSingleTenant();
     const setJobsScope = useJobsDrawerStore((state) => state.setScope);
@@ -147,7 +174,7 @@ const DashboardBottomBar = () => {
                 {showClusters && <Separator orientation='vertical' className='h-[18px] self-center' />}
 
                 {showClusters && (
-                    <BottomBarSegment label='clusters' onClick={() => openSidePanel('clusters')}>
+                    <BottomBarSegment label='clusters'>
                         <BottomBarMetric
                             icon={<Cpu size={13} />}
                             value={`${clusterMetrics.avgCpu}%`}
@@ -163,7 +190,7 @@ const DashboardBottomBar = () => {
                 {showPresence && <Separator orientation='vertical' className='h-[18px] self-center' />}
 
                 {showPresence && (
-                    <BottomBarSegment label='team presence' icon={<Users size={13} />} onClick={() => openModal(DASHBOARD_DRAWER_IDS.presence)}>
+                    <BottomBarSegment label='team presence' icon={<Users size={13} />} onClick={() => navigate('/dashboard/my-team')}>
                         <span className='text-xs text-muted'>
                             <span className={cn('inline-block size-1.5 rounded-full mr-1.5 align-middle', presenceCounts.online > 0 ? 'bg-success' : 'bg-muted')} aria-hidden='true' />
                             {presenceCounts.online} / {presenceCounts.total} online

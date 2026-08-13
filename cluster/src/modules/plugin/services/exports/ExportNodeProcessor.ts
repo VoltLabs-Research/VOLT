@@ -8,6 +8,7 @@ import { exportBondArtifact, exportLineArtifact } from '@modules/plugin/services
 import { exportMeshArtifact } from '@modules/plugin/services/exports/mesh-exporter';
 import type {
     AtomisticExportData,
+    AtomisticExportOptions,
     BondExportData,
     BondExportOptions,
     ChartExportOptions,
@@ -126,7 +127,14 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<bo
         case 'AtomisticExporter': {
             const octreeOptions = isEnabledOctreeOptions(options.octree) ? options.octree : undefined;
             return runEntries<AtomisticExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
-                exportAtomisticArtifact(input, exportData, objectPath, ownerClusterId, octreeOptions)
+                exportAtomisticArtifact(
+                    input,
+                    exportData,
+                    objectPath,
+                    ownerClusterId,
+                    octreeOptions,
+                    options as AtomisticExportOptions
+                )
             ));
         }
         case 'MeshExporter':

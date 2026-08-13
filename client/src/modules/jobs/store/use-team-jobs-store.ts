@@ -5,12 +5,10 @@ interface TeamJobsStore {
     isLoading: boolean;
     currentTeamId: string | null;
     latestAppliedRevision: number;
-    requestedRasterTrajectoryIds: Set<string>;
     setConnected: (isConnected: boolean) => void;
     setLoading: (isLoading: boolean) => void;
     setCurrentTeamId: (currentTeamId: string | null) => void;
     setLatestAppliedRevision: (latestAppliedRevision: number) => void;
-    setRequestedRasterTrajectoryIds: (trajectoryIds: Set<string>) => void;
     reset: () => void;
 };
 
@@ -19,7 +17,6 @@ interface TeamJobsState {
     isLoading: boolean;
     currentTeamId: string | null;
     latestAppliedRevision: number;
-    requestedRasterTrajectoryIds: Set<string>;
 };
 
 const createInitialState = (): TeamJobsState => ({
@@ -27,7 +24,6 @@ const createInitialState = (): TeamJobsState => ({
     isLoading: false,
     currentTeamId: null,
     latestAppliedRevision: 0,
-    requestedRasterTrajectoryIds: new Set<string>()
 });
 
 const useTeamJobsStore = create<TeamJobsStore>((set) => ({
@@ -36,7 +32,6 @@ const useTeamJobsStore = create<TeamJobsStore>((set) => ({
     setLoading: (isLoading) => set({ isLoading }),
     setCurrentTeamId: (currentTeamId) => set({ currentTeamId }),
     setLatestAppliedRevision: (latestAppliedRevision) => set({ latestAppliedRevision }),
-    setRequestedRasterTrajectoryIds: (requestedRasterTrajectoryIds) => set({ requestedRasterTrajectoryIds }),
     reset: () => set(createInitialState())
 }));
 
