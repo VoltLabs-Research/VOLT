@@ -65,14 +65,16 @@ const MenuPopover = ({ menu, openMenu, onOpenChange, idPrefix = 'menu', triggerC
             isOpen={isOpen}
             onOpenChange={(nextOpen) => onOpenChange(nextOpen ? menu.label : null)}
         >
+            {/*
+              * Ghost until hovered or opened: the menu bar reads as plain labels at
+              * rest, and only the open menu carries a background.
+              */}
             <Button
                 variant={isOpen ? 'secondary' : 'ghost'}
                 size='sm'
-                isIconOnly={Boolean(menu.icon)}
-                aria-label={menu.label}
                 className={cn('text-xs', triggerClassName)}
             >
-                {menu.icon ?? menu.label}
+                {menu.label}
             </Button>
             <Popover.Content placement='bottom start'>
                 <Popover.Dialog id={`${idPrefix}-${menu.label.toLowerCase()}`} aria-label={menu.label} className='flex min-w-40 max-w-80 flex-col p-1'>
