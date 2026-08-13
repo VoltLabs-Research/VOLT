@@ -45,17 +45,6 @@ const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: Analy
         });
     }, [plugin]);
 
-    // TEMPORARY diagnostic: remove once the gate is understood.
-    console.warn('[panel-diag]', JSON.stringify({
-        analysisId: analysisId ?? null,
-        pluginId: pluginId ?? null,
-        hasPlugin: Boolean(plugin),
-        exposures: plugin?.exposures?.length ?? -1,
-        withPanel: (plugin?.exposures ?? []).filter((e) => e.panel).map((e) => e.name),
-        tables: tables.length,
-        currentTimestep: currentTimestep ?? null
-    }));
-
     // A plugin that declares nothing gets no section at all, rather than an empty one.
     if (!analysisId || tables.length === 0) {
         return null;

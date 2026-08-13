@@ -239,18 +239,78 @@ const ObjectsPanel = ({
      * listed, "the analysis the user is looking at" is not ambiguous, and showing its
      * summary beats showing nothing.
      */
-    const resultsAnalysisId = useMemo(() => {
-        if (activeScene?.source === 'plugin') return activeScene.analysisId;
-        if (analysisId) return analysisId;
+    const resultsTarget = useMemo((): { analysisId?: string; pluginId?: string } => {
+        /*
+         * `analysis.plugin` is typed as an id but arrives populated: the API sends the whole
+         * plugin object. Passing it straight through made the results panel look up
+         * `pluginsById[{ _id, workflow, ... }]`, which is always a miss, so the panel found
+         * no plugin, derived no tables, and removed itself — with every layer beneath it
+         * holding the right data.
+         */
+        const toPluginId = (plugin: unknown): string | undefined => {
+            if (typeof plugin === 'string') return plugin;
+            if (plugin && typeof plugin === 'object') {
+                const populated = plugin as { _id?: string; id?: string };
+                return populated._id ?? populated.id;
+            }
 
-        return sceneCollectionSections[0]?.analysis._id;
-    }, [activeScene, analysisId, sceneCollectionSections]);
+            return undefined;
+        };
 
-    const resultsPluginId = useMemo(() => {
-        if (!resultsAnalysisId) return undefined;
-        return sceneCollectionSections
-            .find((section) => section.analysis._id === resultsAnalysisId)?.analysis.plugin;
-    }, [resultsAnalysisId, sceneCollectionSections]);
+        const fromSections = (id: string | undefined) => toPluginId(sceneCollectionSections
+            .find((section) => section.analysis._id === id)?.analysis.plugin);
+
+        /*
+         * A pipeline run carries the identity of every stage it executed, so a run row can
+         * name its analysis and its plugin even when the analysis has no section — which is
+         * exactly the state the sidebar is usually in. Its rows render from `stage`, so the
+         * tree looks populated while `sceneCollectionSections` is empty, and any resolution
+         * that only consulted the sections found nothing to describe.
+         */
+        const fromRuns = () => {
+            for (const section of runSections) {
+                for (const row of section.rows) {
+                    const stage = row.stage;
+                    const stageAnalysisId = stage?.cacheHit ? stage.cachedFromAnalysisId : stage?.analysisId;
+                    if (stageAnalysisId) {
+                        return {
+                            analysisId: stageAnalysisId,
+                            pluginId: fromSections(stageAnalysisId) ?? toPluginId(stage?.pluginId)
+                        };
+                    }
+                }
+            }
+
+            return undefined;
+        };
+
+        if (activeScene?.source === 'plugin') {
+            return {
+                analysisId: activeScene.analysisId,
+                pluginId: fromSections(activeScene.analysisId)
+            };
+        }
+
+        if (analysisId) {
+            return {
+                analysisId,
+                pluginId: fromSections(analysisId)
+            };
+        }
+
+        const firstSection = sceneCollectionSections[0];
+        if (firstSection) {
+            return {
+                analysisId: firstSection.analysis._id,
+                pluginId: toPluginId(firstSection.analysis.plugin)
+            };
+        }
+
+        return fromRuns() ?? {};
+    }, [activeScene, analysisId, runSections, sceneCollectionSections]);
+
+    const resultsAnalysisId = resultsTarget.analysisId;
+    const resultsPluginId = resultsTarget.pluginId;
 
     const populatedSections = artifactSections.filter((section) => section.timesteps.length > 0);
     const showSceneCollection = !isAnalysisCompact || sceneCollectionSections.length > 0;
@@ -279,19 +339,37 @@ const ObjectsPanel = ({
                         />
                     </RightCollapsible>
                 )}
-                <AnalysisResultsSection
-                    analysisId={resultsAnalysisId}
-                    pluginId={resultsPluginId}
-                    currentTimestep={currentTimestep}
-                />
-
                 {pipelineSection}
 
-                {isAnalysisCompact && populatedSections.map(renderArtifactSection)}
+                {isAnalysisCompact && (
+                    <>
+                        <AnalysisResultsSection
+                            analysisId={resultsAnalysisId}
+                            pluginId={resultsPluginId}
+                            currentTimestep={currentTimestep}
+                        />
+                        {populatedSections.map(renderArtifactSection)}
+                    </>
+                )}
             </div>
 
+            {/*
+             * Pinned to the bottom, above Color Coding: the results are a readout of the
+             * selected analysis, not a branch of the scene tree, so they belong with the other
+             * bottom panels rather than between the tree and the pipeline.
+             *
+             * The height is capped because this region does not scroll with the tree — a long
+             * table would otherwise push Color Coding and Particle Filter off screen.
+             */}
             {!isAnalysisCompact && (
                 <div className='flex flex-none flex-col border-t border-border'>
+                    <div className='flex max-h-[40vh] flex-col overflow-y-auto'>
+                        <AnalysisResultsSection
+                            analysisId={resultsAnalysisId}
+                            pluginId={resultsPluginId}
+                            currentTimestep={currentTimestep}
+                        />
+                    </div>
                     {artifactSections.map(renderArtifactSection)}
                 </div>
             )}

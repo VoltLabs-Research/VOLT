@@ -33,15 +33,15 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep }: PanelRes
     const rows = query.data?.pages.flatMap((page) => page.rows) ?? [];
 
     return (
-        <div className='flex flex-col gap-1 px-1 pb-2'>
-            <span className='px-1 text-2xs font-medium text-muted'>{table.title}</span>
+        <div className='flex flex-col gap-1 px-2.5 pb-2'>
+            <span className='text-2xs font-medium text-muted'>{table.title}</span>
 
             {query.isLoading && (
-                <span className='px-1 text-2xs text-muted'>Loading…</span>
+                <span className='text-2xs text-muted'>Loading…</span>
             )}
 
             {!query.isLoading && rows.length === 0 && (
-                <span className='px-1 text-2xs text-muted'>No results for this frame.</span>
+                <span className='text-2xs text-muted'>No results for this frame.</span>
             )}
 
             {rows.length > 0 && (
@@ -50,11 +50,12 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep }: PanelRes
                         <tr className='text-muted'>
                             {/* Swatch column: no header, it labels itself. */}
                             <th className='w-4 p-0' aria-label='Color' />
-                            <th className='py-0.5 pl-1 pr-2 text-left font-normal'>{}</th>
+                            {/* No header: the swatch and the name label themselves. */}
+                            <th className='w-full py-0.5 pl-2 text-left font-normal' />
                             {table.columns.map((column) => (
                                 <th
                                     key={column.column}
-                                    className='py-0.5 pl-2 text-right font-normal whitespace-nowrap'
+                                    className='py-0.5 pl-3 text-right font-normal whitespace-nowrap'
                                 >
                                     {column.label}
                                 </th>
@@ -77,11 +78,17 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep }: PanelRes
                                             title={swatch ? undefined : 'The plugin declared no color for this category'}
                                         />
                                     </td>
-                                    <td className='max-w-0 truncate py-0.5 pl-1 pr-2' title={label}>{label}</td>
+                                    {/*
+                                      * `w-full` makes this the column that absorbs the row's
+                                      * spare width, so a short category name is written in
+                                      * full; it was `max-w-0`, which shrinks the cell to its
+                                      * minimum and clipped "OTHER" to "O…" with 180px free.
+                                      */}
+                                    <td className='w-full truncate py-0.5 pl-2' title={label}>{label}</td>
                                     {table.columns.map((column) => (
                                         <td
                                             key={column.column}
-                                            className='py-0.5 pl-2 text-right tabular-nums whitespace-nowrap'
+                                            className='py-0.5 pl-3 text-right tabular-nums whitespace-nowrap'
                                         >
                                             {formatPanelValue(row[column.column], column.format)}
                                         </td>
