@@ -3,6 +3,7 @@ import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store'
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import CanvasPluginSearch from '../CanvasPluginSearch';
 import MenuPopover from '../MenuPopover';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import TrajectorySharePanelPopover from '../TrajectorySharePanelPopover';
 import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
 
@@ -145,7 +146,11 @@ const TopToolbar = ({
         isMobile: boolean,
         menuIdPrefix = 'menu'
     ) => (
-        <div className={isMobile ? 'flex max-md:h-[var(--canvas-header-height,40px)] max-md:w-full max-md:min-w-0 max-md:flex-nowrap max-md:items-center max-md:justify-center max-md:gap-0.5 max-md:overflow-x-auto max-md:overflow-y-hidden max-md:whitespace-nowrap max-md:px-1.5 max-md:[&>*]:shrink-0' : 'contents'}>
+        /*
+         * A scroller only in the mobile branch: the desktop branch is `display: contents`, which
+         * generates no box at all, so the horizontal overflow this carries has nothing to act on.
+         */
+        <Scrollable orientation='horizontal' className={isMobile ? 'flex max-md:h-[var(--canvas-header-height,40px)] max-md:w-full max-md:min-w-0 max-md:flex-nowrap max-md:items-center max-md:justify-center max-md:gap-0.5 max-md:overflow-y-hidden max-md:whitespace-nowrap max-md:px-1.5 max-md:[&>*]:shrink-0' : 'contents'}>
             <nav className='flex flex-row items-center gap-1 px-4 max-md:flex-none max-md:overflow-visible max-md:p-0 max-md:[&>*]:shrink-0' aria-label='Canvas primary navigation'>
                 {isMobile && useGuestMobileNavigation && renderBackButton('hidden max-md:inline-flex max-md:size-[1.625rem] max-md:min-h-[1.625rem] max-md:min-w-[1.625rem] max-md:rounded-lg max-md:p-1')}
                 {menus.map((menu) => (
@@ -159,7 +164,7 @@ const TopToolbar = ({
                     />
                 ))}
             </nav>
-        </div>
+        </Scrollable>
     );
 
     return (

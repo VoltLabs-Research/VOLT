@@ -4,6 +4,7 @@ import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-de
 import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
 import { cn } from '@heroui/react';
 import { useState } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 type DebugContextOutput = Record<string, unknown>;
 type DebugContextEntry = [string, DebugContextOutput];
@@ -130,7 +131,7 @@ const DebugContextPanel = () => {
             </div>
 
             {isOpen && (
-                <div className='nowheel min-h-0 flex-1 overflow-y-auto'>
+                <Scrollable className='nowheel min-h-0 flex-1'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
@@ -170,7 +171,7 @@ const DebugContextPanel = () => {
                     {!forEachEntry && postForEach.length === 0 && entries.length > preForEach.length &&
                         entries.slice(preForEach.length).map(([nodeId, output]) => renderEntry(nodeId, output))
                     }
-                </div>
+                </Scrollable>
             )}
         </div>
     );

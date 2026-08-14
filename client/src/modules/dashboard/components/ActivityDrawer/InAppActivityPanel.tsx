@@ -1,4 +1,5 @@
 import RecoveryState from '@/shared/ui/components/RecoveryState';
+import { CHART_FONT_SIZE, CHART_TICK } from '@/shared/ui/utils/chart-theme';
 import { formatDuration } from '@/shared/utils/format';
 import { useMemo } from 'react';
 import { Activity as ActivityIcon } from 'lucide-react';
@@ -144,13 +145,10 @@ const InAppActivityPanel = ({ activityData }: InAppActivityPanelProps) => {
                         />
                         <PolarAngleAxis
                             dataKey='day'
-                            tick={{
-                                fill: 'var(--muted)',
-                                fontSize: 11
-                            }}
+                            tick={CHART_TICK}
                         />
                         <Tooltip content={renderTooltip} />
-                        <Legend verticalAlign='bottom' height={32} wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend verticalAlign='bottom' height={32} wrapperStyle={{ fontSize: CHART_FONT_SIZE }} />
                         <Radar
                             name='Avg. time'
                             dataKey='minutes'

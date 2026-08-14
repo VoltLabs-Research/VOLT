@@ -8,6 +8,7 @@ import type { TeamRole } from '@volt/contracts/modules/team/domain';
 import type { RbacEntry } from '@volt/contracts/modules/system/domain';
 import { TriangleAlert } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 export interface RoleEditorPayload {
     name: string;
@@ -122,7 +123,7 @@ export const RoleEditorModal = ({
             width='720px'
             footer={footer}
         >
-            <div className='flex flex-col gap-8 p-8 max-h-[70vh] overflow-y-auto'>
+            <Scrollable className='flex flex-col gap-8 p-8 max-h-[70vh]'>
                 {isSystemRole && (
 
                     <Alert status='warning' role='status' aria-live='polite'>
@@ -190,7 +191,7 @@ export const RoleEditorModal = ({
                         })}
                     </div>
                 </fieldset>
-            </div>
+            </Scrollable>
         </Modal>
     );
 };

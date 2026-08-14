@@ -25,6 +25,7 @@ import type { ArtifactSection } from './use-artifact-sections';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const ROW_ICON_STYLE = {
     width: 12,
@@ -152,7 +153,7 @@ const ArtifactTreeSection = ({
             expanded={section.open}
             onExpandedChange={section.setOpen}
         >
-            <div className='canvas-tree-container flex flex-col gap-1 overflow-auto px-2 pb-2.5 pt-1.5' role='tree' aria-label={section.ariaLabel}>
+            <Scrollable className='canvas-tree-container flex flex-col gap-1 px-2 pb-2.5 pt-1.5' role='tree' aria-label={section.ariaLabel}>
                 {timesteps.length === 0 ? (
                     <CanvasTreeEmptyRow label={isLoading ? 'Loading...' : 'No models generated'} />
                 ) : (
@@ -168,7 +169,7 @@ const ArtifactTreeSection = ({
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)
                     </button>
                 )}
-            </div>
+            </Scrollable>
         </RightCollapsible>
     );
 };

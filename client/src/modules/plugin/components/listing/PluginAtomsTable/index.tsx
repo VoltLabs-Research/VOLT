@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import PluginCompactTable, { type PluginTableColumnConfig } from '@/modules/plugin/components/listing/PluginCompactTable';
+import { getCategoricalColorByIndex } from '@/shared/ui/utils/categorical-palette';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 
@@ -13,18 +14,24 @@ interface PluginAtomsTableProps {
     exposureId?: string;
 }
 
-const TYPE_PALETTE = [
-    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2',
-    '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', '#98df8a', '#ff9896',
-    '#c5b0d5', '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5'
-];
+/*
+ * These swatches do NOT match the viewport, and cannot be made to from here.
+ *
+ * The 3D scene colours atoms by chemical element, using the CPK table the daemon keeps in
+ * cluster/src/modules/trajectory/workers/element-table.cjs and bakes into the GLB. This table only
+ * ever receives `id`, `type`, `x`, `y` and `z` — a LAMMPS type is a bare integer, and no
+ * type-to-element mapping is persisted or served anywhere (contracts, server and cluster have
+ * none). So the client cannot know that type 1 is Bi, and cannot look up its CPK colour.
+ *
+ * What this does instead is stop being a third palette: it takes the shared categorical one, so
+ * type colours at least belong to the same family as the rest of the app. Aligning them with the
+ * viewport needs the type-to-element map captured at ingest and exposed on the trajectory — a
+ * contract change, not a styling one.
+ */
+const getTypeColor = (type?: number): string => {
+    if(type === undefined) return 'var(--muted)';
 
-const getTypeColor = (t?: number): string => {
-    if (t === undefined) return '#888888';
-    const type = Math.max(1, Math.floor(t));
-    if (type <= TYPE_PALETTE.length) return TYPE_PALETTE[type - 1];
-    const hue = ((type - 1) * 47) % 360;
-    return `hsl(${hue}deg 60% 55%)`;
+    return getCategoricalColorByIndex(type);
 };
 
 const ATOMS_PAGE_SIZE = 100;

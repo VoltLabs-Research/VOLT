@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useId, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface StepperStep<K extends string> {
     key: K;
@@ -192,9 +193,9 @@ const CreateContainerStepper = <K extends string>({
                     );
                 })}
             </div>
-            <div className='max-w-[900px] flex-1 overflow-y-auto px-12 py-8 max-[900px]:max-w-none max-[900px]:p-6'>
+            <Scrollable className='max-w-[900px] flex-1 px-12 py-8 max-[900px]:max-w-none max-[900px]:p-6'>
                 {panel}
-            </div>
+            </Scrollable>
         </div>
     );
 };

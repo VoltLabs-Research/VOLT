@@ -1,5 +1,6 @@
 import { cn } from '@heroui/react';
 import type { SecretKeyPerKeyMetric } from '@volt/contracts/modules/team/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface PerKeyBreakdownTableProps {
     perKey: SecretKeyPerKeyMetric[];
@@ -8,7 +9,7 @@ interface PerKeyBreakdownTableProps {
 const PerKeyBreakdownTable = ({ perKey }: PerKeyBreakdownTableProps) => (
     <div className='bg-surface border border-border p-6 rounded-xl'>
         <h3 className='text-base font-semibold text-foreground mb-6'>Per-Key Breakdown</h3>
-        <div className='overflow-x-auto'>
+        <Scrollable orientation='horizontal' className=''>
             <table className='w-full border-collapse'>
                 <thead>
                     <tr>
@@ -46,7 +47,7 @@ const PerKeyBreakdownTable = ({ perKey }: PerKeyBreakdownTableProps) => (
                     ))}
                 </tbody>
             </table>
-        </div>
+        </Scrollable>
     </div>
 );
 

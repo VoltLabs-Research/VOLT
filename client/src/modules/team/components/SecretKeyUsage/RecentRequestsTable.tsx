@@ -1,6 +1,7 @@
 import { cn } from '@heroui/react';
 import { formatDistanceToNow } from 'date-fns';
 import type { KeyUsageMetricsRequest } from '@volt/contracts/modules/team/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const STATUS_COLORS: Record<string, string> = {
     '2xx': 'var(--success)',
@@ -29,7 +30,7 @@ interface RecentRequestsTableProps {
 }
 
 const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
-    <div className='overflow-x-auto max-h-[250px]'>
+    <Scrollable orientation='horizontal' className='max-h-[250px]'>
         <table className='w-full border-collapse'>
             <thead>
                 <tr>
@@ -76,7 +77,7 @@ const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
                 })}
             </tbody>
         </table>
-    </div>
+    </Scrollable>
 );
 
 export default RecentRequestsTable;

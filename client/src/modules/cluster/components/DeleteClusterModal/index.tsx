@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type { DeleteTeamClusterResponse } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 export const DELETE_CLUSTER_MODAL_ID = 'delete-cluster-modal';
 
@@ -99,9 +100,9 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
                             {result.message}
                         </p>
                         {result.manualUninstallCommand && (
-                            <div className='p-4 rounded-xl overflow-auto bg-background font-mono text-xs'>
+                            <Scrollable className='p-4 rounded-xl bg-background font-mono text-xs'>
                                 {result.manualUninstallCommand}
-                            </div>
+                            </Scrollable>
                         )}
                     </>
                 )}

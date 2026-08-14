@@ -1,6 +1,7 @@
 import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface AnalysisLogPanelProps {
     analysisId?: string;
@@ -98,7 +99,7 @@ const AnalysisLogPanel = ({
 
     return (
         <div className='flex h-full min-h-0 flex-1 flex-col'>
-            <div className='min-h-0 flex-1 overflow-y-auto bg-surface' ref={scrollRef}>
+            <Scrollable className='min-h-0 flex-1 bg-surface' ref={scrollRef}>
                 {helperText ? (
                     <div className='flex min-h-0 flex-1 flex-row items-center justify-center p-4'>
                         <p className='text-xs text-muted'>{helperText}</p>
@@ -116,7 +117,7 @@ const AnalysisLogPanel = ({
                         ))}
                     </pre>
                 )}
-            </div>
+            </Scrollable>
         </div>
     );
 };

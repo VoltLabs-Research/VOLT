@@ -2,6 +2,7 @@ import JobsHistoryViewer from '@/modules/jobs/components/JobsHistoryViewer';
 import { useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { CloseButton } from '@heroui/react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const JobsDrawer = () => {
     const trajectoryId = useJobsDrawerStore((state) => state.trajectoryId);
@@ -21,13 +22,13 @@ const JobsDrawer = () => {
                 </div>
                 <CloseButton onPress={close} aria-label='Close compute jobs panel' />
             </header>
-            <div className='min-h-0 flex-1 overflow-y-auto px-2 py-2'>
+            <Scrollable className='min-h-0 flex-1 px-2 py-2'>
                 <JobsHistoryViewer
                     trajectoryId={trajectoryId ?? undefined}
                     displayMode='full'
                     autoSelectAnalysis={false}
                 />
-            </div>
+            </Scrollable>
         </div>
     );
 };

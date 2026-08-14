@@ -9,6 +9,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useCallback, useState } from 'react';
 import { BookOpen, Copy } from 'lucide-react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 enum InviteTab {
     Share = 'Share',
@@ -87,7 +88,7 @@ export const TeamInvitePanel = ({
                 tabs={tabs}
                 onClose={onClose}
             />
-            <div className='flex flex-col overflow-y-auto flex-1'>
+            <Scrollable className='flex flex-col flex-1'>
                 {activeTab === InviteTab.Share && (
                     <>
                         <InvitationEmailInput
@@ -153,7 +154,7 @@ export const TeamInvitePanel = ({
                         </div>
                     </>
                 )}
-            </div>
+            </Scrollable>
         </div>
     );
 };

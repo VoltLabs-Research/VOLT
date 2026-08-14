@@ -1,3 +1,4 @@
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { cn } from '@heroui/react';
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
@@ -157,13 +158,13 @@ const AutoScrollList = <T,>({
         }
     };
 
-    const listClassName = cn('flex flex-col gap-2 flex-1 overflow-y-auto overscroll-contain', className);
+    const listClassName = cn('flex flex-col gap-2 flex-1 overscroll-contain', className);
 
     if (isLoading && items.length === 0) {
         return (
-            <div className={cn(listClassName, loadingClassName)} role='status' aria-live='polite' aria-atomic='true'>
+            <Scrollable className={cn(listClassName, loadingClassName)} role='status' aria-live='polite' aria-atomic='true'>
                 {renderLoading}
-            </div>
+            </Scrollable>
         );
     }
 
@@ -176,7 +177,7 @@ const AutoScrollList = <T,>({
     }
 
     return (
-        <div ref={containerRef} className={listClassName} onScroll={handleScroll} role='log' aria-live='polite' aria-relevant='additions text' aria-atomic='false' aria-busy={isLoading} aria-label='Auto-updating content'>
+        <Scrollable ref={containerRef} className={listClassName} onScroll={handleScroll} role='log' aria-live='polite' aria-relevant='additions text' aria-atomic='false' aria-busy={isLoading} aria-label='Auto-updating content'>
             {hasMore ? loadMoreIndicator : null}
             {items.map((item, index) => (
                 <Fragment key={getItemKey ? getItemKey(item, index) : index}>
@@ -185,7 +186,7 @@ const AutoScrollList = <T,>({
             ))}
             {renderAfter}
             <div className='min-h-px' aria-hidden={hasItems} />
-        </div>
+        </Scrollable>
     );
 };
 

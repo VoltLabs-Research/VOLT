@@ -1,4 +1,5 @@
 import { Skeleton } from '@heroui/react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const ContainerDetailsSkeleton = () => (
     <div className='flex flex-col h-full min-h-0'>
@@ -18,14 +19,14 @@ const ContainerDetailsSkeleton = () => (
                 <Skeleton animationType='pulse' className='h-[30px] w-[320px] rounded-xl' />
             </div>
         </div>
-        <div className='flex flex-col gap-6 p-6 overflow-auto flex-1 min-h-0 min-w-0'>
+        <Scrollable className='flex flex-col gap-6 p-6 flex-1 min-h-0 min-w-0'>
             <div className='flex flex-row items-center gap-8'>
                 <Skeleton animationType='pulse' className='h-[140px] w-1/3 rounded-xl' />
                 <Skeleton animationType='pulse' className='h-[140px] w-1/3 rounded-xl' />
                 <Skeleton animationType='pulse' className='h-[140px] w-1/3 rounded-xl' />
             </div>
             <Skeleton animationType='pulse' className='h-60 w-full rounded-xl' />
-        </div>
+        </Scrollable>
     </div>
 );
 

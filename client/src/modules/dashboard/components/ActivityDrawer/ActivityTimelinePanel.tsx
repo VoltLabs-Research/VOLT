@@ -1,5 +1,6 @@
 import { Skeleton } from '@heroui/react';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { ACTIVITY_ACCENT, ACTIVITY_ICON } from '@/modules/daily-activity/utils/activity-mappings';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
 import { useMemo } from 'react';
@@ -73,18 +74,20 @@ const TimelineRow = ({ connector, icon, children }: TimelineRowProps) => (
 );
 
 export const ActivityTimelineSkeleton = () => (
-    <ol className='flex min-h-0 flex-1 list-none flex-col gap-0 overflow-y-auto p-0 m-0' role='list'>
-        {Array.from({ length: 10 }, (_, index) => (
-            <TimelineRow
-                key={index}
-                connector={index < 3}
-                icon={<Skeleton className='size-4 shrink-0 rounded-xl' aria-hidden='true' />}
-            >
-                <Skeleton className='h-3 w-[70%] shrink-0 origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' />
-                <Skeleton className='mt-1 h-2.5 w-[40%] shrink-0 origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' />
-            </TimelineRow>
-        ))}
-    </ol>
+    <Scrollable className='flex min-h-0 flex-1 flex-col'>
+        <ol className='flex list-none flex-col gap-0 p-0 m-0' role='list'>
+            {Array.from({ length: 10 }, (_, index) => (
+                <TimelineRow
+                    key={index}
+                    connector={index < 3}
+                    icon={<Skeleton className='size-4 shrink-0 rounded-xl' aria-hidden='true' />}
+                >
+                    <Skeleton className='h-3 w-[70%] shrink-0 origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' />
+                    <Skeleton className='mt-1 h-2.5 w-[40%] shrink-0 origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' />
+                </TimelineRow>
+            ))}
+        </ol>
+    </Scrollable>
 );
 
 const ActivityTimelinePanel = ({ activityData, lookbackDays }: ActivityTimelinePanelProps) => {
@@ -102,30 +105,32 @@ const ActivityTimelinePanel = ({ activityData, lookbackDays }: ActivityTimelineP
     }
 
     return (
-        <ol className='flex min-h-0 flex-1 list-none flex-col gap-0 overflow-y-auto p-0 m-0' role='list'>
-            {entries.map((entry, index) => (
-                <TimelineRow
-                    key={`${entry.timestamp}-${index}`}
-                    connector={index < entries.length - 1}
-                    icon={
-                        <span className='inline-flex' style={{ color: ACTIVITY_ACCENT[entry.type] }}>
-                            {ACTIVITY_ICON[entry.type]}
+        <Scrollable className='flex min-h-0 flex-1 flex-col'>
+            <ol className='flex list-none flex-col gap-0 p-0 m-0' role='list'>
+                {entries.map((entry, index) => (
+                    <TimelineRow
+                        key={`${entry.timestamp}-${index}`}
+                        connector={index < entries.length - 1}
+                        icon={
+                            <span className='inline-flex' style={{ color: ACTIVITY_ACCENT[entry.type] }}>
+                                {ACTIVITY_ICON[entry.type]}
+                            </span>
+                        }
+                    >
+                        <span className='text-sm text-foreground'>
+                            <strong className='font-medium capitalize'>
+                                {entry.userName}
+                            </strong>
+                            {' '}
+                            <span className='text-muted'>{entry.description}</span>
                         </span>
-                    }
-                >
-                    <span className='text-sm text-foreground'>
-                        <strong className='font-medium capitalize'>
-                            {entry.userName}
-                        </strong>
-                        {' '}
-                        <span className='text-muted'>{entry.description}</span>
-                    </span>
-                    <span className='text-xs text-muted'>
-                        {formatCompactRelativeTime(entry.timestamp)}
-                    </span>
-                </TimelineRow>
-            ))}
-        </ol>
+                        <span className='text-xs text-muted'>
+                            {formatCompactRelativeTime(entry.timestamp)}
+                        </span>
+                    </TimelineRow>
+                ))}
+            </ol>
+        </Scrollable>
     );
 };
 

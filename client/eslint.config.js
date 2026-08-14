@@ -5,6 +5,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import { cssBaseline } from './eslint.css-baseline.js';
 import { classNameBaseline } from './eslint.classname-baseline.js';
+import { overflowBaseline } from './eslint.overflow-baseline.js';
 
 const LOCAL_CSS_IMPORT = '^(\\.{1,2}/|@/).*\\.css(\\?.*)?$';
 
@@ -45,6 +46,28 @@ const classNameRatchet = BANNED_CLASS_PATTERNS.flatMap(([pattern, message]) => [
     { selector: `Literal[value=/${pattern}/]`, message },
     { selector: `TemplateElement[value.raw=/${pattern}/]`, message }
 ]);
+
+/*
+ * Scroll-affordance ratchet. Scrollbars are hidden globally (index.css), so a bare
+ * overflow-*-auto container clips its content with no cue that anything continues; the edge fade
+ * is the only affordance left. Scrollable owns it.
+ *
+ * `(?!ing)` keeps `[-webkit-overflow-scrolling:touch]` out of the match. As above, the pattern
+ * carries no regex character class because it lives inside an esquery selector, where [ is
+ * a literal.
+ */
+const BANNED_OVERFLOW_PATTERN = 'overflow-(x-|y-)?(auto|scroll)(?!ing)';
+const OVERFLOW_MESSAGE = [
+    'Scrolling containers are closed. Use shared/ui/components/Scrollable (orientation="horizontal"',
+    'for sideways scrollers) so the region gets an edge fade: scrollbars are hidden app-wide, so',
+    'without it a clipped list gives the reader no sign that content continues.',
+    'overflow-hidden and overflow-*-clip stay available — they do not scroll.'
+].join(' ');
+
+const overflowRatchet = [
+    { selector: `Literal[value=/${BANNED_OVERFLOW_PATTERN}/]`, message: OVERFLOW_MESSAGE },
+    { selector: `TemplateElement[value.raw=/${BANNED_OVERFLOW_PATTERN}/]`, message: OVERFLOW_MESSAGE }
+];
 
 const CSS_BOUNDARY_MESSAGE = [
     'Per-component stylesheets are closed. Layout and typography belong to bravais:',
@@ -111,11 +134,29 @@ export default tseslint.config(
             }]
         }
     },
+    /*
+     * Both ratchets ride the same rule key, so they cannot be two plain blocks: in flat config a
+     * later block that sets `no-restricted-syntax` replaces the earlier one for the files it
+     * matches, which would silently switch the first ratchet off. Instead the shared case bans
+     * both, and each baseline gets a block that re-applies the ratchet it is *not* exempt from.
+     */
     {
         files: ['src/**/*.{ts,tsx}'],
-        ignores: [...classNameBaseline],
+        ignores: [...classNameBaseline, ...overflowBaseline],
+        rules: {
+            'no-restricted-syntax': ['error', ...classNameRatchet, ...overflowRatchet]
+        }
+    },
+    {
+        files: [...overflowBaseline],
         rules: {
             'no-restricted-syntax': ['error', ...classNameRatchet]
+        }
+    },
+    {
+        files: [...classNameBaseline],
+        rules: {
+            'no-restricted-syntax': ['error', ...overflowRatchet]
         }
     }
 );

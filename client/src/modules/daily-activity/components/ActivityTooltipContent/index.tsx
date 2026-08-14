@@ -1,5 +1,6 @@
 import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utils/activity-mappings';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface ActivityTooltipContentProps {
     activity: DailyActivityHeatmapDetailEntry[];
@@ -24,7 +25,7 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
     }
 
     return (
-        <div className='flex flex-col gap-4 max-h-[400px] overflow-y-scroll'>
+        <Scrollable className='flex flex-col gap-4 max-h-[400px]'>
             <div className='flex flex-col gap-1'>
                 <span className='text-sm font-medium text-foreground'>{dateLabel}</span>
                 <span className='text-xs text-muted'>
@@ -47,7 +48,7 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
                     </div>
                 </div>
             ))}
-        </div>
+        </Scrollable>
     );
 };
 

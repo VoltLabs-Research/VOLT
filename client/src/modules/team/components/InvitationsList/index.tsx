@@ -2,6 +2,7 @@ import { InvitationRow } from '../InvitationRow';
 import { EmptyStateRoot } from '@heroui/react';
 import { useId } from 'react';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface InvitationsListProps {
     invitations: TeamInvitation[];
@@ -50,7 +51,7 @@ export const InvitationsList = ({
     }
 
     return (
-        <div className='overflow-y-auto shrink-0 p-2 flex-1 max-h-[300px]'>
+        <Scrollable className='shrink-0 p-2 flex-1 max-h-[300px]'>
             <div className='flex flex-col gap-2'>
                 {invitations.map((invitation) => (
                     <InvitationRow
@@ -62,6 +63,6 @@ export const InvitationsList = ({
                     />
                 ))}
             </div>
-        </div>
+        </Scrollable>
     );
 };

@@ -23,6 +23,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { ArtifactSection } from './use-artifact-sections';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { CanvasPanelActionProps } from '../canvas-panel-props';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface ObjectsPanelProps extends CanvasPanelActionProps {
     trajectory: Trajectory | null | undefined;
@@ -317,7 +318,7 @@ const ObjectsPanel = ({
 
     return (
         <div className={cn('canvas-objects-panel flex h-full min-h-0 flex-col justify-between overflow-hidden', isAnalysisCompact && 'canvas-objects-panel--analysis-compact justify-start')}>
-            <div className='flex min-h-0 flex-auto flex-col overflow-y-auto [&>:first-child]:mt-2'>
+            <Scrollable className='flex min-h-0 flex-auto flex-col [&>:first-child]:mt-2'>
                 {showSceneCollection && (
                     <RightCollapsible
                         title="Visual Elements"
@@ -351,7 +352,7 @@ const ObjectsPanel = ({
                         {populatedSections.map(renderArtifactSection)}
                     </>
                 )}
-            </div>
+            </Scrollable>
 
             {/*
              * Pinned to the bottom, above Color Coding: the results are a readout of the
@@ -363,13 +364,13 @@ const ObjectsPanel = ({
              */}
             {!isAnalysisCompact && (
                 <div className='flex flex-none flex-col border-t border-border'>
-                    <div className='flex max-h-[40vh] flex-col overflow-y-auto'>
+                    <Scrollable className='flex max-h-[40vh] flex-col'>
                         <AnalysisResultsSection
                             analysisId={resultsAnalysisId}
                             pluginId={resultsPluginId}
                             currentTimestep={currentTimestep}
                         />
-                    </div>
+                    </Scrollable>
                     {artifactSections.map(renderArtifactSection)}
                 </div>
             )}

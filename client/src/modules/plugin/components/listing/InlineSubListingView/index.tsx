@@ -7,6 +7,7 @@ import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queri
 import { buildCompactSubListingColumns } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 export interface InlineSubListingViewProps {
     analysisId: string;
@@ -89,7 +90,7 @@ const InlineSubListingView = ({
                 >
                     <ArrowLeft size={14} aria-hidden='true' />
                 </Button>
-                <div className='flex min-w-0 flex-1 flex-row flex-nowrap gap-1 overflow-x-auto' role='tablist'>
+                <Scrollable orientation='horizontal' className='flex min-w-0 flex-1 flex-row flex-nowrap gap-1' role='tablist'>
                     {subListingNames.map((name) => {
                         const isActive = name === activeName;
                         return (
@@ -108,7 +109,7 @@ const InlineSubListingView = ({
                             </button>
                         );
                     })}
-                </div>
+                </Scrollable>
             </div>
             <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
                 <PluginCompactTable

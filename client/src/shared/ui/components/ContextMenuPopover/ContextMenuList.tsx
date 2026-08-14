@@ -1,3 +1,4 @@
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { cn } from '@heroui/react';
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
@@ -81,16 +82,16 @@ const ContextMenuList = ({ children, label = 'Menu', size = 'md', onClose }: Con
     };
 
     return (
-        <div
+        <Scrollable
             ref={menuRef}
-            className={cn('flex flex-col gap-1 overflow-y-auto p-1', { sm: 'min-w-[124px]', md: 'min-w-[160px]' }[size])}
+            className={cn('flex flex-col gap-1 p-1', { sm: 'min-w-[124px]', md: 'min-w-[160px]' }[size])}
             role='menu'
             aria-label={label}
             aria-orientation='vertical'
             onKeyDown={handleKeyDown}
         >
             {children}
-        </div>
+        </Scrollable>
     );
 };
 

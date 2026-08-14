@@ -1,6 +1,7 @@
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import type { ChartStat } from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
+import { CHART_FONT_SIZE } from '@/shared/ui/utils/chart-theme';
 import { Activity } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -65,7 +66,7 @@ const CHART_MARGIN = {
     bottom: 0
 };
 const LEGEND_WRAPPER_STYLE = {
-    fontSize: '12px',
+    fontSize: CHART_FONT_SIZE,
     paddingTop: '20px',
     color: CHART_COLORS.legend
 };
@@ -255,7 +256,7 @@ const NetworkChart = ({
                         <CartesianGrid strokeDasharray='3 3' stroke={CHART_COLORS.grid} />
                         <YAxis
                             stroke={CHART_COLORS.axis}
-                            style={{ fontSize: '12px' }}
+                            style={{ fontSize: CHART_FONT_SIZE }}
                             tickFormatter={formatByteSize}
                         />
                         <Tooltip content={renderTooltip} />

@@ -1,5 +1,6 @@
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { ReactNode } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface SecretKeyPageShellProps {
     header: ReactNode;
@@ -30,12 +31,12 @@ interface SecretKeyAsyncStateProps {
 }
 
 const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
-    <div className='h-full overflow-scroll text-foreground'>
+    <Scrollable className='h-full text-foreground'>
         <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
             {header}
             {children}
         </div>
-    </div>
+    </Scrollable>
 );
 
 const SecretKeyRecoveryView = ({

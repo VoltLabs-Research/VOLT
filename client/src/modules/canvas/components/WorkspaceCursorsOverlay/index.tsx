@@ -1,3 +1,4 @@
+import { getCategoricalColor } from '@/shared/ui/utils/categorical-palette';
 import { useLayoutEffect, useState } from 'react';
 import type { WorkspaceCursor } from '@/modules/canvas/collaboration/use-workspace-cursors';
 
@@ -10,27 +11,6 @@ interface ResolvedCursor extends WorkspaceCursor {
     left: number;
     top: number;
 }
-
-const USER_COLORS = [
-    '#ef4444',
-    '#f59e0b',
-    '#10b981',
-    '#3b82f6',
-    '#8b5cf6',
-    '#ec4899',
-    '#14b8a6',
-    '#f97316'
-];
-
-const resolveColor = (userId: string): string => {
-    let hash = 0;
-    for (let index = 0; index < userId.length; index += 1) {
-        hash = (hash * 31 + userId.charCodeAt(index)) | 0;
-    }
-
-    const bucket = Math.abs(hash) % USER_COLORS.length;
-    return USER_COLORS[bucket];
-};
 
 const resolveDisplayName = (cursor: WorkspaceCursor): string => {
     const parts = [cursor.firstName, cursor.lastName].filter(Boolean);
@@ -68,7 +48,7 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
     return (
         <div className='pointer-events-none absolute inset-0 z-[8] select-none' aria-hidden='true'>
             {resolvedCursors.map((cursor) => {
-                const color = resolveColor(cursor.userId);
+                const color = getCategoricalColor(cursor.userId);
                 const name = resolveDisplayName(cursor);
 
                 return (

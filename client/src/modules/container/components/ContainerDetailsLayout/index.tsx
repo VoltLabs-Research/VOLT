@@ -20,6 +20,7 @@ import useContainerStats from '../../hooks/use-container-stats';
 import type { EnvVariable } from '@volt/contracts/modules/container/domain';
 import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { ContainerDetailsContext } from '../../hooks/use-container-details-context';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const ContainerDetailsLayout = () => {
     const { id } = useParams<{ id: string }>();
@@ -175,7 +176,7 @@ const ContainerDetailsLayout = () => {
                 contextualActions={headerActions}
             />
 
-            <div className='flex flex-col overflow-auto flex-1 min-h-0 min-w-0'>
+            <Scrollable className='flex flex-col flex-1 min-h-0 min-w-0'>
                 <motion.div
                     key={pathname}
                     initial={prefersReducedMotion ? false : { opacity: 0 }}
@@ -188,7 +189,7 @@ const ContainerDetailsLayout = () => {
                 >
                     <Outlet context={outletContext} />
                 </motion.div>
-            </div>
+            </Scrollable>
         </div>
     );
 };

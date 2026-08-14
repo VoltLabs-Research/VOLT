@@ -4,6 +4,7 @@ import { Button, cn } from '@heroui/react';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { renderExpandedValue } from '@/modules/plugin/components/listing/SubListingDetailPanel/expandedRenderers';
 import { inferCellKind, type InferredCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface SubListingDetailColumn {
     key?: string;
@@ -115,7 +116,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                     </Button>
                 </div>
             </header>
-            <div className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-4 overflow-y-auto overflow-x-hidden p-3.5'>
+            <Scrollable className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-4 overflow-x-hidden p-3.5'>
                 {fields.map((field) => {
                     const copiedThisField = copiedKey === field.key;
 
@@ -147,7 +148,7 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                         </section>
                     );
                 })}
-            </div>
+            </Scrollable>
         </aside>
     );
 };

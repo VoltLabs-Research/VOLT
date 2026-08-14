@@ -118,11 +118,17 @@ const ColorSubmenu = ({ value, onChange }: ColorSubmenuProps) => (
     </div>
 );
 
+/*
+ * Not a theme colour: it seeds the picker for a scene colour the user then owns, so it has to be a
+ * literal hex the <input type=color> can display, and it must not shift with the theme.
+ */
+const DEFAULT_SCENE_COLOR = '#4d80e6';
+
 export const buildColorSubmenu = (
     value: string | undefined,
     onChange: (color: string | undefined) => void
 ) => (
-    <ColorSubmenu value={value ?? '#4d80e6'} onChange={onChange} />
+    <ColorSubmenu value={value ?? DEFAULT_SCENE_COLOR} onChange={onChange} />
 );
 
 export const colorOption = (submenuContent: React.ReactNode): MenuOption => ({

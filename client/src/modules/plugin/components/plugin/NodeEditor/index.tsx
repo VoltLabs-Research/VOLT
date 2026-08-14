@@ -19,6 +19,7 @@ import IfStatementEditor from './editors/IfStatementEditor';
 import SwitchStatementEditor from './editors/SwitchStatementEditor';
 import SwitchCaseEditor from './editors/SwitchCaseEditor';
 import ConnectorLayoutEditor from './ConnectorLayoutEditor';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 type NodeEditorSection = 'details' | 'connectors';
 
@@ -72,7 +73,7 @@ const NodeEditor = ({ node }: EditorProps) => {
                     layoutId={`node-editor-${node.id}`}
                 />
             </div>
-            <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 max-[768px]:p-3'>
+            <Scrollable className='min-h-0 flex-1 overflow-x-hidden p-4 max-[768px]:p-3'>
                 {activeSection === 'details' && (
                     EditorComponent ? (
                         <>
@@ -93,7 +94,7 @@ const NodeEditor = ({ node }: EditorProps) => {
                 {activeSection === 'connectors' && (
                     <ConnectorLayoutEditor node={node} />
                 )}
-            </div>
+            </Scrollable>
             <div className='shrink-0 border-t border-border px-4 py-3'>
                 <Alert
                     status='danger'

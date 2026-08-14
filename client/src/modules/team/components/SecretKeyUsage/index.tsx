@@ -14,6 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
 import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 export default function SecretKeyUsage() {
     const { secretKeyId } = useParams<{ secretKeyId: string }>();
@@ -105,7 +106,7 @@ export default function SecretKeyUsage() {
     ];
 
     return (
-        <div className='h-full overflow-scroll text-foreground'>
+        <Scrollable className='h-full text-foreground'>
             <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
                 <div className='flex flex-col gap-2'>
                     <div className='flex flex-row items-center gap-4'>
@@ -198,6 +199,6 @@ export default function SecretKeyUsage() {
                     </ChartContainer>
                 </div>
             </div>
-        </div>
+        </Scrollable>
     );
 }

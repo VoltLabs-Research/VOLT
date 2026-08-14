@@ -3,6 +3,7 @@ import AccessDenied from '@/shared/ui/components/AccessDenied';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface FileExplorerProps {
     headerLeft?: ReactNode;
@@ -135,9 +136,9 @@ const FileExplorer = ({
                 </div>
             )}
 
-            <div className='flex-1 overflow-y-auto' role='list' aria-busy={isLoading || isRetrying}>
+            <Scrollable className='flex-1' role='list' aria-busy={isLoading || isRetrying}>
                 {renderContent()}
-            </div>
+            </Scrollable>
         </div>
     );
 };

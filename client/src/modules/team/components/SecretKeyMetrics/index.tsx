@@ -9,6 +9,7 @@ import RequestsAreaChart from '@/modules/team/components/secret-key/shared/Reque
 import { SecretKeyAsyncState } from '@/modules/team/components/secret-key/shared/SecretKeyAsyncViews';
 import SecretKeyStatCard from '@/modules/team/components/secret-key/shared/SecretKeyStatCard';
 import PerKeyBreakdownTable from './PerKeyBreakdownTable';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const metricsTitle = (
     <div className='flex flex-col gap-2'>
@@ -20,7 +21,7 @@ const CARD_SKELETON_KEYS = ['total-requests', 'avg-response-time', 'unique-endpo
 const CHART_SKELETON_KEYS = ['requests-over-time', 'top-endpoints'];
 
 const loadingView = (
-    <div className='h-full overflow-scroll text-foreground'>
+    <Scrollable className='h-full text-foreground'>
         <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
             <div className='flex flex-col gap-2'>
                 <Skeleton className='h-8 w-[240px] rounded-md' />
@@ -43,7 +44,7 @@ const loadingView = (
                 ))}
             </div>
         </div>
-    </div>
+    </Scrollable>
 );
 
 export default function SecretKeyMetrics() {
@@ -108,7 +109,7 @@ export default function SecretKeyMetrics() {
     ];
 
     return (
-        <div className='h-full overflow-scroll text-foreground'>
+        <Scrollable className='h-full text-foreground'>
             <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
                 <div className='flex flex-col gap-2'>
                     <h3 className='text-2xl font-semibold text-foreground'>Secret Key Metrics</h3>
@@ -176,6 +177,6 @@ export default function SecretKeyMetrics() {
 
                 <PerKeyBreakdownTable perKey={metrics.perKey} />
             </div>
-        </div>
+        </Scrollable>
     );
 }

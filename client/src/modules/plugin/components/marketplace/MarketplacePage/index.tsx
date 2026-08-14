@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const SEARCH_DEBOUNCE_MS = 400;
 const RESULTS_PER_PAGE = 30;
@@ -197,14 +198,14 @@ const MarketplacePage = () => {
                 </div>
 
                 {/* Only this column scrolls, so the search field stays put while you browse. */}
-                <div className='min-h-0 flex-1 overflow-y-auto'>
+                <Scrollable className='min-h-0 flex-1'>
                     {renderListBody()}
-                </div>
+                </Scrollable>
             </div>
 
-            <div
+            <Scrollable
                 className={cn(
-                    'min-h-0 min-w-0 flex-1 overflow-y-auto',
+                    'min-h-0 min-w-0 flex-1',
                     !selectedItem && 'max-md:hidden'
                 )}
             >
@@ -228,7 +229,7 @@ const MarketplacePage = () => {
                         />
                     </div>
                 )}
-            </div>
+            </Scrollable>
         </div>
     );
 };

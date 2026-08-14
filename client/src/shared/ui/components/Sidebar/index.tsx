@@ -1,9 +1,10 @@
+import Scrollable from '@/shared/ui/components/Scrollable';
 import SidebarBottom from '@/shared/ui/components/SidebarBottom';
 import SidebarHeader from '@/shared/ui/components/SidebarHeader';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { cn } from '@heroui/react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useState, useRef, useCallback, useMemo, useId } from 'react';
+import { useEffect, useState, useMemo, useId } from 'react';
 import React from 'react';
 import type { ReactNode, ComponentType } from 'react';
 
@@ -40,21 +41,9 @@ const Sidebar = ({
     keepMounted = false
 }: SidebarProps) => {
     const [collapsed, setCollapsed] = useState(false);
-    const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(false);
-    const tabsContainerRef = useRef<HTMLDivElement>(null);
     const prefersReducedMotion = useReducedMotion();
     const sidebarId = useId();
     const isMobile = useMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
-
-    const checkOverflow = useCallback(() => {
-        const container = tabsContainerRef.current;
-        if (!container) return;
-
-        const { scrollLeft, scrollWidth, clientWidth } = container;
-        setCanScrollLeft(scrollLeft > 0);
-        setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
-    }, []);
 
     useEffect(() => {
         if (!collapsible) {
@@ -71,19 +60,6 @@ const Sidebar = ({
         }
     }, [activeTagId, collapsible, isMobile]);
 
-    useEffect(() => {
-        const container = tabsContainerRef.current;
-        if (!container) return;
-
-        checkOverflow();
-        container.addEventListener('scroll', checkOverflow);
-        window.addEventListener('resize', checkOverflow);
-
-        return () => {
-            container.removeEventListener('scroll', checkOverflow);
-            window.removeEventListener('resize', checkOverflow);
-        };
-    }, [checkOverflow, tags.length]);
 
     const toggleCollapsed = () => {
         if (collapsible) {
@@ -146,10 +122,7 @@ const Sidebar = ({
                             {tags.length > 1 && (
                                 <div className={isCollapsedOnMobile ? 'hidden' : 'p-6'}>
                                     <div className='relative overflow-hidden rounded-full'>
-                                        {canScrollLeft && (
-                                            <div className='pointer-events-none absolute top-0 bottom-0 z-10 w-10 left-0 bg-linear-to-r from-surface to-transparent' aria-hidden='true' />
-                                        )}
-                                            <div ref={tabsContainerRef} className={cn('flex justify-between flex-nowrap overflow-x-auto overflow-y-hidden rounded-full p-2 scrollbar-none', collapsed && 'gap-1')} role='tablist' aria-label='Sidebar sections'>
+                                            <Scrollable orientation='horizontal' size={40} className={cn('flex justify-between flex-nowrap overflow-y-hidden rounded-full p-2', collapsed && 'gap-1')} role='tablist' aria-label='Sidebar sections'>
                                                 {tags.map((tag) => {
                                                     const isSelected = tag.id === activeTagId;
 
@@ -171,37 +144,34 @@ const Sidebar = ({
                                                         </button>
                                                     );
                                                 })}
-                                            </div>
-                                        {canScrollRight && (
-                                            <div className='pointer-events-none absolute top-0 bottom-0 z-10 w-10 right-0 bg-linear-to-l from-surface to-transparent' aria-hidden='true' />
-                                        )}
+                                            </Scrollable>
                                     </div>
                                 </div>
                             )}
 
                             {keepMounted ? (
                                 tags.map((tag) => (
-                                    <div
+                                    <Scrollable
                                         key={tag.id}
-                                        className={isCollapsedOnMobile ? 'hidden' : 'min-h-0 flex-1 overflow-y-auto overflow-x-hidden'}
+                                        className={isCollapsedOnMobile ? 'hidden' : 'min-h-0 flex-1 overflow-x-hidden'}
                                         id={`${sidebarId}-panel-${tag.id}`}
                                         role='tabpanel'
                                         aria-labelledby={`${sidebarId}-tab-${tag.id}`}
                                         hidden={tag.id !== activeTagId}
                                     >
                                         <tag.Component />
-                                    </div>
+                                    </Scrollable>
                                 ))
                             ) : (
                                 activeTagConfig && (
-                                    <div
-                                        className={isCollapsedOnMobile ? 'hidden' : 'min-h-0 flex-1 overflow-y-auto overflow-x-hidden'}
+                                    <Scrollable
+                                        className={isCollapsedOnMobile ? 'hidden' : 'min-h-0 flex-1 overflow-x-hidden'}
                                         id={tags.length > 1 ? `${sidebarId}-panel-${activeTagConfig.id}` : undefined}
                                         role={tags.length > 1 ? 'tabpanel' : undefined}
                                         aria-labelledby={tags.length > 1 ? `${sidebarId}-tab-${activeTagConfig.id}` : undefined}
                                     >
                                         <activeTagConfig.Component />
-                                    </div>
+                                    </Scrollable>
                                 )
                             )}
                         </>

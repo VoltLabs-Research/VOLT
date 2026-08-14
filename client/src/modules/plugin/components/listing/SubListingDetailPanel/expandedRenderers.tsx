@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from 'react';
 import { cn } from '@heroui/react';
 import { inferCellKind } from '@/modules/plugin/components/listing/PluginCompactTable/typeInference';
 import { formatScientific, vectorMagnitude } from '@/modules/plugin/components/listing/PluginCompactTable/formatters';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const NUMERIC_PRECISION = 8;
 const MAX_ARRAY_ROWS = 500;
@@ -69,13 +70,13 @@ const renderNumberArray = (values: number[]): ReactNode => {
             <div className='text-2xs text-muted'>
                 <span>{values.length} values</span>
             </div>
-            <div className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 overflow-y-auto tabular-nums'>
+            <Scrollable className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 tabular-nums'>
                 {capped.map((value, index) => (
                     <span key={index} className='text-sm text-foreground tabular-nums lining-nums'>
                         {formatScientific(value, NUMERIC_PRECISION).long}
                     </span>
                 ))}
-            </div>
+            </Scrollable>
             {overflow > 0 && (
                 <div className='text-2xs text-muted'>
                     +{overflow} more
@@ -100,11 +101,17 @@ const renderPoints = (points: number[][]): ReactNode => {
             <div className='text-2xs text-muted'>
                 <span>{points.length} points · dim {dim}</span>
             </div>
-            <div className='flex max-h-[240px] flex-col overflow-auto'>
+            {/*
+              * The header sits outside the scroller rather than `sticky` inside it. The scroll fade
+              * is a mask over everything the scroller paints, so a pinned header would dissolve at
+              * the top edge exactly when it matters. Column widths still line up because the hidden
+              * scrollbar takes no width.
+              */}
+            <div className='flex flex-col'>
                 <div
                     className={cn(
                         'grid grid-cols-[32px_repeat(var(--points-dim,3),minmax(80px,1fr))] gap-1 py-1 text-sm tabular-nums lining-nums',
-                        'sticky top-0 z-[1] border-b border-border bg-surface backdrop-blur-md text-2xs font-medium text-muted'
+                        'border-b border-border bg-surface text-2xs font-medium text-muted'
                     )}
                     style={gridStyle}
                 >
@@ -115,7 +122,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                         </span>
                     ))}
                 </div>
-                <div className='flex flex-col'>
+                <Scrollable className='flex max-h-[240px] flex-col'>
                     {capped.map((point, rowIndex) => (
                         <div
                             key={rowIndex}
@@ -130,7 +137,7 @@ const renderPoints = (points: number[][]): ReactNode => {
                             ))}
                         </div>
                     ))}
-                </div>
+                </Scrollable>
             </div>
             {overflow > 0 && (
                 <div className='text-2xs text-muted'>
@@ -151,7 +158,7 @@ const renderMatrix = (matrix: number[][]): ReactNode => {
             <div className='text-2xs text-muted'>
                 <span>{matrix.length}×{cols}</span>
             </div>
-            <div className='flex max-h-[220px] flex-col overflow-auto tabular-nums'>
+            <Scrollable className='flex max-h-[220px] flex-col tabular-nums'>
                 {matrix.map((row, rowIndex) => (
                     <div
                         key={rowIndex}
@@ -164,7 +171,7 @@ const renderMatrix = (matrix: number[][]): ReactNode => {
                         ))}
                     </div>
                 ))}
-            </div>
+            </Scrollable>
         </div>
     );
 };
@@ -202,7 +209,7 @@ const renderHeterogeneousArray = (values: unknown[]): ReactNode => {
             <div className='text-2xs text-muted'>
                 <span>{values.length} items</span>
             </div>
-            <div className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1 overflow-y-auto'>
+            <Scrollable className='flex max-h-[180px] flex-row flex-wrap gap-x-3 gap-y-1'>
                 {capped.map((item, index) => (
                     <div
                         key={index}
@@ -217,7 +224,7 @@ const renderHeterogeneousArray = (values: unknown[]): ReactNode => {
                         </div>
                     </div>
                 ))}
-            </div>
+            </Scrollable>
         </div>
     );
 };

@@ -5,6 +5,7 @@ import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import { Switch } from '@heroui/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface AnalysisListingDownloadSelection {
     analysisId: string;
@@ -238,7 +239,7 @@ const AnalysisListingDownloadModal = ({
                                 This analysis does not expose downloadable CSV files.
                             </p>
                         ) : (
-                            <div className='flex max-h-64 w-full max-w-[450px] flex-col gap-2 overflow-auto pr-1'>
+                            <Scrollable className='flex max-h-64 w-full max-w-[450px] flex-col gap-2 pr-1'>
                                 {optionsData.hasConfig && renderOptionRow(
                                     'analysis-download-config',
                                     'analysis-download-config',
@@ -264,7 +265,7 @@ const AnalysisListingDownloadModal = ({
                                         (next) => toggleSubListing(subListing.name, next)
                                     )
                                 ))}
-                            </div>
+                            </Scrollable>
                         )}
                     </>
                 )}

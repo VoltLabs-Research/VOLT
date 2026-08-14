@@ -27,6 +27,7 @@ import type { MenuOption } from '@/shared/contracts/menu';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 import type { SceneRowActions } from './ExposureRow';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface AnalysisTreeNodeProps extends SceneRowActions {
     section: AnalysisSectionData;
@@ -98,7 +99,7 @@ const AnalysisTreeNode = ({
                     Analysis still running. Some options will be disabled until it finishes.
                 </div>
             )}
-            <div className='max-h-[min(22rem,calc(100dvh-6rem))] overflow-auto overscroll-contain'>
+            <Scrollable className='max-h-[min(22rem,calc(100dvh-6rem))] overscroll-contain'>
                 {hasConfig || hasWorkflowPluginNodes ? (
                     <ExecutionConfigSummary
                         config={analysis.config}
@@ -108,7 +109,7 @@ const AnalysisTreeNode = ({
                 ) : (
                     <div className='p-3 text-xs text-muted'>No execution config captured for this analysis.</div>
                 )}
-            </div>
+            </Scrollable>
         </div>
     ) : null;
 

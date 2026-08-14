@@ -1,5 +1,6 @@
 import NotificationItem from '../NotificationItem';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { Skeleton } from '@heroui/react';
 import { BellOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -29,7 +30,11 @@ const NotificationList = ({
     onLoadMore,
     onClose
 }: NotificationListProps) => {
-    const containerRef = useRef<HTMLUListElement>(null);
+    /*
+     * Held on the scroller, not on the list: the load-more check below reads scrollTop from this
+     * element, and the element that scrolls is now the Scrollable wrapper.
+     */
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -71,26 +76,30 @@ const NotificationList = ({
     }
 
     return (
-        <ul
+        <Scrollable
             ref={containerRef}
-            className='flex flex-col gap-2 p-2 m-0 list-none overflow-y-auto max-h-[360px] max-[480px]:max-h-[calc(60vh-60px)]'
-            aria-busy={isLoading}
+            className='max-h-[360px] max-[480px]:max-h-[calc(60vh-60px)]'
         >
-            {notifications.map((notification) => (
-                <NotificationItem
-                    key={notification._id}
-                    notification={notification}
-                    onClose={onClose}
-                />
-            ))}
-            {isLoading && (
-                <li className='list-none'>
-                    <div className='flex flex-col gap-2 p-3 rounded-lg'>
-                        {skeletonLines}
-                    </div>
-                </li>
-            )}
-        </ul>
+            <ul
+                className='flex flex-col gap-2 p-2 m-0 list-none'
+                aria-busy={isLoading}
+            >
+                {notifications.map((notification) => (
+                    <NotificationItem
+                        key={notification._id}
+                        notification={notification}
+                        onClose={onClose}
+                    />
+                ))}
+                {isLoading && (
+                    <li className='list-none'>
+                        <div className='flex flex-col gap-2 p-3 rounded-lg'>
+                            {skeletonLines}
+                        </div>
+                    </li>
+                )}
+            </ul>
+        </Scrollable>
     );
 };
 

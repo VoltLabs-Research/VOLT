@@ -6,6 +6,7 @@ import { formatTraceDuration } from '@/modules/plugin/components/plugin/BaseNode
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, SkipForward } from 'lucide-react';
 import type { DebugNodeState, DebugTraceNode } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { NodeType } from '@volt/contracts/modules/plugin/enums';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const TRACE_STATUS_ICONS = {
     completed: <CheckCircle2 size={11} />,
@@ -162,7 +163,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
     );
 
     return (
-        <div className='absolute left-1/2 top-[calc(100%+2rem)] w-[300px] max-h-[260px] -translate-x-1/2 overflow-y-auto rounded-md border border-border bg-surface-secondary p-2 nowheel' onClick={(event) => event.stopPropagation()}>
+        <Scrollable className='absolute left-1/2 top-[calc(100%+2rem)] w-[300px] max-h-[260px] -translate-x-1/2 rounded-md border border-border bg-surface-secondary p-2 nowheel' onClick={(event) => event.stopPropagation()}>
             {debugState.status === DebugNodeStatus.Failed && (
                 <div className='flex flex-col gap-1 rounded-lg bg-danger/8 p-2 text-xs text-danger'>
                     <div className='flex flex-row items-center gap-1'>
@@ -198,7 +199,7 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
                     )}
                 </div>
             )}
-        </div>
+        </Scrollable>
     );
 };
 

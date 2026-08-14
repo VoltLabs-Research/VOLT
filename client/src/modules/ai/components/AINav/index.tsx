@@ -12,6 +12,7 @@ import { useParams } from 'react-router-dom';
 
 import type { Params } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface AINavRouteParams extends Params {
     conversationId?: string;
@@ -134,9 +135,9 @@ const AINav = ({ active, collapsed }: AINavProps) => {
                         </SearchField>
                     )}
 
-                    <div className='flex min-h-0 flex-col gap-0.5 overflow-y-auto'>
+                    <Scrollable className='flex min-h-0 flex-col gap-0.5'>
                         {listContent}
-                    </div>
+                    </Scrollable>
                 </div>
             )}
         </SidebarPanel>

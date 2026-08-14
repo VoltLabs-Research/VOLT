@@ -2,6 +2,7 @@ import { useCommandPaletteStore } from '../../store/use-command-palette-store';
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
 import { triggerShortcutAction } from '../../utils/shortcut-actions';
 import formatKeyName from '../../utils/format-key-name';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import CanvasSearchInput from '../CanvasSearchInput';
@@ -131,7 +132,8 @@ const CommandPalette = () => {
                     onChange={(event) => setQuery(event.currentTarget.value)}
                     data-modal-initial-focus='true'
                 />
-                <ul className='m-0 flex max-h-[420px] list-none flex-col gap-1 overflow-y-auto pt-2'
+                <Scrollable className='max-h-[420px] pt-2'>
+                <ul className='m-0 flex list-none flex-col gap-1'
                     ref={listRef}
                     role='listbox'
                     aria-label='Available commands'
@@ -166,6 +168,7 @@ const CommandPalette = () => {
                         </li>
                     ))}
                 </ul>
+                </Scrollable>
             </div>
         </Modal>
     );

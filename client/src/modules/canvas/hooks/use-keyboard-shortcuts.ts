@@ -39,7 +39,6 @@ const useKeyboardShortcuts = ({
         showGrid,
         showGizmo,
         updateSearchParams,
-        setResultsPluginId,
     } = useCanvasUrlState();
 
     const actionsRef = useRef<Record<string, () => void>>({});
@@ -184,9 +183,7 @@ const useKeyboardShortcuts = ({
             'escape': () => {
                 if (useCommandPaletteStore.getState().isOpen) {
                     useCommandPaletteStore.getState().close();
-                    return;
                 }
-                setResultsPluginId(undefined, { replace: true });
             }
         };
 
@@ -204,8 +201,7 @@ const useKeyboardShortcuts = ({
         trajectoryId,
         currentTimestep,
         availableTimesteps,
-        updateSearchParams,
-        setResultsPluginId
+        updateSearchParams
     ]);
 
     useEffect(() => {

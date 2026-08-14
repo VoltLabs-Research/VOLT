@@ -4,6 +4,7 @@ import { Button, cn } from '@heroui/react';
 import { Expand } from 'lucide-react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { ComponentPropsWithoutRef } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 type MarkdownTableProps = ComponentPropsWithoutRef<'table'>;
 
@@ -36,9 +37,9 @@ export const createTableArtifactComponents = (
 
             return (
                 <div className='my-1.5 overflow-hidden rounded-lg border border-border'>
-                    <div className='overflow-x-auto'>
+                    <Scrollable orientation='horizontal' className=''>
                         <table {...props} className={cn('m-0! rounded-none! border-0!', className)}>{children}</table>
-                    </div>
+                    </Scrollable>
                     {parsed && parsed.rows.length > 0 && (
                         <Button
                             type='button'

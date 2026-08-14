@@ -29,7 +29,6 @@ import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
 import CanvasBanners from '../CanvasBanners';
 import CommandPalette from '../CommandPalette';
 import ExposureSettingsWidget from '../ExposureSettingsWidget';
-import PluginResultsViewer from '../PluginResultsViewer';
 import PreloadingOverlay from '../PreloadingOverlay';
 import ShortcutFeedback from '../ShortcutFeedback';
 import StatusBar from '../StatusBar';
@@ -139,8 +138,6 @@ const CanvasPage = () => {
         analysisId,
         showGrid,
         showGizmo,
-        resultsPluginId,
-        showWidgets,
         searchParams,
     } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
@@ -402,12 +399,6 @@ const CanvasPage = () => {
                     canMutateCanvas={canMutateCanvas}
                     onDownloadAnalysis={openAnalysisDownloadModal}
                     onDownloadExposureListing={downloadListing}
-                />
-            )}
-            {!isLocalGlbViewer && showWidgets && resultsPluginId && analysisId && (
-                <PluginResultsViewer
-                    pluginId={resultsPluginId}
-                    analysisId={analysisId}
                 />
             )}
             <AnalysisListingDownloadModal

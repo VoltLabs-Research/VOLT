@@ -1,4 +1,5 @@
 import { SOURCE_LABELS } from '@/shared/utils/error-routing';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { Button, buttonVariants } from '@heroui/react';
 import { format, isValid } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -61,9 +62,17 @@ const ErrorPage = () => {
                                 </Button>
 
                                 {showStack && (
-                                    <pre className='max-h-60 max-md:max-h-[180px] overflow-y-auto px-4 py-3 rounded-xl bg-surface-secondary border border-border font-mono text-xs leading-[1.6] text-muted text-left whitespace-pre-wrap break-words'>
-                                        {stack}
-                                    </pre>
+                                    /*
+                                     * The chrome sits on the scroller and the <pre> stays
+                                     * transparent: the fade masks whatever the scroller paints, so
+                                     * a background on the inner element would dissolve along with
+                                     * the text at the edges.
+                                     */
+                                    <Scrollable className='max-h-60 max-md:max-h-[180px] px-4 py-3 rounded-xl bg-surface-secondary border border-border'>
+                                        <pre className='m-0 font-mono text-xs leading-[1.6] text-muted text-left whitespace-pre-wrap break-words'>
+                                            {stack}
+                                        </pre>
+                                    </Scrollable>
                                 )}
                             </div>
                         )}

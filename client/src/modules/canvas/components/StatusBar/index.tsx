@@ -2,6 +2,7 @@ import { Separator, cn } from '@heroui/react';
 import { formatSize } from '@/shared/utils/format';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface StatusItem {
     key: string;
@@ -71,12 +72,12 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
     ];
 
     return (
-        <div className='flex h-7 w-full flex-row items-center justify-between gap-3 overflow-scroll px-3'>
+        <Scrollable className='flex h-7 w-full flex-row items-center justify-between gap-3 px-3'>
             <div className='flex flex-row items-center gap-2'>
                 <StatusGroup items={left} />
             </div>
             <StatusGroup items={right} />
-        </div>
+        </Scrollable>
     );
 };
 

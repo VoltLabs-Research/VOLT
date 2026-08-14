@@ -11,6 +11,7 @@ import { FloatingPortal, autoUpdate, flip, offset, shift, useFloating } from '@f
 import { ChevronRight } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface SubmenuItemWrapperProps {
     option: MenuOption;
@@ -190,10 +191,10 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
 
             {isOpen && portalRoot && (
                 <FloatingPortal root={portalRoot}>
-                    <div
+                    <Scrollable
                         ref={composeRefs(submenuPanelRef, refs.setFloating)}
                         id={submenuId}
-                        className='context-menu-submenu-panel z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-border bg-overlay p-1 shadow-lg'
+                        className='context-menu-submenu-panel z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overscroll-contain rounded-xl border border-border bg-overlay p-1 shadow-lg'
                         data-floating-submenu-panel='true'
                         data-side={placement.startsWith('left') ? 'left' : 'right'}
                         role='dialog'
@@ -208,7 +209,7 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
                                 {option.submenuContent}
                             </FloatingRootContext.Provider>
                         </FloatingOwnerIdsContext.Provider>
-                    </div>
+                    </Scrollable>
                 </FloatingPortal>
             )}
         </div>

@@ -15,6 +15,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { DragEvent, ReactNode } from 'react';
 import '@xyflow/react/dist/style.css';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const nodeTypesList = Object.values(NODE_CONFIGS);
 
@@ -117,11 +118,11 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <div className='flex flex-col gap-6 overflow-y-auto p-8'>
+                <Scrollable className='flex flex-col gap-6 p-8'>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
-                </div>
+                </Scrollable>
             )
         }
     ], [onDragStart, handleAddNode]);

@@ -19,7 +19,6 @@ const useCanvasUrlState = () => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const analysisId = searchParams.get('analysisId') || undefined;
-    const resultsPluginId = searchParams.get('results') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
     const selectedNotebookId = searchParams.get('notebook') || undefined;
@@ -38,10 +37,6 @@ const useCanvasUrlState = () => {
         updateSearchParams({ analysisId: id ?? null }, options);
     }, [updateSearchParams]);
 
-    const setResultsPluginId = useCallback((pluginId?: string, options?: UpdateOptions) => {
-        updateSearchParams({ results: pluginId ?? null }, options);
-    }, [updateSearchParams]);
-
     const setTimelineExposureId = useCallback((exposureId?: string, options?: UpdateOptions) => {
         updateSearchParams({ timelineExposure: exposureId ?? null }, options);
     }, [updateSearchParams]);
@@ -54,7 +49,6 @@ const useCanvasUrlState = () => {
         searchParams,
         updateSearchParams,
         analysisId,
-        resultsPluginId,
         timelineExposureId,
         settingsKey,
         selectedNotebookId,
@@ -63,7 +57,6 @@ const useCanvasUrlState = () => {
         showGrid,
         showGizmo,
         setAnalysisId,
-        setResultsPluginId,
         setTimelineExposureId,
         setSelectedNotebookId
     };

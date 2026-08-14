@@ -4,6 +4,7 @@ import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import { ArrowLeft, FileText, Folder } from 'lucide-react';
 import FileExplorer from '@/shared/ui/components/FileExplorer';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import FileExplorerRow from '@/shared/ui/components/FileExplorer/FileExplorerRow';
 import RefreshButton from '@/shared/ui/components/RefreshButton';
 import { Button, Tooltip } from '@heroui/react';
@@ -96,7 +97,11 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     );
 
     if(viewingFile && fileContent !== undefined){
-        return renderFileViewer(<pre className='m-0 flex-1 overflow-auto rounded-lg border border-border bg-background p-4 text-base text-muted'>{fileContent}</pre>);
+        return renderFileViewer(
+            <Scrollable className='flex-1 rounded-lg border border-border bg-background p-4'>
+                <pre className='m-0 text-base text-muted'>{fileContent}</pre>
+            </Scrollable>
+        );
     }
 
     if (viewingFile && fileContentError) {

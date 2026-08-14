@@ -9,6 +9,7 @@ import { useId } from 'react';
 import type { ChangeEvent, FocusEvent } from 'react';
 import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import type { FieldTextElement } from './use-field-autocomplete';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const InlineCanvasFieldRenderer = ({
     field,
@@ -271,7 +272,7 @@ const InlineCanvasFieldRenderer = ({
 
             {tokenAutocomplete.isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu flex flex-col max-h-[180px] overflow-y-auto border border-border rounded-lg bg-surface-secondary shadow-[0_8px_24px_rgba(0,0,0,0.25)] z-[var(--z-floating)]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
+                    <Scrollable ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu flex flex-col max-h-[180px] border border-border rounded-lg bg-surface-secondary shadow-[0_8px_24px_rgba(0,0,0,0.25)] z-[var(--z-floating)]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
                         {tokenAutocomplete.options.map((option, index) => (
                             <button
                                 type='button'
@@ -291,7 +292,7 @@ const InlineCanvasFieldRenderer = ({
                                 )}
                             </button>
                         ))}
-                    </div>
+                    </Scrollable>
                 </FloatingPortal>
             )}
 

@@ -9,6 +9,7 @@ import { Separator, cn } from '@heroui/react';
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
 import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
 import type { ReactNode } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 export enum TimelineTab {
     Timeline = 'timeline',
@@ -166,9 +167,9 @@ const TimelineHeader = ({
     return (
         <div className='relative flex w-full flex-row items-center px-2 py-1 h-10 max-[900px]:h-auto max-[900px]:min-h-10 max-[900px]:flex-wrap max-[900px]:gap-2 max-md:contents max-md:h-auto max-md:min-h-0 max-md:p-0'>
             <div className='flex min-w-0 flex-auto flex-row items-center max-[900px]:flex-[1_1_100%] max-md:pointer-events-none max-md:order-1 max-md:w-full max-md:flex-none max-md:self-stretch'>
-                <div className='flex flex-[0_1_auto] flex-row flex-nowrap items-center overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-[min(55vw,500px)] max-[900px]:max-w-full max-md:hidden [&>*]:shrink-0 [mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)]' role='tablist' aria-label='Timeline tabs' data-tour-id='canvas-timeline-tabs'>
+                <Scrollable orientation='horizontal' className='flex flex-[0_1_auto] flex-row flex-nowrap items-center overflow-y-hidden whitespace-nowrap max-w-[min(55vw,500px)] max-[900px]:max-w-full max-md:hidden [&>*]:shrink-0 [mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)]' role='tablist' aria-label='Timeline tabs' data-tour-id='canvas-timeline-tabs'>
                     {tabs.map(renderTab)}
-                </div>
+                </Scrollable>
                 <div className='hidden max-md:block max-md:overflow-hidden max-md:rounded-xl max-md:bg-surface-secondary max-md:pointer-events-auto' data-tour-id='canvas-timeline-tab-selector'>
                     <CanvasOptionSelect
                         ariaLabel='Timeline tab'

@@ -1,4 +1,5 @@
 import { CHART_COLORS } from '@/modules/cluster/utils/chart-colors';
+import { CHART_AXIS_COLOR, CHART_FONT_SIZE, CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { useMemo } from 'react';
@@ -93,15 +94,15 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
                             <stop offset='95%' stopColor={CHART_COLORS.write} stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
+                    <CartesianGrid strokeDasharray='3 3' stroke={CHART_GRID_COLOR} />
                     <YAxis
-                        stroke='var(--muted)'
-                        style={{ fontSize: '12px' }}
+                        stroke={CHART_AXIS_COLOR}
+                        style={{ fontSize: CHART_FONT_SIZE }}
                     />
                     <Tooltip content={renderTooltip} />
                     <Legend
                         wrapperStyle={{
-                            fontSize: '12px',
+                            fontSize: CHART_FONT_SIZE,
                             paddingTop: '20px'
                         }}
                         iconType='circle'

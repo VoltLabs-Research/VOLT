@@ -1,5 +1,6 @@
 import { getModelListingRoute } from './populated-model-routes';
 import { isRecord } from '@/shared/utils/type-guards';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { PopoverContent, PopoverDialog, PopoverRoot, PopoverTrigger } from '@heroui/react';
 import { useMemo, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
@@ -150,12 +151,12 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                                     </nav>
                                 )}
                             </div>
-                            <div className='flex flex-col max-h-[240px] overflow-y-auto overscroll-contain'>
+                            <Scrollable className='flex flex-col max-h-[240px] overscroll-contain'>
                                 {fields.length > 0
                                     ? <dl className='m-0'>{fields.map(renderField)}</dl>
                                     : <span className='text-xs text-muted p-2'>No fields to display</span>
                                 }
-                            </div>
+                            </Scrollable>
                         </div>
                     </PopoverDialog>
                 </PopoverContent>

@@ -10,6 +10,7 @@ import {
 } from '@/modules/plugin/utils/plugin/argument-values';
 import { X, Play, Settings2 } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface DebugArgumentsPanelProps {
     onStart: () => void;
@@ -80,7 +81,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     <X size={14} aria-hidden='true' />
                 </Button>
             </div>
-            <div className='flex min-h-0 max-h-[280px] flex-1 flex-col gap-2 overflow-y-auto p-3 max-[768px]:max-h-[40dvh]'>
+            <Scrollable className='flex min-h-0 max-h-[280px] flex-1 flex-col gap-2 p-3 max-[768px]:max-h-[40dvh]'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
@@ -90,7 +91,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                         title: `Frame ${index + 1} (t=${frame.timestep})`
                     }))}
                 />
-            </div>
+            </Scrollable>
             <div className='shrink-0 border-t border-border px-3 py-2.5'>
                 <Button
                     variant='primary'

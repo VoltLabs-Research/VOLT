@@ -1,4 +1,5 @@
 import { Button } from '@heroui/react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const DEFAULT_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏', '💯', '✨', '🙌', '💪'];
 
@@ -9,8 +10,8 @@ interface EmojiPickerProps {
 };
 
 const EmojiPicker = ({ onSelect, emojis = DEFAULT_EMOJIS, columns = 6 }: EmojiPickerProps) => (
-    <div
-        className='max-h-[min(18rem,60vh)] animate-[emoji-picker-slide_0.2s_cubic-bezier(0.25,0.46,0.45,0.94)] overflow-y-auto overscroll-contain rounded-xl border border-border bg-surface-tertiary p-2 shadow-lg'
+    <Scrollable
+        className='max-h-[min(18rem,60vh)] animate-[emoji-picker-slide_0.2s_cubic-bezier(0.25,0.46,0.45,0.94)] overscroll-contain rounded-xl border border-border bg-surface-tertiary p-2 shadow-lg'
         role='group'
         aria-label='Emoji picker'
     >
@@ -30,7 +31,7 @@ const EmojiPicker = ({ onSelect, emojis = DEFAULT_EMOJIS, columns = 6 }: EmojiPi
                 </div>
             ))}
         </div>
-    </div>
+    </Scrollable>
 );
 
 export default EmojiPicker;

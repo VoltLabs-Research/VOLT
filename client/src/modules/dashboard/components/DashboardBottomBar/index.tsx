@@ -16,6 +16,7 @@ import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-p
 import { useMemo } from 'react';
 import { ArrowDown, ArrowUp, Cpu, HardDrive, MemoryStick, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const CRITICAL_CPU_THRESHOLD = 85;
 
@@ -161,7 +162,7 @@ const DashboardBottomBar = () => {
 
     return (
         <footer className='shrink-0 border-t border-border' aria-label='Workspace status'>
-            <div className='flex flex-row items-center gap-2 h-9 overflow-x-auto overscroll-x-contain px-3'>
+            <Scrollable orientation='horizontal' className='flex flex-row items-center gap-2 h-9 overscroll-x-contain px-3'>
                 <BottomBarSegment label='compute jobs' onClick={openJobsDrawer}>
                     <StatusCounts
                         queued={jobCounts.queued}
@@ -197,7 +198,7 @@ const DashboardBottomBar = () => {
                         </span>
                     </BottomBarSegment>
                 )}
-            </div>
+            </Scrollable>
         </footer>
     );
 };

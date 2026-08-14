@@ -6,6 +6,7 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const MAX_RESULTS = 12;
 
@@ -155,9 +156,9 @@ const CanvasPluginSearch = () => {
             />
             {isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <div
+                    <Scrollable
                         ref={refs.setFloating}
-                        className='max-h-[60vh] min-h-36 overflow-y-auto rounded-xl border border-border bg-surface z-[var(--z-floating)]'
+                        className='max-h-[60vh] min-h-36 rounded-xl border border-border bg-surface z-[var(--z-floating)]'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >
@@ -201,7 +202,7 @@ const CanvasPluginSearch = () => {
                                 })}
                             </div>
                         )}
-                    </div>
+                    </Scrollable>
                 </FloatingPortal>
             )}
         </div>

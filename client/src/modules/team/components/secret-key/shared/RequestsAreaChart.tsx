@@ -1,5 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
+import { CHART_AXIS_COLOR, CHART_FONT_SIZE, CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
 import type { ContentType } from 'recharts/types/component/Tooltip';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
@@ -40,16 +41,16 @@ const RequestsAreaChart = ({
                     <stop offset='95%' stopColor={CHART_COLORS.requests} stopOpacity={0} />
                 </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray='3 3' stroke='var(--border)' />
+            <CartesianGrid strokeDasharray='3 3' stroke={CHART_GRID_COLOR} />
             <XAxis
                 dataKey='date'
-                stroke='var(--muted)'
-                style={{ fontSize: '12px' }}
+                stroke={CHART_AXIS_COLOR}
+                style={{ fontSize: CHART_FONT_SIZE }}
                 tickLine={xAxisTickLine}
             />
             <YAxis
-                stroke='var(--muted)'
-                style={{ fontSize: '12px' }}
+                stroke={CHART_AXIS_COLOR}
+                style={{ fontSize: CHART_FONT_SIZE }}
                 allowDecimals={yAxisAllowDecimals}
             />
             <Tooltip content={tooltipContent} />

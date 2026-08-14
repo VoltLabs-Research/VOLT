@@ -8,6 +8,7 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { useEffect, useState } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { TeamClusterQueueConcurrency, TeamClusterQueueScopeLimit, TeamClusterQueueScopeLimits, UpdateTeamClusterQueueConcurrencyResponse } from '@volt/contracts/modules/cluster/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface QueueFieldDefinition {
     key: keyof TeamClusterQueueConcurrency;
@@ -272,7 +273,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                         <Disclosure.Body>
                             <div className='flex flex-col gap-2 mt-2'>
                                 <p className='text-xs text-muted'>Per-trajectory limits. Use 0 for no limit.</p>
-                                <div className='w-full overflow-x-auto'>
+                                <Scrollable orientation='horizontal' className='w-full'>
                                     <table className='w-full border-collapse'>
                                         <thead>
                                             <tr>
@@ -302,7 +303,7 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
+                                </Scrollable>
                             </div>
                         </Disclosure.Body>
                     </Disclosure.Content>

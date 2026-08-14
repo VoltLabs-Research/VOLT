@@ -9,6 +9,7 @@ import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Box as CubeIcon, ChevronRight, Package, ScanSearch, Users, Workflow } from 'lucide-react';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 type SectionConfig = {
     key: GlobalSearchSectionKey;
@@ -199,7 +200,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
-                    <div ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] overflow-y-auto rounded-xl border border-border bg-surface shadow-overlay z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
+                    <Scrollable ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] rounded-xl border border-border bg-surface shadow-overlay z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
                         <p className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
                             {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
                         </p>
@@ -229,7 +230,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                                 {SECTIONS.map(renderSection)}
                             </div>
                         )}
-                    </div>
+                    </Scrollable>
                 </FloatingPortal>
             )}
         </div>

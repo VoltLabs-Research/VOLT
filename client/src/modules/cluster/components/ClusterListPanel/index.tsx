@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface ClusterListPanelProps {
     clusters: TeamCluster[];
@@ -98,9 +99,9 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
             <div className='px-3 py-2.5 border-b border-border'>
                 <p className='text-sm font-semibold text-foreground'>Your clusters</p>
             </div>
-            <div className='overflow-y-auto max-h-[min(264px,calc(100dvh-14rem))] max-md:max-h-[min(224px,calc(100dvh-16rem))]'>
+            <Scrollable className='max-h-[min(264px,calc(100dvh-14rem))] max-md:max-h-[min(224px,calc(100dvh-16rem))]'>
                 {clusters.map(renderRow)}
-            </div>
+            </Scrollable>
             <ClusterInstallCommandModal
                 clusterId={installClusterId}
                 enrollmentToken={installToken}

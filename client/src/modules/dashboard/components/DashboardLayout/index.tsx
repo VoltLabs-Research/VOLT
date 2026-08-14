@@ -38,6 +38,7 @@ import type {
     DashboardGlobalSearchBreadcrumb,
     DashboardHeaderContext
 } from '@/modules/dashboard/hooks/use-dashboard-header-context';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 type SidebarRailState = 'expanded' | 'collapsed' | 'hidden';
 
@@ -215,7 +216,7 @@ const DashboardLayout = () => {
                         />
                     )}
 
-                    <div className='relative min-h-0 flex-1 overflow-y-auto'>
+                    <Scrollable className='relative min-h-0 flex-1'>
                         <TrajectoryUploaderContainer>
                             <motion.div
                                 key={getOutletTransitionKey(location.pathname)}
@@ -230,7 +231,7 @@ const DashboardLayout = () => {
                                 <Outlet context={outletContext} />
                             </motion.div>
                         </TrajectoryUploaderContainer>
-                    </div>
+                    </Scrollable>
 
                     {!headerHidden && <DashboardBottomBar />}
                 </div>

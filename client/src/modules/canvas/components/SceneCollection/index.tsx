@@ -29,6 +29,7 @@ import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../../util
 import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface SceneCollectionProps {
     /** Analyses already grouped by the run that produced them, newest run first. */
@@ -210,7 +211,7 @@ const SceneCollection = ({
     );
 
     return (
-        <div className='canvas-tree-container flex flex-col gap-1 overflow-auto px-2 pb-2.5 pt-1.5' role='tree' aria-label='Scene hierarchy'>
+        <Scrollable className='canvas-tree-container flex flex-col gap-1 px-2 pb-2.5 pt-1.5' role='tree' aria-label='Scene hierarchy'>
             {showDefaultScene && (
                 <MaybeContextMenu enabled id='canvas-ctx-default-scene' options={defaultSceneOptions}>
                     {trajectoryRow}
@@ -243,7 +244,7 @@ const SceneCollection = ({
                     })}
                 />
             ))}
-        </div>
+        </Scrollable>
     );
 };
 

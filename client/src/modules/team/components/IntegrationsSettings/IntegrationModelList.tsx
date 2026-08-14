@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { TeamAIModelMetadata } from '@volt/contracts/modules/team/domain';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface IntegrationModelListProps {
     models: TeamAIModelMetadata[];
@@ -70,7 +71,7 @@ const IntegrationModelList = ({
                 </Button>
             </div>
             {models.length > 0 && (
-                <div className='max-h-[200px] overflow-y-auto'>
+                <Scrollable className='max-h-[200px]'>
                     {models.map((model) => {
                         const modelSummary = defaultModel === model.id ? `${model.id} · default` : model.id;
 
@@ -98,7 +99,7 @@ const IntegrationModelList = ({
                             </div>
                         );
                     })}
-                </div>
+                </Scrollable>
             )}
         </div>
     );

@@ -8,6 +8,7 @@ import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import useTip from '@/shared/tips/use-tip';
 import { Link } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 const ClusterResourceReadout = lazy(() => import('@/modules/cluster/components/ClusterResourceReadout'));
 const CpuDistribution = lazy(() => import('@/modules/cluster/components/CpuDistribution'));
@@ -82,7 +83,7 @@ const ClusterMonitoringPage = () => {
 
     return (
 
-        <div className='h-full! overflow-auto text-foreground'>
+        <Scrollable className='h-full! text-foreground'>
             <div className='flex flex-col gap-6 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
                 {vm.isLoading && !vm.hasClusters && (
                     <Loader />
@@ -140,7 +141,7 @@ const ClusterMonitoringPage = () => {
                     </>
                 )}
             </div>
-        </div>
+        </Scrollable>
     );
 };
 

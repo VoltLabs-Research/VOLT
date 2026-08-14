@@ -1,4 +1,5 @@
 import { Chip } from '@heroui/react';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { Terminal } from 'lucide-react';
 import type { DebugExecutionLogSegment } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { ReactNode } from 'react';
@@ -48,30 +49,32 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
                     </Chip>
                 )}
             </div>
-            <pre className='m-0 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words p-2 font-mono text-2xs leading-[1.6]'>
-                {logSegments.length > 0 ? (
-                    logSegments.map((segment, index) => (
-                        <span
-                            key={`${segment.occurredAt}-${index}`}
-                            className={streamClass[segment.stream] ?? undefined}
-                        >
-                            {segment.text}
-                        </span>
-                    ))
-                ) : (
-                    <>
-                        {stdout && (
-                            <span className='text-foreground'>{stdout}</span>
-                        )}
-                        {stderr && (
-                            <span className='text-danger'>{stderr}</span>
-                        )}
-                        {!stdout && !stderr && (
-                            <span className='italic text-muted'>Waiting for output...</span>
-                        )}
-                    </>
-                )}
-            </pre>
+            <Scrollable className='max-h-[220px] p-2'>
+                <pre className='m-0 whitespace-pre-wrap break-words font-mono text-2xs leading-[1.6]'>
+                    {logSegments.length > 0 ? (
+                        logSegments.map((segment, index) => (
+                            <span
+                                key={`${segment.occurredAt}-${index}`}
+                                className={streamClass[segment.stream] ?? undefined}
+                            >
+                                {segment.text}
+                            </span>
+                        ))
+                    ) : (
+                        <>
+                            {stdout && (
+                                <span className='text-foreground'>{stdout}</span>
+                            )}
+                            {stderr && (
+                                <span className='text-danger'>{stderr}</span>
+                            )}
+                            {!stdout && !stderr && (
+                                <span className='italic text-muted'>Waiting for output...</span>
+                            )}
+                        </>
+                    )}
+                </pre>
+            </Scrollable>
         </div>
     );
 };
