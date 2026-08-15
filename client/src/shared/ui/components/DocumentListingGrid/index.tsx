@@ -1,7 +1,6 @@
 import getListingDisplayState from '@/shared/ui/components/DocumentListing/listing-state';
 import GridItem from '@/shared/ui/components/DocumentListingGrid/GridItem';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import Scrollable from '@/shared/ui/components/Scrollable';
 import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
 import { useInfiniteScroll } from '@/shared/ui/hooks/use-infinite-scroll';
 import { cn } from '@heroui/react';
@@ -134,7 +133,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
     };
 
     const grid = (
-        <Scrollable ref={containerRef} className={cn('document-listing-grid grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(300px,1fr))] content-start gap-6 max-md:grid-cols-1 max-md:p-4', className)}>
+        <div ref={containerRef} className={cn('document-listing-grid grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(300px,1fr))] content-start gap-6 overflow-y-auto max-md:grid-cols-1 max-md:p-4', className)}>
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
@@ -191,7 +190,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {isFetchingMore && renderSkeleton?.()}
 
             <div ref={sentinelRef} className='col-span-full h-px' aria-hidden='true' />
-        </Scrollable>
+        </div>
     );
 
     const gridContent = (

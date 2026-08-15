@@ -1,7 +1,7 @@
 import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { createHash } from 'node:crypto';
-import { getAvailableCpuCount, resolvePluginProcessEstMemoryMb, resolvePluginProcessMemoryBudgetMb, computePluginProcessMemorySlots, computeEffectivePluginProcessConcurrency } from '@shared/domain/utilities/runtime-capacity';
+import { getAvailableCpuCount, resolvePluginProcessEstMemoryMb, resolvePluginProcessMemoryBudgetMb, computePluginProcessMemorySlots, resolvePluginProcessConcurrency } from '@shared/domain/utilities/runtime-capacity';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 import {
     PluginProcessChannel,
@@ -37,7 +37,10 @@ export class PluginProcessPool {
         const pluginProcessMemoryBudgetMb = resolvePluginProcessMemoryBudgetMb();
         const memorySlots = computePluginProcessMemorySlots(pluginProcessMemoryBudgetMb, estimatedProcessMemoryMb);
 
-        this.effectiveMaxConcurrent = computeEffectivePluginProcessConcurrency(cpuMaxConcurrent, memorySlots);
+        // Deliberately the shared helper rather than a second local computation: the
+        // per-process thread budget divides the cores by exactly this number, and if
+        // the two ever disagree the host is oversubscribed again.
+        this.effectiveMaxConcurrent = resolvePluginProcessConcurrency();
         this.memoryGuard = new PluginProcessMemoryGuard(estimatedProcessMemoryMb);
         this.minIdle = readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MIN_IDLE') ?? 1;
         this.requestTimeoutMs = readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_REQUEST_TIMEOUT_MS') ?? DEFAULT_REQUEST_TIMEOUT_MS;

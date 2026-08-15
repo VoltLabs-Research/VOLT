@@ -47,13 +47,48 @@ export const computeEffectivePluginProcessConcurrency = (
     return Math.max(1, Math.min(cpuMaxConcurrent, memorySlots));
 };
 
-export const resolvePluginNativeThreadBudget = (): number => {
+/*
+ * Threads to give ONE plugin process, given that several run at once.
+ *
+ * This used to return (cpus - 1) unconditionally, while PluginProcessPool
+ * independently allowed (cpus - 1) concurrent processes. The two numbers were
+ * derived from the same core count and then multiplied against each other, so a
+ * 16-thread host was told to run 15 processes of 15 threads. Native plugins add a
+ * second pool on top of that — geogram's parallel Delaunay runs on OpenMP, and
+ * before the coretoolkit fix it took min(cpus, 16) regardless of --threads — which
+ * brought the total to roughly 465 software threads on 16 hardware ones. Measured
+ * consequence: PTM reached only 2.7x on 16 threads and a stall in the allocator
+ * turned about one frame in twelve into a multi-minute straggler.
+ *
+ * Dividing the cores by the concurrency is the fix. It is also the right shape for
+ * these workloads: about a third of a plugin run is strictly serial (measured on
+ * both PTM and OpenDXA), so filling the machine with independent frames extracts
+ * more total throughput than pushing one frame's intra-stage parallelism.
+ */
+export const resolvePluginNativeThreadBudget = (concurrentProcesses?: number): number => {
     const configured = readPositiveIntegerEnv('PLUGIN_PROCESS_NATIVE_THREAD_BUDGET');
     if (configured !== undefined) {
         return configured;
     }
 
-    return Math.max(MIN_NATIVE_THREAD_BUDGET, getAvailableCpuCount() - RESERVED_DAEMON_CPUS);
+    const usableCpus = Math.max(1, getAvailableCpuCount() - RESERVED_DAEMON_CPUS);
+    const processes = Math.max(1, concurrentProcesses ?? resolvePluginProcessConcurrency());
+
+    return Math.max(MIN_NATIVE_THREAD_BUDGET, Math.floor(usableCpus / processes));
+};
+
+/*
+ * The process-level half of the same budget, exposed so the thread budget above and
+ * PluginProcessPool cannot drift apart — they must be two views of one decision.
+ */
+export const resolvePluginProcessConcurrency = (): number => {
+    const cpuMaxConcurrent =
+        readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MAX') ?? Math.max(1, getAvailableCpuCount() - 1);
+    const memorySlots = computePluginProcessMemorySlots(
+        resolvePluginProcessMemoryBudgetMb(),
+        resolvePluginProcessEstMemoryMb()
+    );
+    return computeEffectivePluginProcessConcurrency(cpuMaxConcurrent, memorySlots);
 };
 
 interface SystemMemorySample {
