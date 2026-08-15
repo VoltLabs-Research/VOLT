@@ -14,10 +14,6 @@ interface PointCloudColorInfo {
     injectedFallbackColor: boolean;
 }
 
-// `side` is deliberately absent: it has to be carried over from the loaded
-// material so the exporter's glTF `doubleSided` flag survives. Forcing FrontSide
-// here culled the outward faces of any mesh whose winding points inward (the DXA
-// defect mesh among them), which read as looking straight through the surface.
 const OPTIMIZED_MATERIAL_DEFAULTS: THREE.MeshStandardMaterialParameters = {
     clipShadows: true,
     transparent: false,
@@ -29,18 +25,6 @@ const OPTIMIZED_MATERIAL_DEFAULTS: THREE.MeshStandardMaterialParameters = {
 const MAX_MESH_ROUGHNESS = 0.75;
 const MESH_ENV_MAP_INTENSITY = 0.7;
 
-/**
- * How a GLB surface is lit.
- *
- * `pbr` is the house look: MeshStandardMaterial fed by the scene lights, the
- * environment map and shadow maps.
- *
- * `ovito` reproduces OVITO's single shading model verbatim (see
- * assets/shaders/ovito-surface.frag). Scenes that exist to be compared against
- * OVITO -- the DXA defect mesh, the interface mesh, dislocation tubes -- use it so
- * the finish matches instead of merely resembling: no reflections, no shadows, no
- * tone mapping, and two-sided lighting so an open surface never goes black inside.
- */
 export type SurfaceShadingModel = 'pbr' | 'ovito';
 
 const readMaterialColor = (material: THREE.Material): THREE.Color => {

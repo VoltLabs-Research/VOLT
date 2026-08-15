@@ -1,4 +1,5 @@
-import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
+import { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
+import ClusterInstallCommandModal from '@/modules/cluster/components/ClusterInstallCommandModal';
 import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
 import { useRegenerateTeamClusterEnrollmentTokenMutation } from '@/modules/cluster/hooks/team-cluster/queries';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';

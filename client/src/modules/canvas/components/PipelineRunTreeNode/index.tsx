@@ -25,24 +25,9 @@ interface PipelineRunTreeNodeProps {
     isExpanded: boolean;
     onToggle: (runId: string) => void;
     status?: CanvasAnalysisStatus;
-    /** Absent when the caller cannot mutate the canvas, which hides the action. */
     onRestore?: (run: PipelineRun) => void;
-    /**
-     * Absent when the caller cannot mutate the canvas, which renders the title as
-     * plain text. An empty `name` clears the override and returns the run to its
-     * derived label.
-     */
     onRename?: (run: PipelineRun, name: string) => void;
-    /**
-     * Absent when the caller cannot mutate the canvas, which hides the action.
-     * Deleting a run also deletes the analyses it produced.
-     */
     onDelete?: (run: PipelineRun) => void;
-    /**
-     * Renders one analysis stage. A render prop rather than a forwarded prop bag:
-     * the parent already wires every `AnalysisTreeNode` prop, and duplicating
-     * that list here is how the two row kinds would drift apart.
-     */
     renderAnalysisRow: (row: Extract<PipelineRunStageRow, { kind: 'analysis' }>) => ReactNode;
 }
 
@@ -82,14 +67,8 @@ const PipelineRunTreeNode = ({
     const counts = countRunStagesByKind(rows);
     const [isEditingName, setIsEditingName] = useState(false);
 
-    /*
-     * Named after what it ran, not by an ordinal: "PTM → Grain Segmentation"
-     * identifies a run on sight, while "Run #4" only says how many came before
-     * it — and that number shifts as soon as the fetched window moves.
-     */
     const label = isUngrouped ? 'Ungrouped' : resolveRunLabel(run, rows);
 
-    // Ungrouped rows have no run behind them, so there is no single time to show.
     const timeLabel = isUngrouped || !run
         ? undefined
         : formatCompactRelativeTime(run.createdAt);
@@ -98,11 +77,6 @@ const PipelineRunTreeNode = ({
         `${counts.analyses} ${counts.analyses === 1 ? 'stage' : 'stages'}`,
         counts.context > 0 ? `${counts.context} transform${counts.context === 1 ? '' : 's'}` : undefined,
         counts.cached > 0 ? `${counts.cached} cached` : undefined,
-        /*
-         * The status dot is gone, so an unfinished or failed run says so in
-         * words here. Nothing is shown for a completed run: that is the common
-         * case, and a marker on every row carries no information.
-         */
         status !== undefined && status !== CanvasAnalysisStatusEnum.Completed ? status : undefined
     ].filter((part): part is string => part !== undefined).join(' · ');
 
@@ -125,11 +99,6 @@ const PipelineRunTreeNode = ({
 
     const canRename = Boolean(run && onRename);
 
-    /*
-     * `truncate` is dropped while editing: it pins white-space to nowrap and hides
-     * the overflow, so in a sidebar this narrow the caret would run off the clipped
-     * edge of the text it is editing.
-     */
     const titleClassName = cn('font-medium text-foreground', !isEditingName && 'truncate');
 
     const title = canRename && run
@@ -138,13 +107,7 @@ const PipelineRunTreeNode = ({
                 as='span'
                 className={titleClassName}
                 title={label}
-                /*
-                 * Single click still reaches the row and toggles it; a double click
-                 * starts editing. Without this the title would swallow the click
-                 * that expands the run.
-                 */
                 allowSingleClickPropagation
-                // Clearing the name is an edit, not a discard: it restores the derived label.
                 allowEmpty
                 onEditingChange={setIsEditingName}
                 onSave={(next) => onRename?.(run, next)}
@@ -154,12 +117,6 @@ const PipelineRunTreeNode = ({
         )
         : <span className={titleClassName} title={label}>{label}</span>;
 
-    /*
-     * A `div` rather than the `<button>` this used to be. The title is now a
-     * contentEditable, which cannot legally nest inside a button and misbehaves
-     * there; `role='treeitem'` was always the accurate role anyway, and it is the
-     * button that was the anomaly.
-     */
     const runRow = (
         <div
             role='treeitem'
@@ -168,13 +125,6 @@ const PipelineRunTreeNode = ({
             tabIndex={0}
             onClick={() => onToggle(section.runId)}
             onKeyDown={(event) => {
-                /*
-                 * The title stops propagation while editing, so these keys normally
-                 * only land here when the row itself has focus. The explicit check is
-                 * belt-and-braces: this handler calls preventDefault, so a single key
-                 * escaping the title would both swallow the character and toggle the
-                 * row under the caret — which is exactly how Space used to break.
-                 */
                 if (isEditingName) return;
                 if (event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();

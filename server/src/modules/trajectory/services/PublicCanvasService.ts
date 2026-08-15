@@ -282,11 +282,6 @@ export default class PublicCanvasService{
         });
     }
 
-    /*
-     * Reachable on a shared canvas, unlike the legacy panel path: a panel needs only the
-     * analysis and the frame, where the legacy tables were declared on the plugin and so
-     * depended on the team-scoped plugin catalogue.
-     */
     async exposurePanels(input: AnalysisScopedRequest & { timestep: number }): Promise<GetPluginExposurePanelsResponse>{
         await this.#access.assertReadable(input.trajectoryId, input.userId);
         const analysis = await this.#requireOwnedAnalysis(input.analysisId, input.trajectoryId);

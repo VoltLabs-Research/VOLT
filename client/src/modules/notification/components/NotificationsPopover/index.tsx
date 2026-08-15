@@ -1,4 +1,4 @@
-import useNotificationData from '../../hooks/use-notification-data';
+import useNotificationData from './use-notification-data';
 import NotificationList from '../NotificationList';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import useTip from '@/shared/tips/use-tip';

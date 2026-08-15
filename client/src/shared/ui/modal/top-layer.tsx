@@ -1,13 +1,9 @@
 import { UNSAFE_PortalProvider } from 'react-aria';
 import FloatingRootContext, { TopLayerRootContext } from '@/shared/ui/contexts/FloatingRootContext';
-import { createContext, useCallback, useContext } from 'react';
+import { createContext, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
 const ModalTopLayerContext = createContext<HTMLElement | null>(null);
-
-export const useModalTopLayerRoot = (): HTMLElement | null => {
-    return useContext(ModalTopLayerContext);
-};
 
 interface ModalTopLayerProps {
     root: HTMLElement | null;

@@ -30,10 +30,6 @@ const NotificationList = ({
     onLoadMore,
     onClose
 }: NotificationListProps) => {
-    /*
-     * Held on the scroller, not on the list: the load-more check below reads scrollTop from this
-     * element, and the element that scrolls is now the Scrollable wrapper.
-     */
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

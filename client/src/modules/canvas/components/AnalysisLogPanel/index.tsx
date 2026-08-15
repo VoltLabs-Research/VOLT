@@ -1,4 +1,4 @@
-import useAnalysisFrameLog from '@/modules/canvas/hooks/use-analysis-frame-log';
+import useAnalysisFrameLog from './use-analysis-frame-log';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';

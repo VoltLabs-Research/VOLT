@@ -1,3 +1,4 @@
+import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '@/modules/scripting/contracts/modal-ids';
 import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
 import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-cluster-resource-selection';
 import { Modal } from '@/shared/ui/modal/Modal';
@@ -5,23 +6,10 @@ import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { getNotebookTeamClusterId } from '@/modules/scripting/utils/notebooks';
 import { useCallback, useEffect, useState } from 'react';
-import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 import type { ModalFooterAction } from '@/shared/ui/components/ModalFooterActions';
 
-export const SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID = 'scripting-notebook-deployment-modal';
 
-export interface ScriptingNotebookDeploymentSelection {
-    teamClusterId: string;
-};
-
-export interface ScriptingNotebookDeploymentModalRequest {
-    teamId: string;
-    title: string;
-    description: string;
-    confirmLabel: string;
-    notebook?: ScriptingNotebook | null;
-    onSubmit: (selection: ScriptingNotebookDeploymentSelection) => Promise<void>;
-};
+import type { ScriptingNotebookDeploymentModalRequest } from '@/modules/scripting/contracts/notebook-deployment';
 
 interface ScriptingNotebookDeploymentModalProps {
     request: ScriptingNotebookDeploymentModalRequest | null;

@@ -19,19 +19,6 @@ interface CpuCoreDataPoint {
     [key: string]: number;
 }
 
-/*
- * Every core is drawn in the same hue at low opacity, so the panel reads as what it
- * is named: a distribution, dense where cores agree and frayed where one diverges.
- *
- * It used to cycle twelve saturated colours, which on a 160-core host meant each
- * colour stood for thirteen different cores — identity that could not be recovered
- * from the picture. Those hues also fail as a categorical palette for CVD readers,
- * which is why charts in this client carry identity by label and never by hue.
- *
- * There is no tooltip: hovering a 160-series chart produced a list of 160 rows,
- * and a single core's number is not what this panel is for. The summary above it
- * carries the average and the core count.
- */
 const CORE_STROKE = 'var(--accent)';
 const CORE_OPACITY = 0.28;
 

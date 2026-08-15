@@ -1,6 +1,7 @@
+import { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import ClusterListPanel from '@/modules/cluster/components/ClusterListPanel';
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
-import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
+import DeleteClusterModal from '@/modules/cluster/components/DeleteClusterModal';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { resolvePostAuthDestination } from '@/modules/auth/services/post-auth-destination-storage';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
@@ -11,7 +12,7 @@ import OnboardingLayout from '@/modules/onboarding/components/templates/Onboardi
 import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
 import { Button, buttonVariants } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
-import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
+import { closeModal, openModal, useModalPayload } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useEffect, useRef, useState } from 'react';
@@ -44,8 +45,8 @@ const ClusterOnboardingPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [createdCluster, setCreatedCluster] = useState<TeamCluster | null>(null);
     const [enrollmentToken, setEnrollmentToken] = useState<string | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
     const [connectedClusterName, setConnectedClusterName] = useState<string | null>(null);
+    const deleteTarget = useModalPayload<TeamCluster>(DELETE_CLUSTER_MODAL_ID);
     const [hasWaitTimedOut, setHasWaitTimedOut] = useState(false);
     const [waitNonce, setWaitNonce] = useState(0);
     const hasRedirected = useRef(false);
@@ -151,8 +152,7 @@ const ClusterOnboardingPage = () => {
     };
 
     const handlePanelDelete = (cluster: TeamCluster) => {
-        setDeleteTarget(cluster);
-        openModal(DELETE_CLUSTER_MODAL_ID);
+        openModal(DELETE_CLUSTER_MODAL_ID, cluster);
     };
 
     const handleDeleteCluster = async (password: string): Promise<DeleteTeamClusterResponse> => {
@@ -293,7 +293,6 @@ const ClusterOnboardingPage = () => {
                 <DeleteClusterModal
                     teamCluster={deleteTarget}
                     onDelete={handleDeleteCluster}
-                    onClose={() => setDeleteTarget(null)}
                 />
             </>
         </OnboardingLayout>

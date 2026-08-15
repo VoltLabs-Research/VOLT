@@ -235,11 +235,6 @@ export class WorkflowSession {
                 continue;
             }
 
-            /*
-             * Without argument values this stays a pure structural scan, which is what the
-             * callers that only need the node topology rely on. A run passes its values and
-             * gets the gated view instead.
-             */
             if (
                 argumentValues !== undefined
                 && !matchesArgumentCondition(exposureData.exportWhen, argumentDefinitions, argumentValues)

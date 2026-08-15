@@ -30,17 +30,6 @@ const toQueuedJobNotification = <TJob extends QueueJobLike>(
     name
 });
 
-/*
- * Rasterization exists for exactly one reason: the still image shown on a
- * trajectory card. The queue used to also rasterize every GLB in the trajectory —
- * per frame and per analysis exposure — for a Raster workspace that no longer
- * exists; that path, and the object listing and key parsing it needed, are gone.
- *
- * The method keeps its plural name because its two callers (frame ingest and the
- * GLB exporter) pass the same request shape and are edited elsewhere; what it
- * queues is one preview job per trajectory, guarded by a claim so concurrent
- * frames cannot each queue their own.
- */
 export class TrajectoryRasterQueue {
     constructor(
         private readonly queueService: QueueService,
@@ -62,7 +51,6 @@ export class TrajectoryRasterQueue {
 
         const timestep = input.config?.timestep;
         if (typeof timestep !== 'number' || !Number.isFinite(timestep)) {
-            // Nothing to preview without a frame to render it from.
             result.skippedJobs += 1;
             return result;
         }

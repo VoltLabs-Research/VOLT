@@ -1,3 +1,4 @@
+import { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
@@ -8,15 +9,13 @@ import type { DeleteTeamClusterResponse } from '@volt/contracts/modules/cluster/
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
-export const DELETE_CLUSTER_MODAL_ID = 'delete-cluster-modal';
 
 interface DeleteClusterModalProps {
     teamCluster: TeamCluster | null;
     onDelete: (password: string) => Promise<DeleteTeamClusterResponse>;
-    onClose: () => void;
 }
 
-const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterModalProps) => {
+const DeleteClusterModal = ({ teamCluster, onDelete }: DeleteClusterModalProps) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +28,6 @@ const DeleteClusterModal = ({ teamCluster, onDelete, onClose }: DeleteClusterMod
         setError(undefined);
         setResult(null);
         closeModal(DELETE_CLUSTER_MODAL_ID);
-        onClose();
     };
 
     const handleSubmit = async () => {

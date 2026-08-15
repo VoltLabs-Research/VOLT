@@ -5,12 +5,6 @@ import type { INodeData, IWorkflow, IWorkflowNode } from '@volt/contracts/module
 export const DEFAULT_EDGE_STYLE = {
     animated: true,
     style: {
-        /*
-         * A token, not a literal: this is chrome drawn in the DOM, so it has to follow the theme.
-         * The slate hex it replaced was fixed, which read as roughly right on the light canvas and
-         * washed out on the dark one. React Flow passes this straight to the SVG stroke attribute,
-         * where var() resolves normally.
-         */
         stroke: 'var(--border)',
         strokeWidth: 2
     }

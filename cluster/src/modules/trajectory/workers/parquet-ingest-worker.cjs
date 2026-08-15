@@ -23,19 +23,11 @@ const readPositiveIntegerEnv = (name, fallback) => {
     return Number.parseInt(value, 10);
 };
 
-// '*' asks for every per-atom column present in the file beyond id/type/position, so
-// the parquet schema follows the dump instead of a list the caller has to know up
-// front. Nothing upstream knows those column names, which is why the old
-// caller-supplied list was always empty and every extra column was dropped.
 const readFrameFromFile = (filePath) => readFrame(filePath, {
     includeIds: true,
     properties: ['*']
 });
 
-// The parquet schema is the union of the per-atom columns the frames actually
-// carry, in first-seen order. Frames are allowed to disagree — a restarted run can
-// introduce a new compute mid-trajectory — and a column absent from a given frame
-// is written as NULL for that frame's rows.
 const collectCustomPropertyNames = (parsedFrames) => {
     const seen = new Set();
     const names = [];
@@ -127,10 +119,6 @@ const buildParquet = async (input) => {
 
     try {
         await connection.run(`SET threads TO ${readPositiveIntegerEnv('TRAJECTORY_PARQUET_DUCKDB_THREADS', DEFAULT_DUCKDB_THREADS)}`);
-        // An in-memory DuckDB with no temp_directory cannot spill, so the whole
-        // trajectory has to fit in RAM before the parquet is written. Point it at the
-        // output directory — a caller-owned temp dir — so large trajectories spill to
-        // disk and get cleaned up with everything else.
         await connection.run(`SET temp_directory TO ${sqlString(path.dirname(input.outputPath))}`);
 
         const sortedFrames = [...input.frames].sort((a, b) => a.timestep - b.timestep);
@@ -163,18 +151,12 @@ const buildParquet = async (input) => {
             appender.closeSync();
         }
 
-        // No ORDER BY: frames are appended in ascending timestep and atom_index ascends
-        // within each frame, so the table is already in (timestep, atom_index) order.
-        // Sorting here would re-sort the entire trajectory for nothing.
         await connection.run(
             `COPY frames TO ${sqlString(input.outputPath)} (FORMAT PARQUET, COMPRESSION ZSTD)`
         );
 
         return {
             columnDtypes,
-            // LAMMPS files do not record the unit style — it is a setting in the input
-            // script, not in the dump — so this is fixed until something upstream can
-            // actually ask the user for it.
             units: DEFAULT_UNITS,
             elementTable
         };

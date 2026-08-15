@@ -25,11 +25,6 @@ const matchesVisibilityCondition = (
     }
 };
 
-/*
- * Precedence matters: a definition pinned to a literal `value` wins over whatever the run
- * supplied, and an argument the run never mentioned falls back to its declared `default`.
- * That last step is what makes a condition work for an argument the user never touched.
- */
 const readConditionSourceValue = (
     argumentKey: string,
     definitions: WorkflowArgumentDefinition[],
@@ -47,11 +42,6 @@ const readConditionSourceValue = (
     return referenced?.default;
 };
 
-/**
- * Evaluates a standalone condition against a run's argument values. Used for exposure
- * `exportWhen` gates, which share the operator semantics of argument `visibleWhen` but hang
- * off an exposure node rather than an argument definition.
- */
 export const matchesArgumentCondition = (
     condition: WorkflowArgumentVisibilityCondition | undefined,
     definitions: WorkflowArgumentDefinition[],

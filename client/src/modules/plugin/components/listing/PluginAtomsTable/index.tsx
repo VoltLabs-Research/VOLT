@@ -14,20 +14,6 @@ interface PluginAtomsTableProps {
     exposureId?: string;
 }
 
-/*
- * These swatches do NOT match the viewport, and cannot be made to from here.
- *
- * The 3D scene colours atoms by chemical element, using the CPK table the daemon keeps in
- * cluster/src/modules/trajectory/workers/element-table.cjs and bakes into the GLB. This table only
- * ever receives `id`, `type`, `x`, `y` and `z` — a LAMMPS type is a bare integer, and no
- * type-to-element mapping is persisted or served anywhere (contracts, server and cluster have
- * none). So the client cannot know that type 1 is Bi, and cannot look up its CPK colour.
- *
- * What this does instead is stop being a third palette: it takes the shared categorical one, so
- * type colours at least belong to the same family as the rest of the app. Aligning them with the
- * viewport needs the type-to-element map captured at ingest and exposed on the trajectory — a
- * contract change, not a styling one.
- */
 const getTypeColor = (type?: number): string => {
     if(type === undefined) return 'var(--muted)';
 

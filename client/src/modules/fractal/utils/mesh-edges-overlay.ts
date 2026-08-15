@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export const EDGES_OVERLAY_NAME = '__fractalEdgesOverlay';
+const EDGES_OVERLAY_NAME = '__fractalEdgesOverlay';
 
 const EDGES_THRESHOLD_ANGLE = 20;
 const EDGES_COLOR = 0x0a0a0a;

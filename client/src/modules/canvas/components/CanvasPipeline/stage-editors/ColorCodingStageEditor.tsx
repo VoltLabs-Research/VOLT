@@ -5,7 +5,7 @@ import GradientPreview from '../../GradientPreview';
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import usePropertySelector from '@/modules/trajectory/hooks/particle-filter/use-property-selector';
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
-import colorCodingService from '@/modules/trajectory/api/services/color-coding-service';
+import { applyColorCoding } from '@/modules/trajectory/hooks/color-coding/queries';
 import { COLORMAP_NAMES } from '@/modules/fractal/services/colormaps';
 import { parseNumericInput } from '../../../utils/parse-numeric-input';
 import { showPromise } from '@/shared/ui/hooks/toast';
@@ -98,7 +98,7 @@ const ColorCodingStageEditor = ({
             }
 
             await showPromise(
-                colorCodingService.apply({
+                applyColorCoding({
                     trajectoryId,
                     analysisId,
                     timestep: currentTimestep,

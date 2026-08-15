@@ -90,7 +90,6 @@ interface ProcessedMesh {
     positions: Float32Array;
     normals: Float32Array;
     indices: Uint32Array;
-    /** Present only when cap polygons were generated, to tint them apart. */
     colors?: Float32Array;
     bounds: {
         minX: number;
@@ -102,22 +101,10 @@ interface ProcessedMesh {
     };
 }
 
-/** OVITO's SurfaceMeshVis.capColor default, the lavender it fills cell cuts with. */
 const CAP_COLOR: readonly [number, number, number, number] = [0.8, 0.8, 1.0, 1.0];
 
 const SURFACE_COLOR: readonly [number, number, number, number] = [1, 1, 1, 1];
 
-/**
- * Moves the cap triangles onto their own copies of their vertices.
- *
- * Two things need this. A vertex colour is per-vertex, and the rim vertices are
- * shared with the surface, so without the copy the cap tint would bleed into the
- * surrounding surface. And normals are averaged per vertex: a shared rim vertex would
- * blend the surface normal with the cap's, rounding off the hard edge that OVITO
- * shows where a mesh meets the cell boundary.
- *
- * The copies are exactly coincident, so nothing cracks open visually.
- */
 export const separateCapVertices = (
     positions: Float32Array,
     indices: Uint32Array,
@@ -154,18 +141,6 @@ export const separateCapVertices = (
     };
 };
 
-/**
- * Turns the surface inside out, the way OVITO's SurfaceMeshVis.reverseOrientation
- * does (mesh/surface/SurfaceMeshVis.cpp -> TriangleMesh::flipFaces). Swapping two
- * corners of every triangle reverses the winding, and since computeNormals derives
- * the normals from that winding, they follow automatically.
- *
- * The DXA needs this: its interface mesh is built single-sided with the facets
- * oriented toward the bad-crystal region, so left as-is the outward faces are the
- * ones that get culled and you look straight through the mesh into its interior.
- * OVITO's DislocationAnalysisModifier carries the same correction as
- * `defect_vis = SurfaceMeshVis(reverse_orientation=True, ...)`.
- */
 const reverseWinding = (indices: Uint32Array): void => {
     for (let index = 0; index + 2 < indices.length; index += 3) {
         const second = indices[index + 1];
@@ -186,12 +161,6 @@ const finishMesh = (
     indices: Uint32Array,
     options: FinishMeshOptions
 ): ProcessedMesh => {
-    // Smoothing runs first, on the geometry as the plugin exported it. Note that the
-    // plugin's facets are PBC-unwrapped with duplicated seam vertices, so the one-ring
-    // is broken along every periodic face and the smoothing there differs from
-    // OVITO's, which walks the half-edge structure with wrapped edge vectors
-    // (SurfaceMeshBuilder.cpp -> smoothMesh). Closing that gap needs a PBC-aware
-    // taubinSmooth in @voltstack/spatial-assembler.
     if (options.smoothIterations && options.smoothIterations > 0) {
         spatialAssembler.taubinSmooth(positions, indices, options.smoothIterations);
     }
@@ -204,17 +173,12 @@ const finishMesh = (
     let workingIndices = indices;
     let colors: Float32Array | undefined;
 
-    // Shell removal has to precede the clipping: clipping cuts a wrapped surface at
-    // the cell boundary, turning one physical shell into several components, and the
-    // containment test would then be comparing fragments instead of bodies.
     if (options.interiorOnly) {
         const filtered = dropEnclosingComponent(workingPositions, workingIndices);
         workingPositions = filtered.positions;
         workingIndices = filtered.indices;
     }
 
-    // Then contain it in the cell and cap the cuts, which is the order OVITO uses:
-    // the modifier smooths, the vis element splits and caps.
     if (options.cell) {
         const clipped = clipMeshToPeriodicCell(workingPositions, workingIndices, options.cell);
         if (clipped) {
@@ -404,10 +368,6 @@ const processMesh = (
     return finishMesh(positions, indices, finishOptions);
 };
 
-// Mirrors OVITO's SurfaceMeshVis defaults: an opaque white, fully matte surface
-// (mesh/surface/SurfaceMeshVis.h -> surfaceColor = {1,1,1}). OVITO shades meshes
-// with a flat ambient + headlight term and no reflections, so any metalness here
-// only shows up as a highlight OVITO does not have.
 const DEFAULT_MESH_MATERIAL: ExportMaterial = {
     baseColor: [1, 1, 1, 1],
     metallic: 0,
@@ -462,9 +422,6 @@ export const exportMeshArtifact = async (
         return true;
     }
 
-    // Vertex colours ride along only when caps exist, to tint them OVITO's lavender
-    // against the white surface. The renderer multiplies them into the base colour,
-    // so a mesh without caps stays a plain single-material surface.
     const buffer = spatialAssembler.generateMeshGLB(
         processed.positions,
         processed.normals,

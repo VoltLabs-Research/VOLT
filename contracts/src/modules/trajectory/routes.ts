@@ -107,10 +107,5 @@ export const trajectoryRoutes = {
     canvasSubListing: get<CanvasSubListingResponse>('/api/public/trajectories/:trajectoryId/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'),
     canvasExposureGlb: get<unknown>('/api/public/trajectories/:trajectoryId/exposures/:analysisId/:exposureId/:timestep/glb'),
     canvasFrameLog: get<CanvasFrameLogResponse>('/api/public/trajectories/:trajectoryId/analyses/:analysisId/logs/:timestep'),
-    /*
-     * The public twin of `getPluginExposurePanels`. A panel needs only the analysis and the
-     * frame, so unlike the legacy path it does not depend on the RBAC plugin catalogue and
-     * works on a shared canvas.
-     */
     canvasExposurePanels: get<GetPluginExposurePanelsResponse>('/api/public/trajectories/:trajectoryId/analyses/:analysisId/panels/:timestep')
 } as const;

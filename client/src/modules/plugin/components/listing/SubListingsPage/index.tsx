@@ -4,7 +4,7 @@ import DocumentListing from '@/shared/ui/components/DocumentListing';
 import SubListingDetailPanel from '@/modules/plugin/components/listing/SubListingDetailPanel';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
-import listingService from '@/modules/plugin/api/services/listing-service';
+import { fetchSubListing } from '@/modules/plugin/hooks/listing/queries';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
 import { buildDocumentSubListingColumnSnapshot, type SubListingColumnSnapshot } from '@/modules/plugin/components/listing/sub-listing-columns';
 import { resolvePersistenceKey } from '@/shared/ui/components/DocumentListing/use-listing-view-preferences';
@@ -90,7 +90,7 @@ const SubListingsPage = () => {
         page: number;
         limit: number;
     } & SubListingFetchContext): Promise<PaginatedResponse<SubListingRow>> => {
-        const response = await listingService.getSubListing(requestParams);
+        const response = await fetchSubListing(requestParams);
         const rows = response.rows as SubListingRow[];
 
         if(response.page === 1){

@@ -26,13 +26,6 @@ export const containsPluginReferenceArgument = (definition: ArgumentDefinition):
     return definition.listArguments.some((nestedDefinition) => containsPluginReferenceArgument(nestedDefinition));
 };
 
-/**
- * Shared shape checks for a condition that selects on an argument's value.
- *
- * `field` names the property in the emitted messages so the same checks can serve an
- * argument's `visibleWhen` and an exposure's `exportWhen`. `selfArgument` is only supplied
- * for the former, where depending on yourself is the error; an exposure has no such notion.
- */
 const validateArgumentCondition = (
     condition: ArgumentVisibilityCondition,
     definitions: ArgumentDefinition[],
@@ -69,13 +62,6 @@ const validateArgumentCondition = (
     }
 };
 
-/**
- * Validates every exposure's `exportWhen` gate.
- *
- * This matters more than it looks: a gate pointing at a misspelled argument resolves to no
- * value at all, which compares false and silently drops the export from the run. Catching it
- * at publish turns a mystery ("why is my mesh gone?") into an error message.
- */
 export const validateExposureExportConditions = (
     workflow: WorkflowProps,
     errors: string[]

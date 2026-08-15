@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { useOpenContainerPort } from '@/modules/container/hooks/use-open-container-port';
 import { getPrimaryAccessiblePort } from '@/modules/container/utils/get-primary-accessible-port';
-import { ContainerAction } from '@/modules/container/api/service';
+import { ContainerAction } from '@/modules/container/contracts/actions';
 import type { ReactNode } from 'react';
 import type { Container as ContainerEntity } from '@volt/contracts/modules/container/domain';
 

@@ -1,4 +1,4 @@
-import type { ExportType, PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/domain/port/persistence';
 import type {
     GetAnalysisListingExportOptionsResponse,
     ListingRowByAnalysisData
@@ -23,10 +23,6 @@ export type GetListingRowsByAnalysisIdOutput = PaginatedResult<ListingRowByAnaly
 export interface ExportListingRowsByAnalysisIdInput {
     analysisId: string;
     teamId: string;
-    format?: ExportType;
-    includeConfig?: boolean;
-    selectedListingIds?: string[];
-    selectedSubListingIds?: string[];
 }
 
 export interface AnalysisListingExportData {

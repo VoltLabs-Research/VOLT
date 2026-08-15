@@ -42,14 +42,9 @@ services:
       volt-postgres: { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      # Avatars live here now, so this is data, not a cache.
       - volt-server-data:/var/lib/volt-server
       - ${VOLT_SOURCE_DIR}/server:/app
       - ${VOLT_SOURCE_DIR}/contracts:/contracts:ro
-      # The install-manifest build distribution mode ships the daemon source (and
-      # the SDK it links) to enrolled hosts; both live in this repository now. The
-      # server also compiles the SDK contracts from source through its tsconfig
-      # paths map, which resolves to /sdk inside this container.
       - ${VOLT_SOURCE_DIR}/cluster:/ClusterDaemon:ro
       - ${VOLT_SOURCE_DIR}/sdk:/sdk:ro
       - volt-server-node-modules:/app/node_modules
@@ -67,8 +62,6 @@ services:
   cluster-daemon:
     profiles: [enrolled]
     build:
-      # The daemon links @voltstack/daemon-cluster-client from the repository, so
-      # the build context is the repo root and the SDK travels with it.
       context: ${VOLT_SOURCE_DIR}
       dockerfile: cluster/Dockerfile.dev
     image: cluster-daemon:local
@@ -77,12 +70,6 @@ services:
       - SYS_NICE
     environment:
       NODE_ENV: production
-      # The daemon sizes its own V8 heap from the memory it can actually see (see
-      # cluster/scripts/start.js), because this file is shipped to every enrolled
-      # host and a fixed ceiling fits none of them: the 8 GB it used to hardcode
-      # was the whole of a small laptop and a third of a 31 GB workstation, where
-      # it turned a large frame's mesh flattening into a fatal heap error. Set
-      # DAEMON_HEAP_MB to pin the ceiling on a host that shares its RAM.
       DAEMON_HEAP_MB: ${DAEMON_HEAP_MB-}
       COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-volt}
       HOST: 0.0.0.0
@@ -93,8 +80,6 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-volt}:${POSTGRES_PASS:-volt}@volt-postgres:5432/volt-cluster
       DAEMON_DATA_DIR: /var/lib/volt-daemon
       BUCKET_PREFIX: cluster-
-      # Both services share this network, so object bytes have no reason to be
-      # reframed onto the daemon's socket.io control connection to reach the server.
       OBJECT_GATEWAY_PUBLIC_BASE_URL: http://cluster-daemon:${DAEMON_PORT:-18080}
     depends_on:
       volt-postgres: { condition: service_healthy }
@@ -103,7 +88,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${VOLT_SOURCE_DIR}/cluster:/app/cluster
       - cluster-daemon-node-modules:/app/cluster/node_modules
-      # The object store lives here now, so this holds the cluster's data — not a cache.
       - cluster-daemon-data:/var/lib/volt-daemon
     ports: ["${DAEMON_PORT:-18080}:${DAEMON_PORT:-18080}"]
 

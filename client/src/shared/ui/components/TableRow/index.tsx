@@ -187,9 +187,6 @@ const TableRow = <T extends Identifiable>({
                             default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm max-md:text-sm',
                             compact: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs'
                         }[density],
-                        // The first column identifies the row, so it reads as primary content;
-                        // every other column is metadata about it. Without this split the whole
-                        // row was muted and weight was the only hierarchy lever left.
                         colIdx === 0 ? 'text-foreground' : 'text-muted',
                         col.numeric && 'justify-end text-right tabular-nums'
                     )} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>

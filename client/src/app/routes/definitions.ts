@@ -158,11 +158,6 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/simulation-cell/components/SimulationCellsListing'),
         requiredPermissions: ['simulation-cell:read']
     },
-    /*
-     * No `navigation` entry: Plugins is a nav tree in AppNav (Installed +
-     * Marketplace), and a metadata entry here would render a second, flat row
-     * beside it.
-     */
     {
         path: '/dashboard/plugins/list',
         title: 'Plugins',

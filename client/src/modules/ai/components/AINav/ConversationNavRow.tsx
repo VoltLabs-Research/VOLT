@@ -18,11 +18,6 @@ interface ConversationNavRowProps {
 
 const ROW_ACTION_CLASS = 'inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
 
-/*
- * One conversation in the rail. Sized to the rail's own nav rows rather than the
- * wide two-line rows this replaced, so the list reads as navigation next to the
- * app's other rails instead of a panel wedged inside one.
- */
 const ConversationNavRow = ({
     conversation,
     isActive,

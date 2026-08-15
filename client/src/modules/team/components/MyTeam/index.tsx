@@ -4,7 +4,7 @@ import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presenc
 import ActivityHeatmap from '@/modules/daily-activity/components/ActivityHeatmap';
 import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activity-data';
 import { teamMembersResource } from '@/modules/team/hooks/member/queries';
-import useTeamMemberListingActions from '@/modules/team/hooks/member/use-team-member-listing-actions';
+import useTeamMemberListingActions from './use-team-member-listing-actions';
 import type { GetTeamMembersParams } from '@/modules/team/api/services/member-service';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';

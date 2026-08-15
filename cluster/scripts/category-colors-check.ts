@@ -1,16 +1,3 @@
-/*
- * Pins the property that keeps the daemon agnostic: it must hold no opinion about what
- * a category name means. A plugin declares the colours for its own categories; anything
- * undeclared gets a deterministic generated colour, and a category invented tomorrow
- * renders without a change here.
- *
- * The regression this guards against is a well-meaning "FCC is green" table creeping
- * back into the daemon, which would silently override whatever a plugin declared and
- * leave any new structure type unrenderable without editing VOLT.
- *
- * Run: npx tsx scripts/category-colors-check.ts
- */
-
 import { resolveCategoryColors } from '@modules/plugin/services/exports/category-colors';
 
 interface CheckResult {
@@ -32,8 +19,6 @@ const check = (label: string, passed: boolean, detail: string): void => {
 const asText = (color: [number, number, number, number] | undefined): string =>
     color ? `[${color.map((c) => c.toFixed(4)).join(', ')}]` : 'undefined';
 
-/* ---- 1. a declared colour is used verbatim ---- */
-
 {
     const declared: [number, number, number, number] = [0.4, 1, 0.4, 1];
     const resolved = resolveCategoryColors(['FCC', 'HCP'], { FCC: declared });
@@ -45,8 +30,6 @@ const asText = (color: [number, number, number, number] | undefined): string =>
     );
 }
 
-/* ---- 2. the daemon has no built-in meaning for well-known names ---- */
-
 {
     const undeclared = resolveCategoryColors(['FCC'], undefined);
     const green: [number, number, number, number] = [0.4, 1, 0.4, 1];
@@ -57,7 +40,6 @@ const asText = (color: [number, number, number, number] | undefined): string =>
         `${asText(undeclared.get('FCC'))} (verde de OVITO seria ${asText(green)})`
     );
 
-    // The same check from the other side: an invented category resolves fine.
     const invented = resolveCategoryColors(['QUASICRYSTAL_APPROXIMANT'], undefined);
     const color = invented.get('QUASICRYSTAL_APPROXIMANT');
     check(
@@ -66,8 +48,6 @@ const asText = (color: [number, number, number, number] | undefined): string =>
         asText(color)
     );
 }
-
-/* ---- 3. declaration matching tolerates spelling, not meaning ---- */
 
 {
     const resolved = resolveCategoryColors(
@@ -81,8 +61,6 @@ const asText = (color: [number, number, number, number] | undefined): string =>
         asText(resolved.get('Cubic diamond'))
     );
 }
-
-/* ---- 4. generated colours are stable and distinct ---- */
 
 {
     const first = resolveCategoryColors(['A', 'B', 'C'], undefined);
@@ -103,11 +81,8 @@ const asText = (color: [number, number, number, number] | undefined): string =>
     );
 }
 
-/* ---- 5. cluster names pin the colour to the id, not to list position ---- */
-
 {
     const dense = resolveCategoryColors(['Cluster 1', 'Cluster 2', 'Cluster 3'], undefined);
-    // Cluster 2 disappears between frames; Cluster 3 must not inherit its colour.
     const sparse = resolveCategoryColors(['Cluster 1', 'Cluster 3'], undefined);
 
     check(
@@ -124,8 +99,6 @@ const asText = (color: [number, number, number, number] | undefined): string =>
         asText(resolveCategoryColors(['Cluster 3'], { 'Cluster 3': [1, 0, 0, 1] }).get('Cluster 3'))
     );
 }
-
-/* ---- report ---- */
 
 let failed = 0;
 for (const result of results) {

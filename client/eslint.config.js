@@ -9,12 +9,6 @@ import { overflowBaseline } from './eslint.overflow-baseline.js';
 
 const LOCAL_CSS_IMPORT = '^(\\.{1,2}/|@/).*\\.css(\\?.*)?$';
 
-/*
- * className token ratchet. The design scales are closed (see the @theme
- * contract in src/shared/ui/assets/stylesheets/index.css); these patterns
- * ban the escape hatches. Patterns avoid regex character classes because
- * they live inside esquery selectors ([ is a literal "[").
- */
 const BANNED_CLASS_PATTERNS = [
     [
         'text-\\u005B\\d',
@@ -47,15 +41,6 @@ const classNameRatchet = BANNED_CLASS_PATTERNS.flatMap(([pattern, message]) => [
     { selector: `TemplateElement[value.raw=/${pattern}/]`, message }
 ]);
 
-/*
- * Scroll-affordance ratchet. Scrollbars are hidden globally (index.css), so a bare
- * overflow-*-auto container clips its content with no cue that anything continues; the edge fade
- * is the only affordance left. Scrollable owns it.
- *
- * `(?!ing)` keeps `[-webkit-overflow-scrolling:touch]` out of the match. As above, the pattern
- * carries no regex character class because it lives inside an esquery selector, where [ is
- * a literal.
- */
 const BANNED_OVERFLOW_PATTERN = 'overflow-(x-|y-)?(auto|scroll)(?!ing)';
 const OVERFLOW_MESSAGE = [
     'Scrolling containers are closed. Use shared/ui/components/Scrollable (orientation="horizontal"',
@@ -69,12 +54,40 @@ const overflowRatchet = [
     { selector: `TemplateElement[value.raw=/${BANNED_OVERFLOW_PATTERN}/]`, message: OVERFLOW_MESSAGE }
 ];
 
+const LAYER_SERVICE_MESSAGE = [
+    'Components must not call api services directly. Go through the module data layer',
+    '(hooks/<area>/queries.ts) so caching, access mode and error handling stay in one place.',
+    'Type-only imports of request/response shapes are allowed.'
+].join(' ');
+
+const LAYER_COMPONENT_MESSAGE = [
+    'hooks/ and store/ must not depend on components/. Move the shared value into',
+    'contracts/ (ids, payload shapes, enums). Type-only imports are allowed.'
+].join(' ');
+
 const CSS_BOUNDARY_MESSAGE = [
     'Per-component stylesheets are closed. Layout and typography belong to bravais:',
     'use Box/Stack/Row/Grid style props (display, direction, align, justify, gap, p, radius, border, overflow)',
     'and Text/Heading (size, tone, weight) instead of a .css file.',
     'Global sheets are wired in src/app/, and shared visual language belongs in bravais itself.'
 ].join(' ');
+
+const cssImportPattern = {
+    regex: LOCAL_CSS_IMPORT,
+    message: CSS_BOUNDARY_MESSAGE
+};
+
+const serviceLayerPattern = {
+    group: ['**/api/service', '**/api/service/**', '**/api/services/**'],
+    allowTypeImports: true,
+    message: LAYER_SERVICE_MESSAGE
+};
+
+const componentLayerPattern = {
+    group: ['**/components/**'],
+    allowTypeImports: true,
+    message: LAYER_COMPONENT_MESSAGE
+};
 
 export default tseslint.config(
     {
@@ -127,19 +140,36 @@ export default tseslint.config(
         ignores: ['src/app/**', ...cssBaseline],
         rules: {
             'no-restricted-imports': ['error', {
-                patterns: [{
-                    regex: LOCAL_CSS_IMPORT,
-                    message: CSS_BOUNDARY_MESSAGE
-                }]
+                patterns: [cssImportPattern]
             }]
         }
     },
-    /*
-     * Both ratchets ride the same rule key, so they cannot be two plain blocks: in flat config a
-     * later block that sets `no-restricted-syntax` replaces the earlier one for the files it
-     * matches, which would silently switch the first ratchet off. Instead the shared case bans
-     * both, and each baseline gets a block that re-applies the ratchet it is *not* exempt from.
-     */
+    {
+        files: ['src/modules/*/components/**/*.tsx'],
+        ignores: ['**/use-*.tsx', ...cssBaseline],
+        rules: {
+            'no-restricted-imports': ['error', {
+                patterns: [cssImportPattern, serviceLayerPattern]
+            }]
+        }
+    },
+    {
+        files: cssBaseline.filter((file) => /^src\/modules\/[^/]+\/components\/.*\.tsx$/.test(file)),
+        ignores: ['**/use-*.tsx'],
+        rules: {
+            'no-restricted-imports': ['error', {
+                patterns: [serviceLayerPattern]
+            }]
+        }
+    },
+    {
+        files: ['src/**/hooks/**/*.{ts,tsx}', 'src/**/store/**/*.{ts,tsx}'],
+        rules: {
+            'no-restricted-imports': ['error', {
+                patterns: [cssImportPattern, componentLayerPattern]
+            }]
+        }
+    },
     {
         files: ['src/**/*.{ts,tsx}'],
         ignores: [...classNameBaseline, ...overflowBaseline],

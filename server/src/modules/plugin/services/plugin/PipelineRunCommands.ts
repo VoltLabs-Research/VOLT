@@ -19,18 +19,6 @@ export interface DeletePipelineRunInput{
     userId?: string;
 }
 
-/**
- * Renames a run, or clears the override when `name` is empty.
- *
- * The empty case is a real command, not a rejected edit: it is how the UI returns
- * a run to being labelled by its plugin chain, so it stores `null` rather than
- * refusing the write the way the notebook and conversation renames do.
- *
- * Scoping by `team` in the lookup is the ownership check — `teamScoped` on the
- * controller proves membership of the team in the URL, not that this run belongs
- * to it, so without the `team` predicate a member of team A could rename a run
- * belonging to team B by id.
- */
 export const updatePipelineRun = async (input: UpdatePipelineRunInput): Promise<PipelineRun> => {
     const run = await PipelineRunEntity.findOneBy({
         id: input.pipelineRunId,
@@ -55,22 +43,6 @@ export const updatePipelineRun = async (input: UpdatePipelineRunInput): Promise<
     return toWireRun(await run.save());
 };
 
-/**
- * Deletes a run *and* the analyses it produced.
- *
- * The analyses are not deleted here: this module cannot reach the analysis module
- * without adding a cross-module import edge, so it emits `pipelineRun.deleted` and
- * `AnalysisEvents` cascades — the same route `team.deleted` and `trajectory.deleted`
- * already take.
- *
- * The event deliberately carries no analysis ids. Resolving them belongs to the
- * subscriber, via `Analysis.pipelineRunId`, because a run's stage list holds two
- * different kinds of id: `analysisId` for a stage it computed and
- * `cachedFromAnalysisId` for one it replayed from an earlier run. Deleting the
- * latter would destroy a result that another run still owns and renders. Filtering
- * on `pipelineRunId` cannot make that mistake — a replayed analysis still carries
- * the id of the run that actually computed it.
- */
 export const deletePipelineRun = async (input: DeletePipelineRunInput): Promise<{ success: boolean }> => {
     const run = await PipelineRunEntity.findOneBy({
         id: input.pipelineRunId,

@@ -1,5 +1,5 @@
 import usePipelineSlicePlanes from '@/modules/canvas/hooks/use-pipeline-slice-planes';
-import useGlbScene from '@/modules/fractal/hooks/use-glb-scene';
+import useGlbScene from './use-glb-scene';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import useExpressionVisibilityMask from '@/modules/canvas/hooks/use-expression-visibility-mask';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
@@ -9,7 +9,7 @@ import { areModelWorldBoundsEqual } from '@/modules/fractal/utils/model-world-bo
 import { calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils/box-utils';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
-import { resolveGlbResource } from '@/modules/fractal/api/service/compute-glb-url';
+import { resolveGlbResource } from '@/modules/fractal/services/compute-glb-url';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utils/camera-fit';
 import { useThree } from '@react-three/fiber';
@@ -189,9 +189,6 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
         ? sceneConfig.sceneRenderMetadata?.exporter
         : undefined;
     const depthBias = exporter === Exporter.LINE;
-    // Surfaces and tubes coming out of a structural analysis are the ones users
-    // read side by side with OVITO (defect mesh, interface mesh, dislocation
-    // network), so they get OVITO's shading model rather than the house PBR look.
     const surfaceShading: SurfaceShadingModel = exporter === Exporter.MESH || exporter === Exporter.LINE
         ? 'ovito'
         : 'pbr';

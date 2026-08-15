@@ -1,17 +1,3 @@
-/**
- * Resolves a colour for a named category, for any exporter that colours geometry by
- * one of its own categorical properties.
- *
- * VOLT holds no opinion about what the categories mean. A plugin that cares about the
- * colour of a category declares it (`propertyColors` in its plugin.json, or a colour
- * on the row itself); anything undeclared gets a deterministic generated colour. That
- * is the whole contract: a plugin can introduce a category tomorrow and it renders,
- * legends included, with no change here.
- *
- * The deliberate consequence is that the daemon has no table of "FCC is green". If a
- * structure-identification plugin wants OVITO's palette, it ships OVITO's palette.
- */
-
 const GOLDEN_RATIO = 0.618033988749895;
 
 export const hueToRgb = (p: number, q: number, t: number): number => {
@@ -38,11 +24,6 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
     ];
 };
 
-/**
- * Distinct, evenly spread colours for the first two dozen categories, then a
- * golden-ratio hue walk. Carries no meaning -- it exists so that an undeclared
- * category is still legible and, above all, stable.
- */
 const GENERATED_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
     [0.91, 0.30, 0.24],
     [0.20, 0.60, 0.86],
@@ -70,12 +51,6 @@ const GENERATED_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
     [0.66, 0.47, 0.33]
 ];
 
-/**
- * `Cluster 7` pins the generated colour to index 7 rather than to the category's
- * position in a sorted list. This is an index rule, not a palette: it keeps a
- * cluster's colour from shifting between frames as other clusters appear and vanish.
- * A plugin that wants specific cluster colours still declares them and wins.
- */
 const INDEXED_CATEGORY_RE = /^Cluster\s+(\d+)$/i;
 
 export const normalizeCategoryName = (name: string): string =>
@@ -96,11 +71,6 @@ export const generatedCategoryColor = (index: number): [number, number, number] 
 
 export type CategoryColor = [number, number, number, number];
 
-/**
- * Declared colours, keyed by category name. Lookup is case- and separator-insensitive
- * so a plugin declaring `CUBIC_DIAMOND` still matches a row spelled
- * `Cubic diamond` -- convenience for plugin authors, not interpretation of the name.
- */
 const buildDeclaredIndex = (
     explicitColors: Record<string, CategoryColor> | undefined
 ): Map<string, CategoryColor> => {

@@ -1,4 +1,4 @@
-import useJobGroupActions from '@/modules/jobs/hooks/use-job-group-actions';
+import useJobGroupActions from './use-job-group-actions';
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import FrameGroup from '@/modules/jobs/components/FrameGroup';
 import JobGroupHeader from './JobGroupHeader';

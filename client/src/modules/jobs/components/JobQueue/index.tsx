@@ -1,6 +1,6 @@
 import { Button, cn } from '@heroui/react';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import useRetryJobAnalysis from '@/modules/jobs/hooks/use-retry-job-analysis';
+import useRetryJobAnalysis from './use-retry-job-analysis';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
 import { Redo2 } from 'lucide-react';

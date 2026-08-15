@@ -1,6 +1,6 @@
 import Loader from '@/shared/ui/components/Loader';
 import { buttonVariants } from '@heroui/react';
-import useClusterMonitoringPage from '@/modules/cluster/hooks/use-cluster-monitoring-page';
+import useClusterMonitoringPage from './use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
@@ -118,11 +118,6 @@ const ClusterMonitoringPage = () => {
 
                         {shouldRenderVisualizations && (
                             <Suspense fallback={renderDeferredVisualizationsFallback()}>
-                                {/*
-                                 * Current state first, as one readout; shape over time below it.
-                                 * The readout states each measure once, so the panels under it are
-                                 * only the measures that split into series worth comparing.
-                                 */}
                                 <ClusterResourceReadout metrics={vm.metrics} history={vm.history} />
 
                                 <CpuDistribution history={vm.history} metrics={vm.metrics} />

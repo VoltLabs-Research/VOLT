@@ -2,7 +2,7 @@ import { Skeleton } from '@heroui/react';
 import { useMemo } from 'react';
 import { Activity, Clock, Globe, Key } from 'lucide-react';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
-import useSecretKeyTeamMetrics from '@/modules/team/hooks/secret-key/use-secret-key-team-metrics';
+import useSecretKeyTeamMetrics from './use-secret-key-team-metrics';
 import { renderRequestsAreaTooltip } from '@/modules/team/components/secret-key/shared/chart-tooltip-renderer';
 import EndpointsBarChart from '@/modules/team/components/secret-key/shared/EndpointsBarChart';
 import RequestsAreaChart from '@/modules/team/components/secret-key/shared/RequestsAreaChart';

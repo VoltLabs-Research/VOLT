@@ -1,5 +1,3 @@
-
-
 import type { IWorkflow } from './workflow';
 import type { PluginStatus } from './enums';
 
@@ -38,10 +36,6 @@ export interface CommitBinaryUploadInput{
     sha256?: string;
 }
 
-/**
- * An empty `name` clears the override and returns the run to its derived label,
- * which is what an emptied inline edit sends.
- */
 export interface UpdatePipelineRunInput{
     name: string;
 }

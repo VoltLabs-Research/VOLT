@@ -269,8 +269,6 @@ class DaemonSceneArtifactIngestService {
             return {
                 ...expected,
                 status: isReady ? 'ready' : 'failed',
-                // An artifact landing overrides any earlier "produced nothing":
-                // another frame of the same exposure may well have data.
                 produced: true,
                 objectName: artifact.objectName,
                 readyAt: isReady ? new Date() : expected.readyAt

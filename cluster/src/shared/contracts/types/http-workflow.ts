@@ -56,16 +56,6 @@ export interface WorkflowArgumentDefinition {
     max?: number;
     step?: number;
     visibleWhen?: WorkflowArgumentVisibilityCondition;
-    /**
-     * How a boolean reaches the binary's command line.
-     *
-     * `presence` (the default) emits the flag only when true and nothing when false, which
-     * is all a binary needs when its own default for that flag is false.
-     *
-     * `explicit` emits `--flag true` / `--flag false` on every run. Required for flags whose
-     * binary-side default is true: omitting them cannot express false, so the option could
-     * never be turned off.
-     */
     cliValueStyle?: 'presence' | 'explicit';
 }
 
@@ -110,11 +100,6 @@ interface WorkflowExposureData {
     name?: string;
     results?: string;
     id?: string;
-    /**
-     * Gates the exposure on one of the plugin's arguments. When it evaluates false the
-     * exposure never enters the run's exposure list, so nothing registers, exports or
-     * persists it.
-     */
     exportWhen?: WorkflowArgumentVisibilityCondition;
 }
 

@@ -1,8 +1,8 @@
 import { Button } from '@heroui/react';
 import WhiteboardEditorLoader from './WhiteboardEditorLoader';
-import useWhiteboardCanvasBridge from '@/modules/whiteboards/hooks/use-whiteboard-canvas-bridge';
-import useWhiteboardImageInsertion from '@/modules/whiteboards/hooks/use-whiteboard-image-insertion';
-import useWhiteboardPresence from '@/modules/whiteboards/hooks/use-whiteboard-presence';
+import useWhiteboardCanvasBridge from './use-whiteboard-canvas-bridge';
+import useWhiteboardImageInsertion from './use-whiteboard-image-insertion';
+import useWhiteboardPresence from './use-whiteboard-presence';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';

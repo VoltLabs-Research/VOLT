@@ -29,17 +29,6 @@ export class MetricsService {
             si.networkStats()
         ]);
 
-        /*
-         * Reported from `available`, never from systeminformation's `used`: that field
-         * is `total - free`, and on Linux `free` excludes the reclaimable page cache.
-         * A 188 GiB host with 15 GiB genuinely in use and 156 GiB of cache reported
-         * 92% memory and tripped the >=90% degraded threshold in
-         * `team-cluster-heartbeat-metrics`, while the kernel would have handed almost
-         * all of that back to the next allocation.
-         *
-         * The same rule already governs whether a plugin process may spawn, so both
-         * decisions share one helper rather than disagreeing about what "free" means.
-         */
         const availableBytes = selectAvailableMemoryBytes(memoryData);
         const usedBytes = Math.max(0, memoryData.total - availableBytes);
 
@@ -113,4 +102,3 @@ export class MetricsService {
         };
     }
 }
-

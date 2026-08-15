@@ -1,4 +1,4 @@
-import useAIConversationPanel from '@/modules/ai/components/AIConversationPanelContent/use-shared-ai-conversation-panel';
+import useAIConversationPanel from './use-shared-ai-conversation-panel';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { Button, Tooltip, cn } from '@heroui/react';

@@ -1,3 +1,4 @@
+import useDebouncedValue from '@/shared/ui/hooks/use-debounced-value';
 import Loader from '@/shared/ui/components/Loader';
 import MarketplaceDetail from '@/modules/plugin/components/marketplace/MarketplaceDetail';
 import MarketplaceRow from '@/modules/plugin/components/marketplace/MarketplaceRow';
@@ -14,7 +15,7 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { Package } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
@@ -24,7 +25,6 @@ const SEARCH_DEBOUNCE_MS = 400;
 const RESULTS_PER_PAGE = 30;
 const INSTALLED_LOOKUP_LIMIT = 200;
 
-/** Which package the detail pane is showing, so a reload or a shared link keeps it. */
 const SELECTED_PACKAGE_PARAM = 'package';
 
 const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
@@ -33,18 +33,6 @@ const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to install plugin'
 });
 
-/*
- * Two panes: the registry on the left, one package on the right.
- *
- * The list used to carry each package's description and its Install button on one
- * clipped line, which made it both unreadable and a place to trigger a cluster
- * operation by mistake. Splitting them gives each half one job — the left is for
- * finding, the right is for reading and deciding — and lets the description be a
- * paragraph instead of a truncated sentence.
- *
- * Selection lives in the query string rather than in state: the pane survives a
- * reload, and the URL of a package is something you can send to someone.
- */
 const MarketplacePage = () => {
     usePageTitle('Marketplace');
 
@@ -55,14 +43,9 @@ const MarketplacePage = () => {
     const selectedFullName = searchParams.get(SELECTED_PACKAGE_PARAM);
 
     const [search, setSearch] = useState('');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS);
     const [installingName, setInstallingName] = useState<string | null>(null);
     const installRegistryPlugin = useInstallRegistryPluginMutation();
-
-    useEffect(() => {
-        const timeout = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
-        return () => clearTimeout(timeout);
-    }, [search]);
 
     const { data, isFetching, error } = useRegistrySearchQuery({
         q: debouncedSearch,
@@ -80,17 +63,8 @@ const MarketplacePage = () => {
         [installedQuery.data]
     );
 
-    /*
-     * Memoised because the `?? []` fallback is a fresh array on every render, which
-     * would re-run the selection lookup below on renders where nothing changed.
-     */
     const items = useMemo(() => data?.items ?? [], [data?.items]);
 
-    /*
-     * Resolved against the current results, so a selection that a new search no longer
-     * returns falls back to the empty state instead of showing a package the list next
-     * to it does not contain.
-     */
     const selectedItem = useMemo(() => {
         if (!selectedFullName) return undefined;
         return items.find((item) => item.fullName === selectedFullName);
@@ -171,11 +145,6 @@ const MarketplacePage = () => {
 
     return (
         <div className='flex h-full w-full flex-row overflow-hidden'>
-            {/*
-             * Below the two-pane breakpoint the panes take turns: the list hides while a
-             * package is open, and the detail pane's own back button returns to it. Two
-             * columns in a phone's width would leave neither of them readable.
-             */}
             <div
                 className={cn(
                     'flex min-h-0 w-80 shrink-0 flex-col border-r border-border max-md:w-full',
@@ -197,7 +166,6 @@ const MarketplacePage = () => {
                     </SearchField>
                 </div>
 
-                {/* Only this column scrolls, so the search field stays put while you browse. */}
                 <Scrollable className='min-h-0 flex-1'>
                     {renderListBody()}
                 </Scrollable>

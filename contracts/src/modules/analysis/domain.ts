@@ -23,12 +23,6 @@ export interface AnalysisExpectedArtifact{
     isPrimary?: boolean;
     objectName?: string;
     readyAt?: string;
-    /**
-     * `false` once an exposure's export node ran and emitted nothing (no data,
-     * or options it could not use), so no upload is coming. `undefined` means
-     * the exporter has not reported yet. `status` still describes the transfer,
-     * which is why this is a separate fact rather than another status value.
-     */
     produced?: boolean;
 }
 
@@ -68,11 +62,6 @@ export interface Analysis extends BaseEntity{
     pluginDisplayName: string;
     config: Record<string, unknown>;
     trajectory: AnalysisTrajectory;
-    /**
-     * The pipeline execution this analysis was a stage of. Absent on analyses
-     * created before runs were recorded, which is why every consumer must keep
-     * a path for ungrouped rows.
-     */
     pipelineRunId?: string;
     pipelineStageIndex?: number;
     teamCluster?: Ref<TeamCluster> | null;

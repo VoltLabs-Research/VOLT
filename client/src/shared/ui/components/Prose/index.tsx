@@ -6,14 +6,6 @@ import type { Components } from 'react-markdown';
 
 const REMARK_PLUGINS = [remarkGfm];
 
-/*
- * Markdown typography, in one place.
- *
- * This list used to be pasted twice inside AIMessageItem — once for a message,
- * once for its reasoning — which is how the two drifted apart. Rendered markdown
- * needs element-level rules that no utility on the wrapper can express, so the
- * arbitrary variants stay; what matters is that there is exactly one copy.
- */
 const PROSE_CLASS = cn(
     'm-0 w-full min-w-0 break-words leading-[1.6]',
     '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
@@ -41,7 +33,6 @@ const PROSE_CLASS = cn(
     '[&_strong]:font-semibold [&_strong]:text-foreground'
 );
 
-/** `sm` is the reasoning voice: same rules, quieter and tighter. */
 const SIZE_CLASS = {
     base: 'text-sm text-foreground',
     sm: cn(

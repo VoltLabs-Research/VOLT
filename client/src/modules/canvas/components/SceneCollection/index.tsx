@@ -32,7 +32,6 @@ import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/co
 import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface SceneCollectionProps {
-    /** Analyses already grouped by the run that produced them, newest run first. */
     runSections: PipelineRunSection[];
     onRestoreRun?: (run: PipelineRun) => void;
     onRenameRun?: (run: PipelineRun, name: string) => void;
@@ -49,14 +48,6 @@ interface SceneCollectionProps {
     statusMap: Map<string, CanvasAnalysisStatusEntry>;
     toneByAnalysisId?: Map<string, AnalysisActivityTone>;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
-    onDownloadAnalysis: (analysisId: string) => void | Promise<void>;
-    onDownloadExposureListing?: (params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => void;
     onRetryLoadExposures?: (analysisId: string) => void;
     showDefaultScene?: boolean;
     showSimulationCell?: boolean;
@@ -89,8 +80,6 @@ const SceneCollection = ({
     statusMap,
     toneByAnalysisId,
     onDeleteAnalysis,
-    onDownloadAnalysis,
-    onDownloadExposureListing,
     onRetryLoadExposures,
     showDefaultScene = true,
     showSimulationCell = true,
@@ -135,8 +124,6 @@ const SceneCollection = ({
                 onAddScene={addScene}
                 onRemoveScene={removeScene}
                 onDeleteAnalysis={onDeleteAnalysis}
-                onDownloadAnalysis={onDownloadAnalysis}
-                onDownloadExposureListing={onDownloadExposureListing}
                 onRetryLoadExposures={onRetryLoadExposures}
                 sceneVisualOverrides={sceneVisualOverrides}
                 setSceneOpacity={setSceneOpacity ?? (() => undefined)}

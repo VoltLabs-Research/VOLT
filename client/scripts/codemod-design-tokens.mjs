@@ -1,29 +1,13 @@
-
-/*
- * One-shot migration of arbitrary utility values to the closed design-token
- * scale defined in src/shared/ui/assets/stylesheets/index.css.
- *
- * Most of the arbitrary values this removes were fallout from the earlier
- * bravais -> Tailwind migration (utility-class-map.json mapped the old
- * fractional scale to literal brackets, e.g. gap-035 -> gap-[0.35rem]).
- * Values are snapped to the nearest step; ties round down (denser).
- *
- * Run with --dry to preview. The className ratchet in eslint.config.js
- * keeps the tree clean after this runs.
- */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
 const dryRun = process.argv.includes('--dry');
 
-// macOS window-chrome mimicry: intentionally off-scale, kept in the ratchet baseline.
 const EXCLUDE = /WindowControls\/index\.tsx$/;
 
 const files = execSync('find src -name "*.tsx" -o -name "*.ts"', { encoding: 'utf8' })
     .trim().split('\n').filter((f) => f && !EXCLUDE.test(f));
 
-// text-[VALUE] -> role on the closed scale. 11px (2xs) is the floor:
-// everything below it maps up, never to a smaller size.
 const TEXT_SIZE = {
     '0.55rem': '2xs', '0.58rem': '2xs', '9px': '2xs', '0.6rem': '2xs', '0.62rem': '2xs',
     '10px': '2xs', '0.625rem': '2xs', '0.65rem': '2xs', '0.68rem': '2xs',
@@ -37,7 +21,6 @@ const TEXT_SIZE = {
     '1.8rem': '3xl', '2rem': '3xl'
 };
 
-// spacing-[VALUE] -> 4px-grid step (rem * 16, nearest step, ties down).
 const SPACING = {
     '0.05rem': 'px', '0.1rem': '0.5', '0.15rem': '0.5', '0.1875rem': '0.5',
     '0.2rem': '1', '0.25rem': '1', '0.3rem': '1',
@@ -80,8 +63,6 @@ rules.push(
     ['font-bold', /font-bold(?![\w-])/g, 'font-semibold']
 );
 
-// Hand-picked light-theme status hexes -> the *-soft-foreground tokens
-// (one color-mix formula per tone, defined in index.css for both themes).
 const HEX_TO_TONE = { '0a5fbf': 'info', '8a5300': 'warning', '0f7a34': 'success', 'c41e1e': 'danger' };
 const LIGHT_OVERRIDE = /\s*\[\[data-theme=light\]_&\]:(?:\[&>\.truncate\]:)?text-\[#([0-9a-f]{6})\]/;
 
@@ -98,8 +79,6 @@ const retoneLine = (line) => {
     return retoneLine(retoned);
 };
 
-// Bare `rounded` (4px) -> rounded-sm, only on className lines so that
-// non-class strings like skeleton variant names stay untouched.
 const bareRounded = (line) => (
     line.includes('className')
         ? line.replace(/(?<=[\s'"`])rounded(?=\s)/g, 'rounded-sm')

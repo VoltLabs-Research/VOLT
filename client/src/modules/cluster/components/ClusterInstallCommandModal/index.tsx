@@ -1,8 +1,13 @@
+import { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import ClusterInstallCommandPicker from '@/modules/cluster/components/ClusterInstallCommandPicker';
 import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
 import { Modal } from '@/shared/ui/modal/Modal';
 
-export const CLUSTER_INSTALL_COMMAND_MODAL_ID = 'cluster-install-command-modal';
+
+export interface ClusterInstallCommand {
+    clusterId: string;
+    enrollmentToken: string;
+}
 
 interface ClusterInstallCommandModalProps {
     clusterId: string | null;

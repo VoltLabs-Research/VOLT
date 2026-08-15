@@ -1,15 +1,3 @@
-/*
- * Checks the "interior defects only" filter, which drops the connected component of a
- * defect mesh that encloses the others -- the sample's outer shell.
- *
- * The case that matters most here is the one where it must NOT act: in a fully
- * periodic bulk cell the components are voids sitting side by side, and dropping "the
- * biggest" would silently delete a real void. The filter only fires when one component
- * genuinely contains all the rest.
- *
- * Run: npx tsx scripts/mesh-component-filter-check.ts
- */
-
 import { dropEnclosingComponent } from '@modules/plugin/services/exports/mesh-component-filter';
 
 interface CheckResult {
@@ -30,7 +18,6 @@ const check = (label: string, passed: boolean, detail: string): void => {
 
 const BOX_TRIANGLES = 12;
 
-/** Appends an axis-aligned closed box, outward-wound, to the arrays being built. */
 const pushBox = (
     positions: number[],
     indices: number[],
@@ -98,12 +85,10 @@ const maxIndex = (indices: Uint32Array): number => {
     return highest;
 };
 
-/* ---- 1. a shell wrapping one interior void: the shell goes ---- */
-
 {
     const mesh = buildMesh([
-        [[0, 0, 0], [100, 100, 100]],   // outer shell
-        [[40, 40, 40], [60, 60, 60]]    // interior void
+        [[0, 0, 0], [100, 100, 100]],
+        [[40, 40, 40], [60, 60, 60]]
     ]);
     const filtered = dropEnclosingComponent(mesh.positions, mesh.indices);
 
@@ -131,12 +116,10 @@ const maxIndex = (indices: Uint32Array): number => {
     );
 }
 
-/* ---- 2. two voids side by side: nothing may be dropped ---- */
-
 {
     const mesh = buildMesh([
         [[10, 10, 10], [30, 30, 30]],
-        [[60, 60, 60], [95, 95, 95]]    // bigger, but encloses nothing
+        [[60, 60, 60], [95, 95, 95]]
     ]);
     const filtered = dropEnclosingComponent(mesh.positions, mesh.indices);
 
@@ -149,8 +132,6 @@ const maxIndex = (indices: Uint32Array): number => {
     );
 }
 
-/* ---- 3. a lone component is never dropped ---- */
-
 {
     const mesh = buildMesh([[[0, 0, 0], [100, 100, 100]]]);
     const filtered = dropEnclosingComponent(mesh.positions, mesh.indices);
@@ -161,8 +142,6 @@ const maxIndex = (indices: Uint32Array): number => {
         `componentes=${filtered.componentCount} descartados=${filtered.droppedTriangles}`
     );
 }
-
-/* ---- 4. a shell with several interior defects ---- */
 
 {
     const mesh = buildMesh([
@@ -189,8 +168,6 @@ const maxIndex = (indices: Uint32Array): number => {
     );
 }
 
-/* ---- 5. nested shells: only the outermost goes ---- */
-
 {
     const mesh = buildMesh([
         [[0, 0, 0], [100, 100, 100]],
@@ -208,8 +185,6 @@ const maxIndex = (indices: Uint32Array): number => {
         `descartados=${filtered.droppedTriangles} min=[${bounds.min.join(', ')}] max=[${bounds.max.join(', ')}]`
     );
 }
-
-/* ---- report ---- */
 
 let failed = 0;
 for (const result of results) {

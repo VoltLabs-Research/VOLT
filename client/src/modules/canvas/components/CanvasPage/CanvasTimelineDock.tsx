@@ -8,11 +8,6 @@ import type useResizable from '../../hooks/use-resizable';
 interface CanvasTimelineDockProps extends Omit<ComponentProps<typeof Timeline>, 'disableContextualTips'> {
     panel: ReturnType<typeof useResizable>;
     isNarrowViewport: boolean;
-    /**
-     * Trajectory/timestep readout. It rides inside the dock so the bottom of the
-     * screen is one band instead of two stacked ones, and so the numbers sit next
-     * to the timeline they describe.
-     */
     statusBar?: ReactNode;
 }
 

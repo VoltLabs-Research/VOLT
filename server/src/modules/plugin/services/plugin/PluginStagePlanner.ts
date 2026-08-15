@@ -35,14 +35,8 @@ export interface PlannedStage {
     execution: PipelineStageExecutionInput;
     createdAnalysis?: Analysis;
     pluginDisplayName: string;
-    /** The analysis this stage resolved to, whether it computed or was cached. */
     analysisId: string;
     cacheHit: boolean;
-    /**
-     * The config that actually ran — visibility-sanitized, so it differs from the
-     * submitted one whenever a hidden argument was dropped. This is the copy the
-     * run records and the one a re-run must reproduce.
-     */
     config: Record<string, unknown>;
 }
 

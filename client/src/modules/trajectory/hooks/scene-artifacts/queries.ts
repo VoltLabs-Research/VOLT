@@ -1,3 +1,4 @@
+import sceneArtifactService from '../../api/services/scene-artifacts-service';
 import { useQueries } from '@tanstack/react-query';
 import { buildKeys } from '@/shared/query/query-keys';
 import { createQuery } from '@/shared/query/create-query';
@@ -111,3 +112,7 @@ export const useSceneArtifactsQueries = (paramsList: ListSceneArtifactsInput[]) 
         }))
     });
 };
+
+export const fetchSceneArtifactsByTeam = (
+    params: Parameters<typeof sceneArtifactService.listByTeam>[0]
+) => sceneArtifactService.listByTeam(params);

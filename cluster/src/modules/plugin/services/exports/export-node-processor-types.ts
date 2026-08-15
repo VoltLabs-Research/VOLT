@@ -97,23 +97,13 @@ export interface ExportMaterial {
 }
 
 export interface AtomisticExportOptions {
-    /**
-     * Colour per category name, declared by the plugin. Categories the plugin does not
-     * declare fall back to a generated colour; the daemon never interprets the names.
-     */
     propertyColors?: Record<string, [number, number, number, number]>;
     octree?: OctreeExportOptions;
 }
 
 export interface MeshExportOptions {
     enableDoubleSided?: boolean;
-    /** Flips the winding, matching OVITO's SurfaceMeshVis.reverseOrientation. */
     reverseOrientation?: boolean;
-    /**
-     * Drops the connected component that encloses all others -- the sample's outer
-     * shell -- so interior defects are not hidden behind it. Removes real geometry,
-     * so it is meant for a companion artifact rather than the primary one.
-     */
     interiorOnly?: boolean;
     smoothIterations?: number;
     material?: ExportMaterial;
@@ -152,18 +142,10 @@ export interface ChartExportOptions {
     showGrid?: boolean;
 }
 
-/*
- * Panel blocks, transcribed from `contracts/src/modules/plugin/panel.ts`, which is the
- * source of truth. The daemon cannot import the contracts package — its tsconfig resolves
- * only @core/@modules/@shared — so it re-declares wire shapes, as everything under
- * `shared/contracts/` already does. Keep the field names identical; the resolved document
- * this produces is parsed on the server against the contract version.
- */
 export type PanelRgba = [number, number, number, number];
 export type PanelScalar = string | number | boolean | null;
 export type PanelColumnFormat = 'integer' | 'decimal' | 'percent';
 
-/** Either a literal, or a dotted path to a number the plugin computes per frame. */
 export type PanelNumber = number | { source: string };
 
 export interface PanelColumnDeclaration {

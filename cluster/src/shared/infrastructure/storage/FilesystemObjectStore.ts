@@ -74,16 +74,6 @@ export class FilesystemObjectStore implements LocalClusterObjectStoreGateway {
         return `${this.resolvePath(this.metadataRoot, bucket, objectKey)}.json`;
     }
 
-    /**
-     * Where an object sits on this host's disk.
-     *
-     * Only meaningful for the local store, which is why it lives on the local gateway and
-     * not on the cluster-wide one. It exists so a reader that can memory-map a file does
-     * not have to stream a copy of it somewhere else first — for a multi-gigabyte
-     * trajectory that copy is the expensive part of looking at its headers.
-     *
-     * The object must exist; callers that are not sure should statObject first.
-     */
     resolveLocalPath(bucket: string, objectKey: string): string {
         return this.objectPath(bucket, objectKey);
     }

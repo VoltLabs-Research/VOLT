@@ -3,11 +3,11 @@ import FrameCombobox from '../FrameCombobox';
 import PresetPopover from './PresetPopover';
 import TransportControls from '../TransportControls';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import useDownloadExposureListing from '../../hooks/use-download-exposure-listing';
 
 import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
 import { Separator, cn } from '@heroui/react';
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
-import type { DownloadPluginListingParams } from '../../hooks/use-download-plugin-listing';
 import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -46,7 +46,6 @@ interface TimelineHeaderProps {
     onRangeEndChange: (value: number | undefined) => void;
     playSpeed: number;
     onPlaySpeedChange: (speed: number) => void;
-    onDownloadExposureListing?: (params: DownloadPluginListingParams) => void;
     downloadContext: TimelineDownloadContext;
 }
 
@@ -98,9 +97,9 @@ const TimelineHeader = ({
     onRangeEndChange,
     playSpeed,
     onPlaySpeedChange,
-    onDownloadExposureListing,
     downloadContext
 }: TimelineHeaderProps) => {
+    const { download: downloadExposureListing } = useDownloadExposureListing();
     const tabSelectOptions: SelectOption[] = tabs.map((tab) => ({
         value: tab.id,
         title: tab.label
@@ -127,11 +126,10 @@ const TimelineHeader = ({
     };
 
     const renderTab = (tab: TimelineTabOption) => {
-        const download = tab.exposureId && downloadContext.pluginId && onDownloadExposureListing
+        const download = tab.exposureId && downloadContext.pluginId
             ? {
                 exposureId: tab.exposureId,
-                pluginId: downloadContext.pluginId,
-                run: onDownloadExposureListing
+                pluginId: downloadContext.pluginId
             }
             : undefined;
 
@@ -150,15 +148,13 @@ const TimelineHeader = ({
                 trigger={<span className='inline-flex'>{renderTabButton(tab)}</span>}
                 options={[{
                     label: 'Download',
-                    onClick: () => {
-                        download.run({
-                            pluginId: download.pluginId,
-                            exposureId: download.exposureId,
-                            analysisId: downloadContext.analysisId,
-                            trajectoryId: downloadContext.trajectoryId,
-                            exposureName: tab.label
-                        });
-                    }
+                    onClick: () => void downloadExposureListing({
+                        pluginId: download.pluginId,
+                        exposureId: download.exposureId,
+                        analysisId: downloadContext.analysisId,
+                        trajectoryId: downloadContext.trajectoryId,
+                        exposureName: tab.label
+                    })
                 }]}
             />
         );

@@ -35,13 +35,9 @@ export interface PipelineStageInput {
 
 export type ExecutePipelineParams = { trajectoryId: string } & ExecutePipelineInput;
 
-export interface ExportAnalysisResultsInput {
-    pluginId: string;
-    analysisId: string;
-}
-
 export interface ExportPluginInput {
     pluginId: string;
+    filename: string;
 }
 
 export interface GetPluginInput {
@@ -179,8 +175,7 @@ const endpoints = {
         return commitResponse.data;
     }),
     deleteBinary: routes.route<DeleteBinaryInput, void>(pluginRoutes.removeBinary, { unwrap: 'void' }),
-    exportPlugin: download<ExportPluginInput>('GET', routes.path(pluginRoutes.exportPlugin)),
-    exportAnalysisResults: download<ExportAnalysisResultsInput>('GET', routes.path(pluginRoutes.exportListingRowsByAnalysisId)),
+    exportPlugin: download<ExportPluginInput>('GET', routes.path(pluginRoutes.exportPlugin), { query: () => undefined }),
     importPlugin: routes.route<ImportPluginInput, Plugin>(pluginRoutes.importPlugin, {
         body: ({ file }) => buildFileFormData([{
             name: 'file',

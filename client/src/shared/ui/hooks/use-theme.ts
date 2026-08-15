@@ -1,3 +1,5 @@
+import { useMedia } from '@/shared/ui/hooks/use-media';
+import { readStoredString, removeStoredValue, writeStoredString } from '@/shared/utils/local-storage';
 import { useEffect, useState } from 'react';
 
 export enum Theme {
@@ -24,20 +26,20 @@ const getSystemTheme = (): Theme => {
 };
 
 const getSavedTheme = (): Theme | null => {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const savedTheme = readStoredString(THEME_STORAGE_KEY);
 
     if (savedTheme === Theme.Light || savedTheme === Theme.Dark || savedTheme === Theme.System) {
         return savedTheme;
     }
 
     if (savedTheme !== null) {
-        localStorage.removeItem(THEME_STORAGE_KEY);
+        removeStoredValue(THEME_STORAGE_KEY);
     }
 
     return null;
 };
 
-const getEffectiveTheme = (preference: Theme): Theme => {
+export const resolveEffectiveTheme = (preference: Theme): Theme => {
     if (preference === Theme.System) {
         return getSystemTheme();
     }
@@ -70,71 +72,34 @@ const syncThemeColorMeta = (): void => {
     themeColorMeta.setAttribute('content', backgroundColor);
 };
 
-const initializeTheme = (): void => {
-    applyTheme(getEffectiveTheme(resolvePreference()));
-};
-
 export const useThemeInitialization = (): void => {
+    const systemPrefersDark = useMedia(THEME_MEDIA_QUERY);
+
     useEffect(() => {
-        initializeTheme();
+        const preference = resolvePreference();
+
+        applyTheme(preference === Theme.System
+            ? (systemPrefersDark ? Theme.Dark : Theme.Light)
+            : preference);
         syncThemeColorMeta();
-
-        const mediaQueryList = window.matchMedia(THEME_MEDIA_QUERY);
-
-        const handleSystemThemeChange = (): void => {
-            const preference = getSavedTheme() ?? Theme.System;
-
-            if (preference !== Theme.System) {
-                return;
-            }
-
-            applyTheme(getSystemTheme());
-            syncThemeColorMeta();
-        };
-
-        mediaQueryList.addEventListener('change', handleSystemThemeChange);
-
-        return () => {
-            mediaQueryList.removeEventListener('change', handleSystemThemeChange);
-        };
-    }, []);
+    }, [systemPrefersDark]);
 };
 
 export const useTheme = (): UseThemeReturn => {
     const [preference, setPreferenceState] = useState<Theme>(resolvePreference);
-    const [effectiveTheme, setEffectiveTheme] = useState<Theme>(() => getEffectiveTheme(preference));
+    const systemPrefersDark = useMedia(THEME_MEDIA_QUERY);
+    const effectiveTheme = preference === Theme.System
+        ? (systemPrefersDark ? Theme.Dark : Theme.Light)
+        : preference;
 
     useEffect(() => {
-        const effective = getEffectiveTheme(preference);
-        setEffectiveTheme(effective);
-        applyTheme(effective);
+        applyTheme(effectiveTheme);
         syncThemeColorMeta();
-    }, [preference]);
-
-    useEffect(() => {
-        if (preference !== Theme.System) {
-            return;
-        }
-
-        const mediaQueryList = window.matchMedia(THEME_MEDIA_QUERY);
-
-        const handleSystemThemeChange = (event: MediaQueryListEvent): void => {
-            const newEffective = event.matches ? Theme.Dark : Theme.Light;
-            setEffectiveTheme(newEffective);
-            applyTheme(newEffective);
-            syncThemeColorMeta();
-        };
-
-        mediaQueryList.addEventListener('change', handleSystemThemeChange);
-
-        return () => {
-            mediaQueryList.removeEventListener('change', handleSystemThemeChange);
-        };
-    }, [preference]);
+    }, [effectiveTheme]);
 
     const setTheme = (newTheme: Theme): void => {
         setPreferenceState(newTheme);
-        localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+        writeStoredString(THEME_STORAGE_KEY, newTheme);
     };
 
     return {

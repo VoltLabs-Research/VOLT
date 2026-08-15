@@ -4,6 +4,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 interface ShortcutOptions {
     ctrl?: boolean;
     meta?: boolean;
+    mod?: boolean;
     shift?: boolean;
     alt?: boolean;
     preventDefault?: boolean;
@@ -12,13 +13,14 @@ interface ShortcutOptions {
 };
 
 export const useKeyboardShortcut = (
-    key: string,
+    key: string | string[],
     callback: () => void,
     options: ShortcutOptions = {}
 ) => {
     const {
         ctrl = false,
         meta = false,
+        mod = false,
         shift = false,
         alt = false,
         preventDefault = true,
@@ -27,17 +29,20 @@ export const useKeyboardShortcut = (
     } = options;
 
     const hotkey = useMemo(() => {
-        const parts: string[] = [];
+        const modifiers: string[] = [];
 
-        if (ctrl) parts.push('ctrl');
-        if (meta) parts.push('meta');
-        if (shift) parts.push('shift');
-        if (alt) parts.push('alt');
+        if (mod) modifiers.push('mod');
+        if (ctrl) modifiers.push('ctrl');
+        if (meta) modifiers.push('meta');
+        if (shift) modifiers.push('shift');
+        if (alt) modifiers.push('alt');
 
-        parts.push(key.toLowerCase());
+        const keys = Array.isArray(key) ? key : [key];
 
-        return parts.join('+');
-    }, [alt, ctrl, key, meta, shift]);
+        return keys
+            .map((single) => [...modifiers, single.toLowerCase()].join('+'))
+            .join(',');
+    }, [alt, ctrl, key, meta, mod, shift]);
 
     useHotkeys(
         hotkey,

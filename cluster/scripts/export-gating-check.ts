@@ -1,14 +1,3 @@
-/*
- * Checks the two halves of argument-driven exports against the real opendxa workflow:
- *
- *   1. an exposure whose `exportWhen` is false never reaches the run's exposure list, so
- *      nothing downstream registers, exports or persists it;
- *   2. a boolean declared `cliValueStyle: 'explicit'` always reaches the binary with a
- *      value, which is the only way to switch off a flag the binary defaults to true.
- *
- * Run: npx tsx scripts/export-gating-check.ts
- */
-
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
@@ -63,10 +52,6 @@ const namesFor = (config?: WorkflowValueMap): string[] => (
         .sort()
 );
 
-/* ---- 1. no config at all keeps the pre-gating behaviour ---- */
-
-// Counted from the workflow rather than hardcoded: the invariant is "no config gates
-// nothing out", which must keep holding as exposures are added or removed.
 const declaredExposureCount = workflow.nodes.filter((node) => node.type === 'exposure').length;
 const ungated = namesFor();
 check(
@@ -74,8 +59,6 @@ check(
     ungated.length === declaredExposureCount,
     `${ungated.length} de ${declaredExposureCount} exposures`
 );
-
-/* ---- 2. defaults: only what opendxa writes by default ---- */
 
 const withDefaults = namesFor(defaultConfig());
 const expectedByDefault = [
@@ -98,8 +81,6 @@ check(
     withDefaults.includes('Structure Identification') ? 'sigue presente' : 'ausente'
 );
 
-/* ---- 3. turning the defect mesh off removes exactly one exposure ---- */
-
 const meshOff = namesFor({
     ...defaultConfig(),
     export_defect_mesh: false
@@ -110,8 +91,6 @@ check(
     !meshOff.includes('Defect Mesh') && meshOff.length === withDefaults.length - 1,
     meshOff.join(', ')
 );
-
-/* ---- 4. one flag can gate several exposures ---- */
 
 const statsOff = namesFor({
     ...defaultConfig(),
@@ -125,8 +104,6 @@ check(
     statsOff.join(', ')
 );
 
-/* ---- 5. opting in adds exposures back ---- */
-
 const structureOn = namesFor({
     ...defaultConfig(),
     export_structure_identification: true
@@ -137,8 +114,6 @@ check(
     structureOn.includes('Structure Identification'),
     structureOn.join(', ')
 );
-
-/* ---- 6. everything off yields nothing, without throwing ---- */
 
 const allOff: WorkflowValueMap = {};
 for (const definition of argumentDefinitions) {
@@ -153,8 +128,6 @@ check(
     nothing.length === 0,
     `${nothing.length} exposures`
 );
-
-/* ---- 7. explicit CLI style can express false ---- */
 
 const buildCliArgument = (
     definition: WorkflowArgumentDefinition,
@@ -197,8 +170,6 @@ if (meshDefinition) {
     );
 }
 
-/* ---- 8. every gate points at a declared argument ---- */
-
 const declared = new Set(argumentDefinitions.map((definition) => definition.argument));
 const danglingGates = workflow.nodes
     .filter((node) => node.type === 'exposure')
@@ -211,8 +182,6 @@ check(
     danglingGates.length === 0,
     danglingGates.length === 0 ? 'todos resueltos' : danglingGates.join(', ')
 );
-
-/* ---- report ---- */
 
 let failed = 0;
 for (const result of results) {

@@ -76,8 +76,6 @@ export default class PipelineExecutionPlanner {
         const stageExecutions: PipelineStageExecutionInput[] = [];
         const createdAnalyses: Analysis[] = [];
         const runStages: PipelineRunStage[] = [];
-        // Minted before the loop so each analysis can be stamped with it as it is
-        // inserted; the run row itself is only written once every stage resolved.
         const pipelineRunId = generateEntityId();
 
         try {
@@ -131,8 +129,6 @@ export default class PipelineExecutionPlanner {
                 }
             }
 
-            // Written before dispatch so a failed dispatch still leaves the run in
-            // history next to the analyses it marked failed.
             await PipelineRunEntity.create({
                 id: pipelineRunId,
                 trajectory: input.trajectoryId,

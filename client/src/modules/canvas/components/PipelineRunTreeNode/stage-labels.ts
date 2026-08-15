@@ -31,11 +31,6 @@ const formatNormal = (config: Record<string, unknown>): string | undefined => {
     return parts.every((part): part is string => part !== undefined) ? parts.join(', ') : undefined;
 };
 
-/**
- * What a non-plugin stage did, short enough for a tree row. These stages carry no
- * name of their own — the transform *is* the label — so the config is where the
- * meaning lives.
- */
 export const describePipelineRunStage = (stage: PipelineRunStage): string => {
     if (stage.kind === 'expression') {
         return readString(stage.config, 'expression') ?? KIND_LABELS.expression;
@@ -57,22 +52,11 @@ export const describePipelineRunStage = (stage: PipelineRunStage): string => {
     return stage.pluginDisplayName ?? KIND_LABELS.plugin;
 };
 
-export const pipelineRunStageKindLabel = (kind: PipelineRunStage['kind']): string => KIND_LABELS[kind];
-
 const CHAIN_SEPARATOR = ' → ';
 
-/** Beyond this the chain stops being a name and starts being a paragraph. */
 const MAX_CHAIN_PARTS = 3;
 
-/**
- * A run's name: the plugins it ran, in order.
- *
- * Only plugin stages appear. A slice or expression stage describes *how* the
- * frame was prepared, which the expanded rows already say; putting it in the
- * title would push the plugin names — the part that identifies the run — out of
- * a narrow sidebar.
- */
-export const describeRunChain = (
+const describeRunChain = (
     rows: readonly { kind: string; stage?: PipelineRunStage }[]
 ): string => {
     const names = rows
@@ -81,7 +65,6 @@ export const describeRunChain = (
         .filter((name): name is string => Boolean(name));
 
     if (names.length === 0) {
-        // Every stage was a transform, or none carried a name.
         return 'Pipeline run';
     }
 
@@ -93,14 +76,6 @@ export const describeRunChain = (
     return `${shown} +${names.length - MAX_CHAIN_PARTS}`;
 };
 
-/**
- * The title to show for a run: the user's own name when it has one, the plugin
- * chain otherwise.
- *
- * The chain stays a fallback computed on read rather than a value copied into the
- * run at creation, so renaming a plugin re-labels the runs that used it instead of
- * leaving them quoting a name that no longer exists.
- */
 export const resolveRunLabel = (
     run: { name?: string | null } | undefined,
     rows: readonly { kind: string; stage?: PipelineRunStage }[]

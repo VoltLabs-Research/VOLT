@@ -14,10 +14,6 @@ export interface GetPipelineRunsByTrajectoryIdInput{
 
 export const toWireRun = (run: PipelineRunEntity): PipelineRun => run.toJSON() as unknown as PipelineRun;
 
-/**
- * Newest-first, paginated **by run** rather than by analysis: a page boundary
- * that fell in the middle of a run would hand the client a partial stage chain.
- */
 export const getPipelineRunsByTrajectoryId = async (
     input: GetPipelineRunsByTrajectoryIdInput
 ): Promise<PaginatedResult<PipelineRun>> => {

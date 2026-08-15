@@ -1,13 +1,13 @@
 import { cn } from '@heroui/react';
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import useCanvasCleanup from '../../hooks/use-canvas-cleanup';
-import useCanvasCoordinator from '../../hooks/use-canvas-coordinator';
+import useCanvasCleanup from './use-canvas-cleanup';
+import useCanvasCoordinator from './use-canvas-coordinator';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
-import useFractalSceneConfig from '@/modules/canvas/hooks/use-fractal-scene-config';
-import useKeyboardShortcuts from '../../hooks/use-keyboard-shortcuts';
+import useFractalSceneConfig from './use-fractal-scene-config';
+import useKeyboardShortcuts from './use-keyboard-shortcuts';
 import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
-import useViewportNarrow from '../../hooks/use-viewport-narrow';
+import useViewportNarrow from './use-viewport-narrow';
 
 import useAnalysisDiscoveryTourGate from './use-analysis-discovery-tour-gate';
 import useCanvasAccessPublication from './use-canvas-access-publication';
@@ -24,7 +24,6 @@ import CanvasToolbarActions from './CanvasToolbarActions';
 import LocalViewerFrameControls from './LocalViewerFrameControls';
 
 import AnalysisExecutionOverlay from '../AnalysisExecutionOverlay';
-import AnalysisListingDownloadModal from '../AnalysisListingDownloadModal';
 import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
 import CanvasBanners from '../CanvasBanners';
 import CommandPalette from '../CommandPalette';
@@ -46,7 +45,7 @@ import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { RefObject } from 'react';
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 
 
 
@@ -144,12 +143,6 @@ const CanvasPage = () => {
 
     const localGlbViewer = useLocalGlbViewer(isLocalGlbViewer);
     const {
-        isDownloading,
-        downloadListing,
-        downloadAnalysisListings,
-        analysisDownloadTargetId,
-        openAnalysisDownloadModal,
-        closeAnalysisDownloadModal,
         downloadAllTrajectoryAnalyses,
         canDownloadAnalysisListing,
         canDownloadTrajectoryAnalyses
@@ -195,21 +188,6 @@ const CanvasPage = () => {
         && !analysisDiscoveryTourActive
     );
 
-    /*
-     * The panel's width is an inline style driven by this hook, so a utility class on the
-     * element would just be overridden — this default is the only place the docked width
-     * can be set.
-     *
-     * This only governs viewports wider than the narrow breakpoint (1199px). Below it the
-     * panel becomes an overlay drawer whose width is pinned by an `!important` utility in
-     * CanvasRightPanelRegion, which beats this inline style; both have to move together
-     * for a width change to be visible on a laptop-sized window.
-     *
-     * The storage key carries a version suffix because a persisted size shadows the
-     * default: anyone who had ever dragged the divider would keep their old width and
-     * never see this one. Bumping the suffix discards those saved widths, which is the
-     * intended reset.
-     */
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
         initialSize: 320,
@@ -242,11 +220,10 @@ const CanvasPage = () => {
 
     const toolbarContextualActions = useMemo(() => (
         <CanvasToolbarActions
+            analysisId={analysisId}
             canDownloadAnalysis={canDownloadAnalysisListing}
-            isDownloadingAnalysis={isDownloading}
-            onDownloadAnalysis={openAnalysisDownloadModal}
         />
-    ), [canDownloadAnalysisListing, isDownloading, openAnalysisDownloadModal]);
+    ), [analysisId, canDownloadAnalysisListing]);
 
     const viewportBodyContent = useViewportBodyContent({
         trajectory,
@@ -319,12 +296,6 @@ const CanvasPage = () => {
                 )}
 
                 <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-stage'>
-                    {/*
-                      * The viewport stops where the docked right panel begins. The panel is an
-                      * absolute overlay, so without this the scene box stayed full-window and the
-                      * 3D model centred behind the panel — half a panel width right of every
-                      * other "centred" element on screen (toolbar cluster, transport controls).
-                      */}
                     <div className='flex flex-col absolute overflow-hidden inset-0 canvas-center-viewport' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
@@ -371,7 +342,6 @@ const CanvasPage = () => {
                             availableTimesteps={availableTimesteps}
                             selectedAnalysisTimesteps={selectedAnalysisTimesteps}
                             analysisId={analysisId}
-                            onDownloadExposureListing={downloadListing}
                         />
                     )}
                     {isLocalGlbViewer && (
@@ -397,16 +367,8 @@ const CanvasPage = () => {
                     analysisId={analysisId}
                     currentTimestep={currentTimestep}
                     canMutateCanvas={canMutateCanvas}
-                    onDownloadAnalysis={openAnalysisDownloadModal}
-                    onDownloadExposureListing={downloadListing}
                 />
             )}
-            <AnalysisListingDownloadModal
-                analysisId={analysisDownloadTargetId}
-                isDownloading={isDownloading}
-                onDownload={downloadAnalysisListings}
-                onClose={closeAnalysisDownloadModal}
-            />
             <CommandPalette />
             <ShortcutFeedback />
             <ExposureSettingsWidget />

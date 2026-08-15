@@ -1,16 +1,9 @@
-import { Theme } from '@/shared/ui/hooks/use-theme';
+import { Theme, resolveEffectiveTheme } from '@/shared/ui/hooks/use-theme';
+import { writeStoredString } from '@/shared/utils/local-storage';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 import type { SetThemeInput } from '@volt/contracts/modules/ai/ai-tools';
 
 const THEME_STORAGE_KEY = 'theme';
-const THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
-
-const resolveEffectiveTheme = (preference: Theme): Theme => {
-    if (preference === Theme.System) {
-        return window.matchMedia(THEME_MEDIA_QUERY).matches ? Theme.Dark : Theme.Light;
-    }
-    return preference;
-};
 
 const setTheme: ClientToolHandler<SetThemeInput> = {
     name: 'set_theme',
@@ -18,7 +11,7 @@ const setTheme: ClientToolHandler<SetThemeInput> = {
     run(input): ClientToolResult {
         const preference = input.theme as Theme;
 
-        localStorage.setItem(THEME_STORAGE_KEY, preference);
+        writeStoredString(THEME_STORAGE_KEY, preference);
 
         const effective = resolveEffectiveTheme(preference);
         document.documentElement.setAttribute('data-theme', effective);

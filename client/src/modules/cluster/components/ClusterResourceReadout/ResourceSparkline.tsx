@@ -4,10 +4,6 @@ import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts';
 const SPARKLINE_HEIGHT = 28;
 const MIN_DATA_MAX = 1;
 
-/*
- * Domain floors at a max of 1 so a flat-zero series draws along the bottom instead of
- * recharts spreading no range across the full height and inventing a shape.
- */
 const SPARKLINE_DOMAIN: [string, (dataMax: number) => number] = [
     'dataMin',
     (dataMax: number) => Math.max(dataMax, MIN_DATA_MAX)
@@ -30,7 +26,6 @@ const toSparklinePoints = (values: number[]): SparklinePoint[] => {
         .filter((entry) => Number.isFinite(entry))
         .map((value) => ({ value }));
 
-    // A single sample has no line to draw, so it is doubled into a flat segment.
     if (points.length === 1) return [points[0], points[0]];
     if (points.length === 0) return [{ value: 0 }, { value: 0 }];
 
@@ -39,15 +34,9 @@ const toSparklinePoints = (values: number[]): SparklinePoint[] => {
 
 interface ResourceSparklineProps {
     values: number[];
-    /** A CSS colour, so the row's threshold tone carries into its trace. */
     color: string;
 }
 
-/*
- * Decorative by construction: `aria-hidden`, no tooltip, no interaction. Every number
- * it encodes is already written next to it, so a screen reader loses nothing and a
- * pointer has nothing to discover here.
- */
 const ResourceSparkline = ({ values, color }: ResourceSparklineProps) => {
     const fillId = `${useId()}-resource-sparkline`;
 

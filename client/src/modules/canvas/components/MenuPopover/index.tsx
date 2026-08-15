@@ -65,10 +65,6 @@ const MenuPopover = ({ menu, openMenu, onOpenChange, idPrefix = 'menu', triggerC
             isOpen={isOpen}
             onOpenChange={(nextOpen) => onOpenChange(nextOpen ? menu.label : null)}
         >
-            {/*
-              * Ghost until hovered or opened: the menu bar reads as plain labels at
-              * rest, and only the open menu carries a background.
-              */}
             <Button
                 variant={isOpen ? 'secondary' : 'ghost'}
                 size='sm'

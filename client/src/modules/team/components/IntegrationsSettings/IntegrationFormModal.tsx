@@ -1,10 +1,11 @@
+import { TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/contracts/modal-ids';
 import Loader from '@/shared/ui/components/Loader';
 import { Button, Label, ListBox, Select, Switch } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import IntegrationModelList from './IntegrationModelList';
-import { OLLAMA_DEFAULT_BASE_URL, TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
+import { OLLAMA_DEFAULT_BASE_URL } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import type { IntegrationDraft } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import { useId } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';

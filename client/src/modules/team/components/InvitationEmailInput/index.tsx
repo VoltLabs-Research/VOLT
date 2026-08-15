@@ -1,5 +1,5 @@
 import { InviteButton } from '../InviteButton';
-import type { InviteButtonState } from '../InviteButton';
+import type { InviteButtonState } from '@/modules/team/contracts/invite';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import type { ChangeEvent, FormEvent } from 'react';
 

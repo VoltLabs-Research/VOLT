@@ -171,9 +171,6 @@ const PipelineRunControl = ({
             const viewTimestep = selectedTimesteps?.[0]
                 ?? getNearestTimestep(currentTimestep, availableTimesteps);
 
-            // Each stage carries its own analysisId and name. Zipping the response
-            // against `pluginStages` by position would mislabel every stage after
-            // the first cache hit, since a cached stage creates no analysis.
             const computedStages = stages.filter((stage) => stage.analysisId !== undefined);
             computedStages.forEach((stage) => {
                 pendingStore.register({

@@ -129,10 +129,6 @@ const AIPageContent = () => {
     }
 
     let workspaceContent: ReactNode = (
-        /*
-         * Always stretched: the thread centres its own empty state, and letting the
-         * row shrink to content pinned the composer to the middle of the page.
-         */
         <div className='flex min-h-0 flex-1 flex-row items-stretch max-md:flex-col'>
             <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
                 <AIConversationThread
@@ -203,10 +199,6 @@ const AIPageContent = () => {
         );
     }
 
-    /*
-     * No conversation list here: it owns the left rail while this route is open
-     * (see AINav), so the page is only the thread and its composer.
-     */
     return (
         <div className='flex h-full min-w-0 flex-col overflow-hidden'>
             {providerCatalogError && (

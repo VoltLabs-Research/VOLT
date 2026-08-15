@@ -23,17 +23,8 @@ interface AINavProps {
     collapsed: boolean;
 }
 
-/* Below this the search field costs more room than it saves. */
 const SEARCH_THRESHOLD = 8;
 
-/*
- * The rail while /dashboard/ai is open: the conversation list takes over the left
- * column, exactly as Settings does, with "Go back" returning to the dashboard.
- *
- * It reads the chat context directly — `AIChatProvider` wraps the whole dashboard
- * layout, so the list and the thread share one source of conversations and can
- * never disagree about which one is active.
- */
 const AINav = ({ active, collapsed }: AINavProps) => {
     const { conversationId } = useParams<AINavRouteParams>();
     const { canAccess } = useTeamPermissions();
@@ -117,7 +108,6 @@ const AINav = ({ active, collapsed }: AINavProps) => {
                 </Tooltip.Content>
             </Tooltip>
 
-            {/* The rail collapses to icons only, where a list of titles cannot be read. */}
             {!collapsed && (
                 <div className='mt-2 flex min-h-0 flex-col gap-1'>
                     {showSearch && (

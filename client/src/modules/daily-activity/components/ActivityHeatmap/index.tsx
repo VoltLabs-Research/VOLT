@@ -1,4 +1,4 @@
-import useActivityHeatmap, { getDayAriaLabel, getDayTooltipState } from '@/modules/daily-activity/hooks/use-activity-heatmap';
+import useActivityHeatmap, { getDayAriaLabel, getDayTooltipState } from './use-activity-heatmap';
 import ActivityTooltipContent from '@/modules/daily-activity/components/ActivityTooltipContent';
 import { ScrollShadow, Tooltip, cn } from '@heroui/react';
 import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domain';

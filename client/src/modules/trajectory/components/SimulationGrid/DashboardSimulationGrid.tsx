@@ -1,17 +1,20 @@
+import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import SimulationSkeletonCard from '../SimulationSkeletonCard';
 import SimulationCard from '../SimulationCard';
 import SimulationFolderCard from '../SimulationFolderCard';
 import SimulationBreadcrumbs from './SimulationBreadcrumbs';
-import useDeleteSelectedTrajectories from '@/modules/trajectory/hooks/trajectory/use-delete-selected-trajectories';
-import useDownloadSamples from '@/modules/trajectory/hooks/trajectory/use-download-samples';
+import useDeleteSelectedTrajectories from './use-delete-selected-trajectories';
+import useDownloadSamples from './use-download-samples';
 import useTrajectoriesListing, { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import { isTrajectoryFolderRow } from '@/modules/trajectory/utils/listing';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { FolderedListingModals } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
 import { Download, Upload } from 'lucide-react';
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
+
+const DELETE_SHORTCUT_KEYS = ['Backspace', 'Delete'];
 
 const renderGridSkeleton = () => <SimulationSkeletonCard />;
 
@@ -43,23 +46,17 @@ const DashboardSimulationGrid = () => {
         showDragAffordance: false
     }) : undefined, [dragAndDrop]);
 
-    const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
-        if (selectedIds.length === 0) {
-            return;
-        }
-
-        const isDeleteShortcut = (e.ctrlKey || e.metaKey) && ['Backspace', 'Delete'].includes(e.key);
-        if (isDeleteShortcut) {
-            e.preventDefault();
+    const handleDeleteShortcut = useCallback(() => {
+        void (async () => {
             await deleteSelectedTrajectories();
             clearSelection();
-        }
-    }, [selectedIds.length, deleteSelectedTrajectories, clearSelection]);
+        })();
+    }, [deleteSelectedTrajectories, clearSelection]);
 
-    useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleKeyDown]);
+    useKeyboardShortcut(DELETE_SHORTCUT_KEYS, handleDeleteShortcut, {
+        mod: true,
+        enabled: selectedIds.length > 0
+    });
 
     const handleFolderOpen = useCallback((folderId: string) => {
         clearSelection();

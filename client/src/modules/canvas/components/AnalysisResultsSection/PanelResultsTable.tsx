@@ -10,9 +10,6 @@ interface PanelResultsTableProps {
     timestep: number;
 }
 
-// A results table summarises categories, so it is inherently short. One page is the
-// whole table; anything longer is a listing, not a summary, and belongs in the results
-// viewer where it can be paged and downloaded.
 const MAX_PANEL_ROWS = 64;
 
 const PanelResultsTable = ({ table, analysisId, exposureId, timestep }: PanelResultsTableProps) => {
@@ -48,9 +45,7 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep }: PanelRes
                 <table className='w-full border-collapse text-2xs'>
                     <thead>
                         <tr className='text-muted'>
-                            {/* Swatch column: no header, it labels itself. */}
                             <th className='w-4 p-0' aria-label='Color' />
-                            {/* No header: the swatch and the name label themselves. */}
                             <th className='w-full py-0.5 pl-2 text-left font-normal' />
                             {table.columns.map((column) => (
                                 <th
@@ -78,12 +73,6 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep }: PanelRes
                                             title={swatch ? undefined : 'The plugin declared no color for this category'}
                                         />
                                     </td>
-                                    {/*
-                                      * `w-full` makes this the column that absorbs the row's
-                                      * spare width, so a short category name is written in
-                                      * full; it was `max-w-0`, which shrinks the cell to its
-                                      * minimum and clipped "OTHER" to "O…" with 180px free.
-                                      */}
                                     <td className='w-full truncate py-0.5 pl-2' title={label}>{label}</td>
                                     {table.columns.map((column) => (
                                         <td

@@ -1,4 +1,3 @@
-
 import type {
     Analysis,
     AnalysisChildAnalysis,
@@ -115,9 +114,6 @@ export default class AnalysisStageProjection {
             return artifacts;
         }
 
-        // `uploading` promises an upload is on its way. When the exporter told us
-        // it emitted nothing, nothing is coming: record that instead of leaving
-        // the artifact waiting on a transfer that will never arrive.
         const nothingProduced = producedArtifacts === false && nextStatus === 'uploading';
 
         return artifacts.map((artifact) => {
@@ -140,8 +136,6 @@ export default class AnalysisStageProjection {
             return {
                 ...artifact,
                 status: nextStatus,
-                // A stage that just started invalidates any earlier verdict; a
-                // terminal one without a report leaves it unknown.
                 produced: nextStatus === 'generating'
                     ? undefined
                     : (producedArtifacts ?? artifact.produced)

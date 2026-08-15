@@ -1,3 +1,4 @@
+import { SECRET_KEY_CREATION_MODAL_ID } from '@/modules/team/contracts/modal-ids';
 import { Button, Chip } from '@heroui/react';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
@@ -6,9 +7,9 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { SecretKeyCreationModal, SECRET_KEY_CREATION_MODAL_ID } from '../SecretKeyCreationModal';
+import { SecretKeyCreationModal } from '../SecretKeyCreationModal';
 import { useDeleteSecretKeyMutation, useRevokeSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
-import useSecretKeysListing from '@/modules/team/hooks/secret-key/use-secret-keys-listing';
+import useSecretKeysListing from './use-secret-keys-listing';
 import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';

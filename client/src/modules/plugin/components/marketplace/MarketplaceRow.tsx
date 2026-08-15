@@ -10,17 +10,6 @@ interface MarketplaceRowProps {
     onSelect: (item: RegistryPackageSummary) => void;
 }
 
-/*
- * A row in the left pane: it selects, it does not act.
- *
- * The Install button used to live here, which made every row a place where an
- * irreversible cluster operation could be triggered while scanning. Installing is
- * now the detail pane's single primary action, so this row carries only what you
- * choose by: the name, its version, and whether you already have it.
- *
- * The description is gone from the row too — it is read in the detail pane, in
- * full, instead of being clipped into a line that ends mid-sentence.
- */
 const MarketplaceRow = ({ item, installedVersion, isSelected, onSelect }: MarketplaceRowProps) => {
     const state = resolveInstallState(item.latest, installedVersion);
 
@@ -48,10 +37,6 @@ const MarketplaceRow = ({ item, installedVersion, isSelected, onSelect }: Market
                 {item.latest && (
                     <span className='text-2xs text-muted tabular-nums lining-nums'>{`v${item.latest}`}</span>
                 )}
-                {/*
-                 * Only "installed" and "update" are marked. Marking the third state too
-                 * would put a label on every row, which says nothing about any of them.
-                 */}
                 {state === 'installed' && <span className='text-2xs text-muted'>Installed</span>}
                 {state === 'update' && <span className='text-2xs text-accent'>Update</span>}
             </span>

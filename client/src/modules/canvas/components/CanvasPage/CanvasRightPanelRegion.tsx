@@ -1,5 +1,5 @@
+import ObjectsPanel from '../ObjectsPanel';
 import ResizeHandle from '../ResizeHandle';
-import RightPanel from '../RightPanel';
 import { ResizeDirection } from '../../hooks/use-resizable';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { PanelRight } from 'lucide-react';
@@ -7,7 +7,7 @@ import { PanelRight } from 'lucide-react';
 import type { ComponentProps, Dispatch, SetStateAction } from 'react';
 import type useResizable from '../../hooks/use-resizable';
 
-interface CanvasRightPanelRegionProps extends Omit<ComponentProps<typeof RightPanel>, 'compactAnalysisOnly'> {
+interface CanvasRightPanelRegionProps extends Omit<ComponentProps<typeof ObjectsPanel>, 'mode'> {
     panel: ReturnType<typeof useResizable>;
     isNarrowViewport: boolean;
     isDrawerOpen: boolean;
@@ -67,7 +67,7 @@ const CanvasRightPanelRegion = ({
                 style={{ width: panel.size }}
                 data-drawer-open={isNarrowViewport ? (isDrawerOpen ? 'true' : 'false') : undefined}
             >
-                <RightPanel {...panelProps} compactAnalysisOnly={isCompactAnalysis} />
+                <ObjectsPanel {...panelProps} mode={isCompactAnalysis ? 'analysis-compact' : 'default'} />
             </div>
         </>
     );

@@ -345,9 +345,6 @@ const flattenMesh = async (
         return null;
     }
 
-    // A handful of numbers next to two multi-million-row arrays, so it rides along
-    // as JSON instead of getting its own parquet file. Absent for plugins that do
-    // not report a domain; the exporter treats that as "no periodic rewrite".
     const cell = await readMeshDomain(connection, filePath, sectionPath);
 
     return {

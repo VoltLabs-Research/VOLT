@@ -1,6 +1,6 @@
 import { useClusterStore } from '@/modules/cluster/store/use-cluster-store';
 import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
-import { useTeamClusterSocket } from '@/modules/cluster/hooks/team-cluster/use-team-cluster-socket';
+import { useTeamClusterSocket } from './use-team-cluster-socket';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { SOCKET_CLUSTER_METRICS_EVENTS } from '@/modules/socket/events/cluster';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';

@@ -15,7 +15,7 @@ import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useMemo, useCallback, useEffect, memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import type { FractalSceneConfig } from '@/modules/fractal/contracts/scene-config';
 import type { ScreenshotComposition } from '@/modules/fractal/contracts/screenshot-composition';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';

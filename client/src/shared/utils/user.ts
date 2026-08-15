@@ -1,5 +1,3 @@
-
-
 import { getCategoricalColor } from '@/shared/ui/utils/categorical-palette';
 
 interface InitialsUserSource {
@@ -31,9 +29,4 @@ export const getInitialsFromEmail = (email: string): string => {
     return email.split('@')[0].charAt(0).toUpperCase();
 };
 
-/*
- * Delegates to the shared categorical palette instead of keeping its own five hues and its own
- * hash. The old hash summed char codes, which ignores position and so collided across similar
- * addresses; the shared one is position-sensitive.
- */
 export const getAvatarColorFromString = (str: string): string => getCategoricalColor(str);

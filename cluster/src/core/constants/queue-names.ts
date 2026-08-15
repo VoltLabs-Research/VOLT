@@ -6,11 +6,6 @@ export const TRAJECTORY_RASTER_QUEUE_NAME = 'trajectory_rasterization';
 export const TRAJECTORY_GLB_QUEUE_NAME = 'trajectory_glb_conversion';
 export const TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME = 'trajectory_frame_processing';
 
-/**
- * Every frame job of one trajectory shares this key prefix, which is what lets a
- * frame ask the queue how many of its siblings are still live instead of a separate
- * counter having to track it.
- */
 export const toTrajectoryFrameJobKeyPrefix = (trajectoryId: string): string =>
     `trajectory-glb:${trajectoryId}:`;
 

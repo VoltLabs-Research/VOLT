@@ -3,7 +3,7 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useEffect } from 'react';
 
 import type { RefObject } from 'react';
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 
 interface CanvasBridgeRegistrationParams {
     trajectoryId: string;

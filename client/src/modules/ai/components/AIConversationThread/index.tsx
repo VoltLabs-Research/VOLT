@@ -91,7 +91,6 @@ const AIConversationThread = ({
         <AutoScrollList
             items={normalizedMessages}
             isLoading={isLoading}
-            /* Same max width as the composer, so the column reads as one surface. */
             className='mx-auto w-full max-w-[46rem] gap-6 px-4 pt-6 pb-3 max-md:px-3 [.ai-floating-assistant_&]:gap-4 [.ai-floating-assistant_&]:p-3'
             getItemKey={(message) => message.id}
             autoScrollDependency={autoScrollDependency}

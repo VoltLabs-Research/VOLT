@@ -1,4 +1,4 @@
-import { preloadFractalSceneAsset } from '@/modules/fractal/api/service/preload-scene-asset';
+import { preloadFractalSceneAsset } from '@/modules/fractal/services/preload-scene-asset';
 import { useCanvasAccessStore } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import { isAbortError, reportError } from '@/shared/errors/core/report-error';

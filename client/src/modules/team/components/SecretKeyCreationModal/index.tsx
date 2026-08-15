@@ -1,3 +1,4 @@
+import { SECRET_KEY_CREATION_MODAL_ID } from '@/modules/team/contracts/modal-ids';
 import { Alert } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { resetModal } from '@/shared/ui/modal/use-modal-store';
@@ -12,7 +13,6 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-export const SECRET_KEY_CREATION_MODAL_ID = 'secret-key-creation-modal';
 const SECRET_KEY_CREATION_FORM_ID = 'secret-key-creation-form';
 
 interface SecretKeyCreationModalProps {

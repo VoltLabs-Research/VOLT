@@ -1,7 +1,5 @@
-import useWhiteboardsListing, {
-    RENAME_WHITEBOARD_MODAL_ID,
-    whiteboardsListingResource
-} from '@/modules/whiteboards/hooks/use-whiteboards-listing';
+import { RENAME_WHITEBOARD_MODAL_ID } from '@/modules/whiteboards/contracts/modal-ids';
+import useWhiteboardsListing, { whiteboardsListingResource } from './use-whiteboards-listing';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/ui/components/FolderedListingHeaderControls';
 import {

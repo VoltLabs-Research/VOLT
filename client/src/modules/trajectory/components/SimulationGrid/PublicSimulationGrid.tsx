@@ -1,6 +1,6 @@
 import SimulationSkeletonCard from '../SimulationSkeletonCard';
 import SimulationCard from '../SimulationCard';
-import discoverService from '@/modules/trajectory/api/services/discover-service';
+import { fetchPublicTeamTrajectories } from '@/modules/trajectory/hooks/trajectory/queries';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { useCallback } from 'react';
 import type { DiscoverTeamSummary } from '@/modules/trajectory/api/services/discover-service';
@@ -25,7 +25,7 @@ const PublicSimulationGrid = ({ teamId, onPublicListingChange }: PublicSimulatio
             throw new Error('Team ID is required to load public trajectories.');
         }
 
-        const response = await discoverService.listPublicTeamTrajectories({
+        const response = await fetchPublicTeamTrajectories({
             teamId,
             page: params.page,
             limit: params.limit,

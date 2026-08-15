@@ -1,5 +1,5 @@
 import { CORE_TABS, TimelineTab } from '../TimelineHeader';
-import useCanvasTimelineTabs from '@/modules/canvas/hooks/use-canvas-timeline-tabs';
+import useCanvasTimelineTabs from './use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 

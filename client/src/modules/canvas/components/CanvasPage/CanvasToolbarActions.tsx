@@ -1,18 +1,16 @@
 import { Button, Tooltip } from '@heroui/react';
 import { Download } from 'lucide-react';
+import useDownloadAnalysisListings from '../../hooks/use-download-analysis-listings';
 
 interface CanvasToolbarActionsProps {
+    analysisId?: string;
     canDownloadAnalysis: boolean;
-    isDownloadingAnalysis: boolean;
-    onDownloadAnalysis: () => void;
 }
 
-const CanvasToolbarActions = ({
-    canDownloadAnalysis,
-    isDownloadingAnalysis,
-    onDownloadAnalysis
-}: CanvasToolbarActionsProps) => {
-    if (!canDownloadAnalysis) {
+const CanvasToolbarActions = ({ analysisId, canDownloadAnalysis }: CanvasToolbarActionsProps) => {
+    const { download, isDownloading } = useDownloadAnalysisListings();
+
+    if (!canDownloadAnalysis || !analysisId) {
         return null;
     }
 
@@ -23,13 +21,13 @@ const CanvasToolbarActions = ({
                     variant='ghost'
                     size='sm'
                     className='text-xs'
-                    isPending={isDownloadingAnalysis}
-                    onPress={() => onDownloadAnalysis()}
+                    isPending={isDownloading}
+                    onPress={() => void download({ analysisId })}
                 >
                     <Download size={12} />
                     Download Analysis
                 </Button>
-                <Tooltip.Content placement='bottom'>Download analysis listings</Tooltip.Content>
+                <Tooltip.Content placement='bottom'>Download every listing and sub-listing as CSV</Tooltip.Content>
             </Tooltip>
         </div>
     );

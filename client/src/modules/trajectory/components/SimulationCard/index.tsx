@@ -2,7 +2,7 @@ import { cn } from '@/shared/utils/cn';
 import { getStageMessage, isProcessingStatus, isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
-import useTrajectoryPreview from '@/modules/trajectory/hooks/trajectory/use-trajectory-preview';
+import useTrajectoryPreview from './use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
 import { Atom } from 'lucide-react';
 import { useMemo } from 'react';

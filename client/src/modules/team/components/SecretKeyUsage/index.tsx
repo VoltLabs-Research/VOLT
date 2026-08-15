@@ -7,7 +7,7 @@ import SecretKeyStatCard from '@/modules/team/components/secret-key/shared/Secre
 import RecentRequestsTable from './RecentRequestsTable';
 import StatusCodesPieChart from './StatusCodesPieChart';
 import UsageSkeleton from './UsageSkeleton';
-import useSecretKeyUsage from '@/modules/team/hooks/secret-key/use-secret-key-usage';
+import useSecretKeyUsage from './use-secret-key-usage';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';

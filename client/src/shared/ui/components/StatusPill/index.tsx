@@ -46,7 +46,7 @@ const STATUS_TO_TONE: Record<string, StatusTone> = {
     disconnected: 'muted'
 };
 
-export const resolveStatusTone = (status: string): StatusTone => (
+const resolveStatusTone = (status: string): StatusTone => (
     STATUS_TO_TONE[status.toLowerCase()] ?? 'muted'
 );
 

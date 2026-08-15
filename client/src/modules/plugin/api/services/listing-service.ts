@@ -6,16 +6,14 @@ import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
 import type { RawListingResponse } from './listing-response';
-import type { GetAnalysisListingExportOptionsResponse, SubListingColumn } from '@volt/contracts/modules/plugin/listing';
+import type { SubListingColumn } from '@volt/contracts/modules/plugin/listing';
 
 export type ExportType = 'json' | 'csv';
 
+export const DEFAULT_LISTING_EXPORT_FORMAT: ExportType = 'json';
+
 export interface ExportListingByAnalysisInput {
     analysisId: string;
-    format: ExportType;
-    includeConfig?: boolean;
-    selectedListingIds?: string[];
-    selectedSubListingIds?: string[];
 }
 
 export interface ExportPluginListingInput {
@@ -24,11 +22,7 @@ export interface ExportPluginListingInput {
     trajectoryId?: string;
     analysisId?: string;
     exposureName?: string;
-    format: ExportType;
-}
-
-export interface GetAnalysisListingExportOptionsInput {
-    analysisId: string;
+    format?: ExportType;
 }
 
 interface PluginListingMeta extends Record<string, unknown> {
@@ -72,8 +66,6 @@ export interface GetSubListingResponse {
     limit: number;
 }
 
-const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
-
 const routes = serviceRoutes('/teams', { rbac: true });
 
 const endpoints = {
@@ -85,9 +77,6 @@ const endpoints = {
     getSubListing: routes.route<GetSubListingInput, GetSubListingResponse>(
         pluginRoutes.getSubListing
     ),
-    getAnalysisListingExportOptions: routes.route<GetAnalysisListingExportOptionsInput, GetAnalysisListingExportOptionsResponse>(
-        pluginRoutes.getAnalysisListingExportOptions
-    ),
     exportListing: download<ExportPluginListingInput>('GET',
         routes.path(pluginRoutes.exportPluginListingDocuments),
         {
@@ -96,32 +85,12 @@ const endpoints = {
                 ...(analysisId ? { analysisId } : {}),
                 ...(exposureId ? { exposureId } : {}),
                 ...(exposureName ? { exposureName } : {}),
-                format
+                format: format ?? DEFAULT_LISTING_EXPORT_FORMAT
             })
         }
     ),
     exportListingByAnalysis: download<ExportListingByAnalysisInput>('GET',
-        routes.path(pluginRoutes.exportListingRowsByAnalysisId),
-        {
-            query: ({ format, includeConfig, selectedListingIds, selectedSubListingIds }) => ({
-                format,
-                ...(includeConfig !== undefined ? { includeConfig } : {}),
-                ...(selectedListingIds
-                    ? {
-                        selectedListingIds: selectedListingIds.length > 0
-                            ? selectedListingIds.join(',')
-                            : EMPTY_SELECTION_SENTINEL
-                    }
-                    : {}),
-                ...(selectedSubListingIds
-                    ? {
-                        selectedSubListingIds: selectedSubListingIds.length > 0
-                            ? selectedSubListingIds.join(',')
-                            : EMPTY_SELECTION_SENTINEL
-                    }
-                    : {})
-            })
-        }
+        routes.path(pluginRoutes.exportListingRowsByAnalysisId)
     )
 };
 

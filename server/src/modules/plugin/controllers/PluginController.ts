@@ -37,7 +37,6 @@ import type { GetPluginExposureExportInput } from '@shared/contracts/operations/
 import type { GetPluginExposurePanelsInput } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
 import type { GetPluginExposureGLBInput } from '@shared/contracts/operations/GetPluginExposureGLB';
 import type {
-    GetAnalysisListingExportOptionsInput,
     ExportListingRowsByAnalysisIdInput,
     GetListingRowsByAnalysisIdInput
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
@@ -94,16 +93,6 @@ export default class PluginController extends Controller {
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetListingRowsByAnalysisIdInput;
         const value = await this.#service.getListingRowsByAnalysisId(input);
-        BaseResponse.success(res, value, HttpStatus.OK);
-    }
-
-    @Route(pluginRoutes.getAnalysisListingExportOptions)
-    async getAnalysisListingExportOptions(
-        @Req() req: AuthenticatedRequest,
-        @Res() res: Response
-    ): Promise<void>{
-        const input = buildControllerParams(req) as unknown as GetAnalysisListingExportOptionsInput;
-        const value = await this.#service.getAnalysisListingExportOptions(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -369,10 +358,6 @@ export default class PluginController extends Controller {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
-    /*
-     * Validated body rather than the module's usual `buildControllerParams` cast:
-     * this is the one plugin endpoint whose payload is free text typed by a user.
-     */
     @Route(pluginRoutes.updatePipelineRun)
     async updatePipelineRun(
         @Param('teamId') teamId: string,

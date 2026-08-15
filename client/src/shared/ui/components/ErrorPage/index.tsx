@@ -62,12 +62,6 @@ const ErrorPage = () => {
                                 </Button>
 
                                 {showStack && (
-                                    /*
-                                     * The chrome sits on the scroller and the <pre> stays
-                                     * transparent: the fade masks whatever the scroller paints, so
-                                     * a background on the inner element would dissolve along with
-                                     * the text at the edges.
-                                     */
                                     <Scrollable className='max-h-60 max-md:max-h-[180px] px-4 py-3 rounded-xl bg-surface-secondary border border-border'>
                                         <pre className='m-0 font-mono text-xs leading-[1.6] text-muted text-left whitespace-pre-wrap break-words'>
                                             {stack}

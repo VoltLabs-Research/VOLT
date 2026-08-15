@@ -1,3 +1,4 @@
+import { readStoredString, writeStoredString } from '@/shared/utils/local-storage';
 import {
     Button,
     Tooltip,
@@ -16,7 +17,7 @@ import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions
 import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
 import AINav from '@/modules/ai/components/AINav';
 import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
-import useGlobalSocketCacheSync from '@/modules/dashboard/hooks/use-global-socket-cache-sync';
+import useGlobalSocketCacheSync from './use-global-socket-cache-sync';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/TrajectoryUploaderContainer';
 import {
     DASHBOARD_LAYOUT_EVENTS,
@@ -71,7 +72,7 @@ const DashboardLayout = () => {
     const [globalSearchBreadcrumb, setGlobalSearchBreadcrumb] = useState<DashboardGlobalSearchBreadcrumb | null>(null);
     const [sidebarCollapsedOverride, setSidebarCollapsedOverride] = useState(false);
     const [sidebarCollapsedPreference, setSidebarCollapsedPreference] = useState(() => {
-        return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
+        return readStoredString(SIDEBAR_COLLAPSED_KEY) === 'true';
     });
     const workspaceChromeState = useSyncExternalStore(
         subscribeToDashboardWorkspaceChromeState,
@@ -87,13 +88,6 @@ const DashboardLayout = () => {
 
     const sidePanelOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);
 
-    /*
-     * The two side columns are mutually exclusive: opening the right-hand panel
-     * hides the left rail rather than squeezing the content between two 320px
-     * columns. Scoped to the rail viewport because below it the left rail is an
-     * overlay drawer, not a column — there is nothing to make room for, and the
-     * drawer must stay openable while the panel is up.
-     */
     const railHidden = headerHidden || (sidePanelOpen && isRailViewport);
 
     let rail: SidebarRailState = 'expanded';
@@ -103,13 +97,12 @@ const DashboardLayout = () => {
         rail = 'collapsed';
     }
 
-    /* Don't advise collapsing a rail that is not currently on screen. */
     useTip('dashboard-sidebar-collapse', {
         enabled: !railHidden
     });
 
     const expandSidebar = useCallback(() => {
-        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
+        writeStoredString(SIDEBAR_COLLAPSED_KEY, 'false');
         setSidebarCollapsedPreference(false);
     }, []);
 
@@ -157,7 +150,6 @@ const DashboardLayout = () => {
 
                 <aside
                     data-rail={rail}
-                    /* A zero-width rail must not keep its nav in the tab order. */
                     inert={railHidden || (!isRailViewport && !sidebarOpen)}
                     className={cn(
                         'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent pt-5 transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',

@@ -125,11 +125,6 @@ export default class PluginEvents {
         });
     }
 
-    /**
-     * `PipelineRun` holds plain reference columns rather than relations, so these
-     * two handlers are what keeps run history from outliving its trajectory or
-     * team. The analyses a run produced are deleted by their own FK cascade.
-     */
     @Event('trajectory.deleted')
     async deleteTrajectoryPipelineRuns({ trajectoryId }: EventMap['trajectory.deleted']) {
         await PipelineRunEntity.delete({ trajectory: trajectoryId });

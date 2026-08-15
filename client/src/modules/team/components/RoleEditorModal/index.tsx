@@ -10,10 +10,7 @@ import { TriangleAlert } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
-export interface RoleEditorPayload {
-    name: string;
-    permissions: string[];
-}
+import type { RoleEditorPayload } from '@/modules/team/contracts/role-editor';
 
 interface RoleEditorModalProps {
     role?: TeamRole | null;

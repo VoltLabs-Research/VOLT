@@ -1,3 +1,4 @@
+import colorCodingService from '../../api/services/color-coding-service';
 import { buildKeys } from '@/shared/query/query-keys';
 import { createQuery } from '@/shared/query/create-query';
 import { currentCanvasDataAccess, currentAccessKey } from '@/modules/canvas/api/access/use-canvas-access-store';
@@ -30,3 +31,7 @@ export const colorCodingStatsQuery = createQuery<GetColorCodingStatsInput, Color
     getColorCodingStatsKey,
     (params) => currentCanvasDataAccess().getColorCodingStats(params)
 );
+
+export const applyColorCoding = (
+    params: Parameters<typeof colorCodingService.apply>[0]
+) => colorCodingService.apply(params);

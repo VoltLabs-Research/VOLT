@@ -1,10 +1,10 @@
 import { createConversationStreamTransport } from '@/modules/ai/services/stream-transport';
 import { invalidateConversationsQueries, invalidateConversationMessagesQuery } from '@/modules/ai/hooks/queries';
-import { useClientToolDispatch } from '@/modules/ai/tools/use-client-tool-dispatch';
+import { useClientToolDispatch } from './use-client-tool-dispatch';
 import { useChat } from '@ai-sdk/react';
 import { isToolUIPart, lastAssistantMessageIsCompleteWithApprovalResponses, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { AddToolResultFn } from '@/modules/ai/tools/use-client-tool-dispatch';
+import type { AddToolResultFn } from './use-client-tool-dispatch';
 import type { AIModelSelection } from '@/modules/ai/api/service';
 import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
 import type { ConversationMessagesQueryParams } from '@/modules/ai/hooks/queries';

@@ -1,7 +1,7 @@
 import { Button } from '@heroui/react';
 import { Ban, Check, Copy, Download, FilePen, Pencil, Upload } from 'lucide-react';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
-import useExportPlugin from '@/modules/plugin/hooks/plugin/use-export-plugin';
+import useExportPlugin from './use-export-plugin';
 import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
@@ -191,7 +191,10 @@ const PluginsListing = () => {
             export: {
                 label: 'Export',
                 icon: Download,
-                handler: ({ item }) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`),
+                handler: ({ item }) => exportPlugin({
+                    pluginId: item._id,
+                    filename: `${item.modifier?.name || item._id}.zip`
+                }),
                 requiredPermission: 'plugin:read'
             },
             delete: {

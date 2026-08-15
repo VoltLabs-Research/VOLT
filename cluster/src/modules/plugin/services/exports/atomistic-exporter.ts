@@ -15,11 +15,6 @@ import {
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
-/**
- * Colour per category name, from whatever the plugin declared, falling back to a
- * generated colour. The daemon does not know what any category means -- see
- * category-colors.ts.
- */
 const buildCategoryPalette = (
     categories: Iterable<string>,
     declaredColors: Record<string, CategoryColor> | undefined

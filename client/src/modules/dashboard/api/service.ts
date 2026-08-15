@@ -20,11 +20,6 @@ export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResponse = {
 
 export const MIN_SEARCH_QUERY_LENGTH = 2;
 
-/*
- * The trajectory-metrics endpoint is deliberately absent: the dashboard no
- * longer shows metrics. The route still exists server-side for the AI tools, so
- * re-add a client method here if a view ever needs it again.
- */
 const endpoints = {
     search: custom<GlobalSearchInput, GlobalSearchResponse>(
         async ({ getClient }, { query, limit = 5 }) => {

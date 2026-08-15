@@ -95,11 +95,3 @@ export interface SummarizeAnalysisResultInput{
     maxRows?: number;
 }
 
-export interface ExportAnalysisResultInput{
-    analysisId: string;
-    format?: 'json' | 'csv';
-    includeConfig?: boolean;
-    selectedListingIds?: string[];
-    selectedSubListingIds?: string[];
-    sortAsc?: boolean;
-}

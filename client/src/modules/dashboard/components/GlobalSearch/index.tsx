@@ -1,7 +1,7 @@
 import Loader from '@/shared/ui/components/Loader';
 import { EmptyStateRoot, SearchField, cn } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
-import useDashboardGlobalSearch from '@/modules/dashboard/hooks/use-dashboard-global-search';
+import useDashboardGlobalSearch from './use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';

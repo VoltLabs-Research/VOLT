@@ -37,9 +37,6 @@ export class PluginProcessPool {
         const pluginProcessMemoryBudgetMb = resolvePluginProcessMemoryBudgetMb();
         const memorySlots = computePluginProcessMemorySlots(pluginProcessMemoryBudgetMb, estimatedProcessMemoryMb);
 
-        // Deliberately the shared helper rather than a second local computation: the
-        // per-process thread budget divides the cores by exactly this number, and if
-        // the two ever disagree the host is oversubscribed again.
         this.effectiveMaxConcurrent = resolvePluginProcessConcurrency();
         this.memoryGuard = new PluginProcessMemoryGuard(estimatedProcessMemoryMb);
         this.minIdle = readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MIN_IDLE') ?? 1;

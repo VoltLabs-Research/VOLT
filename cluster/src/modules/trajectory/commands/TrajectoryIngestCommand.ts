@@ -69,20 +69,6 @@ const toIngestFrame = (
     objectKey
 });
 
-/**
- * Separates "this file is not a trajectory" from "this file could not be read".
- *
- * Both used to be skipped identically, which meant a staged object that never landed
- * on disk — a wrong key, a failed reassembly, a permissions problem — was reported to
- * the user as an unsupported upload. It is the difference between a mistake the user
- * can fix and one only we can, and the whole upload failing for the second reason
- * while blaming the first is what made this class of bug invisible.
- *
- * The strings come from the native reader (`@voltstack/lammps-io`): it throws
- * `Unsupported trajectory format: <path>` once it has read the file and does not
- * recognise it, and `Failed to open file: <path>` when it never got that far — which
- * it also does for a zero byte file.
- */
 const isUnsupportedContentError = (error: unknown): boolean => (
     /unsupported trajectory format/i.test(error instanceof Error ? error.message : '')
 );
@@ -126,13 +112,6 @@ export class TrajectoryIngestCommand {
         const frames = this.deduplicateFrames(parsedFrames, trajectoryId);
 
         if (frames.length === 0) {
-            /*
-             * Reaching here now means every staged object was readable and none of them
-             * was a trajectory — an object we could not read raises its own error inside
-             * `parseStagedObject`. The counts are in the message because this error is
-             * remapped to user-facing copy by the API, and without them "no valid frames"
-             * for a 100 file upload says nothing about which part went wrong.
-             */
             throw new Error(
                 `No valid trajectory frames found in upload (trajectoryId=${trajectoryId}, ` +
                 `staged=${stagedObjects.length}, readable=${readyObjects.length}, ` +
@@ -153,20 +132,12 @@ export class TrajectoryIngestCommand {
             trajectoryId,
             frames,
             stats: {
-                // Files as uploaded, which is no longer the same as the frame count: one
-                // multi-frame dump is a single file holding many frames.
                 totalFiles: readyObjects.length,
                 totalSize
             }
         };
     }
 
-    /**
-     * Stages every uploaded object and keeps the ones that landed intact. A single
-     * missing or truncated file must not discard the rest of the upload, but if none
-     * of them can be staged the original failure is surfaced instead of the much less
-     * helpful "no valid trajectory frames".
-     */
     private async materializeStagedObjects(
         stagedObjects: TrajectoryIngestStagedObject[]
     ): Promise<TrajectoryIngestStagedObject[]> {
@@ -262,16 +233,6 @@ export class TrajectoryIngestCommand {
             })));
     }
 
-    /**
-     * Turns one local file into one staged object per frame it contains.
-     *
-     * A single-frame file keeps the staged object it arrived in — the common case, where
-     * copying it would double the upload's I/O for no gain. A multi-frame file is cut
-     * along the byte ranges the scan reports, which reproduces each frame byte for byte
-     * without reserializing anything, and leaves every timestep with a dump file of its
-     * own. That last part is the contract the analysis plugins are written against: they
-     * are handed one dump per timestep.
-     */
     private async promoteFramesToStagedObjects(
         localPath: string,
         expandedKeyPrefix: string,
@@ -316,9 +277,6 @@ export class TrajectoryIngestCommand {
         index: number,
         trajectoryId: string
     ): Promise<TrajectoryIngestFrame[]> {
-        // Read in place: the staged object is already a file on this host, and the reader
-        // memory-maps it. Streaming a copy somewhere else first would mean copying a
-        // multi-gigabyte trajectory to look at its frame boundaries.
         const localPath = this.objectStore.resolveLocalPath(INGEST_BUCKET, staged.objectKey);
 
         const frames = await this.promoteFramesToStagedObjects(
@@ -330,7 +288,6 @@ export class TrajectoryIngestCommand {
             }
         );
 
-        // A file that turned into several frames has been superseded by its parts.
         if (frames.length > 0 && frames[0].objectKey !== staged.objectKey) {
             await this.removeIgnoredStagedObject(staged.objectKey);
         }
@@ -352,13 +309,6 @@ export class TrajectoryIngestCommand {
                 ? await this.expandZipAndParseFrames(staged, index, trajectoryId, tempDirectory)
                 : await this.splitStagedObjectIntoFrames(staged, index, trajectoryId);
         } catch (error) {
-            /*
-             * Only content we cannot make sense of is skipped. Anything else means the
-             * staged object itself is unreadable, which is our problem and not the
-             * upload's — so it propagates instead of being counted as "not a
-             * trajectory", and the object is left on disk for diagnosis rather than
-             * deleted along with the evidence.
-             */
             if (!isUnsupportedContentError(error)) {
                 logger.error(
                     {
@@ -465,13 +415,6 @@ export class TrajectoryIngestCommand {
         return frames;
     }
 
-    /**
-     * Extracts a single archive entry and promotes its frames to staged objects.
-     *
-     * Returns an empty list for entries that hold no data; anything unreadable throws so
-     * the caller can drop that entry and keep the rest of the archive. An entry may itself
-     * be multi-frame — a ZIP of multi-frame dumps is a perfectly ordinary upload.
-     */
     private async extractZipEntryFrames(
         entry: ZipEntry,
         outputPath: string,
@@ -485,8 +428,6 @@ export class TrajectoryIngestCommand {
             return [];
         }
 
-        // No reusable staged object here: the entry only ever existed inside the archive,
-        // so every frame it yields has to be promoted on its own.
         return this.promoteFramesToStagedObjects(outputPath, expandedKeyPrefix, null);
     }
 

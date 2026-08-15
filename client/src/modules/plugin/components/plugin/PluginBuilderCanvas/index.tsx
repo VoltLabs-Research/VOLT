@@ -5,7 +5,7 @@ import DebugToolbar from '@/modules/plugin/components/plugin/DebugToolbar';
 import CanvasToolbar from '@/modules/plugin/components/plugin/CanvasToolbar';
 import { nodeTypes } from '@/modules/plugin/components/plugin/nodes';
 import FloatingNodePanel from '@/modules/plugin/components/plugin/FloatingNodePanel';
-import useCanvasHandlers from '@/modules/plugin/hooks/plugin/use-canvas-handlers';
+import useCanvasHandlers from './use-canvas-handlers';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';

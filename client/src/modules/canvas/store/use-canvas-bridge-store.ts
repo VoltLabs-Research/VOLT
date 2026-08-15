@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { RefObject } from 'react';
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import type { CanvasBridgeSnapshot } from '@/modules/ai/contracts/tools';
 
 interface CanvasBridgeRegistration {

@@ -1,24 +1,5 @@
 import { logger } from '@shared/infrastructure/logger';
 
-/**
- * Drops the connected component of a surface mesh that encloses all the others --
- * the sample's outer shell.
- *
- * A DXA defect mesh classifies free surfaces as bad crystal, so for any non-periodic
- * sample (a nanoparticle, a slab, a nanowire) it contains a closed shell wrapping the
- * whole model, and that shell hides every interior defect behind it. OVITO has no
- * equivalent filter -- it expects you to make the surface transparent, hide it, or
- * slice through it -- so this is a VOLT addition and has to stay opt-in: it removes
- * geometry that is really in the data.
- *
- * The interior defects (voids, grain-boundary patches) are separate connected
- * components from the free surface, which is what makes the split well defined.
- *
- * Run this BEFORE the periodic clipping. Clipping cuts a wrapped surface at the cell
- * boundary, which splits one physical shell into several components and would leave
- * the containment test comparing pieces instead of bodies.
- */
-
 export interface ComponentFilterResult {
     positions: Float32Array;
     indices: Uint32Array;
@@ -31,7 +12,6 @@ interface Bounds {
     max: [number, number, number];
 }
 
-/** Union-find over vertex indices, joined through the triangles that share them. */
 const labelComponents = (positions: Float32Array, indices: Uint32Array): Int32Array => {
     const vertexCount = positions.length / 3;
     const parent = new Int32Array(vertexCount);
@@ -44,7 +24,6 @@ const labelComponents = (positions: Float32Array, indices: Uint32Array): Int32Ar
         while (parent[root] !== root) {
             root = parent[root];
         }
-        // Path compression, iterative so a long chain cannot blow the stack.
         let cursor = vertex;
         while (parent[cursor] !== root) {
             const next = parent[cursor];
@@ -93,16 +72,6 @@ const isStrictlyLarger = (outer: Bounds, inner: Bounds): boolean => {
     return false;
 };
 
-/**
- * Removes the enclosing component, if there is one, and compacts the vertex list so
- * the shell's vertices do not ride along unreferenced -- on a nanoparticle the shell
- * is most of the mesh, so leaving them would defeat the point.
- *
- * Returns the input untouched when nothing qualifies: a single component, or several
- * where none contains the rest. That second case is the one worth being careful
- * about -- in a fully periodic bulk cell the components are voids sitting side by
- * side, and dropping "the biggest" would silently delete a real void.
- */
 export const dropEnclosingComponent = (
     positions: Float32Array,
     indices: Uint32Array
@@ -200,7 +169,6 @@ export const dropEnclosingComponent = (
         };
     }
 
-    // Compact: remap only the vertices the surviving triangles still reference.
     const remap = new Int32Array(positions.length / 3).fill(-1);
     const nextIndices = new Uint32Array(keptTriangles.length * 3);
     const keptPositions: number[] = [];

@@ -71,11 +71,6 @@ export interface ArgumentDefinition {
     max?: number;
     step?: number;
     visibleWhen?: ArgumentVisibilityCondition;
-    /**
-     * How a boolean reaches the binary's command line. `presence` (the default) emits the
-     * flag only when true; `explicit` always emits `--flag true` / `--flag false`, needed
-     * for flags the binary enables by default.
-     */
     cliValueStyle?: 'presence' | 'explicit';
 }
 
@@ -140,13 +135,6 @@ export interface ExposureProperty {
     type?: string;
 }
 
-/*
- * Re-exported rather than re-declared. These were a hand-copy of the contract types, and
- * a copy of a wire shape is a copy that drifts.
- *
- * @deprecated with the shapes themselves: superseded by the `PanelExporter` export node
- * (`@volt/contracts/modules/plugin/panel`).
- */
 export type {
     IPanelColumn as PanelColumn,
     IPanelTable as PanelTable,
@@ -155,7 +143,6 @@ export type {
 
 export type { IPanelExportOptions } from '@volt/contracts/modules/plugin/panel';
 
-// Also imported locally, because a re-export does not put the name in this file's scope.
 import type { IExposurePanel } from '@volt/contracts/modules/plugin/exposure';
 
 interface ExposureNodeData {
@@ -165,16 +152,7 @@ interface ExposureNodeData {
     hasListing?: boolean;
     properties?: ExposureProperty[];
     id?: string;
-    /**
-     * Declares compact results tables for the analysis panel. Purely descriptive: the
-     * plugin says which sub-listings to summarise, how to label them and what colour
-     * each category has, and the server passes it through untouched.
-     */
     panel?: IExposurePanel;
-    /**
-     * Gates the exposure on one of the plugin's arguments, using the same condition shape
-     * as an argument's `visibleWhen`.
-     */
     exportWhen?: ArgumentVisibilityCondition;
 }
 
@@ -199,11 +177,6 @@ export enum ExportType {
     CIF = 'cif'
 }
 
-/*
- * This enum duplicates `Exporter` in the contracts package (their member *names* differ,
- * which is why they are not simply re-exported). The guard below fails the build if their
- * *values* ever diverge — the only property anything at runtime depends on.
- */
 type ExporterValuesMatch = `${Exporter}` extends `${WireExporter}`
     ? (`${WireExporter}` extends `${Exporter}` ? true : never)
     : never;

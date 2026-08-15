@@ -11,14 +11,6 @@ const EXPECTED_ARTIFACT_EXPORTERS = new Set([
 
 type ArgumentValueMap = Record<string, unknown>;
 
-/**
- * Builds the list of artifacts a run is expected to produce.
- *
- * `config` carries the run's argument values, which decide the outcome of each exposure's
- * `exportWhen` gate. An exposure the run turned off is dropped here rather than marked,
- * so the UI never shows a row that will sit at `pending` forever. Callers without argument
- * values get every exposure, which is the pre-gating behaviour.
- */
 export const resolveExpectedArtifacts = (
     plugin: Plugin,
     config: ArgumentValueMap = {}
@@ -37,10 +29,6 @@ export const resolveExpectedArtifacts = (
             status: 'pending'
         }));
 
-    /*
-     * The primary is picked after gating, so a disabled glb export can never be named
-     * primary for a run that will not produce it.
-     */
     const primaryIndex = artifacts.findIndex((artifact) => artifact.exportType === 'glb');
     const selectedPrimaryIndex = primaryIndex >= 0 ? primaryIndex : 0;
 

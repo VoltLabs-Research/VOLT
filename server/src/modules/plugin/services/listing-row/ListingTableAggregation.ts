@@ -61,17 +61,13 @@ export const buildListingExportOptions = (rows: DaemonListingRow[]): ListingExpo
 
 export const aggregateListingTables = (
     analysisId: string,
-    rows: DaemonListingRow[],
-    selectedListingIds: Set<string> | null
+    rows: DaemonListingRow[]
 ): AnalysisListingExportData[] => {
     const listingMap = new Map<string, ListingAggregation>();
 
     for (const doc of rows) {
         const listingRow = mapDaemonRowByAnalysis(doc);
         const { listingId, listingName, selectionId } = listingIdentityOf(listingRow);
-        if (selectedListingIds && !selectedListingIds.has(selectionId)) {
-            continue;
-        }
 
         const aggregated = listingMap.get(selectionId) ?? {
             listingId,

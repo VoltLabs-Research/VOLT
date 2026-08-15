@@ -19,7 +19,7 @@ import type { PaginatedResponse } from '@voltstack/voltclient';
 import pluginService from '../../api/services/plugin-service';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
-import type { ClonePluginInput, DeletePipelineRunParams, DeletePluginInput, ExecutePipelineParams, ExportAnalysisResultsInput, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPipelineRunsInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePipelineRunParams, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
+import type { ClonePluginInput, DeletePipelineRunParams, DeletePluginInput, ExecutePipelineParams, ExportPluginInput, GetPluginInput, GetPluginsInput, ImportPluginInput, ListPipelineRunsInput, ListPluginTeamClustersInput, ListPluginTeamClustersResponse, SavePluginInput, SearchRegistryInput, UpdatePipelineRunParams, UpdatePluginParams, UploadBinaryParams, UploadBinaryResponse } from '../../api/services/plugin-service';
 import type { InstallRegistryPluginInput } from '@volt/contracts/modules/plugin/http';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
@@ -185,11 +185,6 @@ export const usePipelineRunsQuery = createQuery<ListPipelineRunsInput, Paginated
     (params) => pluginService.listPipelineRuns(params)
 );
 
-/**
- * A run is written before its jobs are dispatched, so the list is refetched on
- * success rather than patched: the new run row is already on the server and the
- * response carries no `createdAt` to fabricate one from.
- */
 export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse, ExecutePipelineParams>(
     pluginService.executePipeline,
     async () => {
@@ -197,10 +192,6 @@ export const useExecutePipelineMutation = createMutation<ExecutePipelineResponse
     }
 );
 
-/**
- * Invalidated by prefix, not by the exact list key: the runs list is paginated and
- * a renamed run can be sitting on any fetched page.
- */
 export const useUpdatePipelineRunMutation = createMutation<PipelineRun, UpdatePipelineRunParams>(
     pluginService.updatePipelineRun,
     async () => {
@@ -208,12 +199,6 @@ export const useUpdatePipelineRunMutation = createMutation<PipelineRun, UpdatePi
     }
 );
 
-/**
- * Deleting a run also deletes the analyses it produced, server side, so this only
- * invalidates the runs list. The analysis and scene-artifact caches belong to the
- * analysis module and are cleared by the caller, which is the one that knows which
- * scenes and selection were pointing at those results.
- */
 export const useDeletePipelineRunMutation = createMutation<void, DeletePipelineRunParams>(
     pluginService.deletePipelineRun,
     async () => {
@@ -235,4 +220,3 @@ export const useUploadBinaryMutation = createMutation<UploadBinaryResponse, Uplo
 
 export const useDeleteBinaryMutation = createMutation<void, { pluginId: string }>(pluginService.deleteBinary);
 
-export const useExportAnalysisResultsMutation = createMutation<Blob, ExportAnalysisResultsInput>(pluginService.exportAnalysisResults);

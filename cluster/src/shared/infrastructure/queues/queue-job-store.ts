@@ -273,16 +273,6 @@ export interface LiveQueueJobRef {
     state: Extract<QueueJobState, 'waiting' | 'delayed' | 'active'>;
 }
 
-/**
- * Lists the jobs in `queue` whose key starts with `jobKeyPrefix` and that still have a
- * run ahead of them — waiting, delayed, or mid-flight.
- *
- * This is how a member of a fan-out group finds out what its siblings are still
- * doing, so the group needs no separate counter: the queue table already knows. A job
- * that failed permanently is no longer live, so a dead sibling cannot wedge the group.
- * The caller's own job is included, because the queue marks a job complete only after
- * its handler returns.
- */
 export const listLiveJobsByKeyPrefix = async (
     queue: string,
     jobKeyPrefix: string

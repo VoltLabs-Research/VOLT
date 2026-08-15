@@ -7,10 +7,6 @@ import type { MenuOption } from '@/shared/contracts/menu';
 
 export type CanvasTreeIndent = 'base' | 'lg' | 'xl';
 
-/**
- * Row chrome shared by every tree row, extracted so the four row components
- * cannot drift apart when a level is added.
- */
 export const TREE_ROW_CLASS = 'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-[26px] [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1 [.canvas-objects-panel--analysis-compact_&]:text-2xs';
 
 const INDENT_CLASS: Record<CanvasTreeIndent, string> = {
@@ -21,7 +17,6 @@ const INDENT_CLASS: Record<CanvasTreeIndent, string> = {
 
 export const treeIndentClass = (indent: CanvasTreeIndent): string => INDENT_CLASS[indent];
 
-/** One level deeper, saturating at the deepest level the tree renders. */
 export const nextTreeIndent = (indent: CanvasTreeIndent): CanvasTreeIndent => {
     if (indent === 'base') return 'lg';
     return 'xl';

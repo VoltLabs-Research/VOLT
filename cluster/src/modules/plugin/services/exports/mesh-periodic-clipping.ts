@@ -1,38 +1,15 @@
 import { logger } from '@shared/infrastructure/logger';
 import type { MeshDomain } from '@shared/contracts/types/workflow-exposure';
 
-/**
- * Rewrites a surface mesh so it sits entirely inside its periodic cell, the way
- * OVITO's SurfaceMeshVis does before handing a mesh to the renderer
- * (ovito/src/ovito/mesh/surface/SurfaceMeshVis.cpp).
- *
- * Analysis plugins export facets with PBC-unwrapped vertices: each triangle is
- * made contiguous by shifting whichever corners crossed the boundary, which pushes
- * that triangle outside the cell and leaves a matching hole on the opposite face.
- * Rendered as-is the surface pokes through the cell wireframe into whatever else
- * shares the viewport, and you can see into its interior through the holes.
- *
- * The fix is OVITO's: wrap every vertex back into the cell, cut the straddling
- * triangles on the boundary plane, and close the openings with cap polygons.
- *
- * Everything happens in reduced coordinates (cell vectors as the basis, so the
- * cell is the unit cube) because that is what makes the "does this edge cross the
- * boundary" test a comparison against 0.5 regardless of cell shape or triclinicity.
- */
-
 export interface ClippedMesh {
     positions: Float32Array;
     indices: Uint32Array;
-    /** Triangle count at the head of `indices` that belongs to the surface itself. */
     surfaceTriangleCount: number;
-    /** Triangles after `surfaceTriangleCount` that close the cuts at the boundary. */
     capTriangleCount: number;
 }
 
 interface ReducedFrame {
-    /** Column-major 3x3: reduced -> absolute. */
     matrix: number[];
-    /** Column-major 3x3: absolute -> reduced (without the origin shift). */
     inverse: number[];
     origin: [number, number, number];
     pbc: [boolean, boolean, boolean];
@@ -93,10 +70,6 @@ const applyColumnMajor3 = (
     m[2] * x + m[5] * y + m[8] * z
 ];
 
-/**
- * Absolute -> reduced, wrapping each periodic component into [0, 1). Matches
- * OVITO's SimulationCellData::absoluteToReducedAndWrap.
- */
 const toReducedAndWrap = (frame: ReducedFrame, positions: Float32Array): Float64Array => {
     const reduced = new Float64Array(positions.length);
 
@@ -112,8 +85,6 @@ const toReducedAndWrap = (frame: ReducedFrame, positions: Float32Array): Float64
             let component = components[dim];
             if (frame.pbc[dim]) {
                 component -= Math.floor(component);
-                // Guard the boundary case where floor() of a value a hair under 1
-                // still returns 0 after subtraction rounds back up to exactly 1.
                 if (component >= 1) component = 0;
             }
             reduced[offset + dim] = component;
@@ -141,13 +112,6 @@ const toAbsolute = (frame: ReducedFrame, reduced: Float64Array, count: number): 
     return positions;
 };
 
-/**
- * A growable flat triangle-index list.
- *
- * Deliberately not `number[][]`: a defect mesh from a multi-million-atom cell carries
- * millions of facets, and one small JS array per triangle -- rebuilt once per periodic
- * direction -- costs hundreds of megabytes for nothing.
- */
 class TriangleBuffer {
     private data: Uint32Array;
 
@@ -186,7 +150,6 @@ class TriangleBuffer {
     }
 }
 
-/** A growable reduced-coordinate vertex list; the split appends to it. */
 class ReducedVertexBuffer {
     private data: Float64Array;
 
@@ -227,37 +190,14 @@ class ReducedVertexBuffer {
 
 const SPLIT_EPSILON = 1e-9;
 
-/**
- * Vertex-pair keys are packed into one number as `a * VERTEX_KEY_STRIDE + b`, which
- * only stays exact while the product fits a double's 53-bit mantissa. 2^26 leaves
- * 2^52 of headroom and allows 67M vertices, far past anything a defect mesh reaches;
- * a stride of 2^32 would have started colliding at 2M, which such a mesh does reach.
- */
 const VERTEX_KEY_STRIDE = 0x4000000;
 
 const MAX_KEYABLE_VERTICES = VERTEX_KEY_STRIDE;
 
 const vertexPairKey = (from: number, to: number): number => from * VERTEX_KEY_STRIDE + to;
 
-/**
- * Rings larger than this are left uncapped. Ear clipping is quadratic in the ring
- * size in the common case and worse on strongly concave rings, so an unbounded ring
- * could stall an export; an opening this large is also well past the small
- * cross-sections caps exist for.
- */
 const MAX_CAP_LOOP_VERTICES = 4096;
 
-/**
- * Port of OVITO's SurfaceMeshVis::RenderableSurfaceBuilder::splitFace.
- *
- * A triangle whose vertices were wrapped independently shows up as an edge jumping
- * more than half the cell along `dim`. A validly split triangle has exactly two
- * such edges; anything else means the cell is too small for the geometry, and OVITO
- * fails the whole build there. Here the triangle is dropped instead: one unusable
- * facet is not worth discarding the mesh.
- *
- * Returns false only when the triangle was rejected.
- */
 const splitTriangle = (
     vertices: ReducedVertexBuffer,
     triangle: [number, number, number],
@@ -291,10 +231,6 @@ const splitTriangle = (
         return false;
     }
 
-    // splitVertices[e][0] is the cut point on the same side of the boundary as
-    // triangle[e]; [1] the one on the same side as triangle[(e+1) % 3]. Keeping the
-    // slots relative to the edge's own traversal direction is what lets the two
-    // triangles sharing an edge reuse the cached pair regardless of direction.
     const splitVertices: Array<[number, number] | null> = [null, null, null];
 
     for (let edge = 0; edge < 3; edge += 1) {
@@ -326,8 +262,6 @@ const splitTriangle = (
                 vertices.get(second, 2) - vertices.get(first, 2)
             ];
             delta[dim] -= 1;
-            // Dimensions already split are settled; later ones may still wrap, so
-            // take the shortest image for those before interpolating.
             for (let other = dim + 1; other < 3; other += 1) {
                 if (pbc[other]) {
                     delta[other] -= Math.round(delta[other]);
@@ -370,8 +304,6 @@ const splitTriangle = (
         return false;
     }
 
-    // The short edge's two corners stay together on one side; the third corner and
-    // its two cut points form the piece on the other side.
     emitted.push(triangle[shortEdge], triangle[previousEdge], nextSplit[1]);
     emitted.push(triangle[previousEdge], previousSplit[0], nextSplit[1]);
     emitted.push(previousSplit[1], triangle[nextEdge], nextSplit[0]);
@@ -386,19 +318,6 @@ interface BoundaryEdge {
     to: number;
 }
 
-/**
- * Collects the directed edges that only one triangle claims -- the rim of every
- * opening -- restricted to edges lying flat on the cell face `(dim, plane)`.
- *
- * Deriving the openings from the finished mesh rather than recording them during the
- * split is what makes this correct for a surface that crosses more than one boundary:
- * a cut made while splitting along x can itself be subdivided when splitting along y,
- * at which point any segment list captured earlier no longer describes real edges.
- *
- * The plane test is applied before indexing, not after. A defect mesh from a large
- * cell has millions of interior edges and only a rim's worth on any cell face, so
- * filtering first keeps this map proportional to the opening rather than to the mesh.
- */
 const collectBoundaryEdgesOnPlane = (
     triangles: TriangleBuffer,
     triangleCount: number,
@@ -432,13 +351,6 @@ interface LoopBuildResult {
     danglingEdges: number;
 }
 
-/**
- * Chains directed boundary edges into closed rings by following `to -> from`.
- *
- * Rings that fail to close are counted, not guessed at: a defect mesh can carry
- * genuine holes (the rims DXA leaves where a dislocation line passes through), and
- * inventing a ring there would fabricate surface that is not in the data.
- */
 const buildLoops = (edges: BoundaryEdge[]): LoopBuildResult => {
     const outgoing = new Map<number, number[]>();
     edges.forEach((edge, index) => {
@@ -488,16 +400,6 @@ const buildLoops = (edges: BoundaryEdge[]): LoopBuildResult => {
     };
 };
 
-/**
- * Ear clipping over a loop projected onto the boundary plane. The rings coming off
- * a cell face are cross-sections of the enclosed body: small, and convex or mildly
- * concave, which is well within what ear clipping handles.
- *
- * Returns triangles as index triples into `loop`, wound to follow the loop's own
- * order around its perimeter. That guarantee is the point -- the caller relies on it
- * to make the patch close the surface instead of duplicating its orientation.
- * Null means the loop is degenerate (zero area) or clipping stalled.
- */
 const earClip = (loop: number[], u: Float64Array, v: Float64Array): number[][] | null => {
     const remaining = loop.map((_, index) => index);
 
@@ -515,8 +417,6 @@ const earClip = (loop: number[], u: Float64Array, v: Float64Array): number[][] |
     if (!Number.isFinite(area) || Math.abs(area) < 1e-18) {
         return null;
     }
-    // The convexity test below assumes counter-clockwise, so clockwise loops get
-    // reversed here and their triangles flipped back on the way out.
     const reversed = area < 0;
     if (reversed) {
         remaining.reverse();
@@ -583,29 +483,6 @@ interface CapStats {
     nestedLoops: number;
 }
 
-/**
- * Closes the openings the split left on the cell faces and appends the cap triangles
- * to `emitted`.
- *
- * Only rings that lie flat on a periodic cell face are filled. Any other open rim is
- * a hole that belongs to the data -- DXA leaves one wherever a dislocation line exits
- * the defect mesh -- and OVITO does not cap those either.
- *
- * Orientation needs no outwardness test. A closed oriented mesh requires every edge
- * to appear once in each direction, so the patch simply has to run the rim backwards
- * from the surface. Walking the rim in reverse and keeping earClip's winding aligned
- * with that order makes the caps consistent with whichever way the surface itself
- * faces, which is also what makes the result watertight by construction.
- *
- * Known limitation: a body that crosses two periodic boundaries at once has an
- * opening that bends around the cell edge, so it is not planar and no single cell
- * face holds a closed ring. OVITO reaches those by tracing the contour on the
- * original periodic mesh and re-closing it against the cell corners
- * (SurfaceMeshVis.cpp -> traceContour / sliceContourAtPeriodicBoundaries), machinery
- * this does not carry. Such a face is detected -- its rim leaves dangling edges --
- * and skipped whole, so the opening stays open rather than being filled with surface
- * that is not there. The containment half of the rewrite still applies.
- */
 const appendCaps = (
     frame: ReducedFrame,
     vertices: ReducedVertexBuffer,
@@ -623,10 +500,6 @@ const appendCaps = (
         const axisV = (dim + 2) % 3;
 
         for (const plane of [0, 1] as const) {
-            // Only the surface is scanned, never the caps appended for an earlier
-            // face. A cap laid on the x face can have edges sitting on a y face, and
-            // treating those as part of the y opening's rim would close the y cap
-            // against the x cap instead of against the surface.
             const edgesOnPlane = collectBoundaryEdgesOnPlane(
                 emitted,
                 surfaceTriangleCount,
@@ -638,16 +511,10 @@ const appendCaps = (
 
             const { loops, danglingEdges } = buildLoops(edgesOnPlane);
             if (danglingEdges > 0) {
-                // The rim runs off this face, so the opening is not planar and the
-                // rings found here are fragments. Filling a fragment invents surface
-                // and breaks the orientation; leave the whole face alone.
                 unclosedLoops += 1;
                 continue;
             }
             if (loops.length > 1) {
-                // Nested rings (an annular cross-section) would need each inner ring
-                // treated as a hole in the outer one. Filling them independently
-                // over-fills, so report it instead of passing it off as correct.
                 nestedLoops += loops.length - 1;
             }
 
@@ -657,7 +524,6 @@ const appendCaps = (
                     continue;
                 }
 
-                // Reverse the rim: the cap has to traverse it the other way round.
                 const capLoop = [...loop].reverse();
                 const u = new Float64Array(capLoop.length);
                 const v = new Float64Array(capLoop.length);
@@ -688,15 +554,9 @@ const appendCaps = (
 };
 
 export interface PeriodicClipOptions {
-    /** Skip cap generation and only contain the surface inside the cell. */
     generateCaps?: boolean;
 }
 
-/**
- * Contains `positions`/`indices` inside `cell` and, unless disabled, closes the
- * resulting openings. Returns null when there is nothing to do (no periodic
- * directions, or a degenerate cell), so callers can keep the input untouched.
- */
 export const clipMeshToPeriodicCell = (
     positions: Float32Array,
     indices: Uint32Array,
@@ -713,7 +573,6 @@ export const clipMeshToPeriodicCell = (
         return null;
     }
 
-    // The split only adds vertices, so bounding the input bounds the whole run.
     const inputVertexCount = positions.length / 3;
     if (inputVertexCount * 2 >= MAX_KEYABLE_VERTICES) {
         logger.warn(
@@ -728,8 +587,6 @@ export const clipMeshToPeriodicCell = (
 
     const vertices = new ReducedVertexBuffer(toReducedAndWrap(frame, positions));
 
-    // Two buffers swapped between directions, so at most one extra copy of the index
-    // data is alive at a time instead of one per direction.
     let triangles = new TriangleBuffer(indices.length);
     for (let offset = 0; offset + 2 < indices.length; offset += 3) {
         triangles.push(indices[offset], indices[offset + 1], indices[offset + 2]);

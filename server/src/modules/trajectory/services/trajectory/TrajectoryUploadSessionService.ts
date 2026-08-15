@@ -194,11 +194,6 @@ class TrajectoryUploadSessionService {
             logger.error(error, `[TrajectoryUploadSessionService] Commit failed for uploadSessionId=${session.id}`);
             await discardFailedCommit(session.id, trajectoryId, input);
 
-            /*
-             * Checked before the no-frames case, and never folded into it: an object we
-             * failed to read is our failure, and reporting it as an unsupported upload
-             * sends the user to re-export a trajectory that was never the problem.
-             */
             if (isUnreadableStagedObjectError(error)) {
                 throw ApplicationError.unprocessableEntity(
                     ErrorCodes.TRAJECTORY_CREATION_STAGED_OBJECT_UNREADABLE,

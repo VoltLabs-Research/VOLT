@@ -50,7 +50,6 @@ type TimeWindow = {
     now: Date;
     monthStart: Date;
     prevMonthStart: Date;
-    /** Start of the first bucket, already snapped to the bucket's boundary. */
     seriesStart: Date;
     bucket: TeamMetricsBucket;
     days: number;
@@ -59,7 +58,6 @@ type TimeWindow = {
 const startOfDay = (date: Date): Date =>
     new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-/* Weeks start Monday, so a week bucket never splits a working week in two. */
 const startOfWeek = (date: Date): Date => {
     const start = startOfDay(date);
     const mondayOffset = (start.getDay() + 6) % 7;
@@ -72,11 +70,6 @@ const startOfWeek = (date: Date): Date => {
 const startOfBucket = (date: Date, bucket: TeamMetricsBucket): Date =>
     bucket === 'week' ? startOfWeek(date) : startOfDay(date);
 
-/*
- * Local date parts, never toISOString(): the month/week boundaries above are all
- * built from local components, so a UTC key would land in the wrong bucket for
- * every deployment west of Greenwich.
- */
 const toDateKey = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -114,11 +107,6 @@ const createTimeWindow = (input: GetTeamMetricsInput): TimeWindow => {
     };
 };
 
-/*
- * Every bucket in the window, contiguous and in order — including the empty
- * ones. Callers fill them with 0 rather than dropping them, which is what makes
- * a quiet stretch read as a quiet stretch instead of a straight line.
- */
 const buildBucketKeys = (window: TimeWindow): string[] => {
     const step = window.bucket === 'week' ? 7 : 1;
     const lastKey = toDateKey(startOfBucket(window.now, window.bucket));

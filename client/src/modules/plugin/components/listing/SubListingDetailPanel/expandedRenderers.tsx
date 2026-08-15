@@ -101,12 +101,6 @@ const renderPoints = (points: number[][]): ReactNode => {
             <div className='text-2xs text-muted'>
                 <span>{points.length} points · dim {dim}</span>
             </div>
-            {/*
-              * The header sits outside the scroller rather than `sticky` inside it. The scroll fade
-              * is a mask over everything the scroller paints, so a pinned header would dissolve at
-              * the top edge exactly when it matters. Column widths still line up because the hidden
-              * scrollbar takes no width.
-              */}
             <div className='flex flex-col'>
                 <div
                     className={cn(

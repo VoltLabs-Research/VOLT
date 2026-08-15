@@ -4,7 +4,7 @@ import TimelineRuler from '../TimelineRuler';
 import TimelineTabContent from './TimelineTabContent';
 import useTimelineScrubber from './use-timeline-scrubber';
 import useTimelineTabsState from './use-timeline-tabs-state';
-import useTimelineJobActivity from '../../hooks/use-timeline-job-activity';
+import useTimelineJobActivity from './use-timeline-job-activity';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { toAnalysisFrameActivityStatus } from '@/modules/canvas/utils/analysis-status-selectors';
@@ -12,8 +12,7 @@ import useTip from '@/shared/tips/use-tip';
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { CanvasExposureDownloadParams } from '../canvas-panel-props';
-import type { FractalSceneRef } from '@/modules/fractal/components/organisms/FractalScene';
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 const SCENE_ZOOM_SUBSCRIBE_RETRY_MS = 120;
@@ -28,7 +27,6 @@ interface TimelineProps {
     selectedAnalysisTimesteps?: number[];
     analysisId: string | undefined;
     disableContextualTips?: boolean;
-    onDownloadExposureListing?: (params: CanvasExposureDownloadParams) => void;
 }
 
 const Timeline = ({
@@ -39,8 +37,7 @@ const Timeline = ({
     availableTimesteps,
     selectedAnalysisTimesteps,
     analysisId,
-    disableContextualTips = false,
-    onDownloadExposureListing
+    disableContextualTips = false
 }: TimelineProps) => {
     useTip('canvas-timeline-scrub', {
         enabled: !disableContextualTips
@@ -163,7 +160,6 @@ const Timeline = ({
                 onRangeEndChange={setRangeEnd}
                 playSpeed={playSpeed}
                 onPlaySpeedChange={setPlaySpeed}
-                onDownloadExposureListing={onDownloadExposureListing}
                 downloadContext={{
                     pluginId,
                     analysisId,

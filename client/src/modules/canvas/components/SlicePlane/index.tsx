@@ -1,5 +1,5 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import useSlicePlane from '../../hooks/use-slice-plane';
+import useSlicePlane from './use-slice-plane';
 
 interface SlicePlaneProps {
     stageId: string;

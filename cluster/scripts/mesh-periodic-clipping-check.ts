@@ -1,20 +1,3 @@
-/*
- * Checks the periodic rewrite the MeshExporter applies to surface meshes, which
- * replaces the plugin's PBC-unwrapped facets with OVITO's behaviour: every vertex
- * wrapped back into the cell, straddling triangles cut on the boundary plane, and
- * the resulting openings closed with cap polygons.
- *
- * The invariants worth pinning are geometric rather than structural, because they
- * are what "looks like OVITO" reduces to:
- *
- *   1. nothing escapes the cell;
- *   2. the enclosed volume survives the cut (divergence theorem over the triangles),
- *      which only holds if the caps are present, complete and wound outward;
- *   3. the result is a closed oriented manifold -- every directed edge paired once.
- *
- * Run: npx tsx scripts/mesh-periodic-clipping-check.ts
- */
-
 import { clipMeshToPeriodicCell } from '@modules/plugin/services/exports/mesh-periodic-clipping';
 import { separateCapVertices } from '@modules/plugin/services/exports/mesh-exporter';
 import type { MeshDomain } from '@shared/contracts/types/workflow-exposure';
@@ -38,7 +21,6 @@ const check = (label: string, passed: boolean, detail: string): void => {
 const approximately = (actual: number, expected: number, tolerance = 1e-4): boolean =>
     Math.abs(actual - expected) <= tolerance * Math.max(1, Math.abs(expected));
 
-/** Axis-aligned box as a closed, outward-wound triangle mesh. */
 const buildBox = (
     min: [number, number, number],
     max: [number, number, number]
@@ -56,13 +38,10 @@ const buildBox = (
         x0, y1, z1
     ]);
     const indices = new Uint32Array([
-        // -z, +z
         0, 2, 1, 0, 3, 2,
         4, 5, 6, 4, 6, 7,
-        // -y, +y
         0, 1, 5, 0, 5, 4,
         3, 7, 6, 3, 6, 2,
-        // -x, +x
         0, 4, 7, 0, 7, 3,
         1, 2, 6, 1, 6, 5
     ]);
@@ -86,7 +65,6 @@ const signedVolume = (positions: Float32Array, indices: Uint32Array): number => 
     return total / 6;
 };
 
-/** Returns the directed edges that have no single matching opposite. */
 const findOpenEdges = (indices: Uint32Array): number => {
     const balance = new Map<string, number>();
     for (let offset = 0; offset + 2 < indices.length; offset += 3) {
@@ -107,10 +85,6 @@ const findOpenEdges = (indices: Uint32Array): number => {
     return open;
 };
 
-/**
- * A directed edge appearing twice means two triangles claim the same side of it,
- * which is what happens when a patch is laid over surface that is already there.
- */
 const countDuplicateDirectedEdges = (indices: Uint32Array): number => {
     const seen = new Set<string>();
     let duplicates = 0;
@@ -132,8 +106,6 @@ const reducedExtent = (
     positions: Float32Array,
     cell: MeshDomain
 ): { min: number[]; max: number[] } => {
-    // Only exercised with cells whose matrix is diagonal or upper-triangular in the
-    // tests below, so a direct solve is enough here.
     const inverse = (() => {
         const m = [
             cell.matrix[0][0], cell.matrix[0][1], cell.matrix[0][2],
@@ -189,8 +161,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
     pbc
 });
 
-/* ---- 1. a surface entirely inside the cell is left alone ---- */
-
 {
     const cell = orthorhombicCell(10, [true, true, true]);
     const box = buildBox([3, 3, 3], [7, 7, 7]);
@@ -213,11 +183,8 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
     );
 }
 
-/* ---- 2. a surface straddling one periodic boundary ---- */
-
 {
     const cell = orthorhombicCell(10, [true, true, true]);
-    // Exactly what the plugin emits: PBC-unwrapped, so it reaches out to x = 12.
     const box = buildBox([8, 3, 3], [12, 7, 7]);
     const clipped = clipMeshToPeriodicCell(box.positions, box.indices, cell);
 
@@ -253,8 +220,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
     }
 }
 
-/* ---- 3. without caps the surface is contained but open ---- */
-
 {
     const cell = orthorhombicCell(10, [true, true, true]);
     const box = buildBox([8, 3, 3], [12, 7, 7]);
@@ -268,14 +233,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
             : 'devolvio null'
     );
 }
-
-/* ---- 4. a surface crossing two boundaries at once ----
- *
- * The opening of such a body bends around the cell edge, so it is not planar and this
- * implementation leaves it uncapped on purpose (see appendCaps). What must still hold
- * is that the containment half worked and that nothing invented a bad patch: no
- * directed edge may appear twice, which is what a fragment fill would produce.
- */
 
 {
     const cell = orthorhombicCell(10, [true, true, true]);
@@ -307,8 +264,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
     }
 }
 
-/* ---- 5. triclinic cell ---- */
-
 {
     const cell: MeshDomain = {
         matrix: [
@@ -319,7 +274,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
         origin: [-5, -5, -5],
         pbc: [true, true, true]
     };
-    // Straddles the first cell vector, expressed in absolute coordinates.
     const box = buildBox([3, -2, -2], [7, 2, 2]);
     const clipped = clipMeshToPeriodicCell(box.positions, box.indices, cell);
 
@@ -340,8 +294,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
     }
 }
 
-/* ---- 6. a non-periodic cell is a no-op ---- */
-
 {
     const cell = orthorhombicCell(10, [false, false, false]);
     const box = buildBox([8, 3, 3], [12, 7, 7]);
@@ -353,8 +305,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
         clipped === null ? 'devolvio null como se espera' : 'reescribio la malla'
     );
 }
-
-/* ---- 7. a degenerate cell is a no-op rather than a crash ---- */
 
 {
     const cell: MeshDomain = {
@@ -375,8 +325,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
         clipped === null ? 'devolvio null como se espera' : 'reescribio la malla'
     );
 }
-
-/* ---- 8. cap vertices are separated so their colour and normal stay their own ---- */
 
 {
     const cell = orthorhombicCell(10, [true, true, true]);
@@ -400,7 +348,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
         + `colores=${separated.colors.length / 4} indices=${separated.indices.length}`
     );
 
-    // Geometry must be untouched: every index still resolves to the same point.
     let movedVertices = 0;
     for (let offset = 0; offset < separated.indices.length; offset += 1) {
         const before = clipped.indices[offset] * 3;
@@ -417,7 +364,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
         `componentes desplazadas=${movedVertices}`
     );
 
-    // Surface triangles must stay white, cap triangles lavender, with no bleed.
     const colorOf = (vertex: number): [number, number, number, number] => [
         separated.colors[vertex * 4],
         separated.colors[vertex * 4 + 1],
@@ -450,8 +396,6 @@ const orthorhombicCell = (size: number, pbc: [boolean, boolean, boolean]): MeshD
         `volumen=${signedVolume(separated.positions, separated.indices).toFixed(6)} esperado=64`
     );
 }
-
-/* ---- report ---- */
 
 let failed = 0;
 for (const result of results) {

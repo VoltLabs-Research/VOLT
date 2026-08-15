@@ -50,8 +50,6 @@ const RightCollapsible = ({
         onExpandedChange?.(!expanded);
     };
 
-    // Weight and ink carry the section boundary, so the header no longer needs the
-    // 39px band to be read as a header: it was the same size and tone as body text.
     const titleNode = <span className='min-w-0 flex-1 truncate text-xs font-medium text-foreground [.canvas-objects-panel--analysis-compact_&]:text-2xs'>{title}</span>;
     const actionsNode = <span className='flex shrink-0 flex-row items-center gap-0.5'>{headerAction}</span>;
 

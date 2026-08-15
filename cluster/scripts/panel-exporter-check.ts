@@ -1,23 +1,3 @@
-/*
- * Checks the PanelExporter's resolution rules, which are the whole contract between a
- * plugin's manifest and what the canvas right sidebar can show:
- *
- *   1. both x-axis shapes resolve — categorical labels, and a binned interval whose end is
- *      a dotted path because the plugin computes it per frame;
- *   2. an absent source produces NO block (that is how a block is made conditional on an
- *      argument) while a present-but-wrong-shaped one produces an `omitted` block with a
- *      reason (that is a bug, and must be visible);
- *   3. an over-cap table is kept and marked `truncated`, because a partial table still
- *      reads correctly;
- *   4. an over-cap chart is REFUSED, because a histogram missing its tail misstates the
- *      distribution while looking healthy;
- *   5. a mismatch between categories and values is refused rather than plotted misaligned;
- *   6. `buildObjectPath` routes a panel to `panels/<ts>/<node>.json` — without its branch a
- *      panel is written as `glb/<ts>/<node>.panel-json`.
- *
- * Run: npx tsx scripts/panel-exporter-check.ts
- */
-
 import { resolvePanelBlocks } from '@modules/plugin/services/exports/panel-exporter';
 import { buildObjectPath } from '@modules/plugin/services/exports/export-node-processor-shared';
 import type {
@@ -44,7 +24,6 @@ const check = (label: string, passed: boolean, detail: string): void => {
 
 const options = (blocks: PanelBlockDeclaration[]): PanelExportOptions => ({ blocks });
 
-/* The shape PTM emits: a table of structure counts plus a 100-bin RMSD histogram. */
 const ptmPayload: JsonObject = {
     structure_counts: {
         rows: [
@@ -108,7 +87,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     }]
 };
 
-// 1. Both axis shapes, against the real payload shape.
 {
     const blocks = resolvePanelBlocks(ptmPayload, options([TABLE_BLOCK, INTERVAL_CHART_BLOCK]));
     const table = blocks.find((block) => block.kind === 'table');
@@ -139,7 +117,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// Categorical axis.
 {
     const payload: JsonObject = {
         ordering: {
@@ -166,7 +143,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// 2. Absent vs wrong-shaped.
 {
     const absent = resolvePanelBlocks({}, options([TABLE_BLOCK, INTERVAL_CHART_BLOCK]));
     check(
@@ -185,7 +161,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// 3. Over-cap table is kept and marked.
 {
     const rows = Array.from({ length: 600 }, (_, index) => ({
         structure_name: `S${index}`,
@@ -205,7 +180,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// 4. Over-cap chart is refused.
 {
     const payload: JsonObject = {
         rmsd_histogram: {
@@ -223,7 +197,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// 5. Misaligned categories are refused.
 {
     const payload: JsonObject = {
         ordering: {
@@ -250,7 +223,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// A stat block, and an unknown kind from a newer manifest.
 {
     const blocks = resolvePanelBlocks(
         { totals: { atoms: 221021 } },
@@ -278,7 +250,6 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
     );
 }
 
-// 6. The object key.
 {
     const input = {
         executionData: {

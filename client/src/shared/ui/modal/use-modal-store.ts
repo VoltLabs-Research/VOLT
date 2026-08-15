@@ -2,33 +2,46 @@ import { create } from 'zustand';
 
 interface ModalStoreState {
     openModalIds: Readonly<Record<string, boolean>>;
+    modalPayloads: Readonly<Record<string, unknown>>;
 }
 
 interface ModalStoreActions {
-    open: (id: string) => void;
+    open: (id: string, payload?: unknown) => void;
     close: (id: string) => void;
 }
 
-export const useModalStore = create<ModalStoreState & ModalStoreActions>((set) => ({
+const useModalStore = create<ModalStoreState & ModalStoreActions>((set) => ({
     openModalIds: {},
+    modalPayloads: {},
 
-    open: (id) => set((state) => {
-        if (state.openModalIds[id] === true) {
+    open: (id, payload) => set((state) => {
+        if (state.openModalIds[id] === true && payload === undefined) {
             return state;
         }
 
-        return { openModalIds: { ...state.openModalIds, [id]: true } };
+        return {
+            openModalIds: { ...state.openModalIds, [id]: true },
+            modalPayloads: payload === undefined
+                ? state.modalPayloads
+                : { ...state.modalPayloads, [id]: payload }
+        };
     }),
 
     close: (id) => set((state) => {
-        if (state.openModalIds[id] !== true) {
+        if (state.openModalIds[id] !== true && !(id in state.modalPayloads)) {
             return state;
         }
 
         const nextOpenModalIds = { ...state.openModalIds };
-        delete nextOpenModalIds[id];
+        const nextModalPayloads = { ...state.modalPayloads };
 
-        return { openModalIds: nextOpenModalIds };
+        delete nextOpenModalIds[id];
+        delete nextModalPayloads[id];
+
+        return {
+            openModalIds: nextOpenModalIds,
+            modalPayloads: nextModalPayloads
+        };
     })
 }));
 
@@ -36,8 +49,12 @@ export const useIsModalOpen = (id: string): boolean => {
     return useModalStore((state) => state.openModalIds[id] === true);
 };
 
-export const openModal = (id: string): void => {
-    useModalStore.getState().open(id);
+export const useModalPayload = <T,>(id: string): T | null => {
+    return useModalStore((state) => (state.modalPayloads[id] as T | undefined) ?? null);
+};
+
+export const openModal = <T,>(id: string, payload?: T): void => {
+    useModalStore.getState().open(id, payload);
 };
 
 export const closeModal = (id: string): void => {

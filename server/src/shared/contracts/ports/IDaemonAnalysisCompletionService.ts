@@ -1,4 +1,3 @@
-
 import type { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type { AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
 import type { AnalysisStageType } from '@shared/contracts/types/AnalysisProps';
@@ -49,10 +48,6 @@ export interface DaemonAnalysisStageStatusInput {
     startedAt?: string;
     finishedAt?: string;
     durationMs?: number;
-    /**
-     * Reported by exposure stages that own an export node. `false` means the
-     * export emitted nothing, so no artifact upload will follow for it.
-     */
     producedArtifacts?: boolean;
 }
 

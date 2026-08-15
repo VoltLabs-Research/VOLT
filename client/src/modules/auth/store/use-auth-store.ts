@@ -2,8 +2,7 @@ import { clearCurrentUserQueryData, fetchCurrentUser } from '@/modules/auth/hook
 import { clearSocketSession, updateSocketAuthToken } from '@/modules/socket/services/socket-auth-session';
 import { resetTeamSessionState } from '@/modules/team/store/team/use-team-store';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import authService from '@/modules/auth/api/service';
-import systemService from '@/modules/system/api/service';
+import { tryLocalAutoLogin } from '@/modules/auth/services/local-auto-login';
 import { create } from 'zustand';
 
 interface AuthStore{
@@ -14,19 +13,6 @@ interface AuthStore{
     markAuthenticated: (token: string | null) => void;
     signOut: () => void;
 }
-
-const tryLocalAutoLogin = async (): Promise<string | null> => {
-    try{
-        const { mode } = await systemService.getDeploymentConfig({});
-        if(mode !== 'local'){
-            return null;
-        }
-        const { token } = await authService.localSignIn({});
-        return token;
-    }catch{
-        return null;
-    }
-};
 
 export const useAuthStore = create<AuthStore>((set) => {
     const markSignedIn = () => set({

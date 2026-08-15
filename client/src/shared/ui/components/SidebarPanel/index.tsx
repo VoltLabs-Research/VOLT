@@ -1,4 +1,4 @@
-import { useFocusOnActivate } from '@/shared/ui/hooks/use-focus-on-activate';
+import { useFocusOnActivate } from './use-focus-on-activate';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
@@ -16,13 +16,6 @@ const SidebarPanel = ({ name, label, active, children }: SidebarPanelProps) => {
     const panel = useFocusOnActivate<HTMLDivElement>(active);
 
     return (
-        /*
-         * The scroller is the panel itself rather than a wrapper inside it, for two reasons that
-         * both live in index.css: `.sidebar-panel` carries `grid-area: 1 / 1` so every panel stacks
-         * in one cell, and `.sidebar-panel > *:nth-child(n)` staggers the entrance of each item. An
-         * inserted wrapper would take over the grid area and collapse all six stagger delays onto
-         * itself. `role='navigation'` keeps this equivalent to the <nav> it replaces.
-         */
         <Scrollable
             ref={panel}
             role='navigation'

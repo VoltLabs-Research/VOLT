@@ -63,7 +63,6 @@ export enum Exporter{
     BOND = 'BondExporter',
     CHART = 'ChartExporter',
     CONFIGURATION = 'ConfigurationExporter',
-    /** Resolves declared blocks into a panel document for the canvas right sidebar. */
     PANEL = 'PanelExporter'
 }
 

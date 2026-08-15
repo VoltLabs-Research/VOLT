@@ -3,7 +3,7 @@ import { Button } from '@heroui/react';
 import { Check, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export type InviteButtonState = 'idle' | 'success' | 'error';
+import type { InviteButtonState } from '@/modules/team/contracts/invite';
 
 const BUTTON_CONTENT: Record<InviteButtonState, { text: string; icon?: ReactNode }> = {
     idle: { text: 'Invite' },

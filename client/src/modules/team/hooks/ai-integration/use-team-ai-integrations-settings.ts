@@ -1,3 +1,4 @@
+import { TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/contracts/modal-ids';
 import {
     invalidateTeamAIIntegrationsQuery,
     useCreateTeamAIIntegrationMutation,
@@ -18,7 +19,6 @@ import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/tea
 import { useEffect, useState } from 'react';
 import { sileo } from 'sileo';
 
-export const TEAM_AI_INTEGRATION_MODAL_ID = 'team-ai-integration-modal';
 export const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1';
 
 const AI_PROVIDER_VALUES = Object.values(AIProvider);

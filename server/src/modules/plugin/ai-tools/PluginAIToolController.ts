@@ -8,11 +8,9 @@ import PluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgum
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { PluginRecord } from '@modules/plugin/contracts/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import { ExportType } from '@shared/domain/port/persistence';
 import type {
     ComparePluginsInput,
     ExecutePipelineInput,
-    ExportAnalysisResultInput,
     GetSubListingInput,
     InstallPluginInput,
     ListAnalysisResultOptionsInput,
@@ -345,30 +343,4 @@ export default class PluginAIToolController extends AIToolController {
         };
     }
 
-    @AITool({
-        name: 'export_analysis_result',
-        description: 'Produce a downloadable export (JSON or CSV) of all listing rows for an analysis. Returns export metadata (filename, format, headers); it does not stream the file contents into the chat.',
-        parameters: typia.llm.parameters<ExportAnalysisResultInput>(),
-        validate: typia.createValidate<ExportAnalysisResultInput>()
-    })
-    async exportAnalysisResult(input: ExportAnalysisResultInput & AIToolScope) {
-        const { headers } = await this.#service.exportListingRowsByAnalysisId({
-            ...input,
-            format: input.format as ExportType | undefined
-        });
-
-        const filename = headers['Content-Disposition'] ?? headers['content-disposition'];
-        const contentType = headers['Content-Type'] ?? headers['content-type'];
-
-        return {
-            summary: `Prepared an export for analysis ${input.analysisId} (${input.format ?? ExportType.Json}). Download it from the analysis export endpoint.`,
-            data: {
-                analysisId: input.analysisId,
-                format: input.format ?? ExportType.Json,
-                filename,
-                contentType,
-                note: 'Export prepared. Binary contents are not included in chat; use the download endpoint to retrieve the file.'
-            }
-        };
-    }
 }

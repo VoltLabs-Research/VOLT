@@ -11,20 +11,12 @@ const DANGER_THRESHOLD_PERCENT = 80;
 
 interface ReadoutRow {
     name: string;
-    /** Already formatted, unit included. */
     value: string;
     detail: string;
     history: number[];
-    /** Absent for measures with no capacity to be a share of, such as throughput. */
     percentage?: number;
 }
 
-/*
- * Colour returns here as an ordinal reading of one number — how close to full — and it
- * is redundant with the percentage printed beside it, so it is never the only carrier
- * of the meaning. That is different from the per-core chart below, where colour was
- * being asked to identify 160 series and could not.
- */
 const toneFor = (percentage: number | undefined): string => {
     if (percentage === undefined) return 'var(--accent)';
     if (percentage >= DANGER_THRESHOLD_PERCENT) return 'var(--danger)';
@@ -32,19 +24,6 @@ const toneFor = (percentage: number | undefined): string => {
     return 'var(--success)';
 };
 
-/*
- * One surface, one row per measure, replacing the three summary cards and the separate
- * Resource Usage panel.
- *
- * Those were four bordered boxes describing three measures between them: CPU was a
- * card, a bar and a chart average; memory and disk each appeared as both a card and a
- * bar. Here every measure is stated once — name, current value, the facts behind it,
- * and its own recent shape — and the panels below stay for the measures that split
- * into series worth reading over time (per-core load, rx/tx, read/write).
- *
- * The sparkline also does what the old segmented bar only implied: the bar filled to a
- * percentage in 40 steps, which looked like history and was not.
- */
 const ClusterResourceReadout = ({
     metrics,
     history
@@ -95,11 +74,6 @@ const ClusterResourceReadout = ({
             history: history.map((point) => point.disk.usagePercent)
         },
         {
-            /*
-             * No percentage: throughput has no capacity to be a share of. The old bar
-             * showed it as a percentage of a 10 MB/s ceiling that exists nowhere, so it
-             * filled at a rate unrelated to any limit.
-             */
             name: 'Network',
             value: `${networkFormatted.value} ${networkFormatted.unit}`,
             detail: `↑ ${outgoing.value} ${outgoing.unit} · ↓ ${incoming.value} ${incoming.unit}`,
@@ -122,7 +96,6 @@ const ClusterResourceReadout = ({
                             <span className='truncate text-xs text-muted tabular-nums'>{row.detail}</span>
                         </div>
 
-                        {/* Sits between the name and the value so all four traces share one column. */}
                         <div className='min-w-24 flex-1 max-md:order-last max-md:w-full max-md:flex-none'>
                             <ResourceSparkline values={row.history} color={tone} />
                         </div>

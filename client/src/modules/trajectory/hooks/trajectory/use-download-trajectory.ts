@@ -1,50 +1,31 @@
 import { useDownloadTrajectoryMutation } from './queries';
-import { isAccessDeniedError } from '@/shared/errors/core/report-error';
-import { showPromise } from '@/shared/ui/hooks/toast';
-import { triggerBrowserDownload } from '@/shared/utils/file';
-import { useCallback } from 'react';
+import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
+import useBlobDownload from '@/shared/ui/hooks/use-blob-download';
 
 import type { DownloadTrajectoryInput } from '../../api/services/trajectory-service';
 
-interface UseDownloadTrajectoryReturn {
-    downloadTrajectory: (params: DownloadTrajectoryInput) => Promise<void>;
-    isDownloading: boolean;
-}
+const EXPORT_TRAJECTORY_TOAST = createPromiseToastOptions({
+    loading: 'Exporting trajectory...',
+    success: 'Trajectory exported successfully',
+    error: 'Failed to export trajectory'
+});
 
-const useDownloadTrajectory = (): UseDownloadTrajectoryReturn => {
-    const downloadTrajectoryMutation = useDownloadTrajectoryMutation();
+const buildFilename = ({ filename, trajectoryId }: DownloadTrajectoryInput, blob: Blob): string => {
+    if (blob.type.includes('zip')) return `${filename || trajectoryId}.zip`;
+    if (blob.type.includes('gzip')) return `${filename || trajectoryId}.dump.gz`;
 
-    const downloadTrajectory = useCallback(async (params: DownloadTrajectoryInput) => {
-        try {
-            await showPromise(
-                (async () => {
-                    const blob = await downloadTrajectoryMutation.mutateAsync({
-                        ...params,
-                        archive: params.archive ?? true
-                    });
-                    const extension = blob.type.includes('zip')
-                        ? 'zip'
-                        : blob.type.includes('gzip')
-                            ? 'dump.gz'
-                            : 'dump';
-                    const filename = `${params.filename || params.trajectoryId}.${extension}`;
-                    triggerBrowserDownload(blob, filename);
-                    return blob;
-                })(),
-                {
-                    loading: { title: 'Exporting trajectory...' },
-                    success: { title: 'Trajectory exported successfully' },
-                    error: { title: 'Failed to export trajectory' }
-                }
-            );
-        } catch (error: unknown) {
-            if (isAccessDeniedError(error)) return;
-        }
-    }, [downloadTrajectoryMutation]);
+    return `${filename || trajectoryId}.dump`;
+};
+
+const useDownloadTrajectory = () => {
+    const { download, isDownloading } = useBlobDownload(useDownloadTrajectoryMutation(), {
+        toast: EXPORT_TRAJECTORY_TOAST,
+        filename: buildFilename
+    });
 
     return {
-        downloadTrajectory,
-        isDownloading: downloadTrajectoryMutation.isPending
+        downloadTrajectory: download,
+        isDownloading
     };
 };
 

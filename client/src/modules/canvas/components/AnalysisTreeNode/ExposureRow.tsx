@@ -4,6 +4,7 @@ import { DEFAULT_LINE_WIDTH, buildPluginScene, buildSceneRenderMetadata } from '
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import { cn } from '@heroui/react';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
+import useDownloadExposureListing from '../../hooks/use-download-exposure-listing';
 import {
     buildAddRemoveOption,
     buildColorSubmenu,
@@ -26,13 +27,6 @@ export interface SceneRowActions {
     isSceneActive: (scene: SceneObjectType) => boolean;
     onAddScene: (scene: SceneObjectType) => void;
     onRemoveScene: (scene: SceneObjectType) => void;
-    onDownloadExposureListing?: (params: {
-        pluginId: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        exposureName?: string;
-    }) => void;
     sceneVisualOverrides: SceneVisualOverrides;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
@@ -63,7 +57,6 @@ const ExposureRow = ({
     isSceneActive,
     onAddScene,
     onRemoveScene,
-    onDownloadExposureListing,
     sceneVisualOverrides,
     setSceneOpacity,
     setSceneLineWidth,
@@ -71,6 +64,7 @@ const ExposureRow = ({
     setSceneEdges,
     resolveSceneRenderMetadata
 }: ExposureRowProps) => {
+    const { download: downloadExposureListing } = useDownloadExposureListing();
     const sceneRenderMetadata = buildSceneRenderMetadata(exposure.export)
         ?? resolveSceneRenderMetadata?.(pluginId, exposure.exposureId);
     const scene = buildPluginScene({
@@ -102,14 +96,12 @@ const ExposureRow = ({
         {
             label: 'Download',
             icon: Download,
-            onClick: () => {
-                onDownloadExposureListing?.({
-                    pluginId,
-                    exposureId: exposure.exposureId,
-                    analysisId: analysis._id,
-                    exposureName: exposure.name
-                });
-            }
+            onClick: () => void downloadExposureListing({
+                pluginId,
+                exposureId: exposure.exposureId,
+                analysisId: analysis._id,
+                exposureName: exposure.name
+            })
         },
         transparencyOption(buildTransparencySubmenu(sceneOverride?.opacity ?? 1, (value) => setSceneOpacity(sceneKey, value))),
         colorOption(buildColorSubmenu(sceneOverride?.color, (value) => setSceneColor(sceneKey, value))),

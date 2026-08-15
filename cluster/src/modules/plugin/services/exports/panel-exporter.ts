@@ -14,21 +14,6 @@ import type {
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject, JsonValue } from '@shared/contracts/types/json';
 
-/*
- * Resolves the panel blocks a plugin declared into one self-contained JSON document per
- * timestep, which the canvas right sidebar renders.
- *
- * Why the data is embedded rather than referenced: a sub-listing read is not a database
- * query, it is a command across the reverse channel to this daemon
- * (`PluginListingQueryService` -> `ChannelCommands.PluginSubListingsList`), so a panel of
- * four tables would cost four daemon round trips *per frame* while the user scrubs. And a
- * histogram cannot be referenced at all: it is a bare array of counts with an implicit x
- * axis, so it is not row-shaped and no sub-listing can hold it.
- *
- * The document is immutable for its (analysis, exposure, timestep), which is also why the
- * numbers in it can never skew against each other the way four independent reads can.
- */
-
 const PANEL_MAX_TABLE_ROWS = 512;
 const PANEL_MAX_CHART_POINTS = 2048;
 const PANEL_MAX_DOCUMENT_BYTES = 1024 * 1024;
@@ -80,15 +65,6 @@ interface OmittedBlock {
 
 type ResolvedBlock = ResolvedTableBlock | ResolvedChartBlock | ResolvedStatBlock | OmittedBlock;
 
-/*
- * Three outcomes, and the difference between the last two is the whole point:
- *   - `null`     the source is absent. The plugin declared a block whose data this run did
- *                not emit, which is how a block is made conditional on an argument. No
- *                block, no complaint.
- *   - omitted    the source is present and the wrong shape, or past a cap. That is a bug
- *                or a limit, and it travels into the document so someone can see it.
- *   - resolved   the block.
- */
 type BlockOutcome = ResolvedBlock | null;
 
 const omit = (title: string, reason: string): OmittedBlock => ({
@@ -99,7 +75,6 @@ const omit = (title: string, reason: string): OmittedBlock => ({
 
 const isPresent = (value: JsonValue | undefined): boolean => value !== undefined && value !== null;
 
-/** Cells are flattened to scalars: a nested object in a summary row is not renderable. */
 const toPanelScalar = (value: JsonValue | undefined): PanelScalar => {
     if (value === undefined || value === null) return null;
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
@@ -117,7 +92,6 @@ const toFiniteNumber = (value: JsonValue | undefined): number | null => {
     return null;
 };
 
-/** A `PanelNumber` is either the number itself or a path to it in this run's payload. */
 const resolvePanelNumber = (payload: JsonObject, value: PanelNumber): number | null => {
     if (typeof value === 'number') return Number.isFinite(value) ? value : null;
     if (typeof value?.source !== 'string') return null;
@@ -150,10 +124,6 @@ const resolveTableBlock = (payload: JsonObject, block: PanelTableBlockDeclaratio
         return omit(block.title, `Source "${block.source}" holds no row objects`);
     }
 
-    /*
-     * A table missing rows is visibly partial and still useful, so it is kept and marked.
-     * The client states the remainder rather than clipping in silence.
-     */
     const truncated: PanelTruncation | undefined = total > rows.length
         ? {
             shown: rows.length,
@@ -181,11 +151,6 @@ const resolveChartBlock = (payload: JsonObject, block: PanelChartBlockDeclaratio
         return omit(block.title, `Values "${block.values}" is not an array`);
     }
 
-    /*
-     * Refused rather than clipped, unlike a table. A histogram missing its tail is not a
-     * partial histogram — it is a wrong one: it misstates the shape of the distribution
-     * while looking perfectly healthy.
-     */
     if (rawValues.length > PANEL_MAX_CHART_POINTS) {
         return omit(block.title, `${rawValues.length} points exceeds the ${PANEL_MAX_CHART_POINTS} point limit`);
     }
@@ -284,7 +249,6 @@ const resolveBlock = (payload: JsonObject, block: PanelBlockDeclaration): BlockO
         case 'chart': return resolveChartBlock(payload, block);
         case 'stat': return resolveStatBlock(payload, block);
         default: {
-            // An unknown kind from a newer manifest than this daemon.
             const unknown = block as { kind?: unknown; title?: unknown };
             return omit(
                 typeof unknown.title === 'string' ? unknown.title : 'Unknown block',
@@ -318,21 +282,11 @@ export const exportPanelArtifact = async (
         timestep: input.timestep
     };
 
-    /*
-     * Nothing resolved: no artifact. This is load-bearing beyond tidiness — an exporter
-     * that stages nothing while claiming success would leave an expected artifact unsettled
-     * and strand the analysis mid-upload.
-     */
     if (blocks.length === 0) {
         logger.warn(context, 'PanelExporter: no declared block resolved; no panel written');
         return false;
     }
 
-    /*
-     * Every refusal and every cap is logged with its reason. Nothing upstream validates a
-     * panel declaration, so these lines are the only way a plugin author learns that a
-     * block was declared and did not arrive.
-     */
     for (const block of blocks) {
         const blockContext = {
             ...context,
@@ -362,7 +316,6 @@ export const exportPanelArtifact = async (
 
     const buffer = Buffer.from(JSON.stringify(document), 'utf8');
 
-    // A summary that needs a megabyte is not a summary; a mutilated one is worse than none.
     if (buffer.byteLength > PANEL_MAX_DOCUMENT_BYTES) {
         logger.warn(
             {

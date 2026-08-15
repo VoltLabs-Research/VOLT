@@ -5,7 +5,6 @@ import {
 } from '@tanstack/react-query';
 import queryClient from '@/shared/query/query-client';
 import { createMutation } from '@/shared/query/create-mutation';
-import { createQuery } from '@/shared/query/create-query';
 import { buildKeys } from '@/shared/query/query-keys';
 import { buildCanvasDataAccess } from '@/modules/canvas/api/access/build-canvas-data-access';
 import { DEFAULT_CANVAS_ACCESS_STATE } from '@/modules/canvas/contracts/data-access';
@@ -14,7 +13,6 @@ import listingService from '../../api/services/listing-service';
 import type {
     ExportListingByAnalysisInput,
     ExportPluginListingInput,
-    GetAnalysisListingExportOptionsInput,
     GetPluginListingInput,
     GetPluginListingResponse,
     GetSubListingInput,
@@ -30,9 +28,6 @@ const listingInfiniteKeys = buildKeys<{
 }>(['plugins', 'listing', 'infinite']);
 
 const subListingKeys = buildKeys<Record<string, never>>(['plugins', 'subListing']);
-const analysisExportOptionsKeys = buildKeys<{
-    detail: GetAnalysisListingExportOptionsInput;
-}>(['plugins', 'analysis-export-options']);
 
 const subListingInfiniteKeys = buildKeys<{
     detail: Omit<GetSubListingInput, 'page'> & { limit: number };
@@ -45,8 +40,7 @@ export const LISTING_QUERY_KEYS = {
     listingInfiniteDetail: listingInfiniteKeys.detail,
     subListing: subListingKeys.prefix,
     subListingInfinite: subListingInfiniteKeys.prefix,
-    subListingDetail: subListingInfiniteKeys.detail,
-    analysisExportOptionsDetail: analysisExportOptionsKeys.detail
+    subListingDetail: subListingInfiniteKeys.detail
 };
 
 const useListingAccess = (trajectoryId?: string) => {
@@ -139,11 +133,10 @@ export const useSubListingInfiniteQuery = (
     });
 };
 
-export const useAnalysisListingExportOptionsQuery = createQuery(
-    LISTING_QUERY_KEYS.analysisExportOptionsDetail,
-    (params: GetAnalysisListingExportOptionsInput) => listingService.getAnalysisListingExportOptions(params)
-);
-
 export const useExportListingMutation = createMutation<Blob, ExportPluginListingInput>(listingService.exportListing);
 
 export const useExportListingByAnalysisMutation = createMutation<Blob, ExportListingByAnalysisInput>(listingService.exportListingByAnalysis);
+
+export const fetchSubListing = (params: GetSubListingInput): Promise<GetSubListingResponse> => {
+    return listingService.getSubListing(params);
+};

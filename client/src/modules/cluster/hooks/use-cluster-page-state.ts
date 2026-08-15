@@ -1,14 +1,15 @@
+import { CLUSTER_QUEUE_CONCURRENCY_MODAL_ID, CLUSTER_ROLE_MODAL_ID, CLUSTER_TRANSFER_MODAL_ID, DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import useClusterManagement from '@/modules/cluster/hooks/use-cluster-management';
-import { useState } from 'react';
+import { useModalPayload } from '@/shared/ui/modal/use-modal-store';
 import type { TeamCluster,  TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { TeamClusterQueueConcurrency, TeamClusterQueueScopeLimits } from '@volt/contracts/modules/cluster/domain';
 
 const useClusterPageState = () => {
     const management = useClusterManagement();
-    const [deleteTarget, setDeleteTarget] = useState<TeamCluster | null>(null);
-    const [queueConcurrencyTarget, setQueueConcurrencyTarget] = useState<TeamCluster | null>(null);
-    const [roleTarget, setRoleTarget] = useState<TeamCluster | null>(null);
-    const [transferTarget, setTransferTarget] = useState<TeamCluster | null>(null);
+    const deleteTarget = useModalPayload<TeamCluster>(DELETE_CLUSTER_MODAL_ID);
+    const queueConcurrencyTarget = useModalPayload<TeamCluster>(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
+    const roleTarget = useModalPayload<TeamCluster>(CLUSTER_ROLE_MODAL_ID);
+    const transferTarget = useModalPayload<TeamCluster>(CLUSTER_TRANSFER_MODAL_ID);
 
     const deleteCluster = async (password: string) => {
         if (!deleteTarget) {
@@ -63,10 +64,6 @@ const useClusterPageState = () => {
         queueConcurrencyTarget,
         roleTarget,
         transferTarget,
-        setDeleteTarget,
-        setQueueConcurrencyTarget,
-        setRoleTarget,
-        setTransferTarget,
         isLoading: management.isLoading
     };
 };

@@ -1,3 +1,4 @@
+import { readStoredString, writeStoredString } from '@/shared/utils/local-storage';
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 export enum ResizeDirection {
@@ -34,23 +35,20 @@ interface UseResizableReturn {
 
 const readPersistedSize = (storageKey: string | undefined, fallback: number, min: number, max: number): number => {
     if (!storageKey) return fallback;
-    try {
-        const raw = window.localStorage.getItem(storageKey);
-        if (raw === null) return fallback;
-        const parsed = Number.parseInt(raw, 10);
-        if (!Number.isFinite(parsed)) return fallback;
-        return Math.max(min, Math.min(max, parsed));
-    } catch {
-        return fallback;
-    }
+
+    const raw = readStoredString(storageKey);
+    if (raw === null) return fallback;
+
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+
+    return Math.max(min, Math.min(max, parsed));
 };
 
 const persistSize = (storageKey: string | undefined, size: number) => {
     if (!storageKey) return;
-    try {
-        window.localStorage.setItem(storageKey, String(Math.round(size)));
-    } catch {
-    }
+
+    writeStoredString(storageKey, String(Math.round(size)));
 };
 
 const useResizable = ({

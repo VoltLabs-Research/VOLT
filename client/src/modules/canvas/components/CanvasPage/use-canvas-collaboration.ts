@@ -1,5 +1,5 @@
 import useCanvasWorkspace from '@/modules/canvas/collaboration/use-canvas-workspace';
-import useLiveModelDrag from '@/modules/canvas/collaboration/use-live-model-drag';
+import useLiveModelDrag from './use-live-model-drag';
 import useWorkspaceCursors from '@/modules/canvas/collaboration/use-workspace-cursors';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';

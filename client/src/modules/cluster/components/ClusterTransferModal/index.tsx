@@ -1,3 +1,4 @@
+import { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import { useTeamClusterTransferJobsQuery } from '@/modules/cluster/hooks/team-cluster/queries';
@@ -23,17 +24,14 @@ interface ClusterTransferModalProps {
     clusters: TeamCluster[];
     teamId: string | null;
     onSave: (destinationClusterId: string) => Promise<CreateTeamClusterTransferRequestResponse>;
-    onClose: () => void;
 }
 
-export const CLUSTER_TRANSFER_MODAL_ID = 'cluster-transfer-modal';
 
 const ClusterTransferModal = ({
     teamCluster,
     clusters,
     teamId,
-    onSave,
-    onClose
+    onSave
 }: ClusterTransferModalProps) => {
     const [destinationClusterId, setDestinationClusterId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,7 +80,6 @@ const ClusterTransferModal = ({
         setError(undefined);
         setQueuedMessage(null);
         closeModal(CLUSTER_TRANSFER_MODAL_ID);
-        onClose();
     };
 
     const handleSave = async () => {

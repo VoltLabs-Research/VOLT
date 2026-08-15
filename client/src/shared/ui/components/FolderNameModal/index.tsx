@@ -1,6 +1,6 @@
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import TextInputModal from '@/shared/ui/components/RenameEntityModal/TextInputModal';
-import useTextInputModalState from '@/shared/ui/components/RenameEntityModal/use-text-input-modal-state';
+import useTextInputModalState from './use-text-input-modal-state';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { useCallback, useEffect } from 'react';
 

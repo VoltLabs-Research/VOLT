@@ -46,10 +46,6 @@ const CopyMessageButton = ({ text }: CopyMessageButtonProps) => {
     );
 };
 
-/*
- * Reasoning is collapsed by default. It is context for the answer, not the
- * answer, and left expanded it pushed the reply below the fold on every turn.
- */
 const ReasoningSegment = ({ content }: { content: string }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -111,11 +107,6 @@ const AIMessageItem = memo(({
         }
 
         if (segment.type === 'text') {
-            /*
-             * Only the user gets a bubble. The assistant's turn is the page's main
-             * text — boxing it would add a frame around nearly everything on screen
-             * and cap the width of tables and code blocks that need the room.
-             */
             segmentElements.push(
                 <div
                     key={`seg-${segmentIndex}`}

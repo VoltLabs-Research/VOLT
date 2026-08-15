@@ -1,7 +1,7 @@
 import ContainerTerminal from '../ContainerTerminal';
 import DockerNeededState from '@/shared/ui/components/DockerNeededState';
 import { useContainerRuntimeAvailability } from '@/modules/cluster/hooks/use-container-runtime-availability';
-import useContainersListing, { containersListingResource } from '@/modules/container/hooks/use-containers-listing';
+import useContainersListing, { containersListingResource } from './use-containers-listing';
 import type { ContainerListingRow } from '@/modules/container/contracts/listing';
 import { isContainerFolderRow } from '@/modules/container/utils/listing';
 import { NewFolderHeaderAction, getFolderHeaderMenuOptions } from '@/shared/ui/components/FolderedListingHeaderControls';

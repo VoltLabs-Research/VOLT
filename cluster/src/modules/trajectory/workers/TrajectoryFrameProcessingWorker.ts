@@ -49,11 +49,6 @@ import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/na
 import { readFrame } from '@voltstack/lammps-io';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
-/**
- * Long enough that a slow parquet build is never raced by a straggler frame, short
- * enough that a daemon killed mid-build does not block a retry for the rest of the
- * day. Only ever released early on failure.
- */
 const DRAIN_CLAIM_TTL_SECONDS = 30 * 60;
 
 const DUMP_LIST_PAGE_SIZE = 1_000;
@@ -97,10 +92,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
                 () => this.processFrame(payload, job)
             );
         } catch (error) {
-            // The frame that gives up can be the last one of the trajectory, and no
-            // sibling is left to notice the group is finished. So it looks before it
-            // goes, declaring itself abandoned: the remaining frames get their parquet
-            // instead of the trajectory sitting in `Processing` forever.
             if (isFinalAttempt(job)) {
                 await this.drainWhenFramesSettled(payload, { selfAbandoned: true }).catch((drainError: unknown) => {
                     logger.error(
@@ -165,15 +156,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         await this.drainWhenFramesSettled(payload);
     }
 
-    /**
-     * Builds the trajectory's parquet once every frame has landed its dump.
-     *
-     * Both halves of the question are *derived* rather than tracked. Which frames
-     * exist is whatever dumps are in storage; which frames are still coming is
-     * whatever the queue still lists as live. The counter this replaces could not
-     * survive a frame that failed permanently — it never reached zero, and the
-     * trajectory stayed in `Processing` behind a key that expired 24 hours later.
-     */
     private async drainWhenFramesSettled(
         payload: FrameProcessingQueueJobPayload,
         { selfAbandoned = false }: { selfAbandoned?: boolean } = {}
@@ -185,25 +167,13 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         const liveJobs = await listLiveJobsByKeyPrefix(TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, jobKeyPrefix);
         const liveSiblings = liveJobs.filter((job) => job.jobKey !== selfJobKey);
 
-        // A sibling that has not started cannot have written a dump, so for every frame
-        // but the last few this single check ends the method.
         if (liveSiblings.some((job) => job.state === 'waiting')) return;
 
-        // The rest are mid-flight or waiting on a retry, and one of those only holds the
-        // group up while it still owes a dump: a sibling that already wrote its dump has
-        // nothing left to contribute to the parquet even though its job stays `active`
-        // finishing GLB and raster work. That distinction is the whole point, because
-        // the queue marks a job complete only after its handler returns, so frames
-        // finishing together all see each other as live. There are at most `concurrency`
-        // of them, so probing individually stays cheap.
         for (const job of liveSiblings) {
             const timestep = Number(job.jobKey.slice(jobKeyPrefix.length));
             if (!await this.hasFrameDump(trajectoryId, timestep)) return;
         }
 
-        // This frame is the last one, or one of a batch that all finished together. If
-        // it is here because it gave up, it owes a dump it will never write, so only a
-        // successful frame can conclude the group is complete.
         if (!selfAbandoned && !await this.hasFrameDump(trajectoryId, payload.timestep)) return;
 
         const dumps = await this.listFrameDumps(trajectoryId);
@@ -212,7 +182,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             return;
         }
 
-        // Exactly one of the frames standing here gets to build the parquet.
         const claimed = await this.stateStore.setKeyIfAbsent(
             toParquetDrainClaimKey(trajectoryId),
             new Date().toISOString(),
@@ -235,9 +204,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
 
             logger.info(`@trajectory-frame-processing: parquet ingest complete trajectoryId=${trajectoryId} frameCount=${dumps.length}`);
         } catch (error) {
-            // Released only on failure: a retrying frame job should be able to try the
-            // ingest again, but a straggler arriving after a successful build must not
-            // rebuild it. On success the claim simply expires.
             await this.stateStore.deleteKey(toParquetDrainClaimKey(trajectoryId)).catch(() => {});
             logger.error(`@trajectory-frame-processing: parquet ingest failed trajectoryId=${trajectoryId}: ${String(error)}`);
         }
@@ -255,11 +221,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         }
     }
 
-    /**
-     * The frame dumps this trajectory actually has in storage, oldest timestep first.
-     * Anything else living under the same prefix — the GLBs, the parquet, the element
-     * table — is filtered out by the key pattern.
-     */
     private async listFrameDumps(trajectoryId: string): Promise<TrajectoryDumpReference[]> {
         const prefix = toTrajectoryObjectKeyPrefix(trajectoryId);
         const dumps: TrajectoryDumpReference[] = [];
@@ -296,8 +257,6 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         localRawPath: string,
         tempDirectory: string
     ): Promise<void> {
-        // No format fallback to get wrong: the reader identifies the file itself, which is
-        // what a LAMMPS data upload used to die on here.
         const parsed = readFrame(localRawPath);
 
         const glbPath = path.join(tempDirectory, `${timestep}.glb`);

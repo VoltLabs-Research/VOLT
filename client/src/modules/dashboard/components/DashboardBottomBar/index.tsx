@@ -25,11 +25,6 @@ const SEGMENT_LAYOUT_CLASS = 'inline-flex h-full items-center gap-3.5 whitespace
 interface BottomBarSegmentProps {
     label: string;
     icon?: ReactNode;
-    /**
-     * Omitted for a read-only segment, which then renders as a labelled group
-     * rather than a button — a button that does nothing still takes a tab stop and
-     * still tells the user it can be pressed.
-     */
     onClick?: () => void;
     children: ReactNode;
 }

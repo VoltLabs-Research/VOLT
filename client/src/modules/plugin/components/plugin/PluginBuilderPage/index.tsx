@@ -1,7 +1,7 @@
 import Loader from '@/shared/ui/components/Loader';
 import { lazy, Suspense, useEffect } from 'react';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import useLoadPlugin from '@/modules/plugin/hooks/plugin/use-load-plugin';
+import useLoadPlugin from './use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 

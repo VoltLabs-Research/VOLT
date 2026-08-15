@@ -1,5 +1,5 @@
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
-import useExpressionSelect from '../../../hooks/use-expression-select';
+import useExpressionSelect from './use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';

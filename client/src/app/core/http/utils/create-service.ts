@@ -14,15 +14,6 @@ import type { MethodOpts } from '@voltstack/voltclient';
 import type { Endpoint } from '@volt/contracts/shared/routing';
 export { get, post, patch, del, paginated, request, download, custom };
 
-type EndpointPath<P> = string | ((params: P) => string);
-
-export const put = <P, R, TRaw = unknown>(
-    path: EndpointPath<P>,
-    opts?: MethodOpts<P, R, TRaw>
-): ReturnType<typeof request<P, R, TRaw>> => {
-    return request<P, R, TRaw>('PUT', path, opts);
-};
-
 const API_PREFIX = '/api';
 
 interface ServiceRoutesOptions {

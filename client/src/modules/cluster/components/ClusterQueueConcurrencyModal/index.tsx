@@ -1,3 +1,4 @@
+import { CLUSTER_QUEUE_CONCURRENCY_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
@@ -31,7 +32,6 @@ interface ClusterQueueConcurrencyModalProps {
         queueConcurrency: TeamClusterQueueConcurrency;
         queueScopeLimits: TeamClusterQueueScopeLimits;
     }) => Promise<UpdateTeamClusterQueueConcurrencyResponse>;
-    onClose: () => void;
 }
 
 const MIN_CONCURRENCY = 1;
@@ -84,7 +84,6 @@ const QUEUE_SCOPE_FIELDS: QueueScopeFieldDefinition[] = [
     }
 ];
 
-export const CLUSTER_QUEUE_CONCURRENCY_MODAL_ID = 'cluster-queue-concurrency-modal';
 
 const createInitialValues = (teamCluster: TeamCluster | null): QueueConcurrencyValues => {
     const source = teamCluster?.queueConcurrency;
@@ -105,7 +104,7 @@ const createInitialScopeValues = (teamCluster: TeamCluster | null): QueueScopeVa
     ) as QueueScopeValues;
 };
 
-const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQueueConcurrencyModalProps) => {
+const ClusterQueueConcurrencyModal = ({ teamCluster, onSave }: ClusterQueueConcurrencyModalProps) => {
     const [values, setValues] = useState<QueueConcurrencyValues>(createInitialValues(teamCluster));
     const [scopeValues, setScopeValues] = useState<QueueScopeValues>(createInitialScopeValues(teamCluster));
     const [error, setError] = useState<string | undefined>();
@@ -124,7 +123,6 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave, onClose }: ClusterQ
         setScopeValues(createInitialScopeValues(teamCluster));
         setError(undefined);
         closeModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
-        onClose();
     };
 
     const handleFieldChange = (key: keyof TeamClusterQueueConcurrency, nextValue: string) => {

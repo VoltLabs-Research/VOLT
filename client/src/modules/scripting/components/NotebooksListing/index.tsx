@@ -1,5 +1,6 @@
+import { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/contracts/modal-ids';
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
-import useNotebooksListing, { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/hooks/use-notebooks-listing';
+import useNotebooksListing from './use-notebooks-listing';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import DockerNeededState from '@/shared/ui/components/DockerNeededState';
@@ -11,7 +12,7 @@ import type { DocumentListingTab } from '@/shared/ui/components/DocumentListing/
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { useCallback, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
-import type { NotebooksListingContext } from '@/modules/scripting/hooks/use-notebooks-listing';
+import type { NotebooksListingContext } from './use-notebooks-listing';
 import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 
 enum NotebooksListingTabId {

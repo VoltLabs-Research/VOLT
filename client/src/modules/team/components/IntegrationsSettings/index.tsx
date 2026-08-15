@@ -1,7 +1,8 @@
+import { TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/contracts/modal-ids';
 import { Button } from '@heroui/react';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { invalidateTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
-import useTeamAIIntegrationsSettings, { TEAM_AI_INTEGRATION_MODAL_ID } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
+import useTeamAIIntegrationsSettings from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import IntegrationFormModal from './IntegrationFormModal';
 import ProviderList from './ProviderList';
 import SettingsPage from '@/shared/ui/components/SettingsPage';

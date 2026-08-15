@@ -1,7 +1,7 @@
 import DocumentListingGrid from '@/shared/ui/components/DocumentListingGrid';
 import DocumentListingHeader from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
 import DocumentListingTable, { getColumnKey } from '@/shared/ui/components/DocumentListingTable';
-import useDocumentListingPagination from '@/shared/ui/hooks/use-document-listing-pagination';
+import useDocumentListingPagination from './use-document-listing-pagination';
 import useListingViewPreferences from '@/shared/ui/components/DocumentListing/use-listing-view-preferences';
 import useSocketQueryInvalidation from '@/modules/socket/hooks/use-socket-query-invalidation';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
@@ -215,12 +215,6 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
             );
         }
 
-        /*
-         * No scrolling on this wrapper: the table's own body is the scroll container,
-         * which is what keeps its header visible instead of scrolling away with the
-         * rows. Padding matches the listing header so the table lines up with the rest
-         * of the page instead of running into its edges.
-         */
         return (
             <div className='flex min-h-0 flex-1 flex-col bg-surface px-8 pb-8 [overflow-anchor:none] max-md:px-4 max-md:pb-4'>
                 <motion.div

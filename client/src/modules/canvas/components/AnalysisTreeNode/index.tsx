@@ -16,6 +16,7 @@ import { hasPluginWorkflowNodes } from './config-columns';
 import ExecutionConfigSummary from './ExecutionConfigSummary';
 import ExposureRow from './ExposureRow';
 import PendingArtifactRow from './PendingArtifactRow';
+import useDownloadAnalysisListings from '../../hooks/use-download-analysis-listings';
 import useRecentlyReadyArtifacts from './use-recently-ready-artifacts';
 
 import type { ReactNode } from 'react';
@@ -36,15 +37,12 @@ interface AnalysisTreeNodeProps extends SceneRowActions {
     isExpanded: boolean;
     onToggle: (id: string) => void;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
-    onDownloadAnalysis: (analysisId: string) => void | Promise<void>;
     onRetryLoadExposures?: (analysisId: string) => void;
     plugin?: Plugin;
     pluginsById?: Record<string, Plugin>;
     tourTargetId?: string;
     firstExposureTourTargetId?: string;
-    /** Depth of the analysis row itself; its exposures render one level deeper. */
     indent?: CanvasTreeIndent;
-    /** Rendered between the chevron and the name — used to mark a cached stage. */
     badge?: ReactNode;
 }
 
@@ -65,7 +63,6 @@ const AnalysisTreeNode = ({
     isExpanded,
     onToggle,
     onDeleteAnalysis,
-    onDownloadAnalysis,
     onRetryLoadExposures,
     plugin,
     pluginsById,
@@ -75,6 +72,7 @@ const AnalysisTreeNode = ({
     badge,
     ...sceneActions
 }: AnalysisTreeNodeProps) => {
+    const { download: downloadAnalysisListings } = useDownloadAnalysisListings();
     const childIndent = nextTreeIndent(indent);
     const { analysis, entry, isCurrentAnalysis } = section;
     const { onSelectScene } = sceneActions;
@@ -138,7 +136,7 @@ const AnalysisTreeNode = ({
         {
             label: 'Download',
             icon: Download,
-            onClick: () => onDownloadAnalysis(analysis._id),
+            onClick: () => void downloadAnalysisListings({ analysisId: analysis._id }),
             disabled: resolvedStatus !== CanvasAnalysisStatusEnum.Completed
         },
         {

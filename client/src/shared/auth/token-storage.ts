@@ -1,16 +1,17 @@
+import { readStoredString, removeStoredValue, writeStoredString } from '@/shared/utils/local-storage';
 const TOKEN_KEY = 'authToken';
 
 class TokenStorage {
     getToken(): string | null {
-        return localStorage.getItem(TOKEN_KEY);
+        return readStoredString(TOKEN_KEY);
     }
 
     setToken(token: string): void {
-        localStorage.setItem(TOKEN_KEY, token);
+        writeStoredString(TOKEN_KEY, token);
     }
 
     removeToken(): void {
-        localStorage.removeItem(TOKEN_KEY);
+        removeStoredValue(TOKEN_KEY);
     }
 };
 

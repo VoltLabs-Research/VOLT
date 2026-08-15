@@ -41,10 +41,6 @@ const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 const PANEL_EXPORTER = 'PanelExporter';
 const SUPPORTED_PANEL_DOCUMENT_VERSION = 1;
 
-/*
- * Ceilings on what one frame can hand the sidebar. A panel is a summary, so these sit far
- * above any honest use and exist only so a malformed run cannot make this endpoint expensive.
- */
 const MAX_PANEL_DOCUMENTS = 32;
 const MAX_PANEL_TOTAL_BYTES = 4 * 1024 * 1024;
 
@@ -212,11 +208,6 @@ export default class PluginExposureArtifactService {
             timestep: input.timestep
         });
 
-        /*
-         * Filtered on the exporter, not on `params`. The two existing artifact lookups match
-         * `params` exactly — one requires it to hold a single entry — which would exclude any
-         * artifact that ever gains another param.
-         */
         const panelArtifacts = artifacts
             .filter((artifact) => artifact.metadata?.exporter === PANEL_EXPORTER)
             .slice(0, MAX_PANEL_DOCUMENTS);
@@ -254,10 +245,6 @@ export default class PluginExposureArtifactService {
 
                 panels.push(this.#parseDocument(buffer, exposureId));
             }catch(error){
-                /*
-                 * One unreadable panel is reported and the rest are still served: a frame
-                 * whose second table failed to upload should still show its first.
-                 */
                 logger.warn(`Panel document unreadable analysisId=${analysis.id} exposureId=${exposureId}: ${String(error)}`);
                 unreadable.push({
                     exposureId,
@@ -291,10 +278,6 @@ export default class PluginExposureArtifactService {
             );
         }
 
-        /*
-         * A block kind this server does not know is dropped rather than forwarded: the
-         * client switches exhaustively on kind, and an unknown one would reach its default.
-         */
         const blocks = parsed.blocks.filter((block): block is ResolvedPanelBlock => {
             return Boolean(block) && PANEL_BLOCK_KINDS.has((block as ResolvedPanelBlock).kind);
         });

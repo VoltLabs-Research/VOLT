@@ -64,11 +64,6 @@ const matchesVisibilityCondition = (
     return true;
 };
 
-/**
- * Evaluates a standalone condition against a set of argument values. Exposed for exposure
- * `exportWhen` gates, which share the operator semantics of an argument's `visibleWhen` but
- * are declared on an exposure node instead of an argument definition.
- */
 export const matchesArgumentCondition = (
     condition: ArgumentVisibilityCondition | undefined,
     definitions: ArgumentDefinition[],

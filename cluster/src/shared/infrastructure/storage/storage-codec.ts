@@ -102,7 +102,6 @@ export const compressFileWithZstd = (sourcePath: string, outputPath: string): Pr
 
 export const isZstdObjectKey = (objectKey: string): boolean => objectKey.endsWith('.zst');
 
-/** Prefix shared by every object belonging to one trajectory. */
 export const toTrajectoryObjectKeyPrefix = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/`;
 
@@ -111,12 +110,6 @@ export const toTrajectoryFrameDumpObjectKey = (trajectoryId: string, timestep: n
 
 const TRAJECTORY_FRAME_DUMP_BASENAME = /^timestep-(\d+)\.dump\.zst$/;
 
-/**
- * Recovers the timestep from a key produced by toTrajectoryFrameDumpObjectKey, and
- * returns null for anything else living under the same prefix — the GLBs, the
- * parquet, the element table. Listing the bucket and keeping the non-null results is
- * the authoritative answer to "which frames does this trajectory have".
- */
 export const parseTrajectoryFrameDumpTimestep = (objectKey: string): number | null => {
     const basename = objectKey.slice(objectKey.lastIndexOf('/') + 1);
     const match = TRAJECTORY_FRAME_DUMP_BASENAME.exec(basename);

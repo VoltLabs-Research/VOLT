@@ -18,16 +18,6 @@ interface ResolvedPanelTable {
     table: IPanelTable;
 }
 
-/**
- * The analysis-results panel: the compact summary tables a plugin declares for the
- * right sidebar, in the spirit of OVITO's "Structure analysis results" /
- * "Dislocation analysis results" blocks sitting next to a modifier.
- *
- * Everything shown here is declared by the plugin (`exposure.panel`) and read from the
- * sub-listings it emitted. This component knows how to lay out a table and nothing
- * about what any row means, so a plugin can add a table or a category without a change
- * on this side.
- */
 const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: AnalysisResultsSectionProps) => {
     const [expanded, setExpanded] = useState(true);
     const { pluginsById } = usePluginSelectors();
@@ -45,7 +35,6 @@ const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: Analy
         });
     }, [plugin]);
 
-    // A plugin that declares nothing gets no section at all, rather than an empty one.
     if (!analysisId || tables.length === 0) {
         return null;
     }

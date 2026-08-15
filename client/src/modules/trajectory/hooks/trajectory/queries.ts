@@ -1,3 +1,4 @@
+import discoverService from '../../api/services/discover-service';
 import trajectoryService from '../../api/services/trajectory-service';
 import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
@@ -204,3 +205,7 @@ export const useTrajectoryAtomsInfiniteQuery = (
 };
 
 export const useDownloadSampleMutation = createMutation(trajectoryService.downloadSample);
+
+export const fetchPublicTeamTrajectories = (
+    params: Parameters<typeof discoverService.listPublicTeamTrajectories>[0]
+) => discoverService.listPublicTeamTrajectories(params);

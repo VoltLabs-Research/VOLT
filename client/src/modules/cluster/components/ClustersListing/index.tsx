@@ -1,15 +1,15 @@
+import { CLUSTER_INSTALL_COMMAND_MODAL_ID, CLUSTER_QUEUE_CONCURRENCY_MODAL_ID, CLUSTER_ROLE_MODAL_ID, CLUSTER_TRANSFER_MODAL_ID, DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import { buttonVariants, cn } from '@heroui/react';
-import ClusterQueueConcurrencyModal, {
-    CLUSTER_QUEUE_CONCURRENCY_MODAL_ID
-} from '@/modules/cluster/components/ClusterQueueConcurrencyModal';
-import ClusterRoleModal, { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/components/ClusterRoleModal';
-import ClusterTransferModal, { CLUSTER_TRANSFER_MODAL_ID } from '@/modules/cluster/components/ClusterTransferModal';
-import ClusterInstallCommandModal, { CLUSTER_INSTALL_COMMAND_MODAL_ID } from '@/modules/cluster/components/ClusterInstallCommandModal';
-import { openModal } from '@/shared/ui/modal/use-modal-store';
+import ClusterQueueConcurrencyModal from '@/modules/cluster/components/ClusterQueueConcurrencyModal';
+import ClusterRoleModal from '@/modules/cluster/components/ClusterRoleModal';
+import ClusterTransferModal from '@/modules/cluster/components/ClusterTransferModal';
+import ClusterInstallCommandModal from '@/modules/cluster/components/ClusterInstallCommandModal';
+import type { ClusterInstallCommand } from '@/modules/cluster/components/ClusterInstallCommandModal';
+import { openModal, useModalPayload } from '@/shared/ui/modal/use-modal-store';
 import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';
-import DeleteClusterModal, { DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/components/DeleteClusterModal';
+import DeleteClusterModal from '@/modules/cluster/components/DeleteClusterModal';
 import useClusterPageState from '@/modules/cluster/hooks/use-cluster-page-state';
-import useClustersListingPage from '@/modules/cluster/hooks/use-clusters-listing-page';
+import useClustersListingPage from './use-clusters-listing-page';
 import { useRegenerateTeamClusterEnrollmentTokenMutation, TEAM_CLUSTER_QUERY_KEYS, teamClusterListQueryKeys } from '@/modules/cluster/hooks/team-cluster/queries';
 import { formatClusterTimestamp } from '@/modules/cluster/utils/format-cluster-timestamp';
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
@@ -25,7 +25,7 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-wa
 import { SOCKET_TEAM_CLUSTER_EVENTS } from '@/modules/socket/events/cluster';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { ArrowRightLeft, Monitor, Settings2, TerminalSquare, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
@@ -149,28 +149,23 @@ const ClustersListing = () => {
     const navigate = useNavigate();
     const state = useClusterPageState();
     const vm = useClustersListingPage();
-    const [installCommandClusterId, setInstallCommandClusterId] = useState<string | null>(null);
-    const [installCommandToken, setInstallCommandToken] = useState<string | null>(null);
+    const installCommand = useModalPayload<ClusterInstallCommand>(CLUSTER_INSTALL_COMMAND_MODAL_ID);
     const regenerateTokenMutation = useRegenerateTeamClusterEnrollmentTokenMutation();
 
     const handleDeleteCluster = (cluster: TeamCluster) => {
-        state.setDeleteTarget(cluster);
-        openModal(DELETE_CLUSTER_MODAL_ID);
+        openModal(DELETE_CLUSTER_MODAL_ID, cluster);
     };
 
     const handleQueueConcurrency = (cluster: TeamCluster) => {
-        state.setQueueConcurrencyTarget(cluster);
-        openModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID);
+        openModal(CLUSTER_QUEUE_CONCURRENCY_MODAL_ID, cluster);
     };
 
     const handleRoleChange = (cluster: TeamCluster) => {
-        state.setRoleTarget(cluster);
-        openModal(CLUSTER_ROLE_MODAL_ID);
+        openModal(CLUSTER_ROLE_MODAL_ID, cluster);
     };
 
     const handleTransferData = (cluster: TeamCluster) => {
-        state.setTransferTarget(cluster);
-        openModal(CLUSTER_TRANSFER_MODAL_ID);
+        openModal(CLUSTER_TRANSFER_MODAL_ID, cluster);
     };
 
     const handleShowInstallCommand = (cluster: TeamCluster) => {
@@ -181,9 +176,10 @@ const ClustersListing = () => {
             teamClusterId: cluster._id
         }, {
             onSuccess: (data) => {
-                setInstallCommandClusterId(cluster._id);
-                setInstallCommandToken(data.enrollmentToken);
-                openModal(CLUSTER_INSTALL_COMMAND_MODAL_ID);
+                openModal<ClusterInstallCommand>(CLUSTER_INSTALL_COMMAND_MODAL_ID, {
+                    clusterId: cluster._id,
+                    enrollmentToken: data.enrollmentToken
+                });
             }
         });
     };
@@ -242,28 +238,24 @@ const ClustersListing = () => {
             <DeleteClusterModal
                 teamCluster={state.deleteTarget}
                 onDelete={state.deleteCluster}
-                onClose={() => state.setDeleteTarget(null)}
             />
             <ClusterQueueConcurrencyModal
                 teamCluster={state.queueConcurrencyTarget}
                 onSave={state.updateQueueConcurrency}
-                onClose={() => state.setQueueConcurrencyTarget(null)}
             />
             <ClusterRoleModal
                 teamCluster={state.roleTarget}
                 onSave={state.updateRole}
-                onClose={() => state.setRoleTarget(null)}
             />
             <ClusterTransferModal
                 teamCluster={state.transferTarget}
                 clusters={state.clusters}
                 teamId={state.selectedTeamId}
                 onSave={state.createTransferRequest}
-                onClose={() => state.setTransferTarget(null)}
             />
             <ClusterInstallCommandModal
-                clusterId={installCommandClusterId}
-                enrollmentToken={installCommandToken}
+                clusterId={installCommand?.clusterId ?? null}
+                enrollmentToken={installCommand?.enrollmentToken ?? null}
             />
             <DocumentListing<ServerRow>
                 title='Clusters'

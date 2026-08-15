@@ -104,16 +104,6 @@ export default class AnalysisEvents{
         await this.#deleteEach({ trajectory: trajectoryId }, teamId, userId);
     }
 
-    /**
-     * Deleting a run takes the results it produced with it.
-     *
-     * `pipelineRunId` is the whole safety argument. A run's stage list also points at
-     * analyses it only *replayed* from cache, under `cachedFromAnalysisId`, and those
-     * belong to the earlier run that computed them — deleting one would blank a result
-     * another run still renders. A replayed analysis keeps the `pipelineRunId` of that
-     * earlier run, so this filter can never reach it, whereas walking the stage list
-     * could.
-     */
     @Event('pipelineRun.deleted')
     async deletePipelineRunAnalyses({ pipelineRunId, teamId, userId }: EventMap['pipelineRun.deleted']){
         await this.#deleteEach({ pipelineRunId }, teamId, userId);

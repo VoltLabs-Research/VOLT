@@ -21,8 +21,6 @@ import { Exporter } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 
-const EMPTY_SELECTION_SENTINEL = '__volt_empty_selection__';
-
 interface ExcludedExposureSet {
     ids: Set<string>;
     names: Set<string>;
@@ -42,27 +40,6 @@ const emptyExcludedExposures = (): ExcludedExposureSet => ({
     ids: new Set<string>(),
     names: new Set<string>()
 });
-
-const toSelectionArray = (selectionIds?: string | string[]): string[] | undefined => {
-    if (selectionIds === undefined) {
-        return undefined;
-    }
-
-    return Array.isArray(selectionIds) ? selectionIds : selectionIds.split(',');
-};
-
-const normalizeSelectionSet = (selectionIds?: string | string[]): Set<string> | null => {
-    const selectionArray = toSelectionArray(selectionIds);
-    if (!selectionArray) {
-        return null;
-    }
-
-    return new Set(
-        selectionArray
-            .map((selectionId) => selectionId.trim())
-            .filter((selectionId) => selectionId && selectionId !== EMPTY_SELECTION_SENTINEL)
-    );
-};
 
 export class AnalysisListingExportCatalogService {
     #subListingCollector: SubListingExportCollector;
@@ -94,27 +71,20 @@ export class AnalysisListingExportCatalogService {
 
     async buildExportPayload(input: ExportListingRowsByAnalysisIdInput): Promise<ExportListingRowsByAnalysisIdOutput> {
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(input.analysisId);
-        const includeConfig = typeof input.includeConfig === 'boolean'
-            ? input.includeConfig
-            : String(input.includeConfig ?? 'true') !== 'false';
-        const config = includeConfig ? analysis?.config : undefined;
+        const config = analysis?.config;
         const rows = await this.collectEnrichedListingRows(teamClusterId, input.analysisId, excludedExposures);
 
         return {
             analysisId: input.analysisId,
             teamClusterId,
             config: hasConfig(config) ? config : undefined,
-            listings: aggregateListingTables(
-                input.analysisId,
-                rows,
-                normalizeSelectionSet(input.selectedListingIds)
-            ),
+            listings: aggregateListingTables(input.analysisId, rows),
             subListings: teamClusterId
                 ? await this.#subListingCollector.collect(
                     teamClusterId,
                     input.teamId,
                     input.analysisId,
-                    discoverSubListingReferences(rows, normalizeSelectionSet(input.selectedSubListingIds))
+                    discoverSubListingReferences(rows)
                 )
                 : []
         };

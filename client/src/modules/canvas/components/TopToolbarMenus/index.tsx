@@ -33,7 +33,6 @@ export interface MenuItem {
 }
 
 export interface MenuConfig {
-    /** Also the trigger's visible text, so it has to read as a menu name on its own. */
     label: string;
     items: MenuItem[];
 }
@@ -60,12 +59,6 @@ export const buildMenus = ({
         statusBarIcon = <Check size={ICON_SIZE} />;
     }
 
-    /*
-     * A menu bar, not one hamburger. Four named menus put the whole action set one
-     * click away and let the label say which group an action is in, where a single
-     * icon trigger said nothing about what was behind it. The separators that used
-     * to divide these groups inside one long list are the menus themselves now.
-     */
     return [
         {
             label: 'File',

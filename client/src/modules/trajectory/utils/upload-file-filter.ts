@@ -20,12 +20,6 @@ const isJunkFile = (entry: FileWithPath): boolean => {
     return segments.some((segment) => segment.startsWith('.') || JUNK_BASENAMES.has(segment));
 };
 
-/**
- * Drops entries the ingest pipeline can never turn into a frame: operating system
- * metadata (dotfiles, AppleDouble sidecars, Thumbs.db) and zero byte files. Unknown
- * extensions are kept on purpose — deciding whether a file is a readable trajectory
- * belongs to the parser, not to the browser.
- */
 export const filterUploadableTrajectoryFiles = (files: FileWithPath[]): FilteredUploadFiles => {
     const uploadable: FileWithPath[] = [];
     let skippedJunk = 0;

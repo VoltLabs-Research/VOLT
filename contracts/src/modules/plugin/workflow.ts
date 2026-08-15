@@ -91,12 +91,6 @@ export interface IArgumentDefinition{
     max?: number;
     step?: number;
     visibleWhen?: IArgumentVisibilityCondition;
-    /**
-     * How a boolean reaches the binary's command line. `presence` (the default) emits the
-     * flag only when true; `explicit` always emits `--flag true` / `--flag false`, which is
-     * required for flags whose binary-side default is true, since omitting them cannot
-     * express false.
-     */
     cliValueStyle?: 'presence' | 'explicit';
 }
 
@@ -161,14 +155,6 @@ export interface IExposureData{
     id?: string;
     results: string;
     hasListing?: boolean;
-    /**
-     * Gates the whole exposure on one of the plugin's own arguments: when the condition
-     * evaluates false the exposure is dropped before the run, so nothing registers it,
-     * exports it, persists it, or lists it as an expected artifact.
-     *
-     * Deliberately the same shape as an argument's `visibleWhen` so both read alike and
-     * share the operator semantics.
-     */
     exportWhen?: IArgumentVisibilityCondition;
     [key: string]: unknown;
 }

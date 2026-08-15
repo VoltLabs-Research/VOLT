@@ -3,19 +3,6 @@ import type { PipelineRun, PipelineRunStage } from '@volt/contracts/modules/plug
 
 export const UNGROUPED_RUN_ID = '__ungrouped__';
 
-/**
- * A stage as the tree renders it. Exactly one shape per kind:
- *
- * - `analysis` — a plugin stage whose analysis is on screen, so it owns an
- *   expandable subtree of exposures. `cacheHit` means this run reused an
- *   analysis an earlier run produced; the row is real, the compute was not.
- * - `context` — a slice/expression stage. It produced no analysis, but it
- *   changed the dump every later stage read, so hiding it would misrepresent
- *   how the results were obtained.
- * - `unavailable` — a plugin stage whose analysis is not in the current page (or
- *   was filtered out). Rendered as a disabled row rather than dropped, so the
- *   chain never silently loses a link.
- */
 export type PipelineRunStageRow =
     | { kind: 'analysis'; key: string; stage?: PipelineRunStage; section: AnalysisSectionData; cacheHit: boolean }
     | { kind: 'context'; key: string; stage: PipelineRunStage }
@@ -75,15 +62,6 @@ interface BuildPipelineRunSectionsInput {
     runs: PipelineRun[];
 }
 
-/**
- * Regroups the already-filtered analysis rows under the run that produced them.
- *
- * Grouping happens after filtering, so a run whose every analysis was filtered
- * out (failed, or scoped to another timestep) disappears with them instead of
- * leaving an empty header. Analyses whose run is unknown — created before runs
- * were recorded, or belonging to a run outside the fetched page — fall into a
- * single trailing ungrouped section so nothing is ever dropped from the tree.
- */
 export const buildPipelineRunSections = ({
     sections,
     runs
@@ -104,8 +82,6 @@ export const buildPipelineRunSections = ({
         }
 
         analysisSections.forEach((section) => {
-            // Only claim an analysis for the run that actually produced it, so a
-            // cached reuse never steals it from its own run's group.
             if (section.analysis.pipelineRunId === run._id) {
                 groupedAnalysisIds.add(section.analysis._id);
             }

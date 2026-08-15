@@ -4,7 +4,6 @@ import { ArrowUp, Square } from 'lucide-react';
 import type { AISelectOption } from '@/modules/ai/utils/model-options';
 import type { KeyboardEvent } from 'react';
 
-/* Roughly six lines; past that the composer would crowd out the transcript. */
 const MAX_TEXTAREA_HEIGHT_PX = 168;
 
 interface AIComposerProps {
@@ -36,10 +35,6 @@ const AIComposer = ({
     const statusId = useId();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    /*
-     * Grow with the content up to a ceiling. Measured from the element rather than
-     * counted from the string, because wrapping depends on the rendered width.
-     */
     useEffect(() => {
         const textarea = textareaRef.current;
         if (!textarea) return;
@@ -49,8 +44,6 @@ const AIComposer = ({
     }, [value]);
 
     const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-        // Enter sends; Shift+Enter is a newline, which a single-line input could
-        // not offer even though the old handler pretended to check for it.
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             onSend();

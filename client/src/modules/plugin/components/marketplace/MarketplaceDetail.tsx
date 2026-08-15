@@ -20,24 +20,12 @@ interface MarketplaceDetailProps {
     item: RegistryPackageSummary;
     installedVersion?: string;
     isInstalling: boolean;
-    /** Installs land on a cluster one at a time. */
     isAnyInstalling: boolean;
     canInstall: boolean;
     onInstall: (item: RegistryPackageSummary) => void;
-    /** Only rendered where the two panes cannot both fit. */
     onBack: () => void;
 }
 
-/*
- * The right pane: everything the registry returned about one package, plus the one
- * action worth taking on it.
- *
- * Which is all it can be — the registry exposes a search endpoint and an install
- * endpoint, and nothing else. There is no readme, no version history and no
- * dependency list to fetch, so this pane presents the summary fields at full length
- * rather than pretending to a depth the API does not have. Facts the registry
- * omitted are omitted here too: a zero download count would read as a measurement.
- */
 const MarketplaceDetail = ({
     item,
     installedVersion,
@@ -93,7 +81,6 @@ const MarketplaceDetail = ({
                     {state === 'installed' ? (
                         <span className='shrink-0 text-xs text-muted'>Installed</span>
                     ) : (
-                        // A disabled control needs a reason, and the two reasons differ.
                         <span className='inline-flex shrink-0' title={installDisabledReason}>
                             <Button
                                 variant='primary'

@@ -1,3 +1,4 @@
+import { readStoredString, writeStoredString } from '@/shared/utils/local-storage';
 import { Button } from '@heroui/react';
 import { Check, ChevronRight, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -43,7 +44,7 @@ const getTourStorageKey = (storageScopeId: string): string => {
 
 const hasCompletedTour = (storageScopeId: string): boolean => {
     try {
-        return window.localStorage.getItem(getTourStorageKey(storageScopeId)) === 'completed';
+        return readStoredString(getTourStorageKey(storageScopeId)) === 'completed';
     } catch {
         return false;
     }
@@ -51,7 +52,7 @@ const hasCompletedTour = (storageScopeId: string): boolean => {
 
 const markTourCompleted = (storageScopeId: string): void => {
     try {
-        window.localStorage.setItem(getTourStorageKey(storageScopeId), 'completed');
+        writeStoredString(getTourStorageKey(storageScopeId), 'completed');
     } catch {
     }
 };

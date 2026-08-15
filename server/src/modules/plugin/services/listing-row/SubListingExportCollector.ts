@@ -55,8 +55,7 @@ const subListingSelectionId = (
 };
 
 export const discoverSubListingReferences = (
-    rows: DaemonListingRow[],
-    selectedIds: Set<string> | null = null
+    rows: DaemonListingRow[]
 ): SubListingReference[] => {
     const references = new Map<string, SubListingReference>();
 
@@ -67,7 +66,7 @@ export const discoverSubListingReferences = (
         for (const subListingName of (row.subListingNames ?? []).filter(Boolean)) {
             const id = subListingSelectionId(exposureId, timestep, subListingName);
 
-            if (references.has(id) || (selectedIds && !selectedIds.has(id))) {
+            if (references.has(id)) {
                 continue;
             }
 

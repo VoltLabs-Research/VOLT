@@ -15,14 +15,6 @@ const IN_FLIGHT_ARTIFACT_STATUSES = new Set<AnalysisExpectedArtifact['status']>(
     'uploading'
 ]);
 
-/**
- * The plugin declares its exposures up front, so an expected artifact exists
- * before anything produces it. Two ways to know nothing ever will: the exporter
- * said so (`produced === false`), or the analysis settled with the artifact
- * still in flight — which also covers rows recorded before exporters reported.
- *
- * `failed` is kept visible on purpose: that is a result, not an absence.
- */
 const wasNeverExported = (
     artifact: AnalysisExpectedArtifact,
     isAnalysisSettled: boolean
@@ -62,4 +54,3 @@ export const buildArtifactRows = (
 
     return rows;
 };
-

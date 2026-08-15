@@ -1,3 +1,4 @@
+import { CLUSTER_ROLE_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
@@ -23,12 +24,10 @@ import type { UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/clus
 interface ClusterRoleModalProps {
     teamCluster: TeamCluster | null;
     onSave: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleResponse>;
-    onClose: () => void;
 }
 
-export const CLUSTER_ROLE_MODAL_ID = 'cluster-role-modal';
 
-const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProps) => {
+const ClusterRoleModal = ({ teamCluster, onSave }: ClusterRoleModalProps) => {
     const [selectedRole, setSelectedRole] = useState<TeamClusterRole>('cluster');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +52,6 @@ const ClusterRoleModal = ({ teamCluster, onSave, onClose }: ClusterRoleModalProp
         setSelectedRole(teamCluster?.roleConfig.desiredRole ?? 'cluster');
         setError(undefined);
         closeModal(CLUSTER_ROLE_MODAL_ID);
-        onClose();
     };
 
     const handleSave = async () => {

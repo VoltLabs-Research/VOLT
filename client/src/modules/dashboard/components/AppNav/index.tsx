@@ -147,11 +147,6 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
     const trajectoriesActive = pathname.includes('/trajectories') || pathname.includes('/simulation-cells');
     const analysisActive = pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute;
     const clustersActive = pathname.includes('/dashboard/clusters');
-    /*
-     * Excludes the per-plugin listing routes: those belong to Analysis (that tree
-     * lists them), and lighting up two sections for one page tells the reader the
-     * page lives in both.
-     */
     const pluginsActive = (pathname.startsWith('/dashboard/plugins') && !isAnalysisPluginListingRoute)
         || pathname.startsWith('/plugins/builder');
 

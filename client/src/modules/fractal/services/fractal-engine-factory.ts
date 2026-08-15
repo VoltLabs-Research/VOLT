@@ -1,4 +1,4 @@
-import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
+import { FractalAssetLoader } from '@/modules/fractal/services/asset-loader';
 import { FractalEngine } from '@/modules/fractal/services/fractal-engine';
 import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { EngineCallbacks, FractalParams } from '@/modules/fractal/services/fractal-engine';

@@ -1,3 +1,4 @@
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import FractalScenePipeline from '@/modules/fractal/components/organisms/FractalScenePipeline';
 import { resolveCanvasRuntimeProps } from '@/shared/rendering/performance';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
@@ -10,13 +11,6 @@ import type { OrbitControlsHandle } from '@/modules/fractal/contracts';
 import type { FractalSceneConfig } from '@/modules/fractal/contracts/scene-config';
 import type { ScreenshotComposition } from '@/modules/fractal/contracts/screenshot-composition';
 import type { ReactNode } from 'react';
-
-export interface FractalSceneRef {
-    zoomTo: (zoomPercent: number) => void;
-    getCurrentZoom: () => number;
-    resetCamera: () => void;
-    subscribeZoom: (listener: (zoom: number) => void) => () => void;
-}
 
 type OrbitControlsSceneProps = Omit<FractalSceneConfig['orbitControls'], 'target'>;
 

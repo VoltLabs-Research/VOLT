@@ -1,7 +1,7 @@
 import { Chip } from '@heroui/react';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import useTeamRoleListingActions from '@/modules/team/hooks/role/use-team-role-listing-actions';
+import useTeamRoleListingActions from './use-team-role-listing-actions';
 import { rbacConfigQuery } from '@/modules/system/hooks/queries';
 import { RoleEditorModal, openRoleEditorModal } from '../RoleEditorModal';
 import { dateColumn } from '@/shared/ui/utils/column-presets';

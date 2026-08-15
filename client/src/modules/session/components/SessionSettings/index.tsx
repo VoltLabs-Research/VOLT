@@ -1,6 +1,4 @@
-import {
-    REVOKE_ALL_MODAL_ID
-} from '@/modules/session/hooks/use-session-data';
+import { REVOKE_ALL_MODAL_ID } from '@/modules/session/contracts/modal-ids';
 import { formatSessionRelativeTime, getSessionActivityIcon, SESSION_ACTION_LABELS } from '@/modules/session/utils/session-display';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import { parseUserAgent as parseSessionUserAgent } from '@volt/contracts/modules/session/user-agent';
@@ -9,7 +7,7 @@ import { Avatar, Button, Card, Chip, Separator, Skeleton } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
-import useSessionData from '@/modules/session/hooks/use-session-data';
+import useSessionData from './use-session-data';
 import useTip from '@/shared/tips/use-tip';
 import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
 import { Fragment } from 'react';
@@ -122,10 +120,6 @@ const SessionSettings = () => {
     );
 
     const renderList = (rows: ReactNode[], isEmptyState: boolean) => (
-        /*
-         * Always the scroller, height-capped only when there are rows: with no cap the content
-         * sets the height, so `overflow-y: auto` never engages and the empty state is unaffected.
-         */
         <Scrollable className={isEmptyState ? '' : 'max-h-[26rem]'}>
             <ul className='m-0 p-0 list-none flex flex-col'>
                 {rows.map((row, index) => (

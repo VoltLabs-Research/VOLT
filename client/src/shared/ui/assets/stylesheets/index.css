@@ -14,15 +14,6 @@
     --font-sans: 'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;
 
-    /*
-     * Closed UI type scale. Roles, not sizes:
-     *   2xs = metadata/timestamps (11px, the floor — nothing smaller)
-     *   xs  = labels/captions (12px)
-     *   sm  = app body (13px)
-     *   base = prose/forms (14px)
-     *   lg+ = page titles and empty states only
-     * Arbitrary text-[...] values are banned by the className ratchet in eslint.config.js.
-     */
     --text-2xs: 0.6875rem;
     --text-2xs--line-height: 1rem;
     --text-xs: 0.75rem;
@@ -32,25 +23,10 @@
     --text-base: 0.875rem;
     --text-base--line-height: 1.25rem;
 
-    /*
-     * Weights. Inter is a variable font, so these are real intermediate weights,
-     * not synthesised ones. 600 read as near-bold across the UI at 13px, which is
-     * why the whole app felt heavy: lowering the token softens every existing
-     * `font-semibold`/`font-bold` at once instead of editing hundreds of usages.
-     * Roles stay the same: normal = body, medium = emphasis/labels, semibold =
-     * section and page headings.
-     */
     --font-weight-medium: 480;
     --font-weight-semibold: 550;
     --font-weight-bold: 620;
 
-    /*
-     * Radius roles: sm = tiny inline (4px), md = controls (6px),
-     * lg = surfaces/cards (8px), xl = overlays (10px).
-     * 2xl/3xl are capped to the overlay role because HeroUI overlays
-     * (modal/popover/dropdown/card/toast) read --radius-3xl internally;
-     * app code must stop at xl (ratchet-enforced).
-     */
     --radius-xl: 0.625rem;
     --radius-2xl: 0.625rem;
     --radius-3xl: 0.625rem;
@@ -87,11 +63,6 @@
     --field-border: var(--border);
     --field-background: transparent;
 
-    /*
-     * HeroUI radius knob (distinct from Tailwind's --radius-* scale).
-     * Fields derive calc(var(--radius) * 1.5) = 6px (control role) and
-     * overlay chrome derives ×2..×2.5 = 8-10px (surface/overlay roles).
-     */
     --radius: 0.25rem;
 }
 
@@ -115,11 +86,6 @@
 :root,
 .light,
 [data-theme='light'] {
-    /*
-     * Full light ladder, pinned to the HeroUI defaults it used to inherit.
-     * Both themes must define the same token set so they can't drift apart
-     * on a library update; dark is hand-tuned below, light is owned here.
-     */
     --background: oklch(0.9702 0 0);
     --foreground: #28282b;
 
@@ -182,12 +148,6 @@
     --info-soft: color-mix(in oklab, var(--info) 15%, transparent);
     --info-soft-foreground: color-mix(in oklab, var(--info) 70%, var(--foreground) 30%);
 
-    /*
-     * Readable status text for any background, one formula per tone.
-     * Replaces the hand-picked light-theme hex overrides that used to live
-     * inline in className ([[data-theme=light]_&]:text-[#0a5fbf] et al).
-     * Warning mixes deeper because yellow needs more contrast help.
-     */
     --success-soft-foreground: color-mix(in oklab, var(--success) 70%, var(--foreground) 30%);
     --warning-soft-foreground: color-mix(in oklab, var(--warning) 60%, var(--foreground) 40%);
     --danger-soft-foreground: color-mix(in oklab, var(--danger) 70%, var(--foreground) 30%);
@@ -222,17 +182,6 @@ input[type='number'] {
 }
 
 html {
-    /*
-     * Fixed, and deliberately not a variable. This used to read
-     * `var(--volt-root-font-size, 16px)`, which App.tsx rewrote on every window
-     * resize: it divided the viewport by a target of 1800x960 and scaled the root
-     * font size down to 0.75 of it, so every rem-based size in the app — type,
-     * spacing, radii, control heights — shrank as the window got smaller. Resizing
-     * did not reflow the layout, it zoomed it.
-     *
-     * 16px is what that mechanism produced at or above its target viewport, so this
-     * is the size the design was drawn at.
-     */
     font-size: 16px;
     max-width: var(--volt-app-max-width, 2560px);
     margin-inline: auto;

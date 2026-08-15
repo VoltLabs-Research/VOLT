@@ -3,7 +3,7 @@ import DocumentListing from '@/shared/ui/components/DocumentListing';
 import PluginCompactTable from '@/modules/plugin/components/listing/PluginCompactTable';
 import InlineSubListingView, { type InlineSubListingViewProps } from '@/modules/plugin/components/listing/InlineSubListingView';
 import { LISTING_QUERY_KEYS, usePluginListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
-import usePluginListing from '@/modules/plugin/hooks/listing/use-plugin-listing';
+import usePluginListing from './use-plugin-listing';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
 import { normalizeListingColumns } from '@/modules/plugin/utils/listing/normalize-listing-columns';
 import { buildListingRowMenuOptions } from '@/modules/plugin/utils/listing/listing-row-menu-options';

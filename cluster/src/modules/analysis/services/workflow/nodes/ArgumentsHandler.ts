@@ -53,12 +53,6 @@ const createCliArgument = (
     if (definition.type === 'boolean') {
         const isEnabled = value === true || value === 'true';
 
-        /*
-         * A bare flag reads as true to the plugin CLI parser, and omitting it leaves the
-         * binary on its own default — which is fine only while that default is false. For a
-         * flag the binary enables by default, "off" has to be said out loud, so those
-         * declare `cliValueStyle: 'explicit'` and always pass a value.
-         */
         if (definition.cliValueStyle === 'explicit') {
             return [`--${argumentKey}`, isEnabled ? 'true' : 'false'];
         }

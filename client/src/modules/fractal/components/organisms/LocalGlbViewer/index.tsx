@@ -1,4 +1,4 @@
-import { FractalAssetLoader } from '@/modules/fractal/api/service/asset-loader';
+import { FractalAssetLoader } from '@/modules/fractal/services/asset-loader';
 import { useLocalGlbStore } from '@/modules/canvas/store/use-local-glb-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';

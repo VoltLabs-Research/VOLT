@@ -2,12 +2,7 @@ import semver from 'semver';
 
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 
-/*
- * Registry versions are not guaranteed to be strict semver, so both sides are
- * coerced before comparing; an uncomparable pair reports "not newer" rather than
- * offering an update that may be a downgrade.
- */
-export const isNewerVersion = (latest: string, installed: string): boolean => {
+const isNewerVersion = (latest: string, installed: string): boolean => {
     const left = semver.coerce(latest, { includePrerelease: true }) ?? semver.coerce(latest);
     const right = semver.coerce(installed, { includePrerelease: true }) ?? semver.coerce(installed);
 
@@ -16,10 +11,6 @@ export const isNewerVersion = (latest: string, installed: string): boolean => {
     return semver.gt(left, right);
 };
 
-/**
- * Installed version per modifier key — the key, not the plugin name, is what a
- * registry package shares with its installed copy.
- */
 export const buildInstalledVersionIndex = (plugins: readonly Plugin[]): Map<string, string> => {
     const index = new Map<string, string>();
 

@@ -146,10 +146,6 @@ const TopToolbar = ({
         isMobile: boolean,
         menuIdPrefix = 'menu'
     ) => (
-        /*
-         * A scroller only in the mobile branch: the desktop branch is `display: contents`, which
-         * generates no box at all, so the horizontal overflow this carries has nothing to act on.
-         */
         <Scrollable orientation='horizontal' className={isMobile ? 'flex max-md:h-[var(--canvas-header-height,40px)] max-md:w-full max-md:min-w-0 max-md:flex-nowrap max-md:items-center max-md:justify-center max-md:gap-0.5 max-md:overflow-y-hidden max-md:whitespace-nowrap max-md:px-1.5 max-md:[&>*]:shrink-0' : 'contents'}>
             <nav className='flex flex-row items-center gap-1 px-4 max-md:flex-none max-md:overflow-visible max-md:p-0 max-md:[&>*]:shrink-0' aria-label='Canvas primary navigation'>
                 {isMobile && useGuestMobileNavigation && renderBackButton('hidden max-md:inline-flex max-md:size-[1.625rem] max-md:min-h-[1.625rem] max-md:min-w-[1.625rem] max-md:rounded-lg max-md:p-1')}
@@ -171,12 +167,6 @@ const TopToolbar = ({
         <header className='absolute left-0 top-0 z-[4] block select-none bg-background px-4 max-md:px-3 right-0 min-h-[var(--canvas-header-height,55px)] max-md:h-[var(--canvas-header-height,40px)] max-md:min-h-[var(--canvas-header-height,40px)] max-md:overflow-hidden canvas-top-toolbar flex items-stretch'>
             {isMobileViewport && renderToolbarOptions(true, 'mobile-menu')}
 
-            {/*
-              * Three real columns: the search sits in the middle cell, so 1fr on each
-              * side centres it against its actual neighbours. It used to be absolutely
-              * positioned at calc(50% + panel/2), which knew nothing about the menus to
-              * its left and overlapped them once the window got narrow.
-              */}
             <div className='relative grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,420px)_minmax(0,1fr)] items-stretch gap-2 max-md:hidden'>
                 <input
                     ref={fileInputRef}

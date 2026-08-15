@@ -5,7 +5,7 @@ import ContainerMetricTile from '../ContainerMetricTile';
 import ContainerInspectorList from '../ContainerInspectorList';
 import ContainerPortBindingsCard from './ContainerPortBindingsCard';
 import { ContainerKeyValueList, ContainerKeyValueRow } from '../ContainerKeyValueList';
-import useContainerMetricsHistory from '@/modules/container/hooks/use-container-metrics-history';
+import useContainerMetricsHistory from './use-container-metrics-history';
 import { buildContainerInspectorRows } from '@/modules/container/utils/build-container-inspector-rows';
 import useTip from '@/shared/tips/use-tip';
 import type { Container as ContainerEntity } from '@volt/contracts/modules/container/domain';

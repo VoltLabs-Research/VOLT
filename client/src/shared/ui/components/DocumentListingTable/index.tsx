@@ -98,7 +98,6 @@ interface DocumentListingTableProps<T extends Identifiable> {
     isFetchingMore?: boolean;
     onLoadMore?: () => void;
     skeletonRowsCount?: number;
-    /** Attached to the row group, which is the element that actually scrolls. */
     scrollContainerRef?: React.RefObject<HTMLDivElement | null> | null;
     emptyButtonText?: string;
     onEmptyButtonClick?: () => void;
@@ -278,13 +277,6 @@ const DocumentListingTable = <T extends Identifiable>({
         />
     ));
 
-    /*
-     * Two scrollers, one axis each: this root scrolls horizontally so the header
-     * travels with its columns, while the row group below scrolls vertically so the
-     * header — a sibling outside it — cannot scroll away. Vertical overflow is pinned
-     * to hidden because `overflow-x: auto` alone would promote it to `auto` and give
-     * the header a second, competing scroll container.
-     */
     return (
         <div className='flex h-full min-h-0 flex-col overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
             {columns.length > 0 && shouldShowContent && (

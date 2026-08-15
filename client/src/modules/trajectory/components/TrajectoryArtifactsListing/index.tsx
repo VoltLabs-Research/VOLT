@@ -1,4 +1,4 @@
-import sceneArtifactService from '@/modules/trajectory/api/services/scene-artifacts-service';
+import { fetchSceneArtifactsByTeam } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { dateColumn, enumColumn, populatedNameColumn, statusColumn } from '@/shared/ui/utils/column-presets';
@@ -55,7 +55,7 @@ const TrajectoryArtifactsListing = () => {
             return createEmptyPaginatedResponse(params);
         }
 
-        return sceneArtifactService.listByTeam({
+        return fetchSceneArtifactsByTeam({
             page: params.page,
             limit: params.limit
         });

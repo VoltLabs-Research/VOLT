@@ -25,14 +25,12 @@ import type { SearchRegistryResponse } from './registry';
 import type {
     ListingRowData,
     ListingRowByAnalysisData,
-    SubListingRowData,
-    GetAnalysisListingExportOptionsResponse
+    SubListingRowData
 } from './listing';
 
 export const pluginRoutes = {
     
     getListingRowsByAnalysisId: get<ListingRowByAnalysisData>('/api/teams/:teamId/plugins/listings/analyses/:analysisId'),
-    getAnalysisListingExportOptions: get<GetAnalysisListingExportOptionsResponse>('/api/teams/:teamId/plugins/listings/analyses/:analysisId/export/options'),
     exportListingRowsByAnalysisId: get<Blob>('/api/teams/:teamId/plugins/listings/analyses/:analysisId/export'),
     getSubListing: get<SubListingRowData>('/api/teams/:teamId/plugins/listings/analyses/:analysisId/sub-listings/:exposureId/:timestep/:subListingName'),
     exportPluginListingDocuments: get<Blob>('/api/teams/:teamId/plugins/:pluginId/listings/export'),
@@ -42,7 +40,6 @@ export const pluginRoutes = {
     getPluginExposureGLB: get<Blob>('/api/teams/:teamId/plugins/exposures/:trajectoryId/:analysisId/:exposureId/:timestep/glb'),
     getPluginExposureChart: get<Blob>('/api/teams/:teamId/plugins/exposures/artifacts/:artifactId/chart'),
     getPluginExposureExport: get<Blob>('/api/teams/:teamId/plugins/exposures/analyses/:analysisId/export'),
-    /* Every panel document of an analysis at one timestep, parsed. One request per frame. */
     getPluginExposurePanels: get<GetPluginExposurePanelsResponse>('/api/teams/:teamId/plugins/exposures/analyses/:analysisId/panels/:timestep'),
 
     

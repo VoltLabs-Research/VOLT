@@ -46,13 +46,6 @@ const isChartExportOptions = (
     typeof options.chartType === 'string' && CHART_TYPES.has(options.chartType)
 );
 
-/*
- * The only validation a panel declaration ever gets. Nothing upstream checks an export
- * node's `options`: the install reader only asserts that `nodes` and `edges` are arrays,
- * and the workflow validator has no export-node rules at all. So this guard, and the
- * per-block reasons the exporter logs, are the whole safety net between a malformed
- * manifest and a silently missing panel.
- */
 const isPanelExportOptions = (
     options: Record<string, unknown>
 ): options is NarrowedOptions<PanelExportOptions> => (
@@ -72,12 +65,6 @@ const exportContext = (input: ExportExecutionInput, exporter: ExporterName) => (
     exporter
 });
 
-/**
- * Resolves to `true` when at least one artifact was staged for upload. Every
- * exporter can legitimately produce nothing (no geometry, no chart points), and
- * the caller has to know: an exposure that emitted nothing has no upload coming,
- * so its expected artifact would otherwise wait forever.
- */
 const runEntries = async <TExportData>(
     input: ExportExecutionInput,
     exporter: ExporterName,

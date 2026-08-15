@@ -1,9 +1,9 @@
 import JobsHistory from '@/modules/jobs/components/JobsHistory';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
-import useJobsHistoryFilters from '@/modules/jobs/hooks/use-jobs-history-filters';
-import useJobsAutoSelectAnalysis from '@/modules/jobs/hooks/use-jobs-auto-select-analysis';
-import useJobsCompletionToast from '@/modules/jobs/hooks/use-jobs-completion-toast';
+import useJobsHistoryFilters from './use-jobs-history-filters';
+import useJobsAutoSelectAnalysis from './use-jobs-auto-select-analysis';
+import useJobsCompletionToast from './use-jobs-completion-toast';
 import { useEffect } from 'react';
 
 interface JobsHistoryViewerProps {

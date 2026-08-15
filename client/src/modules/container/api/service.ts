@@ -19,11 +19,7 @@ import type { PortMapping } from '@volt/contracts/modules/container/domain';
 import type { GetContainerFilesResponse, ReadContainerFileResponse } from '@volt/contracts/modules/container/domain';
 import { normalizePortMapping } from '@/modules/container/utils/port-mapping';
 
-export enum ContainerAction {
-    Start = 'start',
-    Stop = 'stop',
-    Restart = 'restart'
-}
+import type { ContainerAction } from '@/modules/container/contracts/actions';
 
 interface ContainerRouteParams {
     containerId: string;

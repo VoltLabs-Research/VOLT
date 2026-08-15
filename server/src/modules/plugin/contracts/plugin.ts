@@ -19,13 +19,7 @@ export interface PluginExposureProps{
     hasListing: boolean;
     properties: ExposureProperty[];
     export: ExportNodeData | null;
-    /**
-     * Gates the exposure on one of the plugin's arguments. Kept on the persisted props
-     * because the analysis planner needs it before any daemon is involved, to decide which
-     * artifacts a run is even expected to produce.
-     */
     exportWhen?: ArgumentVisibilityCondition;
-    /** Declared results tables for the analysis panel; passed through untouched. */
     panel?: ExposurePanel;
 }
 
