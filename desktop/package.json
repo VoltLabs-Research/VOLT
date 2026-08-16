@@ -1,6 +1,6 @@
 {
   "name": "volt-desktop",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "productName": "Volt",
   "desktopName": "volt.desktop",
   "description": "Volt desktop \u2014 runs the local Volt stack via Docker Compose",
