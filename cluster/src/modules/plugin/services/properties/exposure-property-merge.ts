@@ -9,32 +9,19 @@ export interface ExposurePropertyRows {
     rows: FlatAtomProperties[];
 }
 
-const countPropertyOccurrences = (exposures: ExposurePropertyRows[]): Map<string, number> => {
-    const occurrences = new Map<string, number>();
-    for (const exposure of exposures) {
-        for (const property of exposure.propertyNames) {
-            occurrences.set(property, (occurrences.get(property) ?? 0) + 1);
-        }
-    }
-    return occurrences;
-};
-
 export const mergeExposureRows = (
     exposures: ExposurePropertyRows[],
     atomIds?: Set<number>
 ): PluginAnalysisAllAtomsResponse => {
-    const propertyOccurrences = countPropertyOccurrences(exposures);
     const propertyNames: string[] = [];
+    const declaredProperties = new Set<string>();
     const mergedAtoms = new Map<number, FlatAtomProperties>();
 
     for (const exposure of exposures) {
-        const displayNames = new Map<string, string>();
         for (const property of exposure.propertyNames) {
-            const displayName = (propertyOccurrences.get(property) ?? 0) > 1
-                ? `${exposure.exposureId}: ${property}`
-                : property;
-            displayNames.set(property, displayName);
-            propertyNames.push(displayName);
+            if (declaredProperties.has(property)) continue;
+            declaredProperties.add(property);
+            propertyNames.push(property);
         }
 
         for (const row of exposure.rows) {
@@ -43,9 +30,9 @@ export const mergeExposureRows = (
             if (atomIds && !atomIds.has(atomId)) continue;
 
             const atom = mergedAtoms.get(atomId) ?? { id: atomId };
-            for (const [source, display] of displayNames) {
-                if (row[source] !== undefined) {
-                    atom[display] = row[source];
+            for (const property of exposure.propertyNames) {
+                if (row[property] !== undefined) {
+                    atom[property] = row[property];
                 }
             }
             mergedAtoms.set(atomId, atom);

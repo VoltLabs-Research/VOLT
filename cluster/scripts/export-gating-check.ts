@@ -115,6 +115,30 @@ check(
     structureOn.join(', ')
 );
 
+const coreAtomsOnly = namesFor({
+    ...defaultConfig(),
+    export_structure_identification: false,
+    mark_core_atoms: true
+});
+
+check(
+    'mark_core_atoms=true solo (sin structure identification) expone Core Atoms',
+    coreAtomsOnly.includes('Core Atoms') && !coreAtomsOnly.includes('Structure Identification'),
+    coreAtomsOnly.join(', ')
+);
+
+const markCoreAtomsDefinition = argumentDefinitions.find(
+    (definition) => definition.argument === 'mark_core_atoms'
+);
+
+check(
+    'mark_core_atoms no esta gated por visibleWhen (el binario ya lo desacopla con ||)',
+    markCoreAtomsDefinition !== undefined && markCoreAtomsDefinition.visibleWhen === undefined,
+    markCoreAtomsDefinition === undefined
+        ? 'argumento ausente'
+        : JSON.stringify(markCoreAtomsDefinition.visibleWhen ?? null)
+);
+
 const allOff: WorkflowValueMap = {};
 for (const definition of argumentDefinitions) {
     if (definition.argument?.startsWith('export_')) {
