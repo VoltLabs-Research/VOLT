@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm --prefix ../sdk/node/VoltClient install --no-audit --no-fund && npm --prefix ../sdk/node/VoltClient run build",
     "build": "node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc -b && node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
     "preview": "vite preview"
