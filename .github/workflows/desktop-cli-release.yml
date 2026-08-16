@@ -10,6 +10,11 @@ permissions:
 jobs:
   attach-cli:
     name: Build & attach cli.cjs
+    # Releases here cover other products too, so only desktop `v*` tags attach
+    # assets. `voltsdk-*` tags also start with `v`, hence the second clause.
+    if: >
+      startsWith(github.event.release.tag_name, 'v') &&
+      !startsWith(github.event.release.tag_name, 'voltsdk-')
     runs-on: ubuntu-latest
     defaults:
       run:

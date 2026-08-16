@@ -38,6 +38,14 @@ jobs:
           cache: npm
           cache-dependency-path: server/package-lock.json
 
+      # tsconfig maps @voltstack/daemon-cluster-client to the SDK in this repo,
+      # and its package.json types point at dist/, so build the SDK first.
+      - name: Build cluster SDK
+        working-directory: sdk/node/DaemonClusterClient
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
       # `postinstall` runs `ts-patch install`, which typia's transform needs.
       - name: Install dependencies
         working-directory: server
