@@ -6,6 +6,7 @@ import type {
     UpdateTeamClusterQueueConcurrencyInput,
     CreateTeamClusterTransferRequestInput,
     DeleteTeamClusterInput,
+    RevealTeamClusterCredentialsInput,
     CreateTeamClusterRemoteAccessSessionInput,
     ProcessTeamClusterHealthcheckInput,
     GenerateTeamClusterInstallManifestInput
@@ -18,6 +19,7 @@ import type {
     UpdateTeamClusterRoleResponse,
     UpdateTeamClusterQueueConcurrencyResponse,
     RegenerateTeamClusterEnrollmentTokenResponse,
+    RevealTeamClusterCredentialsResponse,
     ClusterResourceLimitsResponse,
     GetTeamClusterRuntimeSnapshotResponse,
     CreateTeamClusterTransferRequestResponse,
@@ -59,6 +61,7 @@ export const teamClusterRoutes = {
     downloadRemoteExplorerObject: get<void>('/api/teams/:teamId/clusters/:teamClusterId/remote-access/explorer/object'),
 
     regenerateEnrollmentToken: post<never, RegenerateTeamClusterEnrollmentTokenResponse>('/api/teams/:teamId/clusters/:teamClusterId/enrollment-tokens'),
+    revealCredentials: post<RevealTeamClusterCredentialsInput, RevealTeamClusterCredentialsResponse>('/api/teams/:teamId/clusters/:teamClusterId/credentials'),
     deleteById: post<DeleteTeamClusterInput, DeleteTeamClusterResponse>('/api/teams/:teamId/clusters/:teamClusterId/delete-requests')
 } as const;
 

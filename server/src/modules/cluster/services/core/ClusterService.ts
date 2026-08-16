@@ -269,6 +269,22 @@ export default class ClusterService {
         return { enrollmentToken };
     }
 
+    async revealCredentials(input: {
+        teamId: string;
+        teamClusterId: string;
+        userId: string;
+        password: string;
+    }): Promise<{ services: { daemon: { password: string } } }> {
+        const entity = await requireOwnedTeamCluster(input.teamClusterId, input.teamId);
+        await requireConfirmedPassword(input.userId, input.password);
+
+        const daemonPassword = await this.#daemonCredentialGuard.getDecryptedDaemonPassword(toTeamClusterLike(entity));
+
+        logger.info(`Team cluster daemon credentials revealed teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
+
+        return { services: { daemon: { password: daemonPassword } } };
+    }
+
     async deleteById(input: {
         teamId: string;
         teamClusterId: string;
