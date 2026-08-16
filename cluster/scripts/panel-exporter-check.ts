@@ -233,7 +233,10 @@ const INTERVAL_CHART_BLOCK: PanelBlockDeclaration = {
                 source: 'totals.atoms',
                 format: 'integer'
             },
-            { kind: 'histogram-3d', title: 'From the future' } as unknown as PanelBlockDeclaration
+            {
+                kind: 'histogram-3d',
+                title: 'From the future'
+            } as unknown as PanelBlockDeclaration
         ])
     );
 
