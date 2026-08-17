@@ -167,14 +167,16 @@ const CommandPalette = () => {
                                 <span className='text-sm text-foreground'>{item.label}</span>
                                 <span className='text-xs text-muted'>{item.category}</span>
                             </div>
-                            <div className='flex flex-row items-center gap-1'>
-                                {item.keys.map((key, keyIndex) => (
-                                    <span className='flex flex-row items-center gap-1' key={key}>
-                                        {keyIndex > 0 && <span className='text-xs text-muted'>+</span>}
-                                        <Kbd className='text-xs'>{formatKeyName(key)}</Kbd>
-                                    </span>
-                                ))}
-                            </div>
+                            {item.keys.length > 0 && (
+                                <div className='flex flex-row items-center gap-1'>
+                                    {item.keys.map((key, keyIndex) => (
+                                        <span className='flex flex-row items-center gap-1' key={key}>
+                                            {keyIndex > 0 && <span className='text-xs text-muted'>+</span>}
+                                            <Kbd className='text-xs'>{formatKeyName(key)}</Kbd>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </li>
                     ))}
                 </ul>

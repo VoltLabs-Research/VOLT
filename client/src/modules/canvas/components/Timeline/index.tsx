@@ -8,7 +8,6 @@ import useTimelineJobActivity from './use-timeline-job-activity';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { toAnalysisFrameActivityStatus } from '@/modules/canvas/utils/analysis-status-selectors';
-import useTip from '@/shared/tips/use-tip';
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -26,7 +25,6 @@ interface TimelineProps {
     availableTimesteps: number[];
     selectedAnalysisTimesteps?: number[];
     analysisId: string | undefined;
-    disableContextualTips?: boolean;
 }
 
 const Timeline = ({
@@ -36,13 +34,8 @@ const Timeline = ({
     currentTimestep,
     availableTimesteps,
     selectedAnalysisTimesteps,
-    analysisId,
-    disableContextualTips = false
+    analysisId
 }: TimelineProps) => {
-    useTip('canvas-timeline-scrub', {
-        enabled: !disableContextualTips
-    });
-
     const { activeTab, tabs, handleTabChange, activeExposureId, pluginId } = useTimelineTabsState({
         trajectory,
         analysisId

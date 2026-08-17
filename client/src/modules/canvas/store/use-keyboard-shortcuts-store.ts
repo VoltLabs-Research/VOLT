@@ -25,6 +25,7 @@ interface KeyboardShortcutsState {
 interface KeyboardShortcutsActions {
     setCurrentScope: (scope: ShortcutScope) => void;
     setLastTriggered: (trigger: ShortcutTriggered | null) => void;
+    setShortcutEnabled: (id: string, enabled: boolean) => void;
     reset: () => void;
 }
 
@@ -168,6 +169,55 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
         keys: ['escape'],
         scope: 'global',
         category: 'general'
+    },
+    {
+        id: 'import-trajectory',
+        description: 'Import trajectory',
+        keys: ['ctrl', 'i'],
+        scope: 'canvas',
+        category: 'file'
+    },
+    {
+        id: 'download-analyses',
+        description: 'Download all analyses',
+        keys: [],
+        scope: 'canvas',
+        category: 'file'
+    },
+    {
+        id: 'toggle-fullscreen',
+        description: 'Toggle fullscreen',
+        keys: ['f11'],
+        scope: 'canvas',
+        category: 'view'
+    },
+    {
+        id: 'toggle-status-bar',
+        description: 'Toggle status bar',
+        keys: [],
+        scope: 'canvas',
+        category: 'view'
+    },
+    {
+        id: 'guided-tour',
+        description: 'Start guided tour',
+        keys: [],
+        scope: 'canvas',
+        category: 'help'
+    },
+    {
+        id: 'open-docs',
+        description: 'Read the docs',
+        keys: [],
+        scope: 'canvas',
+        category: 'help'
+    },
+    {
+        id: 'open-release-notes',
+        description: 'Release notes',
+        keys: [],
+        scope: 'canvas',
+        category: 'help'
     }
 ];
 
@@ -184,5 +234,15 @@ export const useKeyboardShortcutsStore = create<KeyboardShortcutsState & Keyboar
 
     setCurrentScope: (scope) => set({ currentScope: scope }),
     setLastTriggered: (trigger) => set({ lastTriggered: trigger }),
+    setShortcutEnabled: (id, enabled) => set((state) => {
+        const shortcut = state.shortcuts.get(id);
+        if (!shortcut || (shortcut.enabled ?? true) === enabled) {
+            return state;
+        }
+
+        const shortcuts = new Map(state.shortcuts);
+        shortcuts.set(id, { ...shortcut, enabled });
+        return { shortcuts };
+    }),
     reset: () => set(createInitialState())
 }));

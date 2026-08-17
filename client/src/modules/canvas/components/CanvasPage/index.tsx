@@ -39,9 +39,9 @@ import AccessDenied from '@/shared/ui/components/AccessDenied';
 import ErrorBoundary from '@/shared/ui/components/ErrorBoundary';
 import NotFoundState from '@/shared/ui/components/NotFoundState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
-import useTip from '@/shared/tips/use-tip';
+import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { RefObject } from 'react';
@@ -51,6 +51,7 @@ import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 
 const CanvasPage = () => {
     usePageTitle('Canvas');
+    const navigate = useNavigate();
     const { trajectoryId: routeTrajectoryId, ownerId: ownerIdParam } = useParams<{ trajectoryId?: string; ownerId?: string }>();
     const trajectoryId = routeTrajectoryId ?? '';
     const isLocalGlbViewer = !routeTrajectoryId;
@@ -97,15 +98,6 @@ const CanvasPage = () => {
         containerRef: viewportContainerRef
     });
 
-    useTip('canvas-shortcuts', {
-        enabled: Boolean(trajectoryId) && !trajectoryLoading && !isNarrowViewport
-    });
-
-    useKeyboardShortcuts({
-        trajectoryId,
-        availableTimesteps,
-        currentTimestep
-    });
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
 
@@ -115,12 +107,13 @@ const CanvasPage = () => {
         }
     }, [currentScope, setCurrentScope]);
 
-    const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress } = useEditorStore(useShallow((s) => ({
+    const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress, performancePreset } = useEditorStore(useShallow((s) => ({
         isModelLoading: s.isModelLoading,
         didPreload: s.didPreload,
         isPlaying: s.isPlaying,
         isPreloading: s.isPreloading,
-        preloadProgress: s.preloadProgress
+        preloadProgress: s.preloadProgress,
+        performancePreset: s.performanceSettings.preset
     })));
 
     const sceneConfig = useFractalSceneConfig();
@@ -149,6 +142,20 @@ const CanvasPage = () => {
     } = useCanvasDownloads({
         trajectory,
         analysisId
+    });
+
+    const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
+    const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
+    const [isGuidedTourRequested, setIsGuidedTourRequested] = useState(false);
+    const startGuidedTour = useCallback(() => setIsGuidedTourRequested(true), []);
+
+    useKeyboardShortcuts({
+        trajectoryId,
+        availableTimesteps,
+        currentTimestep,
+        onImport: canMutateCanvas ? openFilePicker : undefined,
+        onDownloadAnalyses: canDownloadTrajectoryAnalyses ? downloadAllTrajectoryAnalyses : undefined,
+        onStartGuidedTour: startGuidedTour
     });
 
     const [rightDrawerOpen, setRightDrawerOpen] = useState(false);
@@ -257,6 +264,7 @@ const CanvasPage = () => {
 
     return (
         <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
+            data-perf={performancePreset}
         >
             <PreloadingOverlay
                 active={overlayActive}
@@ -273,11 +281,17 @@ const CanvasPage = () => {
                 />
             )}
 
+            <input
+                ref={fileInputRef}
+                type='file'
+                multiple
+                hidden
+                onChange={handlePickerChange}
+            />
+
             <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-main'>
                 <TopToolbar
                     trajectory={trajectory}
-                    canDownloadAnalyses={canDownloadTrajectoryAnalyses}
-                    onDownloadAnalyses={downloadAllTrajectoryAnalyses}
                     localGlbMode={isLocalGlbViewer}
                     canMutateCanvas={canMutateCanvas}
                     workspacePeers={peersInLobby}
@@ -370,13 +384,16 @@ const CanvasPage = () => {
             <ShortcutFeedback />
             <ExposureSettingsWidget />
             <CanvasAnalysisDiscoveryTour
-                enabled={analysisDiscoveryTour.enabled}
+                enabled={analysisDiscoveryTour.enabled || isGuidedTourRequested}
                 storageScopeId={analysisDiscoveryTour.storageScopeId}
                 isMobile={isNarrowViewport}
                 rightDrawerOpen={rightDrawerOpen}
                 onRightDrawerOpenChange={setRightDrawerOpen}
                 onActiveChange={setAnalysisDiscoveryTourActive}
-                onComplete={closeRightDrawer}
+                onComplete={() => {
+                    setIsGuidedTourRequested(false);
+                    closeRightDrawer();
+                }}
             />
         </div>
     );

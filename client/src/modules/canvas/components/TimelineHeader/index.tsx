@@ -5,7 +5,7 @@ import TransportControls from '../TransportControls';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import useDownloadExposureListing from '../../hooks/use-download-exposure-listing';
 
-import { Atom, Box as BoxIcon, Gauge, ZoomIn } from 'lucide-react';
+import { Atom, Box as BoxIcon, FastForward, ZoomIn } from 'lucide-react';
 import { Separator, cn } from '@heroui/react';
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
 import type { ReactNode } from 'react';
@@ -206,7 +206,7 @@ const TimelineHeader = ({
                         <Separator orientation='vertical' className='h-4 shrink-0 max-md:hidden' />
                         <PresetPopover
                             id='timeline-speed'
-                            icon={<Gauge size={12} />}
+                            icon={<FastForward size={12} />}
                             presets={SPEED_PRESETS}
                             value={playSpeed}
                             suffix='x'

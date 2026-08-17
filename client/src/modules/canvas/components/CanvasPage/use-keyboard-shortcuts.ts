@@ -20,26 +20,45 @@ const normalizeKey = (key: string): string => {
     return keyMap[lower] ?? lower;
 };
 
+const DOCS_URL = 'https://docs.voltcloud.dev';
+const RELEASE_NOTES_URL = 'https://github.com/voltlabs-research';
+
+const openExternalUrl = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
+
 interface UseKeyboardShortcutsParams {
     trajectoryId?: string;
     currentTimestep: number | undefined;
     availableTimesteps: number[];
+    onImport?: () => void;
+    onDownloadAnalyses?: () => void;
+    onStartGuidedTour?: () => void;
 }
 
 const useKeyboardShortcuts = ({
     trajectoryId,
     currentTimestep,
-    availableTimesteps
+    availableTimesteps,
+    onImport,
+    onDownloadAnalyses,
+    onStartGuidedTour
 }: UseKeyboardShortcutsParams) => {
     const shortcuts = useKeyboardShortcutsStore((s) => s.shortcuts);
     const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
     const setLastTriggered = useKeyboardShortcutsStore((s) => s.setLastTriggered);
+    const setShortcutEnabled = useKeyboardShortcutsStore((s) => s.setShortcutEnabled);
     const {
         showWidgets,
         showGrid,
         showGizmo,
+        searchParams,
         updateSearchParams,
     } = useCanvasUrlState();
+
+    useEffect(() => {
+        setShortcutEnabled('import-trajectory', Boolean(onImport));
+        setShortcutEnabled('download-analyses', Boolean(onDownloadAnalyses));
+        setShortcutEnabled('guided-tour', Boolean(onStartGuidedTour));
+    }, [onImport, onDownloadAnalyses, onStartGuidedTour, setShortcutEnabled]);
 
     const actionsRef = useRef<Record<string, () => void>>({});
     const lastTriggeredTimeoutRef = useRef<number | null>(null);
@@ -184,6 +203,40 @@ const useKeyboardShortcuts = ({
                 if (useCommandPaletteStore.getState().isOpen) {
                     useCommandPaletteStore.getState().close();
                 }
+            },
+
+            'import-trajectory': () => {
+                onImport?.();
+            },
+
+            'download-analyses': () => {
+                onDownloadAnalyses?.();
+            },
+
+            'toggle-fullscreen': () => {
+                if (document.fullscreenElement) {
+                    void document.exitFullscreen();
+                    return;
+                }
+
+                void document.documentElement.requestFullscreen();
+            },
+
+            'toggle-status-bar': () => {
+                const isVisible = searchParams.get('statusBar') !== 'false';
+                updateSearchParams({ statusBar: isVisible ? 'false' : 'true' });
+            },
+
+            'guided-tour': () => {
+                onStartGuidedTour?.();
+            },
+
+            'open-docs': () => {
+                openExternalUrl(DOCS_URL);
+            },
+
+            'open-release-notes': () => {
+                openExternalUrl(RELEASE_NOTES_URL);
             }
         };
 
@@ -201,7 +254,11 @@ const useKeyboardShortcuts = ({
         trajectoryId,
         currentTimestep,
         availableTimesteps,
-        updateSearchParams
+        searchParams,
+        updateSearchParams,
+        onImport,
+        onDownloadAnalyses,
+        onStartGuidedTour
     ]);
 
     useEffect(() => {

@@ -15,15 +15,6 @@ export interface ContextualTipDefinition {
 };
 
 const CONTEXTUAL_TIPS = {
-    'canvas-shortcuts': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Canvas commands',
-        description: 'Press Ctrl+K any time to search canvas commands while you explore the canvas.',
-        buttonLabel: 'Got it',
-        delay: 1800,
-        position: 'top-center'
-    },
     'dashboard-drag-upload': {
         surface: 'page',
         dismissMode: 'manual',
@@ -41,13 +32,6 @@ const CONTEXTUAL_TIPS = {
         delay: 350,
         duration: 6500,
         position: 'top-center'
-    },
-    'canvas-screenshot-shortcut': {
-        surface: 'action',
-        dismissMode: 'auto',
-        title: 'Ctrl+S takes screenshots',
-        duration: 5500,
-        position: 'bottom-center'
     },
     'dashboard-sidebar-collapse': {
         surface: 'page',
@@ -148,15 +132,6 @@ const CONTEXTUAL_TIPS = {
         delay: 1600,
         position: 'top-center'
     },
-    'canvas-timeline-scrub': {
-        surface: 'feature',
-        dismissMode: 'auto',
-        title: 'Scrub the timeline to navigate',
-        description: 'Drag the ruler to jump between timesteps, use Arrow keys to step frame by frame, or mouse wheel to scroll.',
-        delay: 350,
-        duration: 6500,
-        position: 'bottom-center'
-    },
     'plugins-import-export': {
         surface: 'page',
         dismissMode: 'manual',
@@ -192,15 +167,6 @@ const CONTEXTUAL_TIPS = {
         buttonLabel: 'Got it',
         delay: 1600,
         position: 'top-center'
-    },
-    'canvas-render-settings': {
-        surface: 'feature',
-        dismissMode: 'auto',
-        title: 'Fine-tune the 3D rendering',
-        description: 'Use the floating Render, Camera, Screenshot and Performance menus on the viewport to adjust lights, effects, environment, and capture settings.',
-        delay: 350,
-        duration: 6500,
-        position: 'bottom-right'
     },
     'container-env-vars': {
         surface: 'feature',

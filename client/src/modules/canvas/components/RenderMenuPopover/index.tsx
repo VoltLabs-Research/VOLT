@@ -14,7 +14,7 @@ const RenderMenuPopover = ({ compact = false }: RenderMenuPopoverProps) => {
 
     const options = useMemo<MenuOption[]>(() => {
         return renderGroups
-            .filter((group) => group.visible !== false && group.id !== 'camera')
+            .filter((group) => group.visible !== false)
             .map((group) => ({
                 label: group.title,
                 submenuContent: <RenderGroupSubmenuContent group={group} />
