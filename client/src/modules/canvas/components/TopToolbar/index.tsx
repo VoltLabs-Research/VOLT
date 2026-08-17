@@ -156,7 +156,7 @@ const TopToolbar = ({
                         openMenu={openMenu}
                         onOpenChange={setOpenMenu}
                         idPrefix={menuIdPrefix}
-                        triggerClassName={isMobile ? 'max-md:h-[1.625rem] max-md:min-h-[1.625rem] max-md:px-1.5 max-md:text-2xs' : undefined}
+                        triggerClassName={isMobile ? 'max-md:h-7 max-md:min-h-7 max-md:px-1.5' : undefined}
                     />
                 ))}
             </nav>
@@ -184,7 +184,7 @@ const TopToolbar = ({
                             <EditableTrajectoryName
                                 trajectoryId={trajectory._id}
                                 name={trajectory.name}
-                                className='overflow-hidden text-ellipsis whitespace-nowrap text-xs leading-6 text-muted'
+                                className='overflow-hidden text-ellipsis whitespace-nowrap text-xs leading-6 text-foreground'
                             />
                         </div>
                     )}

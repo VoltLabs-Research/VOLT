@@ -1,4 +1,5 @@
-import { Description, Label, ListBox, Select } from '@heroui/react';
+import { ListBox, Select } from '@heroui/react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 
 export interface ClusterSelectOption {
     value: string;
@@ -48,11 +49,7 @@ const ClusterOptionSelect = ({
         <Select.Popover>
             <ListBox>
                 {options.map((option) => (
-                    <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                        <ListBox.ItemIndicator />
-                        <Label>{option.title}</Label>
-                        {option.description && <Description>{option.description}</Description>}
-                    </ListBox.Item>
+                    <OptionListBoxItem key={option.value} option={option} />
                 ))}
             </ListBox>
         </Select.Popover>

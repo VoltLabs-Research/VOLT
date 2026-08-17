@@ -125,7 +125,7 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
             <div className='m-0 border-l-0 p-0' role='group' aria-label={`${analysis.pluginDisplayName} execution timeline`}>
                 {rows.map((row) => (
                     <div key={row.key} className={cn(
-                        'flex min-h-[22px] items-center gap-1.5 text-xs text-muted max-md:min-h-[18px] max-md:gap-1 max-md:text-2xs',
+                        'flex min-h-[22px] items-center gap-1.5 text-xs text-muted max-md:min-h-[18px] max-md:gap-1',
                         row.status in rowToneClass && rowToneClass[row.status as keyof typeof rowToneClass]
                     )}>
                         <span className={cn(

@@ -1,4 +1,6 @@
-import { Description, Label, ListBox, Select, cn } from '@heroui/react';
+import { ListBox, Select, cn } from '@heroui/react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
+import { COMPACT_FIELD_TRIGGER, COMPACT_FIELD_VALUE } from '@/shared/ui/utils/field-density';
 
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
 
@@ -46,8 +48,8 @@ const CanvasOptionSelect = ({
         fullWidth
         className={cn('min-w-0', className)}
     >
-        <Select.Trigger className={cn(size === 'compact' ? 'h-6 min-h-6 rounded-lg px-1.5 text-2xs' : '', triggerClassName)}>
-            <Select.Value className={size === 'compact' ? 'text-2xs' : ''}>
+        <Select.Trigger className={cn(size === 'compact' ? COMPACT_FIELD_TRIGGER : '', triggerClassName)}>
+            <Select.Value className={size === 'compact' ? COMPACT_FIELD_VALUE : 'min-w-0 truncate'}>
                 {({ isPlaceholder, selectedText, defaultChildren }) => (
                     isPlaceholder ? defaultChildren : selectedText
                 )}
@@ -57,11 +59,11 @@ const CanvasOptionSelect = ({
         <Select.Popover>
             <ListBox>
                 {options.map((option) => (
-                    <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                        {showSelectionIcon && <ListBox.ItemIndicator />}
-                        <Label>{option.title}</Label>
-                        {option.description && <Description>{option.description}</Description>}
-                    </ListBox.Item>
+                    <OptionListBoxItem
+                        key={option.value}
+                        option={option}
+                        showIndicator={showSelectionIcon}
+                    />
                 ))}
             </ListBox>
         </Select.Popover>

@@ -9,9 +9,18 @@ import {
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from './PipelineRunControl';
-import { Button, Popover } from '@heroui/react';
+import {
+    Button,
+    DropdownItem,
+    DropdownMenu,
+    DropdownPopover,
+    DropdownRoot,
+    DropdownTrigger,
+    Popover
+} from '@heroui/react';
 import { Play, Plus } from 'lucide-react';
 import { useState } from 'react';
+import type { Key } from 'react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
@@ -22,16 +31,26 @@ interface PipelineHeaderActionsProps {
     canMutateCanvas?: boolean;
 }
 
-interface AddMenuItemProps {
-    label: string;
-    onSelect: () => void;
-}
-
-const AddMenuItem = ({ label, onSelect }: AddMenuItemProps) => (
-    <button type='button' role='menuitem' className='flex w-full min-h-10 cursor-pointer items-center gap-1.5 rounded-lg border-none bg-transparent px-2.5 py-2 text-left text-xs text-foreground hover:bg-default' onClick={onSelect}>
-        <span className='min-w-0 flex-1 truncate'>{label}</span>
-    </button>
-);
+const STATIC_STAGE_PRESETS: { id: string; label: string; type: StageType; config: StageConfig }[] = [
+    {
+        id: 'slice-plane',
+        label: 'Slice Plane',
+        type: 'slice-plane',
+        config: DEFAULT_SLICE_PLANE_STAGE_CONFIG
+    },
+    {
+        id: 'expression-select',
+        label: 'Expression Select',
+        type: 'expression-select',
+        config: DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG
+    },
+    {
+        id: 'color-coding',
+        label: 'Color Coding',
+        type: 'color-coding',
+        config: DEFAULT_COLOR_CODING_STAGE_CONFIG
+    }
+];
 
 const PipelineHeaderActions = ({
     trajectory,
@@ -45,12 +64,26 @@ const PipelineHeaderActions = ({
     const orderedStageCount = useStages(trajectoryId).filter(isOrderedPipelineStage).length;
 
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-    const closeAddMenu = () => setIsAddMenuOpen(false);
     const [isRunMenuOpen, setIsRunMenuOpen] = useState(false);
     const closeRunMenu = () => setIsRunMenuOpen(false);
 
     const handleAdd = (type: StageType, config: StageConfig) => {
         addStage(type, config, trajectoryId);
+    };
+
+    const handleAddMenuAction = (key: Key) => {
+        const id = String(key);
+        const preset = STATIC_STAGE_PRESETS.find((entry) => entry.id === id);
+
+        if (preset) {
+            handleAdd(preset.type, { ...preset.config });
+            return;
+        }
+
+        handleAdd('analysis-plugin', {
+            pluginId: id,
+            argValues: {}
+        });
     };
 
     return (
@@ -67,7 +100,7 @@ const PipelineHeaderActions = ({
                 </Button>
                 <Popover.Content placement='left top'>
                     <Popover.Dialog id='canvas-pipeline-run' aria-label='Run pipeline' className='min-w-[min(22rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))]'>
-                        <div className='gap-2 flex min-w-[min(21rem,calc(100vw-3rem))] max-h-[min(70vh,32rem)] flex-col overflow-hidden origin-top-right'>
+                        <div className='gap-2 flex min-w-[min(21rem,calc(100vw-3rem))] flex-col origin-top-right'>
                             <span className='text-xs font-medium text-muted'>Pipeline</span>
                             <PipelineRunControl
                                 trajectory={trajectory}
@@ -80,47 +113,38 @@ const PipelineHeaderActions = ({
                     </Popover.Dialog>
                 </Popover.Content>
             </Popover>
-            <Popover isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
-                <Button
-                    variant='ghost'
-                    size='sm'
+            <DropdownRoot isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
+                <DropdownTrigger
                     isDisabled={!canMutateCanvas || !trajectoryId}
                     aria-label='Add pipeline stage'
-                    className='text-xs'
                 >
-                    <Plus size={12} />
-                    Add new
-                </Button>
-                <Popover.Content placement='bottom start'>
-                    <Popover.Dialog id='canvas-pipeline-add-menu' aria-label='Add pipeline stage' className='flex min-w-45 max-w-80 flex-col p-1'>
-                        <AddMenuItem
-                            label='Slice Plane'
-                            onSelect={() => { handleAdd('slice-plane', { ...DEFAULT_SLICE_PLANE_STAGE_CONFIG }); closeAddMenu(); }}
-                        />
-                        <AddMenuItem
-                            label='Expression Select'
-                            onSelect={() => { handleAdd('expression-select', { ...DEFAULT_EXPRESSION_SELECT_STAGE_CONFIG }); closeAddMenu(); }}
-                        />
-                        <AddMenuItem
-                            label='Color Coding'
-                            onSelect={() => { handleAdd('color-coding', { ...DEFAULT_COLOR_CODING_STAGE_CONFIG }); closeAddMenu(); }}
-                        />
-                        {modifiers.map((modifier) => (
-                            <AddMenuItem
-                                key={modifier.pluginId}
-                                label={modifier.name}
-                                onSelect={() => {
-                                    handleAdd('analysis-plugin', {
-                                        pluginId: modifier.pluginId,
-                                        argValues: {}
-                                    });
-                                    closeAddMenu();
-                                }}
-                            />
+                    <Button variant='ghost' size='sm' className='text-xs'>
+                        <Plus size={12} />
+                        Add new
+                    </Button>
+                </DropdownTrigger>
+                <DropdownPopover placement='bottom start'>
+                    <DropdownMenu
+                        aria-label='Add pipeline stage'
+                        onAction={handleAddMenuAction}
+                    >
+                        {STATIC_STAGE_PRESETS.map((preset) => (
+                            <DropdownItem key={preset.id} id={preset.id} textValue={preset.label}>
+                                {preset.label}
+                            </DropdownItem>
                         ))}
-                    </Popover.Dialog>
-                </Popover.Content>
-            </Popover>
+                        {modifiers.map((modifier) => (
+                            <DropdownItem
+                                key={modifier.pluginId}
+                                id={modifier.pluginId}
+                                textValue={modifier.name}
+                            >
+                                {modifier.name}
+                            </DropdownItem>
+                        ))}
+                    </DropdownMenu>
+                </DropdownPopover>
+            </DropdownRoot>
         </div>
     );
 };

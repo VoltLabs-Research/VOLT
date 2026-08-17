@@ -1,5 +1,6 @@
 import Loader from '@/shared/ui/components/Loader';
-import { Autocomplete, Description, Label, ListBox, SearchField, Select, cn } from '@heroui/react';
+import { Autocomplete, ListBox, SearchField, Select, cn } from '@heroui/react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import type { UIEvent } from 'react';
@@ -35,11 +36,7 @@ const SelectOptionList = ({ options, ariaLabel, onScrollEnd }: SelectOptionListP
     return (
         <ListBox aria-label={ariaLabel} onScroll={handleScroll}>
             {options.map((option) => (
-                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                    <ListBox.ItemIndicator />
-                    <Label>{option.title}</Label>
-                    {option.description && <Description>{option.description}</Description>}
-                </ListBox.Item>
+                <OptionListBoxItem key={option.value} option={option} />
             ))}
         </ListBox>
     );
@@ -159,7 +156,7 @@ export const PluginMultiSelect = ({
                     <Autocomplete.Value className={valueClassName}>{triggerLabel}</Autocomplete.Value>
                     <Autocomplete.Indicator />
                 </Autocomplete.Trigger>
-                <Autocomplete.Popover>
+                <Autocomplete.Popover className='w-auto min-w-56 max-w-none'>
                     <Autocomplete.Filter>
                         <SearchField autoFocus aria-label={searchPlaceholder}>
                             <SearchField.Group>

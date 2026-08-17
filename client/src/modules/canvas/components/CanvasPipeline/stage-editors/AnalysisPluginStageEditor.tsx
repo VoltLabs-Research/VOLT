@@ -3,6 +3,7 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import { extractTrajectoryTimesteps } from '../../../utils/selected-timestep-analysis';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
+import StageEditorLayout from '../StageEditorLayout';
 import { Button } from '@heroui/react';
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
 import { useMemo } from 'react';
@@ -52,7 +53,19 @@ const AnalysisPluginStageEditor = ({
     }
 
     return (
-        <div className='flex flex-col gap-3'>
+        <StageEditorLayout
+            footer={(
+                <Button
+                    variant='primary'
+                    size='sm'
+                    fullWidth
+                    className='text-xs'
+                    onPress={() => onSave?.()}
+                >
+                    Save
+                </Button>
+            )}
+        >
             <ArgumentFieldsRenderer
                 arguments={getUserConfigurableArguments(getPluginArguments(pluginId))}
                 values={argValues}
@@ -65,15 +78,7 @@ const AnalysisPluginStageEditor = ({
                 frameOptions={frameOptions}
                 emptyMessage='No arguments configured.'
             />
-            <Button
-                variant='primary'
-                size='sm'
-                fullWidth
-                onPress={() => onSave?.()}
-            >
-                Save
-            </Button>
-        </div>
+        </StageEditorLayout>
     );
 };
 

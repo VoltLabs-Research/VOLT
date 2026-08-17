@@ -17,6 +17,7 @@ import {
     type PrerequisiteStage
 } from '../../utils/pipeline-prerequisites';
 import SelectedTimestepsField from '../SelectedTimestepsField';
+import StageEditorLayout from './StageEditorLayout';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
@@ -199,7 +200,21 @@ const PipelineRunControl = ({
     };
 
     return (
-        <div className='flex flex-col gap-3 canvas-pipeline-run'>
+        <StageEditorLayout
+            footer={(
+                <Button
+                    variant='primary'
+                    size='sm'
+                    fullWidth
+                    className='text-xs'
+                    isPending={executePipelineMutation.isPending}
+                    onPress={() => { void handleExecute(); }}
+                    isDisabled={!canExecute}
+                >
+                    Execute
+                </Button>
+            )}
+        >
             <span className='text-xs text-muted'>
                 Runs the {enabledOrderedStages.length} enabled stage{enabledOrderedStages.length === 1 ? '' : 's'} as one pipeline.
             </span>
@@ -225,17 +240,7 @@ const PipelineRunControl = ({
                 selectedTimesteps={selectedTimesteps}
                 onChange={(next) => setSelectedTimesteps(normalizeSelectedTimesteps(next, availableTimesteps))}
             />
-            <Button
-                variant='primary'
-                size='sm'
-                fullWidth
-                isPending={executePipelineMutation.isPending}
-                onPress={() => { void handleExecute(); }}
-                isDisabled={!canExecute}
-            >
-                Execute
-            </Button>
-        </div>
+        </StageEditorLayout>
     );
 };
 

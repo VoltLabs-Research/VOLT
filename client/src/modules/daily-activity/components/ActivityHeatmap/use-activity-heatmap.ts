@@ -34,29 +34,6 @@ interface ActivityHeatmapTooltipState {
 
 const DAYS_PER_WEEK = 7;
 
-const ACTIVITY_HEATMAP_LEGEND: { label: string; level: number }[] = [
-    {
-        label: 'No activity',
-        level: 0
-    },
-    {
-        label: 'Low',
-        level: 1
-    },
-    {
-        label: 'Moderate',
-        level: 2
-    },
-    {
-        label: 'High',
-        level: 3
-    },
-    {
-        label: 'Peak',
-        level: 4
-    }
-];
-
 const getDateLabel = (date: string): string => {
     return new Intl.DateTimeFormat(undefined, {
         month: 'short',
@@ -227,8 +204,7 @@ const useActivityHeatmap = ({ data, range }: UseActivityHeatmapParams) => {
 
     return {
         cells,
-        weeks,
-        legendItems: ACTIVITY_HEATMAP_LEGEND
+        weeks
     };
 };
 

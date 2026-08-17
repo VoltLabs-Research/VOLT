@@ -139,7 +139,7 @@ const PipelineRunTreeNode = ({
         >
             <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
                 {title}
-                <span className='truncate text-2xs leading-[1.2] text-muted opacity-90'>
+                <span className='truncate text-xs leading-[1.2] text-muted opacity-90'>
                     {timeLabel ? `${timeLabel} · ${stageSummary}` : stageSummary}
                 </span>
             </span>

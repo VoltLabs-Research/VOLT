@@ -1,5 +1,11 @@
-import { Autocomplete, Label, ListBox, SearchField } from '@heroui/react';
+import { Autocomplete, ListBox, SearchField, cn } from '@heroui/react';
 import { useMemo, useCallback } from 'react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
+import {
+    COMPACT_FIELD_LABEL,
+    COMPACT_FIELD_TRIGGER,
+    COMPACT_FIELD_VALUE
+} from '@/shared/ui/utils/field-density';
 
 import type { Key } from 'react';
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
@@ -11,6 +17,11 @@ interface SelectedTimestepsFieldProps {
 }
 
 const ALL_OPTION_KEY = '__all__';
+
+const ALL_OPTION: SelectOption = {
+    value: ALL_OPTION_KEY,
+    title: 'All'
+};
 
 const SelectedTimestepsField = ({
     availableTimesteps,
@@ -51,8 +62,8 @@ const SelectedTimestepsField = ({
     const triggerLabel = selectedValues.length === 0 ? 'All' : `${selectedValues.length} selected`;
 
     return (
-        <div className='form-field-canvas flex min-h-6 flex-row items-center justify-between gap-2'>
-            <span className='canvas-form-label min-w-[130px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap text-2xs leading-6 tracking-[0.01em] text-muted'>
+        <div className='form-field-canvas flex min-h-7 flex-row items-center justify-between gap-2'>
+            <span className={cn('canvas-form-label min-w-32 shrink-0', COMPACT_FIELD_LABEL)}>
                 Selected Timesteps
             </span>
             <div className='render-input-container relative flex w-full min-w-0 max-w-[150px] items-center justify-end'>
@@ -65,29 +76,23 @@ const SelectedTimestepsField = ({
                     aria-label='Selected timesteps'
                     fullWidth
                 >
-                    <Autocomplete.Trigger className='h-6 min-h-6 rounded-lg px-1.5 text-2xs'>
-                        <Autocomplete.Value className='truncate text-2xs'>{triggerLabel}</Autocomplete.Value>
+                    <Autocomplete.Trigger className={COMPACT_FIELD_TRIGGER}>
+                        <Autocomplete.Value className={COMPACT_FIELD_VALUE}>{triggerLabel}</Autocomplete.Value>
                         <Autocomplete.Indicator />
                     </Autocomplete.Trigger>
-                    <Autocomplete.Popover>
+                    <Autocomplete.Popover className='w-auto min-w-56 max-w-none'>
                         <Autocomplete.Filter>
                             <SearchField autoFocus aria-label='Search timesteps'>
                                 <SearchField.Group>
                                     <SearchField.SearchIcon />
-                                    <SearchField.Input placeholder='Search timesteps...' />
+                                    <SearchField.Input placeholder='Search timesteps…' />
                                     <SearchField.ClearButton />
                                 </SearchField.Group>
                             </SearchField>
                             <ListBox aria-label='Timesteps'>
-                                <ListBox.Item id={ALL_OPTION_KEY} textValue='All'>
-                                    <ListBox.ItemIndicator />
-                                    <Label>All</Label>
-                                </ListBox.Item>
+                                <OptionListBoxItem option={ALL_OPTION} />
                                 {options.map((option) => (
-                                    <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                        <ListBox.ItemIndicator />
-                                        <Label>{option.title}</Label>
-                                    </ListBox.Item>
+                                    <OptionListBoxItem key={option.value} option={option} />
                                 ))}
                             </ListBox>
                         </Autocomplete.Filter>

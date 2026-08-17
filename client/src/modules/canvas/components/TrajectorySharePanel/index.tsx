@@ -53,7 +53,7 @@ const TrajectorySharePanel = ({
                     <CopyableField
                         value={shareUrl}
                         successMessage='Canvas link copied'
-                        className='px-2.5 py-2 [&_.copyable-field-value]:text-2xs'
+                        className='px-2.5 py-2 [&_.copyable-field-value]:text-xs'
                     />
                 </div>
             </div>

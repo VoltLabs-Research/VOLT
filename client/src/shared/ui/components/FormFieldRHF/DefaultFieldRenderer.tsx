@@ -1,8 +1,6 @@
 import {
-    Description,
     Input,
     InputGroup,
-    Label,
     ListBox,
     Select,
     Switch,
@@ -14,6 +12,7 @@ import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
 import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import { buildFieldAccessibilityState } from './field-accessibility';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 
 const DefaultFieldRenderer = ({
     field,
@@ -80,11 +79,7 @@ const DefaultFieldRenderer = ({
                     <Select.Popover>
                         <ListBox>
                             {options.map((option) => (
-                                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                    <ListBox.ItemIndicator />
-                                    <Label>{option.title}</Label>
-                                    {option.description && <Description>{option.description}</Description>}
-                                </ListBox.Item>
+                                <OptionListBoxItem key={option.value} option={option} />
                             ))}
                         </ListBox>
                     </Select.Popover>

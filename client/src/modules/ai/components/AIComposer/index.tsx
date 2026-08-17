@@ -1,4 +1,5 @@
-import { Button, Description, Label, ListBox, Select, Tooltip, cn } from '@heroui/react';
+import { Button, ListBox, Select, Tooltip, cn } from '@heroui/react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { useEffect, useId, useRef } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 import type { AISelectOption } from '@/modules/ai/utils/model-options';
@@ -112,11 +113,7 @@ const AIComposer = ({
                         <Select.Popover>
                             <ListBox>
                                 {modelOptions.map((option) => (
-                                    <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                        <ListBox.ItemIndicator />
-                                        <Label>{option.title}</Label>
-                                        {option.description && <Description>{option.description}</Description>}
-                                    </ListBox.Item>
+                                    <OptionListBoxItem key={option.value} option={option} />
                                 ))}
                             </ListBox>
                         </Select.Popover>

@@ -22,7 +22,7 @@ const PresetPopover = ({ id, icon, presets, value, suffix, onSelect, hideOnMobil
             <Button
                 variant='ghost'
                 size='sm'
-                className={cn('text-xs', 'max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:rounded-xl max-md:bg-surface-secondary max-md:px-2 max-md:text-2xs', hideOnMobile && 'max-md:hidden')}
+                className={cn('text-xs', 'max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:rounded-xl max-md:bg-surface-secondary max-md:px-2', hideOnMobile && 'max-md:hidden')}
             >
                 {icon}
                 {`${value}${suffix}`}

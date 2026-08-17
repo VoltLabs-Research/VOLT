@@ -1,5 +1,7 @@
-import { ComboBox, Input, Label, ListBox, cn } from '@heroui/react';
+import { ComboBox, Input, ListBox, cn } from '@heroui/react';
 import { useMemo, useCallback } from 'react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
+import { COMPACT_FIELD_GROUP, COMPACT_FIELD_GROUP_INPUT } from '@/shared/ui/utils/field-density';
 
 import type { SelectOption } from '@/modules/canvas/contracts/select-option';
 
@@ -45,16 +47,14 @@ const FrameCombobox = ({ value, options, onChange, title, className, groupClassN
             isDisabled={options.length === 0}
             aria-label={title ?? 'Select frame'}
         >
-            <ComboBox.InputGroup className={cn('h-6 min-h-6 w-24 rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary', groupClassName)}>
-                <Input className='h-6 min-h-6 border-0 bg-transparent px-1.5 text-2xs text-foreground shadow-none placeholder:text-2xs placeholder:text-muted' placeholder={placeholder} />
+            <ComboBox.InputGroup className={cn(COMPACT_FIELD_GROUP, 'w-24', groupClassName)}>
+                <Input className={COMPACT_FIELD_GROUP_INPUT} placeholder={placeholder} />
                 <ComboBox.Trigger />
             </ComboBox.InputGroup>
             <ComboBox.Popover>
                 <ListBox>
                     {selectOptions.map((option) => (
-                        <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                            <Label>{option.title}</Label>
-                        </ListBox.Item>
+                        <OptionListBoxItem key={option.value} option={option} showIndicator={false} />
                     ))}
                 </ListBox>
             </ComboBox.Popover>

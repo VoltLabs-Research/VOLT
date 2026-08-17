@@ -330,10 +330,7 @@ const CanvasPage = () => {
                             panel={timelinePanel}
                             isNarrowViewport={isNarrowViewport}
                             statusBar={showStatusBar ? (
-                                <StatusBar
-                                    trajectory={trajectory}
-                                    currentTimestep={currentTimestep}
-                                />
+                                <StatusBar trajectory={trajectory} />
                             ) : undefined}
                             sceneRef={sceneRef}
                             trajectory={trajectory}

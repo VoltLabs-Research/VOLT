@@ -108,12 +108,6 @@ const DashboardSimulationGrid = () => {
             buttonIsLoading: isDownloading
         };
 
-    const breadcrumbItems = useMemo(() => breadcrumbs.map((crumb) => ({
-        key: crumb.id ?? 'root',
-        title: crumb.title,
-        folderId: crumb.id ?? null
-    })), [breadcrumbs]);
-
     return (
         <>
             <input
@@ -132,7 +126,7 @@ const DashboardSimulationGrid = () => {
                 renderGridItem={renderGridItem}
                 gridBeforeContent={breadcrumbs.length > 1 ? (
                     <SimulationBreadcrumbs
-                        items={breadcrumbItems}
+                        items={breadcrumbs}
                         onOpen={navigateToFolder}
                         droppable={!!simulationDragAndDrop}
                     />

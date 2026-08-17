@@ -1,5 +1,6 @@
-import { Chip, Description, Label, ListBox, Select } from '@heroui/react';
+import { Chip, ListBox, Select } from '@heroui/react';
 import ListingUserCell from '@/shared/ui/components/ListingUserCell';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
 import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { formatDuration } from '@/shared/utils/format';
@@ -84,11 +85,7 @@ export const createTeamMemberColumns = ({
                         <Select.Popover>
                             <ListBox>
                                 {roleOptions.map((option) => (
-                                    <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                        <ListBox.ItemIndicator />
-                                        <Label>{option.title}</Label>
-                                        {option.description && <Description>{option.description}</Description>}
-                                    </ListBox.Item>
+                                    <OptionListBoxItem key={option.value} option={option} />
                                 ))}
                             </ListBox>
                         </Select.Popover>

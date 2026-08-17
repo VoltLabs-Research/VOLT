@@ -1,6 +1,5 @@
 import { useCanvasPipelineStore } from '../../store/canvas-pipeline';
-import CanvasSearchInput from '../CanvasSearchInput';
-import { EmptyState, Typography } from '@heroui/react';
+import { EmptyState, SearchField, Typography } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
@@ -135,25 +134,30 @@ const CanvasPluginSearch = () => {
 
     return (
         <div className='w-full min-w-0' ref={refs.setReference} {...getReferenceProps()}>
-            <CanvasSearchInput
-                ref={inputRef}
-                id={searchInputId}
-                placeholder='Search plugins…'
-                value={query}
-                variant='small'
-                containerClassName='flex w-full min-h-9 items-center gap-2 rounded-xl px-3 py-1.5'
-                className='text-sm leading-[1.25] m-0 h-auto p-0'
+            <SearchField
                 aria-label='Search plugins'
-                role='combobox'
-                aria-autocomplete='list'
-                aria-expanded={isOpen}
-                aria-haspopup='listbox'
-                aria-controls={isOpen ? resultsListId : undefined}
-                aria-activedescendant={activeOptionId}
-                onChange={(e) => { setQuery(e.target.value); setIsOpen(true); setActiveIndex(-1); }}
-                onFocus={() => setIsOpen(true)}
-                onKeyDown={handleKeyDown}
-            />
+                value={query}
+                onChange={(next) => { setQuery(next); setIsOpen(true); setActiveIndex(-1); }}
+                fullWidth
+            >
+                <SearchField.Group>
+                    <SearchField.SearchIcon />
+                    <SearchField.Input
+                        ref={inputRef}
+                        id={searchInputId}
+                        placeholder='Search plugins…'
+                        role='combobox'
+                        aria-autocomplete='list'
+                        aria-expanded={isOpen}
+                        aria-haspopup='listbox'
+                        aria-controls={isOpen ? resultsListId : undefined}
+                        aria-activedescendant={activeOptionId}
+                        onFocus={() => setIsOpen(true)}
+                        onKeyDown={handleKeyDown}
+                    />
+                    <SearchField.ClearButton />
+                </SearchField.Group>
+            </SearchField>
             {isOpen && (
                 <FloatingPortal root={floatingRoot}>
                     <Scrollable

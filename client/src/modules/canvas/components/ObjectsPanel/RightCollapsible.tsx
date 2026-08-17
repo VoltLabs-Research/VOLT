@@ -50,21 +50,21 @@ const RightCollapsible = ({
         onExpandedChange?.(!expanded);
     };
 
-    const titleNode = <span className='min-w-0 flex-1 truncate text-xs font-medium text-foreground [.canvas-objects-panel--analysis-compact_&]:text-2xs'>{title}</span>;
+    const titleNode = <span className='min-w-0 flex-1 truncate text-xs font-medium text-foreground'>{title}</span>;
     const actionsNode = <span className='flex shrink-0 flex-row items-center gap-0.5'>{headerAction}</span>;
 
     return (
         <div data-tour-id={tourId}>
             <div className={cn('flex flex-col', extraClassName)}>
-                <div className='flex min-h-8 flex-row items-center justify-between gap-2 px-3 max-md:h-auto max-md:min-h-[34px] [.canvas-objects-panel--analysis-compact_&]:h-[30px] [.canvas-objects-panel--analysis-compact_&]:min-h-[30px] [.canvas-objects-panel--analysis-compact_&]:px-2'>
+                <div className='flex min-h-8 flex-row items-center justify-between gap-2 px-3 max-md:h-auto max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:h-7 [.canvas-objects-panel--analysis-compact_&]:min-h-7 [.canvas-objects-panel--analysis-compact_&]:px-2'>
                     <h3 id={headingId} className='m-0 min-w-0 flex-1'>
-                        <span className='flex min-h-8 w-full min-w-0 flex-row items-center gap-2 max-md:min-h-[34px] [.canvas-objects-panel--analysis-compact_&]:min-h-7'>
+                        <span className='flex min-h-8 w-full min-w-0 flex-row items-center gap-2 max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:min-h-7'>
                             {collapsible ? (
                                 <>
                                     <button
                                         id={triggerId}
                                         type='button'
-                                        className='mr-1 flex min-h-8 min-w-0 flex-1 cursor-pointer flex-row items-center gap-2 border-none bg-transparent p-0 text-left select-none max-md:min-h-[34px] [.canvas-objects-panel--analysis-compact_&]:min-h-7'
+                                        className='mr-1 flex min-h-8 min-w-0 flex-1 cursor-pointer flex-row items-center gap-2 border-none bg-transparent p-0 text-left select-none max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:min-h-7'
                                         onClick={toggle}
                                         aria-expanded={expanded}
                                         aria-controls={bodyId}
@@ -74,7 +74,7 @@ const RightCollapsible = ({
                                     {actionsNode}
                                     <button
                                         type='button'
-                                        className='flex size-[1.625rem] shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-0 text-muted hover:bg-surface-hover focus-visible:bg-surface-hover [.canvas-objects-panel--analysis-compact_&]:size-[1.375rem]'
+                                        className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-0 text-muted hover:bg-surface-hover focus-visible:bg-surface-hover [.canvas-objects-panel--analysis-compact_&]:size-5'
                                         onClick={toggle}
                                         aria-expanded={expanded}
                                         aria-controls={bodyId}

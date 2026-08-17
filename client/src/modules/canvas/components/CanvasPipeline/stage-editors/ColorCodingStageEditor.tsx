@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@heroui/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import StageEditorLayout from '../StageEditorLayout';
 import GradientPreview from '../../GradientPreview';
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import usePropertySelector from '@/modules/trajectory/hooks/particle-filter/use-property-selector';
@@ -149,7 +150,21 @@ const ColorCodingStageEditor = ({
     };
 
     return (
-        <div className='flex flex-col gap-2'>
+        <StageEditorLayout
+            footer={(
+                <Button
+                    variant='primary'
+                    size='sm'
+                    fullWidth
+                    isPending={isApplying}
+                    onPress={() => { void handleApply(); }}
+                    isDisabled={!canApply || isLoading}
+                    className='text-xs'
+                >
+                    Apply (bake)
+                </Button>
+            )}
+        >
             <FormFieldRHF
                 fieldKey='color-coding-property'
                 fieldType='select'
@@ -201,19 +216,7 @@ const ColorCodingStageEditor = ({
                     />
                 </>
             )}
-
-            <Button
-                variant='primary'
-                size='sm'
-                fullWidth
-                isPending={isApplying}
-                onPress={() => { void handleApply(); }}
-                isDisabled={!canApply || isLoading}
-                className='text-xs'
-            >
-                Apply (bake)
-            </Button>
-        </div>
+        </StageEditorLayout>
     );
 };
 

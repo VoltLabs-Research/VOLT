@@ -1,66 +1,25 @@
 import { getTrajectoryListingFolderDroppableId } from '@/modules/trajectory/utils/listing';
-import { cn } from '@/shared/utils/cn';
-import { ChevronRight } from 'lucide-react';
+import { BreadcrumbsItem, BreadcrumbsRoot, cn } from '@heroui/react';
 import { useDroppable } from '@dnd-kit/core';
+import type { FolderBreadcrumbItem } from '@/shared/ui/hooks/use-folder-breadcrumbs';
 
-interface SimulationBreadcrumbItem {
-    key: string;
-    title: string;
-    folderId: string | null;
-}
-
-interface SimulationBreadcrumbLinkProps {
-    item: SimulationBreadcrumbItem;
-    isCurrent: boolean;
-    onOpen: (folderId: string | null) => void;
-    dropRef?: (element: HTMLElement | null) => void;
-    className?: string;
-}
-
-const SimulationBreadcrumbLink = ({ item, isCurrent, onOpen, dropRef, className }: SimulationBreadcrumbLinkProps) => {
-    if (isCurrent) {
-        return (
-            <span
-                ref={dropRef}
-                className={cn(className, 'inline-flex min-w-0 max-w-48 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-lg px-2.5 py-2 bg-surface-hover font-semibold text-foreground shadow-[inset_0_0_0_1px_var(--border)]')}
-                aria-current='page'
-                title={item.title}
-            >
-                {item.title}
-            </span>
-        );
-    }
-
-    return (
-        <button
-            ref={dropRef}
-            type='button'
-            className={cn(className, 'inline-flex min-w-0 max-w-48 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap rounded-lg px-2.5 py-2 cursor-pointer border-none bg-transparent text-left font-[inherit] text-muted hover:bg-surface-hover hover:text-foreground')}
-            onClick={() => onOpen(item.folderId)}
-            title={item.title}
-            aria-label={`Open ${item.title}`}
-        >
-            {item.title}
-        </button>
-    );
-};
-
-const DroppableSimulationBreadcrumbLink = (props: SimulationBreadcrumbLinkProps) => {
+const DroppableCrumbLabel = ({ item }: { item: FolderBreadcrumbItem }) => {
     const { setNodeRef, isOver } = useDroppable({
-        id: getTrajectoryListingFolderDroppableId(props.item.folderId)
+        id: getTrajectoryListingFolderDroppableId(item.id)
     });
 
     return (
-        <SimulationBreadcrumbLink
-            {...props}
-            dropRef={setNodeRef}
-            className={cn('relative transition-[box-shadow] duration-[160ms]', isOver ? 'is-drag-over shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--info)_62%,transparent)]' : '')}
-        />
+        <span
+            ref={setNodeRef}
+            className={cn('block max-w-48 truncate', isOver && 'is-drag-over underline')}
+        >
+            {item.title}
+        </span>
     );
 };
 
 interface SimulationBreadcrumbsProps {
-    items: SimulationBreadcrumbItem[];
+    items: FolderBreadcrumbItem[];
     onOpen: (folderId: string | null) => void;
 
     droppable?: boolean;
@@ -71,27 +30,19 @@ const SimulationBreadcrumbs = ({ items, onOpen, droppable = false }: SimulationB
         return null;
     }
 
-    const Link = droppable ? DroppableSimulationBreadcrumbLink : SimulationBreadcrumbLink;
-
     return (
-        <div className='dashboard-simulations-breadcrumbs'>
-            <nav className='min-w-0' aria-label='Folder breadcrumbs'>
-                <ol className='flex flex-row flex-wrap items-center gap-0.5 m-0 min-w-0 list-none p-0'>
-                    {items.map((item, index) => (
-                        <li key={item.key} className='flex flex-row items-center gap-1'>
-                            {index > 0 ? (
-                                <ChevronRight size={12} className='shrink-0 text-muted' aria-hidden='true' />
-                            ) : null}
-                            <Link
-                                item={item}
-                                isCurrent={index === items.length - 1}
-                                onOpen={onOpen}
-                            />
-                        </li>
-                    ))}
-                </ol>
-            </nav>
-        </div>
+        <BreadcrumbsRoot className='min-w-0 flex-wrap' aria-label='Folder breadcrumbs'>
+            {items.map((item) => (
+                <BreadcrumbsItem
+                    key={item.id ?? 'root'}
+                    onPress={() => onOpen(item.id)}
+                >
+                    {droppable
+                        ? <DroppableCrumbLabel item={item} />
+                        : <span className='block max-w-48 truncate'>{item.title}</span>}
+                </BreadcrumbsItem>
+            ))}
+        </BreadcrumbsRoot>
     );
 };
 

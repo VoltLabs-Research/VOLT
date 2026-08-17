@@ -1,7 +1,7 @@
 import useFieldAutocomplete from './use-field-autocomplete';
 import { buildFieldAccessibilityState } from './field-accessibility';
 import { useIsInFormSectionGroup } from '@/shared/ui/components/FormSection';
-import { Description, Label, ListBox, Select, Switch, cn } from '@heroui/react';
+import { ListBox, Select, Switch, cn } from '@heroui/react';
 import { useFloatingLayerRoot } from '@/shared/ui/utils/floating-layer';
 import { FloatingPortal } from '@floating-ui/react';
 import { AlertCircle } from 'lucide-react';
@@ -9,7 +9,15 @@ import { useId } from 'react';
 import type { ChangeEvent, FocusEvent } from 'react';
 import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import type { FieldTextElement } from './use-field-autocomplete';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import Scrollable from '@/shared/ui/components/Scrollable';
+import {
+    COMPACT_FIELD_INPUT,
+    COMPACT_FIELD_LABEL,
+    COMPACT_FIELD_TEXTAREA,
+    COMPACT_FIELD_TRIGGER,
+    COMPACT_FIELD_VALUE
+} from '@/shared/ui/utils/field-density';
 
 const InlineCanvasFieldRenderer = ({
     field,
@@ -94,12 +102,12 @@ const InlineCanvasFieldRenderer = ({
                     <Select.Trigger className={{
                         inline: 'w-full min-h-0 px-3 py-1.5 pe-7 border border-border rounded-lg bg-transparent text-foreground',
                         section: 'w-full h-auto min-h-0 p-0 pe-6 border-0 bg-transparent shadow-none text-muted hover:text-foreground',
-                        canvas: 'w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
+                        canvas: cn('w-full', COMPACT_FIELD_TRIGGER)
                     }[surface]}>
                         <Select.Value className={{
                             inline: 'text-sm',
                             section: 'text-sm text-end tabular-nums',
-                            canvas: 'text-2xs'
+                            canvas: COMPACT_FIELD_VALUE
                         }[surface]}>
                             {({ isPlaceholder, selectedText, defaultChildren }) => (
                                 isPlaceholder ? defaultChildren : selectedText
@@ -110,11 +118,7 @@ const InlineCanvasFieldRenderer = ({
                     <Select.Popover>
                         <ListBox>
                             {options.map((option) => (
-                                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                    <ListBox.ItemIndicator />
-                                    <Label>{option.title}</Label>
-                                    {option.description && <Description>{option.description}</Description>}
-                                </ListBox.Item>
+                                <OptionListBoxItem key={option.value} option={option} />
                             ))}
                         </ListBox>
                     </Select.Popover>
@@ -169,7 +173,7 @@ const InlineCanvasFieldRenderer = ({
                     className={cn(isCanvasVariant ? 'form-field-canvas-input form-field-canvas-textarea' : 'form-field-inline-input form-field-inline-textarea', {
                         inline: 'flex-1 min-w-0 px-3 py-1.5 border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent resize-y min-h-20',
                         section: 'flex-1 min-w-0 px-0 py-1 border-0 bg-transparent text-muted text-sm text-left tabular-nums placeholder:text-muted placeholder:text-left focus:text-foreground resize-y min-h-20',
-                        canvas: 'flex-1 min-w-0 px-1.5 border border-border rounded-lg bg-transparent text-foreground text-2xs transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-2xs resize-y min-h-[60px]'
+                        canvas: cn('flex-1 min-w-0', COMPACT_FIELD_TEXTAREA)
                     }[surface])}
                     value={String(effectiveValue ?? '')}
                     onChange={handleValueChange}
@@ -202,7 +206,7 @@ const InlineCanvasFieldRenderer = ({
                     className={cn(isCanvasVariant ? 'form-field-canvas-input' : 'form-field-inline-input', 'labeled-input', {
                         inline: 'flex-1 min-w-0 px-3 py-1.5 border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent',
                         section: 'flex-1 min-w-0 px-0 py-1 border-0 bg-transparent text-muted text-sm text-right tabular-nums placeholder:text-muted placeholder:text-right focus:text-foreground',
-                        canvas: 'flex-1 min-w-0 h-6 px-1.5 border border-border rounded-lg bg-transparent text-foreground text-2xs transition-colors duration-150 ease-out hover:border-border-secondary focus:border-accent placeholder:text-muted placeholder:text-2xs'
+                        canvas: cn('flex-1 min-w-0', COMPACT_FIELD_INPUT)
                     }[surface])}
                     value={String(effectiveValue ?? '')}
                     onChange={handleValueChange}
@@ -238,11 +242,11 @@ const InlineCanvasFieldRenderer = ({
             collapsesLabelColumn ? {
                 inline: 'grid grid-cols-[1fr] items-center gap-3 min-h-[2.375rem]',
                 section: 'grid grid-cols-[1fr] items-center gap-3 px-3.5 py-2 min-h-10 border-b border-border last:border-b-0',
-                canvas: 'flex flex-row items-center justify-between gap-2 min-h-6'
+                canvas: 'flex flex-row items-center justify-between gap-2 min-h-7'
             }[surface] : {
                 inline: 'grid grid-cols-[140px_1fr] items-center gap-3 min-h-[2.375rem]',
                 section: 'grid grid-cols-[minmax(88px,40%)_1fr] items-center gap-3 px-3.5 py-2 min-h-10 border-b border-border last:border-b-0',
-                canvas: 'flex flex-row items-center justify-between gap-2 min-h-6'
+                canvas: 'flex flex-row items-center justify-between gap-2 min-h-7'
             }[surface],
             isLoading && 'is-loading form-field-loading opacity-70 pointer-events-none'
         )}>
@@ -252,11 +256,11 @@ const InlineCanvasFieldRenderer = ({
                     isCheckbox ? {
                         inline: 'shrink-0 text-base font-normal',
                         section: 'shrink-0 text-sm font-normal text-foreground',
-                        canvas: 'w-auto min-w-0 flex-1 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
+                        canvas: cn('w-auto min-w-0 flex-1', COMPACT_FIELD_LABEL)
                     }[surface] : {
                         inline: 'shrink-0 text-base font-normal',
                         section: 'shrink-0 text-sm font-normal text-foreground',
-                        canvas: 'min-w-[130px] shrink-0 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'
+                        canvas: cn('min-w-32 shrink-0', COMPACT_FIELD_LABEL)
                     }[surface]
                 )}>
                     {label}
@@ -288,7 +292,7 @@ const InlineCanvasFieldRenderer = ({
                             >
                                 <span className='form-field-autocomplete-option-label text-xs leading-[1.2]'>{option.label}</span>
                                 {option.label !== option.value && (
-                                    <span className='form-field-autocomplete-option-value text-2xs leading-[1.1] text-muted'>{option.value}</span>
+                                    <span className='form-field-autocomplete-option-value text-xs leading-[1.1] text-muted'>{option.value}</span>
                                 )}
                             </button>
                         ))}

@@ -2,6 +2,7 @@ import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import useExpressionSelect from './use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
+import StageEditorLayout from '../StageEditorLayout';
 import { Button } from '@heroui/react';
 import { useState } from 'react';
 import {
@@ -75,7 +76,31 @@ const ExpressionSelectStageEditor = ({
     const hasExpression = draft.trim().length > 0;
 
     return (
-        <div className='flex flex-col gap-2 w-full'>
+        <StageEditorLayout
+            footer={(
+                <div className='flex flex-row items-center gap-2'>
+                    <Button
+                        variant='primary'
+                        size='sm'
+                        className='text-xs'
+                        onPress={handleApply}
+                        isDisabled={!hasExpression || (!autoRoute && !isValid)}
+                    >
+                        Apply
+                    </Button>
+                    {hasExpression && (
+                        <Button
+                            variant='ghost'
+                            size='sm'
+                            className='text-xs'
+                            onPress={handleClear}
+                        >
+                            Clear
+                        </Button>
+                    )}
+                </div>
+            )}
+        >
             <span className='text-xs text-muted'>Boolean expression over atom columns</span>
             <textarea
                 className='w-full rounded-lg border border-border bg-surface-secondary px-2 py-1.5 font-mono text-xs leading-[1.4] text-foreground w-full resize-y'
@@ -129,26 +154,7 @@ const ExpressionSelectStageEditor = ({
                     Large dataset — route to daemon on apply
                 </span>
             )}
-            <div className='flex flex-row items-center gap-2'>
-                <Button
-                    variant='primary'
-                    size='sm'
-                    onPress={handleApply}
-                    isDisabled={!hasExpression || (!autoRoute && !isValid)}
-                >
-                    Apply
-                </Button>
-                {hasExpression && (
-                    <Button
-                        variant='ghost'
-                        size='sm'
-                        onPress={handleClear}
-                    >
-                        Clear
-                    </Button>
-                )}
-            </div>
-        </div>
+        </StageEditorLayout>
     );
 };
 

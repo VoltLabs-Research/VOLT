@@ -225,7 +225,7 @@ export const checkbox = (
     value: boolean,
     onChange: (value: boolean) => void
 ): ReactNode => (
-    <div className='canvas-form-section flex flex-col gap-2 [&_.form-field-container]:min-h-6 [&_.form-field-container]:w-full [&_.form-field-container]:flex-row [&_.form-field-container]:items-center [&_.form-field-container]:justify-between [&_.form-field-container]:gap-2 [&_.form-field-container>label]:min-w-0 [&_.form-field-container>label]:flex-auto [&_.form-field-container>label]:text-2xs [&_.form-field-container>label]:text-muted [&_.form-field-container>.relative]:flex-none [&_.labeled-input-color]:h-[22px] [&_.labeled-input-color]:w-8 [&_.labeled-input-color]:cursor-pointer [&_.labeled-input-color]:rounded-lg [&_.labeled-input-color]:border [&_.labeled-input-color]:border-border [&_.labeled-input-color]:bg-transparent [&_.labeled-input-color]:p-0' key={key}>
+    <div className='canvas-form-section flex flex-col gap-2 [&_.form-field-container]:min-h-7 [&_.form-field-container]:w-full [&_.form-field-container]:flex-row [&_.form-field-container]:items-center [&_.form-field-container]:justify-between [&_.form-field-container]:gap-2 [&_.form-field-container>label]:min-w-0 [&_.form-field-container>label]:flex-auto [&_.form-field-container>label]:text-xs [&_.form-field-container>label]:text-muted [&_.form-field-container>.relative]:flex-none [&_.labeled-input-color]:h-[22px] [&_.labeled-input-color]:w-8 [&_.labeled-input-color]:cursor-pointer [&_.labeled-input-color]:rounded-lg [&_.labeled-input-color]:border [&_.labeled-input-color]:border-border [&_.labeled-input-color]:bg-transparent [&_.labeled-input-color]:p-0' key={key}>
         <FormFieldRHF
             fieldKey={key}
             fieldType="checkbox"
@@ -249,7 +249,7 @@ export const colorField = (
     onChange: (value: string) => void,
     description?: string
 ): ReactNode => (
-    <div className='canvas-form-section flex flex-col gap-2 [&_.form-field-container]:min-h-6 [&_.form-field-container]:w-full [&_.form-field-container]:flex-row [&_.form-field-container]:items-center [&_.form-field-container]:justify-between [&_.form-field-container]:gap-2 [&_.form-field-container>label]:min-w-0 [&_.form-field-container>label]:flex-auto [&_.form-field-container>label]:text-2xs [&_.form-field-container>label]:text-muted [&_.form-field-container>.relative]:flex-none [&_.labeled-input-color]:h-[22px] [&_.labeled-input-color]:w-8 [&_.labeled-input-color]:cursor-pointer [&_.labeled-input-color]:rounded-lg [&_.labeled-input-color]:border [&_.labeled-input-color]:border-border [&_.labeled-input-color]:bg-transparent [&_.labeled-input-color]:p-0' key={key}>
+    <div className='canvas-form-section flex flex-col gap-2 [&_.form-field-container]:min-h-7 [&_.form-field-container]:w-full [&_.form-field-container]:flex-row [&_.form-field-container]:items-center [&_.form-field-container]:justify-between [&_.form-field-container]:gap-2 [&_.form-field-container>label]:min-w-0 [&_.form-field-container>label]:flex-auto [&_.form-field-container>label]:text-xs [&_.form-field-container>label]:text-muted [&_.form-field-container>.relative]:flex-none [&_.labeled-input-color]:h-[22px] [&_.labeled-input-color]:w-8 [&_.labeled-input-color]:cursor-pointer [&_.labeled-input-color]:rounded-lg [&_.labeled-input-color]:border [&_.labeled-input-color]:border-border [&_.labeled-input-color]:bg-transparent [&_.labeled-input-color]:p-0' key={key}>
         <FormFieldRHF
             fieldKey={key}
             fieldType="color"

@@ -1,5 +1,11 @@
-import { Button } from '@heroui/react';
+import { Button, cn } from '@heroui/react';
 import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
+import {
+    COMPACT_FIELD_LABEL_COLUMN,
+    COMPACT_FIELD_ROW,
+    COMPACT_FIELD_TRIGGER,
+    COMPACT_FIELD_VALUE
+} from '@/shared/ui/utils/field-density';
 import { PluginMultiSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
@@ -134,7 +140,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className='canvas-form-label min-w-[130px] shrink-0 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
+                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
                         {argumentLabel}
                     </p>
                     <ArgumentFieldsRenderer
@@ -160,7 +166,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className='canvas-form-label min-w-[130px] shrink-0 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
+                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
                         {argumentLabel}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
@@ -170,7 +176,7 @@ const ArgumentFieldsRenderer = ({
                         variant='outline'
                         size='sm'
                         fullWidth
-                        className='h-6 min-h-6 px-2 text-2xs'
+                        className='h-7 min-h-7 px-2 text-xs'
                         onPress={() => {
                             onChange(argument.argument, [...items, createDefaultListItem(argument.listArguments)]);
                             setSectionExpanded(`${fieldKey}.${items.length}`, true);
@@ -190,8 +196,8 @@ const ArgumentFieldsRenderer = ({
             const selectValues = Array.isArray(selectedValues) ? selectedValues : [];
 
             return (
-                <div className='form-field-canvas flex flex-row items-center justify-between gap-2 min-h-6' key={fieldKey}>
-                    <p className='canvas-form-label min-w-[130px] shrink-0 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
+                <div className={cn('form-field-canvas', COMPACT_FIELD_ROW)} key={fieldKey}>
+                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
                         {argumentLabel}
                     </p>
                     <div className='render-input-container flex items-center justify-end relative w-full min-w-0 max-w-[150px]'>
@@ -202,8 +208,8 @@ const ArgumentFieldsRenderer = ({
                             onMultiChange={(nextValues) => onChange(argument.argument, coerceArgumentInputValue(argument, nextValues))}
                             placeholder='Select options'
                             className='form-field-canvas-select labeled-input flex-1 min-w-0'
-                            triggerClassName='w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
-                            valueClassName='text-2xs'
+                            triggerClassName={cn('w-full', COMPACT_FIELD_TRIGGER)}
+                            valueClassName={COMPACT_FIELD_VALUE}
                             ariaLabel={argumentLabel}
                             renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                 selectedCount,

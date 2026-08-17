@@ -35,7 +35,7 @@ const CanvasRenderSubsectionContent = ({
                             )}
                             {section.onToggle && (
                                 <div className='flex min-h-6 flex-row items-center justify-between' role='group' aria-label={`${section.key} toggle`}>
-                                    <span className='text-2xs font-medium tracking-[0.01em] text-muted'>Enabled</span>
+                                    <span className='text-xs font-medium text-muted'>Enabled</span>
                                     <FormFieldRHF
                                         fieldValue={section.enabled}
                                         fieldKey={`${section.key}-enabled`}
@@ -52,7 +52,7 @@ const CanvasRenderSubsectionContent = ({
 
                                     return (
                                         <div className={cn('flex min-h-6 flex-row items-center justify-between gap-2', row.className)} key={`${section.key}-${row.label}`} role='group' aria-label={row.label}>
-                                            <span className='min-w-0 flex-auto truncate text-2xs leading-6 tracking-[0.01em] text-muted'>{row.label}</span>
+                                            <span className='min-w-0 flex-auto truncate text-xs leading-6 text-muted'>{row.label}</span>
                                             <div className='flex flex-none flex-row items-center justify-end gap-1.5'>
                                                 <Slider
                                                     className='w-24 min-h-5 py-1'
@@ -68,7 +68,7 @@ const CanvasRenderSubsectionContent = ({
                                                         <Slider.Thumb />
                                                     </Slider.Track>
                                                 </Slider>
-                                                <span className='min-w-11 text-right text-2xs tabular-nums text-muted'>
+                                                <span className='min-w-11 text-right text-xs tabular-nums text-foreground'>
                                                     {row.format?.(value) ?? value}
                                                 </span>
                                             </div>

@@ -14,7 +14,6 @@ interface StatusItem {
 
 interface StatusBarProps {
     trajectory: Trajectory | null | undefined;
-    currentTimestep: number | undefined;
 }
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
@@ -30,17 +29,12 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     </div>
 );
 
-const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
-    let teamName = '-';
-    if (trajectory && typeof trajectory.team === 'object' && trajectory.team) {
-        teamName = trajectory.team.name;
-    }
-
+const StatusBar = ({ trajectory }: StatusBarProps) => {
     const atoms = trajectory?.frames?.[0]?.natoms ?? 0;
     const frames = trajectory?.frames?.length ?? 0;
     const size = trajectory?.stats?.totalSize !== undefined ? formatSize(trajectory.stats.totalSize) : '—';
 
-    const left: StatusItem[] = [
+    const items: StatusItem[] = [
         {
             key: 'atoms',
             label: 'Atoms',
@@ -58,25 +52,9 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
         }
     ];
 
-    const right: StatusItem[] = [
-        {
-            key: 'timestep',
-            label: 'Timestep',
-            value: currentTimestep ?? '—'
-        },
-        {
-            key: 'team',
-            label: '',
-            value: teamName
-        }
-    ];
-
     return (
-        <Scrollable className='flex h-7 w-full flex-row items-center justify-between gap-3 px-3'>
-            <div className='flex flex-row items-center gap-2'>
-                <StatusGroup items={left} />
-            </div>
-            <StatusGroup items={right} />
+        <Scrollable className='flex h-7 w-full flex-row items-center gap-3 px-3'>
+            <StatusGroup items={items} />
         </Scrollable>
     );
 };

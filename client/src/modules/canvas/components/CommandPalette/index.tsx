@@ -2,10 +2,12 @@ import { useCommandPaletteStore } from '../../store/use-command-palette-store';
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
 import { triggerShortcutAction } from '../../utils/shortcut-actions';
 import formatKeyName from '../../utils/format-key-name';
+import { Kbd } from '@heroui/react';
+
 import Scrollable from '@/shared/ui/components/Scrollable';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import CanvasSearchInput from '../CanvasSearchInput';
+import { SearchField } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 
@@ -123,15 +125,23 @@ const CommandPalette = () => {
             onClose={() => useCommandPaletteStore.getState().close()}
         >
             <div className='flex flex-col gap-2 p-3' onKeyDown={handleKeyDown}>
-                <CanvasSearchInput
-                    ref={inputRef}
-                    id='canvas-command-palette-input'
+                <SearchField
                     aria-label='Search commands'
-                    placeholder='Search commands…'
                     value={query}
-                    onChange={(event) => setQuery(event.currentTarget.value)}
-                    data-modal-initial-focus='true'
-                />
+                    onChange={setQuery}
+                    fullWidth
+                >
+                    <SearchField.Group>
+                        <SearchField.SearchIcon />
+                        <SearchField.Input
+                            ref={inputRef}
+                            id='canvas-command-palette-input'
+                            placeholder='Search commands…'
+                            data-modal-initial-focus='true'
+                        />
+                        <SearchField.ClearButton />
+                    </SearchField.Group>
+                </SearchField>
                 <Scrollable className='max-h-[420px] pt-2'>
                 <ul className='m-0 flex list-none flex-col gap-1'
                     ref={listRef}
@@ -161,7 +171,7 @@ const CommandPalette = () => {
                                 {item.keys.map((key, keyIndex) => (
                                     <span className='flex flex-row items-center gap-1' key={key}>
                                         {keyIndex > 0 && <span className='text-xs text-muted'>+</span>}
-                                        <kbd className='inline-flex items-center rounded-sm border border-white/10 bg-white/[0.03] px-1.5 py-0.5 font-mono text-xs leading-none text-muted'>{formatKeyName(key)}</kbd>
+                                        <Kbd className='text-xs'>{formatKeyName(key)}</Kbd>
                                     </span>
                                 ))}
                             </div>

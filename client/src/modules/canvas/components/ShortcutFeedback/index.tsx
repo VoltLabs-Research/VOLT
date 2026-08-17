@@ -1,5 +1,6 @@
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
 import formatKeyName from '../../utils/format-key-name';
+import { Kbd } from '@heroui/react';
 
 import { Fragment } from 'react';
 
@@ -16,9 +17,7 @@ const ShortcutFeedback = () => {
                 {shortcut.keys.map((key, i) => (
                     <Fragment key={key}>
                         {i > 0 && <span className='text-xs text-muted'>+</span>}
-                        <kbd className='inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-border bg-surface-tertiary text-xs'>
-                            {formatKeyName(key)}
-                        </kbd>
+                        <Kbd className='text-xs'>{formatKeyName(key)}</Kbd>
                     </Fragment>
                 ))}
             </div>

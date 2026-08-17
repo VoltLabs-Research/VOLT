@@ -49,13 +49,13 @@ const CollapsibleSection = ({
                 <Disclosure.Trigger
                     className={cn(
                         'flex min-w-0 flex-1 select-none flex-row items-center gap-2 border-none bg-transparent text-left',
-                        isCompact ? 'min-h-6 p-0' : 'min-h-11 py-1'
+                        isCompact ? 'min-h-7 p-0' : 'min-h-11 py-1'
                     )}
                 >
                     <span
                         className={cn(
                             'min-w-0 flex-1 text-foreground',
-                            isCompact ? 'text-2xs font-normal' : 'text-sm font-medium'
+                            isCompact ? 'text-xs font-normal' : 'text-sm font-medium'
                         )}
                     >
                         {title}

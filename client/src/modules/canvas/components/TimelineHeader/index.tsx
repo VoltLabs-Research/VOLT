@@ -173,7 +173,7 @@ const TimelineHeader = ({
                         value={activeTab}
                         onChange={onTabChange}
                         placeholder='Tab'
-                        triggerClassName='max-md:pointer-events-auto max-md:h-auto max-md:min-h-[1.875rem] max-md:w-full max-md:rounded-[inherit] max-md:border-transparent max-md:bg-inherit max-md:px-2 max-md:py-1 max-md:text-2xs'
+                        triggerClassName='max-md:pointer-events-auto max-md:h-auto max-md:min-h-[1.875rem] max-md:w-full max-md:rounded-[inherit] max-md:border-transparent max-md:bg-inherit max-md:px-2 max-md:py-1'
                     />
                 </div>
             </div>
@@ -194,14 +194,14 @@ const TimelineHeader = ({
                             options={availableTimesteps}
                             onChange={onRangeStartChange}
                             title='Start timestep'
-                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-2xs'
+                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary'
                         />
                         <FrameCombobox
                             value={endFrame}
                             options={availableTimesteps}
                             onChange={onRangeEndChange}
                             title='End timestep'
-                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary max-md:text-2xs'
+                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary'
                         />
                         <Separator orientation='vertical' className='h-4 shrink-0 max-md:hidden' />
                         <PresetPopover

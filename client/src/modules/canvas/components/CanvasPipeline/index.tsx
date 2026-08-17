@@ -148,7 +148,7 @@ const CanvasPipeline = ({
                                             className='flex min-w-0 flex-1 cursor-pointer select-none items-center gap-1.5 border-none bg-transparent p-0 text-inherit'
                                             aria-label={`${label} settings`}
                                         >
-                                            <span className={cn('min-w-0 flex-1 truncate text-left text-xs', 'text-muted')}>
+                                            <span className='min-w-0 flex-1 truncate text-left text-xs text-foreground'>
                                                 {label}
                                             </span>
                                             <span className='ml-auto flex items-center text-muted opacity-0 transition-opacity duration-[120ms] ease-out group-hover:opacity-100 group-focus-within:opacity-100' aria-hidden='true'>
@@ -157,7 +157,7 @@ const CanvasPipeline = ({
                                         </button>
                                     }
                                     content={(close) => (
-                                        <div className='flex min-w-[min(21rem,calc(100vw-3rem))] max-h-[min(70vh,32rem)] flex-col overflow-hidden origin-top-right'>
+                                        <div className='flex min-w-[min(21rem,calc(100vw-3rem))] flex-col origin-top-right'>
                                             {renderStageEditor(stage, close)}
                                         </div>
                                     )}

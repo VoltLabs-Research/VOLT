@@ -1,5 +1,5 @@
 import Loader from '@/shared/ui/components/Loader';
-import { EmptyStateRoot, SearchField, cn } from '@heroui/react';
+import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, SearchField, cn } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from './use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
@@ -7,7 +7,7 @@ import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
 import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Box as CubeIcon, ChevronRight, Package, ScanSearch, Users, Workflow } from 'lucide-react';
+import { Box as CubeIcon, Package, ScanSearch, Users, Workflow } from 'lucide-react';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -91,34 +91,17 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         const items = contextBreadcrumb.items;
 
         return (
-            <nav className='pointer-events-none text-sm' aria-label='Context breadcrumbs'>
-                <ol className='m-0 flex min-w-0 list-none flex-wrap items-center gap-1 p-0'>
-                    {items.map((item, index) => {
-                        const isLast = index === items.length - 1;
-
-                        return (
-                            <li className='flex min-w-0 items-center gap-1' key={item.id ?? 'root'}>
-                                {index > 0 && <ChevronRight size={12} className='shrink-0 text-muted' aria-hidden='true' />}
-                                {isLast ? (
-                                    <span className='inline-flex min-w-0 max-w-[12rem] items-center gap-1 truncate rounded-lg px-2 py-1.5 font-medium text-muted' aria-current='page' title={item.title}>
-                                        {item.title}
-                                    </span>
-                                ) : (
-                                    <button
-                                        type='button'
-                                        className={cn('inline-flex min-w-0 max-w-[12rem] items-center gap-1 truncate rounded-lg px-2 py-1.5 font-medium text-muted', 'pointer-events-auto cursor-pointer border-none bg-transparent transition-[background-color,color,box-shadow] duration-150 ease-[ease] hover:bg-surface-hover focus-visible:outline-none focus-visible:bg-surface-hover focus-visible:text-foreground focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_3px_var(--focus)] active:bg-surface-hover')}
-                                        title={item.title}
-                                        aria-label={`Open ${item.title}`}
-                                        onClick={() => contextBreadcrumb.onNavigate(item.id)}
-                                    >
-                                        {item.title}
-                                    </button>
-                                )}
-                            </li>
-                        );
-                    })}
-                </ol>
-            </nav>
+            <BreadcrumbsRoot className='pointer-events-none min-w-0 flex-wrap' aria-label='Context breadcrumbs'>
+                {items.map((item) => (
+                    <BreadcrumbsItem
+                        key={item.id ?? 'root'}
+                        className='pointer-events-auto'
+                        onPress={() => contextBreadcrumb.onNavigate(item.id)}
+                    >
+                        <span className='block max-w-48 truncate'>{item.title}</span>
+                    </BreadcrumbsItem>
+                ))}
+            </BreadcrumbsRoot>
         );
     }, [contextBreadcrumb]);
 

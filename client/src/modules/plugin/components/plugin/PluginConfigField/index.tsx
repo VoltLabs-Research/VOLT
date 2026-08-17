@@ -8,6 +8,13 @@ import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSe
 import { PluginMultiSelect, PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
+import { cn } from '@heroui/react';
+import {
+    COMPACT_FIELD_LABEL_COLUMN,
+    COMPACT_FIELD_ROW,
+    COMPACT_FIELD_TRIGGER,
+    COMPACT_FIELD_VALUE
+} from '@/shared/ui/utils/field-density';
 import { useMemo } from 'react';
 import type {
     IArgumentDefinition,
@@ -139,8 +146,8 @@ const PluginConfigField = ({
 
     return (
         <div className='flex flex-col gap-2'>
-            <div className='form-field-canvas flex flex-row items-center justify-between gap-2 min-h-6'>
-                <p className='canvas-form-label min-w-[130px] shrink-0 text-2xs text-muted whitespace-nowrap overflow-hidden text-ellipsis leading-6 tracking-[0.01em]'>
+            <div className={cn('form-field-canvas', COMPACT_FIELD_ROW)}>
+                <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
                     {argument.label || argument.argument}
                 </p>
                 <div className='render-input-container flex items-center justify-end relative w-full min-w-0 max-w-[150px]'>
@@ -154,8 +161,8 @@ const PluginConfigField = ({
                             searchPlaceholder='Search plugins…'
                             placeholder='Select plugins'
                             className='form-field-canvas-select labeled-input flex-1 min-w-0'
-                            triggerClassName='w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
-                            valueClassName='text-2xs'
+                            triggerClassName={cn('w-full', COMPACT_FIELD_TRIGGER)}
+                            valueClassName={COMPACT_FIELD_VALUE}
                             ariaLabel={argument.label || argument.argument}
                             renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
                                 selectedCount,
@@ -173,8 +180,8 @@ const PluginConfigField = ({
                             onChange={handleSinglePluginChange}
                             placeholder='Select…'
                             className='form-field-canvas-select labeled-input flex-1 min-w-0'
-                            triggerClassName='w-full h-6 min-h-6 py-0 ps-[0.4rem] pe-6 border border-border rounded-lg bg-transparent text-foreground transition-colors duration-150 ease-out hover:border-border-secondary'
-                            valueClassName='text-2xs'
+                            triggerClassName={cn('w-full', COMPACT_FIELD_TRIGGER)}
+                            valueClassName={COMPACT_FIELD_VALUE}
                             ariaLabel={argument.label || argument.argument}
                         />
                     )}

@@ -4,7 +4,9 @@ import { TRAJECTORY_QUERY_KEYS, fetchTrajectoryAtoms, trajectoryAtomsQuery } fro
 import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { ComboBox, Input, Label, ListBox } from '@heroui/react';
+import { ComboBox, Input, ListBox, cn } from '@heroui/react';
+import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
+import { COMPACT_FIELD_GROUP, COMPACT_FIELD_GROUP_INPUT } from '@/shared/ui/utils/field-density';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -209,17 +211,14 @@ export default function PerAtomViewer() {
                     }}
                     aria-label='Select timestep'
                 >
-                    <ComboBox.InputGroup className='h-6 min-h-6 w-[clamp(3.25rem,17vw,4.5rem)] rounded-lg border border-border bg-transparent shadow-none transition-colors duration-150 ease-out hover:border-border-secondary'>
-                        <Input className='h-6 min-h-6 border-0 bg-transparent px-1.5 text-2xs text-foreground shadow-none placeholder:text-2xs placeholder:text-muted' placeholder={String(timestep)} />
+                    <ComboBox.InputGroup className={cn(COMPACT_FIELD_GROUP, 'w-[clamp(3.25rem,17vw,4.5rem)]')}>
+                        <Input className={COMPACT_FIELD_GROUP_INPUT} placeholder={String(timestep)} />
                         <ComboBox.Trigger />
                     </ComboBox.InputGroup>
                     <ComboBox.Popover>
                         <ListBox>
                             {timestepOptions.map((option) => (
-                                <ListBox.Item key={option.value} id={option.value} textValue={option.title}>
-                                    <ListBox.ItemIndicator />
-                                    <Label>{option.title}</Label>
-                                </ListBox.Item>
+                                <OptionListBoxItem key={option.value} option={option} />
                             ))}
                         </ListBox>
                     </ComboBox.Popover>
