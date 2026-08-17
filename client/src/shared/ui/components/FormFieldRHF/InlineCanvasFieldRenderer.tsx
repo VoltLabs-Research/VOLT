@@ -276,7 +276,7 @@ const InlineCanvasFieldRenderer = ({
 
             {tokenAutocomplete.isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <Scrollable ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu flex flex-col max-h-[180px] border border-border rounded-lg bg-surface-secondary shadow-[0_8px_24px_rgba(0,0,0,0.25)] z-[var(--z-floating)]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
+                    <Scrollable ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu popover flex flex-col max-h-[180px] z-[var(--z-floating)]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
                         {tokenAutocomplete.options.map((option, index) => (
                             <button
                                 type='button'

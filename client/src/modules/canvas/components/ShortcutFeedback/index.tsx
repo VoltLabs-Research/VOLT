@@ -12,7 +12,7 @@ const ShortcutFeedback = () => {
     if (!lastTriggered || !shortcut) return null;
 
     return (
-        <div className='center-x fixed bottom-28 z-[1001] flex items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-1.5'>
+        <div className='popover center-x fixed bottom-28 z-[1001] flex items-center gap-2 px-2.5 py-1.5'>
             <div className='flex flex-row items-center gap-1'>
                 {shortcut.keys.map((key, i) => (
                     <Fragment key={key}>

@@ -107,13 +107,12 @@ const CanvasPage = () => {
         }
     }, [currentScope, setCurrentScope]);
 
-    const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress, performancePreset } = useEditorStore(useShallow((s) => ({
+    const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress } = useEditorStore(useShallow((s) => ({
         isModelLoading: s.isModelLoading,
         didPreload: s.didPreload,
         isPlaying: s.isPlaying,
         isPreloading: s.isPreloading,
-        preloadProgress: s.preloadProgress,
-        performancePreset: s.performanceSettings.preset
+        preloadProgress: s.preloadProgress
     })));
 
     const sceneConfig = useFractalSceneConfig();
@@ -264,7 +263,6 @@ const CanvasPage = () => {
 
     return (
         <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
-            data-perf={performancePreset}
         >
             <PreloadingOverlay
                 active={overlayActive}

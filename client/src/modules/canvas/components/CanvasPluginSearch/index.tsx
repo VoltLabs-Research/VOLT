@@ -162,7 +162,7 @@ const CanvasPluginSearch = () => {
                 <FloatingPortal root={floatingRoot}>
                     <Scrollable
                         ref={refs.setFloating}
-                        className='max-h-[60vh] min-h-36 rounded-xl border border-border bg-surface z-[var(--z-floating)]'
+                        className='popover max-h-[60vh] min-h-36 z-[var(--z-floating)]'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >

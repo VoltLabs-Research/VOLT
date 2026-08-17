@@ -176,7 +176,6 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
             <ContextMenuItem
                 ref={composeRefs(triggerRef, refs.setReference)}
                 icon={menuIcon}
-                size={size}
                 disabled={option.disabled}
                 onClick={handleTriggerClick}
                 onKeyDown={handleTriggerKeyDown}
@@ -194,7 +193,7 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
                     <Scrollable
                         ref={composeRefs(submenuPanelRef, refs.setFloating)}
                         id={submenuId}
-                        className='context-menu-submenu-panel z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overscroll-contain rounded-xl border border-border bg-overlay p-1 shadow-lg'
+                        className='context-menu-submenu-panel popover z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overscroll-contain p-1'
                         data-floating-submenu-panel='true'
                         data-side={placement.startsWith('left') ? 'left' : 'right'}
                         role='dialog'

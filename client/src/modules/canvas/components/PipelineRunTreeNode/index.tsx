@@ -73,9 +73,8 @@ const PipelineRunTreeNode = ({
         ? undefined
         : formatCompactRelativeTime(run.createdAt);
 
-    const stageSummary = [
-        `${counts.analyses} ${counts.analyses === 1 ? 'stage' : 'stages'}`,
-        counts.context > 0 ? `${counts.context} transform${counts.context === 1 ? '' : 's'}` : undefined,
+    const metaLabel = [
+        timeLabel,
         counts.cached > 0 ? `${counts.cached} cached` : undefined,
         status !== undefined && status !== CanvasAnalysisStatusEnum.Completed ? status : undefined
     ].filter((part): part is string => part !== undefined).join(' · ');
@@ -139,9 +138,11 @@ const PipelineRunTreeNode = ({
         >
             <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
                 {title}
-                <span className='truncate text-xs leading-[1.2] text-muted opacity-90'>
-                    {timeLabel ? `${timeLabel} · ${stageSummary}` : stageSummary}
-                </span>
+                {metaLabel && (
+                    <span className='truncate text-xs leading-[1.2] text-muted opacity-90'>
+                        {metaLabel}
+                    </span>
+                )}
             </span>
             <span className='flex-1' />
             <span className='flex items-center text-muted' aria-hidden='true'>

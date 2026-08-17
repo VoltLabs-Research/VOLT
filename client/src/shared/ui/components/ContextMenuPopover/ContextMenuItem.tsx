@@ -13,7 +13,6 @@ export interface ContextMenuItemProps {
     children?: ReactNode;
     onClick?: () => void;
     variant?: ContextMenuItemVariant;
-    size?: ContextMenuItemSize;
     disabled?: boolean;
     isLoading?: boolean;
     rightAdornment?: ReactNode;
@@ -34,7 +33,6 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
     children,
     onClick,
     variant = 'default',
-    size = 'md',
     disabled = false,
     isLoading = false,
     rightAdornment,
@@ -56,10 +54,8 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             ref={ref}
             type='button'
             className={cn(
-                'relative flex w-full cursor-pointer select-none items-center justify-start font-medium transition-colors duration-150',
-                'disabled:cursor-not-allowed disabled:opacity-50',
-                { sm: 'min-h-[2.1rem] gap-2 rounded-md px-3.5 py-2 text-sm', md: 'min-h-[2.75rem] gap-2 rounded-xl px-3.5 text-sm' }[size],
-                { default: 'text-muted hover:bg-surface-hover hover:text-foreground', danger: 'text-danger hover:bg-danger/8' }[variant],
+                'menu-item',
+                { default: 'menu-item--default', danger: 'menu-item--danger' }[variant],
                 isLoading && 'pointer-events-none text-transparent'
             )}
             disabled={isInert}

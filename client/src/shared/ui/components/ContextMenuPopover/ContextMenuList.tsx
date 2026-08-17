@@ -84,7 +84,7 @@ const ContextMenuList = ({ children, label = 'Menu', size = 'md', onClose }: Con
     return (
         <Scrollable
             ref={menuRef}
-            className={cn('flex flex-col gap-1 p-1', { sm: 'min-w-[124px]', md: 'min-w-[160px]' }[size])}
+            className={cn('menu', { sm: 'min-w-[124px]', md: 'min-w-[160px]' }[size])}
             role='menu'
             aria-label={label}
             aria-orientation='vertical'

@@ -58,7 +58,6 @@ const AsyncContextMenuItem = ({
             icon={menuIcon}
             onClick={handleClick}
             variant={option.destructive ? 'danger' : 'default'}
-            size={size}
             disabled={option.disabled}
             isLoading={isLoading}
         >

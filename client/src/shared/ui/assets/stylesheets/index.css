@@ -125,7 +125,7 @@
     --surface-secondary-solid: #171719;
     --surface-tertiary-solid: #1d1d20;
 
-    --overlay-solid: #171719;
+    --overlay-solid: #0d0d0d;
     --chrome-solid: #0c0c0e;
 
     --glass-filter: blur(16px) saturate(1.4) brightness(0.82);
@@ -157,7 +157,7 @@
     --surface: color-mix(in srgb, var(--surface-solid) var(--glass-alpha), transparent);
     --surface-secondary: color-mix(in srgb, var(--surface-secondary-solid) var(--glass-alpha), transparent);
     --surface-tertiary: color-mix(in srgb, var(--surface-tertiary-solid) var(--glass-alpha), transparent);
-    --overlay: color-mix(in srgb, var(--overlay-solid) var(--glass-alpha), transparent);
+    --overlay: var(--overlay-solid);
     --chrome: color-mix(in srgb, var(--chrome-solid) var(--glass-alpha), transparent);
 }
 
@@ -432,46 +432,16 @@ html[data-volt-desktop][data-volt-maximized] #root {
         }
     }
 
-    /* Floating surfaces sit over content, so they get the blur. The docked chrome
-       listed here is the subset that overlays the viewport; the right panel is a
-       flex sibling with only --background behind it, so it takes the translucent
-       colour but no filter, which would cost a repaint and blur nothing. */
-    .popover,
-    .popover__dialog,
-    .select__popover,
-    .dropdown__popover,
-    .autocomplete__popover,
-    .combo-box__popover,
-    .date-picker__popover,
-    .date-range-picker__popover,
-    .color-picker__popover,
-    .tooltip__content,
-    .modal__dialog,
-    .alert-dialog__dialog,
-    .drawer__dialog,
-    [data-context-menu-panel='true'],
+    /* Only the docked chrome is translucent, and only the surfaces that actually
+       overlay the viewport get the blur. Menus and popovers read --overlay, which is
+       opaque on purpose (content showing through a menu is noise), so a filter there
+       would cost a repaint and blur nothing. The right panel is a flex sibling with
+       only --background behind it, so it is excluded for the same reason. */
     .canvas-top-toolbar,
     .canvas-viewport-floating-controls,
     #canvas-center-timeline {
-        backdrop-filter: var(--glass-filter);
         -webkit-backdrop-filter: var(--glass-filter);
-    }
-
-    /* backdrop-filter does not stack: a nested layer blurs the already-composited
-       result of its parent and washes out. ContextMenuPopover portals submenus into
-       the nearest panel, so neutralise the inner layer. */
-    [data-context-menu-panel='true'] :is(
-        .popover,
-        .popover__dialog,
-        .select__popover,
-        .dropdown__popover,
-        .autocomplete__popover,
-        .combo-box__popover,
-        .tooltip__content,
-        [data-context-menu-panel='true']
-    ) {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+        backdrop-filter: var(--glass-filter);
     }
 }
 
