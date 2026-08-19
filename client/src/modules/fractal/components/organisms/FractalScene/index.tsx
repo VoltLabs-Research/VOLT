@@ -260,7 +260,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
         <section className='relative w-full h-full' role='region' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={0}>
             <h2 className='sr-only' id={titleId}>3D model viewer</h2>
             <p className='sr-only' id={descriptionId}>
-                Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. On desktop, hold Control or Command while dragging a model to move it. On touch devices, double tap and drag to move the model. When a model is selected, extra rotation controls appear in the viewer.
+                Interactive 3D viewport. Use mouse controls to orbit, pan, and zoom. On desktop, hold Control or Command while dragging a model to move it. On touch devices, double tap and drag to move the model. Dropping a model over another one snaps them together so the pair shares a single simulation cell; hold Shift while dragging to separate a model from its group. When a model is selected, extra rotation controls appear in the viewer.
             </p>
             <div className='sr-only' aria-live='polite' aria-atomic='true'>
                 {screenshotAnnouncement}

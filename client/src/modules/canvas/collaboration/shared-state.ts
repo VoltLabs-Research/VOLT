@@ -16,7 +16,8 @@ type SharedValueKey =
     | 'playSpeed'
     | 'rangeStart'
     | 'rangeEnd'
-    | 'modelDragOffsets';
+    | 'modelDragOffsets'
+    | 'sceneMergeGroups';
 
 type SharedSliceKey =
     | 'lights'
@@ -111,6 +112,7 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
         rangeStart: state.rangeStart,
         rangeEnd: state.rangeEnd,
         modelDragOffsets: state.modelDragOffsets,
+        sceneMergeGroups: state.sceneMergeGroups,
         lights: pickDataFields(state.lights, LIGHTS_DATA_KEYS),
         effects: pickDataFields(state.effects, EFFECTS_DATA_KEYS),
         grid: pickDataFields(state.grid, GRID_DATA_KEYS),

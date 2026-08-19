@@ -1,3 +1,5 @@
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
+
 import type { EditorStore } from './types';
 
 export const selectFractalSceneConfig = (state: EditorStore) => ({
@@ -17,3 +19,28 @@ export const selectFractalSceneConfig = (state: EditorStore) => ({
     interactionDegradeEnabled: state.performanceSettings.interactionDegrade.enabled,
     activeScene: state.activeScene
 });
+
+export const selectSceneMergeGroupKeys = (state: EditorStore, sceneKey: string): string[] => {
+    const groupId = state.sceneMergeGroups[sceneKey];
+    if (!groupId) {
+        return [];
+    }
+
+    return Object.keys(state.sceneMergeGroups).filter((key) => state.sceneMergeGroups[key] === groupId);
+};
+
+export const selectIsSceneMergeFollower = (state: EditorStore, sceneKey: string): boolean => {
+    const groupId = state.sceneMergeGroups[sceneKey];
+    if (!groupId) {
+        return false;
+    }
+
+    const leaderKey = state.activeScenes
+        .map(getSceneKey)
+        .find((key) => state.sceneMergeGroups[key] === groupId);
+
+    return leaderKey !== undefined && leaderKey !== sceneKey;
+};
+
+export const selectHasMergedScenes = (state: EditorStore): boolean =>
+    Object.keys(state.sceneMergeGroups).length > 0;

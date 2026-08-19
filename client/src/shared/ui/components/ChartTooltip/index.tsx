@@ -10,7 +10,7 @@ interface ChartTooltipProps {
 };
 
 const ChartTooltip = ({ title, items }: ChartTooltipProps) => (
-    <div className='rounded-xl border border-border bg-overlay p-3 shadow-lg' role='tooltip'>
+    <div className='popover p-3' role='tooltip'>
         {title && (
             <p className='mb-2 text-sm font-semibold text-foreground'>
                 {title}

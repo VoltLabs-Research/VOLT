@@ -1,11 +1,15 @@
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
-import { parseNumericInput } from '@/modules/canvas/utils/parse-numeric-input';
+import { parseNumericInput, resolveNumericInputDraft } from '@/modules/canvas/utils/parse-numeric-input';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { SlicePlaneNormalAxis } from '@/modules/fractal/contracts/scene';
 import type { SlicePlaneStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
 type FieldChangeHandler = (fieldKey: string, value: string | number | boolean) => void;
+
+const syncNumericDraft = (draft: string, value: number): string => (
+    parseNumericInput(draft) === value ? draft : String(value)
+);
 
 const useSlicePlane = (stageId: string, trajectoryId?: string) => {
     const { config, patch } = useStageConfig<SlicePlaneStageConfig>(stageId, trajectoryId);
@@ -28,19 +32,29 @@ const useSlicePlane = (stageId: string, trajectoryId?: string) => {
     }));
 
     useEffect(() => {
-        setDistanceInput(String(distance));
+        setDistanceInput((current) => syncNumericDraft(current, distance));
     }, [distance]);
 
     useEffect(() => {
-        setNormalInputs({
-            x: String(normal.x),
-            y: String(normal.y),
-            z: String(normal.z)
+        setNormalInputs((current) => {
+            const next = {
+                x: syncNumericDraft(current.x, normal.x),
+                y: syncNumericDraft(current.y, normal.y),
+                z: syncNumericDraft(current.z, normal.z)
+            };
+
+            const isUnchanged = next.x === current.x
+                && next.y === current.y
+                && next.z === current.z;
+
+            return isUnchanged ? current : next;
         });
     }, [normal.x, normal.y, normal.z]);
 
     const handleDistanceChange: FieldChangeHandler = (_fieldKey, value) => {
-        const nextValue = String(value);
+        const nextValue = resolveNumericInputDraft(String(value));
+        if (nextValue === null) return;
+
         setDistanceInput(nextValue);
 
         const parsed = parseNumericInput(nextValue);
@@ -50,7 +64,9 @@ const useSlicePlane = (stageId: string, trajectoryId?: string) => {
 
     const handleNormalChange = (axis: SlicePlaneNormalAxis): FieldChangeHandler => {
         return (_fieldKey, value) => {
-            const nextValue = String(value);
+            const nextValue = resolveNumericInputDraft(String(value));
+            if (nextValue === null) return;
+
             setNormalInputs((current) => ({
                 ...current,
                 [axis]: nextValue

@@ -212,6 +212,15 @@ const CONTEXTUAL_TIPS = {
         delay: 350,
         duration: 5500,
         position: 'top-center'
+    },
+    'canvas-models-unified': {
+        surface: 'action',
+        dismissMode: 'auto',
+        title: 'Models share one simulation cell',
+        description: 'Overlapping models snap together and stop drawing duplicated cells. Hold Shift while dragging one to separate it again.',
+        delay: 600,
+        duration: 7000,
+        position: 'top-center'
     }
 } as const satisfies Record<string, ContextualTipDefinition>;
 

@@ -1,4 +1,5 @@
 import { isSameScene, isTimestepScopedScene } from '@/modules/canvas/utils/scene-identity';
+import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_SCENE, getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utils/model-world-bounds';
 
@@ -55,6 +56,33 @@ const MODEL_DRAG_OFFSET_ZERO: ModelDragOffset = {
     z: 0
 };
 
+const getSceneKeysInMergeGroup = (
+    mergeGroups: Record<string, string>,
+    groupId: string
+): string[] => Object.keys(mergeGroups).filter((key) => mergeGroups[key] === groupId);
+
+const withSceneRemovedFromMergeGroups = (
+    mergeGroups: Record<string, string>,
+    sceneKey: string
+): Record<string, string> | null => {
+    const groupId = mergeGroups[sceneKey];
+    if (!groupId) {
+        return null;
+    }
+
+    const nextMergeGroups = { ...mergeGroups };
+    delete nextMergeGroups[sceneKey];
+
+    const remainingKeys = getSceneKeysInMergeGroup(nextMergeGroups, groupId);
+    if (remainingKeys.length < 2) {
+        remainingKeys.forEach((key) => {
+            delete nextMergeGroups[key];
+        });
+    }
+
+    return nextMergeGroups;
+};
+
 const createInitialState = (): ModelState => ({
     activeModel: null,
     activeScene: DEFAULT_SCENE,
@@ -67,6 +95,7 @@ const createInitialState = (): ModelState => ({
     sceneVisualOverrides: {},
     modelWorldBounds: null,
     modelDragOffsets: {},
+    sceneMergeGroups: {},
     showSimulationCell: true,
     isPointCloudScene: false,
 });
@@ -103,7 +132,9 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
 
             return {
                 activeScenes: state.activeScenes.filter(s => !isSameScene(s, scene)),
-                modelDragOffsets: nextOffsets
+                modelDragOffsets: nextOffsets,
+                sceneMergeGroups: withSceneRemovedFromMergeGroups(state.sceneMergeGroups, removedKey)
+                    ?? state.sceneMergeGroups
             };
         });
     },
@@ -292,5 +323,42 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
 
     getModelDragOffsetForScene(sceneKey: string): ModelDragOffset {
         return get().modelDragOffsets[sceneKey] ?? MODEL_DRAG_OFFSET_ZERO;
+    },
+
+    mergeScenes(sceneKeys: string[]) {
+        if (sceneKeys.length < 2) return;
+
+        set((state) => {
+            const joinedGroupIds = new Set(
+                sceneKeys
+                    .map((sceneKey) => state.sceneMergeGroups[sceneKey])
+                    .filter((groupId): groupId is string => Boolean(groupId))
+            );
+            const groupId = joinedGroupIds.values().next().value ?? uuidv4();
+            const nextMergeGroups = { ...state.sceneMergeGroups };
+
+            for (const [key, currentGroupId] of Object.entries(nextMergeGroups)) {
+                if (joinedGroupIds.has(currentGroupId)) {
+                    nextMergeGroups[key] = groupId;
+                }
+            }
+
+            sceneKeys.forEach((sceneKey) => {
+                nextMergeGroups[sceneKey] = groupId;
+            });
+
+            return { sceneMergeGroups: nextMergeGroups };
+        });
+    },
+
+    unmergeScene(sceneKey: string) {
+        set((state) => {
+            const nextMergeGroups = withSceneRemovedFromMergeGroups(state.sceneMergeGroups, sceneKey);
+            if (!nextMergeGroups) {
+                return state;
+            }
+
+            return { sceneMergeGroups: nextMergeGroups };
+        });
     }
 });

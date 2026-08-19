@@ -12,6 +12,8 @@ import { debugFractal } from '@/modules/fractal/utils/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utils/frame-box-bounds';
 import { getRenderableScenes } from '@/modules/fractal/utils/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { selectHasMergedScenes } from '@/modules/canvas/store/editor/selectors';
+import useTip from '@/shared/tips/use-tip';
 import { useMemo, useCallback, useEffect, memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -105,6 +107,9 @@ const Viewport = ({
 
         return getFrameBoxBounds(currentFrame);
     }, [currentFrame]);
+    const hasMergedScenes = useEditorStore(selectHasMergedScenes);
+    useTip('canvas-models-unified', { enabled: hasMergedScenes });
+
     const localGlbMode = Boolean(forcedGlbUrl && !trajectory?._id);
     const localModelWorldBounds = useLocalGlbStore((s) => s.localModelWorldBounds);
     const localAutoSimulationCellWorldBounds = useLocalGlbStore((s) => s.localAutoSimulationCellWorldBounds);

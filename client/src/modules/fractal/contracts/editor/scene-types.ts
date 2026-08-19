@@ -53,6 +53,7 @@ export interface ModelState {
     sceneVisualOverrides: SceneVisualOverrides;
     modelWorldBounds: ModelWorldBounds | null;
     modelDragOffsets: Record<string, ModelDragOffset>;
+    sceneMergeGroups: Record<string, string>;
     showSimulationCell: boolean;
     isPointCloudScene: boolean;
 }
@@ -86,6 +87,8 @@ interface ModelActions {
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
     getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
+    mergeScenes: (sceneKeys: string[]) => void;
+    unmergeScene: (sceneKey: string) => void;
 }
 
 export type ModelStore = ModelActions & ModelState;
