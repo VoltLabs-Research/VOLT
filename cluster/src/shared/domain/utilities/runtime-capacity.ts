@@ -7,6 +7,10 @@ const DEFAULT_PLUGIN_PROCESS_EST_MEMORY_MB = 1024;
 
 const PLUGIN_PROCESS_MEMORY_BUDGET_RATIO = 0.7;
 
+const DUCKDB_MEMORY_BUDGET_RATIO = 0.25;
+const DUCKDB_MEMORY_LIMIT_FLOOR_MB = 1024;
+const DUCKDB_MEMORY_LIMIT_CEILING_MB = 16 * 1024;
+
 const RESERVED_DAEMON_CPUS = 1;
 const MIN_NATIVE_THREAD_BUDGET = 2;
 
@@ -26,6 +30,19 @@ export const resolvePluginProcessMemoryBudgetMb = (): number => {
     return (
         readPositiveIntegerEnv('PLUGIN_PROCESS_POOL_MAX_MEMORY_MB') ??
         deriveDefaultPluginProcessMemoryBudgetMb(getTotalSystemMemoryMb())
+    );
+};
+
+export const resolveDuckDbMemoryLimitMb = (): number => {
+    const configured = readPositiveIntegerEnv('VOLT_DUCKDB_MEMORY_LIMIT_MB');
+    if (configured !== undefined) {
+        return configured;
+    }
+
+    const hostShareMb = Math.floor(getTotalSystemMemoryMb() * DUCKDB_MEMORY_BUDGET_RATIO);
+    return Math.min(
+        DUCKDB_MEMORY_LIMIT_CEILING_MB,
+        Math.max(DUCKDB_MEMORY_LIMIT_FLOOR_MB, hostShareMb)
     );
 };
 

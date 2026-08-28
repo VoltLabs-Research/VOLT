@@ -1,5 +1,5 @@
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import { resolvePluginNativeThreadBudget, resolvePluginProcessMemoryBudgetMb, resolvePluginProcessConcurrency } from '@shared/domain/utilities/runtime-capacity';
+import { resolvePluginNativeThreadBudget, resolveDuckDbMemoryLimitMb } from '@shared/domain/utilities/runtime-capacity';
 
 const resolveNativeThreadCount = (): number =>
     readPositiveIntegerEnv('PLUGIN_PROCESS_DEFAULT_NATIVE_THREADS') ?? resolvePluginNativeThreadBudget();
@@ -12,17 +12,6 @@ const NATIVE_THREAD_ENV_KEYS = [
     'NUMEXPR_NUM_THREADS',
     'BLIS_NUM_THREADS'
 ];
-
-const resolveDuckDbMemoryLimitMb = (): number => {
-    const configured = readPositiveIntegerEnv('VOLT_DUCKDB_MEMORY_LIMIT_MB');
-    if (configured !== undefined) {
-        return configured;
-    }
-    const perProcessMb = Math.floor(
-        resolvePluginProcessMemoryBudgetMb() / Math.max(1, resolvePluginProcessConcurrency())
-    );
-    return Math.max(256, Math.floor(perProcessMb / 2));
-};
 
 export const buildPluginProcessEnv = (
     inputEnv?: NodeJS.ProcessEnv,

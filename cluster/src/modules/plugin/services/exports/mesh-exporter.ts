@@ -10,6 +10,7 @@ import { sqlString } from '@modules/plugin/services/properties/duckdb-sql-escapi
 import type { ExportExecutionInput, ExportMaterial, InlineMeshInput, MeshExportOptions, MeshInput } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { MeshDomain, MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import spatialAssembler from '@voltstack/spatial-assembler';
+import path from 'node:path';
 
 const computeBounds = (positions: Float32Array) => {
     const bounds = {
@@ -400,7 +401,7 @@ export const exportMeshArtifact = async (
         ...DEFAULT_MESH_MATERIAL,
         ...options.material
     };
-    const parquetSource = readMeshParquetSource(exportData);
+    const parquetSource = readMeshParquetSource(exportData, path.dirname(input.outputFilePath));
     const finishOptions: FinishMeshOptions = {
         smoothIterations: resolveSmoothIterations(options.smoothIterations),
         reverseOrientation: options.reverseOrientation ?? false,

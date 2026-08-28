@@ -291,6 +291,33 @@ const readMeshDomain = async (
     };
 };
 
+const readDeclaredMeshSource = async (
+    connection: DuckDBConnection,
+    filePath: string,
+    sectionPath: string
+): Promise<MeshParquetSource | null> => {
+    const sourcePath = `${sectionPath}."${escapeJsonPathSegment(PARQUET_SOURCE_KEY)}"`;
+    if (await jsonTypeAt(connection, filePath, sourcePath) !== 'OBJECT') {
+        return null;
+    }
+
+    const raw = await extractJson(connection, filePath, sourcePath);
+    if (typeof raw !== 'object' || raw === null) {
+        return null;
+    }
+
+    const candidate = raw as Partial<MeshParquetSource>;
+    if (typeof candidate.vertices !== 'string' || typeof candidate.facets !== 'string') {
+        logger.warn({
+            path: filePath,
+            jsonPath: sourcePath
+        }, 'Mesh payload declares a parquet source without vertices and facets paths; ignoring it');
+        return null;
+    }
+
+    return candidate as MeshParquetSource;
+};
+
 const flattenMesh = async (
     connection: DuckDBConnection,
     filePath: string,
@@ -422,6 +449,10 @@ const readExporterSection = async (
     outputPrefix: string
 ): Promise<unknown> => {
     if (exporter === MESH_EXPORTER) {
+        const declared = await readDeclaredMeshSource(connection, filePath, sectionPath);
+        if (declared) {
+            return { [PARQUET_SOURCE_KEY]: declared };
+        }
         const mesh = await flattenMesh(connection, filePath, sectionPath, outputPrefix);
         return mesh ? { [PARQUET_SOURCE_KEY]: mesh } : null;
     }

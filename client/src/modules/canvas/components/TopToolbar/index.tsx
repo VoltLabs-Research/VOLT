@@ -5,11 +5,10 @@ import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import WindowControls from '@/shared/ui/components/WindowControls';
 import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
-import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { memo, useCallback, useMemo } from 'react';
-import { ChevronLeft, Sparkles } from 'lucide-react';
-import { Button, Tooltip, cn } from '@heroui/react';
+import { ChevronLeft } from 'lucide-react';
+import { Button, cn } from '@heroui/react';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
@@ -43,7 +42,6 @@ const TopToolbar = ({
     share,
     contextualActions
 }: TopToolbarProps) => {
-    const toggleVoltAi = useChatSurfaceStore((s) => s.toggleWidget);
     const navigate = useNavigate();
     const user = useCurrentUser();
 
@@ -96,18 +94,6 @@ const TopToolbar = ({
 
                 <div className={cn('flex min-w-0 flex-row items-center justify-end gap-1', 'max-md:hidden')}>
                     {contextualActions}
-                    <Tooltip>
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            isIconOnly
-                            aria-label='Open Volt AI'
-                            onPress={toggleVoltAi}
-                        >
-                            <Sparkles size={14} />
-                        </Button>
-                        <Tooltip.Content placement='bottom'>Volt AI</Tooltip.Content>
-                    </Tooltip>
                     <ThemeToggleButton />
                     {canShowPeers && onSelectWorkspacePeer && (
                         <WorkspacePeerAvatars

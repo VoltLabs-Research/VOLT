@@ -5,6 +5,7 @@ import type { JobIdentity } from '@shared/contracts/types/job-identity';
 import type { GeometryBudget } from '@shared/domain/octree';
 import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
+import path from 'node:path';
 
 export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'LineExporter' | 'BondExporter' | 'ChartExporter' | 'ConfigurationExporter' | 'PanelExporter';
 
@@ -49,9 +50,20 @@ const isMeshParquetSource = (value: unknown): value is MeshParquetSource => {
     return typeof candidate.vertices === 'string' && typeof candidate.facets === 'string';
 };
 
-export const readMeshParquetSource = (exportData: MeshInput): MeshParquetSource | null => {
+export const readMeshParquetSource = (
+    exportData: MeshInput,
+    baseDirectory: string
+): MeshParquetSource | null => {
     const candidate = (exportData as MeshParquetSourcePayload)[PARQUET_SOURCE_KEY];
-    return isMeshParquetSource(candidate) ? candidate : null;
+    if (!isMeshParquetSource(candidate)) {
+        return null;
+    }
+
+    return {
+        ...candidate,
+        vertices: path.resolve(baseDirectory, candidate.vertices),
+        facets: path.resolve(baseDirectory, candidate.facets)
+    };
 };
 
 export interface LineEntity {
