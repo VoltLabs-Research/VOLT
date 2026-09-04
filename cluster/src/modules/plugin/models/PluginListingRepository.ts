@@ -26,13 +26,6 @@ import type {
 
 const WRITE_CHUNK_SIZE = 1000;
 
-const SUB_LISTING_INSERT_SQL = `
-    INSERT INTO plugin_sub_listing_rows ("_id", analysis, "exposureId", timestep, "subListingName", row)
-    SELECT batch.i, $2, $3, $4, $5, batch.r
-    FROM jsonb_to_recordset($1::jsonb) AS batch(i text, r jsonb)
-    ON CONFLICT ("_id") DO UPDATE SET row = EXCLUDED.row
-`;
-
 const chunk = <T>(items: T[], size: number): T[][] => {
     const chunks: T[][] = [];
     for (let index = 0; index < items.length; index += size) {
@@ -195,24 +188,24 @@ class TypeOrmPluginListingRepository {
                         continue;
                     }
 
-                    const payload = batch.map((row) => ({
-                        i: buildPluginSubListingRowId(
+                    const rows = batch.map((row) => ({
+                        _id: buildPluginSubListingRowId(
                             input.analysis,
                             input.exposureId,
                             input.timestep,
                             input.subListingName,
                             index++
                         ),
-                        r: row
+                        analysis: input.analysis,
+                        exposureId: input.exposureId,
+                        timestep: input.timestep,
+                        subListingName: input.subListingName,
+                        row
                     }));
 
-                    await manager.query(SUB_LISTING_INSERT_SQL, [
-                        JSON.stringify(payload),
-                        input.analysis,
-                        input.exposureId,
-                        input.timestep,
-                        input.subListingName
-                    ]);
+                    for (const rowsChunk of chunk(rows, WRITE_CHUNK_SIZE)) {
+                        await repository.upsert(rowsChunk as never, ['_id']);
+                    }
                 }
             }
         });
