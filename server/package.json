@@ -1,13 +1,14 @@
 {
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.alias.json",
     "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
     "lint": "eslint .",
     "postinstall": "ts-patch install -s || echo 'ts-patch unavailable (runtime-only install); skipping TypeScript patch'",
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register -r tsconfig-paths/register src/server.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "depcruise:ratchet": "node scripts/check-depcruise-ratchet.mjs"
+    "depcruise:ratchet": "node scripts/check-depcruise-ratchet.mjs",
+    "start:dist": "node dist/server/src/server.js"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.6.1",
@@ -28,11 +29,11 @@
     "@types/pg": "^8.15.5",
     "@types/unzipper": "^0.10.11",
     "@types/ws": "^8.18.1",
-    "better-sqlite3": "^12.4.1",
     "eslint": "^9.39.2",
     "pino-pretty": "^13.1.2",
     "ts-node": "^10.9.2",
     "ts-patch": "^3.3.0",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.49.0"
@@ -50,9 +51,11 @@
     "@ai-sdk/openai": "^3.0.37",
     "@ai-sdk/togetherai": "^2.0.35",
     "@ai-sdk/xai": "^3.0.60",
+    "@voltstack/daemon-cluster-client": "file:../sdk/node/DaemonClusterClient",
     "ai": "^6.0.105",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.4.1",
     "compression": "^1.8.0",
     "cookie": "^1.1.1",
     "cors": "^2.8.5",
@@ -78,6 +81,7 @@
     "pino": "^10.1.0",
     "sharp": "^0.34.3",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tsconfig-paths": "^4.2.0",
     "typeorm": "^0.3.27",
     "typia": "^12.1.1",
