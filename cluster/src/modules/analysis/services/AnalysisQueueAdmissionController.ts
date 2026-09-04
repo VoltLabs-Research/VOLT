@@ -2,7 +2,8 @@ import { singleton } from '@shared/application/utilities/singleton';
 import { logger } from '@shared/infrastructure/logger';
 import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
 import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
-import { DaemonStateStore, getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
 import type { AnalysisQueueJobPayload } from '@shared/contracts/types/http-analysis';
 import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
 
