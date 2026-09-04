@@ -11,6 +11,22 @@ interface ResolvedEntrypoint {
     projectRootDir: string;
 }
 
+const WINDOWS_EXECUTABLE_EXTENSIONS = ['.exe', '.cmd', '.bat'];
+
+const entrypointCandidates = (normalizedEntrypoint: string): string[] => {
+    if (process.platform !== 'win32' || path.posix.extname(normalizedEntrypoint)) {
+        return [normalizedEntrypoint];
+    }
+
+    return [
+        normalizedEntrypoint,
+        ...WINDOWS_EXECUTABLE_EXTENSIONS.map((extension) => `${normalizedEntrypoint}${extension}`)
+    ];
+};
+
+const fileExists = (filePath: string): Promise<boolean> =>
+    fs.access(filePath, fs.constants.F_OK).then(() => true, () => false);
+
 const resolveRelativePath = async (
     projectDir: string,
     entrypointScript: string,
@@ -21,18 +37,19 @@ const resolveRelativePath = async (
         throw new Error(`${kind} entrypointScript is empty`);
     }
 
-    const directPath = path.join(projectDir, normalizedEntrypoint);
-    const directHit = await fs.access(directPath, fs.constants.F_OK).then(() => true, () => false);
-    if (directHit) {
-        return normalizedEntrypoint;
+    const candidates = entrypointCandidates(normalizedEntrypoint);
+    for (const candidate of candidates) {
+        if (await fileExists(path.join(projectDir, candidate))) {
+            return candidate;
+        }
     }
 
     const projectFiles = (await listProjectFiles(projectDir))
         .map((filePath) => normalizeProjectRelativePath(filePath))
         .sort((left, right) => left.length - right.length);
-    const suffixMatches = projectFiles.filter((filePath) => {
-        return filePath === normalizedEntrypoint || filePath.endsWith(`/${normalizedEntrypoint}`);
-    });
+    const suffixMatches = projectFiles.filter((filePath) => candidates.some((candidate) => {
+        return filePath === candidate || filePath.endsWith(`/${candidate}`);
+    }));
 
     if (suffixMatches.length === 1) {
         return suffixMatches[0];

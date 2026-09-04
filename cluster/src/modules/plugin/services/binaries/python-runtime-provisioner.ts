@@ -5,6 +5,7 @@ import { runCommand } from '@modules/plugin/services/binaries/run-command';
 import { ensureExtractedProject } from '@modules/plugin/services/binaries/zip-project-extractor';
 import { resolvePythonEntrypoint } from '@modules/plugin/services/binaries/extracted-entrypoint-resolver';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
+import { prependPathEntries } from '@shared/infrastructure/utilities/process-path';
 
 
 export const PYTHON_VENV_DIRECTORY = 'venv';
@@ -14,6 +15,10 @@ const PYTHON_INSTALL_MARKER_FILENAME = '.requirements-installed';
 const PYTHON_ZIP_EXTRACTED_MARKER = '.zip-extracted';
 const PYTHON_PROJECT_REQUIREMENTS_FILENAME = '.volt-requirements.txt';
 const STUB_MSGPACK_REQUIREMENT = 'msgpack';
+const IS_WINDOWS = process.platform === 'win32';
+const VENV_BIN_DIRECTORY = IS_WINDOWS ? 'Scripts' : 'bin';
+const VENV_PYTHON_EXECUTABLE = IS_WINDOWS ? 'python.exe' : 'python3';
+const SYSTEM_PYTHON_COMMAND = process.env.VOLT_PYTHON || (IS_WINDOWS ? 'python' : 'python3');
 
 export const PYTHON_RUNTIME_WARM_ENTRIES = [
     PYTHON_VENV_DIRECTORY,
@@ -47,7 +52,7 @@ export const providePythonRuntime = async (input: {
     const runtimeDirectory = runtimeDirectoryFor(input.runtimeKey);
     const venvPath = path.join(runtimeDirectory, PYTHON_VENV_DIRECTORY);
     const installMarkerPath = path.join(runtimeDirectory, PYTHON_INSTALL_MARKER_FILENAME);
-    const pythonPath = path.join(venvPath, 'bin', 'python3');
+    const pythonPath = path.join(venvPath, VENV_BIN_DIRECTORY, VENV_PYTHON_EXECUTABLE);
 
     await fs.mkdir(runtimeDirectory, { recursive: true });
 
@@ -77,7 +82,7 @@ export const providePythonRuntime = async (input: {
     }
 
     if (!await pathExists(pythonPath, fs.constants.X_OK)) {
-        await runCommand('python3', ['-m', 'venv', venvPath], runtimeDirectory);
+        await runCommand(SYSTEM_PYTHON_COMMAND, ['-m', 'venv', venvPath], runtimeDirectory);
     }
 
     if (!await pathExists(installMarkerPath, fs.constants.F_OK)) {
@@ -87,7 +92,7 @@ export const providePythonRuntime = async (input: {
 
     const env: NodeJS.ProcessEnv = {
         VIRTUAL_ENV: venvPath,
-        PATH: `${path.join(venvPath, 'bin')}:${process.env.PATH}`
+        ...prependPathEntries([path.join(venvPath, VENV_BIN_DIRECTORY)])
     };
     if (input.entrypointScript) {
         env.PLUGIN_PROJECT_DIR = projectRootDir;
