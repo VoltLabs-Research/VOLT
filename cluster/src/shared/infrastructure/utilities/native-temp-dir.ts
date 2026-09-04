@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
 import { withDir } from 'tmp-promise';
+import { DAEMON_PATHS } from '@core/config/paths';
 
-const NATIVE_PROCESSING_RUNTIME_DIR = path.join(process.cwd(), '.runtime', 'native-processing');
+const NATIVE_PROCESSING_RUNTIME_DIR = DAEMON_PATHS.nativeProcessing;
 
 export const withNativeProcessingTempDir = async <T>(
     prefix: string,
