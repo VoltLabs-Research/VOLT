@@ -93,6 +93,11 @@ class TeamClusterSelectionService implements ITeamClusterSelectionService {
         return this.#resolveClusterId('storage', teamId, requestedTeamClusterId, preferredComputeClusterId);
     }
 
+    async resolveClusterPlatform(teamClusterId: string): Promise<string | null> {
+        const teamCluster = await findTeamClusterByIdWithSensitiveData(teamClusterId);
+        return teamCluster?.props.hostCapabilities?.platform ?? null;
+    }
+
     async #resolveClusterId(
         target: SelectionTarget,
         teamId: string,
