@@ -2,15 +2,14 @@ import { ipcMain, dialog, BrowserWindow } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
 import bus from '@/services/EventBus';
 import { CHANNELS } from '@/types/events';
-import Deploy from '@/services/Deploy';
-import { dockerPreflight } from '@/services/DockerPreflight';
+import LocalDeploy from '@/services/LocalDeploy';
 import AppConfig, { DevModeState, ThemePreference } from '@/services/AppConfig';
 import { probeRemoteEndpoint } from '@/services/RemoteProbe';
 import { openExternalUrl, sendToShell } from '@/services/WindowSecurity';
 import type { ConfirmOptions } from '@/types/global';
 
 interface IpcDeps{
-    deploy: Deploy;
+    deploy: LocalDeploy;
     appConfig: AppConfig;
     loadShell: (hash?: string) => void;
 };
@@ -39,18 +38,9 @@ const handleFromShell = <TResult>(
 };
 
 export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
-    const localClientUrl = async (): Promise<string> => {
-        const env = await deps.appConfig.getStackEnv();
-        const origin = `http://localhost:${env.WEB_PORT ?? '5273'}`;
-        const token = (await deps.appConfig.getBootstrap())?.authToken;
-        return token ? `${origin}/__bootstrap.html?token=${encodeURIComponent(token)}` : origin;
-    };
-
     handleFromShell('deploy:start', () => deps.deploy.start());
     handleFromShell('deploy:stop', () => deps.deploy.stop());
     handleFromShell('deploy:reset', () => deps.deploy.resetAndRedeploy());
-
-    handleFromShell('docker:preflight', () => dockerPreflight());
 
     handleFromShell('config:get', () => deps.appConfig.get());
 
@@ -110,7 +100,11 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         const deployment = await deps.appConfig.getDeployment();
         const url = (deployment?.mode === 'remote' && deployment.remote)
             ? deployment.remote.clientUrl
-            : await localClientUrl();
+            : await deps.deploy.clientUrl();
+        if(!url){
+            deps.loadShell('launcher');
+            return;
+        }
         void win.loadURL(url).catch(() => { });
     });
 

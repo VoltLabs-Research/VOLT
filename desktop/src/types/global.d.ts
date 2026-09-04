@@ -20,9 +20,6 @@ declare global{
                 stop: () => Promise<void>;
                 reset: () => Promise<void>;
             };
-            docker: {
-                preflight: () => Promise<AppEvents['deploy:preflight']>;
-            };
             config: {
                 get: () => Promise<Record<string, unknown>>;
             };

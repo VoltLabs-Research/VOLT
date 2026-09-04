@@ -4,16 +4,11 @@ import type { AppEvents, PhaseSpec } from '@/types/events';
 
 export type DeployState = AppEvents['deploy:state']['state'];
 export type PhaseStatus = 'pending' | 'running' | 'done' | 'error';
-export type PreflightResult = AppEvents['deploy:preflight'];
 
 interface PhaseProgress{
     status: PhaseStatus;
     detail?: string;
 }
-
-const POLL_INTERVAL = 2_000;
-
-const AUTOMATIC_REASONS = new Set(['daemon-starting', 'daemon-down', 'auto-starting', 'auto-installing']);
 
 interface LogLine{
     stream: 'stdout' | 'stderr';
@@ -31,7 +26,6 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
     const [phases, setPhases] = useState<PhaseSpec[]>([]);
     const [phaseState, setPhaseState] = useState<Record<string, PhaseProgress>>({});
     const [logs, setLogs] = useState<LogLine[]>([]);
-    const [preflight, setPreflight] = useState<PreflightResult | null>(null);
     const [busy, setBusy] = useState(false);
     const startedRef = useRef(false);
     const busyRef = useRef(false);
@@ -54,8 +48,8 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         return true;
     }, []);
 
-    const boot = useCallback(async ({ clear = true }: { clear?: boolean } = {}): Promise<void> => {
-        run(() => window.volt.deploy.start(), clear ? () => setPreflight(null) : undefined);
+    const boot = useCallback(async (): Promise<void> => {
+        run(() => window.volt.deploy.start());
     }, [run]);
 
     useEffect(() => {
@@ -124,33 +118,19 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
             }));
         });
 
-        const unsubPreflight = window.volt.on('deploy:preflight', (p) => {
-            setPreflight(p.ok ? null : p);
-        });
-
         if(!startedRef.current){
             startedRef.current = true;
             if(autoStart) void boot();
         }
 
-        return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); unsubPreflight(); };
+        return () => { unsubState(); unsubPhases(); unsubPhase(); unsubLog(); unsubProgress(); };
     }, [autoStart, boot]);
-
-    const preflightReason = preflight?.reason;
-
-    useEffect(() => {
-        if(!preflightReason || !AUTOMATIC_REASONS.has(preflightReason)) return;
-        if(busyRef.current) return;
-        const id = setInterval(() => { void boot({ clear: false }); }, POLL_INTERVAL);
-        return () => clearInterval(id);
-    }, [preflightReason, boot]);
 
     const reset = () => {
         setState('idle');
         setPhases([]);
         setPhaseState({});
         setLogs([]);
-        setPreflight(null);
     };
 
     return {
@@ -158,7 +138,6 @@ export const useDeploy = ({ autoStart = true }: UseDeployOptions = {}) => {
         phases,
         phaseState,
         logs,
-        preflight,
         busy,
         reset,
         run,

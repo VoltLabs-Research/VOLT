@@ -4,7 +4,6 @@ import { Button, Spinner, cn } from '@heroui/react';
 import type { DevModeState, DeploymentState } from '@/services/AppConfig';
 import Titlebar from '@/renderer/src/components/Titlebar';
 import DevModeModal from '@/renderer/src/components/DevModeModal';
-import DockerGate from '@/renderer/src/components/DockerGate';
 import Onboarding from '@/renderer/src/components/Onboarding';
 import { useDeploy, type DeployState, type PhaseStatus } from '@/renderer/src/hooks/useDeploy';
 import { getResolvedTheme, getThemePreference, setThemePreference, subscribeToThemeChange, type ThemePreference } from '@/renderer/src/theme';
@@ -58,7 +57,7 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 };
 
 const App = () => {
-    const { state, phases, phaseState, logs, preflight, busy, reset, run, start } = useDeploy({ autoStart: false });
+    const { state, phases, phaseState, logs, busy, reset, run, start } = useDeploy({ autoStart: false });
     const [mode, setMode] = useState<Mode>('loading');
     const [deployment, setDeployment] = useState<DeploymentState | null>(null);
     const [devModeOpen, setDevModeOpen] = useState(false);
@@ -94,7 +93,7 @@ const App = () => {
         const confirmed = await window.volt.dialog.confirm({
             title: 'Reset & redeploy',
             message: 'Reset the local Volt stack and redeploy from scratch?',
-            detail: 'This stops the stack and deletes its Docker volumes — your local workspace, database and uploaded files will be permanently removed. This cannot be undone.',
+            detail: 'This stops the local stack and deletes its data folder — your local workspace, database and uploaded files will be permanently removed. This cannot be undone.',
             confirmLabel: 'Reset & wipe data',
             cancelLabel: 'Cancel',
             danger: true
@@ -208,7 +207,7 @@ const App = () => {
 
     const isLocal = mode === 'local';
     const deploymentSummary = isLocal
-        ? 'Running locally via Docker on this machine.'
+        ? 'Running locally on this machine.'
         : deployment?.remote?.clientUrl ?? deployment?.remote?.serverEndpoint ?? null;
 
     return (
@@ -252,7 +251,7 @@ const App = () => {
                             </div>
 
                             {isLocal && (
-                                <p className='mt-1 max-w-[42ch] text-xs leading-[1.5] text-muted/75'>Closing the window leaves the stack running in the background. Use “Stop stack” to shut it down.</p>
+                                <p className='mt-1 max-w-[42ch] text-xs leading-[1.5] text-muted/75'>Quitting Volt shuts the local stack down. Use “Stop stack” to stop it while the window stays open.</p>
                             )}
                         </div>
                     </main>
@@ -266,17 +265,7 @@ const App = () => {
                     </main>
                 )}
 
-                {!paused && isLocal && preflight && (
-                    <DockerGate
-                        result={preflight}
-                        onRecheck={start}
-                        onOpenUrl={(target) => window.volt.shell.openExternal(target)}
-                        logs={logs}
-                        onSwitchDeployment={switchDeployment}
-                    />
-                )}
-
-                {!paused && isLocal && !preflight && (
+                {!paused && isLocal && (
                     <main className={PANEL}>
                         <div className='flex min-w-0 flex-1 flex-col items-start gap-7'>
                             <span className={cn(

@@ -65,7 +65,7 @@ const DevModeModal = ({ open, onClose, onApply }: DevModeModalProps) => {
                         <Modal.CloseTrigger />
                         <Modal.Header className='gap-1 pr-8'>
                             <Modal.Heading className='text-base font-[550] text-foreground'>Developer Mode</Modal.Heading>
-                            <p className='text-xs text-muted'>Deploy Volt from local source checkouts instead of published releases.</p>
+                            <p className='text-xs text-muted'>Run the stack from a VOLT checkout instead of the bundled runtime. Build it first with npm run stack:build in its desktop/ folder.</p>
                         </Modal.Header>
                         <Modal.Body className='flex flex-col gap-4'>
                             <div className='flex items-center justify-between gap-4 rounded-lg border border-border bg-surface-secondary px-3.5 py-3'>

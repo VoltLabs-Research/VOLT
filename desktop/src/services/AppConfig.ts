@@ -16,6 +16,12 @@ export interface BootstrapState{
     daemonPassword: string;
 }
 
+export interface PluginSeedState{
+    done: boolean;
+    teamId: string;
+    installed: string[];
+}
+
 export interface DevModeState{
     enabled: boolean;
     voltPath: string;
@@ -112,6 +118,26 @@ export default class AppConfig{
     async clearBootstrap(){
         const current = await this.get();
         delete current.bootstrap;
+        await this.#write(current);
+    }
+
+    async getPluginSeed(): Promise<PluginSeedState | null>{
+        const seed = await this.#field<Partial<PluginSeedState>>('pluginSeed');
+        if(!seed?.teamId) return null;
+        return {
+            done: seed.done === true,
+            teamId: seed.teamId,
+            installed: Array.isArray(seed.installed) ? seed.installed.filter((item): item is string => typeof item === 'string') : []
+        };
+    }
+
+    async setPluginSeed(state: PluginSeedState){
+        await this.#update({ pluginSeed: state });
+    }
+
+    async clearPluginSeed(){
+        const current = await this.get();
+        delete current.pluginSeed;
         await this.#write(current);
     }
 

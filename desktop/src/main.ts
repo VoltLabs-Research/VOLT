@@ -2,8 +2,7 @@ import { app, BrowserWindow, screen } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import AppConfig, { WindowBounds } from '@/services/AppConfig';
-import SourceResolver from '@/services/SourceResolver';
-import Deploy from '@/services/Deploy';
+import LocalDeploy from '@/services/LocalDeploy';
 import { resolveAppPaths } from '@/services/AppPaths';
 import bus from '@/services/EventBus';
 import { applyWindowSecurity } from '@/services/WindowSecurity';
@@ -131,13 +130,23 @@ app.whenReady().then(async () => {
 
     const appConfig = new AppConfig({ configFile: paths.configFile });
 
-    const deploy = new Deploy({
-        composeFile: paths.composeFile,
+    const deploy = new LocalDeploy({
         appConfig,
-        sources: new SourceResolver({
-            appConfig,
-            downloadDir: paths.downloadDir
-        })
+        paths: {
+            runtimeDir: paths.runtimeDir,
+            stackDataDir: paths.stackDataDir,
+            logsDir: paths.logsDir
+        }
+    });
+
+    for(const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => app.quit());
+
+    let quitting = false;
+    app.on('before-quit', (event) => {
+        if(quitting) return;
+        quitting = true;
+        event.preventDefault();
+        deploy.stop().catch(() => {}).finally(() => app.exit(0));
     });
 
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());

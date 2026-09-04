@@ -1,12 +1,10 @@
 import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
 import { LOCAL_DEFAULTS } from '@/services/localDefaults';
-import { setTimeout as sleep } from 'node:timers/promises';
+import ServerApi, { HttpError } from '@/services/ServerApi';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
 import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 import { teamRoutes } from '@volt/contracts/modules/team/routes';
-import { buildPath } from '@volt/contracts/shared/routing';
-import type { Endpoint, HttpMethod } from '@volt/contracts/shared/routing';
 
 export interface ProvisionAccount{
     fullName: string;
@@ -36,49 +34,14 @@ interface TeamClusterResponse{
     teamCluster: { _id: string };
 }
 
-class HttpError extends Error{
-    constructor(
-        public readonly status: number,
-        public readonly code: string,
-        message: string
-    ){
-        super(message);
-    }
-}
-
-interface RequestOptions{
-    params?: Record<string, string>;
-    body?: object;
-    token?: string;
-
-    attempts?: number;
-}
-
-const REQUEST_TIMEOUT_MS = 10_000;
-
 const CLUSTER_CREDENTIALS_UNREADABLE = 'TeamCluster::CredentialsUnreadable';
 
-const readMessage = (payload: unknown): string | undefined => {
-    if(typeof payload !== 'object' || payload === null) return undefined;
-    const message = (payload as { message?: unknown }).message;
-    return typeof message === 'string' ? message : undefined;
-};
-
-const readCode = (payload: unknown): string => {
-    if(typeof payload !== 'object' || payload === null) return '';
-    const record = payload as { code?: unknown; status?: unknown };
-    if(typeof record.code === 'string') return record.code;
-    if(typeof record.status === 'string') return record.status;
-    return '';
-};
-
-const readData = (payload: unknown): unknown => {
-    if(typeof payload !== 'object' || payload === null) return payload;
-    return 'data' in payload ? (payload as { data: unknown }).data : payload;
-};
-
 export default class Bootstrap{
-    constructor(private readonly props: BootstrapProps){}
+    readonly #api: ServerApi;
+
+    constructor(private readonly props: BootstrapProps){
+        this.#api = new ServerApi(props.serverOrigin);
+    }
 
     async ensure(): Promise<BootstrapState>{
         const existing = await this.props.appConfig.getBootstrap();
@@ -211,11 +174,11 @@ export default class Bootstrap{
     }
 
     async #me(token: string): Promise<{ _id: string }>{
-        return this.#request<{ _id: string }>(authRoutes.getMyAccount, { token });
+        return this.#api.request<{ _id: string }>(authRoutes.getMyAccount, { token });
     }
 
     async #findOrCreateTeam(token: string, name: string): Promise<TeamResponse>{
-        const teams = await this.#request<TeamResponse[]>(teamRoutes.listUserTeams, { token });
+        const teams = await this.#api.request<TeamResponse[]>(teamRoutes.listUserTeams, { token });
         const existing = teams[0];
         if(existing){
             bus.emit('deploy:log', {
@@ -232,7 +195,7 @@ export default class Bootstrap{
     }
 
     async #findOrCreateCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
-        const clusters = await this.#request<Array<{ _id: string }>>(teamClusterRoutes.list, {
+        const clusters = await this.#api.request<Array<{ _id: string }>>(teamClusterRoutes.list, {
             params: { teamId },
             token
         });
@@ -252,7 +215,7 @@ export default class Bootstrap{
     }
 
     async #signUp(email: string, password: string, firstName: string, lastName: string): Promise<AuthResponse>{
-        return this.#request<AuthResponse>(authRoutes.signUp, {
+        return this.#api.request<AuthResponse>(authRoutes.signUp, {
             body: {
                 email,
                 firstName: firstName || 'Local',
@@ -263,7 +226,7 @@ export default class Bootstrap{
     }
 
     async #signIn(email: string, password: string): Promise<string>{
-        const data = await this.#request<AuthResponse>(authRoutes.signIn, {
+        const data = await this.#api.request<AuthResponse>(authRoutes.signIn, {
             body: {
                 email,
                 password
@@ -273,7 +236,7 @@ export default class Bootstrap{
     }
 
     async #createTeam(token: string, name: string): Promise<TeamResponse>{
-        return this.#request<TeamResponse>(teamRoutes.create, {
+        return this.#api.request<TeamResponse>(teamRoutes.create, {
             body: {
                 name,
                 description: ''
@@ -283,7 +246,7 @@ export default class Bootstrap{
     }
 
     async #setDefaultTeamForNewUsers(token: string, teamId: string): Promise<void>{
-        await this.#request<unknown>(teamRoutes.setDefaultForNewUsers, {
+        await this.#api.request<unknown>(teamRoutes.setDefaultForNewUsers, {
             params: { teamId },
             body: { enabled: true },
             token
@@ -291,7 +254,7 @@ export default class Bootstrap{
     }
 
     async #createCluster(token: string, teamId: string, name: string): Promise<TeamClusterResponse>{
-        return this.#request<TeamClusterResponse>(teamClusterRoutes.create, {
+        return this.#api.request<TeamClusterResponse>(teamClusterRoutes.create, {
             params: { teamId },
             body: { name },
             token
@@ -299,7 +262,7 @@ export default class Bootstrap{
     }
 
     async #revealDaemonPassword(token: string, teamId: string, teamClusterId: string, password: string): Promise<string>{
-        const data = await this.#request<{ services?: { daemon?: { password?: string } } }>(
+        const data = await this.#api.request<{ services?: { daemon?: { password?: string } } }>(
             teamClusterRoutes.revealCredentials,
             {
                 params: {
@@ -314,63 +277,5 @@ export default class Bootstrap{
         const daemonPassword = data.services?.daemon?.password;
         if(!daemonPassword) throw new Error('reveal-credentials returned no daemon password');
         return daemonPassword;
-    }
-
-    async #request<T>(
-        endpoint: Endpoint<never, unknown> | Endpoint<unknown, unknown>,
-        options: RequestOptions = {}
-    ): Promise<T>{
-        const path = buildPath(endpoint, options.params);
-        const url = `${this.props.serverOrigin}${path}`;
-        const method: HttpMethod = endpoint.method;
-
-        const headers: Record<string, string> = {};
-        if(options.body) headers['Content-Type'] = 'application/json';
-        if(options.token) headers.Authorization = `Bearer ${options.token}`;
-
-        const attempts = options.attempts ?? (method === 'GET' ? 1 : 5);
-        let lastErr: unknown;
-
-        for(let attempt = 0; attempt < attempts; attempt++){
-            let response: Response;
-            let text: string;
-            try{
-                response = await fetch(url, {
-                    method,
-                    headers,
-                    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
-                    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-                });
-                text = await response.text();
-            }catch(err){
-                lastErr = err;
-                if(attempt < attempts - 1){
-                    await sleep(1000);
-                    continue;
-                }
-                throw err;
-            }
-
-            let payload: unknown = null;
-            try{
-                payload = text ? JSON.parse(text) : null;
-            }catch{
-                payload = null;
-            }
-
-            if(!response.ok){
-                const message = readMessage(payload) ?? text ?? `HTTP ${response.status}`;
-                const code = readCode(payload);
-                throw new HttpError(
-                    response.status,
-                    code,
-                    `${path} → ${response.status} ${code} ${message}`.replace(/\s+/g, ' ').trim()
-                );
-            }
-
-            return readData(payload) as T;
-        }
-
-        throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
     }
 };
