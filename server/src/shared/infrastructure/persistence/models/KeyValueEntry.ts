@@ -1,4 +1,5 @@
 import { BaseEntity, Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import { TIMESTAMP_COLUMN_TYPE } from '@shared/infrastructure/persistence/column-types';
 
 @Entity('key_value_entries')
 @Index(['expiresAt'])
@@ -10,7 +11,7 @@ export default class KeyValueEntry extends BaseEntity {
     value!: string;
 
     @Column({
-        type: 'timestamptz',
+        type: TIMESTAMP_COLUMN_TYPE,
         nullable: true
     })
     expiresAt!: Date | null;

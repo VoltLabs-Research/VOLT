@@ -1,4 +1,5 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, Index, PrimaryColumn } from 'typeorm';
+import { JSON_COLUMN_TYPE } from '@shared/infrastructure/persistence/column-types';
 
 @Entity('domain_event_spool')
 @Index(['createdAt'])
@@ -9,7 +10,7 @@ export default class DomainEventSpoolEntry extends BaseEntity {
     @Column('varchar', { length: 128 })
     name!: string;
 
-    @Column('jsonb')
+    @Column({ type: JSON_COLUMN_TYPE })
     payload!: Record<string, unknown>;
 
     @CreateDateColumn()
