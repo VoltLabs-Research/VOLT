@@ -1,4 +1,5 @@
 import { Column, Entity, Index, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { AUTO_INCREMENT_COLUMN_TYPE, TIMESTAMP_COLUMN_TYPE } from '@shared/infrastructure/persistence/column-types';
 
 @Entity('daemon_state_entries')
 @Index(['expiresAt'])
@@ -10,7 +11,7 @@ export class DaemonStateEntry {
     value!: string;
 
     @Column({
-        type: 'timestamptz',
+        type: TIMESTAMP_COLUMN_TYPE,
         nullable: true
     })
     expiresAt!: Date | null;
@@ -20,7 +21,7 @@ export class DaemonStateEntry {
 @Index(['key', 'position'])
 @Index(['expiresAt'])
 export class DaemonStateListItem {
-    @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+    @PrimaryGeneratedColumn('increment', { type: AUTO_INCREMENT_COLUMN_TYPE })
     id!: string;
 
     @Column('varchar', { length: 512 })
@@ -33,7 +34,7 @@ export class DaemonStateListItem {
     value!: string;
 
     @Column({
-        type: 'timestamptz',
+        type: TIMESTAMP_COLUMN_TYPE,
         nullable: true
     })
     expiresAt!: Date | null;

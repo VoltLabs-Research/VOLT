@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { JSON_COLUMN_TYPE, TIMESTAMP_COLUMN_TYPE } from '@shared/infrastructure/persistence/column-types';
 import type { JsonObject } from '@shared/contracts/types/json';
 
 const QUEUE_JOB_STATES = ['waiting', 'delayed', 'active', 'completed', 'failed'] as const;
@@ -23,7 +24,7 @@ export class QueueJob {
     @Column('varchar', { length: 256 })
     jobKey!: string;
 
-    @Column('jsonb')
+    @Column({ type: JSON_COLUMN_TYPE })
     payload!: JsonObject;
 
     @Column('varchar', {
@@ -50,10 +51,13 @@ export class QueueJob {
     @Column('int', { default: 0 })
     stalledCount!: number;
 
-    @Column('timestamptz')
+    @Column({ type: TIMESTAMP_COLUMN_TYPE })
     runAt!: Date;
 
-    @Column('timestamptz', { nullable: true })
+    @Column({
+        type: TIMESTAMP_COLUMN_TYPE,
+        nullable: true
+    })
     lockedUntil!: Date | null;
 
     @Column('varchar', {

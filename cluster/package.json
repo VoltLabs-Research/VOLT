@@ -21,6 +21,7 @@
     "@voltstack/lammps-io": "^2.1.0",
     "@voltstack/spatial-assembler": "^1.0.0",
     "archiver": "^8.0.0",
+    "better-sqlite3": "^12.11.1",
     "bottleneck": "^2.19.5",
     "chart.js": "^4.5.1",
     "chartjs-node-canvas": "^5.0.0",

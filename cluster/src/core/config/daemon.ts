@@ -1,5 +1,6 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { DAEMON_PATHS } from '@core/config/paths';
+import { resolveDatabaseUrl } from '@shared/infrastructure/persistence/dialect';
 
 interface JupyterConfig {
     image: string;
@@ -102,7 +103,7 @@ export const loadConfig = (): DaemonConfig => {
         metricsIntervalMs: readNumberWithDefault('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),
         composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),
         installRoot: readOptionalString('TEAM_CLUSTER_INSTALL_ROOT'),
-        databaseUrl: readRequiredString('DATABASE_URL'),
+        databaseUrl: resolveDatabaseUrl(),
         jupyter,
         allowedBuckets,
         bucketPrefix: readStringWithDefault('BUCKET_PREFIX', ''),

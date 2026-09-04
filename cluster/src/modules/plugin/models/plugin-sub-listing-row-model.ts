@@ -1,4 +1,5 @@
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import { BIG_INTEGER_COLUMN_TYPE, JSON_COLUMN_TYPE, jsonColumnDefault } from '@shared/infrastructure/persistence/column-types';
 import type { JsonObject } from '@shared/contracts/types/json';
 
 @Entity('plugin_sub_listing_rows')
@@ -14,7 +15,8 @@ export class PluginSubListingRow {
     @Column('varchar')
     exposureId!: string;
 
-    @Column('bigint', {
+    @Column({
+        type: BIG_INTEGER_COLUMN_TYPE,
         transformer: {
             to: (value: number): number => value,
             from: (value: string | number): number => Number(value)
@@ -25,7 +27,10 @@ export class PluginSubListingRow {
     @Column('varchar')
     subListingName!: string;
 
-    @Column('jsonb', { default: () => '\'{}\'::jsonb' })
+    @Column({
+        type: JSON_COLUMN_TYPE,
+        default: jsonColumnDefault('{}')
+    })
     row!: JsonObject;
 }
 

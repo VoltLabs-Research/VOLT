@@ -10,5 +10,6 @@ export const DAEMON_PATHS = Object.freeze({
     pluginBinCache: path.join(dataDir, 'plugin-bin-cache'),
     pluginParquetCache: path.join(dataDir, 'plugin-parquet-cache'),
     trajectoryParquetCache: path.join(dataDir, 'trajectory-parquet-cache'),
-    objectStore: path.join(dataDir, 'object-store')
+    objectStore: path.join(dataDir, 'object-store'),
+    database: path.join(dataDir, 'daemon.sqlite')
 });
