@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "productName": "Volt",
   "desktopName": "volt.desktop",
-  "description": "Volt desktop \u2014 runs the local Volt stack via Docker Compose",
+  "description": "Volt desktop \u2014 runs the local Volt stack on this machine, no Docker required",
   "author": "Volt Labs",
   "homepage": "https://github.com/voltlabs-research/volt",
   "type": "module",
@@ -14,8 +14,10 @@
     "deploy": "tsx src/cli.ts",
     "dev": "electron-vite dev -- --no-sandbox",
     "lint": "eslint .",
-    "package": "electron-vite build && electron-builder",
-    "typecheck": "tsc --noEmit"
+    "package": "npm run stack:build && electron-vite build && electron-builder",
+    "typecheck": "tsc --noEmit",
+    "stack:build": "node scripts/build-stack.mjs",
+    "package:only": "electron-vite build && electron-builder"
   },
   "build": {
     "appId": "com.voltlabs.volt",
@@ -28,7 +30,7 @@
     ],
     "extraResources": [
       {
-        "from": "stack",
+        "from": "stack-runtime",
         "to": "stack"
       }
     ],
@@ -53,7 +55,7 @@
         "deb"
       ],
       "category": "Development",
-      "synopsis": "Connect to a VOLT deployment, or run the stack on this machine",
+      "synopsis": "Connect to a VOLT deployment, or run the whole stack on this machine",
       "syncDesktopName": true
     }
   },

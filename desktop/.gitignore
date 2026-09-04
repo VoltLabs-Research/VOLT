@@ -8,3 +8,9 @@ app-config.json
 # MCP and Claude
 .mcp.json
 .claude
+
+# Assembled by scripts/build-stack.mjs; packaged as resources/stack
+stack-runtime/
+
+# Runtime data of the local stack in dev (userData/local-stack when packaged)
+local-stack/
