@@ -4,13 +4,15 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && node scripts/copy-static-assets.js",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && node scripts/copy-static-assets.js && node scripts/fetch-dump-transform.mjs",
     "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
     "dev": "node scripts/start.js --dev",
     "lint": "eslint .",
     "start": "node scripts/start.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "depcruise:ratchet": "node scripts/check-depcruise-ratchet.mjs"
+    "depcruise:ratchet": "node scripts/check-depcruise-ratchet.mjs",
+    "predev": "node scripts/fetch-dump-transform.mjs",
+    "fetch:tools": "node scripts/fetch-dump-transform.mjs"
   },
   "dependencies": {
     "@dagrejs/graphlib": "^4.0.1",
@@ -58,5 +60,9 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.65.0"
+  },
+  "voltDumpTransform": {
+    "repository": "VoltLabs-Research/CoreToolkit",
+    "release": "v2.6.1"
   }
 }

@@ -85,3 +85,5 @@ _deps/
 # MCP and Claude
 .mcp.json
 .claude
+# Per-platform tool binaries fetched by scripts/fetch-dump-transform.mjs
+vendor/

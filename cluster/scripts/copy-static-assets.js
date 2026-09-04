@@ -40,19 +40,9 @@ const ASSETS = [
     'modules/trajectory/workers/element-table.cjs'
 ];
 
-const EXECUTABLE_ASSETS = [
-    'modules/analysis/services/bin/volt-dump-transform'
-];
-
 (async () => {
     for (const asset of ASSETS) {
         await copyFile(path.join(root, 'src', asset), path.join(root, 'dist', asset));
-    }
-
-    for (const asset of EXECUTABLE_ASSETS) {
-        const destination = path.join(root, 'dist', asset);
-        await copyFile(path.join(root, 'src', asset), destination);
-        await fs.chmod(destination, 0o755);
     }
 
     await copyDirectory(

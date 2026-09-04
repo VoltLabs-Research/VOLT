@@ -1,17 +1,29 @@
 import { singleton } from '@shared/application/utilities/singleton';
+import fs from 'node:fs/promises';
 import path from 'node:path';
+import { currentPlatformTag } from '@shared/infrastructure/utilities/platform-tag';
 
 import { BinaryExecutorService, getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import type { AnalysisValueMap } from '@shared/contracts/types/http-analysis';
 
-const DUMP_TRANSFORM_BINARY_NAME = 'volt-dump-transform';
+const DUMP_TRANSFORM_BINARY_NAME = process.platform === 'win32' ? 'volt-dump-transform.exe' : 'volt-dump-transform';
+const VENDOR_BINARY = path.resolve(__dirname, '..', '..', '..', '..', 'vendor', 'volt-dump-transform', 'bin', DUMP_TRANSFORM_BINARY_NAME);
 
-const resolveDumpTransformBinary = (): string => {
+const resolveDumpTransformBinary = async (): Promise<string> => {
     const override = process.env.VOLT_DUMP_TRANSFORM_BIN;
     if (override && override.length > 0) {
         return override;
     }
-    return path.resolve(__dirname, 'bin', DUMP_TRANSFORM_BINARY_NAME);
+
+    const available = await fs.access(VENDOR_BINARY).then(() => true, () => false);
+    if (!available) {
+        throw new Error(
+            `volt-dump-transform is not installed for ${currentPlatformTag()} (expected ${VENDOR_BINARY}); `
+            + 'run "npm run fetch:tools" in the daemon package or point VOLT_DUMP_TRANSFORM_BIN at a native build'
+        );
+    }
+
+    return VENDOR_BINARY;
 };
 
 const readNumber = (value: AnalysisValueMap[string]): number | undefined => {
@@ -57,7 +69,7 @@ export class DumpTransformService {
     }
 
     private async run(workingDump: string, operationArgs: string[]): Promise<void> {
-        const binary = resolveDumpTransformBinary();
+        const binary = await resolveDumpTransformBinary();
         const result = await this.binaryExecutorService.executeProcess({
             jobId: `dump-transform:${path.basename(workingDump)}`,
             commandPath: binary,
