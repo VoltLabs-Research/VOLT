@@ -12,6 +12,12 @@ import type { CSSProperties } from 'react';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Identifiable } from '@/shared/contracts/entity';
+import type { ColumnConfig, ListingDensity } from './column-config';
+import { getColumnKey, getColumnTitle } from './column-config';
+
+export type { ColumnConfig, ListingDensity } from './column-config';
+
+export { getColumnKey, getColumnTitle } from './column-config';
 
 const DEFAULT_MIN_COLUMN_WIDTH = 140;
 const COMPACT_MIN_COLUMN_WIDTH = 80;
@@ -22,35 +28,6 @@ const COMPACT_COLUMN_GAP = 8;
 const DRAG_ACTIVATION_DISTANCE = 6;
 
 const INITIAL_SKELETON_ROWS_COUNT = 20;
-
-export type ListingDensity = 'default' | 'compact';
-
-export interface ColumnConfig<TRow = unknown> {
-    key?: string;
-    title?: string;
-    path?: string;
-    label?: string;
-
-    width?: number;
-
-    minWidth?: number;
-
-    flex?: number;
-
-    numeric?: boolean;
-
-    defaultHidden?: boolean;
-    headerTitleClassName?: string;
-    render?: (value: unknown, row: TRow) => React.ReactNode;
-    skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
-    sortable?: boolean;
-};
-
-export const getColumnKey = <TRow,>(col: ColumnConfig<TRow>): string => col.key ?? col.path ?? '';
-
-export const getColumnTitle = <TRow,>(col: ColumnConfig<TRow>): string => (
-    col.title ?? col.label ?? col.key ?? col.path ?? ''
-);
 
 const resolvePositive = (value: number | undefined): number | undefined => (
     value !== undefined && value > 0 ? value : undefined

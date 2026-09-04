@@ -3,6 +3,7 @@ import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelCon
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { Button, Tooltip, cn } from '@heroui/react';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
+import { PANEL_FOCUSABLE_SELECTOR } from '@/shared/ui/utils/focusable';
 import { useCallback, useEffect, useId, useRef } from 'react';
 import { Expand, Plus, Sparkles } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
@@ -17,16 +18,7 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
         return [];
     }
 
-    const focusableSelector = [
-        'button:not([disabled])',
-        'input:not([disabled])',
-        'select:not([disabled])',
-        'textarea:not([disabled])',
-        'a[href]',
-        '[tabindex]:not([tabindex="-1"])'
-    ].join(',');
-
-    return Array.from(container.querySelectorAll<HTMLElement>(focusableSelector))
+    return Array.from(container.querySelectorAll<HTMLElement>(PANEL_FOCUSABLE_SELECTOR))
         .filter((element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
 };
 

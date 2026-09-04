@@ -35,12 +35,14 @@ export const formatDuration = (minutes: number): string => {
     return `${mins}m`;
 };
 
-export const formatSize = (bytes: number): string => {
+export const formatSize = (bytes: number, formatValue?: (value: number) => string): string => {
     if(bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.min(Math.max(0, Math.floor(Math.log(bytes) / Math.log(k))), sizes.length - 1);
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const scaled = bytes / Math.pow(k, i);
+    const value = formatValue ? formatValue(scaled) : String(parseFloat(scaled.toFixed(2)));
+    return `${value} ${sizes[i]}`;
 };
 
 export const formatUnknownValue = (value: unknown): string => {

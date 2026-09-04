@@ -20,6 +20,8 @@ import type {
     ScopedClusterObjectPutStreamInput
 } from '@shared/contracts/types/cluster-object-store';
 
+const REMOVE_BATCH_SIZE = 8;
+
 const NATIVE_METADATA_KEYS = new Set(['content-type', 'content-encoding']);
 
 const CUSTOM_METADATA_PREFIX = 'x-amz-meta-';
@@ -83,13 +85,14 @@ export class FilesystemObjectStore implements LocalClusterObjectStoreGateway {
     }
 
     async ensureBuckets(): Promise<void> {
-        for (const bucket of this.listBuckets()) {
+        const buckets = this.listBuckets();
+        await Promise.all(buckets.map(async (bucket) => {
             const resolvedBucket = this.resolveBucket(bucket);
             await fs.mkdir(path.join(this.objectsRoot, resolvedBucket), { recursive: true });
             await fs.mkdir(path.join(this.metadataRoot, resolvedBucket), { recursive: true });
-        }
+        }));
 
-        logger.info(`@object-store: ${this.listBuckets().length} buckets ready under ${this.config.objectStoreRoot}`);
+        logger.info(`@object-store: ${buckets.length} buckets ready under ${this.config.objectStoreRoot}`);
     }
 
     async statObject(bucket: string, objectKey: string): Promise<LocalClusterObjectStat> {
@@ -270,8 +273,10 @@ export class FilesystemObjectStore implements LocalClusterObjectStoreGateway {
     async deleteByPrefix(bucket: string, prefix: string): Promise<number> {
         const keys = await this.collectKeys(bucket, prefix);
 
-        for (const key of keys) {
-            await this.removeObject(bucket, key);
+        for (let index = 0; index < keys.length; index += REMOVE_BATCH_SIZE) {
+            await Promise.all(
+                keys.slice(index, index + REMOVE_BATCH_SIZE).map((key) => this.removeObject(bucket, key))
+            );
         }
 
         return keys.length;

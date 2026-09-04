@@ -4,6 +4,7 @@ import { PluginListingRow, buildPluginListingRowId } from '@modules/plugin/model
 import { PluginSubListingRow, buildPluginSubListingRowId } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@shared/contracts/types/pagination';
 import { singleton } from '@shared/application/utilities/singleton';
+import { mapLimited } from '@shared/application/utilities/map-limited';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@shared/contracts/types/pagination';
@@ -165,9 +166,9 @@ class TypeOrmPluginListingRepository {
             )
         }));
 
-        for (const batch of chunk(rows, WRITE_CHUNK_SIZE)) {
-            await this.listings.upsert(batch as never, ['_id']);
-        }
+        await mapLimited(chunk(rows, WRITE_CHUNK_SIZE), 8, (batch) =>
+            this.listings.upsert(batch as never, ['_id'])
+        );
     }
 
     async replaceSubListingRows(inputs: ReplaceSubListingRowsInput[]): Promise<void> {
@@ -261,9 +262,9 @@ class TypeOrmPluginListingRepository {
         }
 
         const repository = this.repositoryFor(input.documentType);
-        for (const batch of chunk(rows, WRITE_CHUNK_SIZE)) {
-            await repository.upsert(batch as never, ['_id']);
-        }
+        await mapLimited(chunk(rows, WRITE_CHUNK_SIZE), 8, (batch) =>
+            repository.upsert(batch as never, ['_id'])
+        );
 
         return rows.length;
     }

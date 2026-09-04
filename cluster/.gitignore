@@ -79,3 +79,9 @@ _deps/
 
 *.o
 *.o.d
+# Repowise
+.repowise
+
+# MCP and Claude
+.mcp.json
+.claude

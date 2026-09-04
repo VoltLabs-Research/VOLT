@@ -1,21 +1,6 @@
 
 
-const FOCUSABLE_SELECTOR = [
-    'button:not([disabled])',
-    '[href]',
-    'input:not([disabled])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
-    '[tabindex]:not([tabindex="-1"])'
-].join(',');
-
-const getFocusableElements = (dialog: HTMLElement): HTMLElement[] => {
-    const focusableElements = dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-
-    return Array.from(focusableElements).filter((element) => {
-        return !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true';
-    });
-};
+import { FOCUSABLE_BASE_SELECTOR } from '@/shared/ui/utils/focusable';
 
 export const getInitialFocusTarget = (dialog: HTMLElement, isCoarsePointer: boolean): HTMLElement => {
     if (isCoarsePointer) {
@@ -32,5 +17,10 @@ export const getInitialFocusTarget = (dialog: HTMLElement, isCoarsePointer: bool
         return autofocusElement;
     }
 
-    return getFocusableElements(dialog)[0] ?? dialog;
+    const focusableElements = dialog.querySelectorAll<HTMLElement>(FOCUSABLE_BASE_SELECTOR);
+
+    return Array.from(focusableElements)
+        .filter((element) => {
+            return !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true';
+        })[0] ?? dialog;
 };

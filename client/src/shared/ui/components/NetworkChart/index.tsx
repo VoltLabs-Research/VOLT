@@ -2,6 +2,7 @@ import ChartContainer from '@/shared/ui/components/ChartContainer';
 import type { ChartStat } from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { CHART_FONT_SIZE } from '@/shared/ui/utils/chart-theme';
+import { formatSize } from '@/shared/utils/format';
 import { Activity } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -85,22 +86,7 @@ const formatTime = (date: Date): string => {
     return timeFormatter.format(date);
 };
 
-const formatByteSize = (value: number): string => {
-    if (value === 0) {
-        return '0 B';
-    }
-
-    const absoluteValue = Math.abs(value);
-    const unitBase = 1024;
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const unitIndex = Math.min(
-        Math.max(0, Math.floor(Math.log(absoluteValue) / Math.log(unitBase))),
-        units.length - 1
-    );
-    const scaledValue = value / (unitBase ** unitIndex);
-
-    return `${byteNumberFormatter.format(scaledValue)} ${units[unitIndex]}`;
-};
+const formatByteSize = (value: number): string => formatSize(value, (scaled) => byteNumberFormatter.format(scaled));
 
 const isDataPointPayloadRecord = (value: unknown): value is DataPointPayloadRecord => {
     if(typeof value !== 'object' || value === null){

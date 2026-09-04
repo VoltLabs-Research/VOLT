@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
-import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
+import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable/column-config';
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { formatUnknownValue } from '@/shared/utils/format';

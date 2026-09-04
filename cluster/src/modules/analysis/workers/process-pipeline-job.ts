@@ -117,11 +117,11 @@ export const processPipelineJob = async (
 
     } catch (error) {
         const message = error instanceof Error ? error.message : 'Pipeline stage failed';
-        for (const stage of payload.stages) {
+        await Promise.all(payload.stages.map(async (stage) => {
             const analysisId = stage.analysisId;
             if (stage.kind !== 'plugin' || stage.cacheHit || analysisId === undefined
                 || run.reportedAnalysisIds.has(analysisId)) {
-                continue;
+                return;
             }
 
             await deps.daemonJobReporter.reportAnalysisFailed({
@@ -131,7 +131,7 @@ export const processPipelineJob = async (
                 jobId: payload.jobId,
                 analysisId
             }, 'Failed to report pipeline stage failure'));
-        }
+        }));
         throw error;
     } finally {
         await pipelineTemp.cleanup().catch(
@@ -327,19 +327,30 @@ const registerStageExposures = async (
                 sourcePath
             });
 
-    for (const exposure of exposures) {
+    const exposureRegistrations = await Promise.all(exposures.map(async (exposure) => {
         if (!exposure.id || exposure.id.length === 0) {
-            continue;
+            return null;
         }
+        const exposureId = exposure.id;
         const filePath = createWorkflowExposureOutputFilePath(outputDir, exposure.results);
         try {
             await fs.access(filePath);
         } catch {
-            continue;
+            return null;
         }
-        registerSharedExposure(context, exposure.id, filePath);
-        await persistShared(exposure.id, filePath);
-    }
+        return {
+            exposureId,
+            filePath
+        };
+    }));
+
+    await Promise.all(exposureRegistrations.map(async (registration) => {
+        if (registration === null) {
+            return;
+        }
+        registerSharedExposure(context, registration.exposureId, registration.filePath);
+        await persistShared(registration.exposureId, registration.filePath);
+    }));
 
     const annotatedDump = `${outputDir}_${ANNOTATED_DUMP_SUFFIX}`;
     let annotatedDumpExists = true;

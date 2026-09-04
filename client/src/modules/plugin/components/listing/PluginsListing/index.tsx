@@ -13,6 +13,7 @@ import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import { dateColumn, statusColumn } from '@/shared/ui/utils/column-presets';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
+import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
 import { useCallback, useRef } from 'react';
 import type { ComponentType } from 'react';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
@@ -204,9 +205,12 @@ const PluginsListing = () => {
                         toast: DELETE_PLUGIN_TOAST_OPTIONS
                     });
                 },
-                confirm: ({ selectedItems }) => (selectedItems.length === 1
-                    ? `Delete plugin "${selectedItems[0].modifier?.name || selectedItems[0]._id}"? This action cannot be undone.`
-                    : `Delete ${selectedItems.length} plugins? This action cannot be undone.`),
+                confirm: ({ selectedItems }) => createListingDeleteConfirmation<Plugin>({
+                    singularName: 'plugin',
+                    pluralName: 'plugins',
+                    untitledLabel: 'Untitled Plugin',
+                    getTitle: (plugin) => plugin.modifier?.name ?? plugin._id
+                })(selectedItems),
                 requiredPermission: 'plugin:delete'
             }
         }

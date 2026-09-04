@@ -34,11 +34,6 @@ export interface TeamClusterDaemonCredentialService extends TeamClusterService{
     password: string;
 }
 
-export interface TeamClusterCredentialServices{
-    postgres: TeamClusterCredentialService;
-    daemon: TeamClusterDaemonCredentialService;
-}
-
 export interface TeamClusterQueueConcurrency{
     analysis: number;
     rasterizer: number;

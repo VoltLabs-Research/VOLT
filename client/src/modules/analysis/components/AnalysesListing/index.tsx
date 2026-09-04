@@ -12,6 +12,7 @@ import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import StatusPill from '@/shared/ui/components/StatusPill';
 import { Button } from '@heroui/react';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
+import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { useMemo } from 'react';
 import { ExternalLink, FlaskConical, RefreshCw } from 'lucide-react';
@@ -34,15 +35,11 @@ const renderTrajectoryName: NonNullable<ColumnConfig<Analysis>['render']> = (_va
     );
 };
 
-const getDeleteConfirmationMessage = (selectedItems: Analysis[]): string => {
-    let message = 'Delete this analysis? This cannot be undone.';
-
-    if (selectedItems.length !== 1) {
-        message = `Delete ${selectedItems.length} analyses? This cannot be undone.`;
-    }
-
-    return message;
-};
+const getDeleteConfirmationMessage = createListingDeleteConfirmation<Analysis>({
+    singularName: 'analysis',
+    pluralName: 'analyses',
+    untitledLabel: 'Untitled Analysis'
+});
 
 const resolveAnalysisListingPath = (analysis: Analysis, plugin: Plugin | undefined): string | undefined => {
     if (analysis.status !== AnalysisStatus.Completed) {

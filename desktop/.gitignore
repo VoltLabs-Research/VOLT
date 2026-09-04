@@ -2,3 +2,9 @@
 # No es fuente: lo regenera AppConfig.ensureStackDefaults / Bootstrap en cada arranque.
 app-config.json
 .docker-home/
+# Repowise
+.repowise
+
+# MCP and Claude
+.mcp.json
+.claude

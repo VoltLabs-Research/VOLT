@@ -7,6 +7,7 @@ import FloatingRootContext, {
     useFloatingRoot
 } from '@/shared/ui/contexts/FloatingRootContext';
 import composeRefs from '@/shared/ui/utils/compose-refs';
+import { FOCUSABLE_SELECTOR } from '@/shared/ui/utils/focusable';
 import { FloatingPortal, autoUpdate, flip, offset, shift, useFloating } from '@floating-ui/react';
 import { ChevronRight } from 'lucide-react';
 import { useCallback, useId, useMemo, useRef, useState } from 'react';
@@ -23,18 +24,6 @@ const MENU_ICON_SIZES: Record<'sm' | 'md', number> = {
     sm: 14,
     md: 16
 };
-
-const FOCUSABLE_SELECTOR = [
-    '[role="menuitem"]:not([disabled])',
-    '[role="menuitemcheckbox"]:not([disabled])',
-    '[role="menuitemradio"]:not([disabled])',
-    'button:not([disabled])',
-    '[href]',
-    'input:not([disabled])',
-    'select:not([disabled])',
-    'textarea:not([disabled])',
-    '[tabindex]:not([tabindex="-1"])'
-].join(', ');
 
 const NESTED_FLOATING_SELECTOR = '.popover, .select-dropdown, .form-field-autocomplete-menu';
 

@@ -36,3 +36,9 @@ dist-ssr
 
 reports/
 tools/local-stack/.generated/
+# Repowise
+.repowise
+
+# MCP and Claude
+.mcp.json
+.claude

@@ -4,6 +4,14 @@ import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { runCrudMutation } from '@/shared/ui/hooks/toast';
 import { sileo } from 'sileo';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
+import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
+
+const deleteAnalysisMessage = createListingDeleteConfirmation<ListingRow>({
+    singularName: 'analysis',
+    pluralName: 'analyses',
+    untitledLabel: 'Untitled Analysis',
+    getTitle: (row) => row.trajectoryName ?? undefined
+});
 
 const useDeletePluginListingAnalyses = () => {
     const deleteAnalysisMutation = analysisQuery.useDeleteMutation();
@@ -18,11 +26,8 @@ const useDeletePluginListingAnalyses = () => {
             return;
         }
 
-        const isConfirmed = await confirm(
-            analysisIds.length === 1
-                ? 'Delete this analysis? This cannot be undone.'
-                : `Delete ${analysisIds.length} analyses? This cannot be undone.`
-        );
+        const matchingRows = rows.filter((row) => analysisIds.includes(String(row.analysisId)));
+        const isConfirmed = await confirm(deleteAnalysisMessage(matchingRows));
         if (!isConfirmed) return;
 
         await Promise.all(analysisIds.map((analysisId) =>

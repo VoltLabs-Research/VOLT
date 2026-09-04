@@ -4,6 +4,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { Open as UnzipperOpen } from 'unzipper';
 import fg from 'fast-glob';
+import { mapLimited } from '@shared/application/utilities/map-limited';
 
 
 export const normalizeProjectRelativePath = (value: string): string => {
@@ -27,26 +28,27 @@ export const listProjectFiles = (projectDir: string): Promise<string[]> => {
 
 const extractZip = async (zipPath: string, destinationDir: string): Promise<void> => {
     const directory = await UnzipperOpen.file(zipPath);
-    for (const entry of directory.files) {
+    const files = directory.files;
+    await mapLimited(files, 8, (entry) => (async () => {
         const normalized = normalizeProjectRelativePath(entry.path);
         if (!normalized || normalized.startsWith('__MACOSX')) {
-            continue;
+            return;
         }
 
         const targetPath = path.join(destinationDir, normalized);
         const relativeToDest = path.relative(destinationDir, targetPath);
         if (relativeToDest.startsWith('..') || path.isAbsolute(relativeToDest)) {
-            continue;
+            return;
         }
 
         if (entry.type === 'Directory') {
             await fs.mkdir(targetPath, { recursive: true });
-            continue;
+            return;
         }
 
         await fs.mkdir(path.dirname(targetPath), { recursive: true });
         await pipeline(entry.stream(), createWriteStream(targetPath));
-    }
+    })());
 };
 
 export const ensureExtractedProject = async (input: {
