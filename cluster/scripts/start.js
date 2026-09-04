@@ -9,6 +9,8 @@ const HEAP_FRACTION = 0.80;
 const MIN_HEAP_MB = 512;
 
 const MAX_HEAP_MB = 262_144;
+const PARENT_EXIT_GRACE_MS = 8_000;
+const PARENT_WATCH_INTERVAL_MS = 2_000;
 
 const totalBytes = os.totalmem();
 const constrainedBytes = process.constrainedMemory();
@@ -59,6 +61,35 @@ const child = spawn(command, commandArgs, {
     cwd: packageRoot,
     env: process.env
 });
+
+if (process.env.VOLT_EXIT_WITH_PARENT === '1') {
+    const stopWithParent = () => {
+        if (child.exitCode === null && child.signalCode === null) {
+            child.kill('SIGTERM');
+            setTimeout(() => {
+                if (child.exitCode === null && child.signalCode === null) {
+                    child.kill('SIGKILL');
+                }
+                process.exit(0);
+            }, PARENT_EXIT_GRACE_MS);
+        }
+    };
+    process.stdin.resume();
+    process.stdin.once('end', stopWithParent);
+    process.stdin.once('close', stopWithParent);
+
+    const parentPid = Number(process.env.VOLT_PARENT_PID);
+    if (Number.isInteger(parentPid) && parentPid > 0) {
+        const parentWatch = setInterval(() => {
+            try {
+                process.kill(parentPid, 0);
+            } catch {
+                clearInterval(parentWatch);
+                stopWithParent();
+            }
+        }, PARENT_WATCH_INTERVAL_MS);
+    }
+}
 
 for (const signal of ['SIGTERM', 'SIGINT', 'SIGHUP']) {
     process.on(signal, () => {

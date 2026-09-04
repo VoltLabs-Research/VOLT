@@ -39,6 +39,7 @@ const SERVER_KEEP_ALIVE_TIMEOUT = readNumberEnv('SERVER_KEEP_ALIVE_TIMEOUT', 180
 const SERVER_HEADERS_TIMEOUT = readNumberEnv('SERVER_HEADERS_TIMEOUT', SERVER_KEEP_ALIVE_TIMEOUT);
 const SERVER_SHUTDOWN_GRACE_PERIOD = readNumberEnv('SERVER_SHUTDOWN_GRACE_PERIOD', 1000);
 const SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT = readNumberEnv('SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT', 5000);
+const PARENT_WATCH_INTERVAL_MS = 2000;
 
 let activeTerminator: HttpTerminator | null = null;
 let activeSocketGateway: SocketGateway | null = null;
@@ -113,6 +114,28 @@ const shutdown = async () => {
         process.exit(1);
     }
 };
+
+if (process.env.VOLT_EXIT_WITH_PARENT === '1') {
+    const exitWithParent = (): void => {
+        setTimeout(() => process.exit(0), SERVER_SHUTDOWN_FORCE_EXIT_TIMEOUT);
+        void shutdown();
+    };
+    process.stdin.resume();
+    process.stdin.once('end', exitWithParent);
+    process.stdin.once('close', exitWithParent);
+
+    const parentPid = Number(process.env.VOLT_PARENT_PID);
+    if (Number.isInteger(parentPid) && parentPid > 0) {
+        const parentWatch = setInterval(() => {
+            try {
+                process.kill(parentPid, 0);
+            } catch {
+                clearInterval(parentWatch);
+                exitWithParent();
+            }
+        }, PARENT_WATCH_INTERVAL_MS);
+    }
+}
 
 process.on('unhandledRejection', (reason: unknown) => {
     const message = reason instanceof Error ? reason.stack || reason.message : String(reason);

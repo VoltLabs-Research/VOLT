@@ -39,6 +39,7 @@ export const registerSignalHandlers = (stop: () => void): void => {
     };
     process.once('SIGINT', shutdown);
     process.once('SIGTERM', shutdown);
+    process.once('disconnect', shutdown);
 };
 
 interface PlaneSocketConfig {
