@@ -94,6 +94,9 @@ const buildDaemon = async () => {
 
     const target = path.join(outDir, 'daemon');
     await copyTree(path.join(daemonDir, 'dist'), path.join(target, 'dist'));
+    if (await exists(path.join(daemonDir, 'vendor'))) {
+        await copyTree(path.join(daemonDir, 'vendor'), path.join(target, 'vendor'));
+    }
     await mkdir(path.join(target, 'scripts'), { recursive: true });
     await cp(path.join(daemonDir, 'scripts', 'start.js'), path.join(target, 'scripts', 'start.js'));
     for (const file of ['package.json', 'package-lock.json']) {
