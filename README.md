@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/voltlabs-research/volt/main/desktop
 
 ### Desktop app
 
-Prefer a one-click setup? Download the desktop app, which launches and manages the local stack for you:
+Prefer a one-click setup? Download the desktop app. It ships the whole stack inside the installer and runs it on your machine with no Docker, database or other dependencies to install:
 
 - [Download the latest release](https://github.com/VoltLabs-Research/VOLT/releases/latest)
 

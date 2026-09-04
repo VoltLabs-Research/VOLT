@@ -7,6 +7,11 @@ on:
   pull_request:
     paths:
       - 'desktop/**'
+      - 'server/**'
+      - 'cluster/**'
+      - 'client/**'
+      - 'contracts/**'
+      - 'sdk/**'
       - '.github/workflows/desktop-build.yml'
   workflow_dispatch:
 
@@ -46,12 +51,23 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # Node 22 is what the bundled server and daemon run on: the build copies this
+      # runner's node binary into the installer as the stack's runtime.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: |
+            desktop/package-lock.json
+            server/package-lock.json
+            cluster/package-lock.json
+            client/package-lock.json
+
+      - name: Set up Python (node-gyp fallback for native modules without a prebuild)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install desktop dependencies
         run: npm ci
@@ -61,8 +77,14 @@ jobs:
         shell: bash
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
 
-      - name: Build & package installers
-        run: npm run package
+      # Assembles desktop/stack-runtime (client bundle, compiled server and daemon with
+      # production node_modules, the SDK, and this runner's node binary), then packages
+      # it under resources/stack. No Docker is involved at build or run time.
+      - name: Build the local stack runtime
+        run: npm run stack:build
+
+      - name: Package installers
+        run: npm run package:only
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
