@@ -5,6 +5,7 @@ import ClusterObjectSignedUrlService from '@modules/cluster/services/object-stor
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/team-cluster';
 
 import type { PluginRecord } from '@modules/plugin/contracts/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
@@ -154,7 +155,12 @@ interface ValidateWorkflowOutput {
     modifier?: WorkflowNode;
 }
 
-const REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
+const DEFAULT_REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
+
+const resolveRegistryInstallPlatform = async (teamClusterId: string): Promise<string> => {
+    const teamCluster = await findTeamClusterByIdWithSensitiveData(teamClusterId);
+    return teamCluster?.props.hostCapabilities?.platform ?? DEFAULT_REGISTRY_INSTALL_PLATFORM;
+};
 
 const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
     [WorkflowNodeType.Modifier]: ['pluginId', 'trajectory', 'analysis'],
@@ -243,7 +249,8 @@ export default class PluginService {
         }
 
         const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(input.teamId);
-        const tarball = await this.#registryGateway.resolveTarball(input.name, input.version, REGISTRY_INSTALL_PLATFORM);
+        const platform = await resolveRegistryInstallPlatform(computeClusterId);
+        const tarball = await this.#registryGateway.resolveTarball(input.name, input.version, platform);
 
         const installed = await teamClusterDaemonClient.command<TeamClusterDaemonRegistryInstallResult>(
             computeClusterId,
@@ -254,7 +261,7 @@ export default class PluginService {
                 fileName: tarball.fileName,
                 name: input.name,
                 version: tarball.version,
-                platform: REGISTRY_INSTALL_PLATFORM
+                platform
             },
             {
                 timeoutClass: 'long-running-control-plane',

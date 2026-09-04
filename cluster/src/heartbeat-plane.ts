@@ -7,6 +7,7 @@ import { loadConfig } from '@core/config/daemon';
 import { logger } from '@shared/infrastructure/logger';
 import { MetricsService } from '@modules/system/services/MetricsService';
 import { probeContainerRuntime } from '@shared/infrastructure/runtime/docker-client';
+import { currentPlatformTag } from '@shared/infrastructure/utilities/platform-tag';
 import type { MetricsSnapshot } from '@shared/contracts/types/metrics';
 import type { TeamClusterDaemonRuntimeConfig, TeamClusterHostCapabilities } from '@shared/contracts/types/team-cluster-runtime';
 import {
@@ -85,7 +86,8 @@ const sendHeartbeat = async (): Promise<void> => {
         runtime: runtimeConfig,
         metrics,
         hostCapabilities: {
-            containerRuntime: await probeContainerRuntime()
+            containerRuntime: await probeContainerRuntime(),
+            platform: currentPlatformTag()
         }
     });
 };

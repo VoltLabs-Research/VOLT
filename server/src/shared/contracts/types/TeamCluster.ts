@@ -64,6 +64,7 @@ export interface TeamClusterEffectiveCapabilitiesProps {
 
 export interface TeamClusterHostCapabilitiesProps {
     containerRuntime: boolean;
+    platform?: string;
 }
 
 export interface TeamClusterProps {

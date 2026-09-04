@@ -35,6 +35,7 @@ export interface TeamClusterDaemonQueueConcurrency {
 
 export interface TeamClusterDaemonHostCapabilities {
     containerRuntime: boolean;
+    platform?: string;
 };
 
 export interface TeamClusterDaemonMemoryMetrics {

@@ -75,6 +75,7 @@ export interface TeamClusterEffectiveCapabilities{
 
 export interface TeamClusterHostCapabilities{
     containerRuntime: boolean;
+    platform?: string;
 }
 
 export type ClusterTransferJobState =
