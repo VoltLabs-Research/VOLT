@@ -1,4 +1,5 @@
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import { LOCAL_ACCOUNT_EMAIL } from '@volt/contracts/modules/auth/local-account';
 import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
 import {
@@ -48,7 +49,6 @@ interface AuthSessionResult{
 }
 
 export default class AuthService{
-    private static readonly LOCAL_USER_EMAIL = 'local@volt.local';
 
     #passwordHasher = new BcryptPasswordHasher();
     #authSessionService = new AuthSessionService();
@@ -79,7 +79,7 @@ export default class AuthService{
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'Not found');
         }
 
-        const user = await User.findOneBy({ email: normalizeEmail(AuthService.LOCAL_USER_EMAIL) });
+        const user = await User.findOneBy({ email: normalizeEmail(LOCAL_ACCOUNT_EMAIL) });
         if(!user){
             throw ApplicationError.notFound(ErrorCodes.USER_NOT_FOUND, 'Local user is not provisioned yet');
         }
