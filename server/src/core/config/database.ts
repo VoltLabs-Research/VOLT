@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
 import type { DataSourceOptions, EntitySchema, MixedList } from 'typeorm';
+import { SQLITE_URL_SCHEME, resolveDatabaseDialect } from '@shared/infrastructure/persistence/dialect';
 
 export type DatabaseEntities = MixedList<string | Function | EntitySchema>;
-
-const SQLITE_SCHEME = 'sqlite:';
 
 const getDatabaseUrl = (): string => {
     const url = process.env.DATABASE_URL;
@@ -17,10 +16,10 @@ const getDatabaseUrl = (): string => {
 const shouldSynchronize = (): boolean => process.env.NODE_ENV !== 'production';
 
 const buildOptions = (url: string, entities: DatabaseEntities): DataSourceOptions => {
-    if(url.startsWith(SQLITE_SCHEME)){
+    if(resolveDatabaseDialect(url) === 'sqlite'){
         return {
             type: 'better-sqlite3',
-            database: url.slice(SQLITE_SCHEME.length),
+            database: url.slice(SQLITE_URL_SCHEME.length),
             synchronize: true,
             entities
         };

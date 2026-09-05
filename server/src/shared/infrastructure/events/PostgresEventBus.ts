@@ -5,6 +5,7 @@ import DomainEventSpoolEntry from '@shared/infrastructure/persistence/models/Dom
 import type { EventName } from '@shared/events/EventGroup';
 import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
 import type { IEventHandler } from '@shared/application/events/IEventHandler';
+import { resolveDatabaseDialect } from '@shared/infrastructure/persistence/dialect';
 
 const CHANNEL = 'volt_domain_events';
 
@@ -22,7 +23,7 @@ interface EventEnvelope {
 }
 
 const isPostgresUrl = (url: string | undefined): boolean =>
-    Boolean(url) && !url!.startsWith('sqlite:');
+    Boolean(url) && resolveDatabaseDialect(url) === 'postgres';
 
 class PostgresEventBus {
     private readonly handlers = new Map<string, IEventHandler<IDomainEvent>[]>();
