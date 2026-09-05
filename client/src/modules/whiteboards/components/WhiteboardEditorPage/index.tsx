@@ -4,6 +4,7 @@ import useWhiteboardCanvasBridge from './use-whiteboard-canvas-bridge';
 import useWhiteboardImageInsertion from './use-whiteboard-image-insertion';
 import useWhiteboardPresence from './use-whiteboard-presence';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import useTip from '@/shared/tips/use-tip';
@@ -56,6 +57,7 @@ const WhiteboardEditorPage = () => {
     usePageTitle(whiteboard?.title ?? 'Whiteboard');
     useDashboardWorkspaceChrome({ hideHeader: true });
 
+    const singleTenant = useSingleTenant();
     const { announcement, users } = useWhiteboardPresence({
         whiteboardId,
         enabled: Boolean(resolvedWhiteboardId)
@@ -120,7 +122,7 @@ const WhiteboardEditorPage = () => {
 
         return (
             <div className='flex flex-row items-center gap-2 px-2 text-xs text-muted'>
-                {users.length > 0 && (
+                {!singleTenant && users.length > 0 && (
                     <div className='max-w-[16rem] truncate' aria-label={collaboratorsLabel}>
                         {collaboratorsLabel}
                     </div>
@@ -129,7 +131,7 @@ const WhiteboardEditorPage = () => {
                 {aiAssistantControl}
             </div>
         );
-    }, [aiAssistantControl, handleOpenImagePicker, users]);
+    }, [aiAssistantControl, handleOpenImagePicker, users, singleTenant]);
 
     if (!whiteboardId) {
         return null;

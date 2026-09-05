@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useDeleteMeMutation, useUpdateMeMutation } from '@/modules/auth/hooks/queries';
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { runAction } from '@/shared/ui/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
@@ -34,6 +35,7 @@ const DELETE_ACCOUNT_TOAST_OPTIONS = createPromiseToastOptions({
 
 const GeneralSettings = () => {
     const user = useCurrentUser();
+    const singleTenant = useSingleTenant();
     const signOut = useAuthStore((state) => state.signOut);
     const updateMe = useUpdateMeMutation();
     const deleteMe = useDeleteMeMutation();
@@ -98,7 +100,8 @@ const GeneralSettings = () => {
                         onUpload={handleAvatarUpload} />
                     <ProfileForm
                         initialValues={profileInitialValues}
-                        onUpdate={handleProfileUpdate} />
+                        onUpdate={handleProfileUpdate}
+                        hideEmail={singleTenant} />
                 </div>
             </div>
             <div className='flex flex-col gap-4'>
@@ -121,23 +124,25 @@ const GeneralSettings = () => {
                     ))}
                 </ToggleButtonGroup>
             </div>
-            <Alert status='danger' role='region' aria-label='Delete Account'>
-                <Alert.Content>
-                    <Alert.Title>Delete Account</Alert.Title>
-                    <Alert.Description>
-                        Permanently delete your account and all associated data
-                    </Alert.Description>
-                </Alert.Content>
-                <Button
-                    variant='ghost'
-                    size='sm'
-                    className='text-danger'
-                    onPress={handleDeleteAccount}
-                >
-                    <Trash2 size={16} />
-                    Delete Account
-                </Button>
-            </Alert>
+            {!singleTenant && (
+                <Alert status='danger' role='region' aria-label='Delete Account'>
+                    <Alert.Content>
+                        <Alert.Title>Delete Account</Alert.Title>
+                        <Alert.Description>
+                            Permanently delete your account and all associated data
+                        </Alert.Description>
+                    </Alert.Content>
+                    <Button
+                        variant='ghost'
+                        size='sm'
+                        className='text-danger'
+                        onPress={handleDeleteAccount}
+                    >
+                        <Trash2 size={16} />
+                        Delete Account
+                    </Button>
+                </Alert>
+            )}
         </SettingsPage>
     );
 };

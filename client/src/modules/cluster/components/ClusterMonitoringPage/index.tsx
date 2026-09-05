@@ -1,4 +1,5 @@
 import Loader from '@/shared/ui/components/Loader';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { buttonVariants } from '@heroui/react';
 import useClusterMonitoringPage from './use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
@@ -32,6 +33,7 @@ const renderDeferredVisualizationsFallback = () => (
 );
 
 const ClusterMonitoringPage = () => {
+    const singleTenant = useSingleTenant();
     useTip('cluster-monitoring-live');
 
     const vm = useClusterMonitoringPage();
@@ -93,14 +95,18 @@ const ClusterMonitoringPage = () => {
                     <div className='flex flex-col items-start gap-4 p-6 rounded-xl border border-border bg-surface-secondary'>
                         <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
                         <p className='text-sm text-muted'>
-                            Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
+                            {singleTenant
+                                ? 'The local compute daemon has not connected yet. Live metrics appear here as soon as it does.'
+                                : 'Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.'}
                         </p>
-                        <Link
-                            to='/onboarding/cluster/setup'
-                            className={buttonVariants({ variant: 'primary' })}
-                        >
-                            Add New Cluster
-                        </Link>
+                        {!singleTenant && (
+                            <Link
+                                to='/onboarding/cluster/setup'
+                                className={buttonVariants({ variant: 'primary' })}
+                            >
+                                Add New Cluster
+                            </Link>
+                        )}
                     </div>
                 )}
 

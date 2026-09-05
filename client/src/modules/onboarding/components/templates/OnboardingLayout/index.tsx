@@ -1,4 +1,5 @@
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
@@ -26,6 +27,7 @@ const OnboardingLayout = ({
     leftSlot,
     overlay
 }: OnboardingLayoutProps) => {
+    const singleTenant = useSingleTenant();
     const user = useCurrentUser();
 
     const handleJoinTeamSuccess = async ({ teamId }: JoinByInviteCodeResponse) => {
@@ -51,14 +53,16 @@ const OnboardingLayout = ({
                 </div>
             )}
 
-            <Button
-                className='fixed z-[2] top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] max-[768px]:min-h-10 max-[768px]:px-3.5'
-                variant='ghost'
-                size='sm'
-                onPress={() => openModal('join-team-modal')}
-            >
-                Have an invite code?
-            </Button>
+            {!singleTenant && (
+                <Button
+                    className='fixed z-[2] top-[max(1rem,env(safe-area-inset-top,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] max-[768px]:min-h-10 max-[768px]:px-3.5'
+                    variant='ghost'
+                    size='sm'
+                    onPress={() => openModal('join-team-modal')}
+                >
+                    Have an invite code?
+                </Button>
+            )}
 
             {user && (
                 <div className='fixed z-[2] bottom-[max(1rem,env(safe-area-inset-bottom,0px))] left-[max(1rem,env(safe-area-inset-left,0px))]'>

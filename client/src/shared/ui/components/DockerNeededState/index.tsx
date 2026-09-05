@@ -1,6 +1,7 @@
 import { EmptyStateRoot } from '@heroui/react';
 import { Container } from 'lucide-react';
 import { useId } from 'react';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 
 interface DockerNeededStateProps {
     feature: string;
@@ -8,6 +9,7 @@ interface DockerNeededStateProps {
 
 const DockerNeededState = ({ feature }: DockerNeededStateProps) => {
     const headingId = useId();
+    const singleTenant = useSingleTenant();
 
     return (
         <EmptyStateRoot<'section'>
@@ -24,8 +26,9 @@ const DockerNeededState = ({ feature }: DockerNeededStateProps) => {
                         {`${feature} needs a container runtime`}
                     </h2>
                     <span className='text-sm text-muted leading-normal'>
-                        This cluster&apos;s machine has no container runtime available, so Volt cannot start
-                        containers on it. Install Docker there and this page works on the next heartbeat.
+                        {singleTenant
+                            ? 'This computer has no container runtime available, so Volt cannot start containers. Install Docker Desktop and this page works on the next heartbeat.'
+                            : 'This cluster\u2019s machine has no container runtime available, so Volt cannot start containers on it. Install Docker there and this page works on the next heartbeat.'}
                     </span>
                     <span className='text-xs text-muted leading-normal'>
                         Nothing else is affected: trajectories, analyses and plugins do not use containers.

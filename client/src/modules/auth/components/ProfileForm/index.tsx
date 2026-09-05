@@ -16,13 +16,15 @@ enum ProfileSaveState {
 interface ProfileFormProps {
     initialValues: ProfileFormType;
     onUpdate: (data: ProfileFormType) => Promise<void>;
+    hideEmail?: boolean;
 }
 
 const AUTO_SAVE_DELAY = 1000;
 
 const ProfileForm = ({
     initialValues,
-    onUpdate
+    onUpdate,
+    hideEmail = false
 }: ProfileFormProps) => {
     const { control, watch, getValues, formState, reset } = useForm<ProfileFormType>({
         defaultValues: initialValues,
@@ -164,21 +166,23 @@ const ProfileForm = ({
                     name: 'fullName'
                 }}
             />
-            <FormFieldRHF
-                name='email'
-                control={control}
-                label='Email'
-                type='email'
-                placeholder='Enter your email'
-                inputProps={{
-                    autoComplete: 'email',
-                    inputMode: 'email',
-                    spellCheck: false,
-                    name: 'email',
-                    autoCapitalize: 'none',
-                    autoCorrect: 'off'
-                }}
-            />
+            {!hideEmail && (
+                <FormFieldRHF
+                    name='email'
+                    control={control}
+                    label='Email'
+                    type='email'
+                    placeholder='Enter your email'
+                    inputProps={{
+                        autoComplete: 'email',
+                        inputMode: 'email',
+                        spellCheck: false,
+                        name: 'email',
+                        autoCapitalize: 'none',
+                        autoCorrect: 'off'
+                    }}
+                />
+            )}
 
             {saveFeedback}
         </form>

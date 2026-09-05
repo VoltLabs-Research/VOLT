@@ -49,7 +49,8 @@ export const protectedRoutes: RouteConfig[] = [
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Authentication',
-            icon: DashboardNavigationIconKey.SettingsAuthentication
+            icon: DashboardNavigationIconKey.SettingsAuthentication,
+            multiTenantOnly: true
         }
     },
     {
@@ -69,7 +70,8 @@ export const protectedRoutes: RouteConfig[] = [
         navigation: {
             section: DashboardNavigationSection.Settings,
             label: 'Sessions',
-            icon: DashboardNavigationIconKey.SettingsSessions
+            icon: DashboardNavigationIconKey.SettingsSessions,
+            multiTenantOnly: true
         }
     },
     {

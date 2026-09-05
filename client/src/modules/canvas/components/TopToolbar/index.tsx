@@ -6,6 +6,7 @@ import EditableTrajectoryName from '@/modules/trajectory/components/EditableTraj
 import WindowControls from '@/shared/ui/components/WindowControls';
 import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { memo, useCallback, useMemo } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Button, cn } from '@heroui/react';
@@ -59,7 +60,8 @@ const TopToolbar = ({
         };
     }, [user]);
 
-    const canShowPeers = Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
+    const singleTenant = useSingleTenant();
+    const canShowPeers = !singleTenant && Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
 
     return (
         <header className='absolute left-0 right-0 top-0 z-[4] flex select-none items-stretch bg-chrome px-4 min-h-[var(--canvas-header-height,55px)] max-md:h-[var(--canvas-header-height,40px)] max-md:min-h-[var(--canvas-header-height,40px)] max-md:px-3 canvas-top-toolbar'>
