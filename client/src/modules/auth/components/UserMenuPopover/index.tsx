@@ -1,5 +1,6 @@
 import Loader from '@/shared/ui/components/Loader';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import UserAvatar from '@/modules/auth/components/UserAvatar';
 import UserInfo from '@/modules/auth/components/UserInfo';
 import { DropdownItem, DropdownMenu, DropdownPopover, DropdownRoot, DropdownTrigger } from '@heroui/react';
@@ -16,6 +17,9 @@ interface UserMenuPopoverProps {
 
 const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger, collapsed = false }: UserMenuPopoverProps) => {
     const user = useCurrentUser();
+    const singleTenant = useSingleTenant();
+
+    if (singleTenant) return null;
 
     let triggerContent: ReactNode = (
         <>

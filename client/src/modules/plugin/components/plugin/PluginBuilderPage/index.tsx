@@ -4,6 +4,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-
 import useLoadPlugin from './use-load-plugin';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
+import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -39,7 +40,8 @@ const PluginBuilderPage = () => {
         };
     }, [clearWorkflow]);
 
-    const bottomSidebarContent = (
+    const singleTenant = useSingleTenant();
+    const bottomSidebarContent = singleTenant ? undefined : (
         <div className='p-6'>
             <UserMenuPopover
                 onSettingsClick={handleSettingsClick}
