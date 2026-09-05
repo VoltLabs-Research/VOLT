@@ -8,3 +8,5 @@
 # MCP and Claude
 .mcp.json
 .claude
+# Playwright output
+test-results/

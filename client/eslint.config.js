@@ -99,13 +99,6 @@ export default tseslint.config(
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
-    {
-        files: ['scripts/**/*.mjs'],
-        languageOptions: {
-            ecmaVersion: 'latest',
-            globals: { ...globals.node }
-        }
-    },
     reactHooks.configs['recommended-latest'],
     reactRefresh.configs.vite,
     {
