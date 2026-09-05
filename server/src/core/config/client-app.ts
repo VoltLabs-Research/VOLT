@@ -71,6 +71,18 @@ export const resolveClientDistDir = (): string | null => {
     return configured ? path.resolve(configured) : null;
 };
 
+export const mountShellBridge = (app: Express): void => {
+    app.get('/__bootstrap.html', (_req: Request, res: Response) => {
+        relaxDocumentSecurityHeaders(res);
+        res.setHeader('Cache-Control', 'no-store');
+        res.type('html').send(BOOTSTRAP_PAGE);
+    });
+
+    app.get('/__nav-bridge.js', (_req: Request, res: Response) => {
+        res.type('application/javascript').send(NAV_BRIDGE_SCRIPT);
+    });
+};
+
 export const mountClientApp = (app: Express, distDir: string): void => {
     const indexHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8')
         .replace('<head>', `<head>${ENDPOINT_BOOTSTRAP_TAG}`)
@@ -81,16 +93,6 @@ export const mountClientApp = (app: Express, distDir: string): void => {
         res.setHeader('Cache-Control', 'no-cache');
         res.type('html').send(indexHtml);
     };
-
-    app.get('/__bootstrap.html', (_req: Request, res: Response) => {
-        relaxDocumentSecurityHeaders(res);
-        res.setHeader('Cache-Control', 'no-store');
-        res.type('html').send(BOOTSTRAP_PAGE);
-    });
-
-    app.get('/__nav-bridge.js', (_req: Request, res: Response) => {
-        res.type('application/javascript').send(NAV_BRIDGE_SCRIPT);
-    });
 
     app.use(express.static(distDir, {
         index: false,

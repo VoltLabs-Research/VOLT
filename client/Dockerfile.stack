@@ -31,58 +31,9 @@ FROM nginx:1.27-alpine AS runtime
 
 COPY --from=build /app/client/dist /usr/share/nginx/html
 
-# Hands the desktop shell's auth token to the web app, then forwards to the SPA.
-RUN cat > /usr/share/nginx/html/__bootstrap.html <<'BOOT_EOF'
-<!doctype html>
-<html><head><meta charset="utf-8"><title>Volt</title></head>
-<body><script>
-(function(){
-  try{
-    var token = new URLSearchParams(location.search).get('token');
-    if(token){ localStorage.setItem('authToken', token); }
-  }catch(e){}
-  location.replace('/');
-})();
-</script></body></html>
-BOOT_EOF
-
-# Mirrors SPA navigation to the embedding shell so its titlebar can follow along.
-RUN cat > /usr/share/nginx/html/__nav-bridge.js <<'BRIDGE_EOF'
-(function(){
-  function send(){
-    try{
-      parent.postMessage({ source: 'volt-client', path: location.pathname + location.search + location.hash }, '*');
-    }catch(e){}
-  }
-  ['pushState', 'replaceState'].forEach(function(name){
-    var original = history[name];
-    history[name] = function(){
-      var result = original.apply(this, arguments);
-      send();
-      return result;
-    };
-  });
-  window.addEventListener('popstate', send);
-  window.addEventListener('message', function(event){
-    var data = event.data;
-    if(!data || data.source !== 'volt-shell') return;
-    if(data.action === 'go' && typeof data.path === 'string'){
-      var state = history.state;
-      var idx = (state && typeof state.idx === 'number') ? state.idx + 1 : 1;
-      var key = Math.random().toString(36).slice(2, 10);
-      history.pushState({ usr: null, key: key, idx: idx }, '', data.path);
-      window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
-    }else if(data.action === 'back'){
-      history.back();
-    }else if(data.action === 'forward'){
-      history.forward();
-    }
-  });
-  if(document.readyState !== 'loading') send();
-  else window.addEventListener('DOMContentLoaded', send);
-})();
-BRIDGE_EOF
-
+# The desktop shell's bootstrap page and navigation bridge are served by volt-server
+# (see server/src/core/config/client-app.ts) and proxied below, so this image only
+# injects the script tag that loads the bridge.
 RUN sed -i 's#</body>#<script src="/__nav-bridge.js"></script></body>#' /usr/share/nginx/html/index.html
 
 # Tells the bundle that this origin serves the API, computed in the browser rather
@@ -119,6 +70,13 @@ server {
   location ~ \.mjs$ {
     default_type application/javascript;
     try_files $uri =404;
+  }
+
+  location ~ ^/__(bootstrap\.html|nav-bridge\.js)$ {
+    set $upstream_shell http://volt-server:8000;
+    proxy_pass $upstream_shell;
+    proxy_http_version 1.1;
+    proxy_set_header Host $http_host;
   }
 
   location /api/ {

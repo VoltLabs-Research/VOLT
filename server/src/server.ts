@@ -9,7 +9,7 @@ import { startRuntimeStateMaintenance, stopRuntimeStateMaintenance } from '@core
 import { configureOAuthStrategies } from './modules/auth/services/oauth/config';
 import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-lifecycle';
 import app from './core/config/express';
-import { mountClientApp, resolveClientDistDir } from './core/config/client-app';
+import { mountClientApp, mountShellBridge, resolveClientDistDir } from './core/config/client-app';
 import scriptingJupyterProxyService from './modules/scripting/services/ScriptingJupyterProxyService';
 import socketGateway, { SocketGateway } from './modules/socket/socket/SocketGateway';
 import { socketModules } from './modules/socket/socket/socket-modules';
@@ -162,6 +162,7 @@ const startServer = async () => {
     });
 
     app.use(mountHttpRoutes());
+    mountShellBridge(app);
 
     const clientDistDir = resolveClientDistDir();
     if (clientDistDir) {
