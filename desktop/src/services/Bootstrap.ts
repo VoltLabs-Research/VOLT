@@ -47,10 +47,10 @@ export default class Bootstrap{
         const existing = await this.props.appConfig.getBootstrap();
         if(existing){
             try{
-                const authToken = await this.#signIn(existing.email, existing.password);
+                const session = await this.#acquireSession(existing.email, existing.password);
                 const next: BootstrapState = {
                     ...existing,
-                    authToken
+                    authToken: session.token
                 };
                 await this.props.appConfig.setBootstrap(next);
                 return next;
@@ -85,11 +85,7 @@ export default class Bootstrap{
                     stream: 'stdout',
                     line: `[bootstrap] user ${email} exists; signing in`
                 });
-                const token = await this.#signIn(email, password);
-                auth = {
-                    token,
-                    user: await this.#me(token)
-                };
+                auth = await this.#acquireSession(email, password);
                 reused = true;
             }else{
                 throw err;
@@ -173,8 +169,21 @@ export default class Bootstrap{
         }
     }
 
-    async #me(token: string): Promise<{ _id: string }>{
-        return this.#api.request<{ _id: string }>(authRoutes.getMyAccount, { token });
+    async #acquireSession(email: string, password: string): Promise<AuthResponse>{
+        if(email === LOCAL_DEFAULTS.email){
+            try{
+                return await this.#api.request<AuthResponse>(authRoutes.localSignIn, {});
+            }catch(err){
+                if(!(err instanceof HttpError) || err.status !== 404) throw err;
+            }
+        }
+
+        return this.#api.request<AuthResponse>(authRoutes.signIn, {
+            body: {
+                email,
+                password
+            }
+        });
     }
 
     async #findOrCreateTeam(token: string, name: string): Promise<TeamResponse>{
@@ -223,16 +232,6 @@ export default class Bootstrap{
                 password
             }
         });
-    }
-
-    async #signIn(email: string, password: string): Promise<string>{
-        const data = await this.#api.request<AuthResponse>(authRoutes.signIn, {
-            body: {
-                email,
-                password
-            }
-        });
-        return data.token;
     }
 
     async #createTeam(token: string, name: string): Promise<TeamResponse>{
