@@ -5,6 +5,7 @@ import { PluginSubListingRow, buildPluginSubListingRowId } from '@modules/plugin
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@shared/contracts/types/pagination';
 import { singleton } from '@shared/application/utilities/singleton';
 import { mapLimited } from '@shared/application/utilities/map-limited';
+import { chunked } from '@shared/infrastructure/persistence/sqlite-sql';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@shared/contracts/types/pagination';
@@ -25,15 +26,6 @@ import type {
 } from '@modules/plugin/models/plugin-listing-repository-contract';
 
 const WRITE_CHUNK_SIZE = 1000;
-
-const chunk = <T>(items: T[], size: number): T[][] => {
-    const chunks: T[][] = [];
-    for (let index = 0; index < items.length; index += size) {
-        chunks.push(items.slice(index, index + size));
-    }
-
-    return chunks;
-};
 
 const LISTING_COLUMNS = [
     '_id', 'plugin', 'team', 'trajectory', 'analysis',
@@ -159,7 +151,7 @@ class TypeOrmPluginListingRepository {
             )
         }));
 
-        await mapLimited(chunk(rows, WRITE_CHUNK_SIZE), 8, (batch) =>
+        await mapLimited(chunked(rows, WRITE_CHUNK_SIZE), 8, (batch) =>
             this.listings.upsert(batch as never, ['_id'])
         );
     }
@@ -203,7 +195,7 @@ class TypeOrmPluginListingRepository {
                         row
                     }));
 
-                    for (const rowsChunk of chunk(rows, WRITE_CHUNK_SIZE)) {
+                    for (const rowsChunk of chunked(rows, WRITE_CHUNK_SIZE)) {
                         await repository.upsert(rowsChunk as never, ['_id']);
                     }
                 }
@@ -255,7 +247,7 @@ class TypeOrmPluginListingRepository {
         }
 
         const repository = this.repositoryFor(input.documentType);
-        await mapLimited(chunk(rows, WRITE_CHUNK_SIZE), 8, (batch) =>
+        await mapLimited(chunked(rows, WRITE_CHUNK_SIZE), 8, (batch) =>
             repository.upsert(batch as never, ['_id'])
         );
 

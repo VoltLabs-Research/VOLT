@@ -1,29 +1,17 @@
 import { getDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
 import { deadlineFromSeconds } from '@shared/infrastructure/persistence/daemon-state-store-contract';
+import { chunked, placeholders } from '@shared/infrastructure/persistence/sqlite-sql';
 import { sqliteNow, toSqliteDateTime } from '@shared/infrastructure/persistence/sqlite-time';
 import type { DaemonStateStore } from '@shared/infrastructure/persistence/daemon-state-store-contract';
 import type { EntityManager } from 'typeorm';
 
 const LIVE = '("expiresAt" IS NULL OR "expiresAt" > ?)';
-const KEY_CHUNK_SIZE = 500;
-const LIST_INSERT_CHUNK_SIZE = 500;
 
 const manager = () => getDaemonDataSource().manager;
 
 const deadlineText = (ttlSeconds: number | undefined): string | null => {
     const deadline = deadlineFromSeconds(ttlSeconds);
     return deadline ? toSqliteDateTime(deadline) : null;
-};
-
-const placeholders = (count: number): string => Array.from({ length: count }, () => '?').join(', ');
-
-const chunked = <T>(items: T[], size: number): T[][] => {
-    const chunks: T[][] = [];
-    for (let offset = 0; offset < items.length; offset += size) {
-        chunks.push(items.slice(offset, offset + size));
-    }
-
-    return chunks;
 };
 
 export class SqliteDaemonStateStore implements DaemonStateStore {
@@ -67,7 +55,7 @@ export class SqliteDaemonStateStore implements DaemonStateStore {
         }
 
         let removed = 0;
-        for (const chunk of chunked(keys, KEY_CHUNK_SIZE)) {
+        for (const chunk of chunked(keys)) {
             const rows = await manager().query<{ key: string }[]>(
                 `DELETE FROM daemon_state_entries WHERE key IN (${placeholders(chunk.length)}) RETURNING key`,
                 chunk
@@ -111,7 +99,7 @@ export class SqliteDaemonStateStore implements DaemonStateStore {
 
             const expiresAt = deadlineText(ttlSeconds);
             let position = 0;
-            for (const chunk of chunked(values, LIST_INSERT_CHUNK_SIZE)) {
+            for (const chunk of chunked(values)) {
                 await transactional.query(
                     `INSERT INTO daemon_state_list_items (key, position, value, "expiresAt")
                      VALUES ${chunk.map(() => '(?, ?, ?, ?)').join(', ')}`,

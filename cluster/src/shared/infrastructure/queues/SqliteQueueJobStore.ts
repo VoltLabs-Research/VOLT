@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
+import { chunked } from '@shared/infrastructure/persistence/sqlite-sql';
 import { fromSqliteDateTime, sqliteDateTimeFromNow, sqliteNow, toSqliteDateTime } from '@shared/infrastructure/persistence/sqlite-time';
 import { TERMINAL_JOB_RETENTION_MS, emptyQueueJobCounts } from '@shared/infrastructure/queues/queue-job-store-contract';
 import type {
@@ -13,7 +14,6 @@ import type { QueueJob, QueueJobState } from '@shared/infrastructure/queues/queu
 import type { EntityManager } from 'typeorm';
 
 const LIVE_STATES = `('waiting', 'delayed', 'active')`;
-const INSERT_CHUNK_SIZE = 200;
 const INSERT_COLUMNS = '(id, queue, "jobKey", payload, state, "maxAttempts", "backoffType", "backoffDelayMs", "runAt", "createdAt", "updatedAt")';
 const INSERT_ROW_PLACEHOLDER = `(?, ?, ?, ?, 'waiting', ?, ?, ?, ?, ?, ?)`;
 
@@ -85,16 +85,20 @@ export class SqliteQueueJobStore implements QueueJobStore {
             const now = sqliteNow();
             let inserted = 0;
 
-            for (let offset = 0; offset < requests.length; offset += INSERT_CHUNK_SIZE) {
-                const chunk = requests.slice(offset, offset + INSERT_CHUNK_SIZE);
+            const options = requests[0];
+            for (const chunk of chunked(requests)) {
                 const rows = await transactional.query<{ id: string }[]>(
                     `INSERT INTO queue_jobs ${INSERT_COLUMNS}
                      VALUES ${chunk.map(() => INSERT_ROW_PLACEHOLDER).join(', ')}
                      ON CONFLICT DO NOTHING
                      RETURNING id`,
                     chunk.flatMap((request) => insertParameters({
-                        ...request,
-                        queue
+                        queue,
+                        jobKey: request.jobKey,
+                        payload: request.payload,
+                        maxAttempts: options.maxAttempts,
+                        backoffType: options.backoffType,
+                        backoffDelayMs: options.backoffDelayMs
                     }, now))
                 );
                 inserted += rows.length;
