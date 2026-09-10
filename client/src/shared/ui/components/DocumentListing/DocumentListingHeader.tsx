@@ -186,7 +186,7 @@ const DocumentListingHeader = <TRow,>({
                             <TabListContainer>
                                 <TabList aria-label='Listing views'>
                                     {tabs.map((tab) => (
-                                        <Tab key={tab.id} id={tab.id}>
+                                        <Tab key={tab.id} id={tab.id} className='whitespace-nowrap'>
                                             {tab.label}
                                             <TabIndicator />
                                         </Tab>
