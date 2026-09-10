@@ -1,5 +1,5 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -25,8 +25,8 @@ import type {
     PluginPropertyStoreWriteInput,
     PluginPropertyStoreWriteResult
 } from '@modules/plugin/services/properties/PluginPropertyStore';
-import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
-import { toPluginExposureParquetObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
+import { toPluginExposureParquetObjectKey } from '@shared/storage/storage-codec';
 import {
     ExposureParquetCache,
     extractExposureId

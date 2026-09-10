@@ -1,11 +1,11 @@
 import { In } from 'typeorm';
-import { getDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
+import { getDaemonDataSource } from '@shared/persistence/DataSource';
 import { PluginListingRow, buildPluginListingRowId } from '@modules/plugin/models/plugin-listing-row-model';
 import { PluginSubListingRow, buildPluginSubListingRowId } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import { calculatePaginationOffset, calculateTotalPages, normalizePagination } from '@shared/contracts/types/pagination';
-import { singleton } from '@shared/application/utilities/singleton';
-import { mapLimited } from '@shared/application/utilities/map-limited';
-import { chunked } from '@shared/infrastructure/persistence/sqlite-sql';
+import { singleton } from '@shared/utilities/singleton';
+import { mapLimited } from '@shared/utilities/map-limited';
+import { chunked } from '@shared/persistence/sqlite-sql';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@shared/contracts/types/pagination';

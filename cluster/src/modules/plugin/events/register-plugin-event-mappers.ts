@@ -1,6 +1,5 @@
-import type { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
-import type { EventMapperSet } from '@shared/infrastructure/events/event-mapper-registry';
-import { registerStatusTriple } from '@shared/infrastructure/events/register-status-triple';
+import type { DomainEventBridge, EventMapperSet } from '@shared/events/DomainEventBridge';
+import { registerStatusTriple } from '@shared/events/register-status-triple';
 import {
     createArtifactUploadJobStatusDedupeKey,
     createArtifactUploadJobStatusMessage,

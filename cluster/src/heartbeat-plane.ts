@@ -1,20 +1,20 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
+import { errorMessage } from '@shared/utilities/error-message';
 import { type Socket } from 'socket.io-client';
 import http from 'node:http';
 import https from 'node:https';
 
 import { loadConfig } from '@core/config/daemon';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { MetricsService } from '@modules/system/services/MetricsService';
-import { probeContainerRuntime } from '@shared/infrastructure/runtime/docker-client';
-import { currentPlatformTag } from '@shared/infrastructure/utilities/platform-tag';
+import { probeContainerRuntime } from '@shared/runtime/docker-client';
+import { currentPlatformTag } from '@shared/utilities/platform-tag';
 import type { MetricsSnapshot } from '@shared/contracts/types/metrics';
 import type { TeamClusterDaemonRuntimeConfig, TeamClusterHostCapabilities } from '@shared/contracts/types/team-cluster-runtime';
 import {
     TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
     connectPlaneSocket,
     registerSignalHandlers
-} from '@shared/infrastructure/planes/plane-shared';
+} from '@shared/planes/plane-shared';
 
 interface RuntimeConfigMessage {
     type: 'runtime-config';

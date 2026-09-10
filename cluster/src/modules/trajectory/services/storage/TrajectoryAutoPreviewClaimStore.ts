@@ -1,7 +1,7 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import { toAutoPreviewRasterClaimKey } from '@shared/infrastructure/persistence/daemon-state-keys';
-import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import { toAutoPreviewRasterClaimKey } from '@shared/persistence/daemon-state-keys';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 
 const AUTO_PREVIEW_CLAIM_TTL_SECONDS = 30 * 60;
 

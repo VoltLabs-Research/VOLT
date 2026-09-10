@@ -1,7 +1,7 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { getPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import {
     createWorkflowExposureOutputFilePath,
     readWorkflowExposurePayload

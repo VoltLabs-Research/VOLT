@@ -1,4 +1,4 @@
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 
 export interface ComponentFilterResult {
     positions: Float32Array;

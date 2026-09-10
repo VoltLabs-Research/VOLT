@@ -1,21 +1,21 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
+import { singleton } from '@shared/utilities/singleton';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
+import { getQueueService } from '@shared/queues/QueueService';
+import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import { getRasterizer } from '@modules/trajectory/services/raster/Rasterizer';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
-import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
-import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
-import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { BaseWorker } from '@shared/queues/BaseWorker';
+import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
+import type { QueueService } from '@shared/queues/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { isFinalAttempt, withJobLifecycle } from '@shared/queues/with-job-lifecycle';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { type RasterQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
-import { logAndSwallow } from '@shared/application/utilities/error-message';
+import { logAndSwallow } from '@shared/utilities/error-message';
 import type { Rasterizer } from '@modules/trajectory/services/raster/Rasterizer';
 import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
@@ -75,9 +75,10 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     }
 }
 
-export const trajectoryRasterWorker = defineDaemonWorker({
+export const trajectoryRasterWorker: WorkerBinding = {
     name: 'trajectory-raster',
     scope: 'always',
     concurrencyKey: 'rasterizer',
-    tracksConcurrencyWhileRunning: true
-}, singleton((): TrajectoryRasterWorker => new TrajectoryRasterWorker(getQueueService(), getQueueScopeLimitsRegistry(), getTrajectoryAutoPreviewClaimStore(), getRasterizer(), getDaemonJobReporter())));
+    tracksConcurrencyWhileRunning: true,
+    resolve: singleton((): TrajectoryRasterWorker => new TrajectoryRasterWorker(getQueueService(), getQueueScopeLimitsRegistry(), getTrajectoryAutoPreviewClaimStore(), getRasterizer(), getDaemonJobReporter()))
+};

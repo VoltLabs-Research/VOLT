@@ -1,14 +1,14 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { randomUUID } from 'node:crypto';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
 import { OrchestrationAction } from '@shared/contracts/types/http-runtime';
 import { PIPELINE_QUEUE_NAME } from '@core/constants/queue-names';
-import { serializeDaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
-import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/domain/utilities/analysis-execution-data';
+import { serializeDaemonTraceContext } from '@shared/observability/daemon-instrumentation';
+import { compressSerializedAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/utilities/analysis-execution-data';
 import { WorkflowEngine, getWorkflowEngine } from '@modules/analysis/services/workflow/WorkflowEngine';
-import { RuntimeEventBroker, getEventBroker } from '@shared/application/events/RuntimeEventBroker';
-import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { RuntimeEventBroker, getEventBroker } from '@shared/events/RuntimeEventBroker';
+import { QueueService, getQueueService } from '@shared/queues/QueueService';
 import { planAnalysisWorkflow } from '@modules/analysis/services/plan-analysis-workflow';
 import type {
     AnalysisStartRequestWithTrace,

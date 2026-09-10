@@ -1,8 +1,8 @@
-import { logger } from '@shared/infrastructure/logger';
-import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
-import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
-import { createAnalysisExecutionLogSink } from '@shared/infrastructure/runtime/execution-log-streaming';
-import { logAndSwallow } from '@shared/application/utilities/error-message';
+import { logger } from '@shared/logger';
+import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
+import { withJobLifecycle } from '@shared/queues/with-job-lifecycle';
+import { createAnalysisExecutionLogSink } from '@shared/runtime/execution-log-streaming';
+import { logAndSwallow } from '@shared/utilities/error-message';
 import type { AnalysisQueueAdmissionController } from '@modules/analysis/services/AnalysisQueueAdmissionController';
 import { AnalysisEnvironment, type AnalysisEnvironmentState } from '@modules/analysis/services/workflow/AnalysisEnvironment';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';

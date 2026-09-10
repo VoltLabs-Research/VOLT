@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { Open as UnzipperOpen } from 'unzipper';
 import fg from 'fast-glob';
-import { mapLimited } from '@shared/application/utilities/map-limited';
+import { mapLimited } from '@shared/utilities/map-limited';
 
 
 export const normalizeProjectRelativePath = (value: string): string => {

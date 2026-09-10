@@ -1,8 +1,8 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import { logger } from '@shared/infrastructure/logger';
-import { compressSerializedAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/domain/utilities/analysis-execution-data';
-import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import { logger } from '@shared/logger';
+import { compressSerializedAnalysisExecutionData, parseStoredAnalysisExecutionData, serializeAnalysisExecutionData } from '@shared/utilities/analysis-execution-data';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import type { AnalysisExecutionDataReference, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 
 const ANALYSIS_EXECUTION_DATA_KEY_PREFIX = 'analysis:execution-data:';

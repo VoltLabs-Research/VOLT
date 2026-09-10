@@ -1,6 +1,6 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { DAEMON_PATHS } from '@core/config/paths';
-import { resolveDatabaseUrl } from '@shared/infrastructure/persistence/dialect';
+import { resolveDatabaseUrl } from '@shared/persistence/dialect';
 
 interface JupyterConfig {
     image: string;

@@ -5,7 +5,7 @@ import {
     buildInferFromContextArgs,
     collectInferFromContextArgumentKeys
 } from '@modules/analysis/services/pipeline-context';
-import { decodeCliArgumentsToken } from '@shared/application/utilities/serialization';
+import { decodeCliArgumentsToken } from '@shared/utilities/serialization';
 
 export interface ResolvedWorkflowEntrypointArgs {
     args: string[];

@@ -1,16 +1,16 @@
-import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { toTrajectoryFrameDumpObjectKey } from '@shared/storage/storage-codec';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
 
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { DAEMON_PATHS } from '@core/config/paths';
-import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
-import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
-import { createAnalysisExecutionLogSink } from '@shared/infrastructure/runtime/execution-log-streaming';
+import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
+import { withJobLifecycle } from '@shared/queues/with-job-lifecycle';
+import { createAnalysisExecutionLogSink } from '@shared/runtime/execution-log-streaming';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { logAndSwallow } from '@shared/application/utilities/error-message';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { logAndSwallow } from '@shared/utilities/error-message';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';
 import { AnalysisEnvironment, type AnalysisSeedMetadata } from '@modules/analysis/services/workflow/AnalysisEnvironment';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';

@@ -1,8 +1,8 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
+import { errorMessage } from '@shared/utilities/error-message';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { getConfig } from '@core/config/daemon';
-import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getFilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
+import { getQueueService } from '@shared/queues/QueueService';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -10,18 +10,18 @@ import { pipeline } from 'node:stream/promises';
 import unzipper from 'unzipper';
 import type { File as ZipEntry } from 'unzipper';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { logger } from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
-import type { LocalClusterObjectStoreGateway } from '@shared/contracts/types/cluster-object-store';
+import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import type { QueueService } from '@shared/queues/QueueService';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, toTrajectoryFrameJobKey } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import { scanTrajectoryFrames, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
-import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
-import { mapLimited } from '@shared/application/utilities/map-limited';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
+import { mapLimited } from '@shared/utilities/map-limited';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
 const INGEST_FRAME_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_INGEST_CONCURRENCY') ?? 8;
 const DEFAULT_FRAME_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_ATTEMPTS') ?? 3;
@@ -77,7 +77,7 @@ const isUnsupportedContentError = (error: unknown): boolean => (
 export class TrajectoryIngestCommand {
     constructor(
         private readonly config: DaemonConfig,
-        private readonly objectStore: LocalClusterObjectStoreGateway,
+        private readonly objectStore: FilesystemObjectStore,
         private readonly queueService: QueueService
     ) {}
 

@@ -1,9 +1,9 @@
-import { toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
-import { singleton } from '@shared/application/utilities/singleton';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { toTrajectoryFrameModelObjectKey } from '@shared/storage/storage-codec';
+import { singleton } from '@shared/utilities/singleton';
+import { getQueueService } from '@shared/queues/QueueService';
 import { getTrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import type { QueueService } from '@shared/queues/QueueService';
 import type { RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@shared/contracts/types/queue-trajectory';
 import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import { buildRasterJobPayload } from '@modules/trajectory/services/raster-job-factory';

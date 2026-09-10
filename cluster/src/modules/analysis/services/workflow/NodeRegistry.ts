@@ -1,4 +1,4 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { WorkflowArgumentsHandler } from '@modules/analysis/services/workflow/nodes/ArgumentsHandler';
 import { WorkflowContextHandler } from '@modules/analysis/services/workflow/nodes/ContextHandler';
 import { WorkflowEntrypointHandler } from '@modules/analysis/services/workflow/nodes/WorkflowEntrypointHandler';

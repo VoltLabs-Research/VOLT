@@ -1,8 +1,8 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
-import { logger } from '@shared/infrastructure/logger';
-import { logAndSwallow } from '@shared/application/utilities/error-message';
-import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
+import { singleton } from '@shared/utilities/singleton';
+import { getEventDispatcher } from '@shared/events/EventDispatcher';
+import { logger } from '@shared/logger';
+import { logAndSwallow } from '@shared/utilities/error-message';
+import type { EventDispatcher } from '@shared/events/EventDispatcher';
 import { AnalysisProvenanceRecordedEvent } from '@modules/analysis/events/analysis-events';
 import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
 import type { AnalysisJobExecutionData, AnalysisJobMetadata, AnalysisValueMap } from '@shared/contracts/types/http-analysis';

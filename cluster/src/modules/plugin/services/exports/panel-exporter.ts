@@ -1,4 +1,4 @@
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { getNestedValue, stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
 

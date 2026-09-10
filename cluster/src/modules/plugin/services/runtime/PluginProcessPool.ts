@@ -1,8 +1,8 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { logger } from '@shared/infrastructure/logger';
+import { singleton } from '@shared/utilities/singleton';
+import { logger } from '@shared/logger';
 import { createHash } from 'node:crypto';
-import { getAvailableCpuCount, resolvePluginProcessEstMemoryMb, resolvePluginProcessMemoryBudgetMb, computePluginProcessMemorySlots, resolvePluginProcessConcurrency } from '@shared/domain/utilities/runtime-capacity';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { getAvailableCpuCount, resolvePluginProcessEstMemoryMb, resolvePluginProcessMemoryBudgetMb, computePluginProcessMemorySlots, resolvePluginProcessConcurrency } from '@shared/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import {
     PluginProcessChannel,
     type PooledProcessSpawnInput

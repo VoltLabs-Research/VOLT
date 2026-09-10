@@ -8,8 +8,8 @@ import type {
     PipelineStageTransport
 } from '@shared/contracts/types/http-analysis';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import { extractDaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
-import { inflateBase64GzipJson } from '@shared/application/utilities/gzip-base64-json';
+import { extractDaemonTraceContext } from '@shared/observability/daemon-instrumentation';
+import { inflateBase64GzipJson } from '@shared/utilities/gzip-base64-json';
 import type { PipelineDispatcher } from '@modules/analysis/services/PipelineDispatcher';
 
 @CommandGroup('pipeline')

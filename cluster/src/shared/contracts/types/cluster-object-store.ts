@@ -84,18 +84,6 @@ export type LocalClusterObjectListRequest = Omit<ClusterObjectListRequest, 'limi
     limit: number;
 };
 
-export interface LocalClusterObjectStoreGateway extends ScopedClusterObjectStore {
-    listBuckets(): string[];
-    statObject(bucket: string, objectKey: string): Promise<LocalClusterObjectStat>;
-    getObjectStream(bucket: string, objectKey: string): Promise<Readable>;
-    getObjectRangeStream(bucket: string, objectKey: string, offset: number, length: number): Promise<Readable>;
-    listObjectsPage(input: LocalClusterObjectListRequest): Promise<ClusterObjectListResponse>;
-    composeObject(input: LocalClusterObjectComposeInput): Promise<void>;
-    removeObject(bucket: string, objectKey: string): Promise<void>;
-    deleteByPrefix(bucket: string, prefix: string): Promise<number>;
-    resolveLocalPath(bucket: string, objectKey: string): string;
-}
-
 export interface RemoteClusterObjectPutBufferRequest {
     bucket: string;
     objectKey: string;
@@ -113,19 +101,6 @@ export interface RemoteClusterObjectPutStreamRequest {
     contentType?: string;
     contentEncoding?: string;
     metadata?: Record<string, string>;
-}
-
-export interface RemoteClusterObjectStoreGateway {
-    head(ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse>;
-    getStream(
-        ownerClusterId: string,
-        bucket: string,
-        objectKey: string,
-        options?: ClusterObjectReadOptions
-    ): Promise<ClusterObjectStreamResponse>;
-    putBuffer(ownerClusterId: string, request: RemoteClusterObjectPutBufferRequest): Promise<void>;
-    putStream(ownerClusterId: string, request: RemoteClusterObjectPutStreamRequest): Promise<void>;
-    list(ownerClusterId: string, request: ClusterObjectListRequest): Promise<ClusterObjectListResponse>;
 }
 
 export interface ClusterObjectStore {

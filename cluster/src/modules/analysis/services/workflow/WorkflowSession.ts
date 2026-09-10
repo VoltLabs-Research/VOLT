@@ -1,4 +1,4 @@
-import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { toTrajectoryFrameDumpObjectKey } from '@shared/storage/storage-codec';
 import type {
     AnalysisExposureDefinition,
     DaemonAnalysisDocument

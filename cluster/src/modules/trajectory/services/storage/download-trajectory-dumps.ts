@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { isZstdObjectKey } from '@shared/infrastructure/storage/storage-codec';
-import { downloadDumpObject } from '@shared/infrastructure/storage/download-dump-object';
+import { isZstdObjectKey } from '@shared/storage/storage-codec';
+import { downloadDumpObject } from '@shared/storage/download-dump-object';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { TrajectoryFrameSource } from '@shared/contracts/types/trajectory-frame-store';
 

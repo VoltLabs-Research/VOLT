@@ -1,10 +1,10 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { getWorkflowNodeRegistry, type WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
 import { DebugEnvironment, getDebugEnvironment } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import { TTLCache } from '@isaacs/ttlcache';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import { WorkflowRuntime, getWorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';

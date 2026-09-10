@@ -1,8 +1,8 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { concurrencyTrackedWorkers, workersForScope } from '@shared/infrastructure/queues/worker-registry';
+import { singleton } from '@shared/utilities/singleton';
+import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { concurrencyTrackedWorkers, workersForScope } from '@shared/queues/worker-registry';
 import { DAEMON_WORKERS } from '@core/bootstrap/workers';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, createDefaultTeamClusterRuntimeRoleConfig } from '@shared/contracts/types/team-cluster-runtime';
 import type {
     TeamClusterDaemonQueueConcurrency,

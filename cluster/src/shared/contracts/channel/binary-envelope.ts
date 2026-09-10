@@ -13,7 +13,7 @@ export const encodeStreamChunk = (payload: Uint8Array): Uint8Array => {
     return out;
 };
 
-export interface SerializedBuffer {
+interface SerializedBuffer {
     type: 'Buffer';
     data: number[];
 }

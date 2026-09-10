@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { DAEMON_PATHS } from '@core/config/paths';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 
 
 const CACHE_MAX_BYTES = Math.max(

@@ -6,7 +6,7 @@ import {
     connectPlaneSocket,
     sendToParent,
     registerSignalHandlers
-} from '@shared/infrastructure/planes/plane-shared';
+} from '@shared/planes/plane-shared';
 
 interface EmitMessage {
     type: 'emit-message';

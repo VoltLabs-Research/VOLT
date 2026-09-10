@@ -1,12 +1,12 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { logger } from '@shared/infrastructure/logger';
+import { singleton } from '@shared/utilities/singleton';
+import { logger } from '@shared/logger';
 import { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 import { WorkflowPlanner } from '@modules/analysis/services/workflow/WorkflowPlanner';
 import { WorkflowNodeRegistry, getWorkflowNodeRegistry, isPlanningNodeType } from '@modules/analysis/services/workflow/NodeRegistry';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import { WorkflowTrajectoryWindowHandler } from '@modules/analysis/services/workflow/nodes/TrajectoryWindowHandler';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import { resolvePluginNativeThreadBudget } from '@shared/domain/utilities/runtime-capacity';
+import { resolvePluginNativeThreadBudget } from '@shared/utilities/runtime-capacity';
 import type { NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition, WorkflowTrajectoryWindowData } from '@shared/contracts/types/http-workflow';
 import type { PlannedExecutionItem, WorkflowWindowMode, DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
 import type { WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';

@@ -1,11 +1,11 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
+import { singleton } from '@shared/utilities/singleton';
+import { getEventDispatcher } from '@shared/events/EventDispatcher';
 import Bottleneck from 'bottleneck';
 
-import type { EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
+import type { EventDispatcher } from '@shared/events/EventDispatcher';
 import { SceneArtifactBatchReportedEvent } from '@modules/plugin/events/plugin-events';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
-import { logAndSwallow, safeExecute } from '@shared/application/utilities/error-message';
+import { logAndSwallow, safeExecute } from '@shared/utilities/error-message';
 
 const SCENE_ARTIFACT_BATCH_SIZE = 64;
 const SCENE_ARTIFACT_BATCH_FLUSH_INTERVAL_MS = 250;

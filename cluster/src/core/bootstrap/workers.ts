@@ -1,4 +1,4 @@
-import type { WorkerBinding } from '@shared/infrastructure/queues/worker-registry';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
 import { analysisWorker } from '@modules/analysis/workers/AnalysisWorker';
 import { pipelineWorker } from '@modules/analysis/workers/PipelineWorker';
 import { artifactUploadWorker } from '@modules/plugin/workers/ArtifactUploadWorker';

@@ -1,6 +1,6 @@
 import { WorkflowSession, type WorkflowOutputsSnapshot } from '@modules/analysis/services/workflow/WorkflowSession';
 import { WorkflowGraph, WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import fg from 'fast-glob';
 import path from 'node:path';
 import type { ReverseChannelCommandPayloadView } from '@shared/contracts/channel/reverse-channel-messaging';

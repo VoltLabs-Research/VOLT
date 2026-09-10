@@ -1,5 +1,5 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -9,7 +9,7 @@ import { Worker } from 'node:worker_threads';
 import { DuckDBConnection, DuckDBTypeId } from '@duckdb/node-api';
 
 import { DAEMON_PATHS } from '@core/config/paths';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { toTrajectoryFrameError } from '@modules/trajectory/services/storage/trajectory-not-found-error';
@@ -25,13 +25,13 @@ import type {
     TrajectoryFrameStoreIngestInput,
     TrajectoryFrameStoreIngestResult
 } from '@shared/contracts/types/trajectory-frame-store';
-import type { ColumnDType, TypedColumn } from '@shared/domain/catalog/element-table';
-import { DEFAULT_UNITS } from '@shared/domain/catalog/units';
-import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
+import type { ColumnDType, TypedColumn } from '@shared/catalog/element-table';
+import { DEFAULT_UNITS } from '@shared/catalog/units';
+import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import {
     toTrajectoryParquetObjectKey,
     toTrajectoryElementTableObjectKey
-} from '@shared/infrastructure/storage/storage-codec';
+} from '@shared/storage/storage-codec';
 
 const BASE_COLUMN_SET = new Set<string>(['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z']);
 const PARQUET_FRAME_CACHE_BYTES = 512 * 1024 * 1024;

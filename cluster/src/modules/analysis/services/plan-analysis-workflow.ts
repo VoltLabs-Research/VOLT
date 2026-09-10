@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { EntrypointType } from '@shared/contracts/types/http-runtime';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';

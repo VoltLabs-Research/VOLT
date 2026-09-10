@@ -1,10 +1,10 @@
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import {
     buildOctreeMetadata,
     DEFAULT_GEOMETRY_BUDGET,
     type OctreeMetadata
-} from '@shared/domain/octree';
+} from '@shared/octree';
 import type {
     ExportExecutionInput,
     OctreeExportOptions

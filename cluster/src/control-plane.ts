@@ -1,4 +1,4 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
+import { errorMessage } from '@shared/utilities/error-message';
 import { randomUUID } from 'node:crypto';
 import { type Socket } from 'socket.io-client';
 
@@ -8,7 +8,7 @@ import {
     connectPlaneSocket,
     registerSignalHandlers,
     sendToParent
-} from '@shared/infrastructure/planes/plane-shared';
+} from '@shared/planes/plane-shared';
 import type {
     TeamClusterDaemonCommandMessage,
     TeamClusterDaemonSocketResponsePayload

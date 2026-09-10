@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
-import { BIG_INTEGER_COLUMN_TYPE, JSON_COLUMN_TYPE, jsonColumnDefault } from '@shared/infrastructure/persistence/column-types';
+import { BIG_INTEGER_COLUMN_TYPE, JSON_COLUMN_TYPE, jsonColumnDefault } from '@shared/persistence/column-types';
 import type { JsonObject } from '@shared/contracts/types/json';
 
 @Entity('plugin_sub_listing_rows')

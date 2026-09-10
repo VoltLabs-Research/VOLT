@@ -1,12 +1,12 @@
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { toTrajectoryFrameDumpObjectKey } from '@shared/storage/storage-codec';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { mapLimited } from '@shared/application/utilities/map-limited';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { mapLimited } from '@shared/utilities/map-limited';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
 interface TrajectoryCloneFramePayload {
     timestep: number | string;

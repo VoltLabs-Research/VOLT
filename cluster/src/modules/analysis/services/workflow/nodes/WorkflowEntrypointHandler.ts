@@ -1,5 +1,5 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
-import { logger } from '@shared/infrastructure/logger';
+import { errorMessage } from '@shared/utilities/error-message';
+import { logger } from '@shared/logger';
 import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
 import type { PluginExecutionRuntime } from '@shared/contracts/types/plugin-execution';
 import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';

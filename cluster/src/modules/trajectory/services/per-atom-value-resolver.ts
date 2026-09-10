@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { toBytes, type InboundChunk } from '@shared/contracts/channel/binary-envelope';
 import type { ParsedTrajectory, TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { ModifierScalarValues, PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';

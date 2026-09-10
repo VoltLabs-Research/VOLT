@@ -1,7 +1,7 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { currentPlatformTag } from '@shared/infrastructure/utilities/platform-tag';
+import { currentPlatformTag } from '@shared/utilities/platform-tag';
 
 import { BinaryExecutorService, getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import type { AnalysisValueMap } from '@shared/contracts/types/http-analysis';

@@ -7,7 +7,7 @@ export interface TeamClusterDaemonRegistryInstallPayload {
     platform: string;
 }
 
-export interface TeamClusterDaemonRegistryInstallBinary {
+interface TeamClusterDaemonRegistryInstallBinary {
     objectPath: string;
     fileName: string;
     hash: string;

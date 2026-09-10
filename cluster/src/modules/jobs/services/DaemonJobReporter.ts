@@ -1,7 +1,7 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getEventDispatcher, type EventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
-import type { DomainEventClass, PayloadOf } from '@shared/domain/events/create-domain-event';
-import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
+import { singleton } from '@shared/utilities/singleton';
+import { getEventDispatcher, type EventDispatcher } from '@shared/events/EventDispatcher';
+import type { DomainEventClass, PayloadOf } from '@shared/events/create-domain-event';
+import type { IDomainEvent } from '@shared/events/IDomainEvent';
 import {
     AnalysisCompletedEvent,
     AnalysisFailedEvent,

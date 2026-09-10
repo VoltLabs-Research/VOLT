@@ -1,6 +1,6 @@
 import { COMMAND_GROUPS } from '@core/bootstrap/command-groups';
 import { registerCommandGroups } from '@shared/commands/CommandRegistry';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { CommandTransport } from '@shared/contracts/channel/command-transport';
 
 const mountCommands = (transport: CommandTransport): void => {

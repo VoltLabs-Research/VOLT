@@ -1,5 +1,5 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { DAEMON_PATHS } from '@core/config/paths';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';

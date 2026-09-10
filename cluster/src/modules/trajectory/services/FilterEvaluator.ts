@@ -1,9 +1,9 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import spatialAssembler from '@voltstack/spatial-assembler';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { toBytes, type InboundChunk } from '@shared/contracts/channel/binary-envelope';
 import {
     buildCategoricalColors,
@@ -16,7 +16,7 @@ import {
 import { resolvePerAtomValues } from '@modules/trajectory/services/per-atom-value-resolver';
 import { resolveGradientCode } from '@modules/trajectory/services/gradient-codes';
 import { uploadGlbBuffer } from '@modules/trajectory/services/glb/upload-glb-buffer';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { type ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { ComparisonOperator } from '@modules/trajectory/services/particle-filter-kernels';
 import type { ParsedTrajectory, TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';

@@ -4,7 +4,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createZstdCompress, createZstdDecompress } from 'node:zlib';
 import * as tar from 'tar';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';

@@ -1,21 +1,21 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
+import { errorMessage } from '@shared/utilities/error-message';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import { getConfig } from '@core/config/daemon';
-import { getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
-import { getVoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getDockerRuntime } from '@shared/runtime/DockerRuntime';
+import { getVoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
+import { getQueueService } from '@shared/queues/QueueService';
 import * as path from 'node:path';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import type { RuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import type { DaemonConfig } from '@core/config/daemon';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import type { QueueService } from '@shared/queues/QueueService';
 import type {
     TeamClusterDaemonQueueConcurrencyApplyPayload,
     TeamClusterDaemonRoleApplyPayload
 } from '@shared/contracts/types/team-cluster-runtime';
-import type { DockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
-import type { VoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
+import type { DockerRuntime } from '@shared/runtime/DockerRuntime';
+import type { VoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
 
 const DEFERRED_RUNTIME_COMMAND_DELAY_MS = 250;
 

@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getQueueService } from '@shared/queues/QueueService';
 import { getConfig } from '@core/config/daemon';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
@@ -26,13 +26,13 @@ import type {
     PluginListingFilter,
     PluginSubListingFilter
 } from '@modules/plugin/models/plugin-listing-repository-contract';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { logger } from '@shared/infrastructure/logger';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { logger } from '@shared/logger';
+import type { QueueService } from '@shared/queues/QueueService';
 import { PLUGIN_WARMUP_QUEUE_NAME } from '@core/constants/queue-names';
 import type { PluginWarmupJobPayload } from '@modules/plugin/workers/PluginWarmupWorker';
 import type { DaemonConfig } from '@core/config/daemon';
-import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
+import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import {
     downloadVerifiedTarball,
     locateRegistryExecutable,

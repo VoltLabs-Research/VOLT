@@ -1,13 +1,13 @@
-import { toError } from '@shared/application/utilities/error-message';
+import { toError } from '@shared/utilities/error-message';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { ProcessExecutionLogSink } from '@shared/contracts/types/execution-log';
 import type {
     PluginProcessRequest,
     PluginProcessResponse
 } from '@shared/contracts/types/plugin-batch';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { buildPluginProcessEnv } from '@modules/plugin/services/runtime/plugin-process-env';
 import {
     PluginProcessFrameReader,

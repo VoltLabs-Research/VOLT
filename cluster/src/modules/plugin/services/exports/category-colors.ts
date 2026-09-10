@@ -1,6 +1,6 @@
 const GOLDEN_RATIO = 0.618033988749895;
 
-export const hueToRgb = (p: number, q: number, t: number): number => {
+const hueToRgb = (p: number, q: number, t: number): number => {
     let tt = t;
     if (tt < 0) tt += 1;
     if (tt > 1) tt -= 1;
@@ -53,10 +53,10 @@ const GENERATED_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
 
 const INDEXED_CATEGORY_RE = /^Cluster\s+(\d+)$/i;
 
-export const normalizeCategoryName = (name: string): string =>
+const normalizeCategoryName = (name: string): string =>
     name.trim().toLowerCase().replace(/[\s-]+/g, '_');
 
-export const generatedCategoryColor = (index: number): [number, number, number] => {
+const generatedCategoryColor = (index: number): [number, number, number] => {
     const wrapped = Math.max(0, Math.trunc(index));
     if (wrapped < GENERATED_PALETTE.length) {
         const color = GENERATED_PALETTE[wrapped];

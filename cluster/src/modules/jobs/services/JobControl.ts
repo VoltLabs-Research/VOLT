@@ -1,10 +1,10 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { logger } from '@shared/infrastructure/logger';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
-import { stopProcess } from '@shared/infrastructure/runtime/process-tracker';
-import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import { singleton } from '@shared/utilities/singleton';
+import { logger } from '@shared/logger';
+import { getQueueService } from '@shared/queues/QueueService';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import type { QueueService } from '@shared/queues/QueueService';
+import { stopProcess } from '@shared/runtime/process-tracker';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import type {
     JobsActionResponse,
     RemoveRunningJobsRequest,

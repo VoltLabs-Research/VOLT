@@ -1,5 +1,5 @@
-import { toTrajectoryFrameModelObjectKey } from '@shared/infrastructure/storage/storage-codec';
-import { singleton } from '@shared/application/utilities/singleton';
+import { toTrajectoryFrameModelObjectKey } from '@shared/storage/storage-codec';
+import { singleton } from '@shared/utilities/singleton';
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
 import { normalizePagination, calculatePaginationOffset } from '@shared/contracts/types/pagination';
 import type {
@@ -14,8 +14,8 @@ import type {
     ColumnDType,
     TypedColumn,
     ElementTableEntry
-} from '@shared/domain/catalog/element-table';
-import type { LammpsUnits } from '@shared/domain/catalog/units';
+} from '@shared/catalog/element-table';
+import type { LammpsUnits } from '@shared/catalog/units';
 
 interface ParsedTrajectoryMetadata {
     headers: string[];

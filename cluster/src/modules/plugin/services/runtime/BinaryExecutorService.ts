@@ -1,17 +1,17 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import type {
     ProcessExecutionResult,
     ProcessExecutionInput,
     PersistentPluginInvocationInput,
     PersistentPluginInvocationResult
 } from '@shared/contracts/types/plugin-execution';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import {
     flushLogSink,
     forwardLogChunk
 } from '@modules/plugin/services/runtime/process-log-sink';
-import { registerProcess, unregisterProcess } from '@shared/infrastructure/runtime/process-tracker';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { registerProcess, unregisterProcess } from '@shared/runtime/process-tracker';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { PluginProcessPool, getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
 import type { PooledProcessSpawnInput } from '@modules/plugin/services/runtime/PluginProcessChannel';
 import { buildPluginProcessEnv } from '@modules/plugin/services/runtime/plugin-process-env';

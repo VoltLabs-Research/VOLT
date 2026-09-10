@@ -5,7 +5,7 @@ import { runCommand } from '@modules/plugin/services/binaries/run-command';
 import { ensureExtractedProject } from '@modules/plugin/services/binaries/zip-project-extractor';
 import { resolvePythonEntrypoint } from '@modules/plugin/services/binaries/extracted-entrypoint-resolver';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
-import { prependPathEntries } from '@shared/infrastructure/utilities/process-path';
+import { prependPathEntries } from '@shared/utilities/process-path';
 
 
 export const PYTHON_VENV_DIRECTORY = 'venv';
