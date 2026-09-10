@@ -15,6 +15,7 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 
 import type { GetTeamMetricsInput, TeamMetricsSnapshot } from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
 import type {
+    TrajectoryFolderListingView,
     TrajectoryFolderQuery,
     TrajectoryFolderView
 } from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
@@ -106,7 +107,7 @@ export default class TrajectoryService {
         return trajectoryCatalogService.deleteById(input);
     }
 
-    listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderView>> {
+    listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderListingView>> {
         return trajectoryCatalogService.listFolders(teamId, query);
     }
 

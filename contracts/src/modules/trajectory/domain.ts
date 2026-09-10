@@ -56,6 +56,7 @@ export interface Trajectory extends BaseEntity{
 export interface TrajectoryFolder extends BaseEntity{
     title: string;
     parent: string | null;
+    stats?: TrajectoryStats;
 }
 
 export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';

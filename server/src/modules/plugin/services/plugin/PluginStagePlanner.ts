@@ -111,6 +111,7 @@ export default class PluginStagePlanner {
             selectedTimesteps,
             upstreamStageHashes,
             pluginId: plugin._id,
+            pluginBinaryHash: plugin.props.workflow.entrypoint?.binaryHash,
             config
         });
 

@@ -17,7 +17,7 @@ export const {
         team: '',
         analysis: [],
         frames: [],
-        stats: {
+        stats: folder.stats ?? {
             totalFiles: 0,
             totalSize: 0
         },

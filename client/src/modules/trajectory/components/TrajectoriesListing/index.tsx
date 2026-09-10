@@ -18,6 +18,12 @@ import type { MenuOption } from '@/shared/contracts/menu';
 
 const renderStatusBadge = (status: string) => <StatusPill status={status} />;
 
+const EMPTY_CELL = <span className='text-sm text-muted'>-</span>;
+
+const renderCount = (value: number | undefined) => (value ? formatNumber(value) : EMPTY_CELL);
+
+const renderSize = (bytes: number | undefined) => (bytes ? formatSize(bytes) : EMPTY_CELL);
+
 const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     createFolderedTitleColumn<TrajectoryListingRow>({
         key: 'name',
@@ -29,7 +35,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'atoms',
         title: 'Atoms',
-        render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.atoms ?? 0),
+        render: (_value, row) => renderCount(isTrajectoryFolderRow(row) ? undefined : row.atoms),
         skeleton: {
             variant: 'text',
             width: 70
@@ -38,7 +44,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'framesCount',
         title: 'Frames',
-        render: (_value, row) => formatNumber(isTrajectoryFolderRow(row) ? 0 : row.framesCount ?? 0),
+        render: (_value, row) => renderCount(isTrajectoryFolderRow(row) ? undefined : row.framesCount),
         skeleton: {
             variant: 'text',
             width: 70
@@ -47,7 +53,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'stats.totalSize',
         title: 'Size',
-        render: (_value, row) => formatSize(isTrajectoryFolderRow(row) ? 0 : row.stats.totalSize),
+        render: (_value, row) => renderSize(row.stats.totalSize),
         skeleton: {
             variant: 'text',
             width: 90
@@ -57,7 +63,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
         key: 'status',
         title: 'Status',
         render: (value, row) => isTrajectoryFolderRow(row)
-            ? <span className='text-sm text-muted'>-</span>
+            ? EMPTY_CELL
             : renderStatusBadge(String(value)),
         skeleton: {
             variant: 'rounded',

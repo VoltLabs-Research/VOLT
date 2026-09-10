@@ -22,9 +22,10 @@ import ApplicationError from '@shared/application/errors/ApplicationError';
 import eventBus from '@shared/infrastructure/events/PostgresEventBus';
 import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
 
-import { ILike, IsNull } from 'typeorm';
+import { ILike, In, IsNull } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { TrajectoryStats } from '@volt/contracts/modules/trajectory/domain';
 import type {
     GetTrajectoriesByTeamIdInput,
     ListPublicTeamTrajectoriesInput,
@@ -36,7 +37,18 @@ import type {
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
 export type TrajectoryFolderView = Awaited<ReturnType<CatalogFolderService['get']>>;
+export type TrajectoryFolderListingView = TrajectoryFolderView & { stats: TrajectoryStats };
 export type TrajectoryFolderQuery = NonNullable<Parameters<CatalogFolderService['list']>[1]>;
+
+const EMPTY_TRAJECTORY_STATS: TrajectoryStats = {
+    totalFiles: 0,
+    totalSize: 0
+};
+
+const addTrajectoryStats = (target: TrajectoryStats, source: TrajectoryStats | null | undefined): TrajectoryStats => ({
+    totalFiles: target.totalFiles + (Number(source?.totalFiles) || 0),
+    totalSize: target.totalSize + (Number(source?.totalSize) || 0)
+});
 
 const LIST_DEFAULT_LIMIT = 20;
 
@@ -184,8 +196,58 @@ class TrajectoryCatalogService {
         return { success: true };
     }
 
-    listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderView>> {
-        return this.#folders.list(teamId, query);
+    async listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderListingView>> {
+        const result = await this.#folders.list(teamId, query);
+        const statsByFolder = await this.#aggregateFolderStats(teamId, result.data.map((folder) => folder._id));
+
+        return {
+            ...result,
+            data: result.data.map((folder) => ({
+                ...folder,
+                stats: statsByFolder.get(folder._id) ?? EMPTY_TRAJECTORY_STATS
+            }))
+        };
+    }
+
+    async #aggregateFolderStats(teamId: string, folderIds: string[]): Promise<Map<string, TrajectoryStats>> {
+        const subtrees = await this.#folders.subtreeIds(teamId, folderIds);
+        const subtreeFolderIds = [...new Set([...subtrees.values()].flat())];
+        if (subtreeFolderIds.length === 0) return new Map();
+
+        const trajectories = await Trajectory.find({
+            where: {
+                team: teamId,
+                folder: In(subtreeFolderIds)
+            },
+            select: {
+                id: true,
+                folder: true,
+                stats: true
+            }
+        });
+
+        const statsByLeafFolder = new Map<string, TrajectoryStats>();
+        for (const trajectory of trajectories) {
+            if (!trajectory.folder) continue;
+            const folderId = String(trajectory.folder);
+            statsByLeafFolder.set(
+                folderId,
+                addTrajectoryStats(statsByLeafFolder.get(folderId) ?? EMPTY_TRAJECTORY_STATS, trajectory.stats)
+            );
+        }
+
+        const statsByFolder = new Map<string, TrajectoryStats>();
+        for (const [folderId, subtreeIds] of subtrees) {
+            statsByFolder.set(
+                folderId,
+                subtreeIds.reduce(
+                    (total, subtreeId) => addTrajectoryStats(total, statsByLeafFolder.get(subtreeId)),
+                    EMPTY_TRAJECTORY_STATS
+                )
+            );
+        }
+
+        return statsByFolder;
     }
 
     getFolder(teamId: string, folderId: string): Promise<TrajectoryFolderView> {

@@ -132,6 +132,7 @@ interface PipelineStageHashInput {
     selectedTimesteps?: number[];
     upstreamStageHashes: string[];
     pluginId: string;
+    pluginBinaryHash?: string;
     config: Record<string, unknown>;
 }
 
@@ -147,6 +148,7 @@ export const computePipelineStageHash = (input: PipelineStageHashInput): string 
             selectedTimesteps: normalizedTimesteps,
             upstreamStageHashes: input.upstreamStageHashes,
             pluginId: input.pluginId,
+            ...(input.pluginBinaryHash ? { pluginBinaryHash: input.pluginBinaryHash } : {}),
             config: input.config
         }))
         .digest('hex')

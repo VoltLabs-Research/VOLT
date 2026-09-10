@@ -35,6 +35,7 @@ const PLUGIN_NAVIGATION_LABEL_COLLATOR = new Intl.Collator(undefined, {
 
 const DEFAULT_PERMISSION_DENIED_REASON = 'You do not have permission to access this section.';
 const DOCS_URL = 'https://docs.voltcloud.dev';
+const TRAJECTORIES_PATH = '/dashboard/trajectories/list';
 
 const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavProps) => {
     const [searchParams] = useSearchParams();
@@ -58,24 +59,6 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
 
         return canAccessPermissions(item.requiredPermissions, permissionMode);
     };
-
-    const trajectoriesItems = useMemo<NavTreeNode[]>(() => [
-        {
-            label: 'View All',
-            to: '/dashboard/trajectories/list',
-            isSelected: pathname === '/dashboard/trajectories/list'
-        },
-        {
-            label: 'Artifacts',
-            to: '/dashboard/trajectories/artifacts',
-            isSelected: pathname === '/dashboard/trajectories/artifacts'
-        },
-        {
-            label: 'Simulation Cells',
-            to: '/dashboard/simulation-cells/list',
-            isSelected: pathname === '/dashboard/simulation-cells/list'
-        }
-    ], [pathname]);
 
     const analysisItems = useMemo<NavTreeNode[]>(() => [
         {
@@ -193,17 +176,21 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
         <SidebarPanel name='app' label='Main navigation' active={active}>
             {visibleNavigationItems(MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
 
-            <NavTreeSection
-                label='Trajectories'
-                icon={CubeIcon}
-                isActive={trajectoriesActive}
-                items={trajectoriesItems}
-                collapsed={collapsed}
-                isDisabled={!canAccessTrajectories}
-                tooltip={canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.'}
-                isTooltipDisabled={canAccessTrajectories && !collapsed}
-                onRequestExpand={onExpandSidebar}
-            />
+            {renderRow(
+                'trajectories',
+                canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.',
+                canAccessTrajectories && !collapsed,
+                (
+                    <NavItem
+                        label='Trajectories'
+                        icon={CubeIcon}
+                        collapsed={collapsed}
+                        to={canAccessTrajectories ? TRAJECTORIES_PATH : undefined}
+                        isActive={trajectoriesActive}
+                        isDisabled={!canAccessTrajectories}
+                    />
+                )
+            )}
 
             <NavTreeSection
                 label='Analysis'

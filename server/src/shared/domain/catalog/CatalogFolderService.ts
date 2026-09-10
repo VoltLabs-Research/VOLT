@@ -99,6 +99,42 @@ export default class CatalogFolderService{
         });
     }
 
+    async subtreeIds(teamId: string, rootIds: string[]): Promise<Map<string, string[]>>{
+        const subtrees = new Map<string, string[]>();
+        if(rootIds.length === 0) return subtrees;
+
+        const folders = await CatalogFolder.find({
+            where: {
+                team: teamId,
+                kind: this.#kind
+            },
+            select: {
+                id: true,
+                parent: true
+            }
+        });
+
+        const childrenByParent = new Map<string, string[]>();
+        for(const folder of folders){
+            if(!folder.parent) continue;
+            const parentId = String(folder.parent);
+            childrenByParent.set(parentId, [...(childrenByParent.get(parentId) ?? []), folder.id]);
+        }
+
+        for(const rootId of rootIds){
+            const collected: string[] = [];
+            const pending = [rootId];
+            while(pending.length > 0){
+                const current = pending.pop()!;
+                collected.push(current);
+                pending.push(...(childrenByParent.get(current) ?? []));
+            }
+            subtrees.set(rootId, collected);
+        }
+
+        return subtrees;
+    }
+
     async remove(teamId: string, folderId: string): Promise<void>{
         await CatalogFolder.delete({
             id: folderId,
