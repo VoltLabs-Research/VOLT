@@ -4,6 +4,10 @@ import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 
 const FOLDER_ID_SEARCH_PARAM = 'folderId';
 
+export const dashboardPathForFolder = (folderId: string | null | undefined): string => (
+    folderId ? `/dashboard?${FOLDER_ID_SEARCH_PARAM}=${encodeURIComponent(folderId)}&page=1` : '/dashboard'
+);
+
 interface UseFolderSearchParamReturn {
     currentFolderId: string | null;
     isInsideFolder: boolean;
