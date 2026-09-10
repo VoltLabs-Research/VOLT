@@ -1,5 +1,5 @@
 import { connectDatabase, disconnectDatabase } from '@core/bootstrap/connect-database';
-import { getKeyValueStore, sweepExpiredKeyValues } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore, sweepExpiredKeyValues } from '@shared/keyvalue/KeyValueStore';
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {

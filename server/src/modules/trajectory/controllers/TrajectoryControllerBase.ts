@@ -1,16 +1,15 @@
 import Controller from '@shared/http/Controller';
-import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
-import { buildControllerParams, readAcceptEncoding } from '@shared/infrastructure/http/controllers/controller-internals';
+import { buildControllerParams, readAcceptEncoding } from '@shared/http/controllers/controller-internals';
 import { encodeAtomsBinary } from '@modules/trajectory/controllers/atoms-binary-format';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 
 import type {
     GetAtomsColumnarInput,
     GetAtomsColumnarOutput
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
@@ -19,8 +18,6 @@ const readRouteParam = (value: string | string[]): string => (
 );
 
 export default abstract class TrajectoryControllerBase extends Controller {
-    protected readonly service = new TrajectoryService();
-
     protected params<T>(
         req: AuthenticatedRequest,
         extend?: (req: AuthenticatedRequest, params: Record<string, unknown>) => Record<string, unknown>

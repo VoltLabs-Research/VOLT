@@ -6,17 +6,17 @@ import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     createClusterTransferJobDefaults,
-    ClusterTransferJobReason as ClusterTransferJobReasonColumn,
-    ClusterTransferJobState as ClusterTransferJobStateColumn
+    type ClusterTransferJobReason as ClusterTransferJobReasonColumn,
+    type ClusterTransferJobState as ClusterTransferJobStateColumn
 } from '@modules/cluster/contracts/cluster-transfer-job';
 import type {
     ClusterTransferJobState
 } from '@volt/contracts/modules/cluster/domain';
-import { StoragePlacementScopeType as StoragePlacementScopeTypeColumn } from '@modules/cluster/contracts/storage-placement';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { type StoragePlacementScopeType as StoragePlacementScopeTypeColumn } from '@modules/cluster/contracts/storage-placement';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type {
     StoragePlacementScopeType
-} from '@shared/domain/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster';
 import { In, IsNull, LessThanOrEqual, Or } from 'typeorm';
 import publishTransferJobProjection from '@modules/cluster/services/transfer/ClusterTransferJobProjector';
 import {
@@ -25,7 +25,7 @@ import {
     OPEN_TRANSFER_JOB_STATES
 } from '@modules/cluster/services/transfer/cluster-transfer-constants';
 
-export default class ClusterTransferJobStore{
+class ClusterTransferJobStore{
     async findById(jobId: string): Promise<ClusterTransferJob | null> {
         const entity = await ClusterTransferJobEntity.findOneBy({ id: jobId });
         return entity ? toClusterTransferJobLike(entity) : null;
@@ -191,3 +191,5 @@ export default class ClusterTransferJobStore{
         return entity ? toTeamClusterLike(entity) : null;
     }
 }
+
+export default new ClusterTransferJobStore();

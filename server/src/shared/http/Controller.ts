@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import type { RequestHandler, Response } from 'express';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import { getRoutes } from '@shared/http/route';
 import { getParamResolvers } from '@shared/http/params';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
 const classMiddleware = new WeakMap<object, RequestHandler[]>();

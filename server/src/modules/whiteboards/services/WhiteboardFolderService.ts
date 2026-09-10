@@ -1,10 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
-import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import whiteboardService from '@modules/whiteboards/services/WhiteboardService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { CatalogFolderKind } from '@shared/catalog/CatalogFolder';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import { IsNull } from 'typeorm';
 
 const DEFAULT_LIST_LIMIT = 500;
@@ -17,9 +17,7 @@ const presentFolder = (folder: CatalogFolder) => ({
     updatedAt: folder.updatedAt
 });
 
-export default class WhiteboardFolderService{
-    #whiteboards = new WhiteboardService();
-
+class WhiteboardFolderService{
     async listFolders(teamId: string, query: { parentId?: string | null; page?: number; limit?: number }){
         const pageRequest = readPageRequest(query.page, query.limit, { defaultLimit: DEFAULT_LIST_LIMIT });
         const [folders, total] = await CatalogFolder.findAndCount({
@@ -93,7 +91,7 @@ export default class WhiteboardFolderService{
             select: { id: true }
         });
         for(const whiteboard of whiteboards){
-            await this.#whiteboards.deleteWhiteboard(teamId, whiteboard.id, userId);
+            await whiteboardService.deleteWhiteboard(teamId, whiteboard.id, userId);
         }
 
         await CatalogFolder.delete({
@@ -103,3 +101,5 @@ export default class WhiteboardFolderService{
         });
     }
 }
+
+export default new WhiteboardFolderService();

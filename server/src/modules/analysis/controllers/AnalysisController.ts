@@ -4,13 +4,11 @@ import { Param, Query, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import AnalysisService from '@modules/analysis/services/AnalysisService';
+import analysisService from '@modules/analysis/services/AnalysisService';
 import { analysisRoutes } from '@volt/contracts/modules/analysis/routes';
 
 @Middleware(protect, teamScoped(Resource.ANALYSIS))
 export default class AnalysisController extends Controller {
-    #service = new AnalysisService();
-
     @Route(analysisRoutes.listByTeamId)
     listByTeamId(
         @Param('teamId') teamId: string,
@@ -22,14 +20,14 @@ export default class AnalysisController extends Controller {
         const pageNumber = page !== undefined ? Number(page) : undefined;
         const pageLimit = limit !== undefined ? Number(limit) : undefined;
         if (trajectoryId !== undefined) {
-            return this.#service.getAnalysesByTrajectoryId({
+            return analysisService.getAnalysesByTrajectoryId({
                 teamId,
                 trajectoryId,
                 page: pageNumber,
                 limit: pageLimit
             });
         }
-        return this.#service.getAnalysesByTeamId({
+        return analysisService.getAnalysesByTeamId({
             teamId,
             page: pageNumber,
             limit: pageLimit,
@@ -44,7 +42,7 @@ export default class AnalysisController extends Controller {
         @Param('timestep') timestep: string,
         @Query('afterCursor') afterCursor?: string
     ) {
-        return this.#service.getAnalysisFrameLog({
+        return analysisService.getAnalysisFrameLog({
             teamId,
             analysisId,
             timestep: Number(timestep),
@@ -58,7 +56,7 @@ export default class AnalysisController extends Controller {
         @Param('analysisId') analysisId: string,
         @CurrentUser() userId: string
     ) {
-        return this.#service.retryFailedFrames({
+        return analysisService.retryFailedFrames({
             teamId,
             analysisId,
             userId
@@ -70,7 +68,7 @@ export default class AnalysisController extends Controller {
         @Param('teamId') teamId: string,
         @Param('analysisId') analysisId: string
     ){
-        return this.#service.getAnalysisById({
+        return analysisService.getAnalysisById({
             teamId,
             analysisId
         });
@@ -83,7 +81,7 @@ export default class AnalysisController extends Controller {
         @Param('analysisId') analysisId: string,
         @CurrentUser() userId: string
     ) {
-        await this.#service.deleteAnalysisById({
+        await analysisService.deleteAnalysisById({
             teamId,
             analysisId,
             userId

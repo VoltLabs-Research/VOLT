@@ -1,7 +1,7 @@
 import type { TrajectoryProps } from '@shared/contracts/types/Trajectory';
 import type { SceneArtifactProps, SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
-import type { GlbContentEncoding } from '@shared/application/utilities/glb-stream-resolution';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { GlbContentEncoding } from '@shared/utilities/glb-stream-resolution';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 import type { Readable } from 'node:stream';
 import type { ReadStream } from 'node:fs';
@@ -179,11 +179,6 @@ export interface ApplyParticleFilterActionInput extends PreviewParticleFilterInp
     action: 'delete' | 'highlight';
 }
 
-export interface ApplyParticleFilterActionOutput {
-    fileId: string;
-    atomsResult: number;
-    action: string;
-}
 
 export interface GetFilteredModelStreamInput extends PreviewParticleFilterInput {
     action?: string;
@@ -278,13 +273,6 @@ export interface GetPublicCanvasGLBOutput {
     lastModified?: Date;
 }
 
-export interface GetPublicCanvasRasterFrameInput {
-    trajectoryId: string;
-    timestep: number;
-    analysisId?: string;
-    model?: string;
-    userId?: string;
-}
 
 export interface GetAtomsColumnarInput {
     trajectoryId: string;

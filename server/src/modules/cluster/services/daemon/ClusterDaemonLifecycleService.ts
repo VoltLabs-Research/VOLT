@@ -16,7 +16,7 @@ import type {
     ClusterRuntimeHeartbeatCommand,
     ClusterRuntimeLifecycleCommand
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 
 export interface ProcessHealthcheckInput {

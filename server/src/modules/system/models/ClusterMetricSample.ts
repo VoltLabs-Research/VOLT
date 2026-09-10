@@ -1,5 +1,5 @@
 import { BaseEntity, Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { AUTO_INCREMENT_COLUMN_TYPE, JSON_COLUMN_TYPE, TIMESTAMP_COLUMN_TYPE } from '@shared/infrastructure/persistence/column-types';
+import { AUTO_INCREMENT_COLUMN_TYPE, JSON_COLUMN_TYPE, TIMESTAMP_COLUMN_TYPE } from '@shared/persistence/column-types';
 
 @Entity('cluster_metric_samples')
 @Index(['clusterId', 'recordedAt'])

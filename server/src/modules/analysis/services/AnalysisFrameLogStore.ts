@@ -4,7 +4,7 @@ import type {
     StoredAnalysisFrameLogRecord
 } from '@modules/analysis/contracts/analysis-execution-log';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { Buffer } from 'node:buffer';
 
 const frameLogObjectKey = (trajectoryId: string, analysisId: string, timestep: number): string => {

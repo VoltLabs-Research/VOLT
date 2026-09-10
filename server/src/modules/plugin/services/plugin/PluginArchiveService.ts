@@ -15,42 +15,92 @@ import {
     isWorkflowProps,
     readPluginArchive
 } from '@modules/plugin/services/plugin/plugin-archive-reader';
+import workflowValidatorService, { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 import {
-    WorkflowValidationMode,
-    WorkflowValidatorService
-} from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IClusterObjectArchiveService } from '@shared/contracts/ports/IClusterObjectArchiveService';
-import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
-import logger from '@shared/infrastructure/logger';
-import type { TeamClusterDaemonRegistryInstallBinary } from '@shared/contracts/types/team-cluster-daemon-channel';
+    ChannelCommands,
+    type TeamClusterDaemonRegistryInstallBinary,
+    type TeamClusterDaemonRegistryInstallResult
+} from '@shared/contracts/types/team-cluster-daemon-channel';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import path from 'node:path';
-import type { Readable } from 'node:stream';
-import unzipper from 'unzipper';
+import type unzipper from 'unzipper';
 import { v4 } from 'uuid';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
+import registryGateway from '@modules/plugin/services/plugin/RegistryGateway';
+import { mapPluginToRecord } from '@modules/plugin/services/plugin/PluginQueries';
+import eventBus from '@shared/events/PostgresEventBus';
+import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
+import type { PluginRecord } from '@modules/plugin/contracts/plugin';
 
-export default class PluginArchiveService {
-    constructor(
-        private readonly storagePlacementService: IStoragePlacementService,
-        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        private readonly workflowValidator: WorkflowValidatorService,
-        private readonly archiveService: IClusterObjectArchiveService
-    ) {}
+export interface RegistryInstallPluginInput {
+    teamId: string;
+    name: string;
+    version?: string;
+}
+
+const DEFAULT_REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
+
+class PluginArchiveService {
+    async installFromRegistry(input: RegistryInstallPluginInput): Promise<PluginRecord> {
+        if (!input.name) {
+            throw ApplicationError.badRequest(ErrorCodes.REGISTRY_PACKAGE_NAME_REQUIRED, 'A registry package name is required');
+        }
+
+        const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(input.teamId);
+        const platform = await teamClusterSelectionService.resolveClusterPlatform(computeClusterId) ?? DEFAULT_REGISTRY_INSTALL_PLATFORM;
+        const tarball = await registryGateway.resolveTarball(input.name, input.version, platform);
+
+        const installed = await teamClusterDaemonClient.command<TeamClusterDaemonRegistryInstallResult>(
+            computeClusterId,
+            ChannelCommands.PluginRegistryInstall,
+            {
+                downloadUrl: tarball.downloadUrl,
+                sha256: tarball.sha256,
+                fileName: tarball.fileName,
+                name: input.name,
+                version: tarball.version,
+                platform
+            },
+            {
+                timeoutClass: 'long-running-control-plane',
+                retryClass: 'idempotent-command'
+            }
+        );
+
+        const plugin = await this.createFromRegistry(
+            installed.workflow,
+            installed.binary,
+            installed.ownerClusterId,
+            input.teamId
+        );
+
+        await eventBus.emit('plugin.created', {
+            pluginId: plugin._id,
+            teamId: input.teamId
+        });
+
+        return mapPluginToRecord(plugin);
+    }
 
     private async resolveOwnerClusterId(pluginId: string): Promise<string> {
-        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', pluginId);
+        const placement = await storagePlacementService.ensurePlacement('plugin-binary', pluginId);
         return placement.props.primaryClusterId;
     }
 
-    async exportPlugin(pluginId: string): Promise<Readable> {
+    async exportPlugin(pluginId: string): Promise<DownloadStreamOutput> {
         const plugin = await requirePlugin(pluginId);
         const entrypoint = plugin.props.workflow.entrypoint;
         const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
         const binaryObjectPath = entrypoint?.binaryObjectPath;
 
-        const archive = await this.archiveService.createArchiveDownload({
+        const archive = await clusterObjectArchiveService.createArchiveDownload({
             teamClusterId: ownerClusterId,
             outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
             outputObjectKey: `exports/plugins/${pluginId}/${v4()}.zip`,
@@ -76,10 +126,14 @@ export default class PluginArchiveService {
             ]
         });
 
-        return archive.stream;
+        return createDownloadStreamResponse({
+            stream: archive.stream,
+            contentType: 'application/zip',
+            filename: `${pluginId}.zip`
+        });
     }
 
-    async importPlugin(fileBuffer: Buffer, teamId: string): Promise<Plugin> {
+    async importPlugin(fileBuffer: Buffer, teamId: string): Promise<PluginRecord> {
         const { workflowProps, binaryFile } = await readPluginArchive(fileBuffer);
 
         const workflow = new Workflow('', workflowProps);
@@ -95,7 +149,14 @@ export default class PluginArchiveService {
         }
 
         logger.info(`@plugin-archive-service: plugin imported ${newPlugin._id}`);
-        return this.publishIfValid(newPlugin);
+        const plugin = await this.publishIfValid(newPlugin);
+
+        await eventBus.emit('plugin.created', {
+            pluginId: plugin._id,
+            teamId
+        });
+
+        return mapPluginToRecord(plugin);
     }
 
     async createFromRegistry(
@@ -125,7 +186,7 @@ export default class PluginArchiveService {
             team: teamId
         }).save());
 
-        await this.storagePlacementService.assignPluginBinaryPlacement(newPlugin.id, teamId, ownerClusterId);
+        await storagePlacementService.assignPluginBinaryPlacement(newPlugin.id, teamId, ownerClusterId);
 
         newPlugin.props.workflow.updateEntrypoint({
             binary: binary.fileName,
@@ -153,7 +214,7 @@ export default class PluginArchiveService {
         const binaryObjectPath = `plugin-binaries/${plugin._id}/${v4()}-${binaryFileName}`;
         const binaryHash = computeSha256(binaryBuffer);
 
-        await this.objectGatewayClient.putBuffer(await this.resolveOwnerClusterId(plugin.id), {
+        await objectGatewayClient.putBuffer(await this.resolveOwnerClusterId(plugin.id), {
             bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
             objectKey: binaryObjectPath,
             buffer: binaryBuffer,
@@ -192,7 +253,7 @@ export default class PluginArchiveService {
     }
 
     private async publishIfValid(plugin: Plugin): Promise<Plugin> {
-        const validation = await this.workflowValidator.validate(
+        const validation = await workflowValidatorService.validate(
             plugin.props.workflow.props,
             plugin.id,
             WorkflowValidationMode.Strict
@@ -214,3 +275,5 @@ export default class PluginArchiveService {
         return toPluginLike(await Object.assign(publishedEntity, { status: PluginStatus.PUBLISHED }).save());
     }
 }
+
+export default new PluginArchiveService();

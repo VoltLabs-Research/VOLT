@@ -1,6 +1,6 @@
 import os from 'node:os';
 import ClusterMetricSample from '@modules/system/models/ClusterMetricSample';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
 
 export const METRIC_RETENTION_MS = 24 * 60 * 60 * 1000;

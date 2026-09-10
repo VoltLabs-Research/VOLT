@@ -1,15 +1,15 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 
 const DEFAULT_ROLE_LIMIT = 10;
 
-export default class TeamRoleService{
+class TeamRoleService{
     async listByTeamId(teamId: string, page = 1, limit = DEFAULT_ROLE_LIMIT): Promise<PaginatedResult<TeamRole>>{
         const pageRequest = readPageRequest(page, limit, { defaultLimit: DEFAULT_ROLE_LIMIT });
 
@@ -107,3 +107,5 @@ export default class TeamRoleService{
         return { success: true };
     }
 }
+
+export default new TeamRoleService();

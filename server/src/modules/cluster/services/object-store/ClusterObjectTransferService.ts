@@ -1,9 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import defaultObjectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
-import ClusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import clusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
+import ApplicationError from '@shared/errors/ApplicationError';
 
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectOperation
@@ -25,10 +24,7 @@ interface ClusterObjectTransferReadOptions {
     rangeHeader?: string;
 }
 
-export default class ClusterObjectTransferService {
-    readonly #signedUrlService = new ClusterObjectSignedUrlService();
-    readonly #objectGatewayClient: ITeamClusterObjectGatewayClient = defaultObjectGatewayClient;
-
+class ClusterObjectTransferService {
     async write(
         teamId: string | undefined,
         token: string | undefined,
@@ -44,7 +40,7 @@ export default class ClusterObjectTransferService {
             );
         }
 
-        await this.#objectGatewayClient.putStream(claims.ownerClusterId, {
+        await objectGatewayClient.putStream(claims.ownerClusterId, {
             bucket: claims.bucket,
             objectKey: claims.objectKey,
             stream: input.stream,
@@ -60,7 +56,7 @@ export default class ClusterObjectTransferService {
         token: string | undefined
     ): Promise<TeamClusterObjectGatewayHeadResponse> {
         const claims = this.#resolveClaims(teamId, token, 'read');
-        return this.#objectGatewayClient.head(
+        return objectGatewayClient.head(
             claims.ownerClusterId,
             claims.bucket,
             claims.objectKey
@@ -73,7 +69,7 @@ export default class ClusterObjectTransferService {
         options: ClusterObjectTransferReadOptions = {}
     ): Promise<TeamClusterObjectGatewayStreamResponse> {
         const claims = this.#resolveClaims(teamId, token, 'read');
-        return this.#objectGatewayClient.getStream(
+        return objectGatewayClient.getStream(
             claims.ownerClusterId,
             claims.bucket,
             claims.objectKey,
@@ -89,7 +85,7 @@ export default class ClusterObjectTransferService {
         token: string | undefined,
         operation: ClusterObjectOperation
     ): ClusterObjectAccessClaims {
-        const claims = token ? this.#signedUrlService.verify(token) : null;
+        const claims = token ? clusterObjectSignedUrlService.verify(token) : null;
 
         if (!claims || claims.operation !== operation || claims.teamId !== teamId) {
             throw ApplicationError.unauthorized(
@@ -112,3 +108,5 @@ export default class ClusterObjectTransferService {
         return contentLength;
     }
 }
+
+export default new ClusterObjectTransferService();

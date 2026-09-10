@@ -5,26 +5,24 @@ import { Body, schemaBody, Param, Query } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import TeamMemberService from '@modules/team/services/TeamMemberService';
+import teamMemberService from '@modules/team/services/TeamMemberService';
 import { teamMemberRoutes } from '@volt/contracts/modules/team/routes';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
 
 @Middleware(protect, teamScoped(Resource.TEAM_MEMBER))
 export default class TeamMemberController extends Controller {
-    #service = new TeamMemberService();
-
     @Route(teamMemberRoutes.list)
     listByTeamId(
         @Param('teamId') teamId: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string
     ){
-        return this.#service.listByTeamId(teamId, page ? Number(page) : undefined, limit ? Number(limit) : undefined);
+        return teamMemberService.listByTeamId(teamId, page ? Number(page) : undefined, limit ? Number(limit) : undefined);
     }
 
     @Route(teamMemberRoutes.get)
     getById(@Param('teamMemberId') teamMemberId: string) {
-        return this.#service.getById(teamMemberId);
+        return teamMemberService.getById(teamMemberId);
     }
 
     @Route(teamMemberRoutes.update)
@@ -32,7 +30,7 @@ export default class TeamMemberController extends Controller {
         @Param('teamMemberId') teamMemberId: string,
         @Body(schemaBody(typia.createValidate<UpdateTeamMemberInput>())) body: UpdateTeamMemberInput
     ){
-        return this.#service.updateById(teamMemberId, body);
+        return teamMemberService.updateById(teamMemberId, body);
     }
 
     @Route(teamMemberRoutes.remove)
@@ -40,6 +38,6 @@ export default class TeamMemberController extends Controller {
         @Param('teamId') teamId: string,
         @Param('memberId') memberId: string
     ){
-        await this.#service.deleteById(teamId, memberId);
+        await teamMemberService.deleteById(teamId, memberId);
     }
 }

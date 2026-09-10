@@ -1,20 +1,18 @@
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import SystemService from '@modules/system/services/SystemService';
+import systemService from '@modules/system/services/SystemService';
 import { systemRoutes } from '@volt/contracts/modules/system/routes';
 
 export default class SystemController extends Controller {
-    #service = new SystemService();
-
     @Route(systemRoutes.config)
     getConfig() {
-        return this.#service.getConfig();
+        return systemService.getConfig();
     }
 
     @Route(systemRoutes.rbac)
     @Middleware(protect)
     getRbac() {
-        return this.#service.getRbac();
+        return systemService.getRbac();
     }
 }

@@ -1,7 +1,7 @@
 import Controller from '@shared/http/Controller';
 import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
-import ClusterObjectTransferService from '@modules/cluster/services/object-store/ClusterObjectTransferService';
+import clusterObjectTransferService from '@modules/cluster/services/object-store/ClusterObjectTransferService';
 import {
     applyObjectHeaders,
     applyRangeHeaders,
@@ -25,15 +25,13 @@ const readRouteParam = (request: Request, paramName: 'teamId' | 'token'): string
 };
 
 export default class ClusterObjectController extends Controller {
-    readonly #transferService = new ClusterObjectTransferService();
-
     @Route(clusterObjectRoutes.write)
     async write(
         @Req() request: Request,
         @Res() response: Response
     ): Promise<void>{
         try {
-            await this.#transferService.write(
+            await clusterObjectTransferService.write(
                 readRouteParam(request, 'teamId'),
                 readRouteParam(request, 'token'),
                 {
@@ -56,7 +54,7 @@ export default class ClusterObjectController extends Controller {
         @Res() response: Response
     ): Promise<void>{
         try {
-            const head = await this.#transferService.head(readRouteParam(request, 'teamId'), readRouteParam(request, 'token'));
+            const head = await clusterObjectTransferService.head(readRouteParam(request, 'teamId'), readRouteParam(request, 'token'));
 
             applyObjectHeaders(response, head);
             response.status(200).end();
@@ -72,7 +70,7 @@ export default class ClusterObjectController extends Controller {
     ): Promise<void>{
         try {
             const rangeHeader = request.header('range') || undefined;
-            const streamResponse = await this.#transferService.openRead(
+            const streamResponse = await clusterObjectTransferService.openRead(
                 readRouteParam(request, 'teamId'),
                 readRouteParam(request, 'token'),
                 rangeHeader ? { rangeHeader } : undefined

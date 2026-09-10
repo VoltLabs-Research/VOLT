@@ -1,7 +1,7 @@
 import type {
     IMemberContentCounter,
     MemberContentCountResult
-} from '@shared/contracts/ports/IMemberContentCounter';
+} from '@shared/contracts/types/IMemberContentCounter';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 
 const COUNT_KEY = 'trajectoriesCount';

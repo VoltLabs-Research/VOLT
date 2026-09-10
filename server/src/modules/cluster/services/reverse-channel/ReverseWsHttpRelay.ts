@@ -1,15 +1,15 @@
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
 import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
 import {
     normalizeWebSocketCloseCode,
     normalizeWebSocketPayload,
     writeUpgradeError
-} from '@shared/infrastructure/utilities/proxy-relay';
+} from '@shared/utilities/proxy-relay';
 import httpProxy from 'http-proxy';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import http from 'node:http';
-import { Duplex, Readable } from 'node:stream';
+import { type Duplex, Readable } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 
 interface ReverseWsHttpProxyOptions {

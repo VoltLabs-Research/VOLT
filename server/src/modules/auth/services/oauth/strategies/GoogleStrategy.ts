@@ -1,13 +1,12 @@
 import { OAuthProvider } from '@modules/auth/contracts/user';
-import type AuthService from '@modules/auth/services/AuthService';
 import BaseOAuthStrategy from '@modules/auth/services/oauth/BaseOAuthStrategy';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import type { Request } from 'express';
 import type { GoogleCallbackParameters, Profile, VerifyCallback } from 'passport-google-oauth20';
 
 export default class GoogleStrategyWrapper extends BaseOAuthStrategy<Profile> {
-    constructor(authService: AuthService) {
-        super(OAuthProvider.Google, authService, {
+    constructor() {
+        super(OAuthProvider.Google, {
             map: (profile) => ({
                 email: profile.emails?.[0]?.value,
                 firstName: profile.name?.givenName,

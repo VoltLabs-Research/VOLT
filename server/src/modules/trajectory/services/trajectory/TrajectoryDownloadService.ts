@@ -3,9 +3,9 @@ import { STATIC_ROOT } from '@core/config/paths';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import ClusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
-import PluginService from '@modules/plugin/services/PluginService';
+import pluginExposureArtifactService from '@modules/plugin/services/exposure/PluginExposureArtifactService';
 import {
     ANALYSIS_LIST_MAX_LIMIT,
     findAnalyses
@@ -13,17 +13,17 @@ import {
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import {
     createDownloadStreamResponse,
     sanitizeDownloadName
-} from '@shared/infrastructure/http/responses/download-response';
-import { readFilenameFromContentDisposition } from '@shared/infrastructure/http/responses/content-disposition';
+} from '@shared/http/responses/download-response';
+import { readFilenameFromContentDisposition } from '@shared/http/responses/content-disposition';
 
 import type {
     ClusterArchiveObjectEntry,
     ClusterArchiveReference
-} from '@shared/contracts/ports/IClusterObjectArchiveService';
+} from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type {
     DownloadSampleSimulationsOutput,
@@ -41,8 +41,6 @@ const SAMPLES_PATH = path.join(STATIC_ROOT, 'default/simulations');
 const ANALYSIS_STATUS_COMPLETED = 'completed';
 const ANALYSIS_EXPORT_CONCURRENCY = 8;
 
-const archiveService = new ClusterObjectArchiveService();
-const pluginService = new PluginService();
 
 const requireTeamTrajectory = async (trajectoryId: string, teamId: string): Promise<Trajectory> => {
     const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
@@ -60,7 +58,7 @@ const buildAnalysisArchiveEntry = async (
     let exportArtifact: DownloadStreamOutput;
 
     try {
-        exportArtifact = await pluginService.getPluginExposureExport({
+        exportArtifact = await pluginExposureArtifactService.getExposureExport({
             analysisId,
             teamId
         });
@@ -105,7 +103,7 @@ class TrajectoryDownloadService {
         const filenameBase = sanitizeDownloadName(input.name || trajectory.name || trajectoryId, 'trajectory');
 
         if (input.archive) {
-            return archiveService.createArchiveDownload({
+            return clusterObjectArchiveService.createArchiveDownload({
                 teamClusterId: storageClusterId,
                 outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
                 outputObjectKey: `exports/trajectory-downloads/${trajectoryId}/${v4()}.zip`,
@@ -172,7 +170,7 @@ class TrajectoryDownloadService {
 
         const filenameBase = sanitizeDownloadName(input.name || trajectory.name || input.trajectoryId, 'trajectory');
 
-        return archiveService.createArchiveDownload({
+        return clusterObjectArchiveService.createArchiveDownload({
             teamClusterId: trajectory.storageClusterId,
             outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
             outputObjectKey: `exports/trajectory-analyses/${input.trajectoryId}/${v4()}.zip`,

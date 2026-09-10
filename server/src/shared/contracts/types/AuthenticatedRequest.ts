@@ -1,4 +1,4 @@
-import type { HttpRequestContext } from '@shared/infrastructure/http/request-context';
+import type { HttpRequestContext } from '@shared/http/request-context';
 import type { Request } from 'express';
 
 export enum AuthenticationType {

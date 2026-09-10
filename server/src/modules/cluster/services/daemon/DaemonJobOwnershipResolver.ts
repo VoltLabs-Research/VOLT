@@ -4,12 +4,12 @@ import type { TrajectoryLike, TrajectoryStatus } from '@shared/contracts/types/T
 import type {
     DaemonJobCompletionInput,
     DaemonRasterJobStatusInput
-} from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
+} from '@modules/cluster/contracts/daemon-job-completion';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import type { AnalysisArtifactStatus as AnalysisArtifactStatusColumn, AnalysisStatus } from '@modules/analysis/contracts/analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 export interface JobTrajectoryContext {
     trajectoryId?: string;

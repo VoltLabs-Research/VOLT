@@ -1,9 +1,9 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import type { TrajectoryStats } from '@volt/contracts/modules/trajectory/domain';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
 import Team from '@modules/team/models/Team';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import User from '@modules/auth/models/User';

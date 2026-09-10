@@ -26,7 +26,7 @@ import {
     type TeamClusterDaemonTunnelDrainPayload,
     type TeamClusterDaemonTunnelStatePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import { randomUUID } from 'node:crypto';
 
 interface TeamClusterReverseTunnelSessionsOptions {

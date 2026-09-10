@@ -7,7 +7,7 @@ const DEPLOYMENT_MODE: 'local' | 'cloud' = process.env.DEPLOYMENT_MODE === 'loca
 const toLabel = (key: string): string =>
     key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\B\w+/g, (w) => w.toLowerCase());
 
-export default class SystemService{
+class SystemService{
     getRbac(): RbacConfig{
         return {
             resources: Object.entries(Resource).map(([enumKey, value]) => ({
@@ -25,3 +25,5 @@ export default class SystemService{
         return { mode: DEPLOYMENT_MODE };
     }
 }
+
+export default new SystemService();

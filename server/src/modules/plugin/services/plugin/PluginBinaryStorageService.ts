@@ -7,13 +7,10 @@ import {
     requirePlugin,
     requirePluginEntity
 } from '@modules/plugin/services/plugin/PluginQueries';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports/IClusterObjectSignedUrlService';
-import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import logger from '@shared/infrastructure/logger';
+import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
+import logger from '@shared/logger';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type {
     CommitBinaryUploadInput as WireCommitBinaryUploadInput,
@@ -23,6 +20,9 @@ import type { BinaryUploadResult, BinaryUploadTarget } from '@volt/contracts/mod
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { v4 } from 'uuid';
+import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import clusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
 
 interface CreateBinaryUploadTargetInput extends WireUploadBinaryInput {
     pluginId: string;
@@ -42,15 +42,9 @@ const normalizeBinaryFileName = (fileName: string): string => {
     return path.basename(fileName.trim()) || 'binary';
 };
 
-export default class PluginBinaryStorageService {
-    constructor(
-        private readonly storagePlacementService: IStoragePlacementService,
-        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        private readonly signedUrlService: IClusterObjectSignedUrlService
-    ) {}
-
+class PluginBinaryStorageService {
     private async resolveOwnerClusterId(pluginId: string): Promise<string> {
-        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', pluginId);
+        const placement = await storagePlacementService.ensurePlacement('plugin-binary', pluginId);
         return placement.props.primaryClusterId;
     }
 
@@ -59,7 +53,7 @@ export default class PluginBinaryStorageService {
 
         const originalName = normalizeBinaryFileName(input.fileName);
         const objectPath = `plugin-binaries/${input.pluginId}/${v4()}${path.extname(originalName)}`;
-        const signed = this.signedUrlService.createToken({
+        const signed = clusterObjectSignedUrlService.createToken({
             kind: 'cluster-object',
             operation: 'write',
             teamId: input.teamId,
@@ -98,7 +92,7 @@ export default class PluginBinaryStorageService {
         }
 
         const ownerClusterId = await this.resolveOwnerClusterId(input.pluginId);
-        const head = await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, input.objectPath);
+        const head = await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, input.objectPath);
         if (head.contentLength !== input.size) {
             throw ApplicationError.badRequest(
                 ErrorCodes.VALIDATION_INVALID_INPUT,
@@ -109,7 +103,7 @@ export default class PluginBinaryStorageService {
         let sha256 = input.sha256;
 
         if (!sha256) {
-            const buffer = await this.objectGatewayClient.getBuffer(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, input.objectPath);
+            const buffer = await objectGatewayClient.getBuffer(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, input.objectPath);
             sha256 = computeSha256(buffer);
         } else if (head.metadata.sha256 && head.metadata.sha256 !== sha256) {
             throw ApplicationError.badRequest(
@@ -121,7 +115,7 @@ export default class PluginBinaryStorageService {
         const originalName = normalizeBinaryFileName(input.fileName);
         const oldBinaryPath = plugin.props.workflow.entrypoint?.binaryObjectPath;
         if (oldBinaryPath && oldBinaryPath !== input.objectPath) {
-            await this.objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
+            await objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, oldBinaryPath).catch((err) => {
                 logger.warn(`@plugin-binary-storage-service: failed to delete old binary ${oldBinaryPath}: ${err}`);
             });
         }
@@ -155,7 +149,7 @@ export default class PluginBinaryStorageService {
         }
 
         const ownerClusterId = await this.resolveOwnerClusterId(pluginId);
-        await this.objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, pathToDelete);
+        await objectGatewayClient.deleteObject(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, pathToDelete);
 
         plugin.props.workflow.updateEntrypoint({
             binaryObjectPath: undefined,
@@ -191,7 +185,7 @@ export default class PluginBinaryStorageService {
 
         let stream;
         try {
-            stream = await this.objectGatewayClient.getStream(
+            stream = await objectGatewayClient.getStream(
                 ownerClusterId,
                 TEAM_CLUSTER_BUCKETS.PLUGINS,
                 entrypoint.binaryObjectPath
@@ -215,3 +209,5 @@ export default class PluginBinaryStorageService {
         });
     }
 }
+
+export default new PluginBinaryStorageService();

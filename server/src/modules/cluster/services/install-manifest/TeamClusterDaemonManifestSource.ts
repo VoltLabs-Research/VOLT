@@ -1,5 +1,5 @@
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 

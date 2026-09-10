@@ -2,8 +2,8 @@ import type { AuthenticatedRequest } from '@shared/contracts/types/Authenticated
 import type { Response } from 'express';
 import type { IValidation } from 'typia';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { formatValidationErrors } from '@shared/infrastructure/utilities/typia-validation-errors';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { formatValidationErrors } from '@shared/utilities/typia-validation-errors';
 
 type ParamResolver = (req: AuthenticatedRequest, res: Response) => unknown | Promise<unknown>;
 

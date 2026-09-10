@@ -5,21 +5,19 @@ import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import TeamRoleService from '@modules/team/services/TeamRoleService';
+import teamRoleService from '@modules/team/services/TeamRoleService';
 import { teamRoleRoutes } from '@volt/contracts/modules/team/routes';
 import type { CreateTeamRoleInput, UpdateTeamRoleInput } from '@volt/contracts/modules/team/http';
 
 @Middleware(protect, teamScoped(Resource.TEAM_ROLE))
 export default class TeamRoleController extends Controller {
-    #service = new TeamRoleService();
-
     @Route(teamRoleRoutes.list)
     listByTeamId(
         @Param('teamId') teamId: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string
     ){
-        return this.#service.listByTeamId(teamId, page ? Number(page) : 1, limit ? Number(limit) : 10);
+        return teamRoleService.listByTeamId(teamId, page ? Number(page) : 1, limit ? Number(limit) : 10);
     }
 
     @Route(teamRoleRoutes.create)
@@ -29,7 +27,7 @@ export default class TeamRoleController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateTeamRoleInput>())) body: CreateTeamRoleInput
     ){
-        return this.#service.create(teamId, userId, body);
+        return teamRoleService.create(teamId, userId, body);
     }
 
     @Route(teamRoleRoutes.remove)
@@ -38,12 +36,12 @@ export default class TeamRoleController extends Controller {
         @Param('roleId') roleId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteById(teamId, roleId, userId);
+        await teamRoleService.deleteById(teamId, roleId, userId);
     }
 
     @Route(teamRoleRoutes.get)
     getById(@Param('roleId') roleId: string) {
-        return this.#service.getById(roleId);
+        return teamRoleService.getById(roleId);
     }
 
     @Route(teamRoleRoutes.update)
@@ -51,6 +49,6 @@ export default class TeamRoleController extends Controller {
         @Param('roleId') roleId: string,
         @Body(schemaBody(typia.createValidate<UpdateTeamRoleInput>())) body: UpdateTeamRoleInput
     ){
-        return this.#service.updateById(roleId, body);
+        return teamRoleService.updateById(roleId, body);
     }
 }

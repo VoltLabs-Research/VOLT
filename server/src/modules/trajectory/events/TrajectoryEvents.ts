@@ -6,15 +6,15 @@ import { StoragePlacementScopeType } from '@modules/cluster/contracts/storage-pl
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import {
     getTrajectoryStorageCleanupTargets,
     type TrajectoryStorageCleanupTarget
-} from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
+} from '@shared/utilities/trajectory-storage-cleanup-prefixes';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import logger from '@shared/infrastructure/logger';
+import eventBus from '@shared/events/PostgresEventBus';
+import logger from '@shared/logger';
+import trajectoryCatalogService from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
 
 const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
     'trajectory_glb_conversion',
@@ -23,8 +23,6 @@ const TRAJECTORY_LIFECYCLE_QUEUE_TYPES = new Set([
 
 @DefineEventGroup('trajectory')
 export default class TrajectoryEvents {
-    #service?: TrajectoryService;
-
     @Event('job.status.changed')
     async syncStatusFromJob({ status, queueType, teamId, trajectoryId }: EventMap['job.status.changed']) {
         if (!trajectoryId) return;
@@ -56,13 +54,11 @@ export default class TrajectoryEvents {
             where: { team: teamId },
             select: { id: true }
         });
-        const service = this.#service ??= new TrajectoryService();
-
         await cascadeDeleteEach({
             label: 'TrajectoryEvents',
             ids: trajectories.map((trajectory) => trajectory.id),
             deleteOne: async (trajectoryId) => {
-                await service.deleteById({
+                await trajectoryCatalogService.deleteById({
                     trajectoryId,
                     teamId,
                     userId

@@ -10,8 +10,8 @@ import {
     PROXY_URL_ORIGIN
 } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { requireTeamMembership } from '@modules/team/services/team/team-membership-guard';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 import { parse as parseCookie } from 'cookie';
 
 export interface AuthorizedProxyContext {

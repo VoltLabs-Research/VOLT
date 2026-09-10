@@ -1,5 +1,5 @@
 import TrajectoryFrameEntity from '@modules/trajectory/models/TrajectoryFrame';
-import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
+import { generateEntityId } from '@shared/persistence/entity-id';
 
 import type { TrajectoryFrame } from '@shared/contracts/types/Trajectory';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';

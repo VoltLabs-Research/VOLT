@@ -1,6 +1,6 @@
 import './env';
-import { requestContextMiddleware, TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
-import { collectAllowedClientOrigins } from '@shared/infrastructure/utilities/client-origins';
+import { requestContextMiddleware, TRACE_ID_HEADER } from '@shared/http/middleware/request-context';
+import { collectAllowedClientOrigins } from '@shared/utilities/client-origins';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';

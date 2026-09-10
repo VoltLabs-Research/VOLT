@@ -31,7 +31,7 @@ interface PluginReferenceValidationResult {
     errors: string[];
 }
 
-export class PluginDependencyResolverService {
+class PluginDependencyResolverService {
     async collectTransitivePublishedDependencies(plugin: Plugin): Promise<PluginDependencyTraversalResult> {
         const visited = new Set<string>([plugin.id]);
         const stack = new Set<string>([plugin.id]);
@@ -207,3 +207,5 @@ export class PluginDependencyResolverService {
         }
     }
 }
+
+export default new PluginDependencyResolverService();

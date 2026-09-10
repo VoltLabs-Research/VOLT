@@ -1,6 +1,6 @@
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 
-export default class TeamRoomPresenceService {
+class TeamRoomPresenceService {
     async getOnlineUserIds(teamId: string): Promise<string[]> {
         const users = await socketIORoomManager.collectPresence(
             `team:${teamId}`,
@@ -21,3 +21,5 @@ export default class TeamRoomPresenceService {
         return (await this.getOnlineUserIds(teamId)).includes(userId);
     }
 }
+
+export default new TeamRoomPresenceService();

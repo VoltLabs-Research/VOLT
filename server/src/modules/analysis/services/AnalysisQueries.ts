@@ -1,13 +1,13 @@
 import { ILike, In } from 'typeorm';
 import type { FindOptionsRelations, FindOptionsSelect, FindOptionsWhere } from 'typeorm';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { isEntityId } from '@shared/infrastructure/persistence/entity-id';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import BaseModel from '@shared/persistence/BaseModel';
+import { isEntityId } from '@shared/persistence/entity-id';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import { AnalysisRelation } from '@modules/analysis/contracts/analysis';
 import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis';
 import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 
 const SEARCH_DEFAULT_LIMIT = 20;
 

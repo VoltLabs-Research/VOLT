@@ -11,10 +11,10 @@ import type {
 } from '@modules/ai/contracts/ai-message';
 import { SYSTEM_PROMPT } from '@modules/ai/contracts/system-prompt';
 import AIToolService from '@modules/ai/services/AIToolService';
-import ModelResolver from '@modules/ai/services/ModelResolver';
+import modelResolver from '@modules/ai/services/ModelResolver';
 import { toModelMessages, toToolSteps } from '@modules/ai/services/SdkMapper';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 const MAX_TOOL_STEPS = 12;
 
@@ -40,10 +40,8 @@ interface GenerateAIChatReplyInput{
 }
 
 class AISDKChatTransport{
-    #models = new ModelResolver();
-
     async generateReplyStream(input: GenerateAIChatReplyInput): Promise<AIChatReplyStream>{
-        const resolved = await this.#models.resolve(input.teamId, input.provider, input.model);
+        const resolved = await modelResolver.resolve(input.teamId, input.provider, input.model);
         const messages = await toModelMessages(input.messages);
         const tools: ToolSet = AIToolService.createToolsForContext(input.teamId, input.userId);
 

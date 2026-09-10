@@ -2,16 +2,12 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import TeamService from '@modules/team/services/TeamService';
-import TeamMemberService from '@modules/team/services/TeamMemberService';
-import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
+import teamService from '@modules/team/services/TeamService';
+import teamMemberService from '@modules/team/services/TeamMemberService';
+import teamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import type { GetTeamContextInput } from '@volt/contracts/modules/team/ai-tools';
 
 export default class TeamAIToolController extends AIToolController {
-    #team = new TeamService();
-    #members = new TeamMemberService();
-    #aiIntegrations = new TeamAIIntegrationService();
-
     @AITool({
         name: 'get_team_context',
         description: 'Get a snapshot of the current team: team info, its members with their roles and online presence, and the configured AI provider integrations plus which models are available. Use this to understand who is on the team and what AI capabilities are set up.',
@@ -19,10 +15,10 @@ export default class TeamAIToolController extends AIToolController {
         validate: typia.createValidate<GetTeamContextInput>()
     })
     async getTeamContext(input: GetTeamContextInput & AIToolScope) {
-        const team = await this.#team.getById(input.teamId);
-        const { data: members } = await this.#members.listByTeamId(input.teamId);
-        const { integrations, providers } = await this.#aiIntegrations.listByTeamId(input.teamId);
-        const { models } = await this.#aiIntegrations.listModels(input.teamId);
+        const team = await teamService.getById(input.teamId);
+        const { data: members } = await teamMemberService.listByTeamId(input.teamId);
+        const { integrations, providers } = await teamAIIntegrationService.listByTeamId(input.teamId);
+        const { models } = await teamAIIntegrationService.listModels(input.teamId);
 
         const onlineCount = members.filter((member) => (
             typeof member.user !== 'string' && member.user.isOnline

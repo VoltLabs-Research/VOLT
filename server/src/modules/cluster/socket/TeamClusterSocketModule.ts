@@ -25,8 +25,8 @@ import {
     type TeamClusterDaemonRegisterPayload,
     type TeamClusterDaemonSocketChannel
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import logger from '@shared/infrastructure/logger';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import logger from '@shared/logger';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];

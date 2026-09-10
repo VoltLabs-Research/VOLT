@@ -2,17 +2,17 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoles } from '@core/constants/system-roles';
 import TeamMember from '@modules/team/models/TeamMember';
 import type TeamRole from '@modules/team/models/TeamRole';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import {
     HttpRequestTeamContextSource,
     setHttpRequestContextTeam,
     type HttpRequestTeamContext
-} from '@shared/infrastructure/http/request-context';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+} from '@shared/http/request-context';
+import BaseResponse from '@shared/http/responses/BaseResponse';
+import logger from '@shared/logger';
+import { isRecord } from '@shared/utilities/type-guards';
 import type { NextFunction, Response } from 'express';
 
 const getRequestTeamPermissions = (role?: TeamRole | null): string[] => {

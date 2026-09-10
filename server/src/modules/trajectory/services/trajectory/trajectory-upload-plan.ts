@@ -1,6 +1,6 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import ClusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import clusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
 import type {
     TrajectoryUploadSessionFileProps,
@@ -25,8 +25,6 @@ export const MAX_UPLOAD_FILE_SIZE = readPositiveIntegerEnv(
     'TRAJECTORY_UPLOAD_MAX_FILE_SIZE',
     DEFAULT_MAX_UPLOAD_FILE_SIZE
 );
-
-const signedUrlService = new ClusterObjectSignedUrlService();
 
 interface SignUploadFilesInput {
     teamId: string;
@@ -119,7 +117,7 @@ export const signUploadFiles = (input: SignUploadFilesInput): TrajectoryUploadSe
         ...(file.contentType ? { contentType: file.contentType } : {}),
         finalObjectKey: file.finalObjectKey,
         parts: file.parts.map((part) => {
-            const signed = signedUrlService.createToken({
+            const signed = clusterObjectSignedUrlService.createToken({
                 kind: 'cluster-object',
                 operation: 'write',
                 teamId: input.teamId,

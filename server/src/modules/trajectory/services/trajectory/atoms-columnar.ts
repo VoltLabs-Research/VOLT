@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { AtomColumn, GetAtomsColumnarOutput } from '@modules/trajectory/services/TrajectoryServiceTypes';
 

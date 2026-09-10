@@ -1,11 +1,11 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMember from '@modules/team/models/TeamMember';
-import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
-import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IMemberContentCounter } from '@shared/contracts/ports/IMemberContentCounter';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import teamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
+import teamMembershipService from '@modules/team/services/team/TeamMembershipService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import type { IMemberContentCounter } from '@shared/contracts/types/IMemberContentCounter';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMemberContentCounter';
 import trajectoryMemberContentCounter from '@modules/trajectory/services/TrajectoryMemberContentCounter';
 import whiteboardMemberContentCounter from '@modules/whiteboards/services/WhiteboardMemberContentCounter';
@@ -19,9 +19,7 @@ const buildContentCounters = (): IMemberContentCounter[] => [
     whiteboardMemberContentCounter
 ];
 
-export default class TeamMemberService{
-    #presence = new TeamRoomPresenceService();
-    #membership = new TeamMembershipService();
+class TeamMemberService{
     #contentCounters: IMemberContentCounter[] = buildContentCounters();
 
     async listByTeamId(teamId: string, page?: number, limit?: number){
@@ -41,7 +39,7 @@ export default class TeamMemberService{
 
         const [countResults, onlineUserIds] = await Promise.all([
             Promise.all(this.#contentCounters.map((counter) => counter.countForTeamMembers(teamId, userIds))),
-            this.#presence.getOnlineUserIds(teamId)
+            teamRoomPresenceService.getOnlineUserIds(teamId)
         ]);
 
         const countsByMetric = new Map(countResults.map((result) => [result.key, result.counts]));
@@ -103,10 +101,12 @@ export default class TeamMemberService{
         if(!teamMember){
             throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'Team member not found');
         }
-        await this.#membership.removeMemberFromTeam(teamMemberId, teamId);
+        await teamMembershipService.removeMemberFromTeam(teamMemberId, teamId);
         await eventBus.emit('team-member.deleted', {
             teamMemberId,
             teamId
         });
     }
 }
+
+export default new TeamMemberService();

@@ -1,5 +1,5 @@
 import Notification from '@modules/notification/models/Notification';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 
 const DEFAULT_LIMIT = 100;
 
@@ -20,7 +20,7 @@ const toNotificationView = (notification: Notification) => ({
     updatedAt: notification.updatedAt
 });
 
-export default class NotificationService{
+class NotificationService{
     async getMyNotifications(input: GetMyNotificationsInput){
         const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: DEFAULT_LIMIT });
         const [notifications, total] = await Notification.findAndCount({
@@ -55,3 +55,5 @@ export default class NotificationService{
         return toNotificationView(notification);
     }
 }
+
+export default new NotificationService();

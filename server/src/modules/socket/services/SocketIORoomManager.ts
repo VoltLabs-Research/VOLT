@@ -1,7 +1,7 @@
 import type { ISocketConnection, PresenceUser } from '@modules/socket/socket/ISocketModule';
 import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
-import logger from '@shared/infrastructure/logger';
-import { Server, Socket } from 'socket.io';
+import logger from '@shared/logger';
+import { type Server, type Socket } from 'socket.io';
 
 export default class SocketIORoomManager {
     private io?: Server;

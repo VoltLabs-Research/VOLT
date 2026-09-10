@@ -19,10 +19,9 @@ import type {
     GetScriptingSessionStatusResponse,
     NotebookContainerStage
 } from '@volt/contracts/modules/scripting/domain';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
+import ApplicationError from '@shared/errors/ApplicationError';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 
 const LOCK_TTL_MS = 90_000;
 
@@ -79,17 +78,8 @@ const mapSessionError = (error: unknown): ApplicationError => {
     return new ApplicationError(ErrorCodes.SCRIPTING_SESSION_FAILED, 'Unexpected scripting error', 500);
 };
 
-export default class ScriptingSessionService{
-    #orchestrator = daemonScriptingSessionOrchestrator;
-    #lock = scriptingSessionLock;
-    #credential = notebookCredentialService;
-    #terminator = notebookRuntimeTerminator;
-    #notebookResolver = scriptingSessionNotebookResolver;
-    #exposureRegistry = teamClusterExposureRegistryService;
+class ScriptingSessionService{
     #accessToken = new ScriptingJupyterAccessTokenService();
-
-    #teamClusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
-
     async createJupyterSession(input: CreateJupyterSessionInput): Promise<CreateJupyterSessionResult>{
         const lockKey = buildLockKey(input);
         if(!lockKey){
@@ -98,23 +88,23 @@ export default class ScriptingSessionService{
 
         let lease: ScriptingSessionLockLease | null = null;
         try{
-            lease = await this.#lock.acquire(lockKey, LOCK_TTL_MS);
+            lease = await scriptingSessionLock.acquire(lockKey, LOCK_TTL_MS);
             if(!lease){
                 return {
                     ...PENDING_JUPYTER_SESSION,
-                    notebookId: await this.#notebookResolver.resolvePendingNotebookId(input)
+                    notebookId: await scriptingSessionNotebookResolver.resolvePendingNotebookId(input)
                 };
             }
 
-            const notebook = await this.#notebookResolver.resolve(input);
+            const notebook = await scriptingSessionNotebookResolver.resolve(input);
             if(!notebook.teamCluster){
                 throw ApplicationError.badRequest(ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS, 'Notebook deployment cluster is not configured');
             }
 
-            const secretKey = await this.#credential.resolveSecretKey(notebook, input.userId);
+            const secretKey = await notebookCredentialService.resolveSecretKey(notebook, input.userId);
             const sessionInput: ScriptingSessionStartInput = {
                 teamId: input.teamId,
-                teamClusterId: await this.#teamClusterSelection.resolveConnectedClusterId(input.teamId, notebook.teamCluster),
+                teamClusterId: await teamClusterSelectionService.resolveConnectedClusterId(input.teamId, notebook.teamCluster),
                 userId: input.userId,
                 notebookId: notebook.id,
                 trajectoryId: notebook.trajectory,
@@ -124,7 +114,7 @@ export default class ScriptingSessionService{
                     content: notebook.content
                 }
             };
-            const session = await this.#orchestrator.startSession(sessionInput);
+            const session = await daemonScriptingSessionOrchestrator.startSession(sessionInput);
 
             return attachScriptingJupyterAccessGrant({
                 notebookId: notebook.id,
@@ -168,7 +158,7 @@ export default class ScriptingSessionService{
             accessToken: accessGrant.token
         });
         const exposures = notebook.teamCluster
-            ? this.#exposureRegistry.listTeamClusterExposures(notebook.teamCluster)
+            ? teamClusterExposureRegistryService.listTeamClusterExposures(notebook.teamCluster)
             : [];
         const match = findNotebookExposure(exposures, runtimeNotebookId);
         const startedStage: NotebookContainerStage = match?.ready ? 'ready' : 'starting';
@@ -195,7 +185,7 @@ export default class ScriptingSessionService{
         const runtimeNotebookId = notebook.runtimeNotebookId;
 
         if(runtimeNotebookId && notebook.teamCluster){
-            await this.#terminator.terminate(notebook.teamCluster, runtimeNotebookId);
+            await notebookRuntimeTerminator.terminate(notebook.teamCluster, runtimeNotebookId);
         }
 
         return {
@@ -205,3 +195,5 @@ export default class ScriptingSessionService{
         };
     }
 }
+
+export default new ScriptingSessionService();

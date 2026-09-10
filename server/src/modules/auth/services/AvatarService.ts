@@ -1,5 +1,5 @@
-import storageService, { SYS_BUCKETS } from '@shared/infrastructure/services/FilesystemStorageService';
-import logger from '@shared/infrastructure/logger';
+import storageService, { SYS_BUCKETS } from '@shared/services/FilesystemStorageService';
+import logger from '@shared/logger';
 import type { IdenticonOptions } from 'identicon.js';
 import Identicon from 'identicon.js';
 import crypto from 'node:crypto';
@@ -11,7 +11,7 @@ interface AvatarResult {
     extension: string;
 }
 
-export default class AvatarService {
+class AvatarService {
     private readonly AVATAR_SIZE_PX = 420;
     private readonly COMPRESSION_QUALITY_PCT = 80;
     private readonly IDENTICON_OPTS: IdenticonOptions = {
@@ -68,3 +68,5 @@ export default class AvatarService {
         }
     }
 }
+
+export default new AvatarService();

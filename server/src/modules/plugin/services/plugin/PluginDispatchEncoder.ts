@@ -1,8 +1,8 @@
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import { promisify } from 'node:util';
 import zlib from 'node:zlib';
 

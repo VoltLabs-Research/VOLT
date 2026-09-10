@@ -1,13 +1,13 @@
 import {
-    ArgumentDefinition,
-    ArgumentVisibilityCondition,
-    ExportNodeData,
-    ExposurePanel,
-    ExposureProperty,
-    ModifierNodeData,
+    type ArgumentDefinition,
+    type ArgumentVisibilityCondition,
+    type ExportNodeData,
+    type ExposurePanel,
+    type ExposureProperty,
+    type ModifierNodeData,
     WorkflowNodeType
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
+import type Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import crypto from 'node:crypto';
 
 interface ComputedExposure {

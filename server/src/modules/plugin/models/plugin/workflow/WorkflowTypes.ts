@@ -2,7 +2,7 @@ import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 import {
     ArgumentType,
     ArgumentVisibilityOperator,
-    Exporter as WireExporter
+    type Exporter as WireExporter
 } from '@volt/contracts/modules/plugin/enums';
 
 export { WorkflowNodeType };
@@ -250,3 +250,17 @@ export interface WorkflowEdge {
     target: string;
     targetHandle?: string;
 }
+
+export const NODE_OUTPUT_PROPERTIES: Record<string, string[]> = {
+    [WorkflowNodeType.Modifier]: ['pluginId', 'trajectory', 'analysis'],
+    [WorkflowNodeType.Arguments]: ['as_str', 'as_array', 'selectedTimesteps'],
+    [WorkflowNodeType.Context]: ['trajectory_dumps', 'count', 'trajectory'],
+    [WorkflowNodeType.ForEach]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],
+    [WorkflowNodeType.Entrypoint]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode', 'projectPath'],
+    [WorkflowNodeType.Plugin]: ['execution_result', 'execution_result.exposures', 'execution_result.exposures.items', 'execution_result.exposures.str_json'],
+    [WorkflowNodeType.Exposure]: ['results', 'sample'],
+    [WorkflowNodeType.Export]: ['results'],
+    [WorkflowNodeType.IfStatement]: ['result', 'branch'],
+    [WorkflowNodeType.SwitchStatement]: ['expression', 'resolvedValue', 'matchedCaseId', 'matchedValue'],
+    [WorkflowNodeType.SwitchCase]: ['value', 'defaultCase']
+};

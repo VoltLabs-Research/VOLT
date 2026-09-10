@@ -5,28 +5,26 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
-import ClusterService from '@modules/cluster/services/core/ClusterService';
+import clusterService from '@modules/cluster/services/core/ClusterService';
 import clusterRemoteExplorerService from '@modules/cluster/services/remote-explorer/ClusterRemoteExplorerService';
 import clusterRuntimeSettingsService from '@modules/cluster/services/core/ClusterRuntimeSettingsService';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import { RATE_LIMIT_POLICIES } from '@shared/http/routing/rate-limit-policies';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
-import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
+import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
 
 @Middleware(protect, teamScoped(Resource.TEAM))
 export default class ClusterController extends ClusterControllerBase {
-    readonly #service = new ClusterService();
-
     @Route(teamClusterRoutes.list)
     async listByTeamId(
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.#service.listByTeamId(this.params(req)));
+        this.sendPaginated(res, await clusterService.listByTeamId(this.params(req)));
     }
 
     @Route(teamClusterRoutes.create)
@@ -34,7 +32,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.create(this.params(req));
+        const value = await clusterService.create(this.params(req));
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
@@ -43,7 +41,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.getById(this.params(req));
+        const value = await clusterService.getById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -79,7 +77,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.#service.listTransferJobs(this.params(req)));
+        this.sendPaginated(res, await clusterService.listTransferJobs(this.params(req)));
     }
 
     @Route(teamClusterRoutes.createTransferRequest)
@@ -87,7 +85,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.createTransferRequest(this.params(req));
+        const value = await clusterService.createTransferRequest(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -143,7 +141,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.regenerateEnrollmentToken(this.params(req));
+        const value = await clusterService.regenerateEnrollmentToken(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -153,7 +151,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.revealCredentials(this.params(req));
+        const value = await clusterService.revealCredentials(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -163,7 +161,7 @@ export default class ClusterController extends ClusterControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.deleteById(this.params(req));
+        const value = await clusterService.deleteById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 }

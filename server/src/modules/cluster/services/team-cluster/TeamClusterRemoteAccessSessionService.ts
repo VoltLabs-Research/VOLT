@@ -1,10 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import {
-    TeamClusterRemoteAccessSessionView,
-    TeamClusterRemoteAccessTarget
+    type TeamClusterRemoteAccessSessionView,
+    type TeamClusterRemoteAccessTarget
 } from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { InMemoryAbsoluteExpiryStore } from '@shared/infrastructure/services/InMemoryAbsoluteExpiryStore';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { InMemoryAbsoluteExpiryStore } from '@shared/services/InMemoryAbsoluteExpiryStore';
 import { randomUUID } from 'node:crypto';
 
 interface CreateRemoteAccessSessionParams {

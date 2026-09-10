@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import logger from '@shared/infrastructure/logger';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import logger from '@shared/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
 import AnalysisProvenanceEntity from '@modules/analysis/models/AnalysisProvenance';
 import { Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';

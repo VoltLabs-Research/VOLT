@@ -1,4 +1,4 @@
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import {
     JOB_STATUS_KEY_PREFIX,
@@ -6,7 +6,7 @@ import {
     projectedTeamJobsRevisionKey
 } from '@modules/jobs/services/JobRuntimeKeys';
 import type { TeamJobSnapshot, TeamJobStatus } from '@shared/contracts/types/TeamJobSnapshot';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 const SAFE_FALLBACK_GROUP_TIMESTAMP = '1970-01-01T00:00:00.000Z';
 const UNGROUPED_TIMESTEP = -1;
@@ -61,7 +61,7 @@ export interface TeamJobsInitialPayload {
     groups: TrajectoryJobGroup[];
 };
 
-export default class TeamJobsService {
+class TeamJobsService {
     private async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         return this.groupJobsByTrajectory(await this.getFlatTeamJobs(teamId));
     }
@@ -265,3 +265,5 @@ export default class TeamJobsService {
         return Number.isFinite(revision) && revision >= 0 ? revision : 0;
     }
 };
+
+export default new TeamJobsService();

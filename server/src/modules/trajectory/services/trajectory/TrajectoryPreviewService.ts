@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import sharp from 'sharp';

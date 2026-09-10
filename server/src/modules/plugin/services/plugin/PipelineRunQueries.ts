@@ -1,6 +1,6 @@
 import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 
 const LIST_DEFAULT_LIMIT = 50;

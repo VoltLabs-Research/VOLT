@@ -1,13 +1,13 @@
 import { DefineEventGroup, Event } from '@shared/events/EventGroup';
 import { cascadeDeleteEach } from '@shared/events/cascadeDeleteEach';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
-import ScriptingService from '@modules/scripting/services/ScriptingService';
+import scriptingService from '@modules/scripting/services/ScriptingService';
 import scriptingSessionOrchestrator from '@modules/scripting/services/DaemonScriptingSessionOrchestrator';
 import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';
 
 @DefineEventGroup('scripting')
 export default class ScriptingEvents {
-    #service?: ScriptingService;
+    #service?: typeof scriptingService;
 
     @Event('team.deleted')
     async deleteTeamNotebooks({ teamId }: EventMap['team.deleted']) {
@@ -20,7 +20,7 @@ export default class ScriptingEvents {
             label: 'ScriptingEvents',
             ids: notebooks.map((notebook) => notebook.id),
             deleteOne: async (notebookId) => {
-                this.#service ??= new ScriptingService();
+                this.#service ??= scriptingService;
                 await this.#service.deleteNotebook({
                     notebookId,
                     teamId

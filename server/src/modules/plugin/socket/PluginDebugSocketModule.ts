@@ -5,12 +5,9 @@ import type { Plugin } from '@modules/plugin/contracts/plugin';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
-import {
-    WorkflowValidationMode
-} from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-import { WorkflowValidatorService } from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import pluginDebugSessionRegistrySingleton from '@modules/plugin/services/PluginDebugSessionRegistryService';
+import pluginDependencyResolverService from '@modules/plugin/services/plugin/PluginDependencyResolverService';
+import workflowValidatorService, { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import pluginDebugSessionRegistry from '@modules/plugin/services/PluginDebugSessionRegistryService';
 import { sanitizeVisibleArgumentConfig } from '@modules/plugin/services/plugin/ArgumentVisibility';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
@@ -18,10 +15,9 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
@@ -121,20 +117,9 @@ const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin =>
 class PluginDebugSocketModule extends BaseSocketModule {
     public readonly name = 'PluginDebugSocketModule';
 
-    private readonly pluginDependencyResolverService: PluginDependencyResolverService;
-    private readonly workflowValidator: WorkflowValidatorService;
-
     private readonly teamSubscriptionCoordinator = socketTeamSubscriptionCoordinator;
-    private readonly pluginDebugSessionRegistry = pluginDebugSessionRegistrySingleton;
-
-        private readonly daemonClient = teamClusterDaemonClient;
-
-    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
-
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
-        this.pluginDependencyResolverService = new PluginDependencyResolverService();
-        this.workflowValidator = new WorkflowValidatorService(this.pluginDependencyResolverService);
     }
 
     onConnection(connection: ISocketConnection): void {
@@ -153,9 +138,9 @@ class PluginDebugSocketModule extends BaseSocketModule {
     }
 
     async onShutdown(): Promise<void> {
-        for (const [sessionId, entry] of this.pluginDebugSessionRegistry.listSessions()) {
+        for (const [sessionId, entry] of pluginDebugSessionRegistry.listSessions()) {
             try {
-                await this.daemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId });
+                await teamClusterDaemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId });
             } catch {
             }
         }
@@ -172,7 +157,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                     return;
                 }
 
-                const teamClusterId = await this.teamClusterSelectionService.resolveComputeClusterId(teamId);
+                const teamClusterId = await teamClusterSelectionService.resolveComputeClusterId(teamId);
 
                 const pluginEntity = await PluginEntity.findOneBy({ id: payload.pluginId });
                 const plugin = pluginEntity ? toPluginLike(pluginEntity) : null;
@@ -183,7 +168,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                     return;
                 }
                 const workflow = payload.workflow ?? plugin.props.workflow.props;
-                const workflowValidation = await this.workflowValidator.validate(
+                const workflowValidation = await workflowValidatorService.validate(
                     workflow,
                     plugin.id,
                     WorkflowValidationMode.Strict
@@ -213,7 +198,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                     });
                     return;
                 }
-                const pluginReferenceValidation = await this.pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
+                const pluginReferenceValidation = await pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(
                     runtimePlugin,
                     sanitizedConfig
                 );
@@ -224,7 +209,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                     return;
                 }
                 const pluginReferenceExecutions = pluginReferenceValidation.executions;
-                const dependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(runtimePlugin);
+                const dependencyResolution = await pluginDependencyResolverService.collectTransitivePublishedDependencies(runtimePlugin);
                 if (dependencyResolution.errors.length > 0) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
                         error: dependencyResolution.errors.join('; ')
@@ -233,7 +218,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                 }
 
                 const runtimePlugins = pluginReferenceValidation.plugins;
-                const runtimeDependencyResolution = await this.pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
+                const runtimeDependencyResolution = await pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
                     runtimePlugins
                 );
                 if (runtimeDependencyResolution.errors.length > 0) {
@@ -250,7 +235,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
 
                 const trajectoryFrames = await getTrajectoryFrames(payload.trajectoryId);
 
-                const response = await this.daemonClient.command<DaemonDebugStartResponse>(
+                const response = await teamClusterDaemonClient.command<DaemonDebugStartResponse>(
                     teamClusterId,
                     ChannelCommands.DebugStart,
                     {
@@ -267,7 +252,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                     }
                 );
 
-                this.pluginDebugSessionRegistry.registerSession(response.sessionId, {
+                pluginDebugSessionRegistry.registerSession(response.sessionId, {
                     socketId: conn.id,
                     teamClusterId
                 });
@@ -306,7 +291,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
             }
 
             try {
-                const response = await this.daemonClient.command<DaemonDebugStepResponse>(
+                const response = await teamClusterDaemonClient.command<DaemonDebugStepResponse>(
                     teamClusterId,
                     ChannelCommands.DebugStep,
                     { sessionId: payload.sessionId }
@@ -330,7 +315,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Step execution failed';
                 logger.error(`@plugin-debug-socket: debug:step failed`);
-                this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
+                pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
                     error: message
@@ -347,7 +332,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
             }
 
             try {
-                const response = await this.daemonClient.command<DaemonDebugContinueResponse>(
+                const response = await teamClusterDaemonClient.command<DaemonDebugContinueResponse>(
                     teamClusterId,
                     ChannelCommands.DebugContinue,
                     { sessionId: payload.sessionId }
@@ -364,7 +349,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : 'Continue execution failed';
                 logger.error(`@plugin-debug-socket: debug:continue failed`);
-                this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
+                pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
                 this.emitToSocket(conn.id, 'debug:session:error', {
                     sessionId: payload.sessionId,
                     error: message
@@ -375,13 +360,13 @@ class PluginDebugSocketModule extends BaseSocketModule {
 
     private registerDebugStop(connection: ISocketConnection): void {
         this.on<DebugSessionPayload>(connection.id, 'debug:stop', async (conn, payload) => {
-            const entry = this.pluginDebugSessionRegistry.getSession(payload.sessionId);
+            const entry = pluginDebugSessionRegistry.getSession(payload.sessionId);
             if (!entry || entry.socketId !== conn.id) {
                 return;
             }
 
             try {
-                await this.daemonClient.command(
+                await teamClusterDaemonClient.command(
                     entry.teamClusterId,
                     ChannelCommands.DebugStop,
                     { sessionId: payload.sessionId }
@@ -389,13 +374,13 @@ class PluginDebugSocketModule extends BaseSocketModule {
             } catch {
             }
 
-            this.pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
+            pluginDebugSessionRegistry.unregisterSession(payload.sessionId);
             logger.info(`@plugin-debug-socket: session ${payload.sessionId} stopped by user`);
         });
     }
 
     private resolveOwnedSessionTeamClusterId(socketId: string, sessionId: string): string | null {
-        const entry = this.pluginDebugSessionRegistry.getSession(sessionId);
+        const entry = pluginDebugSessionRegistry.getSession(sessionId);
         if (!entry || entry.socketId !== socketId) {
             this.emitToSocket(socketId, 'debug:session:error', {
                 sessionId,
@@ -432,7 +417,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
                 nestedTrace: result.nestedTrace ?? []
             });
         } else if (result.status === 'error') {
-            this.pluginDebugSessionRegistry.unregisterSession(sessionId);
+            pluginDebugSessionRegistry.unregisterSession(sessionId);
             this.emitToSocket(socketId, 'debug:node:error', {
                 sessionId,
                 nodeId: result.nodeId,
@@ -449,12 +434,12 @@ class PluginDebugSocketModule extends BaseSocketModule {
             sessionId,
             totalDuration: 0
         });
-        this.pluginDebugSessionRegistry.unregisterSession(sessionId);
+        pluginDebugSessionRegistry.unregisterSession(sessionId);
     }
 
     private cleanupSessionsForSocket(socketId: string): void {
-        for (const [sessionId, entry] of this.pluginDebugSessionRegistry.unregisterSessionsForSocket(socketId)) {
-            this.daemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId }).catch(() => {});
+        for (const [sessionId, entry] of pluginDebugSessionRegistry.unregisterSessionsForSocket(socketId)) {
+            teamClusterDaemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId }).catch(() => {});
         }
     }
 }

@@ -54,7 +54,7 @@ const getSecretKey = (): Secret => {
     return key;
 };
 
-export default class JwtTokenService {
+class JwtTokenService {
     private readonly secret: Secret = getSecretKey();
     private readonly expiresIn = getExpiresIn();
 
@@ -82,3 +82,5 @@ export default class JwtTokenService {
         }
     }
 }
+
+export default new JwtTokenService();

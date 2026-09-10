@@ -9,8 +9,8 @@ import {
     resolveSceneArtifactExecutionContext
 } from '@modules/trajectory/services/SceneArtifactService';
 import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/TrajectoryAnalysis';
-import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import { formatValueForPath } from '@shared/utilities/format-value';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import atomPropertiesService from '@modules/trajectory/services/trajectory/AtomPropertiesService';
@@ -18,6 +18,12 @@ import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/traj
 import trajectoryNativeDaemonService, {
     resolveTrajectoryNativeClusterContext
 } from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
+import { requireTimestep } from '@modules/trajectory/services/trajectory/require-timestep';
+import type {
+    CreateColoredModelInput,
+    GetColorCodingStatsInput,
+    TrajectoryExposureScope
+} from '@modules/trajectory/services/TrajectoryServiceTypes';
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
@@ -49,15 +55,13 @@ const buildColorCodingObjectName = ({
 };
 
 class ColorCodingService {
-    async getProperties(
-        trajectoryId: string,
-        timestep: string | number,
-        analysisId?: string
-    ): Promise<{
+    async getProperties(input: TrajectoryExposureScope): Promise<{
         base: string[];
         modifiers: Record<string, string[]>;
         modifierTypes: Record<string, Record<string, 'number' | 'string'>>;
     }> {
+        const { trajectoryId, analysisId } = input;
+        const timestep = requireTimestep(input.timestep);
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext(trajectoryId);
 
@@ -94,14 +98,9 @@ class ColorCodingService {
         };
     }
 
-    async getStats(
-        trajectoryId: string,
-        timestep: string | number,
-        property: string,
-        type: string,
-        analysisId?: string,
-        exposureId?: string
-    ): Promise<{ min: number; max: number }> {
+    async getStats(input: GetColorCodingStatsInput): Promise<{ min: number; max: number }> {
+        const { trajectoryId, property, type, analysisId, exposureId } = input;
+        const timestep = requireTimestep(input.timestep);
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         let min = Infinity;
         let max = -Infinity;
@@ -174,16 +173,8 @@ class ColorCodingService {
         };
     }
 
-    async createColoredModel(
-        trajectoryId: string,
-        timestep: string | number,
-        property: string,
-        startValue: number,
-        endValue: number,
-        gradient: string,
-        analysisId?: string,
-        exposureId?: string
-    ): Promise<string> {
+    async createColoredModel(input: CreateColoredModelInput): Promise<string> {
+        const { trajectoryId, timestep, property, startValue, endValue, gradient, analysisId, exposureId } = input;
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const objectName = buildColorCodingObjectName({
             trajectoryId,
@@ -257,16 +248,8 @@ class ColorCodingService {
         return objectName;
     }
 
-    async getModelStreamResponse(
-        trajectoryId: string,
-        timestep: string | number,
-        property: string,
-        startValue: number,
-        endValue: number,
-        gradient: string,
-        analysisId?: string,
-        exposureId?: string
-    ): Promise<TrajectoryNativeObjectStreamResponse> {
+    async getModelStreamResponse(input: CreateColoredModelInput): Promise<TrajectoryNativeObjectStreamResponse> {
+        const { trajectoryId, timestep, property, startValue, endValue, gradient, analysisId, exposureId } = input;
         const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
         if (!trajectory) {

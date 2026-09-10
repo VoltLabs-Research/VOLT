@@ -1,11 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 
 import { In, IsNull, LessThanOrEqual } from 'typeorm';
 import Trajectory from '@modules/trajectory/models/Trajectory';
@@ -58,10 +58,6 @@ const getCloneJobMessage = (job: TrajectoryCloneJob): string => {
 };
 
 class TrajectoryCloneCoordinator{
-    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
-    private readonly eventBus = eventBus;
-
     async runPendingJobs(limit = 1): Promise<number>{
         let processed = 0;
 
@@ -182,7 +178,7 @@ class TrajectoryCloneCoordinator{
         const destinationClusterId = initialJob.destinationClusterId;
         const sortedFrames = [...sourceFrames].sort((a, b) => a.timestep - b.timestep);
 
-        const cloneResult = await this.teamClusterDaemonClient.command<{
+        const cloneResult = await teamClusterDaemonClient.command<{
             copiedFrames: number;
             copiedBytes: number;
         }>(
@@ -308,7 +304,7 @@ class TrajectoryCloneCoordinator{
                 }
             });
 
-            await this.eventBus.emit('job.status.changed', {
+            await eventBus.emit('job.status.changed', {
                 jobId: job.id,
                 teamId: job.team,
                 status: mapCloneStateToJobStatus(job.state),

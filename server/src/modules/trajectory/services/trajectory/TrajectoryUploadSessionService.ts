@@ -3,12 +3,12 @@ import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryUploadSession from '@modules/trajectory/models/TrajectoryUploadSession';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
-import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
+import { CatalogFolderKind } from '@shared/catalog/CatalogFolder';
 import { TrajectoryUploadSessionStatus } from '@modules/trajectory/contracts/trajectory-upload-session';
 
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import { replaceTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryFrameStore';
 import { toTrajectoryRecord } from '@modules/trajectory/services/trajectory/trajectory-record';
@@ -30,9 +30,9 @@ import {
     signUploadFiles
 } from '@modules/trajectory/services/trajectory/trajectory-upload-plan';
 
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
+import logger from '@shared/logger';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 
 import type {

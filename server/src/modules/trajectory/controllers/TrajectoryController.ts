@@ -7,19 +7,30 @@ import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import { respondWithTrajectoryPreview } from '@modules/trajectory/controllers/trajectory-preview-response';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
-import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
+import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
+import trajectoryUploadSessionService from '@modules/trajectory/services/trajectory/TrajectoryUploadSessionService';
+import trajectoryCatalogService from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
+import teamMetricsQueryService from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
+import { getTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryPreviewService';
+import { cloneTrajectory } from '@modules/trajectory/services/trajectory/TrajectoryCloneService';
+import trajectoryDownloadService from '@modules/trajectory/services/trajectory/TrajectoryDownloadService';
+import { getTrajectoryAtoms } from '@modules/trajectory/services/trajectory/TrajectoryAtomsService';
+import sceneArtifactQueryService from '@modules/trajectory/services/trajectory/SceneArtifactQueryService';
+import colorCodingService from '@modules/trajectory/services/color-coding/ColorCodingService';
+import particleFilterService from '@modules/trajectory/services/particle-filter/ParticleFilterService';
+import exposureOctreeService from '@modules/trajectory/services/exposure-octree/ExposureOctreeService';
 
 @Middleware(protect, teamScoped(Resource.TRAJECTORY))
 export default class TrajectoryController extends TrajectoryControllerBase {
     @Route(trajectoryRoutes.listSamples)
     async listSamples(@Res() res: Response): Promise<void> {
-        const value = await this.service.listSamples();
+        const value = await trajectoryDownloadService.listSamples();
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -28,7 +39,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.service.downloadSamples(this.params(req));
+        const output = await trajectoryDownloadService.downloadSamples(this.params(req));
         await pipeStreamToResponse(res, output.stream, {
             'Content-Type': 'application/zip',
             'Content-Disposition': `attachment; filename="${output.filename}"`
@@ -40,7 +51,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.service.listTeamSceneArtifacts(this.params(req)));
+        this.sendPaginated(res, await sceneArtifactQueryService.listByTeam(this.params(req)));
     }
 
     @Route(trajectoryRoutes.createUploadSession)
@@ -48,7 +59,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.createUploadSession(this.params(req, this.withAuthenticatedUserId));
+        const value = await trajectoryUploadSessionService.create(this.params(req, this.withAuthenticatedUserId));
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
@@ -57,7 +68,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.commitUploadSession(this.params(req, this.withAuthenticatedUserId));
+        const value = await trajectoryUploadSessionService.commit(this.params(req, this.withAuthenticatedUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -66,7 +77,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        await this.service.cancelUploadSession(this.params(req, this.withAuthenticatedUserId));
+        await trajectoryUploadSessionService.cancel(this.params(req, this.withAuthenticatedUserId));
         res.status(HttpStatus.NoContent).send();
     }
 
@@ -75,7 +86,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.service.getByTeamId(this.params(req)));
+        this.sendPaginated(res, await trajectoryCatalogService.getByTeamId(this.params(req)));
     }
 
     @Route(trajectoryRoutes.clone)
@@ -83,7 +94,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.cloneTrajectory(this.params(req, this.withAuthenticatedUserId));
+        const value = await cloneTrajectory(this.params(req, this.withAuthenticatedUserId));
         BaseResponse.success(res, value, HttpStatus.Accepted);
     }
 
@@ -93,7 +104,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Query() query: Record<string, string>,
         @Res() res: Response
     ): Promise<void>{
-        const result = await this.service.listFolders(teamId, {
+        const result = await trajectoryCatalogService.listFolders(teamId, {
             page: query.page ? Number(query.page) : undefined,
             limit: query.limit ? Number(query.limit) : undefined,
             parentId: query.parentId
@@ -107,7 +118,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Param('folderId') folderId: string,
         @Res() res: Response
     ): Promise<void>{
-        const folder = await this.service.getFolder(teamId, folderId);
+        const folder = await trajectoryCatalogService.getFolder(teamId, folderId);
         BaseResponse.success(res, folder);
     }
 
@@ -118,7 +129,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Body(schemaBody(typia.createValidate<{ title: string; parentId?: string | null }>())) body: { title: string; parentId?: string | null },
         @Res() res: Response
     ): Promise<void> {
-        const folder = await this.service.createFolder(teamId, userId, body);
+        const folder = await trajectoryCatalogService.createFolder(teamId, userId, body);
         BaseResponse.success(res, folder, HttpStatus.Created);
     }
 
@@ -129,7 +140,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Body(schemaBody(typia.createValidate<{ title: string }>())) body: { title: string },
         @Res() res: Response
     ): Promise<void> {
-        const folder = await this.service.updateFolder(teamId, folderId, body);
+        const folder = await trajectoryCatalogService.updateFolder(teamId, folderId, body.title);
         BaseResponse.success(res, folder);
     }
 
@@ -139,7 +150,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Param('folderId') folderId: string,
         @Res() res: Response
     ): Promise<void>{
-        await this.service.deleteFolder(teamId, folderId);
+        await trajectoryCatalogService.deleteFolder(teamId, folderId);
         res.status(HttpStatus.NoContent).send();
     }
 
@@ -148,7 +159,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.getTeamMetrics(this.params(req));
+        const value = await teamMetricsQueryService.getTeamMetrics(this.params(req));
         BaseResponse.success(res, value);
     }
 
@@ -157,7 +168,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        await respondWithTrajectoryPreview(res, () => this.service.getPreview(this.params(req)));
+        await respondWithTrajectoryPreview(res, () => getTrajectoryPreview(this.params<{ trajectoryId: string }>(req).trajectoryId));
     }
 
     @Route(trajectoryRoutes.downloadAnalyses)
@@ -165,7 +176,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.service.downloadTrajectoryAnalyses(this.params(req));
+        const output = await trajectoryDownloadService.downloadTrajectoryAnalyses(this.params(req));
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -175,7 +186,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.service.downloadTrajectory(this.params(req));
+        const output = await trajectoryDownloadService.downloadTrajectory(this.params(req));
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -189,7 +200,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
             return;
         }
 
-        const value = await this.service.getAtoms(this.buildAtomsInput(req));
+        const value = await getTrajectoryAtoms(this.buildAtomsInput(req));
         this.sendAtomsBinary(res, value);
     }
 
@@ -198,7 +209,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.service.getSceneArtifacts(this.params(req)));
+        this.sendPaginated(res, await sceneArtifactQueryService.listByTrajectory(this.params(req)));
     }
 
     @Route(trajectoryRoutes.move)
@@ -206,7 +217,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.move(this.params(req));
+        const value = await trajectoryCatalogService.move(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -215,7 +226,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.getById(this.params(req));
+        const value = await trajectoryCatalogService.getById(this.params<{ trajectoryId: string }>(req).trajectoryId);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -224,7 +235,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.updateById(this.params(req));
+        const value = await trajectoryCatalogService.updateById(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -233,7 +244,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        await this.service.deleteById(this.params(req));
+        await trajectoryCatalogService.deleteById(this.params(req));
         res.status(HttpStatus.NoContent).send();
     }
 
@@ -242,7 +253,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.getColorCodingProperties(this.params(req));
+        const value = await colorCodingService.getProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -251,7 +262,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.getColorCodingStats(this.params(req));
+        const value = await colorCodingService.getStats(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -260,7 +271,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.service.getColoredModelStream(this.params(req));
+        const output = await colorCodingService.getModelStreamResponse(this.params(req));
         await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 
@@ -269,8 +280,8 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.createColoredModel(this.params(req));
-        BaseResponse.success(res, value, HttpStatus.OK);
+        await colorCodingService.createColoredModel(this.params(req));
+        BaseResponse.success(res, null, HttpStatus.OK);
     }
 
     @Route(trajectoryRoutes.particleFilterProperties)
@@ -278,7 +289,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.getParticleFilterProperties(this.params(req));
+        const value = await particleFilterService.getProperties(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -287,7 +298,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.previewParticleFilter(this.params(req));
+        const value = await particleFilterService.preview(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -296,7 +307,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.getParticleFilterUniqueValues(this.params(req));
+        const value = await particleFilterService.getUniqueValues(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -305,7 +316,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.service.getFilteredModelStream(this.params(req));
+        const output = await particleFilterService.getModelStreamResponse(this.params(req));
         await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 
@@ -314,7 +325,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.service.applyParticleFilterAction(this.params(req));
+        const value = await particleFilterService.applyAction(this.params(req));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -323,7 +334,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.service.getOctreeMetadataStream(this.params(req));
+        const output = await exposureOctreeService.getOctreeMetadataStreamResponse(this.params(req));
         await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
     }
 }

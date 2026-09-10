@@ -1,12 +1,12 @@
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
-import Workflow, { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
+import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import {
     EntrypointNodeType,
     WorkflowNodeType,
     type WorkflowNode
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
+import pluginDependencyResolverService from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import {
     readArgumentDefinitions,
     validateArgumentDefinitions,
@@ -29,16 +29,33 @@ export enum WorkflowValidationMode {
     Strict = 'strict'
 }
 
+export interface ValidateWorkflowInput {
+    workflow: WorkflowProps;
+    pluginId?: string;
+}
+
+export interface ValidateWorkflowOutput {
+    validated: boolean;
+    errors?: string[];
+    modifier?: WorkflowNode;
+}
+
 interface WorkflowValidationResult {
     isValid: boolean;
     errors?: string[];
     modifier?: WorkflowNode;
 }
 
-export class WorkflowValidatorService {
-    constructor(
-        private readonly pluginDependencyResolverService: PluginDependencyResolverService
-    ) {}
+class WorkflowValidatorService {
+    async validateWorkflow(input: ValidateWorkflowInput): Promise<ValidateWorkflowOutput> {
+        const validation = await this.validate(input.workflow, input.pluginId, WorkflowValidationMode.Strict);
+
+        return {
+            validated: validation.isValid,
+            errors: validation.errors,
+            modifier: validation.modifier
+        };
+    }
 
     async validate(
         workflow: WorkflowProps,
@@ -160,8 +177,10 @@ export class WorkflowValidatorService {
                 updatedAt: new Date()
             }
         };
-        const dependencyValidation = await this.pluginDependencyResolverService.collectTransitivePublishedDependencies(transientPlugin);
+        const dependencyValidation = await pluginDependencyResolverService.collectTransitivePublishedDependencies(transientPlugin);
 
         return dependencyValidation.errors;
     }
 }
+
+export default new WorkflowValidatorService();

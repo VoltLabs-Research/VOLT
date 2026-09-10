@@ -14,15 +14,12 @@ import {
     requirePluginEntity,
     toPluginLike
 } from '@modules/plugin/services/plugin/PluginQueries';
-import {
-    WorkflowValidationMode,
-    WorkflowValidatorService
-} from '@modules/plugin/services/plugin/WorkflowValidatorService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import logger from '@shared/infrastructure/logger';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import workflowValidatorService, { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
+import logger from '@shared/logger';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { FindOptionsWhere } from 'typeorm';
 
@@ -42,13 +39,7 @@ export interface UpdatePluginByIdInput {
 
 const LIST_PLUGINS_DEFAULT_LIMIT = 100;
 
-export default class PluginCrudService {
-    #workflowValidator: WorkflowValidatorService;
-
-    constructor(workflowValidator: WorkflowValidatorService) {
-        this.#workflowValidator = workflowValidator;
-    }
-
+class PluginCrudService {
     async listPlugins(input: ListPluginsInput): Promise<PaginatedResult<PluginRecord>> {
         const where: FindOptionsWhere<PluginEntity> = {
             team: input.teamId,
@@ -66,7 +57,7 @@ export default class PluginCrudService {
     }
 
     async createPlugin(workflowProps: WorkflowProps, teamId: string): Promise<{ plugin: PluginRecord }> {
-        const validation = await this.#workflowValidator.validate(workflowProps, undefined, WorkflowValidationMode.Draft);
+        const validation = await workflowValidatorService.validate(workflowProps, undefined, WorkflowValidationMode.Draft);
         if (!validation.isValid) {
             throw ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_PUBLISH,
@@ -171,7 +162,7 @@ export default class PluginCrudService {
         const mode = status === PluginStatus.PUBLISHED
             ? WorkflowValidationMode.Strict
             : WorkflowValidationMode.Draft;
-        const { isValid, errors } = await this.#workflowValidator.validate(workflow, pluginId, mode);
+        const { isValid, errors } = await workflowValidatorService.validate(workflow, pluginId, mode);
 
         if (status === PluginStatus.PUBLISHED && !isValid) {
             throw ApplicationError.badRequest(
@@ -216,3 +207,5 @@ export default class PluginCrudService {
         });
     }
 }
+
+export default new PluginCrudService();

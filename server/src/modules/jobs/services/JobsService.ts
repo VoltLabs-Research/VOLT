@@ -1,11 +1,7 @@
-import type {
-    RemoveTeamJobsResult,
-    RetryTeamJobsResult
-} from '@shared/contracts/ports/ITeamJobMaintenanceService';
+import type { RemoveTeamJobsResult, RetryTeamJobsResult } from '@volt/contracts/modules/jobs/domain';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
-import TeamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealtimeSyncService';
-import TeamJobsService, { type TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
-import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
+import teamJobsRealtimeSyncService from '@modules/team/socket/team/TeamJobsRealtimeSyncService';
+import teamJobsService, { type TeamJobsInitialPayload } from '@modules/team/socket/team/TeamJobsService';
 
 interface TeamTrajectoryRef {
     teamId: string;
@@ -14,12 +10,11 @@ interface TeamTrajectoryRef {
 
 interface RemoveRunningJobsResult extends RemoveTeamJobsResult, TeamJobsInitialPayload {}
 
-export default class JobsService {
-    #realtimeSync = new TeamJobsRealtimeSyncService(new TeamJobsService(), socketIOEmitter);
+class JobsService {
 
     async removeRunningJobs(input: TeamTrajectoryRef): Promise<RemoveRunningJobsResult> {
         const outcome = await teamJobMaintenanceService.removeJobsForTrajectory(input.teamId, input.trajectoryId);
-        const snapshot = await this.#realtimeSync.broadcastSnapshot(input.teamId);
+        const snapshot = await teamJobsRealtimeSyncService.broadcastSnapshot(input.teamId);
 
         return {
             ...outcome,
@@ -31,3 +26,5 @@ export default class JobsService {
         return teamJobMaintenanceService.retryFailedJobsForTrajectory(input.teamId, input.trajectoryId);
     }
 }
+
+export default new JobsService();

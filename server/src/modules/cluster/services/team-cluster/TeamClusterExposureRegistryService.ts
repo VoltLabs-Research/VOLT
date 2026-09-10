@@ -1,11 +1,10 @@
 import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
-import type { ITeamClusterExposureRegistryService as ITeamClusterExposureRegistryServicePort } from '@shared/contracts/ports/ITeamClusterExposureRegistryService';
 
 const buildRegistryKey = (teamClusterId: string, exposureId: string): string => {
     return `${teamClusterId}:${exposureId}`;
 };
 
-class TeamClusterExposureRegistryService implements ITeamClusterExposureRegistryServicePort {
+class TeamClusterExposureRegistryService {
     private readonly exposuresByRegistryKey = new Map<string, TeamClusterServiceExposure>();
     private readonly registryKeysByTeamClusterId = new Map<string, Set<string>>();
 

@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { getRegistryUrl } from '@core/config/registry';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { SearchRegistryResponse } from '@volt/contracts/modules/plugin/registry';
 
 export type RegistrySearchResult = SearchRegistryResponse;
@@ -32,10 +32,17 @@ const parsePackageName = (fullName: string): ParsedPackageName => {
     };
 };
 
-export default class RegistryGateway {
+export interface SearchRegistryPluginsInput {
+    teamId: string;
+    q?: string;
+    page?: number;
+    limit?: number;
+}
+
+class RegistryGateway {
     private readonly baseUrl = getRegistryUrl();
 
-    async search(q: string, page: number, pageSize: number): Promise<RegistrySearchResult> {
+    async search(q = '', page = 1, pageSize = 20): Promise<RegistrySearchResult> {
         const query = new URLSearchParams({
             q,
             kind: 'workflow',
@@ -109,3 +116,5 @@ export default class RegistryGateway {
         });
     }
 }
+
+export default new RegistryGateway();

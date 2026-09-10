@@ -2,7 +2,7 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import ClusterService from '@modules/cluster/services/core/ClusterService';
+import clusterService from '@modules/cluster/services/core/ClusterService';
 import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/ClusterDaemonLifecycleService';
 import clusterRemoteExplorerService from '@modules/cluster/services/remote-explorer/ClusterRemoteExplorerService';
 import clusterRuntimeSettingsService from '@modules/cluster/services/core/ClusterRuntimeSettingsService';
@@ -17,8 +17,6 @@ import type {
 } from '@volt/contracts/modules/cluster/ai-tools';
 
 export default class ClusterAIToolController extends AIToolController {
-    #service = new ClusterService();
-
     @AITool({
         name: 'list_clusters',
         description: 'List the team compute clusters.',
@@ -26,7 +24,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ListClustersInput>()
     })
     async listClusters(input: ListClustersInput & AIToolScope) {
-        const { total, data } = await this.#service.listByTeamId({
+        const { total, data } = await clusterService.listByTeamId({
             page: 1,
             limit: 50,
             ...input
@@ -44,7 +42,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ClusterRefInput>()
     })
     async getCluster(input: ClusterRefInput & AIToolScope) {
-        const { teamCluster } = await this.#service.getById(input);
+        const { teamCluster } = await clusterService.getById(input);
         return {
             summary: `Cluster "${teamCluster.name}" is ${teamCluster.status}.`,
             data: teamCluster
@@ -59,7 +57,7 @@ export default class ClusterAIToolController extends AIToolController {
     })
     async getClusterHealthSummary(input: ClusterRefInput & AIToolScope) {
         const [{ teamCluster }, snapshot] = await Promise.all([
-            this.#service.getById(input),
+            clusterService.getById(input),
             clusterRuntimeSettingsService.getRuntimeSnapshot(input)
         ]);
 
@@ -117,7 +115,7 @@ export default class ClusterAIToolController extends AIToolController {
         validate: typia.createValidate<ListClusterTransferJobsInput>()
     })
     async listClusterTransferJobs(input: ListClusterTransferJobsInput & AIToolScope) {
-        const { total, data } = await this.#service.listTransferJobs({
+        const { total, data } = await clusterService.listTransferJobs({
             page: 1,
             limit: 50,
             ...input
@@ -184,7 +182,7 @@ export default class ClusterAIToolController extends AIToolController {
         needsApproval: true
     })
     async regenerateClusterToken(input: ClusterRefInput & AIToolScope) {
-        const { enrollmentToken } = await this.#service.regenerateEnrollmentToken(input);
+        const { enrollmentToken } = await clusterService.regenerateEnrollmentToken(input);
         return {
             summary: 'Cluster enrollment token regenerated.',
             data: { enrollmentToken }

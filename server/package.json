@@ -34,7 +34,6 @@
     "ts-node": "^10.9.2",
     "ts-patch": "^3.3.0",
     "tsc-alias": "^1.8.16",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.49.0"
   },
@@ -81,7 +80,6 @@
     "pino": "^10.1.0",
     "sharp": "^0.34.3",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
     "tsconfig-paths": "^4.2.0",
     "typeorm": "^0.3.27",
     "typia": "^12.1.1",

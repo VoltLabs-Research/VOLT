@@ -3,13 +3,11 @@ import { Route } from '@shared/http/route';
 import { Param, Query, CurrentUser } from '@shared/http/params';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
-import DashboardService from '@modules/dashboard/services/DashboardService';
+import dashboardService from '@modules/dashboard/services/DashboardService';
 import { dashboardRoutes } from '@volt/contracts/modules/dashboard/routes';
 
 @Middleware(protect, checkTeamMembership)
 export default class DashboardController extends Controller {
-    #service = new DashboardService();
-
     @Route(dashboardRoutes.getGlobalSearch)
     getGlobalSearch(
         @Param('teamId') teamId: string,
@@ -17,7 +15,7 @@ export default class DashboardController extends Controller {
         @Query('query') query?: string,
         @Query('limit') limit?: string
     ) {
-        return this.#service.getGlobalSearch({
+        return dashboardService.getGlobalSearch({
             teamId,
             userId,
             query,

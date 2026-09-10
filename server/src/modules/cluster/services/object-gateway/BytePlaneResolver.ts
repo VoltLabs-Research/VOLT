@@ -1,7 +1,7 @@
 import { OBJECT_GATEWAY_EXPOSURE_ID } from '@modules/cluster/services/object-gateway/object-gateway-paths';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
-import logger from '@shared/infrastructure/logger';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import logger from '@shared/logger';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
 export const OBJECT_GATEWAY_BASE_URL_LABEL = 'volt.exposure.base-url';
 

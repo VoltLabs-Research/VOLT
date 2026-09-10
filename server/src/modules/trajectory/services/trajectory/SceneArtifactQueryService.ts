@@ -1,7 +1,7 @@
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { FindOptionsWhere } from 'typeorm';
 import type {
     ListTeamSceneArtifactsInput,

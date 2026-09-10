@@ -1,8 +1,8 @@
 import Controller from '@shared/http/Controller';
-import { buildControllerParams } from '@shared/infrastructure/http/controllers/controller-internals';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { buildControllerParams } from '@shared/http/controllers/controller-internals';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 

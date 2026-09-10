@@ -1,15 +1,15 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type {
     GetSimulationCellByTrajectoryInput,
     GetSimulationCellByTrajectoryOutput
 } from '@shared/contracts/operations/GetSimulationCellByTrajectory';
 import type { SimulationCellDims, SimulationCellGeometry } from '@volt/contracts/modules/simulation-cell/domain';
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
-import type { PersistedOutput } from '@shared/domain/port/PersistedEntity';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
+import type { PersistedOutput } from '@shared/persistence/PersistedEntity';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import type { DeepPartial, FindManyOptions, FindOptionsWhere } from 'typeorm';
 
 interface ListSimulationCellsInput {
@@ -56,7 +56,7 @@ const toInsertableSimulationCell = (item: Partial<SimulationCellProps>): DeepPar
     timestep: item.timestep
 });
 
-export default class SimulationCellService{
+class SimulationCellService{
     async list(input: ListSimulationCellsInput): Promise<PaginatedResult<PersistedOutput<SimulationCellProps>>>{
         const pageRequest = readPageRequest(Number(input.page), Number(input.limit), { defaultLimit: DEFAULT_LIST_LIMIT });
         const where: FindOptionsWhere<SimulationCell> = { team: input.teamId };
@@ -135,3 +135,5 @@ export const insertSimulationCells = async (
     const inserted = await SimulationCell.save(SimulationCell.create(items.map(toInsertableSimulationCell)));
     return inserted.map((cell) => ({ _id: cell.id }));
 };
+
+export default new SimulationCellService();

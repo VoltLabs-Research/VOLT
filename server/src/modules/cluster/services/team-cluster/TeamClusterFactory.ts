@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { encrypt } from '@shared/infrastructure/utilities/crypto';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { encrypt } from '@shared/utilities/crypto';
 import { TeamClusterStatus, type TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type {
     TeamClusterProps,
@@ -10,7 +10,7 @@ import type {
     TeamClusterRuntimeRoleConfigProps
 } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
-import { isUniqueViolation } from '@shared/infrastructure/persistence/unique-violation';
+import { isUniqueViolation } from '@shared/persistence/unique-violation';
 
 const createDefaultTeamClusterQueueConcurrency = (): TeamClusterQueueConcurrencyProps => ({
     analysis: 8,

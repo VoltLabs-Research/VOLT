@@ -1,13 +1,12 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import logger from '@shared/logger';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 
 const SYNC_CACHE_TTL_MS = 600_000;
 const SYNC_CACHE_PREFIX = 'plugin-sync:';
@@ -17,10 +16,6 @@ interface DaemonPluginSyncResponse {
 }
 
 class PluginBinarySyncService {
-    private readonly objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClientSingleton;
-
-    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
     private readonly inflightSyncs = new Map<string, Promise<void>>();
 
     async syncIfNeeded(teamClusterId: string, plugin: Plugin, ownerClusterId: string): Promise<void> {
@@ -55,7 +50,7 @@ class PluginBinarySyncService {
         }
 
         const pendingSync = (async () => {
-            const syncResponse = await this.teamClusterDaemonClient.command<DaemonPluginSyncResponse>(
+            const syncResponse = await teamClusterDaemonClient.command<DaemonPluginSyncResponse>(
                 teamClusterId,
                 ChannelCommands.PluginSync,
                 {
@@ -92,7 +87,7 @@ class PluginBinarySyncService {
 
     private async readObjectSha256(ownerClusterId: string, objectKey: string): Promise<string | undefined> {
         try {
-            const objectHead = await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
+            const objectHead = await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
             return objectHead.metadata.sha256 || undefined;
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {

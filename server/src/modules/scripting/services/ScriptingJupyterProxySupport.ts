@@ -3,7 +3,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
 import { TeamClusterServiceExposureStatus } from '@shared/contracts/types/TeamClusterExposure';
 import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
-import { resolveServerBaseUrl } from '@shared/infrastructure/utilities/server-url';
+import { resolveServerBaseUrl } from '@shared/utilities/server-url';
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;

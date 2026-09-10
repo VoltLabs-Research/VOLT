@@ -1,4 +1,4 @@
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import { randomUUID } from 'node:crypto';
 
 export interface ScriptingSessionLockLease {

@@ -5,22 +5,20 @@ import { Body, schemaBody, Param, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import TeamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
+import teamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import { teamAIIntegrationRoutes } from '@volt/contracts/modules/team/routes';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 
 @Middleware(protect, teamScoped(Resource.TEAM))
 export default class TeamAIIntegrationController extends Controller {
-    #service = new TeamAIIntegrationService();
-
     @Route(teamAIIntegrationRoutes.listModels)
     listModels(@Param('teamId') teamId: string) {
-        return this.#service.listModels(teamId);
+        return teamAIIntegrationService.listModels(teamId);
     }
 
     @Route(teamAIIntegrationRoutes.list)
     listByTeamId(@Param('teamId') teamId: string) {
-        return this.#service.listByTeamId(teamId);
+        return teamAIIntegrationService.listByTeamId(teamId);
     }
 
     @Route(teamAIIntegrationRoutes.createByProvider)
@@ -31,7 +29,7 @@ export default class TeamAIIntegrationController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<TeamAIIntegrationMutationInput>())) body: TeamAIIntegrationMutationInput
     ){
-        return this.#service.createByProvider(teamId, userId, provider, body);
+        return teamAIIntegrationService.createByProvider(teamId, userId, provider, body);
     }
 
     @Route(teamAIIntegrationRoutes.updateByProvider)
@@ -40,7 +38,7 @@ export default class TeamAIIntegrationController extends Controller {
         @Param('provider') provider: string,
         @Body(schemaBody(typia.createValidate<TeamAIIntegrationMutationInput>())) body: TeamAIIntegrationMutationInput
     ){
-        return this.#service.updateByProvider(teamId, provider, body);
+        return teamAIIntegrationService.updateByProvider(teamId, provider, body);
     }
 
     @Route(teamAIIntegrationRoutes.deleteByProvider)
@@ -48,6 +46,6 @@ export default class TeamAIIntegrationController extends Controller {
         @Param('teamId') teamId: string,
         @Param('provider') provider: string
     ){
-        await this.#service.deleteByProvider(teamId, provider);
+        await teamAIIntegrationService.deleteByProvider(teamId, provider);
     }
 }

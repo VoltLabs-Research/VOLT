@@ -18,7 +18,7 @@ const toDomain = (settings: DeploymentSettingsEntity | null): DeploymentSettings
     }
 });
 
-export default class DeploymentSettingsService {
+class DeploymentSettingsService {
     async getSettings(): Promise<DeploymentSettings> {
         return toDomain(await DeploymentSettingsEntity.findOneBy({ key: SINGLETON_KEY }));
     }
@@ -33,3 +33,5 @@ export default class DeploymentSettingsService {
         }).save());
     }
 }
+
+export default new DeploymentSettingsService();

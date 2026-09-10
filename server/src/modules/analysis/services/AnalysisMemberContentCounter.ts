@@ -1,7 +1,7 @@
 import type {
     IMemberContentCounter,
     MemberContentCountResult
-} from '@shared/contracts/ports/IMemberContentCounter';
+} from '@shared/contracts/types/IMemberContentCounter';
 import Analysis from '@modules/analysis/models/Analysis';
 
 const COUNT_KEY = 'analysesCount';

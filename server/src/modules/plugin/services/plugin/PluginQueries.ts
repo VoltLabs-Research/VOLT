@@ -5,8 +5,8 @@ import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/services/plugin/WorkflowProjection';
 import type { PluginProjection } from '@modules/plugin/services/plugin/WorkflowProjection';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { mapPluginToRecord as mapPluginToRecordNeutral } from '@shared/application/utilities/mapPluginToRecord';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { mapPluginToRecord as mapPluginToRecordNeutral } from '@shared/utilities/mapPluginToRecord';
 import type { Plugin, PluginProps, PluginRecord } from '@modules/plugin/contracts/plugin';
 
 const buildPluginLike = (id: string, workflowProps: WorkflowProps, rest: Record<string, unknown>): Plugin => {

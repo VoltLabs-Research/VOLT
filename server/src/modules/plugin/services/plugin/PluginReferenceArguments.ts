@@ -4,7 +4,7 @@ import {
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import { isArgumentVisible } from '@modules/plugin/services/plugin/ArgumentVisibility';
 import { resolveArgumentExecutionValue } from '@modules/plugin/services/plugin/plugin-reference-mappings';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { isRecord } from '@shared/utilities/type-guards';
 
 export interface PluginReferenceExecutionRequest {
     referencePath: string;

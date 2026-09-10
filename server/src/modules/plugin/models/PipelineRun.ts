@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
 
 @Entity('pipeline_runs')

@@ -1,9 +1,9 @@
 import ClusterMetricSample from '@modules/system/models/ClusterMetricSample';
-import DomainEventSpoolEntry from '@shared/infrastructure/persistence/models/DomainEventSpoolEntry';
-import logger from '@shared/infrastructure/logger';
+import DomainEventSpoolEntry from '@shared/persistence/models/DomainEventSpoolEntry';
+import logger from '@shared/logger';
 import { LessThanOrEqual } from 'typeorm';
 import { METRIC_RETENTION_MS } from '@modules/system/services/SystemMetricsRepository';
-import { sweepExpiredKeyValues } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { sweepExpiredKeyValues } from '@shared/keyvalue/KeyValueStore';
 
 const MAINTENANCE_INTERVAL_MS = 300_000;
 

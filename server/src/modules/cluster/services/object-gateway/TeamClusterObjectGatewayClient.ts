@@ -1,11 +1,11 @@
 import { ErrorCodes, toErrorCode } from '@core/constants/error-codes';
 
 import bytePlaneResolver from '@modules/cluster/services/object-gateway/BytePlaneResolver';
-import ObjectGatewayAccessTokenProvider from '@modules/cluster/services/object-gateway/object-gateway-access-token';
+import objectGatewayAccessTokenProvider from '@modules/cluster/services/object-gateway/object-gateway-access-token';
 import objectGatewayDirectTransport, {
     ObjectGatewayDialError
 } from '@modules/cluster/services/object-gateway/object-gateway-direct-transport';
-import ObjectGatewayHttpSessionPool from '@modules/cluster/services/object-gateway/object-gateway-http-session-pool';
+import objectGatewayHttpSessionPool from '@modules/cluster/services/object-gateway/object-gateway-http-session-pool';
 import {
     buildCollectionPath,
     buildComposePath,
@@ -18,7 +18,7 @@ import {
     parseHeadResponse,
     parseListEntry
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER } from '@shared/contracts/types/TeamClusterObjectGateway';
 import { buffer } from 'node:stream/consumers';
 import type {
@@ -31,7 +31,6 @@ import type {
     ObjectGatewayJsonListResponse,
     RawHttpResponse
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     TeamClusterObjectGatewayListRequest,
     TeamClusterObjectGatewayListEntry,
@@ -54,10 +53,7 @@ const isReplayableBody = (body: ObjectGatewayRequestOptions['body']): boolean =>
     body === undefined || Buffer.isBuffer(body)
 );
 
-class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient {
-    private readonly accessTokenProvider = new ObjectGatewayAccessTokenProvider();
-    private readonly httpSessionPool = new ObjectGatewayHttpSessionPool();
-
+class TeamClusterObjectGatewayClient {
     async list(
         teamClusterId: string,
         request: TeamClusterObjectGatewayListRequest
@@ -241,7 +237,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
                 throw error;
             }
 
-            this.httpSessionPool.discardCluster(teamClusterId);
+            objectGatewayHttpSessionPool.discardCluster(teamClusterId);
             return this.attempt(teamClusterId, options, operation);
         }
     }
@@ -251,7 +247,7 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
         options: ObjectGatewayRequestOptions,
         operation: ObjectGatewayOperationName
     ): Promise<RawHttpResponse> {
-        const accessToken = await this.accessTokenProvider.resolve(teamClusterId);
+        const accessToken = await objectGatewayAccessTokenProvider.resolve(teamClusterId);
         const headers = new Headers(options.headers);
         headers.set(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER, accessToken.token);
 
@@ -300,21 +296,21 @@ class TeamClusterObjectGatewayClient implements ITeamClusterObjectGatewayClient 
         headers: Headers,
         operation: ObjectGatewayOperationName
     ): Promise<RawHttpResponse> {
-        const session = await this.httpSessionPool.acquire(teamClusterId, operation);
+        const session = await objectGatewayHttpSessionPool.acquire(teamClusterId, operation);
 
         try {
-            const response = await this.httpSessionPool.request(session, options, headers, operation);
+            const response = await objectGatewayHttpSessionPool.request(session, options, headers, operation);
 
             if (response.statusCode >= 200 && response.statusCode < 300) {
-                this.httpSessionPool.bindResponseLifecycle(response.stream, session);
+                objectGatewayHttpSessionPool.bindResponseLifecycle(response.stream, session);
                 return response;
             }
 
             const gatewayError = await this.toGatewayError(response, operation);
-            this.httpSessionPool.release(session);
+            objectGatewayHttpSessionPool.release(session);
             throw gatewayError;
         } catch (error) {
-            this.httpSessionPool.release(session, true);
+            objectGatewayHttpSessionPool.release(session, true);
             throw error;
         }
     }

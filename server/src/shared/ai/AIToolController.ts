@@ -3,7 +3,7 @@ import type { Tool, ToolSet } from 'ai';
 import { getAITools } from '@shared/ai/tool';
 import type { AIToolDefinition } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { formatValidationErrors } from '@shared/infrastructure/utilities/typia-validation-errors';
+import { formatValidationErrors } from '@shared/utilities/typia-validation-errors';
 
 type ToolHandler = (input: Record<string, unknown>) => unknown;
 

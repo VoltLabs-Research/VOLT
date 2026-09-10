@@ -19,8 +19,8 @@ import {
     TEAM_CLUSTER_INSTALL_MANIFEST_VERSION
 } from '@modules/cluster/services/install-manifest/TeamClusterInstallManifestFiles';
 import { normalizeTeamClusterInstallRoot } from '@modules/cluster/services/install-manifest/TeamClusterInstallRoot';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
+import ApplicationError from '@shared/errors/ApplicationError';
+import daemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
 import archiver from 'archiver';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
@@ -59,18 +59,16 @@ const createTeamClusterDaemonBuildContextArchiveBase64 = async (
 };
 
 class TeamClusterInstallManifestService {
-    private readonly daemonCredentialGuard = new DaemonCredentialGuard();
-
     async generateInstallManifest(
         teamClusterId: string,
         daemonPassword: string,
         installRoot: string,
         ports: TeamClusterInstallManifestPortsView
     ): Promise<TeamClusterInstallManifestView> {
-        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         const cloudUrl = this.requireCloudUrl();
         const normalizedInstallRoot = this.requireInstallRoot(installRoot);
-        const credentials = await this.daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
+        const credentials = await daemonCredentialGuard.getDecryptedServiceCredentials(teamCluster);
         const daemonDistributionMode = await getTeamClusterDaemonDistributionMode();
 
         await this.persistInstallContext(teamCluster, normalizedInstallRoot, ports);

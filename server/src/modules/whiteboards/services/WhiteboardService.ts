@@ -6,14 +6,14 @@ import {
     requireWhiteboardPayloadKey,
     requireWhiteboardStorageClusterId
 } from '@modules/whiteboards/contracts/whiteboard';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import ClusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
+import clusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
+import { CatalogFolderKind } from '@shared/catalog/CatalogFolder';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import { IsNull } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 import { Readable } from 'node:stream';
@@ -45,8 +45,7 @@ const presentWhiteboard = (whiteboard: Whiteboard) => {
     };
 };
 
-export default class WhiteboardService{
-    #signedUrlService = new ClusterObjectSignedUrlService();
+class WhiteboardService{
 
     async createWhiteboard(teamId: string, userId: string, input: { title: string; folderId?: string | null }){
         if(input.folderId){
@@ -194,7 +193,7 @@ export default class WhiteboardService{
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
         const assetId = uuidv4();
-        const signed = this.#signedUrlService.createToken({
+        const signed = clusterObjectSignedUrlService.createToken({
             kind: 'cluster-object',
             operation: 'write',
             teamId,
@@ -262,3 +261,5 @@ export default class WhiteboardService{
         }
     }
 }
+
+export default new WhiteboardService();

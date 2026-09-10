@@ -7,9 +7,9 @@ import type {
     TeamClusterDaemonSocketStreamPayload,
     TeamClusterDaemonSocketStreamStatePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
-export default class TeamClusterReverseInboundStreams {
+class TeamClusterReverseInboundStreams {
     #consumersByStreamId = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();
 
     register(streamId: string, consumer: TeamClusterDaemonInboundStreamConsumer): () => void {
@@ -79,3 +79,5 @@ export default class TeamClusterReverseInboundStreams {
         );
     }
 }
+
+export default new TeamClusterReverseInboundStreams();

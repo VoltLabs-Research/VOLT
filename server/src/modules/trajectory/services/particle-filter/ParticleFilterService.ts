@@ -1,5 +1,5 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
@@ -27,9 +27,18 @@ import trajectoryNativeDaemonService, {
 } from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 
 import { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
+import { requireTimestep } from '@modules/trajectory/services/trajectory/require-timestep';
+import type {
+    ApplyParticleFilterActionInput,
+    GetFilteredModelStreamInput,
+    GetParticleFilterUniqueValuesInput,
+    GetParticleFilterUniqueValuesOutput,
+    PreviewParticleFilterInput,
+    TrajectoryExposureScope
+} from '@modules/trajectory/services/TrajectoryServiceTypes';
 
 export { ParticleFilterCombinator };
-export { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
+import { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
 
 interface ParticleFilterResult {
     mask: Uint8Array;
@@ -38,16 +47,14 @@ interface ParticleFilterResult {
 }
 
 class ParticleFilterService {
-    async getProperties(
-        trajectoryId: string,
-        timestep: string | number,
-        analysisId?: string
-    ): Promise<{
+    async getProperties(input: TrajectoryExposureScope): Promise<{
         dump: string[];
         perAtom: Record<string, string[]>;
         perAtomTypes: Record<string, Record<string, 'number' | 'string'>>;
         exposureNames: Record<string, string>;
     }> {
+        const { trajectoryId, analysisId } = input;
+        const timestep = requireTimestep(input.timestep);
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext(trajectoryId);
 
@@ -92,33 +99,32 @@ class ParticleFilterService {
         };
     }
 
-    async getUniqueValues(
-        trajectoryId: string,
-        timestep: string | number,
-        property: string,
-        maxValues: number = 100,
-        analysisId?: string,
-        exposureId?: string
-    ): Promise<Array<number | string>> {
+    async getUniqueValues(input: GetParticleFilterUniqueValuesInput): Promise<GetParticleFilterUniqueValuesOutput> {
+        const { trajectoryId, property, analysisId, exposureId } = input;
+        const maxValues = input.maxValues ?? 100;
+        const timestep = requireTimestep(input.timestep);
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const clusterContext = await resolveTrajectoryNativeClusterContext(trajectoryId);
 
         if (exposureId && resolvedAnalysisId) {
-            return atomPropertiesService.getModifierUniqueValues(
+            return {
+ values: await atomPropertiesService.getModifierUniqueValues(
                 trajectoryId,
                 resolvedAnalysisId,
                 exposureId,
                 String(timestep),
                 property,
                 maxValues
-            );
+            ) 
+};
         }
 
         if (!clusterContext) {
             throw buildClusterRequiredError();
         }
 
-        return trajectoryNativeDaemonService.getUniqueValues({
+        return {
+ values: await trajectoryNativeDaemonService.getUniqueValues({
             teamClusterId: clusterContext.computeClusterId,
             trajectoryId,
             timestep: Number(timestep),
@@ -126,15 +132,14 @@ class ParticleFilterService {
             ownerClusterId: clusterContext.storageClusterId,
             property,
             maxValues
-        });
+        }) 
+};
     }
 
-    async preview(
-        trajectoryId: string,
-        timestep: string | number,
-        request: ParticleFilterRequest,
-        analysisId?: string
-    ): Promise<{ matchCount: number; totalAtoms: number }> {
+    async preview(input: PreviewParticleFilterInput): Promise<{ matchCount: number; totalAtoms: number }> {
+        const { trajectoryId, analysisId } = input;
+        const timestep = requireTimestep(input.timestep);
+        const request = buildParticleFilterRequest(input);
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
@@ -164,13 +169,10 @@ class ParticleFilterService {
         };
     }
 
-    async applyAction(
-        trajectoryId: string,
-        timestep: string | number,
-        action: 'delete' | 'highlight',
-        request: ParticleFilterRequest,
-        analysisId?: string
-    ): Promise<{ fileId: string; atomsResult: number; action: string }> {
+    async applyAction(input: ApplyParticleFilterActionInput): Promise<{ fileId: string; atomsResult: number; action: string }> {
+        const { trajectoryId, action, analysisId } = input;
+        const timestep = requireTimestep(input.timestep);
+        const request = buildParticleFilterRequest(input);
         const resolvedAnalysisId = normalizeAnalysisId(analysisId);
         const objectName = buildParticleFilterObjectName(
             trajectoryId,
@@ -234,13 +236,10 @@ class ParticleFilterService {
         };
     }
 
-    async getModelStreamResponse(
-        trajectoryId: string,
-        timestep: string | number,
-        request: ParticleFilterRequest,
-        action?: string,
-        analysisId?: string
-    ): Promise<TrajectoryNativeObjectStreamResponse> {
+    async getModelStreamResponse(input: GetFilteredModelStreamInput): Promise<TrajectoryNativeObjectStreamResponse> {
+        const { trajectoryId, action, analysisId } = input;
+        const timestep = requireTimestep(input.timestep);
+        const request = buildParticleFilterRequest(input);
         const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
         if (!trajectory) {

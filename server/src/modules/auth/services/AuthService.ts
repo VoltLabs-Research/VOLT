@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { LOCAL_ACCOUNT_EMAIL } from '@volt/contracts/modules/auth/local-account';
 import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
@@ -9,16 +9,16 @@ import {
     splitFullName
 } from '@modules/auth/contracts/user';
 import type { OAuthProvider } from '@modules/auth/contracts/user';
-import AuthSessionService from '@modules/auth/services/AuthSessionService';
-import AvatarService from '@modules/auth/services/AvatarService';
-import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
+import authSessionService from '@modules/auth/services/AuthSessionService';
+import avatarService from '@modules/auth/services/AvatarService';
+import bcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import { getConfiguredOAuthProviders } from '@modules/auth/services/oauth/config';
 import Session from '@modules/session/models/Session';
 import { SessionActivityType } from '@volt/contracts/modules/session/domain';
-import DefaultTeamEnroller from '@modules/team/services/team/DefaultTeamEnroller';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
-import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
+import defaultTeamEnroller from '@modules/team/services/team/DefaultTeamEnroller';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
+import generateRandomName from '@shared/utilities/generate-random-name';
 import type {
     SignInInput,
     SignUpInput,
@@ -48,14 +48,7 @@ interface AuthSessionResult{
     user: WireUser;
 }
 
-export default class AuthService{
-
-    #passwordHasher = new BcryptPasswordHasher();
-    #authSessionService = new AuthSessionService();
-    #avatarService = new AvatarService();
-    #eventBus = eventBus;
-    #defaultTeamEnroller = new DefaultTeamEnroller();
-
+class AuthService{
     async signIn(input: SignInInput, context: RequestContext): Promise<AuthSessionResult>{
         const user = await User.findOneBy({ email: normalizeEmail(input.email) });
         if(!user){
@@ -63,7 +56,7 @@ export default class AuthService{
             throw ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
         }
 
-        const isPasswordValid = await this.#passwordHasher.compare(input.password, user.password ?? '');
+        const isPasswordValid = await bcryptPasswordHasher.compare(input.password, user.password ?? '');
         if(!isPasswordValid){
             await this.#createFailedLogin(user.id, context.userAgent, context.ip);
             throw ApplicationError.unauthorized(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Invalid email or password');
@@ -94,7 +87,7 @@ export default class AuthService{
             throw ApplicationError.conflict(ErrorCodes.AUTH_CREDENTIALS_INVALID, 'Email already registered');
         }
 
-        const hashedPassword = await this.#passwordHasher.hash(input.password);
+        const hashedPassword = await bcryptPasswordHasher.hash(input.password);
 
         const newUser = await User.create({
             email,
@@ -106,21 +99,21 @@ export default class AuthService{
             analyses: []
         }).save();
 
-        const avatar = await this.#avatarService.generateAndUploadDefaultAvatar(newUser.id, newUser.email);
+        const avatar = await avatarService.generateAndUploadDefaultAvatar(newUser.id, newUser.email);
         await Object.assign(newUser, { avatar }).save();
 
         try{
-            await this.#defaultTeamEnroller.enrollIfConfigured(newUser.id);
+            await defaultTeamEnroller.enrollIfConfigured(newUser.id);
         }catch(err){
             logger.error(err, '[SignUp] default-team enrollment failed');
         }
 
-        await this.#eventBus.emit('user.created', {
+        await eventBus.emit('user.created', {
             id: newUser.id,
             firstName: newUser.firstName
         });
 
-        const token = await this.#authSessionService.createSessionWithToken({
+        const token = await authSessionService.createSessionWithToken({
             userId: newUser.id,
             ip: context.ip,
             userAgent: context.userAgent,
@@ -165,7 +158,7 @@ export default class AuthService{
         }
 
         const hash = crypto.createHash('md5').update(seed).digest('hex');
-        const { buffer } = this.#avatarService.generateIdenticon(hash);
+        const { buffer } = avatarService.generateIdenticon(hash);
         const avatar = `data:image/svg+xml;base64,${buffer.toString('base64')}`;
         const shortHash = hash.substring(0, 4).toUpperCase();
 
@@ -190,7 +183,7 @@ export default class AuthService{
                 );
             }
 
-            const isCurrentPasswordValid = await this.#passwordHasher.compare(input.passwordCurrent, user.password);
+            const isCurrentPasswordValid = await bcryptPasswordHasher.compare(input.passwordCurrent, user.password);
             if(!isCurrentPasswordValid){
                 throw ApplicationError.badRequest(
                     ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT,
@@ -199,7 +192,7 @@ export default class AuthService{
             }
         }
 
-        const hashedPassword = await this.#passwordHasher.hash(input.password);
+        const hashedPassword = await bcryptPasswordHasher.hash(input.password);
         await User.update({ id: userId }, {
             password: hashedPassword,
             passwordChangedAt: new Date(Date.now() - 1000)
@@ -207,7 +200,7 @@ export default class AuthService{
 
         await this.#updateLastLogin(userId);
 
-        const token = await this.#authSessionService.createSessionWithToken({
+        const token = await authSessionService.createSessionWithToken({
             userId,
             ip: context.ip,
             userAgent: context.userAgent,
@@ -233,7 +226,7 @@ export default class AuthService{
 
         const { affected } = await User.delete({ id: userId });
         if((affected ?? 0) > 0){
-            await this.#eventBus.emit('user.deleted', { userId });
+            await eventBus.emit('user.deleted', { userId });
         }
 
         return { success: true };
@@ -280,7 +273,7 @@ export default class AuthService{
             updateData.email = normalizedEmail;
         }
         if(file?.buffer){
-            updateData.avatar = await this.#avatarService.uploadCustomAvatar(userId, file.buffer);
+            updateData.avatar = await avatarService.uploadCustomAvatar(userId, file.buffer);
         }
 
         const updatedUser = await Object.assign(user, updateData).save();
@@ -316,13 +309,13 @@ export default class AuthService{
                     analyses: []
                 }).save();
 
-                await this.#eventBus.emit('user.created', {
+                await eventBus.emit('user.created', {
                     id: user.id,
                     firstName: user.firstName
                 });
 
                 try{
-                    await this.#defaultTeamEnroller.enrollIfConfigured(user.id);
+                    await defaultTeamEnroller.enrollIfConfigured(user.id);
                 }catch(err){
                     logger.error(err, '[OAuthLogin] default-team enrollment failed');
                 }
@@ -331,7 +324,7 @@ export default class AuthService{
 
         await this.#updateLastLogin(user.id);
 
-        const token = await this.#authSessionService.createSessionWithToken({
+        const token = await authSessionService.createSessionWithToken({
             userId: user.id,
             ip: input.ip,
             userAgent: input.userAgent,
@@ -370,7 +363,7 @@ export default class AuthService{
     }
 
     async #issueLoginSession(user: User, context: RequestContext): Promise<AuthSessionResult>{
-        const token = await this.#authSessionService.createSessionWithToken({
+        const token = await authSessionService.createSessionWithToken({
             userId: user.id,
             ip: context.ip,
             userAgent: context.userAgent,
@@ -397,3 +390,5 @@ export default class AuthService{
         };
     }
 }
+
+export default new AuthService();

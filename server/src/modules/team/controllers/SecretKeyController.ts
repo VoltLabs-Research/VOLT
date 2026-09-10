@@ -6,17 +6,15 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import { Resource } from '@core/constants/resources';
-import SecretKeyService from '@modules/team/services/SecretKeyService';
+import secretKeyService from '@modules/team/services/SecretKeyService';
 import { secretKeyRoutes } from '@volt/contracts/modules/team/routes';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 
 @Middleware(protect)
 export default class SecretKeyController extends Controller {
-    #service = new SecretKeyService();
-
     @Route(secretKeyRoutes.current)
     current(@Req() req: AuthenticatedRequest) {
-        return this.#service.current(req.authType, req.secretKeyId);
+        return secretKeyService.current(req.authType, req.secretKeyId);
     }
 
     @Route(secretKeyRoutes.teamMetrics)
@@ -25,7 +23,7 @@ export default class SecretKeyController extends Controller {
         @Param('teamId') teamId: string,
         @Query('days') days?: string
     ){
-        return this.#service.teamMetrics(teamId, days ? Number(days) : undefined);
+        return secretKeyService.teamMetrics(teamId, days ? Number(days) : undefined);
     }
 
     @Route(secretKeyRoutes.keyUsage)
@@ -35,7 +33,7 @@ export default class SecretKeyController extends Controller {
         @Param('secretKeyId') secretKeyId: string,
         @Query('days') days?: string
     ){
-        return this.#service.keyUsage(teamId, secretKeyId, days ? Number(days) : undefined);
+        return secretKeyService.keyUsage(teamId, secretKeyId, days ? Number(days) : undefined);
     }
 
     @Route(secretKeyRoutes.list)
@@ -45,7 +43,7 @@ export default class SecretKeyController extends Controller {
         @Query('page') page?: string,
         @Query('limit') limit?: string
     ){
-        return this.#service.listByTeamId(teamId, page ? Number(page) : undefined, limit ? Number(limit) : undefined);
+        return secretKeyService.listByTeamId(teamId, page ? Number(page) : undefined, limit ? Number(limit) : undefined);
     }
 
     @Route(secretKeyRoutes.create)
@@ -56,7 +54,7 @@ export default class SecretKeyController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateSecretKeyInput>())) body: CreateSecretKeyInput
     ){
-        return this.#service.create(teamId, userId, body);
+        return secretKeyService.create(teamId, userId, body);
     }
 
     @Route(secretKeyRoutes.revokeById)
@@ -65,7 +63,7 @@ export default class SecretKeyController extends Controller {
         @Param('teamId') teamId: string,
         @Param('secretKeyId') secretKeyId: string
     ){
-        return this.#service.revokeById(teamId, secretKeyId);
+        return secretKeyService.revokeById(teamId, secretKeyId);
     }
 
     @Route(secretKeyRoutes.deleteById)
@@ -75,6 +73,6 @@ export default class SecretKeyController extends Controller {
         @Param('secretKeyId') secretKeyId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteById(teamId, secretKeyId, userId);
+        await secretKeyService.deleteById(teamId, secretKeyId, userId);
     }
 }

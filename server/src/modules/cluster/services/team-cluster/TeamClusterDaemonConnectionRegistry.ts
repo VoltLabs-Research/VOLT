@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import DaemonChannelRegistry from '@modules/cluster/services/daemon/DaemonChannelRegistry';
 import type { TeamClusterDaemonSocketChannel } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 
 export interface ReleasedDaemonConnection {
     teamClusterId: string;
@@ -10,7 +10,7 @@ export interface ReleasedDaemonConnection {
     wasBound: boolean;
 }
 
-export default class TeamClusterDaemonConnectionRegistry {
+class TeamClusterDaemonConnectionRegistry {
     #channels = new Map<TeamClusterDaemonSocketChannel, DaemonChannelRegistry>();
     #teamClusterIdBySocketId = new Map<string, string>();
     #channelBySocketId = new Map<string, TeamClusterDaemonSocketChannel>();
@@ -106,3 +106,5 @@ export default class TeamClusterDaemonConnectionRegistry {
         return registry;
     }
 }
+
+export default new TeamClusterDaemonConnectionRegistry();

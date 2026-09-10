@@ -2,7 +2,6 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import TrajectoryService from '@modules/trajectory/services/TrajectoryService';
 import type {
     CloneTrajectoryInput,
     DeleteTrajectoryFolderInput,
@@ -15,9 +14,12 @@ import type {
     MoveTrajectoryInput,
     UpdateTrajectoryInput
 } from '@volt/contracts/modules/trajectory/ai-tools';
+import trajectoryCatalogService from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
+import teamMetricsQueryService from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
+import { cloneTrajectory } from '@modules/trajectory/services/trajectory/TrajectoryCloneService';
+import trajectoryDownloadService from '@modules/trajectory/services/trajectory/TrajectoryDownloadService';
 
 export default class TrajectoryAIToolController extends AIToolController {
-    #service = new TrajectoryService();
 
     @AITool({
         name: 'list_trajectories',
@@ -26,7 +28,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<ListTrajectoriesInput>()
     })
     async listTrajectories(input: ListTrajectoriesInput & AIToolScope) {
-        const { total, data } = await this.#service.getByTeamId(input);
+        const { total, data } = await trajectoryCatalogService.getByTeamId(input);
         return {
             summary: `Found ${total} trajectories.`,
             data
@@ -40,7 +42,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<ListPublicTrajectoriesInput>()
     })
     async listPublicTrajectories(input: ListPublicTrajectoriesInput & AIToolScope) {
-        const { total, data } = await this.#service.listPublicTeamTrajectories(input);
+        const { total, data } = await trajectoryCatalogService.listPublicByTeamId(input);
         return {
             summary: `Found ${total} public trajectories.`,
             data
@@ -54,7 +56,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<ListSampleSimulationsInput>()
     })
     async listSampleSimulations() {
-        const samples = await this.#service.listSamples();
+        const samples = await trajectoryDownloadService.listSamples();
         return {
             summary: `Found ${samples.length} sample simulations.`,
             data: samples
@@ -68,7 +70,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<GetTrajectoryInput>()
     })
     async getTrajectory(input: GetTrajectoryInput) {
-        const trajectory = await this.#service.getById(input);
+        const trajectory = await trajectoryCatalogService.getById(input.trajectoryId);
         return {
             summary: `Trajectory "${trajectory.name}" (${trajectory.status}).`,
             data: trajectory
@@ -82,7 +84,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<GetTrajectoryTeamMetricsInput>()
     })
     async getTeamMetrics(input: GetTrajectoryTeamMetricsInput & AIToolScope) {
-        const metrics = await this.#service.getTeamMetrics(input);
+        const metrics = await teamMetricsQueryService.getTeamMetrics(input);
         return {
             summary: 'Retrieved team trajectory metrics.',
             data: metrics
@@ -96,7 +98,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateTrajectoryInput>()
     })
     updateTrajectory(input: UpdateTrajectoryInput & AIToolScope) {
-        return this.#service.updateById(input);
+        return trajectoryCatalogService.updateById(input);
     }
 
     @AITool({
@@ -106,7 +108,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<CloneTrajectoryInput>()
     })
     cloneTrajectory(input: CloneTrajectoryInput & AIToolScope) {
-        return this.#service.cloneTrajectory(input);
+        return cloneTrajectory(input);
     }
 
     @AITool({
@@ -116,7 +118,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<MoveTrajectoryInput>()
     })
     moveTrajectory(input: MoveTrajectoryInput & AIToolScope) {
-        return this.#service.move(input);
+        return trajectoryCatalogService.move(input);
     }
 
     @AITool({
@@ -126,7 +128,7 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteTrajectoryInput>()
     })
     deleteTrajectory(input: DeleteTrajectoryInput & AIToolScope) {
-        return this.#service.deleteById(input);
+        return trajectoryCatalogService.deleteById(input);
     }
 
     @AITool({
@@ -136,6 +138,6 @@ export default class TrajectoryAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteTrajectoryFolderInput>()
     })
     deleteTrajectoryFolder(input: DeleteTrajectoryFolderInput & AIToolScope) {
-        return this.#service.deleteFolder(input.teamId, input.folderId);
+        return trajectoryCatalogService.deleteFolder(input.teamId, input.folderId);
     }
 }

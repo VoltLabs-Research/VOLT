@@ -1,19 +1,19 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
 import { addTeamToUser, removeTeamFromUser } from '@modules/team/services/team/user-team-links';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 
 interface RemoveMemberOutcome{
     warningCode?: string;
     teamDeleted: boolean;
 }
 
-export default class TeamMembershipService{
+class TeamMembershipService{
 
     async addMemberToTeam(userId: string, teamId: string, roleName: string = SystemRoleNames.MEMBER): Promise<void>{
         const existing = await TeamMember.findOneBy({
@@ -104,3 +104,5 @@ export default class TeamMembershipService{
         }
     }
 }
+
+export default new TeamMembershipService();

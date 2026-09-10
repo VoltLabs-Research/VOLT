@@ -1,5 +1,5 @@
-import logger from '@shared/infrastructure/logger';
-import defaultTempStorageLifecycleService, { type TempStorageLifecycleService } from '@shared/infrastructure/services/TempStorageLifecycleService';
+import logger from '@shared/logger';
+import defaultTempStorageLifecycleService, { type TempStorageLifecycleService } from '@shared/services/TempStorageLifecycleService';
 
 export const startTempStorageLifecycle = async (
     tempStorageLifecycleService: TempStorageLifecycleService = defaultTempStorageLifecycleService

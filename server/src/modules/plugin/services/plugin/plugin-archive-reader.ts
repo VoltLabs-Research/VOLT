@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { isRecord } from '@shared/utilities/type-guards';
 import unzipper from 'unzipper';
 
 interface PluginArchiveContents {

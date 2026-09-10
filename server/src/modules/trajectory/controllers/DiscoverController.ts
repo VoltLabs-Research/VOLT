@@ -5,6 +5,7 @@ import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
+import trajectoryCatalogService from '@modules/trajectory/services/trajectory/TrajectoryCatalogService';
 
 export default class DiscoverController extends TrajectoryControllerBase {
     @Route(trajectoryRoutes.discoverListPublicTrajectories)
@@ -12,6 +13,6 @@ export default class DiscoverController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.service.listPublicTeamTrajectories(this.params(req)));
+        this.sendPaginated(res, await trajectoryCatalogService.listPublicByTeamId(this.params(req)));
     }
 }

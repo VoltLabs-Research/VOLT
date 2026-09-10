@@ -1,11 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
-import defaultObjectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
-import DaemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import daemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
+import ApplicationError from '@shared/errors/ApplicationError';
 
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
 import type {
     TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayListRequest,
@@ -20,25 +19,10 @@ interface TeamClusterTeamIdentity {
     };
 }
 
-interface DaemonCredentialVerifier {
-    requireByDaemonPassword(
-        teamClusterId: string,
-        daemonPassword: string
-    ): Promise<TeamClusterTeamIdentity>;
-}
 
-type TeamClusterObjectStoreGateway = Pick<
-    ITeamClusterObjectGatewayClient,
-    'list' | 'deleteByPrefix' | 'head' | 'getStream' | 'putStream' | 'deleteObject'
->;
 
 type FindOwnerClusterById = (ownerClusterId: string) => Promise<TeamClusterTeamIdentity | null>;
 
-interface TeamClusterObjectStoreProxyServiceDependencies {
-    daemonCredentialGuard?: DaemonCredentialVerifier;
-    objectGatewayClient?: TeamClusterObjectStoreGateway;
-    findOwnerClusterById?: FindOwnerClusterById;
-}
 
 interface TeamClusterObjectStoreWriteInput {
     bucket: string;
@@ -76,17 +60,7 @@ const findOwnerClusterById: FindOwnerClusterById = async (ownerClusterId) => {
     return ownerClusterEntity ? toTeamClusterLike(ownerClusterEntity) : null;
 };
 
-export default class TeamClusterObjectStoreProxyService {
-    readonly #daemonCredentialGuard: DaemonCredentialVerifier;
-    readonly #objectGatewayClient: TeamClusterObjectStoreGateway;
-    readonly #findOwnerClusterById: FindOwnerClusterById;
-
-    constructor(dependencies: TeamClusterObjectStoreProxyServiceDependencies = {}) {
-        this.#daemonCredentialGuard = dependencies.daemonCredentialGuard ?? new DaemonCredentialGuard();
-        this.#objectGatewayClient = dependencies.objectGatewayClient ?? defaultObjectGatewayClient;
-        this.#findOwnerClusterById = dependencies.findOwnerClusterById ?? findOwnerClusterById;
-    }
-
+class TeamClusterObjectStoreProxyService {
     requireRequesterCredentials(
         requesterClusterId: string | undefined,
         daemonPassword: string | undefined
@@ -109,11 +83,11 @@ export default class TeamClusterObjectStoreProxyService {
         credentials: TeamClusterObjectStoreRequesterCredentials,
         ownerClusterId: string
     ): Promise<AuthorizedTeamClusterObjectStoreAccess> {
-        const requesterCluster = await this.#daemonCredentialGuard.requireByDaemonPassword(
+        const requesterCluster = await daemonCredentialGuard.requireByDaemonPassword(
             credentials.requesterClusterId,
             credentials.daemonPassword
         );
-        const ownerCluster = await this.#findOwnerClusterById(ownerClusterId);
+        const ownerCluster = await findOwnerClusterById(ownerClusterId);
 
         if (!ownerCluster) {
             throw ApplicationError.notFound(
@@ -139,7 +113,7 @@ export default class TeamClusterObjectStoreProxyService {
         access: AuthorizedTeamClusterObjectStoreAccess,
         request: TeamClusterObjectGatewayListRequest
     ): Promise<TeamClusterObjectGatewayListResponse> {
-        return this.#objectGatewayClient.list(access.ownerClusterId, request);
+        return objectGatewayClient.list(access.ownerClusterId, request);
     }
 
     async deletePrefix(
@@ -147,7 +121,7 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         prefix: string
     ): Promise<number | undefined> {
-        return this.#objectGatewayClient.deleteByPrefix(access.ownerClusterId, bucket, prefix);
+        return objectGatewayClient.deleteByPrefix(access.ownerClusterId, bucket, prefix);
     }
 
     async head(
@@ -155,7 +129,7 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         objectKey: string
     ): Promise<TeamClusterObjectStoreHeadResponse> {
-        return this.#objectGatewayClient.head(access.ownerClusterId, bucket, objectKey);
+        return objectGatewayClient.head(access.ownerClusterId, bucket, objectKey);
     }
 
     async openRead(
@@ -164,14 +138,14 @@ export default class TeamClusterObjectStoreProxyService {
         objectKey: string,
         options?: TeamClusterObjectStoreReadOptions
     ): Promise<TeamClusterObjectGatewayStreamResponse> {
-        return this.#objectGatewayClient.getStream(access.ownerClusterId, bucket, objectKey, options);
+        return objectGatewayClient.getStream(access.ownerClusterId, bucket, objectKey, options);
     }
 
     async write(
         access: AuthorizedTeamClusterObjectStoreAccess,
         input: TeamClusterObjectStoreWriteInput
     ): Promise<void> {
-        await this.#objectGatewayClient.putStream(access.ownerClusterId, {
+        await objectGatewayClient.putStream(access.ownerClusterId, {
             bucket: input.bucket,
             objectKey: input.objectKey,
             stream: input.stream,
@@ -187,7 +161,7 @@ export default class TeamClusterObjectStoreProxyService {
         bucket: string,
         objectKey: string
     ): Promise<void> {
-        await this.#objectGatewayClient.deleteObject(access.ownerClusterId, bucket, objectKey);
+        await objectGatewayClient.deleteObject(access.ownerClusterId, bucket, objectKey);
     }
 
     #requireContentLength(contentLength: number | undefined): number {
@@ -208,3 +182,5 @@ export default class TeamClusterObjectStoreProxyService {
         return contentLength;
     }
 }
+
+export default new TeamClusterObjectStoreProxyService();

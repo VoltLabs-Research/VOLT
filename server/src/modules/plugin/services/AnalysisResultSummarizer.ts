@@ -13,7 +13,7 @@ import {
     type SummarizedExposure
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
@@ -30,9 +30,7 @@ interface ExposureAccumulator {
     columnValues: Map<string, unknown[]>;
 }
 
-export default class AnalysisResultSummarizer{
-    #daemonClient = teamClusterDaemonClient;
-
+class AnalysisResultSummarizer{
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInput): Promise<SummarizeAnalysisResultOutput> {
         const analysis = await AnalysisEntity.findOneBy({ id: input.analysisId });
         if (!analysis) {
@@ -139,7 +137,7 @@ export default class AnalysisResultSummarizer{
         let truncated = false;
 
         do {
-            const daemonResult = await this.#daemonClient.command<DaemonPaginatedResult>(
+            const daemonResult = await teamClusterDaemonClient.command<DaemonPaginatedResult>(
                 teamClusterId,
                 ChannelCommands.PluginListingsList,
                 {
@@ -291,3 +289,5 @@ export default class AnalysisResultSummarizer{
         return Math.round(value * 1e6) / 1e6;
     }
 }
+
+export default new AnalysisResultSummarizer();

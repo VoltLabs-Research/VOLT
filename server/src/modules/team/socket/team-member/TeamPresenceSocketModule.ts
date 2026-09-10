@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import User from '@modules/auth/models/User';
 import type { SubscribeToTeamSocketPayload, TeamScopedSocketPayload } from '@modules/socket/socket/team-subscription/team-subscription';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
@@ -7,18 +7,14 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import TeamPresenceService, { DetachedTeamPresenceSession } from '@modules/team/services/team-member/TeamPresenceService';
-import TeamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
-import logger from '@shared/infrastructure/logger';
+import teamPresenceService, { type DetachedTeamPresenceSession } from '@modules/team/services/team-member/TeamPresenceService';
+import teamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
+import logger from '@shared/logger';
 
 class TeamPresenceSocketModule extends BaseSocketModule {
     public readonly name = 'TeamPresenceSocketModule';
 
     private unsubscribeFromTeamSubscription?: () => void;
-
-    private readonly teamPresenceService = new TeamPresenceService();
-    private readonly teamRoomPresenceService = new TeamRoomPresenceService();
-
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
@@ -39,7 +35,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
 
     onConnection(connection: ISocketConnection): void {
         this.on<TeamScopedSocketPayload>(connection.id, 'team:heartbeat', async (_conn, payload) => {
-            const heartbeat = this.teamPresenceService.registerHeartbeat(connection.id, payload.teamId);
+            const heartbeat = teamPresenceService.registerHeartbeat(connection.id, payload.teamId);
 
             if (!heartbeat || heartbeat.minutesToPersist <= 0) {
                 return;
@@ -77,7 +73,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
             return;
         }
 
-        const attachResult = this.teamPresenceService.attachConnection(connection.id, payload.teamId, currentUserId);
+        const attachResult = teamPresenceService.attachConnection(connection.id, payload.teamId, currentUserId);
 
         if (attachResult.detachedSession) {
             await this.finalizeDetachedSession(connection.id, attachResult.detachedSession, false);
@@ -90,7 +86,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
             });
         }
 
-        const onlineUserIds = await this.teamRoomPresenceService.getOnlineUserIds(payload.teamId);
+        const onlineUserIds = await teamRoomPresenceService.getOnlineUserIds(payload.teamId);
 
         this.emitToSocket(connection.id, 'user:list', {
             teamId: payload.teamId,
@@ -116,7 +112,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
         connectionId: string,
         leaveRoom = false
     ): Promise<DetachedTeamPresenceSession | null> {
-        const detachedSession = this.teamPresenceService.detachConnection(connectionId);
+        const detachedSession = teamPresenceService.detachConnection(connectionId);
 
         if (!detachedSession) {
             return null;
@@ -138,7 +134,7 @@ class TeamPresenceSocketModule extends BaseSocketModule {
         }
 
         if (session.userWentOffline) {
-            const isStillOnlineInTeam = await this.teamRoomPresenceService.isUserOnline(session.teamId, session.userId);
+            const isStillOnlineInTeam = await teamRoomPresenceService.isUserOnline(session.teamId, session.userId);
 
             if (!isStillOnlineInTeam) {
                 this.emitToRoom(roomName, 'user:offline', {

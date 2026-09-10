@@ -2,7 +2,7 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import AnalysisService from '@modules/analysis/services/AnalysisService';
+import analysisService from '@modules/analysis/services/AnalysisService';
 import type { GetAnalysisByIdResult } from '@modules/analysis/services/AnalysisService';
 import type {
     AnalysisRefInput,
@@ -22,8 +22,6 @@ interface ConfigDelta {
 }
 
 export default class AnalysisAIToolController extends AIToolController {
-    #service = new AnalysisService();
-
     @AITool({
         name: 'list_analyses',
         description: 'List all analyses in the team.',
@@ -31,7 +29,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<ListAnalysesInput>()
     })
     async listAnalyses(input: ListAnalysesInput & AIToolScope) {
-        const { total, data } = await this.#service.getAnalysesByTeamId({
+        const { total, data } = await analysisService.getAnalysesByTeamId({
             page: 1,
             limit: 50,
             ...input
@@ -49,7 +47,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<ListTrajectoryAnalysesInput>()
     })
     async listTrajectoryAnalyses(input: ListTrajectoryAnalysesInput & AIToolScope) {
-        const { total, data } = await this.#service.getAnalysesByTrajectoryId({
+        const { total, data } = await analysisService.getAnalysesByTrajectoryId({
             page: 1,
             limit: 50,
             ...input
@@ -67,7 +65,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<ListAnalysesByConfigInput>()
     })
     async listAnalysesByConfig(input: ListAnalysesByConfigInput & AIToolScope) {
-        const { total, data } = await this.#service.getAnalysesByTrajectoryId({
+        const { total, data } = await analysisService.getAnalysesByTrajectoryId({
             ...input,
             page: 1,
             limit: 1000
@@ -102,7 +100,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<AnalysisRefInput>()
     })
     async getAnalysis(input: AnalysisRefInput & AIToolScope) {
-        const analysis = await this.#service.getAnalysisById(input);
+        const analysis = await analysisService.getAnalysisById(input);
         return {
             summary: `Retrieved analysis ${input.analysisId}.`,
             data: analysis
@@ -116,7 +114,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<AnalysisRefInput>()
     })
     async getAnalysisArtifacts(input: AnalysisRefInput & AIToolScope) {
-        const { expectedArtifacts } = await this.#service.getAnalysisById(input);
+        const { expectedArtifacts } = await analysisService.getAnalysisById(input);
 
         const artifacts = (expectedArtifacts ?? []).map((artifact) => ({
             exposureId: artifact.exposureId,
@@ -142,7 +140,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<GetAnalysisFrameLogInput>()
     })
     async getAnalysisFrameLog(input: GetAnalysisFrameLogInput & AIToolScope) {
-        return this.#service.getAnalysisFrameLog(input);
+        return analysisService.getAnalysisFrameLog(input);
     }
 
     @AITool({
@@ -152,7 +150,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<AnalysisRefInput>()
     })
     async summarizeAnalysisRun(input: AnalysisRefInput & AIToolScope) {
-        const analysis = await this.#service.getAnalysisById(input);
+        const analysis = await analysisService.getAnalysisById(input);
         const totalFrames = analysis.totalFrames ?? 0;
 
         const failedStageFrames = (analysis.stages ?? [])
@@ -210,11 +208,11 @@ export default class AnalysisAIToolController extends AIToolController {
     })
     async compareAnalyses(input: CompareAnalysesInput & AIToolScope) {
         const [a, b] = await Promise.all([
-            this.#service.getAnalysisById({
+            analysisService.getAnalysisById({
                 teamId: input.teamId,
                 analysisId: input.analysisIdA
             }),
-            this.#service.getAnalysisById({
+            analysisService.getAnalysisById({
                 teamId: input.teamId,
                 analysisId: input.analysisIdB
             })
@@ -257,7 +255,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<AnalysisRefInput>()
     })
     async retryFailedAnalysisFrames(input: AnalysisRefInput & AIToolScope) {
-        return this.#service.retryFailedFrames(input);
+        return analysisService.retryFailedFrames(input);
     }
 
     @AITool({
@@ -267,7 +265,7 @@ export default class AnalysisAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteAnalysisInput>()
     })
     async deleteAnalysis(input: DeleteAnalysisInput & AIToolScope) {
-        return this.#service.deleteAnalysisById(input);
+        return analysisService.deleteAnalysisById(input);
     }
 
     #diffConfig(a: Record<string, unknown>, b: Record<string, unknown>): ConfigDelta {

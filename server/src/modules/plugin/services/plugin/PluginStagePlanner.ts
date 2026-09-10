@@ -4,7 +4,6 @@ import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contra
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 import { requirePlugin } from '@modules/plugin/services/plugin/PluginQueries';
 import { sanitizeVisibleArgumentConfig } from '@modules/plugin/services/plugin/ArgumentVisibility';
-import { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import type {
     PipelineStageExecutionInput,
     RoutePluginExecutionInput,
@@ -19,13 +18,9 @@ import {
     resolvePluginDisplayName,
     computePipelineStageHash
 } from '@modules/plugin/services/plugin/WorkflowProjection';
-import {
-    WorkflowValidationMode,
-    WorkflowValidatorService
-} from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import workflowValidatorService, { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { ExecutePipelineStageInput } from '@volt/contracts/modules/plugin/http';
@@ -58,11 +53,7 @@ export interface PlanPluginStageParams {
 
 const ANALYSIS_EXECUTION_METADATA_KEY = '__voltExecution';
 
-export default class PluginStagePlanner {
-    #dependencyResolver = new PluginDependencyResolverService();
-    #workflowValidator = new WorkflowValidatorService(this.#dependencyResolver);
-    #storagePlacementService: IStoragePlacementService = storagePlacementService;
-
+class PluginStagePlanner {
     async planPluginStage({
         stage,
         userId,
@@ -87,7 +78,7 @@ export default class PluginStagePlanner {
             throw ApplicationError.badRequest(ErrorCodes.PLUGIN_NOT_FOUND, `Plugin ${stage.pluginId} is not published`);
         }
 
-        const { isValid, errors } = await this.#workflowValidator.validate(
+        const { isValid, errors } = await workflowValidatorService.validate(
             plugin.props.workflow.props,
             plugin.id,
             WorkflowValidationMode.Strict
@@ -136,10 +127,10 @@ export default class PluginStagePlanner {
             };
         }
 
-        const closure = await resolveExecutionClosure(this.#dependencyResolver, plugin, config);
+        const closure = await resolveExecutionClosure(plugin, config);
 
         if (plugin.props.workflow.entrypoint?.binaryObjectPath) {
-            await this.#storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
+            await storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
         }
 
         const analysisEntity = await AnalysisEntity.create({
@@ -163,7 +154,7 @@ export default class PluginStagePlanner {
             stages: [],
             childAnalyses: []
         }).save();
-        await this.#storagePlacementService.ensurePlacement('analysis', analysisEntity.id);
+        await storagePlacementService.ensurePlacement('analysis', analysisEntity.id);
         const analysis = toAnalysisLike(analysisEntity);
 
         const execution: RoutePluginExecutionInput = {
@@ -198,3 +189,5 @@ export default class PluginStagePlanner {
         };
     }
 }
+
+export default new PluginStagePlanner();

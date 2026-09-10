@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import type { DataSourceOptions, EntitySchema, MixedList } from 'typeorm';
-import { SQLITE_URL_SCHEME, resolveDatabaseDialect } from '@shared/infrastructure/persistence/dialect';
+import { SQLITE_URL_SCHEME, resolveDatabaseDialect } from '@shared/persistence/dialect';
 
 export type DatabaseEntities = MixedList<string | Function | EntitySchema>;
 

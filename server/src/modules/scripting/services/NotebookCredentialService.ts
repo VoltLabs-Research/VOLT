@@ -1,12 +1,10 @@
 import { requireTeamMembership } from '@modules/team/services/team/team-membership-guard';
-import SecretKeyService from '@modules/team/services/SecretKeyService';
+import secretKeyService from '@modules/team/services/SecretKeyService';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
-import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
-import logger from '@shared/infrastructure/logger';
+import { encrypt, decrypt } from '@shared/utilities/crypto';
+import logger from '@shared/logger';
 
 class NotebookCredentialService {
-    readonly #secretKeys = new SecretKeyService();
-
     async resolveSecretKey(notebook: ScriptingNotebook, userId: string): Promise<string> {
         if (notebook.secretKeyId && notebook.secretKeyEncrypted) {
             return decrypt(notebook.secretKeyEncrypted);
@@ -15,7 +13,7 @@ class NotebookCredentialService {
         const teamId = notebook.team;
         const roleId = await this.resolveLauncherRoleId(teamId, userId);
 
-        const { secretKeyId, secretKey } = await this.#secretKeys.create(teamId, userId, {
+        const { secretKeyId, secretKey } = await secretKeyService.create(teamId, userId, {
             roleId,
             name: `notebook:${notebook.id}`
         });
@@ -37,7 +35,7 @@ class NotebookCredentialService {
         }
 
         try {
-            await this.#secretKeys.deleteById(
+            await secretKeyService.deleteById(
                 notebook.team,
                 secretKeyId,
                 notebook.createdBy

@@ -18,8 +18,8 @@ import {
     type TeamClusterDaemonMessage,
     type TeamClusterDaemonSceneArtifactUpsertBatchStream
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import type ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import type ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 
 type EmitToSocket = (socketId: string, event: string, payload: unknown) => void;
 

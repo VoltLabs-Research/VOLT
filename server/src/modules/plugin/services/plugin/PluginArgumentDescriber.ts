@@ -32,7 +32,7 @@ interface DescribePluginArgumentsOutput {
     arguments: DescribedPluginArgument[];
 }
 
-export default class PluginArgumentDescriber{
+class PluginArgumentDescriber{
 
     async describePluginArguments(input: PluginRefInput): Promise<DescribePluginArgumentsOutput> {
         const plugin = await requirePlugin(input.pluginId);
@@ -113,3 +113,5 @@ export default class PluginArgumentDescriber{
         return notes.length ? notes.join(' ') : undefined;
     }
 }
+
+export default new PluginArgumentDescriber();

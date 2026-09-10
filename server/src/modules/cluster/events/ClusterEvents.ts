@@ -7,7 +7,7 @@ import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 @DefineEventGroup('cluster')
 export default class ClusterEvents {

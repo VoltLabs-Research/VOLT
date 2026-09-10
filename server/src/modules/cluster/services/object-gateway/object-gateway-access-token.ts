@@ -1,12 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 
 import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/team-cluster';
-import DaemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
+import daemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
 import {
     OBJECT_GATEWAY_EXPOSURE_ID,
     OBJECT_GATEWAY_EXPOSURE_NAME
 } from '@modules/cluster/services/object-gateway/object-gateway-paths';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import jwt from 'jsonwebtoken';
 
@@ -30,11 +30,9 @@ export interface ObjectGatewayAccessToken {
 const TOKEN_TTL_SECONDS = 5 * 60;
 const TOKEN_EXPIRY_SAFETY_WINDOW_MS = 5_000;
 
-export default class ObjectGatewayAccessTokenProvider {
+class ObjectGatewayAccessTokenProvider {
     private readonly cachedTokens = new Map<string, ObjectGatewayAccessToken>();
     private readonly pendingTokens = new Map<string, Promise<ObjectGatewayAccessToken>>();
-    private readonly daemonCredentialGuard = new DaemonCredentialGuard();
-
     async resolve(teamClusterId: string): Promise<ObjectGatewayAccessToken> {
         const cachedToken = this.cachedTokens.get(teamClusterId);
 
@@ -63,7 +61,7 @@ export default class ObjectGatewayAccessTokenProvider {
             throw ApplicationError.notFound(ErrorCodes.TEAM_CLUSTER_NOT_FOUND, 'Team cluster not found');
         }
 
-        const daemonPassword = await this.daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
+        const daemonPassword = await daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
         const issuedAt = Math.floor(Date.now() / 1000);
         const claims: TeamClusterDirectAccessTokenClaims = {
             requesterKind: 'server',
@@ -83,3 +81,5 @@ export default class ObjectGatewayAccessTokenProvider {
         };
     }
 }
+
+export default new ObjectGatewayAccessTokenProvider();

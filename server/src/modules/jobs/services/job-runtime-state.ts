@@ -1,4 +1,4 @@
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import {
     analysisFailedKey,
