@@ -1,8 +1,8 @@
-import { valueRow } from '../../../CanvasRenderConfigHelpers';
+import { valueRow } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 
 import { useMemo } from 'react';
 import { Grip } from 'lucide-react';

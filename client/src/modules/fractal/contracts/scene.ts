@@ -43,7 +43,7 @@ interface SceneVisualOverride {
 
 export type SceneVisualOverrides = Record<string, SceneVisualOverride>;
 
-export type DefaultScene = {
+type DefaultScene = {
     sceneType: string;
     source: 'default';
 };

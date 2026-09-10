@@ -2,7 +2,7 @@ import CanvasOptionSelect from '@/modules/canvas/components/CanvasOptionSelect';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
 import type { ReactNode } from 'react';
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 
 
 type RowDef = {
@@ -11,7 +11,6 @@ type RowDef = {
     max: number;
     step: number;
     decimals?: number;
-    className?: string;
 };
 
 type ValueRowDef = RowDef & {
@@ -130,7 +129,6 @@ export const row = (
     max: base.max,
     step: base.step,
     format: (value: number) => base.decimals !== undefined ? value.toFixed(base.decimals) : String(value),
-    className: base.className,
     get,
     set
 });
@@ -141,7 +139,6 @@ export const valueRow = (def: ValueRowDef) => ({
     max: def.max,
     step: def.step,
     format: (value: number) => def.decimals !== undefined ? value.toFixed(def.decimals) : String(value),
-    className: def.className,
     value: def.value,
     onChange: def.onChange
 });

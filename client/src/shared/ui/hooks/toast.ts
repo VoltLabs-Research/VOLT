@@ -2,14 +2,12 @@ import { getErrorMessage } from '@voltstack/voltclient';
 import { isApiError, markApiErrorHandled } from '@/shared/errors/core/report-error';
 import { sileo } from 'sileo';
 import { createCrudToastOptions, type PromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import type { SileoOptions, SileoPosition } from 'sileo';
+import type { SileoOptions } from 'sileo';
 
 interface SileoPromiseOptions<T = unknown> {
     loading: SileoOptions;
     success: SileoOptions | ((data: T) => SileoOptions);
     error: SileoOptions | ((err: unknown) => SileoOptions);
-    action?: SileoOptions | ((data: T) => SileoOptions);
-    position?: SileoPosition;
 };
 
 const DEFAULT_ERROR_DESCRIPTION = 'Please try again later.';

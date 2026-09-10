@@ -53,7 +53,6 @@ const useClusterPageState = () => {
     return {
         clusters: management.clusters,
         selectedTeamId: management.selectedTeamId,
-        selectedCluster: management.selectedCluster,
         selectedClusterId: management.selectedClusterId,
         setSelectedClusterId: management.setSelectedClusterId,
         deleteCluster,

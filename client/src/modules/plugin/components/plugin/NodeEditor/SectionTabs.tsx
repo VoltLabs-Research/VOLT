@@ -1,7 +1,6 @@
 import { cn } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
-import type { ReactNode } from 'react';
 
 const PILL_SPRING = {
     type: 'spring',
@@ -12,7 +11,6 @@ const PILL_SPRING = {
 interface SectionTabOption<TId extends string> {
     id: TId;
     label: string;
-    icon?: ReactNode;
 };
 
 interface SectionTabsProps<TId extends string> {
@@ -57,9 +55,6 @@ const SectionTabs = <TId extends string>({
                         )}
 
                         <span className='relative z-[1] inline-flex flex-row items-center gap-1.5 text-sm font-medium leading-none'>
-                            {tab.icon ? (
-                                <span className='flex flex-row items-center justify-center text-current'>{tab.icon}</span>
-                            ) : null}
                             {tab.label}
                         </span>
                     </button>

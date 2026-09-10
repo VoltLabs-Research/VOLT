@@ -10,15 +10,17 @@ import { resetModal } from '@/shared/ui/modal/use-modal-store';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { TeamCreatorForm } from './validation-schema';
+
+interface TeamCreatorForm {
+    name: string;
+    description: string;
+}
 
 const MODAL_ID = 'team-creator-modal';
 const TEAM_CREATOR_FORM_ID = 'team-creator-form';
 
 interface TeamCreatorModalProps {
     isRequired?: boolean;
-    onSuccess?: () => void;
-    onClose?: () => void;
 }
 
 const TEAM_CREATOR_TOAST_OPTIONS = createPromiseToastOptions({
@@ -28,9 +30,7 @@ const TEAM_CREATOR_TOAST_OPTIONS = createPromiseToastOptions({
 });
 
 export const TeamCreatorModal = ({
-    isRequired = false,
-    onSuccess,
-    onClose
+    isRequired = false
 }: TeamCreatorModalProps) => {
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -50,7 +50,6 @@ export const TeamCreatorModal = ({
         resetModal(MODAL_ID, () => {
             form.reset();
             setApiError(null);
-            onClose?.();
         });
     };
 
@@ -66,7 +65,6 @@ export const TeamCreatorModal = ({
                 afterSuccess: (team) => {
                     setSelectedTeamId(team._id);
                     closeTeamCreatorModal();
-                    onSuccess?.();
                 }
             });
         } catch (error: unknown) {

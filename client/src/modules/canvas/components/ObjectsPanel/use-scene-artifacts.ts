@@ -3,8 +3,6 @@ import {
     sceneArtifactsQuery
 } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { toSceneObjectFromArtifact } from '@/modules/canvas/utils/scene-identity';
-import { ErrorSurface } from '@/shared/contracts/errors';
-import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import { useEffect, useMemo } from 'react';
 
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
@@ -57,30 +55,6 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
 
     const isLoading = colorCodingQuery.isLoading || particleFilterQuery.isLoading;
 
-    const error = useMemo(() => {
-        const queryError = colorCodingQuery.error || particleFilterQuery.error;
-        if (!queryError) return null;
-        return reportError(queryError, {
-            surface: ErrorSurface.Silent,
-            fallbackTitle: 'Failed to load scene artifacts'
-        }).title;
-    }, [colorCodingQuery.error, particleFilterQuery.error]);
-
-    const accessDenied = useMemo(() => {
-        return isAccessDeniedError(colorCodingQuery.error)
-            || isAccessDeniedError(particleFilterQuery.error);
-    }, [colorCodingQuery.error, particleFilterQuery.error]);
-
-    const accessDeniedMessage = useMemo(() => {
-        const firstAccessDeniedError = [colorCodingQuery.error, particleFilterQuery.error]
-            .find((queryError) => isAccessDeniedError(queryError));
-        if (!firstAccessDeniedError) {
-            return undefined;
-        }
-
-        return reportError(firstAccessDeniedError, { surface: ErrorSurface.Silent }).title;
-    }, [colorCodingQuery.error, particleFilterQuery.error]);
-
     useEffect(() => {
         const onArtifactsChanged = (event: Event) => {
             const customEvent = event as CustomEvent<{ trajectoryId?: string }>;
@@ -94,24 +68,10 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
         };
     }, [trajectoryId]);
 
-    const totalArtifacts = useMemo(
-        () => colorCodingArtifacts.length + particleFilterArtifacts.length,
-        [colorCodingArtifacts.length, particleFilterArtifacts.length]
-    );
-
-    const reload = () => {
-        void invalidateSceneArtifacts();
-    };
-
     return {
         isLoading,
-        error,
-        accessDenied,
-        accessDeniedMessage,
-        totalArtifacts,
         colorCodingArtifacts,
-        particleFilterArtifacts,
-        reload
+        particleFilterArtifacts
     };
 };
 

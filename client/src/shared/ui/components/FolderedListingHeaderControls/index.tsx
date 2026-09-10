@@ -12,7 +12,6 @@ interface FolderHeaderMenuOptionsParams<TFolder> {
     onRenameFolderOpen: (folder: TFolder) => void;
     onDeleteCurrentFolder: (() => void | Promise<void>) | null;
     newFolderModalId?: string;
-    extraOptions?: MenuOption[];
 };
 
 export const NewFolderHeaderAction = ({ modalId }: NewFolderHeaderActionProps) => (
@@ -30,8 +29,7 @@ export const getFolderHeaderMenuOptions = <TFolder,>({
     currentFolder,
     onRenameFolderOpen,
     onDeleteCurrentFolder,
-    newFolderModalId,
-    extraOptions = []
+    newFolderModalId
 }: FolderHeaderMenuOptionsParams<TFolder>): MenuOption[] => {
     const options: MenuOption[] = [];
 
@@ -60,5 +58,5 @@ export const getFolderHeaderMenuOptions = <TFolder,>({
         );
     }
 
-    return [...options, ...extraOptions];
+    return options;
 };

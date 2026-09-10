@@ -1,11 +1,9 @@
 import { Skeleton } from '@heroui/react';
-interface JobSkeletonProps {
-    n?: number;
-};
+const SKELETON_ROWS = 10;
 
-const JobSkeleton = ({ n = 10 }: JobSkeletonProps) => (
+const JobSkeleton = () => (
     <div className='flex flex-col'>
-        {Array.from({ length: n }, (_, index) => (
+        {Array.from({ length: SKELETON_ROWS }, (_, index) => (
             <div className='flex flex-row items-center justify-between py-3' key={index}>
                 <div className='flex flex-row items-center gap-4 flex-1'>
                     <Skeleton className='size-[30px] shrink-0 rounded-full' />

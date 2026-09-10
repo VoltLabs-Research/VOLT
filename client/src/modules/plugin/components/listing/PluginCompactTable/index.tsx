@@ -25,13 +25,13 @@ interface PluginCompactTableProps {
     onLoadMore?: () => void;
 
     error?: unknown;
-    rowHeight?: number;
     getMenuOptions?: (row: Record<string, unknown>) => MenuOption[];
     onRowClick?: (row: Record<string, unknown>) => void;
     selectedRowId?: string | null;
 }
 
 const DEFAULT_VISIBLE_ROWS = 24;
+const ROW_HEIGHT = 28;
 
 const TYPE_INFERENCE_SAMPLE_SIZE = 30;
 
@@ -85,7 +85,6 @@ const PluginCompactTable = ({
     isFetchingMore,
     onLoadMore,
     error,
-    rowHeight = 28,
     getMenuOptions,
     onRowClick,
     selectedRowId
@@ -135,17 +134,17 @@ const PluginCompactTable = ({
 
         const target = event.target as HTMLDivElement;
         const scrollOffset = target.scrollTop;
-        const scrollThreshold = (data.length * rowHeight) - target.clientHeight - SCROLL_LOAD_MORE_THRESHOLD_PX;
+        const scrollThreshold = (data.length * ROW_HEIGHT) - target.clientHeight - SCROLL_LOAD_MORE_THRESHOLD_PX;
 
         if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold) {
             onLoadMore();
         }
 
         lastScrollOffset.current = scrollOffset;
-    }, [data.length, hasMore, isLoading, isFetchingMore, onLoadMore, rowHeight]);
+    }, [data.length, hasMore, isLoading, isFetchingMore, onLoadMore]);
 
     if (isLoading && data.length === 0) {
-        return <CompactTableSkeleton rowHeight={rowHeight} />;
+        return <CompactTableSkeleton rowHeight={ROW_HEIGHT} />;
     }
 
     if (error) {
@@ -193,9 +192,9 @@ const PluginCompactTable = ({
                 <div style={listContainerStyle}>
                     <List<CompactTableRowProps>
                         onScroll={handleScroll}
-                        defaultHeight={rowHeight * Math.min(Math.max(data.length, 1), DEFAULT_VISIBLE_ROWS)}
+                        defaultHeight={ROW_HEIGHT * Math.min(Math.max(data.length, 1), DEFAULT_VISIBLE_ROWS)}
                         rowCount={data.length}
-                        rowHeight={rowHeight}
+                        rowHeight={ROW_HEIGHT}
                         rowComponent={CompactTableRow}
                         rowProps={{
                             data,

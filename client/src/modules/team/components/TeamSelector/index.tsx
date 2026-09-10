@@ -1,4 +1,4 @@
-import { Description, Label, ListBox, Select, cn } from '@heroui/react';
+import { Description, Label, ListBox, Select } from '@heroui/react';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useLeaveTeam from '@/modules/team/hooks/team/use-leave-team';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
@@ -7,13 +7,9 @@ import useTip from '@/shared/tips/use-tip';
 import { LogOut } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { MouseEvent, PointerEvent } from 'react';
-import type { Key } from 'react-aria-components';
+import type { Key } from '@heroui/react';
 
-interface TeamSelectorProps {
-    className?: string;
-}
-
-export default function TeamSelector({ className = '' }: TeamSelectorProps) {
+export default function TeamSelector() {
     const { teams } = useTeamData();
     const selectedTeamId = useSelectedTeamId();
     const leaveTeam = useLeaveTeam();
@@ -54,7 +50,7 @@ export default function TeamSelector({ className = '' }: TeamSelectorProps) {
 
     return (
         <Select
-            className={cn('min-w-0', className)}
+            className='min-w-0'
             selectedKey={selectedTeamId || null}
             onSelectionChange={handleTeamChange}
             aria-label='Switch team'

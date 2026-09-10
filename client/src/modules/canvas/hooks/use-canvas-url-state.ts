@@ -21,7 +21,6 @@ const useCanvasUrlState = () => {
     const analysisId = searchParams.get('analysisId') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
-    const selectedNotebookId = searchParams.get('notebook') || undefined;
     const requestedTimestep = parseNumberParam(searchParams.get('timestep'));
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') === 'true';
@@ -41,24 +40,18 @@ const useCanvasUrlState = () => {
         updateSearchParams({ timelineExposure: exposureId ?? null }, options);
     }, [updateSearchParams]);
 
-    const setSelectedNotebookId = useCallback((value?: string | null, options?: UpdateOptions) => {
-        updateSearchParams({ notebook: value ?? null }, options);
-    }, [updateSearchParams]);
-
     return {
         searchParams,
         updateSearchParams,
         analysisId,
         timelineExposureId,
         settingsKey,
-        selectedNotebookId,
         requestedTimestep,
         showWidgets,
         showGrid,
         showGizmo,
         setAnalysisId,
-        setTimelineExposureId,
-        setSelectedNotebookId
+        setTimelineExposureId
     };
 };
 

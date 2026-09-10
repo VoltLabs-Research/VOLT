@@ -61,11 +61,6 @@ class SocketService implements ISocketService {
         return this.transport.on(event, callback);
     }
 
-    off<TArgs extends unknown[]>(event: string, callback?: (...args: TArgs) => void): void;
-    off(event: string, callback?: (...args: unknown[]) => void): void {
-        this.transport.off(event, callback);
-    }
-
     async emit<T = unknown>(event: string, data?: unknown): Promise<T> {
         try {
             await this.ensureConnectedForEmit(event);
@@ -198,7 +193,6 @@ const getInitialAuth = (): Record<string, unknown> => {
 
 const socketTransport = new SocketIOAdapter(getBackendOrigin(), {
     auth: getInitialAuth(),
-    autoConnect: false
 });
 
 const socketService = new SocketService(socketTransport, getInitialAuth);

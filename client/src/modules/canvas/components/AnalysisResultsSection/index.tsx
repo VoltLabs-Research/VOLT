@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ListTree } from 'lucide-react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import RightCollapsible, { PANEL_ICON_STYLE } from '../ObjectsPanel/RightCollapsible';
+import RightCollapsible from '../ObjectsPanel/RightCollapsible';
 import PanelResultsTable from './PanelResultsTable';
 
 import type { IPanelTable } from '@volt/contracts/modules/plugin/exposure';
@@ -42,7 +41,6 @@ const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: Analy
     return (
         <RightCollapsible
             title='Analysis Results'
-            icon={<ListTree style={PANEL_ICON_STYLE} />}
             expanded={expanded}
             onExpandedChange={setExpanded}
         >

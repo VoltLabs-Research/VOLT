@@ -18,7 +18,7 @@ import { ModalTopLayer } from '@/shared/ui/modal/top-layer';
 import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 
-export interface ModalSurfaceProps {
+interface ModalSurfaceProps {
     dialogId: string;
 
     titleId?: string;

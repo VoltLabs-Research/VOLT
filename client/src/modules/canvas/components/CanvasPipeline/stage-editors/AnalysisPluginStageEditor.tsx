@@ -1,14 +1,14 @@
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
-import { extractTrajectoryTimesteps } from '../../../utils/selected-timestep-analysis';
+import { extractTrajectoryTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import StageEditorLayout from '../StageEditorLayout';
 import { Button } from '@heroui/react';
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 import { useMemo } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import type { AnalysisPluginStageConfig } from '../../../store/canvas-pipeline';
+import type { AnalysisPluginStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
 interface AnalysisPluginStageEditorProps {
     stageId: string;

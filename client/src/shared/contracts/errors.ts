@@ -13,5 +13,4 @@ export interface ReportErrorOptions {
     surface?: ErrorSurface;
     fallbackTitle?: string;
     fallbackDescription?: string;
-    onError?: (userError: UserFacingError) => void;
 };

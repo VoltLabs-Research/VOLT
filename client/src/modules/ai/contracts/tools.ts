@@ -29,13 +29,6 @@ export interface ClientToolResult {
     data?: unknown;
 }
 
-interface ClientToolEffectDescription {
-    
-    label: string;
-    
-    icon?: string;
-}
-
 export interface ClientToolHandler<TInput = Record<string, unknown>> {
     
     readonly name: string;
@@ -43,8 +36,6 @@ export interface ClientToolHandler<TInput = Record<string, unknown>> {
     readonly needsViewer?: boolean;
     
     run(input: TInput, ctx: ClientToolContext): Promise<ClientToolResult> | ClientToolResult;
-    
-    describeEffect?(input: TInput, result: ClientToolResult): ClientToolEffectDescription;
 }
 
 export interface ClientToolModule {

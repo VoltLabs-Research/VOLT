@@ -13,7 +13,6 @@ import type {
     CreatePluginInput,
     ExecutePipelineInput,
     InstallRegistryPluginInput,
-    PipelineStageKind,
     UpdatePluginInput,
     UpdatePipelineRunInput
 } from '@volt/contracts/modules/plugin/http';
@@ -25,12 +24,6 @@ export interface ClonePluginInput {
 
 export interface DeletePluginInput {
     pluginId: string;
-}
-
-export interface PipelineStageInput {
-    kind: PipelineStageKind;
-    pluginId?: string;
-    config: Record<string, unknown>;
 }
 
 export type ExecutePipelineParams = { trajectoryId: string } & ExecutePipelineInput;

@@ -18,15 +18,7 @@ interface UseModelInteractionParams {
 }
 
 interface UseModelInteractionReturn {
-    isSelected: boolean;
     deselect: () => void;
-    resetTransform: () => void;
-    rotateXNegative: () => void;
-    rotateXPositive: () => void;
-    rotateYNegative: () => void;
-    rotateYPositive: () => void;
-    rotateZNegative: () => void;
-    rotateZPositive: () => void;
     setSelectedObject: (target: RotatableObject | null) => void;
     onHoverChange: (hovered: boolean) => void;
 }
@@ -122,16 +114,6 @@ export default function useModelInteraction({
         stopAnimation();
     }, [stopAnimation]);
 
-    const resetTransform = useCallback(() => {
-        const interaction = stateRef.current;
-        if (!interaction.selectedObject) {
-            return;
-        }
-
-        interaction.targetRotation = new Euler(0, 0, 0);
-        runAnimation();
-    }, [runAnimation]);
-
     const setSelectedObject = useCallback((target: RotatableObject | null) => {
         const interaction = stateRef.current;
         interaction.selectedObject = target;
@@ -193,15 +175,7 @@ export default function useModelInteraction({
     }, [stopAnimation]);
 
     return {
-        isSelected,
         deselect,
-        resetTransform,
-        rotateXNegative,
-        rotateXPositive,
-        rotateYNegative,
-        rotateYPositive,
-        rotateZNegative,
-        rotateZPositive,
         setSelectedObject,
         onHoverChange
     };

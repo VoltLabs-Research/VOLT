@@ -1,6 +1,6 @@
 import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 
-export interface ScriptingNotebookDeploymentSelection {
+interface ScriptingNotebookDeploymentSelection {
     teamClusterId: string;
 }
 

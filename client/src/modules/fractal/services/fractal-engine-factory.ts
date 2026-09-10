@@ -9,7 +9,7 @@ const assetLoader: IFractalAssetLoader = new FractalAssetLoader();
 export const createFractalEngine = (
     surface: FractalSurface,
     params: FractalParams,
-    callbacks: EngineCallbacks = {}
+    callbacks: EngineCallbacks
 ): FractalEngine => {
     return new FractalEngine(surface, params, assetLoader, callbacks);
 };

@@ -1,61 +1,37 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
 import JobGroup from '@/modules/jobs/components/JobGroup';
-import FrameGroup from '@/modules/jobs/components/FrameGroup';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { TrajectoryJobGroup as TJG, Job } from '@volt/contracts/modules/jobs/domain';
+import type { TrajectoryJobGroup as TJG } from '@volt/contracts/modules/jobs/domain';
 
 interface JobsHistoryProps {
     trajectoryId?: string;
-    queueFilter?: string;
     groups: TJG[];
     isLoading: boolean;
-    displayMode?: 'full' | 'children-only';
 };
 
 const JobsHistory = ({
     trajectoryId,
-    queueFilter,
     groups,
-    isLoading,
-    displayMode = 'full'
+    isLoading
 }: JobsHistoryProps) => {
     const filteredGroups = useMemo(() => {
         let result = groups;
         if (trajectoryId) {
             result = result.filter((g: TJG) => g.trajectoryId === trajectoryId);
         }
-        if (queueFilter) {
-            result = result.map((g: TJG) => ({
-                ...g,
-                frameGroups: g.frameGroups.map((f) => ({
-                    ...f,
-                    jobs: f.jobs.filter((j: Job) => j.queueType?.includes(queueFilter))
-                })).filter((f) => f.jobs.length > 0)
-            })).filter((g: TJG) => g.frameGroups.length > 0);
-        }
         return result;
-    }, [groups, trajectoryId, queueFilter]);
+    }, [groups, trajectoryId]);
 
     const shouldShowSkeleton = isLoading;
-    let content: ReactNode = filteredGroups.map((group: TJG) => {
-        if (displayMode === 'children-only') {
-            return group.frameGroups.map((frame) => (
-                <div key={`${group.trajectoryId}-${frame.timestep}`} className='pt-1 pl-4'>
-                    <FrameGroup frame={frame} />
-                </div>
-            ));
-        }
-
-        return (
-            <JobGroup
-                key={group.trajectoryId}
-                group={group}
-            />
-        );
-    });
+    let content: ReactNode = filteredGroups.map((group: TJG) => (
+        <JobGroup
+            key={group.trajectoryId}
+            group={group}
+        />
+    ));
 
     if (shouldShowSkeleton) {
         content = <JobSkeleton />;

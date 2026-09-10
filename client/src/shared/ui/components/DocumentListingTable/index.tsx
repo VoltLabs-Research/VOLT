@@ -15,7 +15,7 @@ import type { Identifiable } from '@/shared/contracts/entity';
 import type { ColumnConfig, ListingDensity } from './column-config';
 import { getColumnKey, getColumnTitle } from './column-config';
 
-export type { ColumnConfig, ListingDensity } from './column-config';
+export type { ColumnConfig } from './column-config';
 
 export { getColumnKey, getColumnTitle } from './column-config';
 

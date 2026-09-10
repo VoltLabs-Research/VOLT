@@ -329,7 +329,6 @@ export class MaterialPipeline {
 
         material.clippingPlanes = clippingPlanes;
         material.precision = 'highp';
-        material.userData.isOptimized = true;
         this.cache.set(key, material);
         return material;
     }

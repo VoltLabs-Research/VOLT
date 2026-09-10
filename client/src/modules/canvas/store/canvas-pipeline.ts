@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
-export type { PipelineStageKind };
 
 export type StageType =
     | 'slice-plane'
@@ -96,7 +95,6 @@ interface CanvasPipelineStore {
     toggleStageEnabled: (id: string, trajectoryId?: string) => void;
     markStagesExecuted: (ids: string[], trajectoryId?: string) => void;
     replaceStages: (stages: NewStage[], trajectoryId?: string) => void;
-    clearAll: (trajectoryId?: string) => void;
 }
 
 export interface NewStage {
@@ -229,17 +227,6 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                                 enabled: true,
                                 executed: false
                             }))
-                        }
-                    }));
-                },
-
-                clearAll: (trajectoryId) => {
-                    const target = resolveTrajectoryId(trajectoryId);
-                    if (!target) return;
-                    set((state) => ({
-                        byTrajectory: {
-                            ...state.byTrajectory,
-                            [target]: []
                         }
                     }));
                 }

@@ -23,7 +23,6 @@ interface SimulationCardFooterProps {
     isNavigable: boolean;
     processingMessage?: string;
     onMoveToFolder?: () => void;
-    onDelete?: (_id: string) => void;
     readOnly?: boolean;
 }
 
@@ -41,7 +40,6 @@ export default function SimulationCardFooter({
     isNavigable,
     processingMessage,
     onMoveToFolder,
-    onDelete,
     readOnly = false
 }: SimulationCardFooterProps) {
     const navigate = useNavigate();
@@ -91,7 +89,6 @@ export default function SimulationCardFooter({
         setIsDeleting(true);
 
         try {
-            onDelete?.(trajectoryId);
             await showPromise(
                 deleteTrajectoryMutation.mutateAsync(trajectoryId),
                 DELETE_TRAJECTORY_TOAST
@@ -99,7 +96,7 @@ export default function SimulationCardFooter({
         } finally {
             setIsDeleting(false);
         }
-    }, [deleteTrajectoryMutation, trajectoryId, name, onDelete]);
+    }, [deleteTrajectoryMutation, trajectoryId, name]);
 
     const popoverItems: MenuOption[] = readOnly ? [] : [{
         onClick: handleViewScene,

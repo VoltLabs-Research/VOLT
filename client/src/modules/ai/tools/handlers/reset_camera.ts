@@ -22,13 +22,6 @@ const resetCamera: ClientToolHandler = {
             summary: 'Reset the camera to the default view.',
             data: { usedImperativeHandle: usedImperative }
         };
-    },
-
-    describeEffect() {
-        return {
-            label: 'Reset the camera',
-            icon: 'camera'
-        };
     }
 };
 

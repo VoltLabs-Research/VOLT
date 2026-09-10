@@ -40,13 +40,6 @@ const getViewerState: ClientToolHandler = {
                 : 'Viewer is open but no trajectory is loaded.',
             data: snapshot
         };
-    },
-
-    describeEffect() {
-        return {
-            label: 'Read viewer state',
-            icon: 'eye'
-        };
     }
 };
 

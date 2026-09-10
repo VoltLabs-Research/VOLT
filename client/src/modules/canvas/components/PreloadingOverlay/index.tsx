@@ -3,14 +3,12 @@ import { Label, ProgressBar } from '@heroui/react';
 interface PreloadingOverlayProps {
     active: boolean;
     title?: string;
-    description?: string;
     progress?: number;
 }
 
 const PreloadingOverlay = ({
     active,
     title = 'Loading trajectory…',
-    description,
     progress
 }: PreloadingOverlayProps) => {
     if (!active) return null;
@@ -25,7 +23,7 @@ const PreloadingOverlay = ({
                 value={hasProgress ? progress * 100 : undefined}
                 isIndeterminate={!hasProgress}
             >
-                <Label>{description ?? title}</Label>
+                <Label>{title}</Label>
                 {hasProgress && <ProgressBar.Output />}
                 <ProgressBar.Track>
                     <ProgressBar.Fill />

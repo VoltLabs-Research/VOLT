@@ -6,7 +6,7 @@ import {
     selectSceneMergeGroupKeys
 } from '@/modules/canvas/store/editor/selectors';
 import { localModelDragBus } from '@/modules/canvas/collaboration/live-drag-bus';
-import { useSceneMergePreviewStore } from '@/modules/fractal/store/scene-merge-preview-store';
+import { useSceneMergePreviewStore } from '@/modules/fractal/store/use-scene-merge-preview-store';
 import {
     getSceneCellBase,
     getSceneCellBases,

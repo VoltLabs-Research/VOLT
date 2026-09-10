@@ -6,17 +6,15 @@ interface SettingsSectionHeaderProps {
     description?: string;
     action?: ReactNode;
     className?: string;
-    headingAs?: 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 };
 
 const SettingsSectionHeader = ({
     title,
     description,
     action,
-    className = '',
-    headingAs = 'h2'
+    className = ''
 }: SettingsSectionHeaderProps) => {
-    const HeadingTag = headingAs;
+    const HeadingTag = 'h2';
 
     return (
         <header className={cn('flex items-start justify-between gap-4 max-sm:flex-col', className)}>

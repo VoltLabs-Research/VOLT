@@ -1,9 +1,35 @@
 import { Eye, Table, Trash2 } from 'lucide-react';
 import formatSnakeCaseToTitle from '@/modules/plugin/utils/listing/format-snake-case';
-import { buildSubListingsPath } from '@/modules/plugin/utils/listing/build-sub-listings-path';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
+
+interface BuildSubListingsPathParams {
+    trajectoryId: string;
+    analysisId: string;
+    exposureId: string;
+    timestep: number;
+    subListingNames: string[];
+    activeSubListingName: string;
+}
+
+const buildSubListingsPath = ({
+    trajectoryId,
+    analysisId,
+    exposureId,
+    timestep,
+    subListingNames,
+    activeSubListingName
+}: BuildSubListingsPathParams): string => {
+    const searchParams = new URLSearchParams({
+        exposureId,
+        timestep: String(timestep),
+        names: subListingNames.join(','),
+        tab: activeSubListingName
+    });
+
+    return `/dashboard/trajectory/${trajectoryId}/analysis/${analysisId}/sub-listings?${searchParams.toString()}`;
+};
 
 interface ListingRowSubListingTarget {
     analysisId: string;

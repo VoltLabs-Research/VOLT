@@ -1,4 +1,4 @@
-import { useExportPluginMutation } from '../../../hooks/plugin/queries';
+import { useExportPluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import useBlobDownload from '@/shared/ui/hooks/use-blob-download';
 

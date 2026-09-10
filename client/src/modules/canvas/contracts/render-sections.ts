@@ -6,7 +6,6 @@ type BaseRow = {
     max: number;
     step: number;
     format?: (value: number) => string;
-    className?: string;
 };
 
 type SliderRowDef =

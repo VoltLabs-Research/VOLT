@@ -60,7 +60,7 @@ const scrollRightPanelToTop = (): (() => void) => {
 };
 
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
-    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
+    const { checkAccessDeniedError } = useAccessDenied();
 
     const trajectoryId = propTrajectoryId || trajectory?._id;
 
@@ -92,10 +92,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const sectionState = useSidebarSceneSectionState();
     const {
         expandedSections,
-        headerPopoverStates,
         expandSection,
         toggleSection,
-        setHeaderPopoverOpen,
         reset: resetSectionState
     } = sectionState;
 
@@ -331,30 +329,14 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         setAnalysisId(analysis?._id, { replace: true });
     }, [clearAutoSelectChain, currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 
-    const headerPopoverCallbacks = useMemo(() => {
-        const map = new Map<string, (isOpen: boolean) => void>();
-        filteredSections.forEach((section) => {
-            map.set(section.analysis._id, (isOpen: boolean) => {
-                setHeaderPopoverOpen(section.analysis._id, isOpen);
-            });
-        });
-        return map;
-    }, [filteredSections, setHeaderPopoverOpen]);
-
     return {
-        trajectoryId,
         searchQuery,
-        setSearchQuery,
         expandedSections,
         analyses: resolvedAnalyses,
-        headerPopoverStates,
-        accessDenied,
-        accessDeniedMessage,
 
         filteredSections,
         sceneCollectionSections,
         showSectionsSkeleton: bootstrapLoading,
-        headerPopoverCallbacks,
 
         activeScene,
         addScene,

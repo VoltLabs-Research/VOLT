@@ -27,20 +27,6 @@ const navigateTo: ClientToolHandler<NavigateToInput> = {
                 title: resolved.title
             }
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Navigation failed',
-                icon: 'navigate'
-            };
-        }
-        const title = (result.data as { title?: string } | undefined)?.title;
-        return {
-            label: title ? `Navigated to ${title}` : 'Navigated',
-            icon: 'navigate'
-        };
     }
 };
 

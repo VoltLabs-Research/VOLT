@@ -16,11 +16,11 @@ export interface CanvasPerformanceProp {
     debounce: number;
 };
 
-export interface AdaptiveEventsSettings {
+interface AdaptiveEventsSettings {
     enabled: boolean;
 };
 
-export interface InteractionDegradeSettings {
+interface InteractionDegradeSettings {
     enabled: boolean;
     debounceMs: number;
 };
@@ -41,7 +41,6 @@ interface PerformancePresetDefinition {
 
 export interface CanvasRuntimeResolutionOptions {
     interacting?: boolean;
-    boostScreenshot?: boolean;
 };
 
 interface CanvasRuntimeInteractionSource {
@@ -51,11 +50,6 @@ interface CanvasRuntimeInteractionSource {
 interface CanvasRuntimeSource extends CanvasRuntimeInteractionSource {
     dpr: DprSettings;
     performance: CanvasPerformanceProp;
-};
-
-export interface AdaptiveDprProps {
-    enabled: boolean;
-    pixelated: boolean;
 };
 
 export interface ResolvedCanvasRuntimeProps {
@@ -267,8 +261,6 @@ const clonePerformanceSettings = (state: PerformanceSettingsState): PerformanceS
     interactionDegrade: { ...state.interactionDegrade }
 });
 
-export const getPerformancePresetLabel = (preset: PerformancePreset): string => PERFORMANCE_PRESET_REGISTRY[preset].label;
-
 export const getPerformancePresetState = (preset: PerformancePreset): PerformanceSettingsState => {
     return clonePerformanceSettings(PERFORMANCE_PRESET_REGISTRY[preset].settings);
 };
@@ -289,14 +281,11 @@ export const getValidatedPerformanceSettingsState = (state: PerformanceSettingsS
     return clonePerformanceSettings(state);
 };
 
-export const resolveCanvasDpr = (
+const resolveCanvasDpr = (
     settings: Pick<CanvasRuntimeSource, 'dpr'> & CanvasRuntimeInteractionSource,
     options: CanvasRuntimeResolutionOptions
 ): number | [number, number] => {
     const { dpr } = settings;
-    if (options.boostScreenshot) {
-        return [dpr.max, dpr.max];
-    }
 
     if (dpr.mode === DprMode.Fixed) {
         return dpr.fixed;
@@ -316,9 +305,4 @@ export const resolveCanvasRuntimeProps = (
 ): ResolvedCanvasRuntimeProps => ({
     dpr: resolveCanvasDpr(settings, options),
     performance: settings.performance
-});
-
-export const resolveAdaptiveDprProps = (settings: Pick<CanvasRuntimeSource, 'dpr'>): AdaptiveDprProps => ({
-    enabled: settings.dpr.mode === DprMode.Adaptive,
-    pixelated: settings.dpr.pixelated
 });

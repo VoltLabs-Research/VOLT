@@ -2,7 +2,7 @@ import { ListBox, Select, cn } from '@heroui/react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { COMPACT_FIELD_TRIGGER, COMPACT_FIELD_VALUE } from '@/shared/ui/utils/field-density';
 
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 
 interface CanvasOptionSelectProps {
     ariaLabel: string;
@@ -14,11 +14,7 @@ interface CanvasOptionSelectProps {
 
     size?: 'compact' | 'default';
 
-    className?: string;
-
     triggerClassName?: string;
-
-    showSelectionIcon?: boolean;
 }
 
 const CanvasOptionSelect = ({
@@ -29,9 +25,7 @@ const CanvasOptionSelect = ({
     placeholder,
     isDisabled = false,
     size = 'default',
-    className,
-    triggerClassName,
-    showSelectionIcon = true
+    triggerClassName
 }: CanvasOptionSelectProps) => (
     <Select
         aria-label={ariaLabel}
@@ -46,7 +40,7 @@ const CanvasOptionSelect = ({
         placeholder={placeholder}
         isDisabled={isDisabled}
         fullWidth
-        className={cn('min-w-0', className)}
+        className='min-w-0'
     >
         <Select.Trigger className={cn(size === 'compact' ? COMPACT_FIELD_TRIGGER : '', triggerClassName)}>
             <Select.Value className={size === 'compact' ? COMPACT_FIELD_VALUE : 'min-w-0 truncate'}>
@@ -62,7 +56,7 @@ const CanvasOptionSelect = ({
                     <OptionListBoxItem
                         key={option.value}
                         option={option}
-                        showIndicator={showSelectionIcon}
+                        showIndicator
                     />
                 ))}
             </ListBox>

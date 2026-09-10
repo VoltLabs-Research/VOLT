@@ -1,4 +1,4 @@
-import { ToggleButton, ToggleButtonGroup, cn } from '@heroui/react';
+import { ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import CopyableField from '@/shared/ui/components/CopyableField';
 import {
     CLUSTER_INSTALL_PLATFORM_OPTIONS,
@@ -12,13 +12,11 @@ import { useMemo, useState } from 'react';
 interface ClusterInstallCommandPickerProps {
     clusterId: string | null;
     enrollmentToken: string | null;
-    className?: string;
 };
 
 const ClusterInstallCommandPicker = ({
     clusterId,
-    enrollmentToken,
-    className = ''
+    enrollmentToken
 }: ClusterInstallCommandPickerProps) => {
     const [activePlatform, setActivePlatform] = useState<ClusterInstallPlatform>(getDefaultClusterInstallPlatform);
 
@@ -32,7 +30,7 @@ const ClusterInstallCommandPicker = ({
 
     return (
 
-        <div className={cn('flex w-full min-w-0 flex-col gap-3', className)}>
+        <div className='flex w-full min-w-0 flex-col gap-3'>
             <ToggleButtonGroup
                 aria-label='Cluster host operating system'
                 selectionMode='single'

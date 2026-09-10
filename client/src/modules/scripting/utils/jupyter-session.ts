@@ -2,7 +2,6 @@ import type { GetScriptingSessionStatusResponse } from '@volt/contracts/modules/
 
 interface WaitForReadyScriptingSessionOptions {
     isCancelled?: () => boolean;
-    onPending?: (session: GetScriptingSessionStatusResponse) => Promise<void> | void;
 };
 
 interface ScriptingSessionLoader {
@@ -43,7 +42,7 @@ const readSessionWithinDeadline = async (
 
 export const startAndWaitForReadyScriptingSession = async (
     { createSession, readSession }: ScriptingSessionLoader,
-    { isCancelled, onPending }: WaitForReadyScriptingSessionOptions = {}
+    { isCancelled }: WaitForReadyScriptingSessionOptions = {}
 ): Promise<WaitForReadyScriptingSessionResult> => {
     let lastSession = await createSession();
     if (lastSession.jupyter.ready || isCancelled?.()) {
@@ -59,8 +58,6 @@ export const startAndWaitForReadyScriptingSession = async (
         if (isCancelled?.()) {
             break;
         }
-
-        await onPending?.(lastSession);
 
         if (isCancelled?.()) {
             break;

@@ -47,7 +47,6 @@ interface ApplyCameraAnglePresetOptions {
     target: Vector3;
     captureBounds?: CaptureBounds | null;
     controls?: CameraControlsTarget | null;
-    fallbackDistance?: number;
 }
 
 const FRAMING_CAPTURE_TARGET_KEY = 'isScreenshotCaptureTarget';
@@ -271,8 +270,7 @@ export const applyCameraAnglePreset = ({
     sceneUp,
     target,
     captureBounds,
-    controls,
-    fallbackDistance = 8
+    controls
 }: ApplyCameraAnglePresetOptions): boolean => {
     const direction = getAngleDirection(anglePreset);
     if (!direction) {
@@ -290,7 +288,7 @@ export const applyCameraAnglePreset = ({
         distance = orthographicFraming.distance;
         camera.zoom = orthographicFraming.zoom;
     } else {
-        distance = Math.max(minDistance, fallbackDistance);
+        distance = Math.max(minDistance, 8);
     }
 
     camera.position.copy(target.clone().addScaledVector(direction, distance));

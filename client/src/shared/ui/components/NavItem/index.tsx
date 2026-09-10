@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 
-export type NavItemDepth = 0 | 1 | 2;
+type NavItemDepth = 0 | 1 | 2;
 
 interface NavItemProps {
     label: string;

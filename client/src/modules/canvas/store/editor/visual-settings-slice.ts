@@ -26,8 +26,8 @@ const isDarkTheme = (): boolean => {
     return document.documentElement.getAttribute('data-theme') !== 'light';
 };
 
-const createGridSettings = (darkTheme = isDarkTheme()): CanvasGridSettingsState => {
-    const defaults = getGridThemeDefaults(darkTheme);
+const createGridSettings = (): CanvasGridSettingsState => {
+    const defaults = getGridThemeDefaults(isDarkTheme());
 
     return {
         enabled: false,

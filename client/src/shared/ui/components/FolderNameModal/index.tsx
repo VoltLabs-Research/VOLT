@@ -9,9 +9,6 @@ interface FolderNameModalProps {
     title: string;
     description: string;
     initialName?: string | null;
-    fieldLabel?: string;
-    placeholder?: string;
-    submitLabel?: string;
     onSubmit: (title: string) => Promise<void>;
     onClose?: () => void;
 };
@@ -21,9 +18,6 @@ const FolderNameModal = ({
     title,
     description,
     initialName,
-    fieldLabel = 'Folder name',
-    placeholder = 'Enter folder name',
-    submitLabel,
     onSubmit,
     onClose
 }: FolderNameModalProps) => {
@@ -63,12 +57,12 @@ const FolderNameModal = ({
             modalId={id}
             modalTitle={title}
             description={description}
-            fieldLabel={fieldLabel}
-            placeholder={placeholder}
+            fieldLabel='Folder name'
+            placeholder='Enter folder name'
             autoFocus={shouldAutoFocus}
             value={folderName}
             error={error}
-            primaryLabel={submitLabel ?? (isRename ? 'Rename Folder' : 'Create Folder')}
+            primaryLabel={isRename ? 'Rename Folder' : 'Create Folder'}
             submitDisabled={isSubmitting || !folderName.trim()}
             isSubmitting={isSubmitting}
             primaryIsLoading={isSubmitting}

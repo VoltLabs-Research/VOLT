@@ -1,16 +1,14 @@
 import { tokenStorage } from '@/shared/auth/token-storage';
 import { buildBackendUrl } from '@/app/core/http/utils/backend-origin';
 import { DefaultChatTransport } from 'ai';
-import type {
-    CreateConversationStreamTransportParams,
-    CreateConversationStreamTransportResult
-} from '../api/service';
+import type { ChatTransport, UIMessage } from 'ai';
+import type { CreateConversationStreamTransportParams } from '../api/service';
 
 export const createConversationStreamTransport = ({
     teamId,
     conversationId,
     getModelSelection
-}: CreateConversationStreamTransportParams): CreateConversationStreamTransportResult => {
+}: CreateConversationStreamTransportParams): ChatTransport<UIMessage> => {
     const api = buildBackendUrl(`/api/teams/${teamId}/ai-conversations/${conversationId}/messages`);
 
     return new DefaultChatTransport({

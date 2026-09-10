@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
-import { Exporter } from '@volt/contracts/modules/plugin/enums';
+import { Exporter, WorkflowExportType as ExportType } from '@volt/contracts/modules/plugin/enums';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/utils/plugin/node-registry';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import CodeEditor from '@/shared/ui/components/CodeEditor';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
-import { EXPORT_EDITOR_DEFAULT_VALUES } from './schema';
-import type { ExportEditorFormValues } from './schema';
+
+interface ExportEditorFormValues {
+    exporter: string;
+    type: string;
+    options?: Record<string, unknown>;
+}
+
+const EXPORT_EDITOR_DEFAULT_VALUES = {
+    exporter: Exporter.ATOMISTIC,
+    type: ExportType.GLB,
+    options: {}
+} satisfies ExportEditorFormValues;
 
 const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map(opt => ({
     value: opt.value,

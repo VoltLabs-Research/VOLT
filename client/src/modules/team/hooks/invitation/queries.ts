@@ -24,7 +24,6 @@ const invitationDetailKeys = buildKeys<TeamInvitationDetailsQueryKeyMap>('team-i
 export const TEAM_INVITATION_QUERY_KEYS = {
     invitations: invitationKeys.prefix,
     pendingInvitations: invitationKeys.pendingInvitations,
-    invitationDetails: invitationDetailKeys.prefix,
     invitationDetailsById: invitationDetailKeys.invitationDetailsById
 };
 

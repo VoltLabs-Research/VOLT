@@ -7,7 +7,7 @@ import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import useFractalSceneConfig from './use-fractal-scene-config';
 import useKeyboardShortcuts from './use-keyboard-shortcuts';
 import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
-import useViewportNarrow from './use-viewport-narrow';
+import { useMedia } from '@/shared/ui/hooks/use-media';
 
 import useAnalysisDiscoveryTourGate from './use-analysis-discovery-tour-gate';
 import useCanvasAccessPublication from './use-canvas-access-publication';
@@ -82,7 +82,7 @@ const CanvasPage = () => {
     });
 
     const viewportContainerRef = useRef<HTMLDivElement | null>(null);
-    const isNarrowViewport = useViewportNarrow();
+    const isNarrowViewport = useMedia('(max-width: 1199px)');
     const {
         peersInLobby,
         collaborationOwner,
@@ -182,8 +182,7 @@ const CanvasPage = () => {
         && trajectory
         && !hasFrames
     );
-    const isSceneSubstituted = showNoFramesState;
-    const showsTrajectoryScene = !isLocalGlbViewer && !isSceneSubstituted;
+    const showsTrajectoryScene = !isLocalGlbViewer && !showNoFramesState;
     const isTrajectoryLoading = trajectoryLoading
         || !trajectory
         || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined));
@@ -290,7 +289,6 @@ const CanvasPage = () => {
             <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-main'>
                 <TopToolbar
                     trajectory={trajectory}
-                    localGlbMode={isLocalGlbViewer}
                     canMutateCanvas={canMutateCanvas}
                     workspacePeers={peersInLobby}
                     workspaceActiveOwnerId={workspaceOwnerId}
@@ -327,8 +325,8 @@ const CanvasPage = () => {
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
                                 analysisOverlay={analysisOverlay}
-                                renderScene={!isSceneSubstituted}
-                                showSceneActions={!isSceneSubstituted}
+                                renderScene={!showNoFramesState}
+                                showSceneActions={!showNoFramesState}
                             />
                         </ErrorBoundary>
                         <WorkspaceCursorsOverlay

@@ -4,21 +4,12 @@ import { useEffect, useId, useState } from 'react';
 
 import type { ReactNode } from 'react';
 
-export const PANEL_ICON_STYLE = {
-    width: 13,
-    height: 13,
-    color: 'var(--muted)'
-} as const;
-
 interface RightCollapsibleProps {
     title: string;
-
-    icon?: ReactNode;
     expanded: boolean;
     onExpandedChange?: (next: boolean) => void;
     headerAction?: ReactNode;
     children: ReactNode;
-    extraClassName?: string;
     collapsible?: boolean;
     tourId?: string;
 }
@@ -29,7 +20,6 @@ const RightCollapsible = ({
     onExpandedChange,
     headerAction,
     children,
-    extraClassName,
     collapsible = true,
     tourId
 }: RightCollapsibleProps) => {
@@ -55,7 +45,7 @@ const RightCollapsible = ({
 
     return (
         <div data-tour-id={tourId}>
-            <div className={cn('flex flex-col', extraClassName)}>
+            <div className='flex flex-col'>
                 <div className='flex min-h-8 flex-row items-center justify-between gap-2 px-3 max-md:h-auto max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:h-7 [.canvas-objects-panel--analysis-compact_&]:min-h-7 [.canvas-objects-panel--analysis-compact_&]:px-2'>
                     <h3 id={headingId} className='m-0 min-w-0 flex-1'>
                         <span className='flex min-h-8 w-full min-w-0 flex-row items-center gap-2 max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:min-h-7'>

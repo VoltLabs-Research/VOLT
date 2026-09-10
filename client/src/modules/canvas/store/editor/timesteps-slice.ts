@@ -67,7 +67,7 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
             if (signal?.aborted) return;
 
             loadedCount++;
-            onProgress?.(loadedCount / total, { bps: 0 });
+            onProgress?.(loadedCount / total);
         });
 
         await Promise.all(promises);

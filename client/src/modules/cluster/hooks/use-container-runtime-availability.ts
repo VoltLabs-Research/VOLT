@@ -2,7 +2,8 @@ import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queri
 import { useClusterStore } from '@/modules/cluster/store/use-cluster-store';
 import { resolveSelectedClusterId } from '@/modules/cluster/utils/resolve-selected-cluster-id';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import type { ContainerRuntimeAvailability } from '@/modules/cluster/contracts/host-capabilities';
+
+type ContainerRuntimeAvailability = 'available' | 'unavailable' | 'unknown';
 
 export const useContainerRuntimeAvailability = (): ContainerRuntimeAvailability => {
     const selectedTeamId = useSelectedTeamId();

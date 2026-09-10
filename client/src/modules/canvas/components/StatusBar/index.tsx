@@ -1,4 +1,4 @@
-import { Separator, cn } from '@heroui/react';
+import { Separator } from '@heroui/react';
 import { formatSize } from '@/shared/utils/format';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
@@ -8,8 +8,6 @@ interface StatusItem {
     key: string;
     label: string;
     value: ReactNode;
-    title?: string;
-    className?: string;
 }
 
 interface StatusBarProps {
@@ -18,10 +16,10 @@ interface StatusBarProps {
 
 const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     <div className='flex flex-row items-center gap-2'>
-        {items.map(({ key, label, value, title, className }, i) => (
+        {items.map(({ key, label, value }, i) => (
             <div className='flex flex-row items-center gap-2' key={key}>
                 {i > 0 && <Separator orientation='vertical' className='h-3 w-px bg-border' />}
-                <span className={cn('text-xs text-muted', className)} title={title}>
+                <span className='text-xs text-muted'>
                     {label}{label && ': '}{value}
                 </span>
             </div>

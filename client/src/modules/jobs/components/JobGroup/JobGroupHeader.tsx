@@ -1,5 +1,4 @@
 import { cn } from '@heroui/react';
-import { FRAME_GROUP_STATUS_LABELS } from '@/modules/jobs/utils/job-status-label';
 import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -8,6 +7,14 @@ import { ChevronRight } from 'lucide-react';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 import type { TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
+
+const FRAME_GROUP_STATUS_LABELS: Record<FrameJobGroupStatus, string> = {
+    [FrameJobGroupStatus.Queued]: 'Queued',
+    [FrameJobGroupStatus.Running]: 'Running',
+    [FrameJobGroupStatus.Completed]: 'Completed',
+    [FrameJobGroupStatus.Failed]: 'Failed',
+    [FrameJobGroupStatus.Partial]: 'Partially complete'
+};
 
 const SESSION_COMPLETION_HIGHLIGHT_MS = 3500;
 

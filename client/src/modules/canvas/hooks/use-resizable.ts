@@ -11,17 +11,15 @@ export type ResizeDirectionValue = ResizeDirection | 'horizontal' | 'vertical';
 interface UseResizableOptions {
     direction: ResizeDirectionValue;
     initialSize: number;
-    minSize?: number;
-    maxSize?: number;
-    growPositive?: boolean;
+    minSize: number;
+    maxSize: number;
+    growPositive: boolean;
     storageKey?: string;
     onResize?: (size: number) => void;
 }
 
 interface UseResizableReturn {
     size: number;
-    setSize: (size: number) => void;
-    resetSize: () => void;
     isDragging: boolean;
     handleProps: {
         onPointerDown: (e: React.PointerEvent) => void;
@@ -54,9 +52,9 @@ const persistSize = (storageKey: string | undefined, size: number) => {
 const useResizable = ({
     direction,
     initialSize,
-    minSize = 100,
-    maxSize = Infinity,
-    growPositive = true,
+    minSize,
+    maxSize,
+    growPositive,
     storageKey,
     onResize
 }: UseResizableOptions): UseResizableReturn => {
@@ -167,8 +165,6 @@ const useResizable = ({
 
     return {
         size,
-        setSize: applySize,
-        resetSize,
         isDragging,
         handleProps: {
             onPointerDown,

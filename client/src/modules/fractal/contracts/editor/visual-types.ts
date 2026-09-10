@@ -16,14 +16,6 @@ import type {
 } from '@/shared/rendering/effects';
 import type { EnvironmentSettings, FogSettings } from '@/shared/rendering/environment';
 
-export interface CameraUpdateState {
-    type?: CameraSettingsState['type'];
-    position?: CameraSettingsState['position'];
-    up?: CameraSettingsState['up'];
-    perspective?: Partial<PerspectiveSettings>;
-    orthographic?: Partial<OrthographicSettings>;
-}
-
 export interface CanvasGridSettingsState {
     enabled: boolean;
     infiniteGrid: boolean;
@@ -58,7 +50,6 @@ interface CameraSettingsActions {
     setUp: (up: CameraSettingsState['up']) => void;
     setPerspective: (partial: Partial<PerspectiveSettings>) => void;
     setOrthographic: (partial: Partial<OrthographicSettings>) => void;
-    setCamera: (partial: CameraUpdateState) => void;
     reset: () => void;
 }
 

@@ -4,13 +4,9 @@ import type { Subsection } from '@/modules/canvas/contracts/render-sections';
 
 interface CanvasRenderSubsectionContentProps {
     subsection: Subsection;
-    className?: string;
 }
 
-const CanvasRenderSubsectionContent = ({
-    subsection,
-    className = ''
-}: CanvasRenderSubsectionContentProps) => {
+const CanvasRenderSubsectionContent = ({ subsection }: CanvasRenderSubsectionContentProps) => {
     const isSubDisabled = subsection.disabled === true;
     const subDisabledReason = subsection.disabledReason;
 
@@ -21,7 +17,7 @@ const CanvasRenderSubsectionContent = ({
                     {subDisabledReason}
                 </div>
             )}
-            <div className={cn('[&_.canvas-form-section+.canvas-form-section]:mt-2.5', isSubDisabled && 'pointer-events-none opacity-45', className)}>
+            <div className={cn('[&_.canvas-form-section+.canvas-form-section]:mt-2.5', isSubDisabled && 'pointer-events-none opacity-45')}>
                 {subsection.sections.map((section) => {
                     const isSectionDisabled = isSubDisabled || section.disabled === true;
                     const sectionDisabledReason = !isSubDisabled ? section.disabledReason : undefined;
@@ -51,7 +47,7 @@ const CanvasRenderSubsectionContent = ({
                                     const onChange = 'set' in row ? row.set : row.onChange;
 
                                     return (
-                                        <div className={cn('flex min-h-6 flex-row items-center justify-between gap-2', row.className)} key={`${section.key}-${row.label}`} role='group' aria-label={row.label}>
+                                        <div className='flex min-h-6 flex-row items-center justify-between gap-2' key={`${section.key}-${row.label}`} role='group' aria-label={row.label}>
                                             <span className='min-w-0 flex-auto truncate text-xs leading-6 text-muted'>{row.label}</span>
                                             <div className='flex flex-none flex-row items-center justify-end gap-1.5'>
                                                 <Slider

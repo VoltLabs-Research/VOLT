@@ -47,17 +47,6 @@ const pushExpressionSelect: ClientToolHandler<PushExpressionSelectInput> = {
             ok: true,
             summary: `Expression select pushed: "${formula}"`
         };
-    },
-
-    describeEffect(input, result) {
-        if (!result.ok) return {
-            label: 'Expression select unavailable',
-            icon: 'filter'
-        };
-        return {
-            label: `Expression: ${input.formula}`,
-            icon: 'filter'
-        };
     }
 };
 

@@ -1,7 +1,7 @@
 import type { AnalysisSectionData } from './sidebar-scene-sections';
 import type { PipelineRun, PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
 
-export const UNGROUPED_RUN_ID = '__ungrouped__';
+const UNGROUPED_RUN_ID = '__ungrouped__';
 
 export type PipelineRunStageRow =
     | { kind: 'analysis'; key: string; stage?: PipelineRunStage; section: AnalysisSectionData; cacheHit: boolean }

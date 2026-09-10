@@ -2,8 +2,6 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { computeGroupStatus } from '@/modules/jobs/utils/job-status-semantics';
 import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domain';
 
-export { computeGroupStatus };
-
 const isUngroupedTimestep = (timestep: number): boolean => timestep === UNGROUPED_TIMESTEP;
 
 const compareFrameTimesteps = (left: number, right: number): number => {

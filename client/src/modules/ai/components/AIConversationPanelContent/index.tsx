@@ -1,7 +1,7 @@
 import AIComposer from '@/modules/ai/components/AIComposer';
 import AIConversationThread from '@/modules/ai/components/AIConversationThread';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import type { AISelectOption } from '@/modules/ai/utils/model-options';
+import type { SelectOption } from '@/shared/contracts/form-field';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { UIMessage } from 'ai';
 import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
@@ -13,7 +13,7 @@ interface AIConversationPanelContentProps {
     isSendingMessage: boolean;
     messagesError?: string | null;
     messageDraft: string;
-    modelOptions: AISelectOption[];
+    modelOptions: SelectOption[];
     selectedModel: string | null;
     canSendMessage: boolean;
     isProviderCatalogLoading: boolean;

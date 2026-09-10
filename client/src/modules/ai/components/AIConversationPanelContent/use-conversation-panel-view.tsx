@@ -3,7 +3,6 @@ import useAIPage from '@/modules/ai/hooks/use-ai-page';
 import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
 import { useCallback, useMemo } from 'react';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
-import type { AISelectOption } from '@/modules/ai/utils/model-options';
 import { useNavigate } from 'react-router-dom';
 
 type AIPageState = ReturnType<typeof useAIPage>;
@@ -27,14 +26,6 @@ const useConversationPanelView = ({
 }: ConversationPanelViewOptions) => {
     const navigate = useNavigate();
     const { loadConversationMessages } = pageState;
-
-    const conversationOptions: AISelectOption[] = useMemo(() => {
-        return pageState.conversations.map((conversation) => ({
-            value: conversation._id,
-            title: conversation.title || 'Untitled Conversation',
-            description: conversation.lastMessageAt ? new Date(conversation.lastMessageAt).toLocaleString() : undefined
-        }));
-    }, [pageState.conversations]);
 
     const modelOptions = useMemo(
         () => toAIModelSelectOptions(pageState.availableModelsForProvider),
@@ -90,13 +81,9 @@ const useConversationPanelView = ({
     );
 
     return {
-        conversationId,
-        conversationOptions,
         conversationPanelContent,
         conversationsError: pageState.conversationsError,
         handleCreateConversation: pageState.handleCreateConversation,
-        handleSelectConversation: pageState.handleSelectConversation,
-        isConversationsLoading: pageState.isConversationsLoading,
         isProviderCatalogLoading: pageState.isProviderCatalogLoading,
         loadConversations: pageState.loadConversations,
         loadProviderCatalog: pageState.loadProviderCatalog,

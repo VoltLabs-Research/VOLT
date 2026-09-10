@@ -48,19 +48,6 @@ const setAppearance: ClientToolHandler<SetAppearanceInput> = {
             summary: `Updated appearance: ${changes.join(', ')}.`,
             data: applied
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Appearance change failed',
-                icon: 'sliders'
-            };
-        }
-        return {
-            label: 'Adjusted appearance',
-            icon: 'sliders'
-        };
     }
 };
 

@@ -3,8 +3,14 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
-import { FOR_EACH_EDITOR_DEFAULT_VALUES } from './schema';
-import type { ForEachEditorFormValues } from './schema';
+
+interface ForEachEditorFormValues {
+    iterableSource: string;
+}
+
+const FOR_EACH_EDITOR_DEFAULT_VALUES = {
+    iterableSource: ''
+} satisfies ForEachEditorFormValues;
 
 const ForEachEditor = ({ node }: EditorProps) => {
     const form = useNodeEditorForm<ForEachEditorFormValues>(node, 'forEach', FOR_EACH_EDITOR_DEFAULT_VALUES);

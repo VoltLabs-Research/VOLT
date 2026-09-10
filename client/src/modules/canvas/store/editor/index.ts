@@ -1,4 +1,4 @@
-import { createConfigurationSlice } from '../configuration-slice';
+import { createConfigurationSlice } from './configuration-slice';
 import { createCameraSlice } from './camera-slice';
 import { createEffectsSlice } from './effects-slice';
 import { createLightsSlice } from './lights-slice';

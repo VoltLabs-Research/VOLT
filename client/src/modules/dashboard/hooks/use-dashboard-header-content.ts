@@ -1,5 +1,5 @@
-import useDashboardHeaderContext from '@/modules/dashboard/hooks/use-dashboard-header-context';
-import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
+import { useOutletContext } from 'react-router-dom';
+import type { DashboardGlobalSearchBreadcrumb, DashboardHeaderContext } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import { useEffect } from 'react';
 
 interface UseDashboardHeaderContentOptions {
@@ -9,7 +9,7 @@ interface UseDashboardHeaderContentOptions {
 const useDashboardHeaderContent = ({
     globalSearchBreadcrumb
 }: UseDashboardHeaderContentOptions) => {
-    const { setGlobalSearchBreadcrumb } = useDashboardHeaderContext();
+    const { setGlobalSearchBreadcrumb } = useOutletContext<DashboardHeaderContext>();
 
     useEffect(() => {
         if (globalSearchBreadcrumb === undefined) {

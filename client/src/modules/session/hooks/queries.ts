@@ -19,10 +19,10 @@ const invalidateActiveSessionsQuery = () => activeSessionsQuery.invalidate(undef
 
 export const useRevokeSessionMutation = createMutation<void, RevokeSessionInput>(
     service.revokeSession,
-    () => invalidateActiveSessionsQuery()
+    invalidateActiveSessionsQuery
 );
 
 export const useRevokeAllOtherSessionsMutation = createMutation<RevokeAllSessionsResponse, void>(
     () => service.revokeAllOtherSessions({}),
-    () => invalidateActiveSessionsQuery()
+    invalidateActiveSessionsQuery
 );

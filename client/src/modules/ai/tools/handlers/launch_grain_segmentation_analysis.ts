@@ -27,17 +27,6 @@ const launchGrainSegmentation: ClientToolHandler<LaunchGrainSegmentationAnalysis
             ok: true,
             summary: `Grain segmentation stage added: threshold=${threshold}${input.frame !== undefined ? ` frame=${input.frame}` : ''}`
         };
-    },
-
-    describeEffect(input, result) {
-        if (!result.ok) return {
-            label: 'Grain segmentation unavailable',
-            icon: 'grain'
-        };
-        return {
-            label: `Added grain-segmentation stage (threshold=${input.dislocation_density_threshold})`,
-            icon: 'grain'
-        };
     }
 };
 

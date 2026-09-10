@@ -1,6 +1,5 @@
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import { computeGroupStatus } from '../utils/job-group-updates';
-import { TEAM_JOBS_QUERY_KEYS } from '../utils/query-keys';
+import { computeGroupStatus } from '@/modules/jobs/utils/job-status-semantics';
 import service from '../api/service';
 import { createSocketQuery } from '@/shared/query/create-query';
 import { withSuccess } from '@/shared/query/create-mutation';
@@ -16,6 +15,14 @@ import type {
 } from '@volt/contracts/modules/jobs/domain';
 import type { TrajectoryJobsParams } from '../api/service';
 import type { MutationOptions } from '@/shared/query/create-mutation';
+import { buildKeys } from '@/shared/query/query-keys';
+import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
+
+type TeamJobsQueryKeys = Record<'groups', void>;
+
+const TEAM_JOBS_QUERY_KEYS = buildKeys<TeamJobsQueryKeys>('team-jobs');
+
+registerPreservedQueryKey(TEAM_JOBS_QUERY_KEYS.groups()[0] as string);
 
 interface TeamJobsMutationContext {
     previousGroups: TrajectoryJobGroup[];
@@ -154,25 +161,20 @@ const useOptimisticTrajectoryMutation = <TData, TVariables extends { trajectoryI
     });
 };
 
-export const useRemoveRunningJobsMutation = (
-    options?: MutationOptions<RemoveTeamRunningJobsResponse, TrajectoryJobsParams>
-) => {
+export const useRemoveRunningJobsMutation = () => {
     return useMutation<RemoveTeamRunningJobsResponse, Error, TrajectoryJobsParams>({
-        ...options,
         mutationFn: (params) => service.removeRunningJobs(params),
         onSuccess: withSuccess<RemoveTeamRunningJobsResponse, TrajectoryJobsParams>((result) => {
             setTeamJobsGroupsQueryData(result.groups);
             useTeamJobsStore.getState().setLatestAppliedRevision(result.revision);
-        }, options)
+        })
     });
 };
 
-export const useRetryFailedJobsMutation = (
-    options?: MutationOptions<RetryTeamFailedJobsResponse, TrajectoryJobsParams>
-) => {
+export const useRetryFailedJobsMutation = () => {
     return useOptimisticTrajectoryMutation<RetryTeamFailedJobsResponse, TrajectoryJobsParams>({
         mutationFn: (params) => service.retryFailedJobs(params),
         applyOptimisticUpdate: markFailedJobsForRetryInTrajectory,
         shouldRollbackOnSuccess: (result) => result.retriedFrames === 0
-    }, options);
+    });
 };

@@ -5,7 +5,7 @@ import useBlobDownload from '@/shared/ui/hooks/use-blob-download';
 
 import type { ExportPluginListingInput } from '@/modules/plugin/api/services/listing-service';
 
-export type DownloadExposureListingParams = ExportPluginListingInput;
+type DownloadExposureListingParams = ExportPluginListingInput;
 
 const DOWNLOAD_LISTING_TOAST = createCrudToastOptions({
     action: 'Downloading',

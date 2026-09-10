@@ -48,19 +48,6 @@ const setPlayback: ClientToolHandler<SetPlaybackInput> = {
             summary: `Updated playback settings (${parts.join(', ')}).`,
             data: applied
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Playback settings unchanged',
-                icon: 'settings'
-            };
-        }
-        return {
-            label: 'Updated playback settings',
-            icon: 'settings'
-        };
     }
 };
 

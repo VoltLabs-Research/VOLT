@@ -42,19 +42,6 @@ const setVisibleLayers: ClientToolHandler<SetVisibleLayersInput> = {
                 visible
             }
         };
-    },
-
-    describeEffect(input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Layer change failed',
-                icon: 'layers'
-            };
-        }
-        return {
-            label: `${input.visible ? 'Showed' : 'Hid'} atoms layer`,
-            icon: 'layers'
-        };
     }
 };
 

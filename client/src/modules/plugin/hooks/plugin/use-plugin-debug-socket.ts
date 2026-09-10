@@ -198,8 +198,7 @@ const usePluginDebugSocket = ({ subscribe = true }: UsePluginDebugSocketOptions 
         step,
         continueAll,
         stop,
-        isDebugging,
-        sessionId
+        isDebugging
     };
 };
 

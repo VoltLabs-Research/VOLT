@@ -368,7 +368,6 @@ const SimulationCellBox = forwardRef<THREE.Mesh, SimulationCellBoxProps>(({
                     <mesh
                         ref={ref}
                         geometry={boxGeometry}
-                        userData={{ isExternal: true }}
                     >
                         <meshBasicMaterial
                             transparent

@@ -7,7 +7,6 @@ import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useRef } from 'react';
 
 interface UseAIPageOptions {
-    navigateOnConversationChange?: boolean;
     onConversationChange?: (conversationId?: string) => void;
 }
 
@@ -21,7 +20,6 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
     const conversationMessages = useAIConversationMessages(teamId, conversationId);
 
     const conversations = useAIConversations(teamId, conversationId, {
-        navigateOnConversationChange: options.navigateOnConversationChange,
         onConversationChange: options.onConversationChange,
         onConversationCreated: () => {
             skipNextMessageLoadRef.current = true;

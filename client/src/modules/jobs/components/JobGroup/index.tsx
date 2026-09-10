@@ -8,14 +8,13 @@ import type { FrameJobGroup, TrajectoryJobGroup as TrajectoryJobGroupType } from
 
 interface JobGroupProps {
     group: TrajectoryJobGroupType;
-    defaultExpanded?: boolean;
 };
 
-const JobGroup = ({ group, defaultExpanded = false }: JobGroupProps) => {
+const JobGroup = ({ group }: JobGroupProps) => {
     const containsTransferJobs = useMemo(() => {
         return group.frameGroups.some((frame) => frame.jobs.some((job) => job.queueType === 'cluster_transfer'));
     }, [group.frameGroups]);
-    const [isExpanded, setIsExpanded] = useState(defaultExpanded || containsTransferJobs);
+    const [isExpanded, setIsExpanded] = useState(containsTransferJobs);
     const contentId = useId();
     const {
         loadingAction,

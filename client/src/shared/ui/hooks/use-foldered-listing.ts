@@ -14,7 +14,7 @@ export interface FolderedListingContext {
     folderId: string | null;
 };
 
-export interface DeleteFolderConfirmConfig {
+interface DeleteFolderConfirmConfig {
     title: string;
     description: string;
     confirmText?: string;

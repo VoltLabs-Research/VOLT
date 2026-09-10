@@ -340,13 +340,6 @@ const ArgumentDefinitionRow = ({
                                         searchPlaceholder='Search plugins…'
                                         placeholder='Select plugins'
                                         ariaLabel='Allowed plugins'
-                                        renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
-                                            selectedCount,
-                                            argument.pluginReferenceFilter,
-                                            pluginOptions,
-                                            'Select plugins',
-                                            'selected'
-                                        )}
                                     />
                                     <PluginMultiSelect
                                         id={`plugin-reference-filter-keys-${fieldPrefix}`}

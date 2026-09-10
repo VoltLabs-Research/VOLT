@@ -7,7 +7,8 @@ import {
 } from '@/modules/analysis/services/cache';
 import { invalidateSceneArtifacts } from '@/modules/trajectory/hooks/scene-artifacts/queries';
 import { AnalysisStatus, normalizeCanvasAnalysisStatus } from '../utils/analysis-status';
-import { isRunningJobStatus, resolveJobAnalysisId } from '../utils/analysis-job-status';
+import { isRunningJobStatus } from '@/modules/jobs/utils/job-status-semantics';
+import { resolveJobAnalysisId } from '../utils/analysis-job-status';
 import queryClient from '@/shared/query/query-client';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { SOCKET_SCENE_ARTIFACT_EVENTS } from '@/modules/socket/events/trajectory';

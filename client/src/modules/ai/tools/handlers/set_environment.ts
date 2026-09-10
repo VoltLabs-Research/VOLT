@@ -54,19 +54,6 @@ const setEnvironment: ClientToolHandler<SetEnvironmentInput> = {
             summary: `Updated environment: ${changes.join(', ')}.`,
             data: applied
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Environment change failed',
-                icon: 'globe'
-            };
-        }
-        return {
-            label: 'Adjusted environment',
-            icon: 'globe'
-        };
     }
 };
 

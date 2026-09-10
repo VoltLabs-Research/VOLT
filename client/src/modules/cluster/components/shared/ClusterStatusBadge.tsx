@@ -7,7 +7,6 @@ export type ClusterBadgeTone =
     | 'danger'
     | 'neutral'
     | 'inactive'
-    | 'active'
     | 'brand'
     | 'primary';
 
@@ -23,7 +22,6 @@ const ClusterStatusBadge = ({ tone, children }: ClusterStatusBadgeProps) => (
         danger: 'text-danger',
         neutral: 'text-muted',
         inactive: 'text-muted',
-        active: 'text-foreground',
         brand: 'text-foreground',
         primary: 'text-foreground'
     }[tone])}>

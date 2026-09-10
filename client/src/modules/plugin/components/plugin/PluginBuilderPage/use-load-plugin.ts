@@ -1,7 +1,5 @@
-import { usePluginByIdQuery } from '../../../hooks/plugin/queries';
+import { usePluginByIdQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { ErrorSurface } from '@/shared/contracts/errors';
-import { reportError } from '@/shared/errors/core/report-error';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 import { useEffect } from 'react';
 
@@ -26,17 +24,8 @@ const useLoadPlugin = (id: string | undefined) => {
         }
     }, [plugin, loadWorkflow]);
 
-    let loadError: string | null = null;
-    if (error) {
-        loadError = reportError(error, {
-            surface: ErrorSurface.Silent,
-            fallbackTitle: 'Failed to load plugin'
-        }).title;
-    }
-
     return {
         isLoading,
-        loadError,
         accessDenied,
         accessDeniedMessage
     };

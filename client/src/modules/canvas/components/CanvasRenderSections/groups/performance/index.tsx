@@ -1,4 +1,4 @@
-import { selectField } from '../../../CanvasRenderConfigHelpers';
+import { selectField } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     isPerformancePreset,

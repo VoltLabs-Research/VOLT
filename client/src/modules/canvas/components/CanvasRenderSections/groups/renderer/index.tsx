@@ -1,4 +1,4 @@
-import { checkbox, row, selectField } from '../../../CanvasRenderConfigHelpers';
+import { checkbox, row, selectField } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     RENDERER_SHADOW_TYPE_OPTIONS,

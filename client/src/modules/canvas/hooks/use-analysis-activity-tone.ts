@@ -4,8 +4,6 @@ import { useMemo } from 'react';
 import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../utils/analysis-status';
 import type { AnalysisActivityTone } from '../utils/analysis-status-selectors';
 
-export type { AnalysisActivityTone };
-
 const getAnalysisTone = (status?: CanvasAnalysisStatus): AnalysisActivityTone | undefined => {
     if (status === CanvasAnalysisStatusEnum.Running) return 'running';
     if (status === CanvasAnalysisStatusEnum.Pending) return 'queued';

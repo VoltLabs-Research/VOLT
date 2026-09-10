@@ -1,6 +1,6 @@
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import { createDefaultArgumentDefinition } from '@/modules/plugin/utils/plugin/argument-values';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import usePluginSelectors, { toPluginSelectOption } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import ArgumentDefinitionRow from './ArgumentDefinitionRow';
 import DashedActionBox from '@/modules/plugin/components/plugin/DashedActionBox';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
@@ -26,12 +26,7 @@ const ArgumentDefinitionSection = ({
     const { publishedPlugins } = usePluginSelectors();
     const [expandedIndex, setExpandedIndex] = useState<number>(-1);
 
-    const pluginOptions = useMemo<SelectOption[]>(() => {
-        return publishedPlugins.map((plugin) => ({
-            value: plugin._id,
-            title: plugin.modifier?.name?.trim() || plugin._id
-        }));
-    }, [publishedPlugins]);
+    const pluginOptions = useMemo<SelectOption[]>(() => publishedPlugins.map(toPluginSelectOption), [publishedPlugins]);
 
     const pluginKeyOptions = useMemo<SelectOption[]>(() => {
         const optionsByKey = new Map<string, SelectOption>();

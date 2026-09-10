@@ -5,11 +5,11 @@ import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-c
 
 interface WorkspacePeerAvatarsProps {
     peers: WorkspacePresenceUser[];
-    self?: WorkspacePresenceUser;
     activeOwnerId?: string;
     onSelectPeer: (peerId: string) => void;
-    maxDisplay?: number;
 }
+
+const MAX_DISPLAY = 4;
 
 const resolveFullName = (peer: WorkspacePresenceUser): string => {
     const parts = [peer.firstName, peer.lastName].filter(Boolean);
@@ -24,12 +24,10 @@ const renderAvatarButton = (
     user: WorkspacePresenceUser,
     options: {
         isActive: boolean;
-        isSelf: boolean;
         onClick: () => void;
     }
 ) => {
     const fullName = resolveFullName(user);
-    const label = options.isSelf ? `${fullName} (you)` : fullName;
     const initials = getInitialsFromUser({
         firstName: user.firstName,
         lastName: user.lastName,
@@ -42,12 +40,11 @@ const renderAvatarButton = (
             type='button'
             className={cn(
                 'cursor-pointer rounded-full border-2 border-transparent bg-transparent p-0 leading-none transition-colors duration-[120ms] ease-out',
-                options.isActive && 'border-foreground',
-                options.isSelf && 'shadow-[0_0_0_1px_var(--foreground)_inset]'
+                options.isActive && 'border-foreground'
             )}
             onClick={options.onClick}
-            title={label}
-            aria-label={options.isSelf ? 'Go to your workspace' : `Open ${fullName} workspace`}
+            title={fullName}
+            aria-label={`Open ${fullName} workspace`}
         >
             <Avatar className='size-6'>
                 {user.avatar && <Avatar.Image src={user.avatar} alt={fullName} />}
@@ -60,21 +57,19 @@ const renderAvatarButton = (
 const WorkspacePeerAvatars = ({
     peers,
     activeOwnerId,
-    onSelectPeer,
-    maxDisplay = 4
+    onSelectPeer
 }: WorkspacePeerAvatarsProps) => {
     if (peers.length === 0) {
         return null;
     }
 
-    const visible = peers.slice(0, maxDisplay);
+    const visible = peers.slice(0, MAX_DISPLAY);
     const overflow = peers.length - visible.length;
 
     return (
         <div className='ml-2 flex h-full flex-row items-center gap-1 pl-2'>
             {visible.map((peer) => renderAvatarButton(peer, {
                 isActive: peer.id === activeOwnerId,
-                isSelf: false,
                 onClick: () => onSelectPeer(peer.id)
             }))}
             {overflow > 0 && (

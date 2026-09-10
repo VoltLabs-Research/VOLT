@@ -2,8 +2,18 @@ import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
-import { EXPOSURE_EDITOR_DEFAULT_VALUES } from './schema';
-import type { ExposureEditorFormValues } from './schema';
+
+interface ExposureEditorFormValues {
+    name: string;
+    id: string;
+    results: string;
+}
+
+const EXPOSURE_EDITOR_DEFAULT_VALUES = {
+    name: '',
+    id: '',
+    results: ''
+} satisfies ExposureEditorFormValues;
 
 const ExposureEditor = ({ node }: EditorProps) => {
     const form = useNodeEditorForm<ExposureEditorFormValues>(node, 'exposure', EXPOSURE_EDITOR_DEFAULT_VALUES);

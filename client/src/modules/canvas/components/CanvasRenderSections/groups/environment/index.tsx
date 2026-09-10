@@ -1,4 +1,4 @@
-import { colorField, row } from '../../../CanvasRenderConfigHelpers';
+import { colorField, row } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { ENVIRONMENT_SUBSECTION_TITLES } from '@/shared/rendering/environment';
 

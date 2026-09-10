@@ -38,7 +38,6 @@ const createInitialState = (): PlaybackState => ({
     isPreloading: false,
     didPreload: false,
     preloadProgress: 0,
-    downlinkMbps: null,
     rangeStart: undefined,
     rangeEnd: undefined,
     targetFps: DEFAULT_TARGET_FPS
@@ -85,8 +84,7 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         set({
             isPlaying: false,
             isPreloading: false,
-            preloadProgress: 0,
-            downlinkMbps: null
+            preloadProgress: 0
         });
     },
 
@@ -129,16 +127,12 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                     await get().loadModels({
                         trajectoryId,
                         timesteps,
-                        onProgress: (progress: number, metrics?: { bps: number }) => {
+                        onProgress: (progress: number) => {
                             if (_runtime.generation !== playbackGeneration) {
                                 return;
                             }
 
-                            const mbps = metrics?.bps != null ? (metrics.bps * 8) / 1_000_000 : null;
-                            set({
-                                preloadProgress: progress,
-                                downlinkMbps: mbps
-                            });
+                            set({ preloadProgress: progress });
                         },
                         maxFramesToPreload,
                         currentFrameIndex,

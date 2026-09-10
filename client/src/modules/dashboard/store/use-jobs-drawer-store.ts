@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 
 export const DASHBOARD_DRAWER_IDS = {
-    jobs: 'dashboard-jobs-drawer',
-    clusters: 'dashboard-clusters-drawer',
     activity: 'dashboard-activity-drawer'
 } as const;
 

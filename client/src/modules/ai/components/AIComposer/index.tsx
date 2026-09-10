@@ -2,14 +2,14 @@ import { Button, ListBox, Select, Tooltip, cn } from '@heroui/react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { useEffect, useId, useRef } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
-import type { AISelectOption } from '@/modules/ai/utils/model-options';
+import type { SelectOption } from '@/shared/contracts/form-field';
 import type { KeyboardEvent } from 'react';
 
 const MAX_TEXTAREA_HEIGHT_PX = 168;
 
 interface AIComposerProps {
     value: string;
-    modelOptions: AISelectOption[];
+    modelOptions: SelectOption[];
     selectedModel: string | null;
     disabled?: boolean;
     isSending?: boolean;

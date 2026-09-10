@@ -1,4 +1,4 @@
-import { row, PRESETS, checkboxGrid, targetRows } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, checkboxGrid, targetRows } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';

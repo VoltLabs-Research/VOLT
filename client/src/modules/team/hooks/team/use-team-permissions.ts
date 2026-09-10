@@ -20,9 +20,6 @@ export default function useTeamPermissions() {
     };
 
     return {
-        selectedTeamId,
-        permissions,
-        permissionsTeamId,
         scopedPermissions,
         isLoading: permissionsQuery.isLoading || permissionsQuery.isFetching,
         isScopeReady,

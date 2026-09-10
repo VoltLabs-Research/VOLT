@@ -26,7 +26,7 @@ const skeletonCellStyle: CSSProperties = {
 
 const CELL_SKELETON_WIDTHS = ['55%', '70%', '85%'] as const;
 
-const CompactTableSkeleton = ({ rowHeight = 28 }: { rowHeight?: number }) => (
+const CompactTableSkeleton = ({ rowHeight }: { rowHeight: number }) => (
     <div className='flex h-full w-full flex-col overflow-hidden'>
         <div style={skeletonFrameStyle}>
             <div className='sticky top-0 z-10 flex flex-row justify-between border-b border-border pb-1'>

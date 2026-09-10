@@ -5,7 +5,6 @@ import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { PageParams, SearchParams, TeamScopedParams } from '@/shared/api/request-params';
 import type {
     ClusterTransferJob,
-    ClusterTransferJobState,
     ClusterResourceLimitsResponse,
     CreateTeamClusterResponse,
     CreateTeamClusterTransferRequestResponse,
@@ -43,9 +42,7 @@ export type ListTeamClustersParams = TeamScopedParams & PageParams & SearchParam
 
 export type ListTeamClustersResponse = PaginatedResponse<TeamCluster>;
 
-export interface ListTeamClusterTransferJobsParams extends TeamClusterScopedParams, PageParams{
-    state?: ClusterTransferJobState;
-}
+export type ListTeamClusterTransferJobsParams = TeamClusterScopedParams & PageParams;
 
 export type ListTeamClusterTransferJobsResponse = PaginatedResponse<ClusterTransferJob>;
 

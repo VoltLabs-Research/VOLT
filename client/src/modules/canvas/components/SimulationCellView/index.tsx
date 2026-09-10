@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 import { Button, Checkbox, Label, NumberField } from '@heroui/react';
-import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
+import { useCellDisplayStore } from '@/modules/fractal/store/use-cell-display-store';
 import type { CellPbc } from '@/modules/fractal/utils/cell-wireframe';
 import { hasValidCellVectors } from '@/modules/fractal/utils/cell-wireframe';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';

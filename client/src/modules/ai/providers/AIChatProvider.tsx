@@ -21,7 +21,6 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     const [messageDraft, setMessageDraft] = useState('');
 
     const pageState = useAIPage(activeConversationId, {
-        navigateOnConversationChange: false,
         onConversationChange: setActiveConversationId
     });
 

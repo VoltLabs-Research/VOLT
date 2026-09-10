@@ -23,11 +23,7 @@ const JobsDrawer = () => {
                 <CloseButton onPress={close} aria-label='Close compute jobs panel' />
             </header>
             <Scrollable className='min-h-0 flex-1 px-2 py-2'>
-                <JobsHistoryViewer
-                    trajectoryId={trajectoryId ?? undefined}
-                    displayMode='full'
-                    autoSelectAnalysis={false}
-                />
+                <JobsHistoryViewer trajectoryId={trajectoryId ?? undefined} />
             </Scrollable>
         </div>
     );

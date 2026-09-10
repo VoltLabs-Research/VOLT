@@ -57,27 +57,6 @@ const controlPlayback: ClientToolHandler<ControlPlaybackInput> = {
                 isPlaying: false
             }
         };
-    },
-
-    describeEffect(input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Playback control failed',
-                icon: 'play'
-            };
-        }
-        if (input.action === 'play') return {
-            label: 'Started playback',
-            icon: 'play'
-        };
-        if (input.action === 'pause') return {
-            label: 'Paused playback',
-            icon: 'pause'
-        };
-        return {
-            label: 'Stopped playback',
-            icon: 'stop'
-        };
     }
 };
 

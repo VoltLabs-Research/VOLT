@@ -14,7 +14,6 @@ import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 import type { EmptyParams } from '@voltstack/voltclient';
 import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { VoltClient } from '@voltstack/voltclient';
-import type { DashboardMetrics } from '@volt/contracts/modules/dashboard/domain';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { TrajectoryFolder } from '@volt/contracts/modules/trajectory/domain';
 import type { CreateTrajectoryUploadSessionResponse } from '@volt/contracts/modules/trajectory/domain';
@@ -207,7 +206,6 @@ const endpoints = {
     }),
     getAtoms: custom<GetAtomsInput, GetAtomsResponse>(createGetAtomsBinary('/trajectories')),
     ...folderEndpoints,
-    getMetrics: routes.route<EmptyParams, DashboardMetrics>(trajectoryRoutes.getMetrics),
     listSamples: routes.route<EmptyParams, string[]>(trajectoryRoutes.listSamples),
     downloadSample: download<DownloadSampleInput>('GET', routes.path(trajectoryRoutes.downloadSamples))
 };

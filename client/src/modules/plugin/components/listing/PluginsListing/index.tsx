@@ -1,8 +1,7 @@
 import { Button } from '@heroui/react';
 import { Ban, Check, Copy, Download, FilePen, Pencil, Upload } from 'lucide-react';
-import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
+import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useDeletePluginMutation, useImportPluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from './use-export-plugin';
-import { useDeletePluginMutation, useImportPluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';

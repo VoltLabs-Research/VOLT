@@ -25,10 +25,6 @@ const CanvasGrid = ({ settings, darkTheme }: CanvasGridProps) => {
         return settings.cellColor;
     }, [settings.cellColor, settings.cellColorFollowsTheme, themeDefaults.cellColor]);
 
-    if (!settings.enabled) {
-        return null;
-    }
-
     return (
         <Grid
             infiniteGrid={settings.infiniteGrid}

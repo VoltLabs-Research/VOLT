@@ -37,7 +37,7 @@ export const toPluginSelectOption = (plugin: Plugin): SelectOption => ({
 });
 
 const usePluginSelectors = () => {
-    const { data: plugins = [], isLoading } = usePluginCatalogQuery({ enabled: true });
+    const { data: plugins = [] } = usePluginCatalogQuery();
 
     const pluginsById = useMemo(() => buildPluginsById(plugins), [plugins]);
 
@@ -46,8 +46,6 @@ const usePluginSelectors = () => {
     }, [plugins]);
 
     const publishedPluginsById = useMemo(() => buildPluginsById(publishedPlugins), [publishedPlugins]);
-
-    const publishedPluginOptions = useMemo(() => publishedPlugins.map(toPluginSelectOption), [publishedPlugins]);
 
     const modifiers = useMemo((): ResolvedModifier[] => {
         return publishedPlugins
@@ -69,10 +67,8 @@ const usePluginSelectors = () => {
         pluginsById,
         publishedPlugins,
         publishedPluginsById,
-        publishedPluginOptions,
         modifiers,
-        getPluginArguments,
-        isLoading
+        getPluginArguments
     };
 };
 

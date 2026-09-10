@@ -5,26 +5,20 @@ import {
 import type { DashboardWorkspaceChromeOptions } from '@/modules/dashboard/contracts/layout';
 import { useId, useLayoutEffect } from 'react';
 
-const useDashboardWorkspaceChrome = ({
-    collapseSidebar = false,
-    hideHeader = false
-}: DashboardWorkspaceChromeOptions = {}): void => {
+const useDashboardWorkspaceChrome = ({ hideHeader = false }: DashboardWorkspaceChromeOptions = {}): void => {
     const registrationId = useId();
 
     useLayoutEffect(() => {
-        if (!collapseSidebar && !hideHeader) {
+        if (!hideHeader) {
             return;
         }
 
-        registerDashboardWorkspaceChrome(registrationId, {
-            collapseSidebar,
-            hideHeader
-        });
+        registerDashboardWorkspaceChrome(registrationId, { hideHeader });
 
         return () => {
             unregisterDashboardWorkspaceChrome(registrationId);
         };
-    }, [collapseSidebar, hideHeader, registrationId]);
+    }, [hideHeader, registrationId]);
 };
 
 export default useDashboardWorkspaceChrome;

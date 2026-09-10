@@ -1,9 +1,11 @@
-import { useMarkAllReadMutation, useNotificationsInfiniteQuery } from '../../hooks/queries';
-import useNotificationSocket from './use-notification-socket';
+import { prependNotificationToInfiniteCache, useMarkAllReadMutation, useNotificationsInfiniteQuery } from '../../hooks/queries';
+import { SOCKET_NOTIFICATION_EVENTS } from '@/modules/socket/events/notification';
+import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import { showPromise } from '@/shared/ui/hooks/toast';
+import type { Notification } from '@volt/contracts/modules/notification/domain';
 
 const useNotificationData = () => {
-    useNotificationSocket();
+    useSocketEvent<Notification>(SOCKET_NOTIFICATION_EVENTS.RECEIVED, prependNotificationToInfiniteCache);
 
     const infiniteQuery = useNotificationsInfiniteQuery();
     const markAllReadMutation = useMarkAllReadMutation();

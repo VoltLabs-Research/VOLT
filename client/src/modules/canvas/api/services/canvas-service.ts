@@ -1,4 +1,4 @@
-import { createService, custom, download, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
+import { createService, custom, paginated, serviceRoutes } from '@/app/core/http/utils/create-service';
 import { getAtomsBinary } from '@/modules/trajectory/api/services/atoms-binary-request';
 import { mapRawListingResponse } from '@/modules/plugin/api/services/listing-response';
 import { base64ToBlob } from '@/shared/utils/file';
@@ -95,11 +95,6 @@ interface ListCanvasAnalysesParams {
     limit?: number;
 }
 
-interface GetCanvasDumpParams {
-    trajectoryId: string;
-    timestep: number | string;
-}
-
 interface PublicCanvasPluginInput {
     trajectoryId: string;
     pluginId: string;
@@ -136,7 +131,6 @@ const endpoints = {
             ...(limit !== undefined ? { limit } : {})
         })
     }),
-    getDump: download<GetCanvasDumpParams>('GET', routes.path(trajectoryRoutes.canvasDump)),
     getAtoms: custom<GetAtomsInput, GetAtomsResponse>(getAtomsBinary),
     getSimulationCell: routes.route<GetSimulationCellByTrajectoryParams, SimulationCell | null>(
         trajectoryRoutes.canvasSimulationCell,

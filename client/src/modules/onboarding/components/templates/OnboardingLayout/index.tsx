@@ -8,7 +8,7 @@ import NotificationsPopover from '@/modules/notification/components/Notification
 import { Button } from '@heroui/react';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
 import type { ReactNode } from 'react';
-import type { JoinByInviteCodeResponse } from '@/modules/team/api/services/team-service';
+import type { JoinTeamResponse } from '@volt/contracts/modules/team/domain';
 
 interface OnboardingLayoutProps {
     children: ReactNode;
@@ -30,7 +30,7 @@ const OnboardingLayout = ({
     const singleTenant = useSingleTenant();
     const user = useCurrentUser();
 
-    const handleJoinTeamSuccess = async ({ teamId }: JoinByInviteCodeResponse) => {
+    const handleJoinTeamSuccess = async ({ teamId }: JoinTeamResponse) => {
         switchSelectedTeam(teamId);
         await refreshSocketSession();
     };

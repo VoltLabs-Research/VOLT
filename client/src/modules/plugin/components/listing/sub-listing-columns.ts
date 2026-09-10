@@ -7,7 +7,6 @@ import type { SubListingColumn } from '@volt/contracts/modules/plugin/listing';
 
 export interface SubListingColumnSnapshot<TRow extends Record<string, unknown>> {
     columns: DocumentColumnConfig<TRow>[];
-    inferredTypes: Record<string, InferredColumnType>;
 }
 
 const COLUMN_SAMPLE_LIMIT = 30;
@@ -55,11 +54,9 @@ export const buildDocumentSubListingColumnSnapshot = <TRow extends Record<string
     columns: SubListingColumn[],
     rows: TRow[]
 ): SubListingColumnSnapshot<TRow> => {
-    const inferredTypes: Record<string, InferredColumnType> = {};
     const mapped = columns.map<DocumentColumnConfig<TRow>>((column) => {
         const key = column.label;
         const inferred = inferColumnFromRows(rows, key);
-        inferredTypes[key] = inferred;
 
         return {
             key,
@@ -70,8 +67,5 @@ export const buildDocumentSubListingColumnSnapshot = <TRow extends Record<string
         };
     });
 
-    return {
-        columns: mapped,
-        inferredTypes
-    };
+    return { columns: mapped };
 };

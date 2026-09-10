@@ -195,7 +195,6 @@ const DocumentListingHeader = <TRow,>({
                             </TabListContainer>
                         </TabsRoot>
                     </div>
-                    <div />
                 </div>
             )}
         </div>

@@ -2,14 +2,12 @@ import socketService from './socket-service';
 import teamSocketRoomService from './team-room-service';
 import { tokenStorage } from '@/shared/auth/token-storage';
 
-export const updateSocketAuthToken = (token: string | null): Promise<void> => {
+export const updateSocketAuthToken = (token: string | null): void => {
     socketService.updateAuth({ token: token ?? undefined });
 
     if (token) {
-        return socketService.connect().catch(() => undefined);
+        socketService.connect().catch(() => undefined);
     }
-
-    return Promise.resolve();
 };
 
 export const refreshSocketSession = async (): Promise<void> => {

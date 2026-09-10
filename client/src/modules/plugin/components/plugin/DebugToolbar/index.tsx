@@ -3,6 +3,7 @@ import { Button, Separator, Tooltip } from '@heroui/react';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
+import { formatTraceDuration } from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
@@ -34,9 +35,6 @@ const DebugControlButton = ({ tooltip, onPress, isDisabled, children }: DebugCon
         <Tooltip.Content placement='bottom'>{tooltip}</Tooltip.Content>
     </Tooltip>
 );
-
-const formatDuration = (totalDuration: number): string =>
-    totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`;
 
 const DebugToolbar = () => {
     const {
@@ -177,7 +175,7 @@ const DebugToolbar = () => {
                 <div className='mt-4 flex flex-col whitespace-nowrap text-center'>
                     {totalDuration !== null && totalDuration >= 0 && (
                         <p className='text-xs text-success'>
-                            Completed in {formatDuration(totalDuration)}
+                            Completed in {formatTraceDuration(totalDuration)}
                         </p>
                     )}
                     {sessionError && (

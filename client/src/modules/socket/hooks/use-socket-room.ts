@@ -9,7 +9,6 @@ interface UseSocketRoomOptions<TJoinPayload, TLeavePayload = TJoinPayload> {
     buildJoinPayload: () => TJoinPayload | null;
     buildLeavePayload?: () => TLeavePayload | null;
     enabled?: boolean;
-    fireAndForget?: boolean;
 };
 
 const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
@@ -21,8 +20,7 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
         roomKey,
         buildJoinPayload,
         buildLeavePayload,
-        enabled = true,
-        fireAndForget = true
+        enabled = true
     } = options;
 
     const socketService = useSocket();
@@ -47,29 +45,16 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
 
             isJoined = true;
 
-            if (fireAndForget) {
-                try {
-                    socketService.emitWithoutAck(joinEvent, payload);
-                } catch (error) {
-                    isJoined = false;
-                    socketErrorReporter.report(error, {
-                        kind: 'subscribe',
-                        event: joinEvent,
-                        roomKey
-                    });
-                }
-                return;
-            }
-
-            socketService.emit(joinEvent, payload).catch((error) => {
-                if (cancelled) return;
+            try {
+                socketService.emitWithoutAck(joinEvent, payload);
+            } catch (error) {
                 isJoined = false;
                 socketErrorReporter.report(error, {
                     kind: 'subscribe',
                     event: joinEvent,
                     roomKey
                 });
-            });
+            }
         };
 
         socketService.connect().catch(() => undefined);
@@ -98,17 +83,12 @@ const useSocketRoom = <TJoinPayload, TLeavePayload = TJoinPayload>(
             const leavePayload = leavePayloadBuilder();
             if (leavePayload === null) return;
 
-            if (fireAndForget) {
-                try {
-                    socketService.emitWithoutAck(leaveEvent, leavePayload);
-                } catch {
-                }
-                return;
+            try {
+                socketService.emitWithoutAck(leaveEvent, leavePayload);
+            } catch {
             }
-
-            socketService.emit(leaveEvent, leavePayload).catch(() => undefined);
         };
-    }, [socketService, joinEvent, leaveEvent, roomKey, enabled, fireAndForget]);
+    }, [socketService, joinEvent, leaveEvent, roomKey, enabled]);
 };
 
 export default useSocketRoom;

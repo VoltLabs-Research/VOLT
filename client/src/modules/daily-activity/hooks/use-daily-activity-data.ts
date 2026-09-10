@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import type { GetDailyActivityParams } from '../api/service';
 
 interface UseDailyActivityDataOptions extends GetDailyActivityParams {
-    enabled?: boolean;
     refetchIntervalMs?: number;
 };
 
@@ -14,11 +13,10 @@ const DEFAULT_RANGE = 365;
 const useDailyActivityData = ({
     range = DEFAULT_RANGE,
     scope = 'team',
-    enabled = true,
     refetchIntervalMs
 }: UseDailyActivityDataOptions = {}) => {
     const teamId = useSelectedTeamId();
-    const isEnabled = enabled && Boolean(teamId);
+    const isEnabled = Boolean(teamId);
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
 
     const activityQuery = dailyActivityQuery({

@@ -11,8 +11,7 @@ export const useTeamClusterSocket = (teamClusterIds: string[]) => {
         joinEvent: SOCKET_TEAM_CLUSTER_EVENTS.SUBSCRIBE,
         roomKey,
         buildJoinPayload: () => teamClusterIds.length > 0 ? { teamClusterIds } : null,
-        enabled: teamClusterIds.length > 0,
-        fireAndForget: true
+        enabled: teamClusterIds.length > 0
     });
 
     useSocketEvent<TeamClusterLifecycleEvent>(SOCKET_TEAM_CLUSTER_EVENTS.LIFECYCLE_UPDATED, (event) => {

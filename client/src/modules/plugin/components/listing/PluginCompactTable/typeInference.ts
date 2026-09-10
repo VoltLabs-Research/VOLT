@@ -14,11 +14,6 @@ export type InferredCellKind =
 
 export interface InferredColumnType {
     kind: InferredCellKind;
-    meta: {
-        vectorLength?: number;
-        pointsInnerLength?: number;
-        sampledCount: number;
-    };
 }
 
 const SAMPLE_SIZE = 30;
@@ -75,21 +70,11 @@ const promoteNumericKind = (a: InferredCellKind, b: InferredCellKind): InferredC
 
 export const inferColumnType = (values: unknown[]): InferredColumnType => {
     const samples = values.slice(0, SAMPLE_SIZE);
-    const meta: InferredColumnType['meta'] = { sampledCount: 0 };
     let kind: InferredCellKind = 'empty';
 
     for(const value of samples){
         const current = inferCellKind(value);
         if(current === 'empty') continue;
-
-        meta.sampledCount += 1;
-
-        if(current === 'vector' && Array.isArray(value)){
-            meta.vectorLength = meta.vectorLength ?? value.length;
-        }
-        if(current === 'points' && Array.isArray(value) && Array.isArray(value[0])){
-            meta.pointsInnerLength = meta.pointsInnerLength ?? (value[0] as unknown[]).length;
-        }
 
         if(kind === 'empty'){
             kind = current;
@@ -100,8 +85,5 @@ export const inferColumnType = (values: unknown[]): InferredColumnType => {
         if(kind === 'mixed') break;
     }
 
-    return {
-        kind,
-        meta
-    };
+    return { kind };
 };

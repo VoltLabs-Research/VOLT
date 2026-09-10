@@ -46,7 +46,6 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     const zoomListenersRef = useRef<Set<(zoom: number) => void>>(new Set());
     const zoomRafRef = useRef<number | null>(null);
     const lastEmittedZoomRef = useRef<number>(100);
-    const isInteractingRef = useRef(false);
     const [screenshotAnnouncement, setScreenshotAnnouncement] = useState('');
     const titleId = useId();
     const descriptionId = useId();
@@ -80,7 +79,6 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     }, []);
 
     const markInteracting = useCallback((active: boolean) => {
-        isInteractingRef.current = active;
         onInteractionChange?.(active);
     }, [onInteractionChange]);
 
@@ -132,7 +130,7 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                 initialDistanceRef.current = camera.position.distanceTo(controls.target);
             }
 
-            const handler = () => notifyZoomListeners();
+            const handler = notifyZoomListeners;
             controls.addEventListener('change', handler);
             boundChangeHandlerRef.current = handler;
         }

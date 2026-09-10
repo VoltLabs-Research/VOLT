@@ -19,7 +19,7 @@ export interface CompactTableRowProps {
     columnWidthScale: number;
 }
 
-export const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): string => {
+const resolveRowIdentifier = (row: Record<string, unknown>, fallback: number): string => {
     const candidate = row._id ?? row.id;
     if(typeof candidate === 'string' || typeof candidate === 'number'){
         return String(candidate);

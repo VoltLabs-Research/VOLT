@@ -3,13 +3,11 @@ import { CenteredModalSurface, EdgeModalSurface } from '@/shared/ui/modal/modal-
 import { getInitialFocusTarget } from '@/shared/ui/modal/initial-focus';
 import { closeModal, openModal, useIsModalOpen } from '@/shared/ui/modal/use-modal-store';
 import { useMedia } from '@/shared/ui/hooks/use-media';
-import { cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface ModalProps {
     id: string;
-
-    trigger?: ReactNode;
     title?: string;
     description?: string;
     children: ReactNode;
@@ -22,8 +20,6 @@ interface ModalProps {
     onClose?: () => void;
 
     dismissible?: boolean;
-
-    lazyMount?: boolean;
 
     placement?: 'center' | 'right' | 'bottom';
 }
@@ -47,7 +43,6 @@ interface ModalPresentation {
 
 export const Modal = ({
     id,
-    trigger,
     title,
     description,
     children,
@@ -177,15 +172,6 @@ export const Modal = ({
         children: paintedChildren
     };
 
-    const triggerElement = trigger && isValidElement<ButtonHTMLAttributes<HTMLButtonElement>>(trigger)
-        ? cloneElement(trigger, {
-            onClick: () => openModal(id),
-            'aria-controls': id,
-            'aria-haspopup': 'dialog',
-            type: 'button'
-        })
-        : null;
-
     const backdropProps = {
         ref: setBackdropElement,
         variant: BACKDROP_VARIANT,
@@ -197,23 +183,15 @@ export const Modal = ({
 
     if (paintedPlacement === 'center') {
         return (
-            <>
-                {triggerElement}
-
-                <ModalBackdrop {...backdropProps}>
-                    <CenteredModalSurface {...surfaceProps} />
-                </ModalBackdrop>
-            </>
+            <ModalBackdrop {...backdropProps}>
+                <CenteredModalSurface {...surfaceProps} />
+            </ModalBackdrop>
         );
     }
 
     return (
-        <>
-            {triggerElement}
-
-            <DrawerBackdrop {...backdropProps}>
-                <EdgeModalSurface {...surfaceProps} placement={paintedPlacement} />
-            </DrawerBackdrop>
-        </>
+        <DrawerBackdrop {...backdropProps}>
+            <EdgeModalSurface {...surfaceProps} placement={paintedPlacement} />
+        </DrawerBackdrop>
     );
 };

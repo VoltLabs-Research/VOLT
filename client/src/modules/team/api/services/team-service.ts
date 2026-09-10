@@ -7,11 +7,8 @@ import type { TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateTeamInput, JoinTeamByCodeInput, UpdateTeamInput } from '@volt/contracts/modules/team/http';
 import type { JoinTeamResponse, PreviewJoinTeamResponse } from '@volt/contracts/modules/team/domain';
 
-export type JoinByInviteCodeInput = JoinTeamByCodeInput;
 
-export type JoinByInviteCodeResponse = JoinTeamResponse;
 
-export type PreviewJoinByInviteCodeResponse = PreviewJoinTeamResponse;
 
 export type UpdateTeamParams = TeamScopedParams & UpdateTeamInput;
 
@@ -26,8 +23,8 @@ const endpoints = {
     delete: routes.route<TeamScopedParams, void>(teamRoutes.remove, { unwrap: 'void' }),
     generateInviteCode: routes.route<TeamScopedParams, Team>(teamRoutes.generateInviteCode),
     deleteInviteCode: routes.route<TeamScopedParams, void>(teamRoutes.deleteInviteCode, { unwrap: 'void' }),
-    previewJoinByCode: routes.route<JoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>(teamRoutes.previewJoinByCode),
-    joinByCode: routes.route<JoinByInviteCodeInput, JoinByInviteCodeResponse>(teamRoutes.joinByCode),
+    previewJoinByCode: routes.route<JoinTeamByCodeInput, PreviewJoinTeamResponse>(teamRoutes.previewJoinByCode),
+    joinByCode: routes.route<JoinTeamByCodeInput, JoinTeamResponse>(teamRoutes.joinByCode),
     leave: routes.route<TeamScopedParams, void>(teamRoutes.leave, { unwrap: 'void' }),
     getMyPermissions: routes.route<TeamScopedParams, string[]>(
         teamRoutes.getMyPermissions, {

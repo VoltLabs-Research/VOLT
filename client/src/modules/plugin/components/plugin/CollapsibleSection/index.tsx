@@ -16,7 +16,6 @@ interface CollapsibleSectionProps {
     noSpacing?: boolean;
 
     isCompact?: boolean;
-    className?: string;
     bodyClassName?: string;
 };
 
@@ -30,7 +29,6 @@ const CollapsibleSection = ({
     deleteActionLabel = 'Delete section',
     noSpacing = false,
     isCompact = false,
-    className,
     bodyClassName
 }: CollapsibleSectionProps) => {
     return (
@@ -38,7 +36,7 @@ const CollapsibleSection = ({
             isExpanded={expanded}
             defaultExpanded={defaultExpanded}
             onExpandedChange={onExpandedChange}
-            className={cn('flex flex-col', noSpacing ? null : 'mb-6', className)}
+            className={cn('flex flex-col', noSpacing ? null : 'mb-6')}
         >
             <Disclosure.Heading
                 className={cn(

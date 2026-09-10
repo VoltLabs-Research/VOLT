@@ -1,9 +1,10 @@
-import useAIConversationPanel from './use-shared-ai-conversation-panel';
+import useConversationPanelView from '@/modules/ai/components/AIConversationPanelContent/use-conversation-panel-view';
+import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
 import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { Button, Tooltip, cn } from '@heroui/react';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
-import { PANEL_FOCUSABLE_SELECTOR } from '@/shared/ui/utils/focusable';
+import { FOCUSABLE_BASE_SELECTOR } from '@/shared/ui/utils/focusable';
 import { useCallback, useEffect, useId, useRef } from 'react';
 import { Expand, Plus, Sparkles } from 'lucide-react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
@@ -18,7 +19,7 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
         return [];
     }
 
-    return Array.from(container.querySelectorAll<HTMLElement>(PANEL_FOCUSABLE_SELECTOR))
+    return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_BASE_SELECTOR))
         .filter((element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
 };
 
@@ -26,6 +27,7 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
     const panelRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const descriptionId = useId();
+    const chatContext = useAIChatContext();
 
     const {
         conversationsError,
@@ -37,7 +39,14 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
         isProviderCatalogLoading,
         openAIPage,
         conversationPanelContent
-    } = useAIConversationPanel({ onNavigateAway: onClose });
+    } = useConversationPanelView({
+        pageState: chatContext,
+        conversationId: chatContext.activeConversationId,
+        messageDraft: chatContext.messageDraft,
+        setMessageDraft: chatContext.setMessageDraft,
+        handleSend: chatContext.handleSend,
+        onNavigateAway: onClose
+    });
 
     useEffect(() => {
         const triggerElement = triggerRef.current;

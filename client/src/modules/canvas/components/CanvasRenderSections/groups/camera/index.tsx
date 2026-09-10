@@ -1,4 +1,4 @@
-import { row, vec3Rows } from '../../../CanvasRenderConfigHelpers';
+import { row, vec3Rows } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     CAMERA_SUBSECTION_TITLES,

@@ -5,7 +5,6 @@ import type { Job, TrajectoryJobGroup } from '@volt/contracts/modules/jobs/domai
 interface UseJobsHistoryFiltersArgs {
     groups: TrajectoryJobGroup[];
     trajectoryId?: string;
-    queueFilter?: string;
     isConnected: boolean;
     isLoading: boolean;
 };
@@ -17,7 +16,6 @@ const flattenGroups = (groups: TrajectoryJobGroup[]): Job[] => {
 const useJobsHistoryFilters = ({
     groups,
     trajectoryId,
-    queueFilter,
     isConnected,
     isLoading
 }: UseJobsHistoryFiltersArgs) => {
@@ -26,11 +24,8 @@ const useJobsHistoryFilters = ({
         if (trajectoryId) {
             allJobs = allJobs.filter((job) => job.trajectoryId === trajectoryId);
         }
-        if (queueFilter) {
-            allJobs = allJobs.filter((job) => job.queueType?.includes(queueFilter));
-        }
         return allJobs;
-    }, [groups, trajectoryId, queueFilter]);
+    }, [groups, trajectoryId]);
 
     const hasActiveJobs = useMemo(() => {
         if (!isConnected || isLoading) return false;

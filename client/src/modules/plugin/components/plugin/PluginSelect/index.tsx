@@ -105,7 +105,6 @@ interface PluginMultiSelectProps {
     onMultiChange: (values: string[]) => void;
     id?: string;
     placeholder: string;
-    isDisabled?: boolean;
 
     hasSearch?: boolean;
     searchPlaceholder?: string;
@@ -123,7 +122,6 @@ export const PluginMultiSelect = ({
     onMultiChange,
     id,
     placeholder,
-    isDisabled,
     hasSearch,
     searchPlaceholder = 'Search…',
     ariaLabel,
@@ -149,7 +147,6 @@ export const PluginMultiSelect = ({
                 value={selectedValues}
                 onChange={handleChange}
                 placeholder={placeholder}
-                isDisabled={isDisabled}
                 aria-label={ariaLabel}
             >
                 <Autocomplete.Trigger className={triggerClassName}>
@@ -180,7 +177,6 @@ export const PluginMultiSelect = ({
             value={selectedValues}
             onChange={handleChange}
             placeholder={placeholder}
-            isDisabled={isDisabled}
             aria-label={ariaLabel}
         >
             <Select.Trigger className={triggerClassName}>

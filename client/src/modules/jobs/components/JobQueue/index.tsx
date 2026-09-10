@@ -8,7 +8,7 @@ import type { Job } from '@volt/contracts/modules/jobs/domain';
 
 interface JobQueueProps {
     job: Job;
-    isChild?: boolean;
+    isChild: boolean;
 };
 
 interface StatusConfigEntry {
@@ -37,7 +37,7 @@ const formatDuration = (ms: number) => {
     return `${(ms / 60000).toFixed(1)}m`;
 };
 
-const JobQueue = ({ job, isChild = false }: JobQueueProps) => {
+const JobQueue = ({ job, isChild }: JobQueueProps) => {
     const retryJobAnalysis = useRetryJobAnalysis();
 
     const statusConfig: Partial<Record<JobStatus, StatusConfigEntry>> = {

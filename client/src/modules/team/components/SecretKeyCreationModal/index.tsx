@@ -15,10 +15,6 @@ import type { FormEvent } from 'react';
 
 const SECRET_KEY_CREATION_FORM_ID = 'secret-key-creation-form';
 
-interface SecretKeyCreationModalProps {
-    onCreated?: (secretKey: string) => void;
-}
-
 interface SecretKeyFormErrors {
     name?: string;
     roleId?: string;
@@ -30,7 +26,7 @@ const SECRET_KEY_CREATION_TOAST_OPTIONS = createPromiseToastOptions({
     error: 'Failed to create secret key'
 });
 
-export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProps) => {
+export const SecretKeyCreationModal = () => {
     const selectedTeam = useSelectedTeam();
     const { roles } = useTeamRoleData({ teamId: selectedTeam?._id });
     const createSecretKeyMutation = useCreateSecretKeyMutation();
@@ -82,7 +78,6 @@ export const SecretKeyCreationModal = ({ onCreated }: SecretKeyCreationModalProp
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
                 setGeneratedKey(result.secretKey);
-                onCreated?.(result.secretKey);
             }
         });
     };

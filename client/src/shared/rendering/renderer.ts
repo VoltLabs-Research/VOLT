@@ -240,8 +240,6 @@ export type RendererRuntimeState = RendererRuntimeSettings;
 interface RendererSettingsActions {
     setCreate: (partial: Partial<RendererCreateState>) => void;
     setRuntime: (partial: Partial<RendererRuntimeState>) => void;
-    resetCreate: () => void;
-    resetRuntime: () => void;
     reset: () => void;
 };
 

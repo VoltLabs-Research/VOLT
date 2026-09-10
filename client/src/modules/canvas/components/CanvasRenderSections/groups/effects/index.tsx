@@ -1,4 +1,4 @@
-import { checkbox, valueRow } from '../../../CanvasRenderConfigHelpers';
+import { checkbox, valueRow } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import {
     EFFECT_SECTION_ORDER,

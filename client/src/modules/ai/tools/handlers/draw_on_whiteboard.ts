@@ -90,20 +90,6 @@ const drawOnWhiteboard: ClientToolHandler<DrawOnWhiteboardInput> = {
                 drawn: result.drawn
             }
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Could not draw on whiteboard',
-                icon: 'whiteboard'
-            };
-        }
-        const drawn = (result.data as { drawn?: number } | undefined)?.drawn ?? 0;
-        return {
-            label: `Drew ${drawn} element${drawn === 1 ? '' : 's'} on the whiteboard`,
-            icon: 'whiteboard'
-        };
     }
 };
 

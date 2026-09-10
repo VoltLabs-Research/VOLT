@@ -2,7 +2,7 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { SOCKET_TEAM_EVENTS } from '@/modules/socket/events/team';
 import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
-import { isRunningJobStatus } from '../../utils/analysis-job-status';
+import { isRunningJobStatus } from '@/modules/jobs/utils/job-status-semantics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { Job } from '@volt/contracts/modules/jobs/domain';

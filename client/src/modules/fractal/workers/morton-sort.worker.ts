@@ -13,7 +13,6 @@ interface MortonSortRequest {
 }
 
 interface MortonSortResponse {
-    type: 'morton-sort-result';
     id: number;
     permutation: Uint32Array;
     positions: Float32Array;
@@ -49,7 +48,6 @@ self.addEventListener('message', (event: MessageEvent<MortonSortRequest>) => {
     }));
 
     const response: MortonSortResponse = {
-        type: 'morton-sort-result',
         id: data.id,
         permutation,
         positions: reorderedPositions,

@@ -14,19 +14,15 @@ import type {
 } from '@volt/contracts/modules/team/domain';
 
 const aiIntegrationKeys = buildKeys<{
-    aiIntegrations: void;
     teamAIIntegrations: string;
 }>('team-ai-integrations');
 
 const aiIntegrationModelKeys = buildKeys<{
-    aiIntegrationModels: void;
     teamAIIntegrationModels: string;
 }>('team-ai-integration-models');
 
 export const AI_INTEGRATION_QUERY_KEYS = {
-    aiIntegrations: aiIntegrationKeys.aiIntegrations,
     teamAIIntegrations: aiIntegrationKeys.teamAIIntegrations,
-    aiIntegrationModels: aiIntegrationModelKeys.aiIntegrationModels,
     teamAIIntegrationModels: aiIntegrationModelKeys.teamAIIntegrationModels
 };
 

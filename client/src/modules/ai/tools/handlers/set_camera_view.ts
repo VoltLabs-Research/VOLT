@@ -67,13 +67,6 @@ const setCameraView: ClientToolHandler<SetCameraViewInput> = {
                 up
             }
         };
-    },
-
-    describeEffect(input) {
-        return {
-            label: `Set ${input.view} view`,
-            icon: 'camera'
-        };
     }
 };
 

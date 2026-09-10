@@ -2,8 +2,26 @@ import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
 import type { EditorProps } from '@/modules/plugin/contracts/node-editors';
-import { MODIFIER_EDITOR_DEFAULT_VALUES } from './schema';
-import type { ModifierEditorFormValues } from './schema';
+
+interface ModifierEditorFormValues {
+    key: string;
+    name: string;
+    author: string;
+    license: string;
+    version: string;
+    homepage: string;
+    description: string;
+}
+
+const MODIFIER_EDITOR_DEFAULT_VALUES = {
+    key: '',
+    name: '',
+    author: '',
+    license: '',
+    version: '',
+    homepage: '',
+    description: ''
+} satisfies ModifierEditorFormValues;
 
 const ModifierEditor = ({ node }: EditorProps) => {
     const form = useNodeEditorForm<ModifierEditorFormValues>(node, 'modifier', MODIFIER_EDITOR_DEFAULT_VALUES);

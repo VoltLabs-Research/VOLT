@@ -2,7 +2,7 @@ import { Skeleton } from '@heroui/react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export type ChartStatEmphasis = 'primary' | 'secondary';
+type ChartStatEmphasis = 'primary' | 'secondary';
 
 export interface ChartStat {
     label: string;

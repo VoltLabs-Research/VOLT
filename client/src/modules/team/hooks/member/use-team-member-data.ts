@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 
 interface UseTeamMemberDataOptions {
     teamId?: string | null;
-    page?: number;
     limit?: number;
 }
 
@@ -28,12 +27,5 @@ export default function useTeamMemberData({ teamId, limit = 100 }: UseTeamMember
     });
     const queryState = useTeamQueryState(membersQuery, 'Failed to load team members');
 
-    return {
-        members: queryState.data ?? [],
-        isLoading: queryState.isLoading,
-        error: queryState.error,
-        accessDenied: queryState.accessDenied,
-        accessDeniedMessage: queryState.accessDeniedMessage,
-        refresh: queryState.refresh
-    };
+    return { members: queryState.data ?? [] };
 }

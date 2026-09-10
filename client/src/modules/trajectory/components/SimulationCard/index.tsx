@@ -1,4 +1,3 @@
-import { cn } from '@/shared/utils/cn';
 import { getStageMessage, isProcessingStatus, isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
@@ -9,6 +8,12 @@ import { useMemo } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { useNavigate } from 'react-router-dom';
+
+type ClassValue = string | boolean | undefined | null;
+
+const cn = (...classes: ClassValue[]): string => {
+    return classes.filter(Boolean).join(' ');
+};
 
 const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
     '.footer-options-btn',
@@ -28,8 +33,6 @@ interface SimulationCardProps {
     trajectory: Trajectory;
     isSelected: boolean;
     onMoveToFolder?: (trajectory: Trajectory) => void;
-    onDelete?: (_id: string) => void;
-    disablePrimaryInteraction?: boolean;
     readOnly?: boolean;
     discoverTeamId?: string;
 }
@@ -38,8 +41,6 @@ export default function SimulationCard({
     trajectory,
     isSelected,
     onMoveToFolder,
-    onDelete,
-    disablePrimaryInteraction = false,
     readOnly = false,
     discoverTeamId
 }: SimulationCardProps) {
@@ -66,7 +67,7 @@ export default function SimulationCard({
     }, [jobGroups, trajectory._id]);
     const isProcessing = isProcessingStatus(trajectory.status);
     const isNavigable = isTrajectoryNavigable(trajectory.status);
-    const canOpen = isNavigable && !disablePrimaryInteraction;
+    const canOpen = isNavigable;
     const hasPersistedPreview = trajectory.hasPreview === true;
 
     const { previewBlobUrl } = useTrajectoryPreview({
@@ -149,7 +150,6 @@ export default function SimulationCard({
                 isNavigable={isNavigable}
                 processingMessage={processingMessage}
                 onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(trajectory) : undefined}
-                onDelete={onDelete}
                 readOnly={readOnly}
             />
         </article>

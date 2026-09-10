@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 interface PoolEntry {
     geometry: THREE.BufferGeometry;
-    accessedAt: number;
     byteSize: number;
 }
 
@@ -57,7 +56,6 @@ class GeometryPool {
     get(resourceKey: string): THREE.BufferGeometry | null {
         const entry = this.pool.get(resourceKey);
         if (!entry) return null;
-        entry.accessedAt = Date.now();
         this.pool.delete(resourceKey);
         this.pool.set(resourceKey, entry);
         return entry.geometry;
@@ -73,7 +71,6 @@ class GeometryPool {
         const byteSize = estimateGeometryBytes(geometry);
         this.pool.set(resourceKey, {
             geometry,
-            accessedAt: Date.now(),
             byteSize
         });
         this.currentBytes += byteSize;
