@@ -30,9 +30,6 @@ export interface TeamClusterCredentialService extends TeamClusterService{
     password: string;
 }
 
-export interface TeamClusterDaemonCredentialService extends TeamClusterService{
-    password: string;
-}
 
 export interface TeamClusterQueueConcurrency{
     analysis: number;

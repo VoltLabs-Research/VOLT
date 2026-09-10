@@ -3,7 +3,7 @@ import bus from '@/services/EventBus';
 import type ServerApi from '@/services/ServerApi';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
-export const DEFAULT_PLUGINS = [
+const DEFAULT_PLUGINS = [
     '@voltlabs/polyhedral-template-matching',
     '@voltlabs/adaptive-common-neighbor-analysis',
     '@voltlabs/opendxa',

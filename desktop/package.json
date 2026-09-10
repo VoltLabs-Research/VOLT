@@ -68,7 +68,6 @@
     "octokit": "^5.0.5",
     "p-wait-for": "^6.0.0",
     "react-aria": "^3.51.0",
-    "react-hotkeys-hook": "^5.3.3",
     "sileo": "^0.1.5"
   },
   "devDependencies": {

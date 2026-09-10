@@ -9,8 +9,8 @@ export interface StackPorts{
     daemon: number;
 }
 
-export const DEFAULT_SERVER_PORT = 8100;
-export const DEFAULT_DAEMON_PORT = 18080;
+const DEFAULT_SERVER_PORT = 8100;
+const DEFAULT_DAEMON_PORT = 18080;
 
 const MIN_DAEMON_HEAP_MB = 1024;
 const MAX_DAEMON_HEAP_MB = 8192;
@@ -42,9 +42,9 @@ const baseEnv = (): Record<string, string> => {
     return env;
 };
 
-export const serverDataDir = (stackDataDir: string): string => path.join(stackDataDir, 'server');
+const serverDataDir = (stackDataDir: string): string => path.join(stackDataDir, 'server');
 
-export const daemonDataDir = (stackDataDir: string): string => path.join(stackDataDir, 'daemon');
+const daemonDataDir = (stackDataDir: string): string => path.join(stackDataDir, 'daemon');
 
 export const buildServerEnv = (input: {
     runtime: StackRuntimeLayout;
