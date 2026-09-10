@@ -1,16 +1,16 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
+import { singleton } from '@shared/utilities/singleton';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
+import { getQueueService } from '@shared/queues/QueueService';
+import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
 import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
-import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
-import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
-import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
-import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { BaseWorker } from '@shared/queues/BaseWorker';
+import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
+import type { QueueService } from '@shared/queues/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { isFinalAttempt, withJobLifecycle } from '@shared/queues/with-job-lifecycle';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
 import type { GlbConversionQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
@@ -52,9 +52,10 @@ export class TrajectoryGlbWorker extends BaseWorker<GlbConversionQueueJobPayload
     }
 }
 
-export const trajectoryGlbWorker = defineDaemonWorker({
+export const trajectoryGlbWorker: WorkerBinding = {
     name: 'trajectory-glb',
     scope: 'compute',
     concurrencyKey: 'glbPreprocessing',
-    tracksConcurrencyWhileRunning: true
-}, singleton((): TrajectoryGlbWorker => new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter())));
+    tracksConcurrencyWhileRunning: true,
+    resolve: singleton((): TrajectoryGlbWorker => new TrajectoryGlbWorker(getQueueService(), getQueueScopeLimitsRegistry(), getGlbExporter(), getDaemonJobReporter()))
+};

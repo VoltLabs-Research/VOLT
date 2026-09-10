@@ -1,8 +1,6 @@
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
-const createErrorCodes = <const T extends Record<string, string>>(errorCodes: T): Readonly<T> => Object.freeze(errorCodes);
-
-export const ErrorCodes = createErrorCodes({
+export const ErrorCodes = Object.freeze({
     ANALYSIS_START_EMPTY_EXECUTION_PLAN: 'Analysis::Start::EmptyExecutionPlan',
     ANALYSIS_START_INVALID_ENTRYPOINT: 'Analysis::Start::InvalidEntrypoint',
     ANALYSIS_START_MISSING_TIMESTEP: 'Analysis::Start::MissingTimestep',
@@ -38,6 +36,5 @@ export const ErrorCodes = createErrorCodes({
     FILTER_MASK_LENGTH_MISMATCH: 'Filter::MaskLengthMismatch',
     FILTER_PROPERTY_NOT_FOUND: 'Filter::PropertyNotFound',
     FILTER_STRING_OPERATOR_UNSUPPORTED: 'Filter::StringOperatorUnsupported',
-    LINE_SCENE_SOURCE_NOT_FOUND: 'LineScene::SourceNotFound',
     MODIFIER_VALUES_UNAVAILABLE: 'Modifier::ValuesUnavailable'
-});
+} as const);

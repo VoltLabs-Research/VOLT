@@ -1,4 +1,4 @@
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getQueueService } from '@shared/queues/QueueService';
 import type {
     EnqueuePreprocessingRequest,
     EnqueuePreprocessingResponse,
@@ -6,11 +6,11 @@ import type {
     TrajectoryRuntimeCleanupRequest
 } from '@shared/contracts/types/queue-trajectory';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import { logger } from '@shared/infrastructure/logger';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
+import { logger } from '@shared/logger';
+import type { QueueService } from '@shared/queues/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
 const DEFAULT_TRAJECTORY_GLB_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_BACKOFF_MS') ?? 2000;

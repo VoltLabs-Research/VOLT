@@ -6,8 +6,8 @@ import type {
     AnalysisStartTransportPayload
 } from '@shared/contracts/types/http-analysis';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import { extractDaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
-import { inflateBase64GzipJson } from '@shared/application/utilities/gzip-base64-json';
+import { extractDaemonTraceContext } from '@shared/observability/daemon-instrumentation';
+import { inflateBase64GzipJson } from '@shared/utilities/gzip-base64-json';
 import type { AnalysisDispatcher } from '@modules/analysis/services/AnalysisDispatcher';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
 

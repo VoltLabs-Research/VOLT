@@ -1,6 +1,6 @@
 import si from 'systeminformation';
-import { logger } from '@shared/infrastructure/logger';
-import { selectAvailableMemoryMb } from '@shared/domain/utilities/runtime-capacity';
+import { logger } from '@shared/logger';
+import { selectAvailableMemoryMb } from '@shared/utilities/runtime-capacity';
 
 
 const MEM_SAMPLE_CACHE_TTL_MS = 1_000;

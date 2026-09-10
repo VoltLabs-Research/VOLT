@@ -5,7 +5,7 @@ import path from 'node:path';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
 import type { ConfigurationExporterOptions, ConfigurationExportFormat, ExportExecutionInput } from '@modules/plugin/services/exports/export-node-processor-types';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 
 const BRIDGE_SCRIPT = path.join(__dirname, '../../../trajectory/services/parsing/ase_export_bridge.py');
 const ASE_PYTHON = process.env['ASE_PYTHON'] ??

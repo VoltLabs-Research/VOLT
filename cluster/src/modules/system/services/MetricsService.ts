@@ -1,7 +1,7 @@
 import { TTLCache } from '@isaacs/ttlcache';
 import type { DiskUsageSnapshot, MetricsSnapshot } from '@shared/contracts/types/metrics';
 import * as os from 'node:os';
-import { selectAvailableMemoryBytes } from '@shared/domain/utilities/runtime-capacity';
+import { selectAvailableMemoryBytes } from '@shared/utilities/runtime-capacity';
 import si from 'systeminformation'
 
 interface CloudMetricsSnapshot {

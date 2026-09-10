@@ -1,29 +1,29 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
-import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
+import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getDaemonArtifactReporter } from '@modules/analysis/services/DaemonArtifactReporter';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
-import { DeferJobError } from '@shared/infrastructure/queues/queue-job-handle';
-import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import { DeferJobError } from '@shared/queues/queue-job-handle';
+import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
-import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
-import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
-import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
-import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
+import { BaseWorker } from '@shared/queues/BaseWorker';
+import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
+import { QueueService, getQueueService } from '@shared/queues/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { withJobLifecycle } from '@shared/queues/with-job-lifecycle';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@core/constants/queue-names';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { logAndSwallow } from '@shared/application/utilities/error-message';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { logAndSwallow } from '@shared/utilities/error-message';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import type { ArtifactUploadBatchJobPayload } from '@shared/contracts/types/artifact-upload';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
 import type { BaseArtifactUploadEventData } from '@modules/plugin/events/plugin-events';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import { compressFileWithZstd } from '@shared/infrastructure/storage/storage-codec';
-import { mapLimited } from '@shared/application/utilities/map-limited';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { compressFileWithZstd } from '@shared/storage/storage-codec';
+import { mapLimited } from '@shared/utilities/map-limited';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 
@@ -188,9 +188,10 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
     }
 }
 
-export const artifactUploadWorker = defineDaemonWorker({
+export const artifactUploadWorker: WorkerBinding = {
     name: 'artifact-upload',
     scope: 'compute',
     concurrencyKey: 'artifactUpload',
-    tracksConcurrencyWhileRunning: true
-}, singleton((): ArtifactUploadWorker => new ArtifactUploadWorker(getQueueService(), getQueueScopeLimitsRegistry(), getObjectStore(), getDaemonArtifactReporter(), getDaemonJobReporter())));
+    tracksConcurrencyWhileRunning: true,
+    resolve: singleton((): ArtifactUploadWorker => new ArtifactUploadWorker(getQueueService(), getQueueScopeLimitsRegistry(), getObjectStore(), getDaemonArtifactReporter(), getDaemonJobReporter()))
+};

@@ -1,5 +1,5 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import fs from 'node:fs/promises';
 import { dir as createTempDir } from 'tmp-promise';
 
@@ -13,7 +13,7 @@ import {
 import type { TrajectoryDumpDescriptor } from '@shared/contracts/types/http-workflow';
 import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@shared/contracts/types/http-analysis';
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 
 export interface AnalysisEnvironmentState {
     outputDir: string;

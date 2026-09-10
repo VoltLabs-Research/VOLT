@@ -1,5 +1,5 @@
 import { getDaemonLifecycle } from '@core/bootstrap/DaemonLifecycle';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 
 let shutdownPromise: Promise<void> | null = null;
 

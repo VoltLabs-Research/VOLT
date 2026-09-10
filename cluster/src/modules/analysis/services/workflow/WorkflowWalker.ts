@@ -11,7 +11,7 @@ import type {
 import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 import type { WorkflowScheduler } from '@modules/analysis/services/workflow/WorkflowScheduler';
 import type { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
 

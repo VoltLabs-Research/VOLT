@@ -1,15 +1,15 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import {
     toAutoPreviewRasterClaimKey,
     toParquetDrainClaimKey
-} from '@shared/infrastructure/persistence/daemon-state-keys';
+} from '@shared/persistence/daemon-state-keys';
 import type {
     AnalysisRuntimeCleanupRequest,
     RuntimeStateCleanupResponse
 } from '@shared/contracts/types/http-analysis';
 import type { TrajectoryRuntimeCleanupRequest } from '@shared/contracts/types/queue-trajectory';
-import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 
 export class RuntimeStateCleanupControl {
     constructor(

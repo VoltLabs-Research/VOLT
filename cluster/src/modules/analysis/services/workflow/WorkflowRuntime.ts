@@ -1,4 +1,4 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
 import { getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import { getResultProcessor } from '@modules/plugin/services/exports/ResultProcessor';

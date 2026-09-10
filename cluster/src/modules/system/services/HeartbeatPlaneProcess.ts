@@ -1,9 +1,9 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
-import { singleton } from '@shared/application/utilities/singleton';
+import { errorMessage } from '@shared/utilities/error-message';
+import { singleton } from '@shared/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
-import { PlaneProcessSupervisor } from '@shared/infrastructure/planes/PlaneProcessSupervisor';
-import { logger } from '@shared/infrastructure/logger';
+import { PlaneProcessSupervisor } from '@shared/planes/PlaneProcessSupervisor';
+import { logger } from '@shared/logger';
 import type { ChildProcess } from 'node:child_process';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { RuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';

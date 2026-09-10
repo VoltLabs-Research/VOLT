@@ -13,7 +13,7 @@ import {
     collectPluginReferences,
     readPluginReferenceSelections
 } from '@modules/analysis/services/workflow/nodes/plugin-reference-arguments';
-import { encodeCliArgumentsToken, stringifyWorkflowValue } from '@shared/application/utilities/serialization';
+import { encodeCliArgumentsToken, stringifyWorkflowValue } from '@shared/utilities/serialization';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 
 const SELECTED_TIMESTEPS_ARGUMENT = 'selectedTimesteps';

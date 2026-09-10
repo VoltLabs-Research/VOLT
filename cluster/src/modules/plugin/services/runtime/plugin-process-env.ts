@@ -1,5 +1,5 @@
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
-import { resolvePluginNativeThreadBudget, resolveDuckDbMemoryLimitMb } from '@shared/domain/utilities/runtime-capacity';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { resolvePluginNativeThreadBudget, resolveDuckDbMemoryLimitMb } from '@shared/utilities/runtime-capacity';
 
 const resolveNativeThreadCount = (): number =>
     readPositiveIntegerEnv('PLUGIN_PROCESS_DEFAULT_NATIVE_THREADS') ?? resolvePluginNativeThreadBudget();

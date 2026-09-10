@@ -1,4 +1,4 @@
-import { createDomainEvent } from '@shared/domain/events/create-domain-event';
+import { createDomainEvent } from '@shared/events/create-domain-event';
 import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
 
 export type TimedTrajectoryJobEventData = JobIdentity;

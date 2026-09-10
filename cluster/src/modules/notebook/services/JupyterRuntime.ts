@@ -1,6 +1,6 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
-import { DockerRuntime, getDockerRuntime } from '@shared/infrastructure/runtime/DockerRuntime';
+import { DockerRuntime, getDockerRuntime } from '@shared/runtime/DockerRuntime';
 import {
     HTTP_PORTS_LABEL_KEY,
     READINESS_HTTP_PATH_LABEL_KEY,

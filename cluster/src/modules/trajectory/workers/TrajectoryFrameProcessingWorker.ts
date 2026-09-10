@@ -1,38 +1,39 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
+import { getQueueService } from '@shared/queues/QueueService';
+import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { getFilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import { getTrajectoryFrameStore } from '@modules/trajectory/services/storage/ParquetTrajectoryFrameStore';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import { toParquetDrainClaimKey } from '@shared/infrastructure/persistence/daemon-state-keys';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import { toParquetDrainClaimKey } from '@shared/persistence/daemon-state-keys';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
-import { logger } from '@shared/infrastructure/logger';
-import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
-import { createLifecycleStatusReporter } from '@shared/infrastructure/queues/create-status-reporter';
-import type { QueueService } from '@shared/infrastructure/queues/QueueService';
-import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
-import { isFinalAttempt, withJobLifecycle } from '@shared/infrastructure/queues/with-job-lifecycle';
-import { listLiveJobsByKeyPrefix } from '@shared/infrastructure/queues/queue-job-store';
+import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
+import { logger } from '@shared/logger';
+import { BaseWorker } from '@shared/queues/BaseWorker';
+import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
+import type { QueueService } from '@shared/queues/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
+import { isFinalAttempt, withJobLifecycle } from '@shared/queues/with-job-lifecycle';
+import { getQueueJobStore } from '@shared/queues/queue-job-store';
 import {
     TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME,
     toTrajectoryFrameJobKey,
     toTrajectoryFrameJobKeyPrefix
 } from '@core/constants/queue-names';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import type { LocalClusterObjectStoreGateway, ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
+import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
+import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 
-import type { DaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import {
     downloadTrajectoryDumps,
     type TrajectoryDumpReference
@@ -44,8 +45,8 @@ import {
     toTrajectoryFrameDumpObjectKey,
     toTrajectoryFrameModelObjectKey,
     toTrajectoryObjectKeyPrefix
-} from '@shared/infrastructure/storage/storage-codec';
-import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
+} from '@shared/storage/storage-codec';
+import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import { readFrame } from '@voltstack/lammps-io';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
@@ -61,7 +62,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     constructor(
         queueService: QueueService,
         queueScopeLimitsRegistry: QueueScopeLimitsRegistry,
-        private readonly localObjectStore: LocalClusterObjectStoreGateway,
+        private readonly localObjectStore: FilesystemObjectStore,
         private readonly objectStore: ClusterObjectStore,
         private readonly trajectoryRasterQueue: TrajectoryRasterQueue,
         private readonly trajectoryFrameStore: TrajectoryFrameStore,
@@ -164,7 +165,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         const jobKeyPrefix = toTrajectoryFrameJobKeyPrefix(trajectoryId);
         const selfJobKey = toTrajectoryFrameJobKey(trajectoryId, payload.timestep);
 
-        const liveJobs = await listLiveJobsByKeyPrefix(TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, jobKeyPrefix);
+        const liveJobs = await getQueueJobStore().listLiveJobsByKeyPrefix(TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, jobKeyPrefix);
         const liveSiblings = liveJobs.filter((job) => job.jobKey !== selfJobKey);
 
         if (liveSiblings.some((job) => job.state === 'waiting')) return;
@@ -292,9 +293,10 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     }
 }
 
-export const trajectoryFrameProcessingWorker = defineDaemonWorker({
+export const trajectoryFrameProcessingWorker: WorkerBinding = {
     name: 'trajectory-frame-processing',
     scope: 'always',
     concurrencyKey: 'glbPreprocessing',
-    tracksConcurrencyWhileRunning: false
-}, singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getFilesystemObjectStore(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getDaemonStateStore(), getDaemonJobReporter())));
+    tracksConcurrencyWhileRunning: false,
+    resolve: singleton((): TrajectoryFrameProcessingWorker => new TrajectoryFrameProcessingWorker(getQueueService(), getQueueScopeLimitsRegistry(), getFilesystemObjectStore(), getObjectStore(), getTrajectoryRasterQueue(), getTrajectoryFrameStore(), getDaemonStateStore(), getDaemonJobReporter()))
+};

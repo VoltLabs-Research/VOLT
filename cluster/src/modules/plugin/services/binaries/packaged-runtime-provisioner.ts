@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { PluginExecutionRuntime } from '@shared/contracts/types/plugin-execution';
-import { sharedLibraryPathEnv } from '@shared/infrastructure/utilities/process-path';
+import { sharedLibraryPathEnv } from '@shared/utilities/process-path';
 import { ensureExtractedProject } from '@modules/plugin/services/binaries/zip-project-extractor';
 import { resolvePackagedEntrypoint } from '@modules/plugin/services/binaries/extracted-entrypoint-resolver';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';

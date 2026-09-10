@@ -3,7 +3,7 @@ import { getTrajectoryParser } from '@modules/trajectory/services/parsing/Trajec
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import { getFilterEvaluator } from '@modules/trajectory/services/FilterEvaluator';
 import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import type {

@@ -5,8 +5,8 @@ import type {
     ArtifactStageBufferInput,
     ArtifactUploadBatchEnqueueResult
 } from '@shared/contracts/types/artifact-upload';
-import { sanitizeFileName } from '@shared/infrastructure/utilities/sanitize-file-name';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { sanitizeFileName } from '@shared/utilities/sanitize-file-name';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 
 interface DebugArtifactRecord {
     path: string;

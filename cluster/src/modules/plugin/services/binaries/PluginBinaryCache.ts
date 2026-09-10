@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import type {
     PluginExecutionRuntime,
     PluginExecutionRuntimeInput
 } from '@shared/contracts/types/plugin-execution';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getConfig } from '@core/config/daemon';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { EntrypointType } from '@shared/contracts/types/http-runtime';

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
 import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject, JsonValue } from '@shared/contracts/types/json';

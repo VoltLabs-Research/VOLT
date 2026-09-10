@@ -1,11 +1,11 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import type { SharedFrameColumn, SharedFramePublishInput } from '@shared/contracts/types/shared-frame';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { PluginFrameColumnBinding } from '@shared/contracts/types/plugin-batch';
-import { safeRemovePath } from '@shared/infrastructure/utilities/safe-remove-path';
+import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 
 const DEFAULT_FRAME_MMAP_ROOT = path.resolve(process.cwd(), 'storage', 'plugin-frames');
 const FRAME_MMAP_ROOT_ENV = 'PLUGIN_FRAME_MMAP_DIR';

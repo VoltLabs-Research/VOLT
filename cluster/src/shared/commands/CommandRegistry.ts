@@ -3,10 +3,10 @@ import {
     type CommandGroupFactory,
     type CommandMethodMetadata
 } from '@shared/commands/command';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { CommandTransport } from '@shared/contracts/channel/command-transport';
 
-export interface CommandResult {
+interface CommandResult {
     status?: number;
     data?: object | null;
     body?: Buffer;

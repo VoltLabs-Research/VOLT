@@ -1,7 +1,7 @@
 import type { EntrypointType } from '@shared/contracts/types/http-runtime';
 import type { NestedPluginDefinition, PluginReferenceExecutionRequest, TrajectoryFrame, WorkflowDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowValueMap } from '@shared/contracts/types/workflow.types';
-import type { DaemonTraceContext } from '@shared/infrastructure/observability/daemon-instrumentation';
+import type { DaemonTraceContext } from '@shared/observability/daemon-instrumentation';
 import type { JobIdentity } from '@shared/contracts/types/job-identity';
 
 type WithTrace<T> = T & { traceContext?: DaemonTraceContext };

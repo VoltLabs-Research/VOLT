@@ -1,12 +1,12 @@
-import { singleton } from '@shared/application/utilities/singleton';
+import { singleton } from '@shared/utilities/singleton';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { dir as createTempDir } from 'tmp-promise';
 
 import { DAEMON_PATHS } from '@core/config/paths';
 import { ARTIFACT_UPLOAD_QUEUE_NAME } from '@core/constants/queue-names';
-import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
-import { sanitizeFileName } from '@shared/infrastructure/utilities/sanitize-file-name';
+import { QueueService, getQueueService } from '@shared/queues/QueueService';
+import { sanitizeFileName } from '@shared/utilities/sanitize-file-name';
 import type {
     ArtifactUploadBatch,
     ArtifactUploadBatchContext,

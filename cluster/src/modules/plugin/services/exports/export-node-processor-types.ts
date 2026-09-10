@@ -2,7 +2,7 @@ import type { AnalysisExposureDefinition } from '@shared/contracts/types/http-an
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { JsonObject } from '@shared/contracts/types/json';
 import type { JobIdentity } from '@shared/contracts/types/job-identity';
-import type { GeometryBudget } from '@shared/domain/octree';
+import type { GeometryBudget } from '@shared/octree';
 import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 import path from 'node:path';
@@ -88,7 +88,7 @@ export interface AtomisticAtom {
     base_color?: [number, number, number] | [number, number, number, number];
 }
 
-export const ATOMISTIC_PARQUET_SOURCE_KEY = PARQUET_SOURCE_KEY;
+const ATOMISTIC_PARQUET_SOURCE_KEY = PARQUET_SOURCE_KEY;
 
 interface AtomisticParquetSourcePayload {
     [ATOMISTIC_PARQUET_SOURCE_KEY]: string;
@@ -154,13 +154,13 @@ export interface ChartExportOptions {
     showGrid?: boolean;
 }
 
-export type PanelRgba = [number, number, number, number];
+type PanelRgba = [number, number, number, number];
 export type PanelScalar = string | number | boolean | null;
-export type PanelColumnFormat = 'integer' | 'decimal' | 'percent';
+type PanelColumnFormat = 'integer' | 'decimal' | 'percent';
 
 export type PanelNumber = number | { source: string };
 
-export interface PanelColumnDeclaration {
+interface PanelColumnDeclaration {
     column: string;
     label: string;
     format?: PanelColumnFormat;
@@ -176,18 +176,18 @@ export interface PanelTableBlockDeclaration {
     colors?: Record<string, PanelRgba>;
 }
 
-export interface PanelCategoricalAxisDeclaration {
+interface PanelCategoricalAxisDeclaration {
     kind: 'categories';
     source: string;
 }
 
-export interface PanelIntervalAxisDeclaration {
+interface PanelIntervalAxisDeclaration {
     kind: 'interval';
     start: PanelNumber;
     end: PanelNumber;
 }
 
-export interface PanelChartMarkerDeclaration {
+interface PanelChartMarkerDeclaration {
     value: PanelNumber;
     label?: string;
     style?: 'line' | 'zone';

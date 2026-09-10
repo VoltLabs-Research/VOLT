@@ -1,5 +1,5 @@
-import { logger } from '@shared/infrastructure/logger';
-import { isRecord } from '@shared/domain/utilities/is-record';
+import { logger } from '@shared/logger';
+import { isRecord } from '@shared/utilities/is-record';
 import type { AnalysisExposureDefinition, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { JsonObject } from '@shared/contracts/types/json';
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';

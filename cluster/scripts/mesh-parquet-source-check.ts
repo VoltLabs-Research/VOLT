@@ -29,7 +29,10 @@ const run = async (): Promise<void> => {
 
     const { input, staged } = buildExportInput('MeshExporter', meshFile);
     const produced = await exportMeshArtifact(
-        { ...input, outputFilePath: meshFile },
+        {
+            ...input,
+            outputFilePath: meshFile
+        },
         meshSection as unknown as MeshInput,
         'mesh-parquet-source-check.glb',
         'cluster-1',

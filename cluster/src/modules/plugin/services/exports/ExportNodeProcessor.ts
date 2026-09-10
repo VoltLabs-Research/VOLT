@@ -1,4 +1,4 @@
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 
 import { buildObjectPath, resolveExporterEntries } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { exportAtomisticArtifact } from '@modules/plugin/services/exports/atomistic-exporter';
@@ -25,7 +25,7 @@ import type {
     PanelExportOptions
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject } from '@shared/contracts/types/json';
-import { isRecord } from '@shared/domain/utilities/is-record';
+import { isRecord } from '@shared/utilities/is-record';
 
 const CHART_TYPES: ReadonlySet<string> = new Set<ChartExportOptions['chartType']>(['line', 'bar', 'scatter', 'area']);
 const CONFIGURATION_FORMATS: ReadonlySet<string> = new Set<ConfigurationExportFormat>(['lammps-dump', 'lammps-data', 'extxyz', 'poscar', 'cif']);

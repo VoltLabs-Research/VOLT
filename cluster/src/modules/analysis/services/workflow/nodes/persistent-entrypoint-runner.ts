@@ -1,4 +1,4 @@
-import { toError } from '@shared/application/utilities/error-message';
+import { toError } from '@shared/utilities/error-message';
 import { EntrypointType } from '@shared/contracts/types/http-runtime';
 import type {
     PersistentPluginInvocationInput,
@@ -18,7 +18,7 @@ import {
     buildEntrypointNodeOutput,
     resolveNonZeroExitMessage
 } from '@modules/analysis/services/workflow/nodes/entrypoint-process-outcome';
-import { isRecord } from '@shared/domain/utilities/is-record';
+import { isRecord } from '@shared/utilities/is-record';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 

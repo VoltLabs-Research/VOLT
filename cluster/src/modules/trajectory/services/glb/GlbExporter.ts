@@ -1,9 +1,9 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -11,8 +11,8 @@ import type { RasterizeTrajectoryRequest } from '@shared/contracts/types/queue-t
 import type { TrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
 import type { TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { compressFileWithZstd } from '@shared/infrastructure/storage/storage-codec';
-import { withNativeProcessingTempDir } from '@shared/infrastructure/utilities/native-temp-dir';
+import { compressFileWithZstd } from '@shared/storage/storage-codec';
+import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import spatialAssembler from '@voltstack/spatial-assembler';
 
 interface PreprocessTrajectoryInput {

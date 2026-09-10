@@ -1,4 +1,4 @@
-import { FilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
+import { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { Readable } from 'node:stream';
 import fs from 'node:fs/promises';

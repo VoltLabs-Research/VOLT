@@ -1,7 +1,7 @@
 import jsonata from 'jsonata';
 import { TTLCache } from '@isaacs/ttlcache';
 
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type {
     WorkflowExecutionContext,
     WorkflowGraph,
@@ -10,8 +10,8 @@ import type {
     WorkflowValue
 } from '@shared/contracts/types/workflow.types';
 import { WorkflowNodeType as WorkflowNodeTypeEnum } from '@shared/contracts/types/workflow.types';
-import { stringifyWorkflowValue } from '@shared/application/utilities/serialization';
-import { isRecord } from '@shared/domain/utilities/is-record';
+import { stringifyWorkflowValue } from '@shared/utilities/serialization';
+import { isRecord } from '@shared/utilities/is-record';
 
 interface WorkflowValueResolverOptions {
     outputs: Map<string, WorkflowNodeOutput>;

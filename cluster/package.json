@@ -55,7 +55,6 @@
     "@types/unzipper": "^0.10.11",
     "@types/ws": "^8.18.1",
     "eslint": "^9.39.5",
-    "node-gyp": "^10.0.0",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

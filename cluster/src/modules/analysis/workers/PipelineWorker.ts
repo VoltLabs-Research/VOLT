@@ -1,18 +1,18 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
-import { getQueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
+import { singleton } from '@shared/utilities/singleton';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
+import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
 import { getAnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import { getArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
 import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { getWorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import { getDumpTransformService } from '@modules/analysis/services/dump-transform';
 import { getPipelineSharedExposureStore } from '@modules/analysis/services/PipelineSharedExposureStore';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
-import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
+import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
-import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
-import { QueueService, getQueueService } from '@shared/infrastructure/queues/QueueService';
-import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/infrastructure/queues/QueueScopeLimitsRegistry';
+import { BaseWorker } from '@shared/queues/BaseWorker';
+import { QueueService, getQueueService } from '@shared/queues/QueueService';
+import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { PIPELINE_QUEUE_NAME } from '@core/constants/queue-names';
 import { AnalysisEnvironment, getAnalysisEnvironment } from '@modules/analysis/services/workflow/AnalysisEnvironment';
@@ -61,9 +61,10 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
     }
 }
 
-export const pipelineWorker = defineDaemonWorker({
+export const pipelineWorker: WorkerBinding = {
     name: 'pipeline',
     scope: 'compute',
     concurrencyKey: 'analysis',
-    tracksConcurrencyWhileRunning: true
-}, singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore())));
+    tracksConcurrencyWhileRunning: true,
+    resolve: singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore()))
+};

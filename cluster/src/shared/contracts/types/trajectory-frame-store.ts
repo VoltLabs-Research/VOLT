@@ -3,8 +3,8 @@ import type {
     ColumnDType,
     TypedColumn,
     ElementTableEntry
-} from '@shared/domain/catalog/element-table';
-import type { LammpsUnits } from '@shared/domain/catalog/units';
+} from '@shared/catalog/element-table';
+import type { LammpsUnits } from '@shared/catalog/units';
 
 export interface TrajectoryFrameData {
     timestep: number;

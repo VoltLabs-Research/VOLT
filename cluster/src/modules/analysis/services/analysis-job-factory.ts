@@ -1,4 +1,4 @@
-import { toTrajectoryFrameDumpObjectKey } from '@shared/infrastructure/storage/storage-codec';
+import { toTrajectoryFrameDumpObjectKey } from '@shared/storage/storage-codec';
 import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
 import type {
     AnalysisJobMetadata,

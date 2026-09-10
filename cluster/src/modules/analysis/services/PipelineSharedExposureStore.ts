@@ -1,5 +1,5 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { getObjectStore } from '@shared/infrastructure/storage/ClusterObjectStore';
+import { singleton } from '@shared/utilities/singleton';
+import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';

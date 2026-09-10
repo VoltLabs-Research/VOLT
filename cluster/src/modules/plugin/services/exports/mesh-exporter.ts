@@ -1,6 +1,6 @@
 import { DuckDBConnection } from '@duckdb/node-api';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
 import { readMeshParquetSource } from '@modules/plugin/services/exports/export-node-processor-types';

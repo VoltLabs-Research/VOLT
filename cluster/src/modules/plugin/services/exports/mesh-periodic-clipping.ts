@@ -1,4 +1,4 @@
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import type { MeshDomain } from '@shared/contracts/types/workflow-exposure';
 
 export interface ClippedMesh {

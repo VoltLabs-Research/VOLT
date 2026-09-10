@@ -1,6 +1,6 @@
 import { DuckDBConnection } from '@duckdb/node-api';
 import path from 'node:path';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 import { quoteIdentifier, sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import type { PerAtomParquetSource } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type { JsonObject } from '@shared/contracts/types/json';

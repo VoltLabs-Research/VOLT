@@ -1,13 +1,13 @@
-import { toError } from '@shared/application/utilities/error-message';
-import { defineDaemonWorker } from '@shared/infrastructure/queues/worker-registry';
-import { singleton } from '@shared/application/utilities/singleton';
+import { toError } from '@shared/utilities/error-message';
+import type { WorkerBinding } from '@shared/queues/worker-registry';
+import { singleton } from '@shared/utilities/singleton';
 import { getPluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
-import { logger } from '@shared/infrastructure/logger';
-import { BaseWorker } from '@shared/infrastructure/queues/BaseWorker';
-import { QueueService, type QueuePayload, getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { logger } from '@shared/logger';
+import { BaseWorker } from '@shared/queues/BaseWorker';
+import { QueueService, type QueuePayload, getQueueService } from '@shared/queues/QueueService';
 import { PLUGIN_WARMUP_QUEUE_NAME } from '@core/constants/queue-names';
 import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
-import type { QueueJobHandle } from '@shared/infrastructure/queues/queue-job-handle';
+import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
 export interface PluginWarmupJobPayload extends QueuePayload {
     pluginId: string;
@@ -69,9 +69,10 @@ export class PluginWarmupWorker extends BaseWorker<PluginWarmupJobPayload> {
     }
 }
 
-export const pluginWarmupWorker = defineDaemonWorker({
+export const pluginWarmupWorker: WorkerBinding = {
     name: 'plugin-warmup',
     scope: 'compute',
     concurrencyKey: 'pluginWarmup',
-    tracksConcurrencyWhileRunning: true
-}, singleton((): PluginWarmupWorker => new PluginWarmupWorker(getQueueService(), getPluginBinaryCache())));
+    tracksConcurrencyWhileRunning: true,
+    resolve: singleton((): PluginWarmupWorker => new PluginWarmupWorker(getQueueService(), getPluginBinaryCache()))
+};

@@ -1,7 +1,7 @@
-import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
+import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/persistence/DataSource';
 import { getDaemonEntities } from '@core/bootstrap/entities';
-import { getDaemonStateStore } from '@shared/infrastructure/persistence/DaemonStateStore';
-import * as store from '@shared/infrastructure/queues/queue-job-store';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import { getQueueJobStore } from '@shared/queues/queue-job-store';
 import { createQaCheckHarness } from './qa-check-harness';
 
 const { check, finish } = createQaCheckHarness(52);
@@ -12,6 +12,7 @@ const JOB_KEYS = ['qa-1', 'qa-2', 'qa-3', 'qa-retry', 'qa-stall'];
 const main = async () => {
     await connectDaemonDataSource(getDaemonEntities());
     const s = getDaemonStateStore();
+    const store = getQueueJobStore();
     const Q = 'analysis_processing';
     const req = (jobKey: string, attempts = 1, backoff: string | null = null, delay: number | null = null) =>
         ({ queue: Q, jobKey, payload: { jobId: jobKey, n: 1 } as never, maxAttempts: attempts, backoffType: backoff, backoffDelayMs: delay });
@@ -32,7 +33,7 @@ const main = async () => {
     await s.appendListWithTtl('lst', ['z'], 60);
     check('appendListWithTtl reemplaza la lista', await s.popListHead('lst'), 'z');
     check('popListHead en lista vacia', await s.popListHead('lst'), null);
-    check('sweep no revienta', typeof await (await import('@shared/infrastructure/persistence/DaemonStateStore')).sweepExpiredDaemonState(), 'number');
+    check('sweep no revienta', typeof await (await import('@shared/persistence/DaemonStateStore')).sweepExpiredDaemonState(), 'number');
 
     console.log('\n== queue-job-store ==');
     for (const k of JOB_KEYS) await store.removeJobByKey(k);

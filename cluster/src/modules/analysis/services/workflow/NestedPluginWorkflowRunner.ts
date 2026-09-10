@@ -1,4 +1,4 @@
-import { stringifyWorkflowValue } from '@shared/application/utilities/serialization';
+import { stringifyWorkflowValue } from '@shared/utilities/serialization';
 import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { WorkflowPlanner } from '@modules/analysis/services/workflow/WorkflowPlanner';
 import { WorkflowScheduler } from '@modules/analysis/services/workflow/WorkflowScheduler';

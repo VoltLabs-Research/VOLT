@@ -1,4 +1,4 @@
-export type NotebookContainerStage = 'creating' | 'starting' | 'ready';
+type NotebookContainerStage = 'creating' | 'starting' | 'ready';
 
 export interface NotebookContainerResources {
     cpus: number;
