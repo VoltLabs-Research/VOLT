@@ -38,7 +38,6 @@ export default function useGlbScene(
     const { scene, camera, gl, invalidate } = useThree();
 
     const modelRef = useRef<THREE.Object3D | null>(null);
-    const modelGenerationRef = useRef(0);
     const [modelBounds, setLocalModelBounds] = useState<BoundsInfo | null>(null);
 
     const engineRef = useRef<ReturnType<typeof createFractalEngine> | null>(null);
@@ -88,7 +87,6 @@ export default function useGlbScene(
                         parentChildren: parent?.children.length ?? 0,
                         modelChildren: modelObj?.children.length ?? 0
                     });
-                    modelGenerationRef.current += 1;
                     const engine = engineRef.current;
                     if (engine) {
                         engine.updatePointCloudSettings(
@@ -253,7 +251,6 @@ export default function useGlbScene(
 
     return {
         modelBounds: modelBounds ?? params.activeModelBounds ?? null,
-        loadError: loadingState.error,
         deselect: interaction.deselect,
         setSelectedObject: interaction.setSelectedObject,
         onHoverChange: interaction.onHoverChange

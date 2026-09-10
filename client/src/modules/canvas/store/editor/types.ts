@@ -1,4 +1,4 @@
-import type { ConfigurationSlice } from '../configuration-slice';
+import type { ConfigurationSlice } from './configuration-slice';
 import type { CameraSlice } from './camera-slice';
 import type { EffectsSlice } from './effects-slice';
 import type { LightsSlice } from './lights-slice';

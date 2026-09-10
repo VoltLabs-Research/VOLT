@@ -6,12 +6,10 @@ export const DASHBOARD_LAYOUT_EVENTS = {
 } as const;
 
 interface DashboardWorkspaceChromeRegistryEntry {
-    collapseSidebar: boolean;
     hideHeader: boolean;
 }
 
 interface DashboardWorkspaceChromeState {
-    sidebarCollapsed: boolean;
     headerHidden: boolean;
 }
 
@@ -24,7 +22,6 @@ const buildDashboardWorkspaceChromeState = (): DashboardWorkspaceChromeState => 
     const entries = [...dashboardWorkspaceChromeEntries.values()];
 
     return {
-        sidebarCollapsed: entries.some((entry) => entry.collapseSidebar),
         headerHidden: entries.some((entry) => entry.hideHeader)
     };
 };
@@ -55,7 +52,6 @@ export const registerDashboardWorkspaceChrome = (
     options: DashboardWorkspaceChromeOptions
 ): void => {
     dashboardWorkspaceChromeEntries.set(registrationId, {
-        collapseSidebar: Boolean(options.collapseSidebar),
         hideHeader: Boolean(options.hideHeader)
     });
 

@@ -8,7 +8,7 @@ export interface PaginationRequest {
     limit: number;
 };
 
-export type InfiniteQueryOptions<TData> = Omit<
+type InfiniteQueryOptions<TData> = Omit<
     UseInfiniteQueryOptions<TData, Error, InfiniteData<TData, number>, QueryKey, number>,
     'queryKey' | 'queryFn' | 'initialPageParam' | 'getNextPageParam'
 >;

@@ -11,11 +11,10 @@ interface UserMenuPopoverProps {
     onSettingsClick: () => void;
     onSignOut: () => void;
     isSigningOut?: boolean;
-    trigger?: ReactNode;
     collapsed?: boolean;
 }
 
-const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger, collapsed = false }: UserMenuPopoverProps) => {
+const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, collapsed = false }: UserMenuPopoverProps) => {
     const user = useCurrentUser();
     const singleTenant = useSingleTenant();
 
@@ -29,11 +28,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
     );
 
     if (collapsed) {
-        triggerContent = <UserAvatar user={user} size='sm' />;
-    }
-
-    if (trigger) {
-        triggerContent = trigger;
+        triggerContent = <UserAvatar user={user} />;
     }
 
     return (

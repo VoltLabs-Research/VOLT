@@ -41,7 +41,7 @@ const MarketplaceDetail = ({
     const facts: DetailFact[] = [
         item.latest ? { label: 'Latest version', value: item.latest } : undefined,
         installedVersion
-            ? { label: 'Installed version', value: installedVersion || 'unknown' }
+            ? { label: 'Installed version', value: installedVersion }
             : undefined,
         { label: 'Author', value: `@${item.username}` },
         { label: 'Package', value: item.fullName },

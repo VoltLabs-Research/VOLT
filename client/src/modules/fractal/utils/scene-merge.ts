@@ -1,7 +1,7 @@
 import { Box3, Vector3 } from 'three';
 import type { Object3D } from 'three';
 
-export const MERGE_OVERLAP_RATIO_THRESHOLD = 0.5;
+const MERGE_OVERLAP_RATIO_THRESHOLD = 0.5;
 
 export interface MergeCandidate {
     sceneKey: string;
@@ -42,7 +42,7 @@ export const measureWorldCellBox = (
     return target.copy(localBounds).applyMatrix4(object.matrixWorld);
 };
 
-export const getCellOverlapRatio = (left: Box3, right: Box3): number => {
+const getCellOverlapRatio = (left: Box3, right: Box3): number => {
     const smallestVolume = Math.min(getBoxVolume(left), getBoxVolume(right));
     if (smallestVolume <= 0) {
         return 0;
@@ -52,21 +52,20 @@ export const getCellOverlapRatio = (left: Box3, right: Box3): number => {
     return getBoxVolume(_intersection) / smallestVolume;
 };
 
-export const getCellSnapDelta = (fromBox: Box3, toBox: Box3): Vector3 => {
+const getCellSnapDelta = (fromBox: Box3, toBox: Box3): Vector3 => {
     fromBox.getCenter(_draggedCenter);
     return toBox.getCenter(new Vector3()).sub(_draggedCenter);
 };
 
 export const findMergeCandidate = (
     draggedBox: Box3,
-    cellBoxes: ReadonlyMap<string, Box3>,
-    threshold: number = MERGE_OVERLAP_RATIO_THRESHOLD
+    cellBoxes: ReadonlyMap<string, Box3>
 ): MergeCandidate | null => {
     let candidate: MergeCandidate | null = null;
 
     for (const [sceneKey, cellBox] of cellBoxes) {
         const overlapRatio = getCellOverlapRatio(draggedBox, cellBox);
-        if (overlapRatio < threshold) {
+        if (overlapRatio < MERGE_OVERLAP_RATIO_THRESHOLD) {
             continue;
         }
 
@@ -87,8 +86,7 @@ export const findMergeCandidate = (
 export const overlapsAnyCell = (
     box: Box3,
     cellBoxes: ReadonlyMap<string, Box3>,
-    sceneKeys: Iterable<string>,
-    threshold: number = MERGE_OVERLAP_RATIO_THRESHOLD
+    sceneKeys: Iterable<string>
 ): boolean => {
     for (const sceneKey of sceneKeys) {
         const cellBox = cellBoxes.get(sceneKey);
@@ -96,7 +94,7 @@ export const overlapsAnyCell = (
             continue;
         }
 
-        if (getCellOverlapRatio(box, cellBox) >= threshold) {
+        if (getCellOverlapRatio(box, cellBox) >= MERGE_OVERLAP_RATIO_THRESHOLD) {
             return true;
         }
     }

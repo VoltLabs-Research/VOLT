@@ -7,7 +7,7 @@ import WindowControls from '@/shared/ui/components/WindowControls';
 import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Button, cn } from '@heroui/react';
 
@@ -24,8 +24,7 @@ interface TopToolbarShareInfo {
 
 interface TopToolbarProps {
     trajectory?: Trajectory | null;
-    localGlbMode?: boolean;
-    canMutateCanvas?: boolean;
+    canMutateCanvas: boolean;
     workspacePeers?: WorkspacePresenceUser[];
     workspaceActiveOwnerId?: string;
     onSelectWorkspacePeer?: (peerId: string) => void;
@@ -35,8 +34,7 @@ interface TopToolbarProps {
 
 const TopToolbar = ({
     trajectory,
-    localGlbMode = false,
-    canMutateCanvas = true,
+    canMutateCanvas,
     workspacePeers,
     workspaceActiveOwnerId,
     onSelectWorkspacePeer,
@@ -47,18 +45,6 @@ const TopToolbar = ({
     const user = useCurrentUser();
 
     const handleBack = useCallback(() => navigate('/dashboard'), [navigate]);
-
-    const selfPresence = useMemo<WorkspacePresenceUser | undefined>(() => {
-        if (!user) return undefined;
-        return {
-            id: user._id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            avatar: user.avatar,
-            isAnonymous: false
-        };
-    }, [user]);
 
     const singleTenant = useSingleTenant();
     const canShowPeers = !singleTenant && Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
@@ -100,7 +86,6 @@ const TopToolbar = ({
                     {canShowPeers && onSelectWorkspacePeer && (
                         <WorkspacePeerAvatars
                             peers={workspacePeers ?? []}
-                            self={localGlbMode ? undefined : selfPresence}
                             activeOwnerId={workspaceActiveOwnerId}
                             onSelectPeer={onSelectWorkspacePeer}
                         />

@@ -8,7 +8,7 @@ import {
 } from '@/shared/ui/utils/field-density';
 
 import type { Key } from 'react';
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 
 interface SelectedTimestepsFieldProps {
     availableTimesteps: number[];

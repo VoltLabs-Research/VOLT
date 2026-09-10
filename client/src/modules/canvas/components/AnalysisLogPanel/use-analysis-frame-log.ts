@@ -2,7 +2,7 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { useCanvasAccessStore, useCanvasCanCollaborate, useCanvasDataAccess } from '@/modules/canvas/api/access/use-canvas-access-store';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type {
     AnalysisFrameLogStatus,
@@ -23,7 +23,7 @@ interface AnalysisLogChunkEvent {
 interface UseAnalysisFrameLogOptions {
     analysisId?: string;
     timestep?: number;
-    active?: boolean;
+    active: boolean;
     live?: boolean;
 }
 
@@ -31,9 +31,6 @@ interface UseAnalysisFrameLogResult {
     isLoading: boolean;
     error: string | null;
     segments: AnalysisLogSegment[];
-    status: AnalysisFrameLogStatus;
-    sealed: boolean;
-    truncated: boolean;
     nextCursor: string | null;
 }
 
@@ -41,16 +38,13 @@ const initialState: UseAnalysisFrameLogResult = {
     isLoading: false,
     error: null,
     segments: [],
-    status: 'pending',
-    sealed: false,
-    truncated: false,
     nextCursor: null
 };
 
 const useAnalysisFrameLog = ({
     analysisId,
     timestep,
-    active = true,
+    active,
     live = false
 }: UseAnalysisFrameLogOptions): UseAnalysisFrameLogResult => {
     const dataAccess = useCanvasDataAccess();
@@ -79,9 +73,6 @@ const useAnalysisFrameLog = ({
             isLoading: true,
             error: null,
             segments: [],
-            status: 'pending',
-            sealed: false,
-            truncated: false,
             nextCursor: null
         }));
         setHasLoadedInitial(false);
@@ -102,9 +93,6 @@ const useAnalysisFrameLog = ({
                 isLoading: false,
                 error: null,
                 segments: response.segments,
-                status: response.status,
-                sealed: response.sealed,
-                truncated: response.truncated,
                 nextCursor: response.nextCursor
             });
             setHasLoadedInitial(true);
@@ -137,9 +125,6 @@ const useAnalysisFrameLog = ({
             isLoading: false,
             error: null,
             segments: current.segments.concat(event.segments),
-            status: event.status,
-            sealed: event.sealed,
-            truncated: event.truncated,
             nextCursor: event.cursor
         }));
     }, {
@@ -168,11 +153,10 @@ const useAnalysisFrameLog = ({
                 timestep
             }
             : null,
-        enabled: liveSubscribeEnabled,
-        fireAndForget: true
+        enabled: liveSubscribeEnabled
     });
 
-    return useMemo(() => state, [state]);
+    return state;
 };
 
 export default useAnalysisFrameLog;

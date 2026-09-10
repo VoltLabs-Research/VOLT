@@ -26,13 +26,6 @@ const setTheme: ClientToolHandler<SetThemeInput> = {
                 effective
             }
         };
-    },
-
-    describeEffect(input) {
-        return {
-            label: `Theme set to ${input.theme}`,
-            icon: 'theme'
-        };
     }
 };
 

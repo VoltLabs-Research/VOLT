@@ -2,7 +2,7 @@ import type { ModelDragOffset } from '@/modules/fractal/contracts/editor/scene-t
 
 export type ModelDragPhase = 'move' | 'end';
 
-export interface ModelDragEvent {
+interface ModelDragEvent {
     sceneKey: string;
     offset: ModelDragOffset;
     delta?: ModelDragOffset;

@@ -212,18 +212,17 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         return new Promise<THREE.Group>((resolve, reject) => {
             const gltfLoader = FractalAssetLoader.createGlbLoader();
             let settled = false;
-            const handleAbort = () => { rejectAbort(); };
             const rejectAbort = () => {
                 if (settled) return;
                 settled = true;
-                signal?.removeEventListener('abort', handleAbort);
+                signal?.removeEventListener('abort', rejectAbort);
                 reject(FractalAssetLoader.createAbortError());
             };
             if (signal?.aborted) {
                 rejectAbort();
                 return;
             }
-            signal?.addEventListener('abort', handleAbort, { once: true });
+            signal?.addEventListener('abort', rejectAbort, { once: true });
 
             gltfLoader.parse(
                 arrayBuffer,
@@ -234,7 +233,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
                         return;
                     }
                     settled = true;
-                    signal?.removeEventListener('abort', handleAbort);
+                    signal?.removeEventListener('abort', rejectAbort);
                     if (signal?.aborted) {
                         disposeObject3DResources(gltf.scene);
                         reject(FractalAssetLoader.createAbortError());
@@ -246,7 +245,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
                 (error: unknown) => {
                     if (settled) return;
                     settled = true;
-                    signal?.removeEventListener('abort', handleAbort);
+                    signal?.removeEventListener('abort', rejectAbort);
                     let parsedError: Error;
                     if (error instanceof Error) parsedError = error;
                     else parsedError = new Error(String(error));

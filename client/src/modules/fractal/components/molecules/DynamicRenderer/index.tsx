@@ -7,14 +7,9 @@ import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 
 import type { RendererRuntimeState } from '@/shared/rendering/renderer';
-import type { WebGLRenderer } from 'three';
 
 interface DynamicRendererProps {
     settings: RendererRuntimeState;
-}
-
-interface WebGLRendererWithOutputColorSpace extends WebGLRenderer {
-    outputColorSpace: string;
 }
 
 const DynamicRenderer = ({ settings }: DynamicRendererProps) => {
@@ -25,8 +20,7 @@ const DynamicRenderer = ({ settings }: DynamicRendererProps) => {
     }, [gl, settings.toneMapping]);
 
     useEffect(() => {
-        const renderer = gl as WebGLRendererWithOutputColorSpace;
-        renderer.outputColorSpace = resolveOutputColorSpace(settings.outputColorSpace);
+        gl.outputColorSpace = resolveOutputColorSpace(settings.outputColorSpace);
     }, [gl, settings.outputColorSpace]);
 
     useEffect(() => {

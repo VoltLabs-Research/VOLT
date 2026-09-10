@@ -27,14 +27,6 @@ const focusResult: ClientToolHandler<FocusResultInput> = {
             summary: `Focused result ${modifierId}.`,
             data: { focusedModifierId: modifierId }
         };
-    },
-
-    describeEffect(_input, result) {
-        const focusedModifierId = (result.data as { focusedModifierId?: string | null } | undefined)?.focusedModifierId;
-        return {
-            label: focusedModifierId ? 'Focused result' : 'Cleared focus',
-            icon: 'focus'
-        };
     }
 };
 

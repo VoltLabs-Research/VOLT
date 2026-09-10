@@ -4,16 +4,13 @@ import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { AIConversationMessage } from '@/modules/ai/contracts/messages';
 import type { PaginatedResponse } from '@voltstack/voltclient';
-import type { ChatTransport, UIMessage } from 'ai';
 
 export interface CreateAIConversationParams {
     title?: string;
-    message?: string;
 }
 
 interface CreateAIConversationResult {
     conversation: AIConversation;
-    userMessage?: AIConversationMessage;
 }
 
 export interface AIModelSelection {
@@ -26,8 +23,6 @@ export interface CreateConversationStreamTransportParams {
     conversationId: string;
     getModelSelection: () => AIModelSelection;
 }
-
-export type CreateConversationStreamTransportResult = ChatTransport<UIMessage>;
 
 export interface ListAIConversationMessagesParams {
     page?: number;

@@ -1,6 +1,6 @@
 import { cn } from '@heroui/react';
 
-export type StatusTone = 'success' | 'warning' | 'danger' | 'accent' | 'muted';
+type StatusTone = 'success' | 'warning' | 'danger' | 'accent' | 'muted';
 
 const TONE_CLASSES: Record<StatusTone, { pill: string; dot: string }> = {
     success: { pill: 'bg-success/10 text-success', dot: 'bg-success' },
@@ -52,12 +52,11 @@ const resolveStatusTone = (status: string): StatusTone => (
 
 interface StatusPillProps {
     status: string;
-    tone?: StatusTone;
     className?: string;
 }
 
-const StatusPill = ({ status, tone, className }: StatusPillProps) => {
-    const resolved = TONE_CLASSES[tone ?? resolveStatusTone(status)];
+const StatusPill = ({ status, className }: StatusPillProps) => {
+    const resolved = TONE_CLASSES[resolveStatusTone(status)];
 
     return (
         <span className={cn(

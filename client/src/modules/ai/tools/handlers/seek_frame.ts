@@ -70,20 +70,6 @@ const seekFrame: ClientToolHandler<SeekFrameInput> = {
                 totalFrames: timesteps.length
             }
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Seek failed',
-                icon: 'seek'
-            };
-        }
-        const timestep = (result.data as { timestep?: number } | undefined)?.timestep;
-        return {
-            label: timestep !== undefined ? `Jumped to frame ${timestep}` : 'Jumped to frame',
-            icon: 'seek'
-        };
     }
 };
 

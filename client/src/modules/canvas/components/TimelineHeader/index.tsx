@@ -7,7 +7,7 @@ import useDownloadExposureListing from '../../hooks/use-download-exposure-listin
 
 import { Atom, Box as BoxIcon, FastForward, ZoomIn } from 'lucide-react';
 import { Separator, cn } from '@heroui/react';
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
 

@@ -10,6 +10,7 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/Recover
 import useTip from '@/shared/tips/use-tip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utils/layout-events';
 import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
 import type { ReactNode } from 'react';
 import type { Params } from 'react-router-dom';
@@ -87,13 +88,13 @@ const AIPageContent = () => {
     const handleOpenTableArtifact = useCallback((artifact: AIMessageArtifact) => {
         setOpenArtifact(artifact);
         didCollapseSidebar.current = true;
-        window.dispatchEvent(new CustomEvent('volt:request-sidebar-collapse'));
+        window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse));
     }, []);
 
     const handleCloseArtifactPanel = useCallback(() => {
         setOpenArtifact(null);
         if (didCollapseSidebar.current) {
-            window.dispatchEvent(new CustomEvent('volt:request-sidebar-expand'));
+            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
             didCollapseSidebar.current = false;
         }
     }, []);
@@ -101,7 +102,7 @@ const AIPageContent = () => {
     useEffect(() => {
         return () => {
             if (didCollapseSidebar.current) {
-                window.dispatchEvent(new CustomEvent('volt:request-sidebar-expand'));
+                window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
             }
         };
     }, []);

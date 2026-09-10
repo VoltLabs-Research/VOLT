@@ -4,7 +4,6 @@ interface ClusterModalActionFooterProps {
     cancelLabel?: string;
     confirmLabel: string;
 
-    confirmVariant?: 'danger';
     onCancel: () => void;
     onConfirm: () => void;
     isSubmitting?: boolean;
@@ -14,7 +13,6 @@ interface ClusterModalActionFooterProps {
 const ClusterModalActionFooter = ({
     cancelLabel = 'Cancel',
     confirmLabel,
-    confirmVariant,
     onCancel,
     onConfirm,
     isSubmitting = false,
@@ -28,7 +26,6 @@ const ClusterModalActionFooter = ({
         }}
         primary={{
             label: confirmLabel,
-            variant: confirmVariant,
             onPress: onConfirm,
             isPending: isSubmitting,
             isDisabled: confirmDisabled

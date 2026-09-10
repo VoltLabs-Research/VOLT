@@ -6,10 +6,9 @@ interface ClusterStatusDotProps {
     tone: ClusterDotTone;
     pulse?: boolean;
     glow?: boolean;
-    label?: string;
 };
 
-const ClusterStatusDot = ({ tone, pulse = false, glow = false, label }: ClusterStatusDotProps) => (
+const ClusterStatusDot = ({ tone, pulse = false, glow = false }: ClusterStatusDotProps) => (
     <span
         className={cn(
             'relative inline-block size-2 shrink-0 rounded-full shadow-[0_0_0_2px_var(--surface-secondary)]',
@@ -23,7 +22,7 @@ const ClusterStatusDot = ({ tone, pulse = false, glow = false, label }: ClusterS
             glow && "after:pointer-events-none after:absolute after:-inset-1 after:rounded-full after:bg-current after:opacity-0 after:content-[''] after:animate-[pulse_1.8s_ease-in-out_infinite]"
         )}
         role='status'
-        aria-label={label ?? `${tone} status`}
+        aria-label={`${tone} status`}
     />
 );
 

@@ -145,13 +145,10 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         }
     }, [atomPropertiesAvailability.error]);
 
-    const hasAtomProperties = atomPropertiesAvailability.hasAtomProperties;
-
     return {
         pluginId: resolvedPluginId,
         isPluginReady: Boolean(plugin ?? resolvedPluginId),
-        listingExposures,
-        hasAtomProperties
+        listingExposures
     };
 };
 

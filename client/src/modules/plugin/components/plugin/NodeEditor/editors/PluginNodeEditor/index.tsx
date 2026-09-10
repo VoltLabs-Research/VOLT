@@ -10,7 +10,7 @@ import {
 } from './argument-reference-candidates';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import useNodeReferenceAutocomplete from '@/modules/plugin/hooks/plugin/use-node-reference-autocomplete';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
+import usePluginSelectors, { toPluginSelectOption } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/use-plugin-execution-cluster-options';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
@@ -74,16 +74,10 @@ const PluginNodeEditor = ({ node }: EditorProps) => {
         value: String(timestep),
         title: `t=${timestep}`
     }));
-    const autocompleteOptions: FormFieldAutocompleteOption[] = nodeReferenceOptions.map((option) => ({
-        value: option.value,
-        label: option.label
-    }));
+    const autocompleteOptions: FormFieldAutocompleteOption[] = nodeReferenceOptions;
 
     const selectablePlugins = publishedPlugins.filter((plugin) => plugin._id !== currentPluginId);
-    const pluginOptions: SelectOption[] = selectablePlugins.map((plugin) => ({
-        value: plugin._id,
-        title: plugin.modifier?.name?.trim() || plugin._id
-    }));
+    const pluginOptions: SelectOption[] = selectablePlugins.map(toPluginSelectOption);
 
     const selectedPluginId = pluginNodeData.pluginId ?? '';
     const selectedPlugin = selectedPluginId ? publishedPluginsById[selectedPluginId] : undefined;

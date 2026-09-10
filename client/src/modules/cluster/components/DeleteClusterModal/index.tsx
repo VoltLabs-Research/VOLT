@@ -59,7 +59,6 @@ const DeleteClusterModal = ({ teamCluster, onDelete }: DeleteClusterModalProps) 
     return (
         <Modal
             id={DELETE_CLUSTER_MODAL_ID}
-            lazyMount
             title={`Delete ${teamCluster?.name ?? 'cluster'}`}
             description={modalDescription}
             footer={(

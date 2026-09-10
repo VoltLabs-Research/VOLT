@@ -8,7 +8,7 @@ interface UseLiveModelDragOptions {
     trajectoryId?: string;
     ownerId?: string;
     isOwner: boolean;
-    enabled?: boolean;
+    enabled: boolean;
 }
 
 interface LiveDragPayload {
@@ -26,7 +26,7 @@ const useLiveModelDrag = ({
     trajectoryId,
     ownerId,
     isOwner,
-    enabled = true
+    enabled
 }: UseLiveModelDragOptions) => {
     const dragEmitter = useThrottledSocketEmit<LiveDragPayload>(SOCKET_CANVAS_WORKSPACE_EVENTS.MODEL_DRAG, {
         intervalMs: EMIT_THROTTLE_MS,

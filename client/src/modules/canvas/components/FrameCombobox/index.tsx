@@ -3,7 +3,7 @@ import { useMemo, useCallback } from 'react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { COMPACT_FIELD_GROUP, COMPACT_FIELD_GROUP_INPUT } from '@/shared/ui/utils/field-density';
 
-import type { SelectOption } from '@/modules/canvas/contracts/select-option';
+import type { SelectOption } from '@/shared/contracts/form-field';
 
 interface FrameComboboxProps {
     value: number | undefined;
@@ -12,12 +12,10 @@ interface FrameComboboxProps {
 
     title?: string;
 
-    className?: string;
-
     groupClassName?: string;
 }
 
-const FrameCombobox = ({ value, options, onChange, title, className, groupClassName }: FrameComboboxProps) => {
+const FrameCombobox = ({ value, options, onChange, title, groupClassName }: FrameComboboxProps) => {
     const selectOptions: SelectOption[] = useMemo(
         () => options.map((n) => ({
             value: String(n),
@@ -41,7 +39,7 @@ const FrameCombobox = ({ value, options, onChange, title, className, groupClassN
 
     return (
         <ComboBox
-            className={cn('min-w-0 shrink-0', className)}
+            className='min-w-0 shrink-0'
             selectedKey={normalizedValue}
             onSelectionChange={(key) => handleSelectionChange(key === null ? null : String(key))}
             isDisabled={options.length === 0}

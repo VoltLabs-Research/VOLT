@@ -10,15 +10,11 @@ import { useCallback, useState } from 'react';
 interface TrajectoryVisibilityToggleProps {
     trajectoryId: string;
     isPublic: boolean;
-    disabled?: boolean;
-    onChange?: (nextIsPublic: boolean) => void;
 }
 
 const TrajectoryVisibilityToggle = ({
     trajectoryId,
-    isPublic,
-    disabled,
-    onChange
+    isPublic
 }: TrajectoryVisibilityToggleProps) => {
     const updateMutation = trajectoryQuery.useUpdateMutation();
     const [optimisticValue, setOptimisticValue] = useState<boolean | null>(null);
@@ -50,7 +46,6 @@ const TrajectoryVisibilityToggle = ({
                 })
             ]);
 
-            onChange?.(nextPressed);
             sileo.success({
                 title: nextPressed
                     ? 'Trajectory is now public'
@@ -64,7 +59,7 @@ const TrajectoryVisibilityToggle = ({
         } finally {
             setOptimisticValue(null);
         }
-    }, [effectivePublic, onChange, trajectoryId, updateMutation]);
+    }, [effectivePublic, trajectoryId, updateMutation]);
 
     const labelId = `trajectory-visibility-label-${trajectoryId}`;
     const descriptionId = `trajectory-visibility-description-${trajectoryId}`;
@@ -82,7 +77,7 @@ const TrajectoryVisibilityToggle = ({
             <Switch
                 isSelected={effectivePublic}
                 onChange={handleChange}
-                isDisabled={disabled || updateMutation.isPending}
+                isDisabled={updateMutation.isPending}
                 aria-labelledby={labelId}
                 aria-describedby={descriptionId}
             >

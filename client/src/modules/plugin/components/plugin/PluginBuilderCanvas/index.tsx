@@ -11,7 +11,7 @@ import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-
 import useTip from '@/shared/tips/use-tip';
 import type { SaveStatus } from '@/modules/plugin/hooks/plugin/use-workflow-save-status';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ReactFlowInstance } from '@xyflow/react';
 
@@ -61,7 +61,6 @@ interface PluginBuilderCanvasProps {
 }
 
 const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) => {
-    const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [currentZoom, setCurrentZoom] = useState(1);
     const themeColors = useCanvasThemeColors();
@@ -111,7 +110,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     });
 
     return (
-        <div className='relative w-full h-full plugin-builder-canvas' ref={reactFlowWrapper}>
+        <div className='relative w-full h-full plugin-builder-canvas'>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}

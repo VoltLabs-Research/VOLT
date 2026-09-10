@@ -27,12 +27,10 @@ export interface WorkspacePresenceUser {
 
 interface WorkspacePresenceState {
     lobbyUsers: WorkspacePresenceUser[];
-    workspaceViewers: WorkspacePresenceUser[];
 }
 
 const usePresenceStore = create<WorkspacePresenceState>(() => ({
-    lobbyUsers: [],
-    workspaceViewers: []
+    lobbyUsers: []
 }));
 
 interface WorkspaceSyncPayload {
@@ -65,7 +63,7 @@ interface WorkspacePatchEmitPayload {
 interface UseCanvasWorkspaceOptions {
     trajectoryId?: string;
     ownerId?: string;
-    enabled?: boolean;
+    enabled: boolean;
 }
 
 const PUBLISH_THROTTLE_MS = 150;
@@ -73,7 +71,7 @@ const PUBLISH_THROTTLE_MS = 150;
 const useCanvasWorkspace = ({
     trajectoryId,
     ownerId: requestedOwnerId,
-    enabled = true
+    enabled
 }: UseCanvasWorkspaceOptions) => {
     const currentUser = useCurrentUser();
     const navigate = useNavigate();
@@ -96,8 +94,7 @@ const useCanvasWorkspace = ({
         leaveEvent: SOCKET_CANVAS_LOBBY_EVENTS.LEAVE,
         roomKey: lobbyEnabled ? trajectoryId ?? null : null,
         buildJoinPayload: () => trajectoryId ? { trajectoryId } : null,
-        enabled: lobbyEnabled,
-        fireAndForget: true
+        enabled: lobbyEnabled
     });
 
     useSocketRoom({
@@ -108,26 +105,18 @@ const useCanvasWorkspace = ({
             trajectoryId,
             ownerId: visitOwner
         } : null,
-        enabled: visitEnabled,
-        fireAndForget: true
+        enabled: visitEnabled
     });
 
     useEffect(() => {
         if (!lobbyEnabled) return;
         return () => {
-            usePresenceStore.setState({
-                lobbyUsers: [],
-                workspaceViewers: []
-            });
+            usePresenceStore.setState({ lobbyUsers: [] });
         };
     }, [lobbyEnabled, trajectoryId, currentUserId]);
 
     useSocketEvent<WorkspacePresenceUser[] | undefined>(SOCKET_CANVAS_LOBBY_EVENTS.UPDATE, (users) => {
         usePresenceStore.setState({ lobbyUsers: users ?? [] });
-    });
-
-    useSocketEvent<WorkspacePresenceUser[] | undefined>(SOCKET_CANVAS_WORKSPACE_EVENTS.VIEWERS, (users) => {
-        usePresenceStore.setState({ workspaceViewers: users ?? [] });
     });
 
     const isMatchingPayload = (payload: { trajectoryId?: string; ownerId?: string } | undefined): boolean => {

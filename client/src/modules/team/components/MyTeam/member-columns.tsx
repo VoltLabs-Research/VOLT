@@ -5,7 +5,7 @@ import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
 import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { formatDuration } from '@/shared/utils/format';
 import { formatDistanceToNow } from 'date-fns';
-import type { Key } from 'react-aria-components';
+import type { Key } from '@heroui/react';
 import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 

@@ -40,17 +40,6 @@ const configureColorCoding: ClientToolHandler<ConfigureColorCodingInput> = {
             ok: true,
             summary: `Color coding stage added: "${input.property}" using ${gradient}`
         };
-    },
-
-    describeEffect(input, result) {
-        if (!result.ok) return {
-            label: 'Color coding unavailable',
-            icon: 'palette'
-        };
-        return {
-            label: `Color coded by ${input.property}`,
-            icon: 'palette'
-        };
     }
 };
 

@@ -27,7 +27,7 @@ import type {
     ExpressionSelectStageConfig,
     PipelineStage
 } from '../../store/canvas-pipeline';
-import type { PipelineStageInput } from '@/modules/plugin/api/services/plugin-service';
+import type { ExecutePipelineStageInput } from '@volt/contracts/modules/plugin/http';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface PipelineRunControlProps {
@@ -38,7 +38,7 @@ interface PipelineRunControlProps {
     onClose: () => void;
 }
 
-const toStagePayload = (stage: PipelineStage): PipelineStageInput | null => {
+const toStagePayload = (stage: PipelineStage): ExecutePipelineStageInput | null => {
     const kind = stageTypeToPipelineKind(stage.type);
     if (!kind) return null;
 
@@ -127,7 +127,7 @@ const PipelineRunControl = ({
 
         const stagePayloads = enabledOrderedStages
             .map(toStagePayload)
-            .filter((payload): payload is PipelineStageInput => payload !== null);
+            .filter((payload): payload is ExecutePipelineStageInput => payload !== null);
 
         if (stagePayloads.length === 0) {
             sileo.warning({

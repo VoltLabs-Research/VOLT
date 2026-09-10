@@ -6,12 +6,9 @@ import type { QueryKey } from '@tanstack/react-query';
 export interface SocketInvalidationRule<TPayload = unknown> {
     event: string;
     queryKeys: QueryKey[] | ((payload: TPayload) => QueryKey[]);
-    matches?: (payload: TPayload) => boolean;
-    enabled?: boolean;
 };
 
 interface UseSocketQueryInvalidationOptions {
-    debounceMs?: number;
     enabled?: boolean;
 };
 
@@ -21,7 +18,7 @@ const useSocketQueryInvalidation = (
     rules: SocketInvalidationRule[],
     options: UseSocketQueryInvalidationOptions = {}
 ): void => {
-    const { debounceMs = DEFAULT_DEBOUNCE_MS, enabled = true } = options;
+    const { enabled = true } = options;
     const socketService = useSocket();
     const rulesRef = useRef(rules);
     const pendingQueryKeysRef = useRef(new Map<string, QueryKey>());
@@ -50,15 +47,13 @@ const useSocketQueryInvalidation = (
                 Promise.allSettled(
                     queryKeys.map((currentQueryKey) => queryClient.invalidateQueries({ queryKey: currentQueryKey }))
                 );
-            }, debounceMs);
+            }, DEFAULT_DEBOUNCE_MS);
         };
 
         const unsubscribers = rulesRef.current.map((rule, index) => {
             return socketService.on(rule.event, (payload: unknown) => {
                 const currentRule = rulesRef.current[index];
                 if (!currentRule) return;
-                if (currentRule.enabled === false) return;
-                if (currentRule.matches && !currentRule.matches(payload)) return;
 
                 const resolvedKeys = typeof currentRule.queryKeys === 'function'
                     ? currentRule.queryKeys(payload)
@@ -76,7 +71,7 @@ const useSocketQueryInvalidation = (
             pendingQueryKeys.clear();
             unsubscribers.forEach((unsubscribe) => unsubscribe());
         };
-    }, [socketService, enabled, debounceMs]);
+    }, [socketService, enabled]);
 };
 
 export default useSocketQueryInvalidation;

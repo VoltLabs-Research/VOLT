@@ -1,6 +1,6 @@
 
 
-export type StatusVariant =
+type StatusVariant =
     | 'active' | 'inactive' | 'danger' | 'neutral'
     | 'success' | 'warning' | 'brand' | 'primary';
 

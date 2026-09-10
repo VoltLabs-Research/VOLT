@@ -4,11 +4,9 @@ import { useCallback, useMemo } from 'react';
 import {
     buildAnalysisStatusMap,
     buildFrameStatusIndex,
-    buildJobStatusCounts,
     buildJobsByAnalysisId,
     toTimelineTickTone
 } from '../utils/analysis-status-selectors';
-import { isCanvasAnalysisInProgress } from '../utils/analysis-status';
 
 import type { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
@@ -18,14 +16,11 @@ import type { TimelineTickTone } from '../utils/analysis-status-selectors';
 interface UseCanvasAnalysisStatusProps {
     trajectoryId?: string;
     enabled?: boolean;
-
-    fallbackAnalyses?: readonly Analysis[];
 }
 
 const useCanvasAnalysisStatus = ({
     trajectoryId,
-    enabled = true,
-    fallbackAnalyses
+    enabled = true
 }: UseCanvasAnalysisStatusProps) => {
     const analysesQuery = useAnalysesByTrajectoryQuery(
         {
@@ -39,11 +34,8 @@ const useCanvasAnalysisStatus = ({
     const { data: groups = [] } = teamJobsGroups();
 
     const analyses = useMemo(() => {
-        const fetched = (analysesQuery.data as { data?: Analysis[] } | undefined)?.data;
-        if (fetched?.length) return fetched;
-
-        return fallbackAnalyses ?? fetched ?? [];
-    }, [analysesQuery.data, fallbackAnalyses]);
+        return (analysesQuery.data as { data?: Analysis[] } | undefined)?.data ?? [];
+    }, [analysesQuery.data]);
 
     const jobsByAnalysisId = useMemo(() => {
         return buildJobsByAnalysisId(groups, trajectoryId);
@@ -57,16 +49,8 @@ const useCanvasAnalysisStatus = ({
         return buildFrameStatusIndex(groups, trajectoryId);
     }, [groups, trajectoryId]);
 
-    const counts = useMemo(() => {
-        return buildJobStatusCounts(groups, trajectoryId);
-    }, [groups, trajectoryId]);
-
     const getAnalysisStatus = useCallback((analysisId: string): CanvasAnalysisStatus | undefined => {
         return statusMap.get(analysisId)?.status;
-    }, [statusMap]);
-
-    const isAnalysisInProgress = useCallback((analysisId: string): boolean => {
-        return isCanvasAnalysisInProgress(statusMap.get(analysisId)?.status);
     }, [statusMap]);
 
     const getAnalysisFrameStatus = useCallback((
@@ -88,11 +72,8 @@ const useCanvasAnalysisStatus = ({
     }, [frameStatusIndex]);
 
     return {
-        analyses,
         statusMap,
-        counts,
         getAnalysisStatus,
-        isAnalysisInProgress,
         getAnalysisFrameStatus,
         getFrameTone
     };

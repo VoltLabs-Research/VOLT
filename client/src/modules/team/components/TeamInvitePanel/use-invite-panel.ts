@@ -9,7 +9,10 @@ import type { ChangeEvent } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { sileo } from 'sileo';
-import type { TeamInviteForm } from '../../hooks/invitation/invite-panel-schema';
+
+interface TeamInviteForm {
+    email: string;
+}
 
 interface EmailFieldBind {
     value: string;

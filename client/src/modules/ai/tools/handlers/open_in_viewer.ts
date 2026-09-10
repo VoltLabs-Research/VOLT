@@ -41,19 +41,6 @@ const openInViewer: ClientToolHandler<OpenInViewerInput> = {
                 analysisId: analysisId || undefined
             }
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Could not open viewer',
-                icon: 'viewer'
-            };
-        }
-        return {
-            label: 'Opened trajectory in viewer',
-            icon: 'viewer'
-        };
     }
 };
 

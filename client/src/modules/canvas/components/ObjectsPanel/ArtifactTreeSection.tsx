@@ -1,4 +1,4 @@
-import RightCollapsible, { PANEL_ICON_STYLE } from './RightCollapsible';
+import RightCollapsible from './RightCollapsible';
 import { formatArtifactLabel } from './artifact-labels';
 import { TIMESTEP_PAGE_SIZE } from './use-artifact-sections';
 import { isSameScene, toSceneObjectFromArtifact } from '@/modules/canvas/utils/scene-identity';
@@ -149,7 +149,6 @@ const ArtifactTreeSection = ({
     return (
         <RightCollapsible
             title={section.title}
-            icon={<Icon style={PANEL_ICON_STYLE} />}
             expanded={section.open}
             onExpandedChange={section.setOpen}
         >

@@ -8,20 +8,21 @@ import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { resetModal } from '@/shared/ui/modal/use-modal-store';
 import { useForm } from 'react-hook-form';
-import type { JoinByInviteCodeResponse } from '@/modules/team/api/services/team-service';
-import type { JoinTeamForm } from './validation-schema';
+import type { JoinTeamResponse } from '@volt/contracts/modules/team/domain';
+
+interface JoinTeamForm {
+    code: string;
+}
 
 const MODAL_ID = 'join-team-modal';
 const JOIN_TEAM_FORM_ID = 'join-team-form';
 
 interface JoinTeamModalProps {
-    onSuccess?: (result: JoinByInviteCodeResponse) => void | Promise<void>;
-    onClose?: () => void;
+    onSuccess?: (result: JoinTeamResponse) => void | Promise<void>;
 }
 
 export const JoinTeamModal = ({
-    onSuccess,
-    onClose
+    onSuccess
 }: JoinTeamModalProps) => {
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -39,7 +40,6 @@ export const JoinTeamModal = ({
         resetModal(MODAL_ID, () => {
             form.reset();
             setApiError(null);
-            onClose?.();
         });
     };
 

@@ -7,12 +7,10 @@ export const FOCUSABLE_BASE_SELECTOR = [
     '[tabindex]:not([tabindex="-1"])'
 ].join(', ');
 
-export const ROLE_MENUITEM_SELECTOR = [
+const ROLE_MENUITEM_SELECTOR = [
     '[role="menuitem"]:not([disabled])',
     '[role="menuitemcheckbox"]:not([disabled])',
     '[role="menuitemradio"]:not([disabled])'
 ].join(', ');
 
 export const FOCUSABLE_SELECTOR = `${ROLE_MENUITEM_SELECTOR}, ${FOCUSABLE_BASE_SELECTOR}`;
-
-export const PANEL_FOCUSABLE_SELECTOR = FOCUSABLE_BASE_SELECTOR;

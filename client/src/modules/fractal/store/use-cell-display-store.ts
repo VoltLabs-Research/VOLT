@@ -14,10 +14,9 @@ interface CellDisplayStore {
     setShowPbcImages: (show: boolean) => void;
     setCellOverride: (trajectoryId: string, cell: EditableCell) => void;
     clearCellOverride: (trajectoryId: string) => void;
-    getCellOverride: (trajectoryId: string | undefined) => EditableCell | undefined;
 }
 
-export const useCellDisplayStore = create<CellDisplayStore>((set, get) => ({
+export const useCellDisplayStore = create<CellDisplayStore>((set) => ({
     showPbcImages: false,
     cellOverrides: {},
 
@@ -37,8 +36,5 @@ export const useCellDisplayStore = create<CellDisplayStore>((set, get) => ({
             const next = { ...state.cellOverrides };
             delete next[trajectoryId];
             return { cellOverrides: next };
-        }),
-
-    getCellOverride: (trajectoryId) =>
-        trajectoryId ? get().cellOverrides[trajectoryId] : undefined
+        })
 }));

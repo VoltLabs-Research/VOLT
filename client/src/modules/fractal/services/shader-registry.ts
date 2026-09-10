@@ -31,7 +31,6 @@ const simpleHash = (value: string): string => {
 interface RegisteredProgram {
     vertex: string;
     fragment: string;
-    cacheKey: string;
 }
 
 class ShaderRegistry {
@@ -49,8 +48,7 @@ class ShaderRegistry {
 
         const program: RegisteredProgram = {
             vertex: resolveIncludes(descriptor.vertex, this.includes),
-            fragment: resolveIncludes(descriptor.fragment, this.includes),
-            cacheKey: key
+            fragment: resolveIncludes(descriptor.fragment, this.includes)
         };
 
         this.programCache.set(key, program);
@@ -60,7 +58,5 @@ class ShaderRegistry {
 
 import atomCommonLib from '@/modules/fractal/assets/shaders/lib/atom-common.glsl?raw';
 
-const registry = new ShaderRegistry();
-registry.registerInclude('volt/atom-common', atomCommonLib);
-
-export const sharedShaderRegistry = registry;
+export const sharedShaderRegistry = new ShaderRegistry();
+sharedShaderRegistry.registerInclude('volt/atom-common', atomCommonLib);

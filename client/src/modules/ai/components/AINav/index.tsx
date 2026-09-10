@@ -4,7 +4,6 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/Recover
 import SidebarPanel from '@/shared/ui/components/SidebarPanel';
 import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import { matchesQuery } from '@/shared/utils/matches-query';
 import { SearchField, Skeleton, Tooltip } from '@heroui/react';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -13,6 +12,15 @@ import { useParams } from 'react-router-dom';
 import type { Params } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
+
+const matchesQuery = (value: string, query: string): boolean => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+        return true;
+    }
+
+    return value.toLowerCase().includes(normalizedQuery);
+};
 
 interface AINavRouteParams extends Params {
     conversationId?: string;

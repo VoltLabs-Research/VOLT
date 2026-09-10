@@ -28,9 +28,7 @@ const useCanvasAccessPublication = ({
         setAccess({
             mode: canMutate ? 'rbac' : 'public',
             trajectoryId,
-            canMutate,
-            canCollaborate: canMutate,
-            hasTeamMembership: canMutate
+            canCollaborate: canMutate
         });
     }, [access, trajectoryId, setAccess]);
 
@@ -41,7 +39,6 @@ const useCanvasAccessPublication = ({
 
     return {
         canCollaborate,
-        hasResolvedAccess,
         canMutateCanvas,
         isReadOnlyCanvas: !isLocalGlbViewer && hasResolvedAccess && !canMutateCanvas
     };

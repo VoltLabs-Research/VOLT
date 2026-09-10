@@ -88,10 +88,6 @@ const useClusterManagement = () => {
         return resolveSelectedClusterId(selectedClusterId, clusters);
     }, [clusters, selectedClusterId]);
 
-    const selectedCluster = useMemo(() => {
-        return clusters.find((cluster) => cluster._id === resolvedSelectedClusterId) ?? null;
-    }, [clusters, resolvedSelectedClusterId]);
-
     const createCluster = async (name: string) => {
         const result = await showPromise(createMutation.mutateAsync({
             teamId: requireSelectedTeamId(),
@@ -148,11 +144,9 @@ const useClusterManagement = () => {
     return {
         clusters,
         selectedTeamId,
-        selectedCluster,
         selectedClusterId: resolvedSelectedClusterId,
         setSelectedClusterId,
         isLoading: teamClustersQuery.isLoading,
-        error: teamClustersQuery.error,
         createCluster,
         deleteCluster,
         updateQueueConcurrency,

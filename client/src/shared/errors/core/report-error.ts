@@ -77,7 +77,6 @@ export const reportError = (
         }
     }
 
-    options?.onError?.(userError);
 
     return userError;
 };

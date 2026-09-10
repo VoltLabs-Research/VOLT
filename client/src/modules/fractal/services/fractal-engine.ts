@@ -143,7 +143,7 @@ export class FractalEngine {
         private surface: FractalSurface,
         private params: FractalParams,
         private assetLoader: IFractalAssetLoader,
-        private callbacks: EngineCallbacks = {}
+        private callbacks: EngineCallbacks
     ) {}
 
     configure(params: FractalParams) {

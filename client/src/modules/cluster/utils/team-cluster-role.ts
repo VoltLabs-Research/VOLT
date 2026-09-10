@@ -1,8 +1,8 @@
 import type { TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
-import type { ClusterSelectOption } from '@/modules/cluster/components/shared/ClusterOptionSelect';
+import type { SelectOption } from '@/shared/contracts/form-field';
 import type { ClusterBadgeTone } from '@/modules/cluster/components/shared/ClusterStatusBadge';
 
-interface TeamClusterRoleOption extends ClusterSelectOption {
+interface TeamClusterRoleOption extends SelectOption {
     value: TeamClusterRole;
     summary: string;
     badgeVariant: ClusterBadgeTone;

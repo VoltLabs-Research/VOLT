@@ -46,8 +46,6 @@ const KEYS = buildKeys<{
     atomsInfinite: void;
     perAtom: void;
     samples: void;
-    folder: FolderGetParams;
-    folders: FolderListParams;
 }>(BASE_KEY);
 
 const stripTrajectoryPage = ({ page: _page, ...params }: GetTrajectoriesInput) => params;

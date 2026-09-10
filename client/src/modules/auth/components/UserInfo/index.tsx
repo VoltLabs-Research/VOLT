@@ -1,4 +1,3 @@
-import { cn } from '@heroui/react';
 import UserAvatar from '@/modules/auth/components/UserAvatar';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
@@ -8,21 +7,18 @@ interface UserInfoProps {
     showStatus?: boolean;
     isOnline?: boolean;
     suffix?: ReactNode;
-    className?: string;
 }
 
 const UserInfo = ({
     user,
     showStatus = false,
     isOnline = false,
-    suffix,
-    className
+    suffix
 }: UserInfoProps) => {
     return (
-        <div className={cn('flex flex-row items-center justify-between gap-3 w-full', className)}>
+        <div className='flex flex-row items-center justify-between gap-3 w-full'>
             <UserAvatar
                 user={user}
-                size='sm'
                 showStatus={showStatus}
                 isOnline={isOnline}
             />

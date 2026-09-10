@@ -64,7 +64,6 @@ interface UseListingViewPreferencesParams<TRow> {
 };
 
 export interface ListingViewPreferences<TRow> {
-    persistenceKey: string;
     activeTabId: string;
     selectTab: (tabId: string) => void;
     sortConfig: SortConfig | null;
@@ -135,7 +134,6 @@ const useListingViewPreferences = <TRow,>({
     };
 
     return {
-        persistenceKey,
         activeTabId: resolveActiveTabId(tabIds, searchParams.get(tabParamKey) ?? defaultTabId),
         selectTab: (tabId: string) => {
             updateParams({ [tabParamKey]: tabId });

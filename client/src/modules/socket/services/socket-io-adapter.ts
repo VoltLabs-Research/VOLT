@@ -1,7 +1,12 @@
-import { SOCKET_CONNECTION_EVENTS } from '../constants/socket-connection-events';
 import { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection-status';
 import { io, Socket } from 'socket.io-client';
 import type { EventSubscription, ISocketService, SocketOptions } from '@/modules/socket/contracts/socket-service';
+
+const SOCKET_CONNECTION_EVENTS = {
+    CONNECT: 'connect',
+    CONNECT_ERROR: 'connect_error',
+    DISCONNECT: 'disconnect'
+} as const;
 
 const subscribe = <TListener>(listeners: Set<TListener>, listener: TListener): (() => void) => {
     listeners.add(listener);
@@ -34,18 +39,8 @@ class SocketIOAdapter implements ISocketService {
     private connectErrorAttempts = 0;
 
     constructor(baseUrl: string, options: SocketOptions = {}) {
-        this.connectionUrl = options.url ?? baseUrl;
-        this.options = {
-            path: options.path ?? '/socket.io',
-            autoConnect: options.autoConnect ?? false,
-            timeout: options.timeout ?? 20000,
-            auth: options.auth ?? {}
-        };
-
-        if (this.options.autoConnect) {
-            this.setConnectionStatus(SocketConnectionStatus.Connecting);
-            this.connect().catch(() => undefined);
-        }
+        this.connectionUrl = baseUrl;
+        this.options = { auth: options.auth ?? {} };
     }
 
     connect(): Promise<void> {
@@ -263,8 +258,8 @@ class SocketIOAdapter implements ISocketService {
     private initializeSocket(): void {
         this.cleanupSocket();
         this.socket = io(this.connectionUrl, {
-            path: this.options.path,
-            timeout: this.options.timeout,
+            path: '/socket.io',
+            timeout: 20000,
             auth: this.options.auth,
             transports: ['polling', 'websocket'],
             reconnection: true,

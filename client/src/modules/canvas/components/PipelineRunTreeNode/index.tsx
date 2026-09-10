@@ -7,7 +7,7 @@ import {
     treeIndentClass
 } from '../CanvasTree';
 import { CanvasAnalysisStatusEnum } from '../../utils/analysis-status';
-import { UNGROUPED_RUN_ID, countRunStagesByKind } from '../../utils/pipeline-run-sections';
+import { countRunStagesByKind } from '../../utils/pipeline-run-sections';
 import { describePipelineRunStage, resolveRunLabel } from './stage-labels';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
@@ -36,7 +36,6 @@ const ICON_STYLE = {
     height: 13
 };
 
-const CHEVRON_STYLE = ICON_STYLE;
 
 const STAGE_ICON = {
     slice: Scissors,
@@ -146,7 +145,7 @@ const PipelineRunTreeNode = ({
             </span>
             <span className='flex-1' />
             <span className='flex items-center text-muted' aria-hidden='true'>
-                {isExpanded ? <ChevronDown style={CHEVRON_STYLE} /> : <ChevronRight style={CHEVRON_STYLE} />}
+                {isExpanded ? <ChevronDown style={ICON_STYLE} /> : <ChevronRight style={ICON_STYLE} />}
             </span>
         </div>
     );
@@ -205,6 +204,6 @@ const PipelineRunTreeNode = ({
     );
 };
 
-export { UNGROUPED_RUN_ID, CachedBadge };
+export { CachedBadge };
 
 export default PipelineRunTreeNode;

@@ -14,38 +14,25 @@ interface CreatePromiseToastOptionsInput {
 
 type CrudAction =
     | 'Creating'
-    | 'Updating'
     | 'Deleting'
     | 'Renaming'
     | 'Moving'
     | 'Saving'
     | 'Downloading'
-    | 'Uploading'
     | 'Starting'
     | 'Stopping'
-    | 'Restarting'
-    | 'Archiving'
-    | 'Restoring'
-    | 'Revoking'
-    | 'Sharing'
-    | 'Publishing'
-    | 'Copying';
+    | 'Restarting';
 
 interface CreateCrudToastOptionsInput {
     action: CrudAction;
     subject: string;
     success?: string;
-    error?: string;
 }
 
 const ACTION_FORMS: Record<CrudAction, { past: string; base: string }> = {
     Creating:    {
         past: 'created',
         base: 'create'
-    },
-    Updating:    {
-        past: 'updated',
-        base: 'update'
     },
     Deleting:    {
         past: 'deleted',
@@ -67,10 +54,6 @@ const ACTION_FORMS: Record<CrudAction, { past: string; base: string }> = {
         past: 'downloaded',
         base: 'download'
     },
-    Uploading:   {
-        past: 'uploaded',
-        base: 'upload'
-    },
     Starting:    {
         past: 'started',
         base: 'start'
@@ -82,30 +65,6 @@ const ACTION_FORMS: Record<CrudAction, { past: string; base: string }> = {
     Restarting:  {
         past: 'restarted',
         base: 'restart'
-    },
-    Archiving:   {
-        past: 'archived',
-        base: 'archive'
-    },
-    Restoring:   {
-        past: 'restored',
-        base: 'restore'
-    },
-    Revoking:    {
-        past: 'revoked',
-        base: 'revoke'
-    },
-    Sharing:     {
-        past: 'shared',
-        base: 'share'
-    },
-    Publishing:  {
-        past: 'published',
-        base: 'publish'
-    },
-    Copying:     {
-        past: 'copied',
-        base: 'copy'
     }
 };
 
@@ -122,8 +81,7 @@ export const createPromiseToastOptions = ({
 export const createCrudToastOptions = ({
     action,
     subject,
-    success,
-    error
+    success
 }: CreateCrudToastOptionsInput): PromiseToastOptions => {
     const { past, base } = ACTION_FORMS[action];
     const normalizedSubject = subject.trim();
@@ -132,6 +90,6 @@ export const createCrudToastOptions = ({
     return createPromiseToastOptions({
         loading: `${action} ${lowerSubject}...`,
         success: success ?? `${normalizedSubject} ${past} successfully`,
-        error: error ?? `Failed to ${base} ${lowerSubject}`
+        error: `Failed to ${base} ${lowerSubject}`
     });
 };

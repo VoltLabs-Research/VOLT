@@ -11,21 +11,19 @@ interface TrajectorySelectOption {
 };
 
 interface UseTrajectorySelectorOptions {
-    allowEmpty?: boolean;
-    emptyLabel?: string;
+    allowEmpty: boolean;
+    emptyLabel: string;
 }
 
 interface UseTrajectorySelectorReturn {
     options: TrajectorySelectOption[];
     isLoading: boolean;
-    hasMore: boolean;
     loadMore: () => void;
 }
 
 const DEFAULT_LIMIT = 20;
 
-export default function useTrajectorySelector(options: UseTrajectorySelectorOptions = {}): UseTrajectorySelectorReturn {
-    const { allowEmpty = false, emptyLabel = 'All Trajectories' } = options;
+export default function useTrajectorySelector({ allowEmpty, emptyLabel }: UseTrajectorySelectorOptions): UseTrajectorySelectorReturn {
     const { checkAccessDeniedError } = useAccessDenied();
 
     const {
@@ -84,7 +82,6 @@ export default function useTrajectorySelector(options: UseTrajectorySelectorOpti
     return {
         options: selectOptions,
         isLoading: isLoading || isFetchingNextPage,
-        hasMore,
         loadMore
     };
 }

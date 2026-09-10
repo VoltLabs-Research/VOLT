@@ -1,4 +1,3 @@
-import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 interface SettingsRowProps {
@@ -6,27 +5,16 @@ interface SettingsRowProps {
     title: string;
     description?: string;
     rightContent?: ReactNode;
-    onClick?: () => void;
-    className?: string;
 }
 
 const SettingsRow = ({
     icon,
     title,
     description,
-    rightContent,
-    onClick,
-    className = ''
+    rightContent
 }: SettingsRowProps) => {
     return (
-        <div
-            className={cn(
-                'flex flex-row items-center gap-3 rounded-xl p-2 transition-colors duration-200 max-sm:flex-wrap',
-                onClick && 'cursor-pointer hover:bg-surface-hover',
-                className
-            )}
-            onClick={onClick}
-        >
+        <div className='flex flex-row items-center gap-3 rounded-xl p-2 transition-colors duration-200 max-sm:flex-wrap'>
             {icon && (
                 <div className='flex flex-row items-center justify-center shrink-0 text-xl text-muted'>
                     {icon}

@@ -23,7 +23,7 @@ export const buildInstalledVersionIndex = (plugins: readonly Plugin[]): Map<stri
     return index;
 };
 
-export type MarketplaceInstallState = 'install' | 'update' | 'installed';
+type MarketplaceInstallState = 'install' | 'update' | 'installed';
 
 export const resolveInstallState = (
     latest: string | undefined,

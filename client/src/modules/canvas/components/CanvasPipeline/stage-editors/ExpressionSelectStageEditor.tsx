@@ -9,7 +9,7 @@ import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
     type ExpressionSelectAction,
     type ExpressionSelectStageConfig
-} from '../../../store/canvas-pipeline';
+} from '@/modules/canvas/store/canvas-pipeline';
 
 interface ExpressionSelectStageEditorProps {
     stageId: string;

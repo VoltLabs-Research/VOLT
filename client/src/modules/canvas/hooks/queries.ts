@@ -1,4 +1,4 @@
-import canvasService from '../api/services/canvas-service';
+import canvasService from '@/modules/canvas/api/services/canvas-service';
 import { buildKeys } from '@/shared/query/query-keys';
 import { createQuery } from '@/shared/query/create-query';
 import type { PaginatedResponse } from '@voltstack/voltclient';
@@ -9,35 +9,23 @@ import type {
 } from '@/modules/canvas/api/services/canvas-service';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-const BASE_KEY = 'canvas';
-
-const KEYS = buildKeys<{
+export const CANVAS_QUERY_KEYS = buildKeys<{
     bootstrap: GetPublicCanvasBootstrapInput;
     trajectory: { trajectoryId: string };
     analyses: { trajectoryId: string; page?: number; limit?: number };
-}>(BASE_KEY);
+}>('canvas');
 
-const bootstrapQuery = createQuery<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>(
-    KEYS.bootstrap,
+export const useCanvasBootstrapQuery = createQuery<GetPublicCanvasBootstrapInput, GetPublicCanvasBootstrapOutput>(
+    CANVAS_QUERY_KEYS.bootstrap,
     (params) => canvasService.getBootstrap(params)
 );
 
-const canvasTrajectoryQuery = createQuery<{ trajectoryId: string }, Trajectory>(
-    KEYS.trajectory,
+export const useCanvasTrajectoryQuery = createQuery<{ trajectoryId: string }, Trajectory>(
+    CANVAS_QUERY_KEYS.trajectory,
     (params) => canvasService.getTrajectory(params)
 );
 
-const canvasAnalysesQuery = createQuery<{ trajectoryId: string; page?: number; limit?: number }, PaginatedResponse<Analysis>>(
-    KEYS.analyses,
+export const useCanvasAnalysesQuery = createQuery<{ trajectoryId: string; page?: number; limit?: number }, PaginatedResponse<Analysis>>(
+    CANVAS_QUERY_KEYS.analyses,
     (params) => canvasService.listAnalyses(params)
 );
-
-export const useCanvasBootstrapQuery = bootstrapQuery;
-export const useCanvasTrajectoryQuery = canvasTrajectoryQuery;
-export const useCanvasAnalysesQuery = canvasAnalysesQuery;
-
-export const CANVAS_QUERY_KEYS = {
-    bootstrap: KEYS.bootstrap,
-    trajectory: KEYS.trajectory,
-    analyses: KEYS.analyses
-} as const;

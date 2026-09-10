@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 
 interface UseTeamRoleDataOptions {
     teamId?: string | null;
-    page?: number;
     limit?: number;
 }
 
@@ -28,8 +27,5 @@ export default function useTeamRoleData({ teamId, limit = 100 }: UseTeamRoleData
     });
     const queryState = useTeamQueryState(rolesQuery, 'Failed to load team roles');
 
-    return {
-        roles: queryState.data ?? [],
-        isLoading: queryState.isLoading
-    };
+    return { roles: queryState.data ?? [] };
 }

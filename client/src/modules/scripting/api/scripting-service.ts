@@ -25,7 +25,6 @@ export interface DeleteScriptingNotebookParams {
 }
 
 export interface ListScriptingNotebooksParams {
-    trajectoryId?: string;
     scope?: ScriptingNotebookScope;
     page?: number;
     limit?: number;
@@ -39,10 +38,6 @@ export interface UpdateScriptingNotebookParams {
 }
 
 interface ReadNotebookSessionStatusParams {
-    notebookId: string;
-}
-
-interface DeleteNotebookSessionParams {
     notebookId: string;
 }
 
@@ -69,8 +64,7 @@ const endpoints = {
             teamClusterId
         })
     }),
-    readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, GetScriptingSessionStatusResponse>('/notebook-sessions/:notebookId/status'),
-    deleteNotebookSession: del<DeleteNotebookSessionParams>('/notebook-sessions/:notebookId')
+    readNotebookSessionStatus: get<ReadNotebookSessionStatusParams, GetScriptingSessionStatusResponse>('/notebook-sessions/:notebookId/status')
 };
 
 export default createService({

@@ -30,8 +30,8 @@ import {
     getWhiteboardListingDroppableId,
     isWhiteboardFolderRow,
     isWhiteboardItemRow
-} from '../../utils/listing';
-import type { WhiteboardItemRow } from '../../contracts/listing';
+} from '@/modules/whiteboards/utils/listing';
+import type { WhiteboardItemRow } from '@/modules/whiteboards/contracts/listing';
 import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 import { useNavigate } from 'react-router-dom';
 

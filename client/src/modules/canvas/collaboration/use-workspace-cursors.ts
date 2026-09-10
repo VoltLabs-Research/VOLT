@@ -35,7 +35,7 @@ interface CursorEmitPayload {
 interface UseWorkspaceCursorsOptions {
     trajectoryId?: string;
     ownerId?: string;
-    enabled?: boolean;
+    enabled: boolean;
     containerRef: React.RefObject<HTMLElement | null>;
 }
 
@@ -46,7 +46,7 @@ const CLEANUP_INTERVAL_MS = 1_000;
 const useWorkspaceCursors = ({
     trajectoryId,
     ownerId,
-    enabled = true,
+    enabled,
     containerRef
 }: UseWorkspaceCursorsOptions) => {
     const currentUser = useCurrentUser();

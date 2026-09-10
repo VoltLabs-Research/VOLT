@@ -34,8 +34,8 @@ interface ViewportProps {
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
     analysisOverlay?: ReactNode;
-    renderScene?: boolean;
-    showSceneActions?: boolean;
+    renderScene: boolean;
+    showSceneActions: boolean;
 }
 
 const resolveTrajectoryTeamId = (trajectory: Trajectory | null | undefined): string | undefined => {
@@ -71,8 +71,8 @@ const Viewport = ({
     sceneRef,
     bodyContent,
     analysisOverlay,
-    renderScene = true,
-    showSceneActions = true
+    renderScene,
+    showSceneActions
 }: ViewportProps) => {
     const selectedTeamId = useSelectedTeamId() ?? undefined;
     const teamId = resolveTrajectoryTeamId(trajectory) ?? selectedTeamId;

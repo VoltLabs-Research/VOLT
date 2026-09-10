@@ -1,4 +1,3 @@
-import { CHART_COLORS } from '@/modules/cluster/utils/chart-colors';
 import { CHART_AXIS_COLOR, CHART_FONT_SIZE, CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
@@ -14,6 +13,12 @@ import {
 } from 'recharts';
 import { HardDrive } from 'lucide-react';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
+
+const CHART_COLORS = {
+    read: 'var(--accent)',
+    write: 'var(--success)',
+    iops: 'var(--warning)'
+};
 
 interface DiskOperationsProps {
     history: ClusterMetrics[];

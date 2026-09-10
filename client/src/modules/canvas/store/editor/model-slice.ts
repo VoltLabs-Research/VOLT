@@ -50,12 +50,6 @@ const getSceneStateWithoutTimestepScopedScenes = (state: ModelState): Pick<Model
     };
 };
 
-const MODEL_DRAG_OFFSET_ZERO: ModelDragOffset = {
-    x: 0,
-    y: 0,
-    z: 0
-};
-
 const getSceneKeysInMergeGroup = (
     mergeGroups: Record<string, string>,
     groupId: string
@@ -88,8 +82,6 @@ const createInitialState = (): ModelState => ({
     activeScene: DEFAULT_SCENE,
     activeScenes: [DEFAULT_SCENE],
     isModelLoading: false,
-    modelLoadProgress: 0,
-    modelLoadError: null,
     pointSizeMultiplier: 1.0,
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneVisualOverrides: {},
@@ -139,17 +131,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         });
     },
 
-    toggleScene(scene: SceneObjectType) {
-        const state = get();
-        const exists = state.activeScenes.some((s: SceneObjectType) => isSameScene(s, scene));
-
-        if (exists) {
-            get().removeScene(scene);
-        } else {
-            get().addScene(scene);
-        }
-    },
-
     setModelBounds(modelBounds: ModelData['modelBounds']) {
         const { activeModel } = get();
         if (!activeModel) return;
@@ -172,27 +153,8 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         });
     },
 
-    setIsModelLoading(loading: boolean) {
-        set({
-            isModelLoading: loading,
-            modelLoadProgress: loading ? 0 : get().modelLoadProgress
-        });
-    },
-
     setModelLoadingState(loadingState: ModelLoadingState) {
-        set({
-            isModelLoading: loadingState.isLoading,
-            modelLoadProgress: loadingState.progress,
-            modelLoadError: loadingState.error
-        });
-    },
-
-    selectModel(glbs: ModelData['glbs']) {
-        set({ activeModel: { glbs } });
-    },
-
-    setGlbsWithoutLoading(glbs: ModelData['glbs']) {
-        set({ activeModel: { glbs } });
+        set({ isModelLoading: loadingState.isLoading });
     },
 
     resetModel() {
@@ -224,10 +186,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         }));
     },
 
-    resetPointCloudSettings() {
-        set({ pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL });
-    },
-
     setSceneOpacity(sceneKey: string, opacity: number) {
         const nextOpacity = Math.max(0, Math.min(1, opacity));
 
@@ -240,10 +198,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 }
             }
         }));
-    },
-
-    getSceneOpacity(sceneKey: string): number {
-        return get().sceneVisualOverrides[sceneKey]?.opacity ?? 1.0;
     },
 
     setSceneLineWidth(sceneKey: string, lineWidth: number) {
@@ -262,10 +216,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         }));
     },
 
-    getSceneLineWidth(sceneKey: string): number | undefined {
-        return get().sceneVisualOverrides[sceneKey]?.lineWidth;
-    },
-
     setSceneColor(sceneKey: string, color: string | undefined) {
         set((state) => ({
             sceneVisualOverrides: {
@@ -276,10 +226,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 }
             }
         }));
-    },
-
-    getSceneColor(sceneKey: string): string | undefined {
-        return get().sceneVisualOverrides[sceneKey]?.color;
     },
 
     setSceneEdges(sceneKey: string, edges: boolean) {
@@ -319,10 +265,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 }
             };
         });
-    },
-
-    getModelDragOffsetForScene(sceneKey: string): ModelDragOffset {
-        return get().modelDragOffsets[sceneKey] ?? MODEL_DRAG_OFFSET_ZERO;
     },
 
     mergeScenes(sceneKeys: string[]) {

@@ -26,7 +26,7 @@ import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { PipelineRunSection } from '../../utils/pipeline-run-sections';
 import type { CanvasAnalysisStatus, CanvasAnalysisStatusEntry } from '../../utils/analysis-status';
-import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
+import type { AnalysisActivityTone } from '../../utils/analysis-status-selectors';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -52,11 +52,11 @@ interface SceneCollectionProps {
     showDefaultScene?: boolean;
     showSimulationCell?: boolean;
     onToggleSimulationCell?: () => void;
-    sceneVisualOverrides?: SceneVisualOverrides;
-    setSceneOpacity?: (sceneKey: string, opacity: number) => void;
-    setSceneLineWidth?: (sceneKey: string, lineWidth: number) => void;
-    setSceneColor?: (sceneKey: string, color: string | undefined) => void;
-    setSceneEdges?: (sceneKey: string, edges: boolean) => void;
+    sceneVisualOverrides: SceneVisualOverrides;
+    setSceneOpacity: (sceneKey: string, opacity: number) => void;
+    setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
+    setSceneColor: (sceneKey: string, color: string | undefined) => void;
+    setSceneEdges: (sceneKey: string, edges: boolean) => void;
     firstAnalysisTourTargetId?: string;
     firstExposureTourTargetId?: string;
 }
@@ -84,7 +84,7 @@ const SceneCollection = ({
     showDefaultScene = true,
     showSimulationCell = true,
     onToggleSimulationCell,
-    sceneVisualOverrides = {},
+    sceneVisualOverrides,
     setSceneOpacity,
     setSceneLineWidth,
     setSceneColor,
@@ -126,10 +126,10 @@ const SceneCollection = ({
                 onDeleteAnalysis={onDeleteAnalysis}
                 onRetryLoadExposures={onRetryLoadExposures}
                 sceneVisualOverrides={sceneVisualOverrides}
-                setSceneOpacity={setSceneOpacity ?? (() => undefined)}
-                setSceneLineWidth={setSceneLineWidth ?? (() => undefined)}
-                setSceneColor={setSceneColor ?? (() => undefined)}
-                setSceneEdges={setSceneEdges ?? (() => undefined)}
+                setSceneOpacity={setSceneOpacity}
+                setSceneLineWidth={setSceneLineWidth}
+                setSceneColor={setSceneColor}
+                setSceneEdges={setSceneEdges}
                 resolveSceneRenderMetadata={(pluginId, exposureId) => {
                     return resolvePluginSceneRenderMetadata(pluginsById[pluginId], exposureId);
                 }}

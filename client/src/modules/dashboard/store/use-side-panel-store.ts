@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type DashboardSidePanelId = 'jobs';
+type DashboardSidePanelId = 'jobs';
 
 interface DashboardSidePanelState {
     openPanel: DashboardSidePanelId | null;

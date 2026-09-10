@@ -1,19 +1,38 @@
-import {
-    BUILT_IN_FEATURE_BUDGETS,
-    DEFAULT_GEOMETRY_BUDGET
-} from '@/modules/fractal/contracts/lod-config';
-import type { FeatureBudget, GeometryBudget } from '@/modules/fractal/contracts/lod-config';
+interface FeatureBudget {
+    maxGeometry: number;
+    decimation?: number;
+}
+
+interface GeometryBudget {
+    maxTriangles: number;
+    maxDrawCalls: number;
+    perFeature: Record<string, FeatureBudget>;
+}
+
+const BUILT_IN_FEATURE_BUDGETS: Record<string, FeatureBudget> = {
+    points: { maxGeometry: 100_000_000 },
+    vectors: {
+        maxGeometry: 2_000_000,
+        decimation: 10
+    },
+    bonds: {
+        maxGeometry: 10_000_000,
+        decimation: 5
+    },
+    meshes: { maxGeometry: 1_000_000 }
+};
+
+const DEFAULT_GEOMETRY_BUDGET: GeometryBudget = {
+    maxTriangles: 1_000_000,
+    maxDrawCalls: 100,
+    perFeature: BUILT_IN_FEATURE_BUDGETS
+};
 
 class GeometryBudgetManager {
     private featureBudgets = new Map<string, FeatureBudget>();
-    private globalBudget: { maxTriangles: number; maxDrawCalls: number };
 
     constructor(budget: GeometryBudget = DEFAULT_GEOMETRY_BUDGET) {
         this.applyBudget(budget);
-        this.globalBudget = {
-            maxTriangles: budget.maxTriangles,
-            maxDrawCalls: budget.maxDrawCalls
-        };
     }
 
     applyBudget(budget: GeometryBudget): void {
@@ -24,37 +43,12 @@ class GeometryBudgetManager {
         for (const [name, featureBudget] of Object.entries(budget.perFeature)) {
             this.featureBudgets.set(name, featureBudget);
         }
-        this.globalBudget = {
-            maxTriangles: budget.maxTriangles,
-            maxDrawCalls: budget.maxDrawCalls
-        };
-    }
-
-    registerFeature(name: string, budget: FeatureBudget): void {
-        this.featureBudgets.set(name, budget);
-    }
-
-    getFeatureBudget(name: string): FeatureBudget | undefined {
-        return this.featureBudgets.get(name);
-    }
-
-    evaluateDecimation(featureName: string, fullGeometryCount: number): number {
-        if (fullGeometryCount <= 0) return 1;
-        const budget = this.featureBudgets.get(featureName);
-        if (!budget) return 1;
-        const floor = budget.decimation && budget.decimation > 1 ? budget.decimation : 1;
-        if (fullGeometryCount <= budget.maxGeometry) return floor;
-        return Math.max(floor, Math.ceil(fullGeometryCount / budget.maxGeometry));
     }
 
     isWithinBudget(featureName: string, fullGeometryCount: number): boolean {
         const budget = this.featureBudgets.get(featureName);
         if (!budget) return true;
         return fullGeometryCount <= budget.maxGeometry && (!budget.decimation || budget.decimation <= 1);
-    }
-
-    getGlobalBudget(): { maxTriangles: number; maxDrawCalls: number } {
-        return { ...this.globalBudget };
     }
 }
 

@@ -46,8 +46,6 @@ export interface ModelState {
     activeScenes: SceneObjectType[];
     activeModel: ModelData | null;
     isModelLoading: boolean;
-    modelLoadProgress: number;
-    modelLoadError: string | null;
     pointSizeMultiplier: number;
     pointCloudSettings: PointCloudSettingsState;
     sceneVisualOverrides: SceneVisualOverrides;
@@ -59,10 +57,7 @@ export interface ModelState {
 }
 
 interface ModelActions {
-    selectModel: (glbs: TrajectoryGLBs | null) => void;
-    setGlbsWithoutLoading: (glbs: TrajectoryGLBs | null) => void;
     resetModel: () => void;
-    setIsModelLoading: (loading: boolean) => void;
     setModelLoadingState: (state: ModelLoadingState) => void;
     setModelBounds: (modelBounds: BoundsInfo | null) => void;
     setModelWorldBounds: (bounds: ModelWorldBounds | null) => void;
@@ -70,23 +65,17 @@ interface ModelActions {
     clearTimestepScopedScenes: () => void;
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;
-    toggleScene: (scene: SceneObjectType) => void;
     setPointSizeMultiplier: (multiplier: number) => void;
     increasePointSize: () => void;
     decreasePointSize: () => void;
     setPointCloudSettings: (partial: Partial<PointCloudSettingsState>) => void;
-    resetPointCloudSettings: () => void;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
-    getSceneOpacity: (sceneKey: string) => number;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
-    getSceneLineWidth: (sceneKey: string) => number | undefined;
     setSceneColor: (sceneKey: string, color: string | undefined) => void;
-    getSceneColor: (sceneKey: string) => string | undefined;
     setSceneEdges: (sceneKey: string, edges: boolean) => void;
     setShowSimulationCell: (show: boolean) => void;
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
-    getModelDragOffsetForScene: (sceneKey: string) => ModelDragOffset;
     mergeScenes: (sceneKeys: string[]) => void;
     unmergeScene: (sceneKey: string) => void;
 }
@@ -100,7 +89,6 @@ export interface PlaybackState {
     isPreloading?: boolean;
     didPreload?: boolean;
     preloadProgress?: number;
-    downlinkMbps?: number | null;
     rangeStart?: number;
     rangeEnd?: number;
     targetFps: number;
@@ -134,7 +122,7 @@ interface TimestepActions {
 interface LoadTimelineModelsParams {
     trajectoryId: string;
     timesteps: number[];
-    onProgress?: (p: number, m?: { bps: number }) => void;
+    onProgress?: (p: number) => void;
     maxFramesToPreload?: number;
     currentFrameIndex?: number;
     signal?: AbortSignal;

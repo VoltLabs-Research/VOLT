@@ -28,9 +28,7 @@ interface CanvasTreeRowProps {
     isActive?: boolean;
     onClick?: () => void;
     indent?: CanvasTreeIndent;
-    trailing?: ReactNode;
     disabled?: boolean;
-    className?: string;
     ariaLabel?: string;
     tourTargetId?: string;
 }
@@ -41,9 +39,7 @@ export const CanvasTreeRow = ({
     isActive,
     onClick,
     indent = 'base',
-    trailing,
     disabled,
-    className = '',
     ariaLabel,
     tourTargetId
 }: CanvasTreeRowProps) => (
@@ -62,14 +58,11 @@ export const CanvasTreeRow = ({
             treeIndentClass(indent),
             isActive && 'text-accent',
             disabled ? 'cursor-default opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
-            !disabled && onClick && 'cursor-pointer',
-            className
+            !disabled && onClick && 'cursor-pointer'
         )}
     >
         {icon ?? <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />}
         <span className={isActive ? 'text-foreground' : 'text-muted'}>{label}</span>
-        {trailing !== undefined && <span className='flex-1' />}
-        {trailing}
     </button>
 );
 

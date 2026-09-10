@@ -1,15 +1,10 @@
 import { ListBox, Select } from '@heroui/react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
-
-export interface ClusterSelectOption {
-    value: string;
-    title: string;
-    description?: string;
-};
+import type { SelectOption } from '@/shared/contracts/form-field';
 
 interface ClusterOptionSelectProps {
     ariaLabel: string;
-    options: ClusterSelectOption[];
+    options: SelectOption[];
     value: string | null;
     onChange: (value: string) => void;
     placeholder?: string;

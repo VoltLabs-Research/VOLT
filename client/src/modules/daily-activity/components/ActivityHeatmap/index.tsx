@@ -5,13 +5,12 @@ import type { DailyActivity } from '@volt/contracts/modules/daily-activity/domai
 
 interface ActivityHeatmapProps {
     data: DailyActivity[];
-    range?: number;
 };
 
-const ActivityHeatmap = ({ data, range = 365 }: ActivityHeatmapProps) => {
+const ActivityHeatmap = ({ data }: ActivityHeatmapProps) => {
     const { cells, weeks } = useActivityHeatmap({
         data,
-        range
+        range: 365
     });
 
     const levelClassNames = [

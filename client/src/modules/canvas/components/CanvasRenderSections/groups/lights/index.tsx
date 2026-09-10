@@ -1,4 +1,4 @@
-import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../CanvasRenderConfigHelpers';
+import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '@/modules/canvas/components/CanvasRenderConfigHelpers';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
 import { useMemo } from 'react';

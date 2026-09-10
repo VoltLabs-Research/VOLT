@@ -3,7 +3,7 @@ import useGlbScene from './use-glb-scene';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import useExpressionVisibilityMask from '@/modules/canvas/hooks/use-expression-visibility-mask';
 import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
-import { useCellDisplayStore } from '@/modules/fractal/store/cell-display-store';
+import { useCellDisplayStore } from '@/modules/fractal/store/use-cell-display-store';
 import useSimulationCell from '@/modules/simulation-cell/hooks/use-simulation-cell';
 import { areModelWorldBoundsEqual } from '@/modules/fractal/utils/model-world-bounds';
 import { calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils/box-utils';

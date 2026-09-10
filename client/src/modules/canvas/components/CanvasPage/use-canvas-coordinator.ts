@@ -6,7 +6,7 @@ import {
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from '../../hooks/queries';
+import { useCanvasBootstrapQuery, useCanvasAnalysesQuery, useCanvasTrajectoryQuery } from '@/modules/canvas/hooks/queries';
 import useAccessDenied, { createAccessDeniedRetry } from '@/shared/ui/hooks/use-access-denied';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import { useEffect, useMemo, useRef } from 'react';
@@ -80,15 +80,14 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const selectedAnalysisTimesteps = useMemo(() => {
         return getSelectedTimestepsForAnalysis(selectedAnalysis, trajectoryTimesteps);
     }, [selectedAnalysis, trajectoryTimesteps]);
-    const availableTimesteps = trajectoryTimesteps;
     const timelineScopeKey = useMemo(() => {
         return [
             trajectory?._id ?? trajectoryId ?? 'no-trajectory',
             analysisId ?? 'no-analysis',
-            availableTimesteps.join(',')
+            trajectoryTimesteps.join(',')
         ].join('|');
-    }, [trajectory?._id, trajectoryId, analysisId, availableTimesteps]);
-    const resolvedCurrentTimestep = getNearestTimestep(currentTimestep, availableTimesteps);
+    }, [trajectory?._id, trajectoryId, analysisId, trajectoryTimesteps]);
+    const resolvedCurrentTimestep = getNearestTimestep(currentTimestep, trajectoryTimesteps);
     const isAwaitingSelectedAnalysis = Boolean(analysisId && analysesQuery.isLoading && !selectedAnalysis);
     const previousTimelineScopeKeyRef = useRef<string>('');
     const previousRequestedTimestepKeyRef = useRef<string>('');
@@ -124,20 +123,20 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             return;
         }
 
-        const requestedTimestepKey = `${requestedTimestep}|${availableTimesteps.join(',')}`;
+        const requestedTimestepKey = `${requestedTimestep}|${trajectoryTimesteps.join(',')}`;
         if (previousRequestedTimestepKeyRef.current === requestedTimestepKey) {
             return;
         }
 
         previousRequestedTimestepKeyRef.current = requestedTimestepKey;
-        const nextTimestep = getNearestTimestep(requestedTimestep, availableTimesteps);
+        const nextTimestep = getNearestTimestep(requestedTimestep, trajectoryTimesteps);
         if (nextTimestep === undefined || nextTimestep === currentTimestep) {
             return;
         }
 
         setCurrentTimestep(nextTimestep);
     }, [
-        availableTimesteps,
+        trajectoryTimesteps,
         currentTimestep,
         isAwaitingSelectedAnalysis,
         requestedTimestep,
@@ -160,14 +159,13 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
 
     return {
         trajectory,
-        availableTimesteps,
+        availableTimesteps: trajectoryTimesteps,
         selectedAnalysisTimesteps,
         currentTimestep: resolvedCurrentTimestep,
         isLoading,
         analyses,
         isAnalysesLoading: analysesQuery.isLoading,
         error: trajectoryQuery.error?.message ?? null,
-        bootstrap: bootstrapQuery.data ?? null,
         access: bootstrapQuery.data?.access ?? null,
         accessDenied,
         accessDeniedMessage

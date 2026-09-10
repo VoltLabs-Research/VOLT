@@ -4,10 +4,10 @@ import { forwardRef } from 'react';
 import type { FocusEventHandler, KeyboardEventHandler, MouseEventHandler, ReactNode } from 'react';
 
 export type ContextMenuItemSize = 'sm' | 'md';
-export type ContextMenuItemVariant = 'default' | 'danger';
-export type ContextMenuItemRole = 'menuitem' | 'menuitemcheckbox' | 'menuitemradio';
+type ContextMenuItemVariant = 'default' | 'danger';
+type ContextMenuItemRole = 'menuitem' | 'menuitemcheckbox' | 'menuitemradio';
 
-export interface ContextMenuItemProps {
+interface ContextMenuItemProps {
     icon?: ReactNode;
     label?: string;
     children?: ReactNode;

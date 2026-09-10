@@ -7,7 +7,9 @@ import type { QueryOptions } from '@/shared/query/create-query';
 import { registerPreservedQueryKey } from '@/shared/utils/app-cleanup-registry';
 import { useMutation } from '@tanstack/react-query';
 import type { Team } from '@volt/contracts/modules/team/domain';
-import type { JoinByInviteCodeInput, JoinByInviteCodeResponse, PreviewJoinByInviteCodeResponse, UpdateTeamParams } from '../../api/services/team-service';
+import type { UpdateTeamParams } from '../../api/services/team-service';
+import type { JoinTeamByCodeInput } from '@volt/contracts/modules/team/http';
+import type { JoinTeamResponse, PreviewJoinTeamResponse } from '@volt/contracts/modules/team/domain';
 import type { TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateTeamInput } from '@volt/contracts/modules/team/http';
 
@@ -104,7 +106,7 @@ export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<s
     });
 };
 
-export const usePreviewJoinByCodeQuery = createQuery<JoinByInviteCodeInput, PreviewJoinByInviteCodeResponse>(
+export const usePreviewJoinByCodeQuery = createQuery<JoinTeamByCodeInput, PreviewJoinTeamResponse>(
     (params) => TEAM_QUERY_KEYS.joinByCodePreview(params.code),
     (params) => teamService.previewJoinByCode(params)
 );
@@ -185,7 +187,7 @@ export const useDeleteInviteCodeMutation = createMutation<void, TeamScopedParams
     }
 );
 
-export const useJoinByCodeMutation = createInvalidatingMutation<JoinByInviteCodeResponse, JoinByInviteCodeInput>(
+export const useJoinByCodeMutation = createInvalidatingMutation<JoinTeamResponse, JoinTeamByCodeInput>(
     teamService.joinByCode,
     [TEAM_QUERY_KEYS.teams()]
 );

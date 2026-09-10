@@ -4,7 +4,7 @@ import type { ComponentProps, CSSProperties } from 'react';
 
 type ScrollShadowProps = ComponentProps<typeof ScrollShadow>;
 
-export type ScrollableProps = Omit<ScrollShadowProps, 'hideScrollBar' | 'variant'>;
+type ScrollableProps = Omit<ScrollShadowProps, 'hideScrollBar' | 'variant'>;
 
 const DEFAULT_SHADOW_SIZE = 24;
 

@@ -2,8 +2,22 @@ import { clearCurrentUserQueryData, fetchCurrentUser } from '@/modules/auth/hook
 import { clearSocketSession, updateSocketAuthToken } from '@/modules/socket/services/socket-auth-session';
 import { resetTeamSessionState } from '@/modules/team/store/team/use-team-store';
 import { tokenStorage } from '@/shared/auth/token-storage';
-import { tryLocalAutoLogin } from '@/modules/auth/services/local-auto-login';
 import { create } from 'zustand';
+import authService from '@/modules/auth/api/service';
+import systemService from '@/modules/system/api/service';
+
+const tryLocalAutoLogin = async (): Promise<string | null> => {
+    try{
+        const { mode } = await systemService.getDeploymentConfig({});
+        if(mode !== 'local'){
+            return null;
+        }
+        const { token } = await authService.localSignIn({});
+        return token;
+    }catch{
+        return null;
+    }
+};
 
 interface AuthStore{
     isLoading: boolean;

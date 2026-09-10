@@ -42,8 +42,6 @@ const useKeyboardShortcuts = ({
     onDownloadAnalyses,
     onStartGuidedTour
 }: UseKeyboardShortcutsParams) => {
-    const shortcuts = useKeyboardShortcutsStore((s) => s.shortcuts);
-    const currentScope = useKeyboardShortcutsStore((s) => s.currentScope);
     const setLastTriggered = useKeyboardShortcutsStore((s) => s.setLastTriggered);
     const setShortcutEnabled = useKeyboardShortcutsStore((s) => s.setShortcutEnabled);
     const {
@@ -334,11 +332,6 @@ const useKeyboardShortcuts = ({
             setLastTriggered(null);
         };
     }, [setLastTriggered]);
-
-    return {
-        shortcuts,
-        currentScope
-    };
 };
 
 export default useKeyboardShortcuts;

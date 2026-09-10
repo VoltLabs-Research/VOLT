@@ -3,7 +3,6 @@ import { reportError } from '@/shared/errors/core/report-error';
 import { useCallback, useState } from 'react';
 
 interface UseTextInputModalStateOptions {
-    initialValue?: string;
     requiredMessage: string;
     submitErrorTitle: string;
     onSubmit: (value: string) => Promise<void>;
@@ -11,21 +10,20 @@ interface UseTextInputModalStateOptions {
 }
 
 const useTextInputModalState = ({
-    initialValue = '',
     requiredMessage,
     submitErrorTitle,
     onSubmit,
     onSubmitted
 }: UseTextInputModalStateOptions) => {
-    const [value, setValue] = useState(initialValue);
+    const [value, setValue] = useState('');
     const [error, setError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const reset = useCallback((nextValue = initialValue) => {
+    const reset = useCallback((nextValue = '') => {
         setValue(nextValue);
         setError(undefined);
         setIsSubmitting(false);
-    }, [initialValue]);
+    }, []);
 
     const handleValueChange = useCallback((nextValue: string) => {
         setValue(nextValue);

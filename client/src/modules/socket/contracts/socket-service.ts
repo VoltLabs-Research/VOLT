@@ -1,11 +1,7 @@
 import type { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection-status';
 
 export interface SocketOptions {
-    url?: string;
-    path?: string;
     auth?: Record<string, unknown>;
-    autoConnect?: boolean;
-    timeout?: number;
 };
 
 export interface EventSubscription {
@@ -19,7 +15,6 @@ export interface ISocketService {
     isConnected(): boolean;
     getConnectionStatus(): SocketConnectionStatus;
     on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void): () => void;
-    off<TArgs extends unknown[]>(event: string, callback?: (...args: TArgs) => void): void;
     emit<T = unknown>(event: string, data?: unknown): Promise<T>;
     emitWithoutAck(event: string, data?: unknown): void;
     updateAuth(auth: Record<string, unknown>): void;

@@ -20,7 +20,6 @@ const BUTTON_CONTENT: Record<InviteButtonState, { text: string; icon?: ReactNode
 interface InviteButtonProps {
     state: InviteButtonState;
     isLoading: boolean;
-    onClick?: () => void;
     disabled?: boolean;
     type?: 'button' | 'submit';
 }
@@ -28,7 +27,6 @@ interface InviteButtonProps {
 export const InviteButton = ({
     state,
     isLoading,
-    onClick,
     disabled = false,
     type = 'button'
 }: InviteButtonProps) => {
@@ -38,7 +36,6 @@ export const InviteButton = ({
         <Button
             variant='primary'
             className='min-h-11'
-            onPress={onClick}
             isDisabled={disabled}
             isPending={isLoading}
             type={type}

@@ -16,7 +16,7 @@ export default function useTeamData(options?: UseTeamDataOptions) {
     const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
     const hydrateSelectedTeamId = useTeamStore((state) => state.hydrateSelectedTeamId);
 
-    const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
+    const { checkAccessDeniedError } = useAccessDenied();
 
     const teamsQuery = useTeamsQuery(undefined, { enabled });
 
@@ -70,9 +70,6 @@ export default function useTeamData(options?: UseTeamDataOptions) {
     return {
         teams,
         isTeamsLoading,
-        selectedTeamId,
-        hasHydratedSelection,
-        accessDenied,
-        accessDeniedMessage
+        selectedTeamId
     };
 }

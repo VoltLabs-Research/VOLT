@@ -3,9 +3,8 @@ import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 interface UseAIConversationsOptions {
-    navigateOnConversationChange?: boolean;
     onConversationChange?: (conversationId?: string) => void;
     onConversationCreated?: () => void;
     checkAccessDeniedError: (error: unknown) => boolean;
@@ -16,9 +15,7 @@ const useAIConversations = (
     conversationId: string | undefined,
     options: UseAIConversationsOptions
 ) => {
-    const navigate = useNavigate();
     const {
-        navigateOnConversationChange = true,
         onConversationChange,
         onConversationCreated,
         checkAccessDeniedError
@@ -47,15 +44,8 @@ const useAIConversations = (
     }
 
     const handleConversationChange = useCallback((targetConversationId?: string) => {
-        if (navigateOnConversationChange) {
-            if (targetConversationId) {
-                navigate(`/dashboard/ai/${targetConversationId}`);
-            } else {
-                navigate('/dashboard/ai');
-            }
-        }
         onConversationChange?.(targetConversationId);
-    }, [navigate, navigateOnConversationChange, onConversationChange]);
+    }, [onConversationChange]);
 
     const handleCreateConversation = useCallback(async (initialTitle?: string) => {
         try {

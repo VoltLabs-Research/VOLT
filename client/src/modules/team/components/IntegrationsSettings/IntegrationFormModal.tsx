@@ -9,7 +9,7 @@ import { OLLAMA_DEFAULT_BASE_URL } from '@/modules/team/hooks/ai-integration/use
 import type { IntegrationDraft } from '@/modules/team/hooks/ai-integration/use-team-ai-integrations-settings';
 import { useId } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
-import type { Key } from 'react-aria-components';
+import type { Key } from '@heroui/react';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { TeamAIIntegration, TeamAIModelMetadata, TeamAIProviderCatalogItem } from '@volt/contracts/modules/team/domain';
 
@@ -94,7 +94,6 @@ const IntegrationFormModal = ({
     return (
         <Modal
             id={TEAM_AI_INTEGRATION_MODAL_ID}
-            lazyMount
             title={editingProvider ? 'Configure provider' : 'Add provider'}
             description='Set the API key and default model for this provider.'
             width='480px'

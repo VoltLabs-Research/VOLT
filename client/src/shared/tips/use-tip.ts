@@ -8,18 +8,17 @@ import { beginContextualTipDisplay, finalizeContextualTipDisplay, releaseContext
 
 interface UseTipOptions {
     enabled?: boolean;
-    delay?: number;
     triggerKey?: string | number | boolean | null;
 };
 
 const useTip = (tipId: ContextualTipId, options: UseTipOptions = {}): void => {
-    const { enabled = true, delay, triggerKey } = options;
+    const { enabled = true, triggerKey } = options;
     const timerRef = useRef<number | null>(null);
     const releaseTimerRef = useRef<number | null>(null);
     const visibilityMonitorRef = useRef<number | null>(null);
     const toastIdRef = useRef<string | null>(null);
     const tip = getContextualTipDefinition(tipId);
-    const resolvedDelay = delay ?? tip.delay ?? 1500;
+    const resolvedDelay = tip.delay ?? 1500;
 
     const clearPendingTimer = useCallback((): void => {
         if (timerRef.current !== null) {

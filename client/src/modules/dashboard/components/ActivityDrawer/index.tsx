@@ -4,11 +4,36 @@ import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activ
 import ActivityTimelinePanel, { ActivityTimelineSkeleton } from '@/modules/dashboard/components/ActivityDrawer/ActivityTimelinePanel';
 import InAppActivityPanel from '@/modules/dashboard/components/ActivityDrawer/InAppActivityPanel';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import { getTeamOwnerContactHint, toPermissionLabels } from '@/modules/dashboard/utils/access-denied-hints';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import { DASHBOARD_DRAWER_IDS } from '@/modules/dashboard/store/use-jobs-drawer-store';
 import { useState } from 'react';
 import type { Key, ReactNode } from 'react';
+import type { Team } from '@volt/contracts/modules/team/domain';
+
+const PERMISSION_LABELS: Record<string, string> = {
+    'trajectory:read': 'View trajectories',
+    'analysis:read': 'View analyses',
+    'daily-activity:read': 'View team activity',
+    'team-member:read': 'View team members',
+    'team:read': 'View team',
+    'team-role:read': 'View roles',
+    'team-secret-key:read': 'View secret keys'
+};
+
+const toPermissionLabels = (keys: string[]): string[] => {
+    return keys.map((key) => PERMISSION_LABELS[key] ?? key);
+};
+
+const getTeamOwnerContactHint = (team: Team | null | undefined): string | undefined => {
+    const owner = team?.owner;
+    if (!owner) {
+        return undefined;
+    }
+
+    const fullName = `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim();
+
+    return `${fullName || owner.fullName?.trim() || owner.email} (team owner)`;
+};
 
 type DashboardActivityTabId = 'activity' | 'in-app-activity';
 
@@ -94,7 +119,6 @@ const ActivityDrawer = () => {
             placement='right'
             title='Your activity'
             description={isInAppTab ? 'Avg / day of week' : 'Last 7 days'}
-            lazyMount
         >
             <div className='flex h-full min-h-0 flex-col p-6 max-[768px]:p-4'>
                 <div className='flex items-center justify-between gap-4 mb-3 max-[768px]:flex-col max-[768px]:items-start'>

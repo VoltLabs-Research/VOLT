@@ -1,10 +1,10 @@
 import { cn } from '@heroui/react';
 import ArtifactTreeSection from './ArtifactTreeSection';
-import RightCollapsible, { PANEL_ICON_STYLE } from './RightCollapsible';
+import RightCollapsible from './RightCollapsible';
 import useArtifactSections from './use-artifact-sections';
 import useAnalysisActivityTone from '../../hooks/use-analysis-activity-tone';
 import useCanvasAnalysisStatus from '../../hooks/use-canvas-analysis-status';
-import useCanvasSidebarState from './use-canvas-sidebar-state';
+import useCanvasSidebarScene from './use-canvas-sidebar-scene';
 import usePipelineRuns from './use-pipeline-runs';
 import useSceneArtifacts from './use-scene-artifacts';
 import CanvasPipeline from '../CanvasPipeline';
@@ -13,7 +13,6 @@ import SceneCollection from '../SceneCollection';
 
 import AnalysisResultsSection from '../AnalysisResultsSection';
 
-import { Layers } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -61,9 +60,8 @@ const ObjectsPanel = ({
         removeScene,
         onDeleteAnalysis,
         applyDeletedAnalysisLocally,
-        onRetryLoadExposures,
-        sceneCollectionTotalAnalyses
-    } = useCanvasSidebarState({
+        onRetryLoadExposures
+    } = useCanvasSidebarScene({
         trajectory,
         trajectoryId: trajectory?._id
     });
@@ -197,7 +195,6 @@ const ObjectsPanel = ({
     const pipelineSection = (
         <RightCollapsible
             title="Pipeline"
-            icon={<Layers style={PANEL_ICON_STYLE} />}
             expanded
             collapsible={false}
             headerAction={(
@@ -287,7 +284,6 @@ const ObjectsPanel = ({
                 {showSceneCollection && (
                     <RightCollapsible
                         title="Visual Elements"
-                        icon={<Layers style={PANEL_ICON_STYLE} />}
                         expanded={sceneCollectionOpen}
                         onExpandedChange={setSceneCollectionOpen}
                         collapsible={!isAnalysisCompact || populatedSections.length > 0}
@@ -296,7 +292,7 @@ const ObjectsPanel = ({
                         <SceneCollection
                             {...sharedSceneCollectionProps}
                             runSections={runSections}
-                            totalAnalyses={sceneCollectionTotalAnalyses}
+                            totalAnalyses={sceneCollectionSections.length}
                             showDefaultScene={!isAnalysisCompact}
                             showSimulationCell={!isAnalysisCompact && showSimulationCell}
                             onToggleSimulationCell={handleToggleSimulationCell}

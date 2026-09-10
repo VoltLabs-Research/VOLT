@@ -20,7 +20,7 @@ import useDownloadAnalysisListings from '../../hooks/use-download-analysis-listi
 import useRecentlyReadyArtifacts from './use-recently-ready-artifacts';
 
 import type { ReactNode } from 'react';
-import type { AnalysisActivityTone } from '../../hooks/use-analysis-activity-tone';
+import type { AnalysisActivityTone } from '../../utils/analysis-status-selectors';
 import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
 import type { CanvasTreeIndent } from '../CanvasTree';
@@ -42,7 +42,7 @@ interface AnalysisTreeNodeProps extends SceneRowActions {
     pluginsById?: Record<string, Plugin>;
     tourTargetId?: string;
     firstExposureTourTargetId?: string;
-    indent?: CanvasTreeIndent;
+    indent: CanvasTreeIndent;
     badge?: ReactNode;
 }
 
@@ -68,7 +68,7 @@ const AnalysisTreeNode = ({
     pluginsById,
     tourTargetId,
     firstExposureTourTargetId,
-    indent = 'base',
+    indent,
     badge,
     ...sceneActions
 }: AnalysisTreeNodeProps) => {
@@ -85,7 +85,6 @@ const AnalysisTreeNode = ({
     );
     const firstExposureRowKey = artifactRows.find((row) => row.exposure)?.key;
     const recentlyReadyArtifactIds = useRecentlyReadyArtifacts(analysis.expectedArtifacts);
-    const isSelectedAnalysis = isCurrentAnalysis;
 
     const hasConfig = Object.keys(analysis.config).length > 0;
     const hasWorkflowPluginNodes = hasPluginWorkflowNodes(plugin);
@@ -117,7 +116,7 @@ const AnalysisTreeNode = ({
             return;
         }
 
-        if (isSelectedAnalysis) {
+        if (isCurrentAnalysis) {
             onSelectScene(TRAJECTORY_SCENE);
             return;
         }
@@ -128,7 +127,7 @@ const AnalysisTreeNode = ({
 
     const analysisMenuOptions: MenuOption[] = [
         {
-            label: isSelectedAnalysis ? 'Deselect' : 'Select',
+            label: isCurrentAnalysis ? 'Deselect' : 'Select',
             icon: MousePointerClick,
             onClick: handleSelectAnalysis,
             disabled: isAnalysisInProgress
@@ -157,7 +156,7 @@ const AnalysisTreeNode = ({
     const nameClassName = cn(
         'min-w-0 flex-[0_1_auto] transition-[color,text-shadow] duration-[180ms]',
         'truncate',
-        isSelectedAnalysis ? 'text-foreground' : 'text-muted',
+        isCurrentAnalysis ? 'text-foreground' : 'text-muted',
         tone && nameToneClass[tone]
     );
 
@@ -175,11 +174,11 @@ const AnalysisTreeNode = ({
                             TREE_ROW_CLASS,
                             'hover:rounded-md hover:bg-surface-hover',
                             treeIndentClass(indent),
-                            isSelectedAnalysis && 'text-accent'
+                            isCurrentAnalysis && 'text-accent'
                         )}
                         onClick={handleSelectAnalysis}
                         role='treeitem'
-                        aria-selected={isSelectedAnalysis}
+                        aria-selected={isCurrentAnalysis}
                         tabIndex={0}
                         data-tour-id={tourTargetId}
                     >

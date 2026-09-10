@@ -142,13 +142,11 @@ export const syncPluginEntityCaches = (plugin: Plugin): void => {
     pluginEntityCache.upsert(plugin);
 };
 
-const invalidatePluginEntityQueries = async (): Promise<void> => {
-    await batchInvalidateQueries([
-        PLUGIN_QUERY_KEYS.catalog(),
-        PLUGIN_QUERY_KEYS.all(),
-        PLUGIN_QUERY_KEYS.byId()
-    ]);
-};
+const invalidatePluginEntityQueries = () => batchInvalidateQueries([
+    PLUGIN_QUERY_KEYS.catalog(),
+    PLUGIN_QUERY_KEYS.all(),
+    PLUGIN_QUERY_KEYS.byId()
+]);
 
 const managePluginEntityMutation = <TVariables, TData = Plugin>(
     mutationFn: (variables: TVariables) => Promise<TData>,

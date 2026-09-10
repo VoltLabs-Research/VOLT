@@ -3,12 +3,6 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import type { ClientToolHandler, ClientToolResult } from '@/modules/ai/contracts/tools';
 import type { ResetViewSettingsInput } from '@volt/contracts/modules/ai/ai-tools';
 
-const EFFECT_LABELS: Record<ResetViewSettingsInput['action'], string> = {
-    undo: 'Undid view change',
-    redo: 'Redid view change',
-    reset_all: 'Reset view settings'
-};
-
 const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
     name: 'reset_view_settings',
     needsViewer: true,
@@ -59,19 +53,6 @@ const resetViewSettings: ClientToolHandler<ResetViewSettingsInput> = {
             ok: true,
             summary: 'Redid the last undone viewer change.',
             data: { action }
-        };
-    },
-
-    describeEffect(input, result) {
-        if (!result.ok) {
-            return {
-                label: `View ${input.action} failed`,
-                icon: 'rotate'
-            };
-        }
-        return {
-            label: EFFECT_LABELS[input.action],
-            icon: 'rotate'
         };
     }
 };

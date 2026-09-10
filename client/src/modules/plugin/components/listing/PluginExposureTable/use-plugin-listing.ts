@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import { fetchPluginListing, usePluginListingQuery } from '../../../hooks/listing/queries';
-import useDeletePluginListingAnalyses from '../../../hooks/listing/use-delete-plugin-listing-analyses';
+import { fetchPluginListing, usePluginListingQuery } from '@/modules/plugin/hooks/listing/queries';
+import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
 import { normalizeListingColumns } from '@/modules/plugin/utils/listing/normalize-listing-columns';
 import { buildListingRowMenuOptions } from '@/modules/plugin/utils/listing/listing-row-menu-options';
 import { useNavigate } from 'react-router-dom';

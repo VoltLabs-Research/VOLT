@@ -17,7 +17,7 @@ interface CanvasBridgeState extends CanvasBridgeRegistration {
     aiActingUntil: number;
     register: (registration: CanvasBridgeRegistration) => void;
     unregister: () => void;
-    markActing: (durationMs?: number) => void;
+    markActing: () => void;
     getSnapshot: () => CanvasBridgeSnapshot;
 }
 
@@ -50,8 +50,8 @@ export const useCanvasBridgeStore = create<CanvasBridgeState>((set, get) => ({
         });
     },
 
-    markActing(durationMs = AI_ACTING_WINDOW_MS) {
-        set({ aiActingUntil: Date.now() + durationMs });
+    markActing() {
+        set({ aiActingUntil: Date.now() + AI_ACTING_WINDOW_MS });
     },
 
     getSnapshot() {

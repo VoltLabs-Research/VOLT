@@ -7,7 +7,6 @@ import {
     COMPACT_FIELD_VALUE
 } from '@/shared/ui/utils/field-density';
 import { PluginMultiSelect } from '@/modules/plugin/components/plugin/PluginSelect';
-import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
 import {
@@ -211,13 +210,6 @@ const ArgumentFieldsRenderer = ({
                             triggerClassName={cn('w-full', COMPACT_FIELD_TRIGGER)}
                             valueClassName={COMPACT_FIELD_VALUE}
                             ariaLabel={argumentLabel}
-                            renderTriggerLabel={(selectedCount) => getMultiSelectTriggerLabel(
-                                selectedCount,
-                                selectValues,
-                                selectOptions,
-                                'Select options',
-                                'selected'
-                            )}
                         />
                     </div>
                 </div>

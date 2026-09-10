@@ -43,20 +43,6 @@ const switchTeam: ClientToolHandler<SwitchTeamInput> = {
                 switched: true
             }
         };
-    },
-
-    describeEffect(_input, result) {
-        if (!result.ok) {
-            return {
-                label: 'Could not switch team',
-                icon: 'team'
-            };
-        }
-        const switched = (result.data as { switched?: boolean } | undefined)?.switched;
-        return {
-            label: switched ? 'Switched active team' : 'Already on team',
-            icon: 'team'
-        };
     }
 };
 

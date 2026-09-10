@@ -99,8 +99,7 @@ export type LightsStore = LightsState & LightsActions;
 
 export enum LightingPreset {
     Trajectory = 'trajectory',
-    Defect = 'defect',
-    Custom = 'custom'
+    Defect = 'defect'
 };
 
 const DARK_LIGHTS_DEFAULTS: LightsThemeDefaults = {

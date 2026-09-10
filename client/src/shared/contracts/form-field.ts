@@ -7,7 +7,7 @@ export interface SelectOption {
     description?: string;
 };
 
-export interface SyntheticInputTarget {
+interface SyntheticInputTarget {
     name: string;
     value: string;
 };
@@ -27,7 +27,7 @@ export interface FormFieldAutocompleteOption {
     label?: string;
 };
 
-export interface FormFieldAutocompleteConfig {
+interface FormFieldAutocompleteConfig {
     trigger?: string;
     options: Array<string | number | FormFieldAutocompleteOption>;
     maxItems?: number;

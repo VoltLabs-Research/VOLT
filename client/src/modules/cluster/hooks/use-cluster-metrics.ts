@@ -16,20 +16,18 @@ const useClusterMetrics = (options: { clusterId?: string | null } = {}) => {
 
     const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
     const isConnected = useClusterStore((state) => state.isConnected);
-    const setSelectedClusterId = useClusterStore((state) => state.setSelectedClusterId);
     const targetClusterId = options.clusterId ?? selectedClusterId;
 
     const { data: clusters = [] } = clusterMetricsQuery(undefined);
     const historyClusterId = targetClusterId ?? '';
     const { data: history = [] } = clusterHistoryQuery(historyClusterId);
-    const { data: isHistoryLoaded = false } = clusterHistoryLoadedQuery(historyClusterId);
 
     const metrics = useMemo(() => {
         if (!clusters.length) return null;
         return clusters.find((cluster) => resolveClusterMetricId(cluster) === targetClusterId) || null;
     }, [clusters, targetClusterId]);
 
-    const handleRequestHistory = useCallback((minutes: number = 5, clusterId?: string | null) => {
+    const handleRequestHistory = useCallback((minutes: number, clusterId?: string | null) => {
         const targetClusterId = clusterId ?? useClusterStore.getState().selectedClusterId;
         if (!targetClusterId) {
             return;
@@ -64,10 +62,7 @@ const useClusterMetrics = (options: { clusterId?: string | null } = {}) => {
     return {
         metrics,
         clusters,
-        selectedClusterId,
-        setSelectedClusterId,
         isConnected,
-        isHistoryLoaded,
         history,
         requestHistory: handleRequestHistory
     };

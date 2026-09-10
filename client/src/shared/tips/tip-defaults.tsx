@@ -1,17 +1,14 @@
-import { Keyboard, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import type { SileoOptions } from 'sileo';
 import type { ContextualTipDefinition } from '@/shared/tips/tip-registry';
 
-export const AUTO_CONTEXTUAL_TIP_DURATION_MS = 6000;
+const AUTO_CONTEXTUAL_TIP_DURATION_MS = 6000;
 const MANUAL_CONTEXTUAL_TIP_DURATION_MS = 2_147_483_647;
 export const CONTEXTUAL_TIP_RELEASE_BUFFER_MS = 700;
 
-type ContextualTipVariant = 'default' | 'shortcut';
-
 export const buildContextualTipOptions = (
     tip: ContextualTipDefinition,
-    onManualDismiss?: () => void,
-    variant: ContextualTipVariant = 'default'
+    onManualDismiss?: () => void
 ): SileoOptions => {
     return {
         title: tip.title,
@@ -29,9 +26,7 @@ export const buildContextualTipOptions = (
                     collapse: 0
                 }
                 : true,
-        icon: variant === 'shortcut'
-            ? <Keyboard size={14} strokeWidth={1.8} />
-            : <Lightbulb size={14} strokeWidth={1.8} />,
+        icon: <Lightbulb size={14} strokeWidth={1.8} />,
         fill: 'var(--surface-tertiary)',
         roundness: 18,
         styles: {

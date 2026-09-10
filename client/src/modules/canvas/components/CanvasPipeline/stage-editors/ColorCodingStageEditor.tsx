@@ -8,11 +8,11 @@ import usePropertySelector from '@/modules/trajectory/hooks/particle-filter/use-
 import { colorCodingStatsQuery } from '@/modules/trajectory/hooks/color-coding/queries';
 import { applyColorCoding } from '@/modules/trajectory/hooks/color-coding/queries';
 import { COLORMAP_NAMES } from '@/modules/fractal/services/colormaps';
-import { parseNumericInput } from '../../../utils/parse-numeric-input';
+import { parseNumericInput } from '@/modules/canvas/utils/parse-numeric-input';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import type { ColorCodingStageConfig } from '../../../store/canvas-pipeline';
+import type { ColorCodingStageConfig } from '@/modules/canvas/store/canvas-pipeline';
 
 interface ColorCodingStageEditorProps {
     stageId: string;

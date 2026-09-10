@@ -7,8 +7,8 @@ const ViewportFloatingControls = () => (
         role='toolbar'
         aria-label='Viewport controls'
     >
-        <RenderMenuPopover compact />
-        <ScreenshotMenuPopover compact />
+        <RenderMenuPopover />
+        <ScreenshotMenuPopover />
     </div>
 );
 

@@ -1,8 +1,20 @@
-import { resetSectionState, setSectionFieldState } from './editor/store-section';
+import { resetSectionState, setSectionFieldState } from './store-section';
 
-import type { EditorStore } from './editor/types';
-import type { ConfigurationStore, ConfigurationState } from '@/modules/fractal/contracts/configuration';
+import type { EditorStore } from './types';
 import type { StateCreator } from 'zustand';
+
+interface ConfigurationState {
+    activeSidebarOption: string;
+    activeModifier: string;
+}
+
+interface ConfigurationActions {
+    setActiveModifier: (modifier: string) => void;
+    setActiveSidebarOption: (option: string) => void;
+    reset: () => void;
+}
+
+type ConfigurationStore = ConfigurationState & ConfigurationActions;
 
 export interface ConfigurationSlice {
     configuration: ConfigurationStore;

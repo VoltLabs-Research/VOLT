@@ -45,11 +45,10 @@ interface ProseProps {
     children: string;
     size?: keyof typeof SIZE_CLASS;
     components?: Components;
-    className?: string;
 }
 
-const Prose = ({ children, size = 'base', components, className }: ProseProps) => (
-    <div className={cn(PROSE_CLASS, SIZE_CLASS[size], className)}>
+const Prose = ({ children, size = 'base', components }: ProseProps) => (
+    <div className={cn(PROSE_CLASS, SIZE_CLASS[size])}>
         <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={components}>
             {children}
         </ReactMarkdown>
