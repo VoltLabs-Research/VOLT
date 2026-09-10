@@ -1,26 +1,20 @@
 import { ILike, In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
-import { mapPluginToRecord } from '@shared/application/utilities/mapPluginToRecord';
+import { mapPluginToRecord } from '@shared/utilities/mapPluginToRecord';
 import type { GetAnalysesByTeamIdItemView } from '@shared/contracts/operations/GetAnalysesByTeamId';
 import type { PluginRecord } from '@shared/contracts/operations/PluginRecord';
 import type { TrajectoryRecord } from '@shared/contracts/operations/GetTrajectoriesByTeamId';
 import Analysis from '@modules/analysis/models/Analysis';
-import Container from '@modules/container/models/Container';
 import Plugin from '@modules/plugin/models/Plugin';
-import Team from '@modules/team/models/Team';
+import type Team from '@modules/team/models/Team';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/services/plugin/WorkflowProjection';
-import TeamService from '@modules/team/services/TeamService';
-import { isEntityId } from '@shared/infrastructure/persistence/entity-id';
-import { paginate, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PageRequest } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
-
-type ContainerSearchRecord = {
-    _id: string;
-    name: string;
-};
+import teamService from '@modules/team/services/TeamService';
+import { isEntityId } from '@shared/persistence/entity-id';
+import { paginate, skipFor } from '@shared/persistence/paginate';
+import type { PageRequest } from '@shared/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 
 interface PluginSearchProps{
     modifier?: { name: string } | null;
@@ -40,7 +34,6 @@ interface GetGlobalSearchInput{
 
 interface GetGlobalSearchResult{
     analyses: GetAnalysesByTeamIdItemView[];
-    containers: ContainerSearchRecord[];
     trajectories: TrajectoryRecord[];
     teams: Team[];
     plugins: PluginSearchRecord[];
@@ -56,7 +49,6 @@ interface FindAnalysesOptions{
 
 const EMPTY_GLOBAL_SEARCH_RESULTS: GetGlobalSearchResult = {
     analyses: [],
-    containers: [],
     trajectories: [],
     teams: [],
     plugins: []
@@ -129,9 +121,7 @@ const toPluginSearchRecord = (plugin: Plugin): PluginSearchRecord => {
     }) as PluginSearchRecord;
 };
 
-export default class DashboardService{
-    #teamService = new TeamService();
-
+class DashboardService{
     async getGlobalSearch(input: GetGlobalSearchInput): Promise<GetGlobalSearchResult>{
         const normalizedQuery = input.query?.trim() ?? '';
         if(normalizedQuery.length < MIN_SEARCH_QUERY_LENGTH){
@@ -151,12 +141,11 @@ export default class DashboardService{
             teams
         ] = await Promise.all([
             this.#searchTrajectoryIdsByTeamAndName(input.teamId, searchPattern),
-            this.#teamService.listUserTeams(input.userId)
+            teamService.listUserTeams(input.userId)
         ]);
 
         const [
             analysesResult,
-            containersResult,
             trajectoriesResult,
             pluginsResult
         ] = await Promise.all([
@@ -167,14 +156,12 @@ export default class DashboardService{
                 trajectoryIds,
                 pageRequest
             }),
-            this.#findContainers(input.teamId, searchPattern, pageRequest),
             this.#searchTrajectories(input.teamId, searchPattern, limit),
             this.#findPlugins(input.teamId, normalizedLowerCaseQuery, pageRequest)
         ]);
 
         return {
             analyses: analysesResult.data,
-            containers: containersResult.data,
             trajectories: trajectoriesResult,
             teams: teams
                 .filter((team) => matchesNormalizedQuery(
@@ -248,20 +235,6 @@ export default class DashboardService{
         return paginate([data, matches.length], pageRequest);
     }
 
-    async #findContainers(teamId: string, searchPattern: string, pageRequest: PageRequest): Promise<PaginatedResult<ContainerSearchRecord>>{
-        const [containers, total] = await Container.findAndCount({
-            where: {
-                team: teamId,
-                name: ILike(searchPattern)
-            },
-            order: { updatedAt: 'DESC' },
-            take: pageRequest.limit,
-            skip: skipFor(pageRequest)
-        });
-
-        return paginate([containers.map((container) => container.toJSON() as ContainerSearchRecord), total], pageRequest);
-    }
-
     async #searchTrajectoryIdsByTeamAndName(teamId: string, searchPattern: string): Promise<string[]>{
         const trajectories = await Trajectory.find({
             where: {
@@ -287,3 +260,5 @@ export default class DashboardService{
         return trajectories.map((trajectory) => toTrajectoryRecord(trajectory));
     }
 }
+
+export default new DashboardService();

@@ -1,6 +1,6 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 
@@ -17,7 +17,7 @@ class NotebookRuntimeTerminator {
         try {
             await teamClusterDaemonClient.command(
                 teamClusterId,
-                ChannelCommands.ContainerDelete,
+                ChannelCommands.NotebookContainerDelete,
                 { containerId }
             );
             return true;

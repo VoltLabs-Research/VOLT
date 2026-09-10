@@ -10,11 +10,9 @@ export enum DashboardNavigationSection {
 
 export enum DashboardNavigationIconKey {
     AI = 'ai',
-    Containers = 'containers',
     Dashboard = 'dashboard',
     MyTeam = 'my-team',
     Notebooks = 'notebooks',
-    Plugins = 'plugins',
     ManageRoles = 'manage-roles',
     Whiteboards = 'whiteboards',
 

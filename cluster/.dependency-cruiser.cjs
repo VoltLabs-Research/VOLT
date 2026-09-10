@@ -1,6 +1,6 @@
 'use strict';
 
-const KERNEL_MODULES = ['system', 'container'];
+const KERNEL_MODULES = ['system'];
 
 module.exports = {
     forbidden: [

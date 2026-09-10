@@ -5,14 +5,13 @@ import type { ApiResponse } from '@volt/contracts/shared/http';
 
 export interface GlobalSearchInput {
     query: string;
-    limit?: number;
+    limit: number;
 }
 
 export type GlobalSearchSectionKey = keyof GlobalSearchResponse;
 
 export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResponse = {
     analyses: [],
-    containers: [],
     trajectories: [],
     teams: [],
     plugins: []
@@ -22,7 +21,7 @@ export const MIN_SEARCH_QUERY_LENGTH = 2;
 
 const endpoints = {
     search: custom<GlobalSearchInput, GlobalSearchResponse>(
-        async ({ getClient }, { query, limit = 5 }) => {
+        async ({ getClient }, { query, limit }) => {
             if (query.trim().length < MIN_SEARCH_QUERY_LENGTH) {
                 return EMPTY_GLOBAL_SEARCH_RESULTS;
             }

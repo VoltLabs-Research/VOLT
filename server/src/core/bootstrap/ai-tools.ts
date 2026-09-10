@@ -3,7 +3,6 @@ import AiAIToolController from '@modules/ai/ai-tools/AiAIToolController';
 import AnalysisAIToolController from '@modules/analysis/ai-tools/AnalysisAIToolController';
 import AuthAIToolController from '@modules/auth/ai-tools/AuthAIToolController';
 import ClusterAIToolController from '@modules/cluster/ai-tools/ClusterAIToolController';
-import ContainerAIToolController from '@modules/container/ai-tools/ContainerAIToolController';
 import DailyActivityAIToolController from '@modules/daily-activity/ai-tools/DailyActivityAIToolController';
 import DashboardAIToolController from '@modules/dashboard/ai-tools/DashboardAIToolController';
 import JobsAIToolController from '@modules/jobs/ai-tools/JobsAIToolController';
@@ -21,7 +20,6 @@ export const AI_TOOL_CONTROLLERS: readonly (new () => AIToolController)[] = [
     AnalysisAIToolController,
     AuthAIToolController,
     ClusterAIToolController,
-    ContainerAIToolController,
     DailyActivityAIToolController,
     DashboardAIToolController,
     JobsAIToolController,

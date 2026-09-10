@@ -21,20 +21,12 @@ export const ChannelCommands = Object.freeze({
 
     PipelineStart: 'pipeline.start',
 
-    ContainerList: 'container.list',
-    ContainerCreate: 'container.create',
-    ContainerGet: 'container.get',
-    ContainerUpdate: 'container.update',
-    ContainerDelete: 'container.delete',
-    ContainerStats: 'container.stats.get',
-    ContainerProcessesList: 'container.processes.list',
-    ContainerFilesList: 'container.files.list',
-    ContainerFileRead: 'container.file.read',
 
     JobsRetry: 'jobs.retry',
     JobsRemoveRunning: 'jobs.remove-running',
 
     NotebookSessionCreate: 'notebook.session.create',
+    NotebookContainerDelete: 'notebook.container.delete',
 
     PluginSync: 'plugin.sync',
     PluginWarmup: 'plugin.warmup',

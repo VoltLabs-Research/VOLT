@@ -3,8 +3,6 @@ export enum ActivityType{
     TrajectoryDeletion = 'trajectory-deletion',
     AnalysisPerformed = 'analysis-performed',
     AnalysisDeletion = 'analysis-deletion',
-    ContainerCreation = 'container-creation',
-    ContainerDeletion = 'container-deletion',
     WhiteboardCreation = 'whiteboard-creation',
     WhiteboardDeletion = 'whiteboard-deletion',
     RoleCreation = 'role-creation',

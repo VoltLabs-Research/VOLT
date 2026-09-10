@@ -7,7 +7,7 @@ import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
 import { useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Box as CubeIcon, Package, ScanSearch, Users, Workflow } from 'lucide-react';
+import { Box as CubeIcon, ScanSearch, Users, Workflow } from 'lucide-react';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -27,11 +27,6 @@ const SECTIONS: SectionConfig[] = [
         key: 'trajectories',
         icon: <ScanSearch size={16} />,
         title: 'Trajectories'
-    },
-    {
-        key: 'containers',
-        icon: <Package />,
-        title: 'Containers'
     },
     {
         key: 'plugins',

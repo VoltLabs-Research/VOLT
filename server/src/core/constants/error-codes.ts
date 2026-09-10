@@ -53,12 +53,6 @@ export const ErrorCodes = createErrorCodes({
     TEAM_MEMBERSHIP_FORBIDDEN: 'Team::Membership::Forbidden',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
 
-    CONTAINER_NOT_FOUND: 'Container::NotFound',
-    CONTAINER_NOT_RUNNING: 'Container::NotRunning',
-    CONTAINER_FILE_IS_DIRECTORY: 'Container::File::IsDirectory',
-    CONTAINER_NETWORKING_UNAVAILABLE: 'Container::NetworkingUnavailable',
-    CONTAINER_PORT_UNAVAILABLE: 'Container::PortUnavailable',
-    CONTAINER_PUBLIC_PORT_UNAVAILABLE: 'Container::PublicPortUnavailable',
 
     SESSION_NOT_FOUND: 'Session::NotFound',
     SESSION_REVOKE_FAILED: 'Session::RevokeSession::Failed',

@@ -19,11 +19,15 @@ import type {
     UpdateTeamClusterRoleParams
 } from '@/modules/cluster/api/service';
 import type { CreateTeamClusterResponse, CreateTeamClusterTransferRequestResponse, DeleteTeamClusterResponse, RegenerateTeamClusterEnrollmentTokenResponse,  UpdateTeamClusterQueueConcurrencyResponse, UpdateTeamClusterRoleResponse } from '@volt/contracts/modules/cluster/domain';
-import type { TeamCluster, TeamClusterLifecycleEvent } from '@volt/contracts/modules/cluster/domain';
+import type { ClusterResourceLimits, TeamCluster, TeamClusterLifecycleEvent } from '@volt/contracts/modules/cluster/domain';
 
 interface TeamClusterQueryKeyMap {
     byTeam: string;
     listingByTeam: string;
+    resourceLimits: {
+        teamId: string;
+        teamClusterId: string;
+    };
     transferJobs: ListTeamClusterTransferJobsParams;
 }
 
@@ -80,6 +84,17 @@ export const useTeamClustersQuery = (teamId: string, options?: QueryOptions<List
         ...options
     });
 };
+
+export const useClusterResourceLimitsQuery = createQuery<{ teamId: string; teamClusterId: string }, ClusterResourceLimits>(
+    TEAM_CLUSTER_QUERY_KEYS.resourceLimits,
+    async ({ teamId, teamClusterId }) => {
+        const result = await teamClusterService.getResourceLimits({
+            teamId,
+            teamClusterId
+        });
+        return result.resourceLimits;
+    }
+);
 
 const invalidateTeamClustersQuery = (teamId: string) => {
     return Promise.all(teamClusterListQueryKeys(teamId).map((queryKey) => {

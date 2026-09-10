@@ -4,16 +4,10 @@ import {
     wrapEnvelopeBuffer
 } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
 import {
-    createBufferedStream,
     SESSION_ATTACH_TIMEOUT_MS,
-    type PendingTerminalEntry,
     type PendingWebSocketEntry
 } from '@modules/cluster/services/reverse-channel/reverse-channel-pending';
 import type ReverseChannelPendingEntries from '@modules/cluster/services/reverse-channel/reverse-channel-pending';
-import {
-    TeamClusterReverseTerminalExec,
-    TeamClusterReverseTerminalStream
-} from '@modules/cluster/services/reverse-channel/TeamClusterReverseTerminal';
 import { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
 import {
     TeamClusterDaemonSessionKind,
@@ -24,13 +18,9 @@ import {
     type TeamClusterDaemonSessionEndPayload,
     type TeamClusterDaemonSocketResponsePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import type {
-    ContainerTerminalAttachment,
-    ContainerTerminalSize
-} from '@shared/contracts/ports/ContainerRuntime';
 import { randomUUID } from 'node:crypto';
 
-type AttachedSessionEntry = PendingTerminalEntry | PendingWebSocketEntry;
+type AttachedSessionEntry = PendingWebSocketEntry;
 
 interface TeamClusterReverseAttachedSessionsOptions {
     pending: ReverseChannelPendingEntries;
@@ -50,34 +40,6 @@ export default class TeamClusterReverseAttachedSessions {
         this.#requireSocketId = options.requireSocketId;
         this.#emitToDaemon = options.emitToDaemon;
         this.#emitCommand = options.emitCommand;
-    }
-
-    async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        const socketId = await this.#requireSocketId(teamClusterId);
-        const sessionId = randomUUID();
-        const stream = createBufferedStream();
-
-        return this.#pending.create({
-            correlationId: sessionId,
-            entryType: 'terminal',
-            timeoutMs: SESSION_ATTACH_TIMEOUT_MS,
-            timeoutMessage: 'Timed out waiting for daemon terminal attachment',
-            createEntry: (resolve, reject, timeout) => ({
-                type: 'terminal',
-                socketId,
-                timeout,
-                stream,
-                resolve,
-                reject
-            }),
-            emitMessage: () => {
-                this.#emitAttach(socketId, sessionId, {
-                    sessionId,
-                    kind: TeamClusterDaemonSessionKind.Terminal,
-                    containerId
-                });
-            }
-        });
     }
 
     async attachWebSocket(
@@ -135,11 +97,6 @@ export default class TeamClusterReverseAttachedSessions {
         entry.timeout = null;
         this.#pending.touch(payload.requestId);
 
-        if (entry.type === 'terminal') {
-            entry.resolve(this.#createTerminalAttachment(entry, payload.requestId));
-            return;
-        }
-
         const attachResult = payload.data?.data as TeamClusterDaemonSessionAttachResult | undefined;
         entry.stream.protocol = attachResult?.selectedProtocol;
         entry.resolve(entry.stream);
@@ -153,11 +110,6 @@ export default class TeamClusterReverseAttachedSessions {
 
         this.#pending.touch(payload.sessionId);
         const chunk = unwrapEnvelopeBuffer(payload.chunk);
-
-        if (entry.type === 'terminal') {
-            entry.stream.write(chunk);
-            return;
-        }
 
         entry.stream.emitData({
             data: chunk,
@@ -182,12 +134,7 @@ export default class TeamClusterReverseAttachedSessions {
             return;
         }
 
-        if (entry.type === 'terminal') {
-            if (error) {
-                entry.stream.emit('error', error);
-            }
-            entry.stream.end();
-        } else if (error) {
+        if (error) {
             entry.stream.emitError(error);
         } else {
             entry.stream.emitEnd({
@@ -209,32 +156,12 @@ export default class TeamClusterReverseAttachedSessions {
             type: 'session-detach',
             sessionId
         });
-
-        if (entry.type === 'terminal') {
-            entry.stream.destroy();
-        }
         this.#pending.delete(sessionId);
     }
 
     #entryFor(sessionId: string): AttachedSessionEntry | null {
         const entry = this.#pending.get(sessionId);
-        return entry?.type === 'terminal' || entry?.type === 'websocket' ? entry : null;
-    }
-
-    #createTerminalAttachment(entry: PendingTerminalEntry, sessionId: string): ContainerTerminalAttachment {
-        return {
-            exec: new TeamClusterReverseTerminalExec((size) => {
-                this.#emitResize(entry.socketId, sessionId, size);
-            }),
-            stream: new TeamClusterReverseTerminalStream(entry.stream, (input) => {
-                this.#emitInput(entry.socketId, sessionId, Buffer.from(input, 'utf8'), false);
-            }, () => {
-                this.detach(sessionId);
-            }),
-            close: async () => {
-                this.detach(sessionId);
-            }
-        };
+        return entry?.type === 'websocket' ? entry : null;
     }
 
     #emitAttach(socketId: string, sessionId: string, payload: TeamClusterDaemonSessionAttachPayload): void {
@@ -247,15 +174,6 @@ export default class TeamClusterReverseAttachedSessions {
             sessionId,
             chunk: wrapEnvelopeBuffer(chunk),
             isBinary
-        });
-    }
-
-    #emitResize(socketId: string, sessionId: string, size: ContainerTerminalSize): void {
-        this.#emitToDaemon(socketId, {
-            type: 'session-resize',
-            sessionId,
-            rows: size.rows,
-            cols: size.cols
         });
     }
 }

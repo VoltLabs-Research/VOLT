@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { createUserFilesRouter } from '@shared/infrastructure/http/user-files-router';
-import logger from '@shared/infrastructure/logger';
+import { createUserFilesRouter } from '@shared/http/user-files-router';
+import logger from '@shared/logger';
 
 import AuthController from '@modules/auth/controllers/AuthController';
 import SessionController from '@modules/session/controllers/SessionController';
@@ -16,7 +16,6 @@ import ClusterController from '@modules/cluster/controllers/ClusterController';
 import ClusterLifecycleController from '@modules/cluster/controllers/ClusterLifecycleController';
 import ClusterObjectController from '@modules/cluster/controllers/ClusterObjectController';
 import ClusterObjectStoreProxyController from '@modules/cluster/controllers/ClusterObjectStoreProxyController';
-import ContainerController from '@modules/container/controllers/ContainerController';
 import TrajectoryController from '@modules/trajectory/controllers/TrajectoryController';
 import CanvasController from '@modules/trajectory/controllers/CanvasController';
 import DiscoverController from '@modules/trajectory/controllers/DiscoverController';
@@ -47,7 +46,6 @@ const CONTROLLERS: Readonly<Record<string, readonly RouterProviderClass[]>> = {
         TeamAIIntegrationController
     ],
     cluster: [ClusterController, ClusterLifecycleController, ClusterObjectController, ClusterObjectStoreProxyController],
-    container: [ContainerController],
     trajectory: [TrajectoryController, CanvasController, DiscoverController],
     plugin: [PluginController],
     scripting: [ScriptingController],

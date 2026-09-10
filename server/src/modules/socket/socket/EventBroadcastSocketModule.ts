@@ -1,11 +1,11 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
-import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/events/IDomainEvent';
 
 const BROADCAST_EVENTS = [
     'trajectory.created',
@@ -26,9 +26,6 @@ const BROADCAST_EVENTS = [
     'team-role.updated',
     'secret-key.created',
     'secret-key.deleted',
-    'container.created',
-    'container.updated',
-    'container.deleted',
     'notebook.deleted',
     'whiteboard.deleted'
 ];

@@ -84,21 +84,6 @@ const NAVIGATION_DESTINATIONS = {
         requiredParams: ['clusterId'],
         description: 'Cluster monitoring'
     },
-    containers_list: {
-        pathTemplate: '/dashboard/containers',
-        requiredParams: [],
-        description: 'Containers'
-    },
-    container_create: {
-        pathTemplate: '/dashboard/containers/new',
-        requiredParams: [],
-        description: 'Create a container'
-    },
-    container_details: {
-        pathTemplate: '/dashboard/containers/:containerId',
-        requiredParams: ['containerId'],
-        description: 'Container details (append tab via query)'
-    },
     ai_conversation: {
         pathTemplate: '/dashboard/ai',
         requiredParams: [],

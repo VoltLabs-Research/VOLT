@@ -1,24 +1,24 @@
-import { errorMessage } from '@shared/application/utilities/error-message';
-import { singleton } from '@shared/application/utilities/singleton';
+import { errorMessage } from '@shared/utilities/error-message';
+import { singleton } from '@shared/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import mountCommands from '@core/bootstrap/mount-commands';
 import { getRuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import { getDomainEventBridge } from '@core/bootstrap/mount-event-mappers';
-import { getFilesystemObjectStore } from '@shared/infrastructure/storage/FilesystemObjectStore';
-import { getQueueMaintenance } from '@shared/infrastructure/queues/QueueMaintenance';
-import { getQueueService } from '@shared/infrastructure/queues/QueueService';
+import { getFilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
+import { getQueueMaintenance } from '@shared/queues/QueueMaintenance';
+import { getQueueService } from '@shared/queues/QueueService';
 import { getDebugSessionManager } from '@modules/analysis/services/workflow/debug/DebugSessionManager';
-import { getDaemonExposureRegistry } from '@modules/container/services/access/DaemonExposureRegistry';
-import { getObjectGatewayServer } from '@shared/infrastructure/http/ObjectGatewayServer';
-import { getVoltCloudConnection } from '@modules/container/socket/connection/VoltCloudConnection';
-import { getVoltEventChannelConnection } from '@modules/container/socket/connection/VoltEventChannelConnection';
-import { getVoltObjectGatewayConnection } from '@modules/container/socket/connection/VoltObjectGatewayConnection';
-import { getReverseChannelBridge } from '@modules/container/socket/ReverseChannelBridge';
+import { getDaemonExposureRegistry } from '@modules/system/services/access/DaemonExposureRegistry';
+import { getObjectGatewayServer } from '@shared/http/ObjectGatewayServer';
+import { getVoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
+import { getVoltEventChannelConnection } from '@modules/system/socket/connection/VoltEventChannelConnection';
+import { getVoltObjectGatewayConnection } from '@modules/system/socket/connection/VoltObjectGatewayConnection';
+import { getReverseChannelBridge } from '@modules/system/socket/ReverseChannelBridge';
 import { getHeartbeatPlaneProcess } from '@modules/system/services/HeartbeatPlaneProcess';
 import { getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
-import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/infrastructure/persistence/DataSource';
+import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/persistence/DataSource';
 import { getDaemonEntities } from '@core/bootstrap/entities';
-import { logger } from '@shared/infrastructure/logger';
+import { logger } from '@shared/logger';
 
 export class DaemonLifecycle {
     private async connectInfrastructure(): Promise<void> {
@@ -26,10 +26,6 @@ export class DaemonLifecycle {
             connectDaemonDataSource(getDaemonEntities()),
             getFilesystemObjectStore().ensureBuckets()
         ]);
-    }
-
-    private async disconnectInfrastructure(): Promise<void> {
-        await disconnectDaemonDataSource();
     }
 
     async start(): Promise<void> {
@@ -95,7 +91,7 @@ export class DaemonLifecycle {
 
         await getPluginProcessPool().shutdown();
 
-        await this.disconnectInfrastructure();
+        await disconnectDaemonDataSource();
     }
 }
 
