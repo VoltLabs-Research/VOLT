@@ -1,13 +1,9 @@
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type {
     GetAnalysisListingExportOptionsResponse,
     ListingRowByAnalysisData
 } from '@volt/contracts/modules/plugin/listing';
 
-export interface GetAnalysisListingExportOptionsInput {
-    analysisId: string;
-    teamId: string;
-}
 
 export type GetAnalysisListingExportOptionsOutput = GetAnalysisListingExportOptionsResponse;
 

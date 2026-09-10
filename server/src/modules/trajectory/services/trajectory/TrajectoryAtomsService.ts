@@ -1,11 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { concatAtomsColumnarOutputs, toAtomsColumnarOutput } from '@modules/trajectory/services/trajectory/atoms-columnar';
 import { readAtomsPage } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import { normalizeAnalysisId } from '@modules/trajectory/services/trajectory/TrajectoryAnalysis';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 import type {
     GetAtomsColumnarInput,

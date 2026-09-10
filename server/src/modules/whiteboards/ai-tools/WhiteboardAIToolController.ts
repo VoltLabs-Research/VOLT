@@ -2,8 +2,8 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool, ClientAITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
-import WhiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
+import whiteboardService from '@modules/whiteboards/services/WhiteboardService';
+import whiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
 import { EMPTY_WHITEBOARD_SCENE } from '@modules/whiteboards/contracts/whiteboard';
 import type { WhiteboardScene } from '@modules/whiteboards/contracts/whiteboard';
 import { text } from 'node:stream/consumers';
@@ -20,10 +20,6 @@ import type {
 type StoredScene = WhiteboardScene & { files?: Record<string, unknown> };
 
 export default class WhiteboardAIToolController extends AIToolController {
-    #service = new WhiteboardService();
-
-    #folders = new WhiteboardFolderService();
-
     @AITool({
         name: 'create_whiteboard',
         description: 'Create a new whiteboard.',
@@ -31,7 +27,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<CreateWhiteboardInput>()
     })
     createWhiteboard(input: CreateWhiteboardInput & AIToolScope) {
-        return this.#service.createWhiteboard(input.teamId, input.userId, input);
+        return whiteboardService.createWhiteboard(input.teamId, input.userId, input);
     }
 
     @AITool({
@@ -41,7 +37,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<ListWhiteboardsInput>()
     })
     async listWhiteboards(input: ListWhiteboardsInput & AIToolScope) {
-        const { total, data } = await this.#service.listWhiteboards(input.teamId, {
+        const { total, data } = await whiteboardService.listWhiteboards(input.teamId, {
             page: 1,
             limit: 50,
             ...input
@@ -59,7 +55,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<WhiteboardRefInput>()
     })
     async getWhiteboard(input: WhiteboardRefInput & AIToolScope) {
-        const whiteboard = await this.#service.getWhiteboard(input.teamId, input.whiteboardId);
+        const whiteboard = await whiteboardService.getWhiteboard(input.teamId, input.whiteboardId);
         return {
             summary: `Retrieved whiteboard ${input.whiteboardId}.`,
             data: whiteboard
@@ -73,7 +69,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<WhiteboardRefInput>()
     })
     async getWhiteboardState(input: WhiteboardRefInput & AIToolScope) {
-        const raw = await text(await this.#service.getWhiteboardState(input.teamId, input.whiteboardId));
+        const raw = await text(await whiteboardService.getWhiteboardState(input.teamId, input.whiteboardId));
 
         let scene: StoredScene;
         try {
@@ -100,7 +96,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateWhiteboardInput>()
     })
     updateWhiteboard(input: UpdateWhiteboardInput & AIToolScope) {
-        return this.#service.updateWhiteboard(input.teamId, input.whiteboardId, input.userId, input);
+        return whiteboardService.updateWhiteboard(input.teamId, input.whiteboardId, input.userId, input);
     }
 
     @AITool({
@@ -110,7 +106,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<MoveWhiteboardInput>()
     })
     async moveWhiteboard(input: MoveWhiteboardInput & AIToolScope) {
-        await this.#service.moveWhiteboard(input.teamId, input.whiteboardId, input.folderId);
+        await whiteboardService.moveWhiteboard(input.teamId, input.whiteboardId, input.folderId);
         return {
             summary: `Moved whiteboard ${input.whiteboardId}.`,
             data: null
@@ -124,7 +120,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<WhiteboardRefInput>()
     })
     async deleteWhiteboard(input: WhiteboardRefInput & AIToolScope) {
-        await this.#service.deleteWhiteboard(input.teamId, input.whiteboardId, input.userId);
+        await whiteboardService.deleteWhiteboard(input.teamId, input.whiteboardId, input.userId);
         return {
             summary: `Deleted whiteboard ${input.whiteboardId}.`,
             data: null
@@ -138,7 +134,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteWhiteboardFolderInput>()
     })
     async deleteWhiteboardFolder(input: DeleteWhiteboardFolderInput & AIToolScope) {
-        await this.#folders.deleteFolder(input.teamId, input.folderId, input.userId);
+        await whiteboardFolderService.deleteFolder(input.teamId, input.folderId, input.userId);
         return {
             summary: `Deleted whiteboard folder ${input.folderId}.`,
             data: null

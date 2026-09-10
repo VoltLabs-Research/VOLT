@@ -1,7 +1,7 @@
 import type AIMessage from '@modules/ai/models/AIMessage';
 import type { AIMessageToolStep } from '@modules/ai/contracts/ai-message';
 import { AIMessageArtifactKind } from '@volt/contracts/modules/ai/domain';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { isRecord } from '@shared/utilities/type-guards';
 
 
 const ARTIFACT_KINDS = new Set<string>(Object.values(AIMessageArtifactKind));

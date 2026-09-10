@@ -30,19 +30,8 @@ export interface TeamClusterServicesView {
     daemon: TeamClusterServiceView;
 }
 
-export interface TeamClusterCredentialServiceView extends TeamClusterServiceView {
-    username: string;
-    password: string;
-}
 
-export interface TeamClusterDaemonCredentialServiceView extends TeamClusterServiceView {
-    password: string;
-}
 
-export interface TeamClusterCredentialServicesView {
-    postgres: TeamClusterCredentialServiceView;
-    daemon: TeamClusterDaemonCredentialServiceView;
-}
 
 export interface TeamClusterView {
     _id: string;

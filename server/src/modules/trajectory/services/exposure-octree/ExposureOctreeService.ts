@@ -3,13 +3,15 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { buildClusterRequiredError } from '@modules/trajectory/services/SceneArtifactService';
 import { stripTrailingZstdExtension } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 
-import { Readable } from 'node:stream';
+import { type Readable } from 'node:stream';
+import { requireTimestep } from '@modules/trajectory/services/trajectory/require-timestep';
+import type { LineExposureScope } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
 interface OctreeStreamResponse {
     stream: Readable;
@@ -18,12 +20,9 @@ interface OctreeStreamResponse {
 }
 
 class ExposureOctreeService {
-    async getOctreeMetadataStreamResponse(
-        trajectoryId: string,
-        timestep: string | number,
-        analysisId: string,
-        exposureId: string
-    ): Promise<OctreeStreamResponse> {
+    async getOctreeMetadataStreamResponse(input: LineExposureScope): Promise<OctreeStreamResponse> {
+        const { trajectoryId, analysisId, exposureId } = input;
+        const timestep = requireTimestep(input.timestep);
         const objectName = await this.resolveExposureGlbObjectName(trajectoryId, analysisId, timestep, exposureId);
 
         return this.streamModelObject(trajectoryId, `${stripTrailingZstdExtension(objectName)}.octree.json`);

@@ -8,7 +8,7 @@ import type {
 import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType
-} from '@shared/domain/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster';
 
 export enum ClusterTransferJobState {
     Queued = 'queued',

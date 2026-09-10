@@ -19,9 +19,9 @@ import {
     emitTeamClusterLifecycleUpdate,
     emitTeamClusterMetricsUpdate
 } from '@modules/cluster/services/team-cluster/TeamClusterLifecycleEvents';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import DaemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import daemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
+import logger from '@shared/logger';
 import { In, LessThan } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 
@@ -63,14 +63,12 @@ const countFinalizedTeamClusters = async (
 };
 
 class TeamClusterLifecycleService {
-    private readonly daemonCredentialGuard = new DaemonCredentialGuard();
-
     async processHealthcheck(teamClusterId: string, enrollmentToken: string, installedVersion?: string): Promise<{
         teamCluster: TeamClusterView;
         daemonPassword: string;
     }> {
-        const teamCluster = await this.daemonCredentialGuard.requireByEnrollment(teamClusterId, enrollmentToken);
-        const daemonPassword = await this.daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
+        const teamCluster = await daemonCredentialGuard.requireByEnrollment(teamClusterId, enrollmentToken);
+        const daemonPassword = await daemonCredentialGuard.getDecryptedDaemonPassword(teamCluster);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: TeamClusterStatus.HealthcheckReceived,
             installedVersion,
@@ -91,7 +89,7 @@ class TeamClusterLifecycleService {
         status: TeamClusterStatus,
         installedVersion?: string
     ): Promise<TeamClusterView> {
-        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
 
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status,
@@ -105,7 +103,7 @@ class TeamClusterLifecycleService {
     }
 
     async recordHeartbeat(input: RecordHeartbeatInput): Promise<TeamClusterView> {
-        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(input.teamClusterId, input.daemonPassword);
+        const teamCluster = await daemonCredentialGuard.requireByDaemonPassword(input.teamClusterId, input.daemonPassword);
         const updatedTeamCluster = await this.persistLifecycleUpdate(teamCluster, {
             status: teamCluster.props.status,
             installedVersion: input.installedVersion,
@@ -161,7 +159,7 @@ class TeamClusterLifecycleService {
     }
 
     async authenticateDaemonConnection(teamClusterId: string, daemonPassword: string): Promise<void> {
-        await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
+        await daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
     }
 
     async markDeleting(teamClusterId: string): Promise<TeamClusterView> {
@@ -176,7 +174,7 @@ class TeamClusterLifecycleService {
     }
 
     async completeDeletion(teamClusterId: string, daemonPassword: string): Promise<void> {
-        const teamCluster = await this.daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
+        const teamCluster = await daemonCredentialGuard.requireByDaemonPassword(teamClusterId, daemonPassword);
         await this.deleteTeamCluster(teamCluster);
     }
 

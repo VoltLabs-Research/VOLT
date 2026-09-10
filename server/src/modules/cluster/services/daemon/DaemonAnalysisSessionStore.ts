@@ -1,4 +1,4 @@
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import type { JobStatus } from '@volt/contracts/modules/jobs/domain';
 
 const SESSION_TTL_MS = 86_400_000;

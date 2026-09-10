@@ -1,16 +1,11 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import type {
-    ITeamJobMaintenanceService,
-    RemoveTeamJobsResult,
-    RetryTeamJobsResult,
-    TeamClusterFailureDetail
-} from '@shared/contracts/ports/ITeamJobMaintenanceService';
-import TeamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import type { AnalysisDeletedEventPayload } from '@shared/contracts/events/AnalysisDeletedPayload';
-import type { TrajectoryDeletedEventPayload } from '@shared/contracts/events/TrajectoryDeletedPayload';
+import type { RemoveTeamJobsResult, RetryTeamJobsResult, TeamClusterFailureDetail } from '@volt/contracts/modules/jobs/domain';
+import teamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
+import type { AnalysisDeletedEventPayload } from '@shared/events/AnalysisDeletedPayload';
+import type { TrajectoryDeletedEventPayload } from '@shared/events/TrajectoryDeletedPayload';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import {
     collectCleanupClusterIds,
     distinctJobIds,
@@ -37,9 +32,7 @@ interface PurgedJobScope {
     daemonClusterIds: string[];
 }
 
-class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
-    private readonly teamJobsService = new TeamJobsService();
-
+class TeamJobMaintenanceService {
     async removeJobsForAnalysis(teamId: string, analysisId: string): Promise<RemoveTeamJobsResult> {
         return this.removeResolvedJobs(teamId, await this.collectJobsMatching(
             teamId,
@@ -120,7 +113,7 @@ class TeamJobMaintenanceService implements ITeamJobMaintenanceService {
         teamId: string,
         predicate: (job: TeamJobSummary) => boolean
     ): Promise<TeamJobSummary[]> {
-        const jobs = await this.teamJobsService.getFlatTeamJobs(teamId);
+        const jobs = await teamJobsService.getFlatTeamJobs(teamId);
         return jobs.filter(predicate);
     }
 

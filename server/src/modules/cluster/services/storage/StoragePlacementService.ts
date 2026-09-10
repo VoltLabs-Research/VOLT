@@ -1,14 +1,13 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
-import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
-import { getTrajectoryStorageCleanupTargets } from '@shared/application/utilities/trajectory-storage-cleanup-prefixes';
+import { getAnalysisStorageCleanupTargets } from '@shared/utilities/storage-cleanup-prefixes';
+import { getTrajectoryStorageCleanupTargets } from '@shared/utilities/trajectory-storage-cleanup-prefixes';
 import StoragePlacementEntity from '@modules/cluster/models/StoragePlacement';
 import {
     createStoragePlacementProps,
     toStoragePlacementLike,
-    StoragePlacementScopeType as StoragePlacementScopeTypeColumn,
-    StoragePlacementState as StoragePlacementStateColumn,
+    type StoragePlacementScopeType as StoragePlacementScopeTypeColumn,
+    type StoragePlacementState as StoragePlacementStateColumn,
     type StoragePlacement,
     type StoragePlacementProps
 } from '@modules/cluster/contracts/storage-placement';
@@ -16,15 +15,14 @@ import Analysis from '@modules/analysis/models/Analysis';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import Plugin from '@modules/plugin/models/Plugin';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { isUniqueViolation } from '@shared/infrastructure/persistence/unique-violation';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { isUniqueViolation } from '@shared/persistence/unique-violation';
 import type {
     StoragePlacementBucketRef,
     StoragePlacementScopeType,
     StoragePlacementState
-} from '@shared/domain/contracts/team-cluster';
-import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
+} from '@shared/contracts/types/team-cluster';
 import { In } from 'typeorm';
 
 const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => [{
@@ -38,9 +36,7 @@ interface ResolvedPlacementDefinition{
     buckets: StoragePlacementBucketRef[];
 }
 
-class StoragePlacementService implements IStoragePlacementService{
-    private readonly teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
-
+class StoragePlacementService {
     async findByScope(
         scopeType: StoragePlacementScopeType,
         scopeId: string
@@ -339,7 +335,7 @@ class StoragePlacementService implements IStoragePlacementService{
 
         return {
             team: plugin.team,
-            primaryClusterId: await this.teamClusterSelectionService.resolveStorageClusterId(plugin.team),
+            primaryClusterId: await teamClusterSelectionService.resolveStorageClusterId(plugin.team),
             buckets: buildPluginBinaryPlacementBuckets(scopeId)
         };
     }

@@ -1,15 +1,14 @@
 import type {
-    IClusterObjectArchiveService,
     ClusterArchiveInlineEntry
-} from '@shared/contracts/ports/IClusterObjectArchiveService';
-import { toCsvContent } from '@shared/infrastructure/http/responses/ExportFileResponse';
+} from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import { toCsvContent } from '@shared/http/responses/ExportFileResponse';
 import {
     createDownloadStreamResponse,
     createSerializedDownloadResponse,
     sanitizeDownloadName
-} from '@shared/infrastructure/http/responses/download-response';
+} from '@shared/http/responses/download-response';
 
-import { ExportType } from '@shared/domain/port/persistence';
+import { ExportType } from '@shared/persistence/persistence';
 import { Readable } from 'node:stream';
 import { v4 } from 'uuid';
 
@@ -20,6 +19,7 @@ import type {
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { LISTING_COLUMNS } from '@modules/plugin/services/listing-row/ListingTableAggregation';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
+import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 
 const titleCaseName = (name: string): string => {
     return name
@@ -29,11 +29,7 @@ const titleCaseName = (name: string): string => {
         .join('-');
 };
 
-export class ListingRowsExportService {
-    constructor(
-        private readonly archiveService: IClusterObjectArchiveService
-    ) {}
-
+class ListingRowsExportService {
     private rootDir(analysisId: string): string {
         return `AnalysisID-${analysisId}`;
     }
@@ -145,7 +141,7 @@ export class ListingRowsExportService {
             );
         }
 
-        return this.archiveService.createArchiveDownload({
+        return clusterObjectArchiveService.createArchiveDownload({
             teamClusterId: payload.teamClusterId,
             outputObjectKey: `exports/listing-rows/${payload.analysisId}/${v4()}.zip`,
             filename: `AnalysisID-${payload.analysisId}.zip`,
@@ -153,3 +149,5 @@ export class ListingRowsExportService {
         });
     }
 }
+
+export default new ListingRowsExportService();

@@ -1,8 +1,8 @@
 import { Action } from '@core/constants/permissions';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import type { RequestHandler, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 

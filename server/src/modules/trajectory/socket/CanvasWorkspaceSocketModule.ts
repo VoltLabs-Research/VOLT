@@ -1,5 +1,5 @@
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 import type {
     ISocketConnection,
@@ -50,9 +50,6 @@ const WORKSPACE_PREFIX = 'trajectory-canvas-workspace';
 
 class CanvasWorkspaceSocketModule extends BaseSocketModule {
     public readonly name = 'CanvasWorkspaceSocketModule';
-
-    private readonly realtimeState = canvasWorkspaceRealtimeStateService;
-
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
@@ -137,7 +134,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
             ctx.workspaceTrajectoryId = payload.trajectoryId;
             ctx.workspaceOwnerId = payload.ownerId;
 
-            const snapshot = await this.realtimeState.getSnapshot(payload.trajectoryId, payload.ownerId);
+            const snapshot = await canvasWorkspaceRealtimeStateService.getSnapshot(payload.trajectoryId, payload.ownerId);
             if (snapshot) {
                 this.emitToSocket(conn.id, 'canvas.workspace.sync_state', snapshot);
             } else if (payload.ownerId !== conn.user._id) {
@@ -182,7 +179,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const snapshot = await this.realtimeState.replaceSnapshot(
+            const snapshot = await canvasWorkspaceRealtimeStateService.replaceSnapshot(
                 payload.trajectoryId,
                 conn.user._id,
                 payload.state ?? {}
@@ -198,7 +195,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
                 return;
             }
 
-            const result = await this.realtimeState.applyPatch(
+            const result = await canvasWorkspaceRealtimeStateService.applyPatch(
                 payload.trajectoryId,
                 conn.user._id,
                 payload.patch ?? {}
@@ -296,7 +293,7 @@ class CanvasWorkspaceSocketModule extends BaseSocketModule {
         });
 
         try {
-            await this.realtimeState.release(trajectoryId, connection.user._id);
+            await canvasWorkspaceRealtimeStateService.release(trajectoryId, connection.user._id);
         } catch (error) {
             logger.warn(`@canvas-workspace - failed to release state: ${error}`);
         }

@@ -6,8 +6,8 @@ import daemonAnalysisCompletionService from '@modules/cluster/services/daemon/Da
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { insertSimulationCells } from '@modules/simulation-cell/services/SimulationCellService';
 
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import logger from '@shared/infrastructure/logger';
+import eventBus from '@shared/events/PostgresEventBus';
+import logger from '@shared/logger';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';

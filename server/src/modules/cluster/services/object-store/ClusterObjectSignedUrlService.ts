@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import type { Secret, SignOptions } from 'jsonwebtoken';
-import type { IClusterObjectSignedUrlService } from '@shared/contracts/ports/IClusterObjectSignedUrlService';
 import type {
     ClusterObjectAccessClaims,
     ClusterObjectSignedUrl
@@ -19,7 +18,7 @@ const getSecret = (): Secret => {
     return secret;
 };
 
-export default class ClusterObjectSignedUrlService implements IClusterObjectSignedUrlService {
+class ClusterObjectSignedUrlService {
     private readonly secret = getSecret();
 
     createToken(payload: ClusterObjectTokenPayload, ttlSeconds = DEFAULT_TTL_SECONDS): ClusterObjectSignedUrl {
@@ -47,3 +46,5 @@ export default class ClusterObjectSignedUrlService implements IClusterObjectSign
         }
     }
 }
+
+export default new ClusterObjectSignedUrlService();

@@ -6,7 +6,7 @@ import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
 import { Resource } from '@core/constants/resources';
-import TeamService from '@modules/team/services/TeamService';
+import teamService from '@modules/team/services/TeamService';
 import { teamRoutes } from '@volt/contracts/modules/team/routes';
 import type {
     CreateTeamInput,
@@ -16,14 +16,12 @@ import type {
 
 @Middleware(protect)
 export default class TeamController extends Controller {
-    #service = new TeamService();
-
     @Route(teamRoutes.previewJoinByCode)
     previewJoinByCode(
         @CurrentUser() userId: string,
         @Param('code') code: string
     ){
-        return this.#service.previewJoinByCode(userId, code);
+        return teamService.previewJoinByCode(userId, code);
     }
 
     @Route(teamRoutes.joinByCode)
@@ -31,12 +29,12 @@ export default class TeamController extends Controller {
         @CurrentUser() userId: string,
         @Param('code') code: string
     ){
-        return this.#service.joinByCode(userId, code);
+        return teamService.joinByCode(userId, code);
     }
 
     @Route(teamRoutes.listUserTeams)
     listUserTeams(@CurrentUser() userId: string) {
-        return this.#service.listUserTeams(userId);
+        return teamService.listUserTeams(userId);
     }
 
     @Route(teamRoutes.create)
@@ -45,13 +43,13 @@ export default class TeamController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateTeamInput>())) body: CreateTeamInput
     ){
-        return this.#service.create(userId, body);
+        return teamService.create(userId, body);
     }
 
     @Route(teamRoutes.getById)
     @Middleware(teamScoped(Resource.TEAM))
     getById(@Param('teamId') teamId: string) {
-        return this.#service.getById(teamId);
+        return teamService.getById(teamId);
     }
 
     @Route(teamRoutes.updateById)
@@ -60,7 +58,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @Body(schemaBody(typia.createValidate<UpdateTeamInput>())) body: UpdateTeamInput
     ){
-        return this.#service.updateById(teamId, body);
+        return teamService.updateById(teamId, body);
     }
 
     @Route(teamRoutes.remove)
@@ -69,7 +67,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.deleteById(teamId, userId);
+        await teamService.deleteById(teamId, userId);
     }
 
     @Route(teamRoutes.setDefaultForNewUsers)
@@ -78,7 +76,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @Body(schemaBody(typia.createValidate<SetDefaultTeamInput>())) body: SetDefaultTeamInput
     ){
-        return this.#service.setDefaultForNewUsers(teamId, body.enabled);
+        return teamService.setDefaultForNewUsers(teamId, body.enabled);
     }
 
     @Route(teamRoutes.checkInvitePermission)
@@ -87,7 +85,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        return this.#service.checkInvitePermission(teamId, userId);
+        return teamService.checkInvitePermission(teamId, userId);
     }
 
     @Route(teamRoutes.generateInviteCode)
@@ -96,7 +94,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        return this.#service.generateInviteCode(teamId, userId);
+        return teamService.generateInviteCode(teamId, userId);
     }
 
     @Route(teamRoutes.deleteInviteCode)
@@ -105,7 +103,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        return this.#service.deleteInviteCode(teamId, userId);
+        return teamService.deleteInviteCode(teamId, userId);
     }
 
     @Route(teamRoutes.getMyPermissions)
@@ -114,7 +112,7 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        return this.#service.getMyPermissions(teamId, userId);
+        return teamService.getMyPermissions(teamId, userId);
     }
 
     @Route(teamRoutes.leave)
@@ -123,6 +121,6 @@ export default class TeamController extends Controller {
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.leave(teamId, userId);
+        await teamService.leave(teamId, userId);
     }
 }

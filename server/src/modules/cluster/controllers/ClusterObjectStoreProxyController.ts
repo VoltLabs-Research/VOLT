@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import TeamClusterObjectStoreProxyService from '@modules/cluster/services/object-gateway/TeamClusterObjectStoreProxyService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import teamClusterObjectStoreProxyService from '@modules/cluster/services/object-gateway/TeamClusterObjectStoreProxyService';
 import {
     applyObjectHeaders,
     applyRangeHeaders,
@@ -145,26 +145,25 @@ const applyMetadataHeaders = (response: Response, metadata: Record<string, strin
 };
 
 export default class ClusterObjectStoreProxyController {
-    readonly #proxyService = new TeamClusterObjectStoreProxyService();
 
     buildRouter(): Router {
         const router = Router();
 
         router.use(TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH, async (request: Request, response: Response) => {
             try {
-                const requesterCredentials = this.#proxyService.requireRequesterCredentials(
+                const requesterCredentials = teamClusterObjectStoreProxyService.requireRequesterCredentials(
                     readHeader(request, TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER),
                     readHeader(request, TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER)
                 );
                 const resolvedRoute = resolveRoute(request.path);
-                const access = await this.#proxyService.authorizeOwner(
+                const access = await teamClusterObjectStoreProxyService.authorizeOwner(
                     requesterCredentials,
                     resolvedRoute.ownerClusterId
                 );
 
                 if (resolvedRoute.type === 'collection') {
                     if (request.method === 'GET') {
-                        const listResponse = await this.#proxyService.list(access, {
+                        const listResponse = await teamClusterObjectStoreProxyService.list(access, {
                             bucket: resolvedRoute.bucket,
                             prefix: request.query.prefix as string | undefined,
                             cursor: request.query.cursor as string | undefined,
@@ -180,7 +179,7 @@ export default class ClusterObjectStoreProxyController {
                         const prefix = typeof request.query.prefix === 'string'
                             ? request.query.prefix
                             : '';
-                        const deletedCount = await this.#proxyService.deletePrefix(
+                        const deletedCount = await teamClusterObjectStoreProxyService.deletePrefix(
                             access,
                             resolvedRoute.bucket,
                             prefix
@@ -198,7 +197,7 @@ export default class ClusterObjectStoreProxyController {
                 }
 
                 if (request.method === 'HEAD') {
-                    const head = await this.#proxyService.head(
+                    const head = await teamClusterObjectStoreProxyService.head(
                         access,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey
@@ -215,7 +214,7 @@ export default class ClusterObjectStoreProxyController {
                     const readOptions: { skipMetadata?: boolean; rangeHeader?: string } = {};
                     if (skipMetadata) readOptions.skipMetadata = true;
                     if (rangeHeader) readOptions.rangeHeader = rangeHeader;
-                    const streamResponse = await this.#proxyService.openRead(
+                    const streamResponse = await teamClusterObjectStoreProxyService.openRead(
                         access,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey,
@@ -232,7 +231,7 @@ export default class ClusterObjectStoreProxyController {
                 if (request.method === 'PUT') {
                     const contentType = request.header('content-type') || undefined;
                     const contentEncoding = request.header('content-encoding') || undefined;
-                    await this.#proxyService.write(access, {
+                    await teamClusterObjectStoreProxyService.write(access, {
                         bucket: resolvedRoute.bucket,
                         objectKey: resolvedRoute.objectKey,
                         stream: request,
@@ -246,7 +245,7 @@ export default class ClusterObjectStoreProxyController {
                 }
 
                 if (request.method === 'DELETE') {
-                    await this.#proxyService.delete(
+                    await teamClusterObjectStoreProxyService.delete(
                         access,
                         resolvedRoute.bucket,
                         resolvedRoute.objectKey

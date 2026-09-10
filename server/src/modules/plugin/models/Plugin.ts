@@ -1,6 +1,6 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { IListingsWithExposures } from '@volt/contracts/modules/plugin/exposure';

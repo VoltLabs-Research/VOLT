@@ -5,7 +5,7 @@ import TeamAIIntegration from '@modules/team/models/TeamAIIntegration';
 import TeamInvitation from '@modules/team/models/TeamInvitation';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
 
 @DefineEventGroup('team')
 export default class TeamEvents{

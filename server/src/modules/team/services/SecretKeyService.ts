@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import SecretKey from '@modules/team/models/SecretKey';
 import TeamRole from '@modules/team/models/TeamRole';
@@ -7,9 +7,9 @@ import {
     getKeyUsageAnalytics
 } from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
 import { toKeyMetrics, toTeamMetrics } from '@modules/team/services/secret-key/SecretKeyUsageMetricsMapper';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import crypto from 'node:crypto';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
 
@@ -21,7 +21,7 @@ const UNKNOWN_ROLE_NAME = 'Unknown';
 
 const roleNameOf = (secretKey: SecretKey): string => secretKey.roleRef?.name ?? UNKNOWN_ROLE_NAME;
 
-export default class SecretKeyService{
+class SecretKeyService{
     async create(teamId: string, userId: string, input: CreateSecretKeyInput): Promise<{
         secretKeyId: string;
         teamId: string;
@@ -220,3 +220,5 @@ export default class SecretKeyService{
         };
     }
 }
+
+export default new SecretKeyService();

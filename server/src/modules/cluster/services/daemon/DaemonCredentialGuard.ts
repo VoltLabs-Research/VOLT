@@ -2,9 +2,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import { findTeamClusterByIdWithSensitiveData } from '@modules/cluster/contracts/team-cluster';
 import { hashEnrollmentToken, secureCompare } from '@modules/cluster/services/team-cluster/TeamClusterCredentialService';
-import { decrypt } from '@shared/infrastructure/utilities/crypto';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
+import { decrypt } from '@shared/utilities/crypto';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 
 export interface DecryptedTeamClusterServiceCredentials {
     postgresUsername: string;
@@ -12,7 +12,7 @@ export interface DecryptedTeamClusterServiceCredentials {
     daemonPassword: string;
 }
 
-export default class DaemonCredentialGuard {
+class DaemonCredentialGuard {
     async requireByDaemonPassword(teamClusterId: string, daemonPassword: string): Promise<TeamCluster> {
         const teamCluster = await this.requireSensitiveCluster(teamClusterId);
         const persistedDaemonPassword = this.requireEncryptedDaemonPassword(teamCluster);
@@ -112,3 +112,5 @@ export default class DaemonCredentialGuard {
         return daemonPassword;
     }
 }
+
+export default new DaemonCredentialGuard();

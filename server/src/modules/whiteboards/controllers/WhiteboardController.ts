@@ -5,9 +5,9 @@ import { Body, schemaBody, Param, Query, CurrentUser, Res } from '@shared/http/p
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
-import WhiteboardService from '@modules/whiteboards/services/WhiteboardService';
-import WhiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
+import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
+import whiteboardService from '@modules/whiteboards/services/WhiteboardService';
+import whiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
 import { whiteboardRoutes } from '@volt/contracts/modules/whiteboards/routes';
 import type {
     CreateWhiteboardInput,
@@ -30,10 +30,6 @@ const readPage = (query: Record<string, string>) => ({
 
 @Middleware(protect, teamScoped(Resource.WHITEBOARD))
 export default class WhiteboardController extends Controller {
-    #service = new WhiteboardService();
-
-    #folders = new WhiteboardFolderService();
-
     @Route(whiteboardRoutes.create)
     @Status(201)
     createWhiteboard(
@@ -41,7 +37,7 @@ export default class WhiteboardController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateWhiteboardInput>())) body: CreateWhiteboardInput
     ){
-        return this.#service.createWhiteboard(teamId, userId, body);
+        return whiteboardService.createWhiteboard(teamId, userId, body);
     }
 
     @Route(whiteboardRoutes.list)
@@ -49,7 +45,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Query() query: Record<string, string>
     ){
-        return this.#service.listWhiteboards(teamId, {
+        return whiteboardService.listWhiteboards(teamId, {
             folderId: query.folderId,
             ...readPage(query)
         });
@@ -60,7 +56,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Query() query: Record<string, string>
     ){
-        return this.#folders.listFolders(teamId, {
+        return whiteboardFolderService.listFolders(teamId, {
             parentId: query.parentId,
             ...readPage(query)
         });
@@ -71,7 +67,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Param('folderId') folderId: string
     ){
-        return this.#folders.getFolder(teamId, folderId);
+        return whiteboardFolderService.getFolder(teamId, folderId);
     }
 
     @Route(whiteboardRoutes.createFolder)
@@ -81,7 +77,7 @@ export default class WhiteboardController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateWhiteboardFolderInput>())) body: CreateWhiteboardFolderInput
     ){
-        return this.#folders.createFolder(teamId, userId, body);
+        return whiteboardFolderService.createFolder(teamId, userId, body);
     }
 
     @Route(whiteboardRoutes.updateFolder)
@@ -90,7 +86,7 @@ export default class WhiteboardController extends Controller {
         @Param('folderId') folderId: string,
         @Body(schemaBody(typia.createValidate<UpdateWhiteboardFolderInput>())) body: UpdateWhiteboardFolderInput
     ){
-        return this.#folders.updateFolder(teamId, folderId, body);
+        return whiteboardFolderService.updateFolder(teamId, folderId, body);
     }
 
     @Route(whiteboardRoutes.removeFolder)
@@ -99,7 +95,7 @@ export default class WhiteboardController extends Controller {
         @Param('folderId') folderId: string,
         @CurrentUser() userId: string
     ){
-        return this.#folders.deleteFolder(teamId, folderId, userId);
+        return whiteboardFolderService.deleteFolder(teamId, folderId, userId);
     }
 
     @Route(whiteboardRoutes.get)
@@ -107,7 +103,7 @@ export default class WhiteboardController extends Controller {
         @Param('teamId') teamId: string,
         @Param('whiteboardId') whiteboardId: string
     ){
-        return this.#service.getWhiteboard(teamId, whiteboardId);
+        return whiteboardService.getWhiteboard(teamId, whiteboardId);
     }
 
     @Route(whiteboardRoutes.update)
@@ -117,7 +113,7 @@ export default class WhiteboardController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<UpdateWhiteboardInput>())) body: UpdateWhiteboardInput
     ) {
-        return this.#service.updateWhiteboard(teamId, whiteboardId, userId, body);
+        return whiteboardService.updateWhiteboard(teamId, whiteboardId, userId, body);
     }
 
     @Route(whiteboardRoutes.remove)
@@ -126,7 +122,7 @@ export default class WhiteboardController extends Controller {
         @Param('whiteboardId') whiteboardId: string,
         @CurrentUser() userId: string
     ){
-        return this.#service.deleteWhiteboard(teamId, whiteboardId, userId);
+        return whiteboardService.deleteWhiteboard(teamId, whiteboardId, userId);
     }
 
     @Route(whiteboardRoutes.move)
@@ -136,7 +132,7 @@ export default class WhiteboardController extends Controller {
         @Param('whiteboardId') whiteboardId: string,
         @Body(schemaBody(typia.createValidate<MoveWhiteboardInput>())) body: MoveWhiteboardInput
     ){
-        return this.#service.moveWhiteboard(teamId, whiteboardId, body.folderId);
+        return whiteboardService.moveWhiteboard(teamId, whiteboardId, body.folderId);
     }
 
     @Route(whiteboardRoutes.getState)
@@ -145,7 +141,7 @@ export default class WhiteboardController extends Controller {
         @Param('whiteboardId') whiteboardId: string,
         @Res() res: Response
     ): Promise<void>{
-        const stream = await this.#service.getWhiteboardState(teamId, whiteboardId);
+        const stream = await whiteboardService.getWhiteboardState(teamId, whiteboardId);
         await pipeStreamToResponse(res, stream, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache'
@@ -160,7 +156,7 @@ export default class WhiteboardController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<SaveWhiteboardStateInput>())) body: SaveWhiteboardStateInput
     ) {
-        return this.#service.saveWhiteboardState(teamId, whiteboardId, userId, Buffer.from(JSON.stringify(body)));
+        return whiteboardService.saveWhiteboardState(teamId, whiteboardId, userId, Buffer.from(JSON.stringify(body)));
     }
 
     @Route(whiteboardRoutes.uploadAsset)
@@ -171,7 +167,7 @@ export default class WhiteboardController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<UploadWhiteboardAssetInput>())) body: UploadWhiteboardAssetInput
     ) {
-        return this.#service.uploadWhiteboardAsset(teamId, whiteboardId, userId, body);
+        return whiteboardService.uploadWhiteboardAsset(teamId, whiteboardId, userId, body);
     }
 
     @Route(whiteboardRoutes.getAsset)
@@ -181,7 +177,7 @@ export default class WhiteboardController extends Controller {
         @Param('assetId') assetId: string,
         @Res() res: Response
     ): Promise<void> {
-        const output = await this.#service.getWhiteboardAsset(teamId, whiteboardId, assetId);
+        const output = await whiteboardService.getWhiteboardAsset(teamId, whiteboardId, assetId);
         await pipeStreamToResponse(res, output.stream, {
             'Content-Type': output.mimetype || 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000'

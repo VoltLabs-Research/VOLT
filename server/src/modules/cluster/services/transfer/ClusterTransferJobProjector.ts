@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import Analysis from '@modules/analysis/models/Analysis';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { type ClusterTransferJob } from '@modules/cluster/contracts/cluster-transfer-job';
@@ -8,8 +8,8 @@ import type {
 } from '@volt/contracts/modules/cluster/domain';
 import type {
     StoragePlacementScopeType
-} from '@shared/domain/contracts/team-cluster';
-import logger from '@shared/infrastructure/logger';
+} from '@shared/contracts/types/team-cluster';
+import logger from '@shared/logger';
 import {
     CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_ID,
     CLUSTER_TRANSFER_FALLBACK_TRAJECTORY_NAME,

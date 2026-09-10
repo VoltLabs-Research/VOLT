@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 
-export default class BcryptPasswordHasher {
+class BcryptPasswordHasher {
     private readonly saltRounds = 12;
 
     public async hash(password: string): Promise<string> {
@@ -11,3 +11,5 @@ export default class BcryptPasswordHasher {
         return bcrypt.compare(password, hash);
     }
 }
+
+export default new BcryptPasswordHasher();

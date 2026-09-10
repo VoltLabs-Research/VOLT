@@ -3,10 +3,10 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import Analysis from '@modules/analysis/models/Analysis';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import trajectoryDumpStorageService from '@modules/trajectory/services/trajectory/TrajectoryDumpStorageService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { generateEntityId } from '@shared/persistence/entity-id';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import type {

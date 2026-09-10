@@ -7,7 +7,7 @@ import {
     type TeamClusterDaemonTunnelOpenPayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import { OBJECT_GATEWAY_EXPOSURE_ID } from '@modules/cluster/services/object-gateway/object-gateway-paths';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import {
     EnvelopeKind,

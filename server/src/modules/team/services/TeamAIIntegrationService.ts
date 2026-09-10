@@ -6,8 +6,8 @@ import {
     getProviderMetadata,
     normalizeProvider
 } from '@modules/team/services/ai-integration/TeamAIProviderCatalog';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { encrypt } from '@shared/infrastructure/utilities/crypto';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { encrypt } from '@shared/utilities/crypto';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 import type {
     GetTeamAIIntegrationsResponse,
@@ -23,7 +23,7 @@ interface TeamAIIntegrationLookup{
     existing: TeamAIIntegrationEntity | null;
 }
 
-export default class TeamAIIntegrationService{
+class TeamAIIntegrationService{
     async listByTeamId(teamId: string): Promise<GetTeamAIIntegrationsResponse>{
         const integrations = await TeamAIIntegrationEntity.find({
             where: { team: teamId },
@@ -189,3 +189,5 @@ export default class TeamAIIntegrationService{
         };
     }
 }
+
+export default new TeamAIIntegrationService();

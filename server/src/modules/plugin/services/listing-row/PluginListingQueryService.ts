@@ -21,7 +21,7 @@ import {
     type GetListingRowsByAnalysisIdInput,
     type GetListingRowsByAnalysisIdOutput
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
+import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type {
     ExportPluginListingDocumentsInput,
@@ -30,8 +30,8 @@ import type {
 } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { GetSubListingInput, GetSubListingOutput } from '@shared/contracts/operations/GetSubListing';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import { createSerializedDownloadResponse } from '@shared/infrastructure/http/responses/download-response';
-import { ExportType, type PaginatedResult } from '@shared/domain/port/persistence';
+import { createSerializedDownloadResponse } from '@shared/http/responses/download-response';
+import { ExportType, type PaginatedResult } from '@shared/persistence/persistence';
 
 type PageMeta = Omit<PaginatedResult<never>, 'data' | '_meta'>;
 
@@ -43,13 +43,7 @@ const emptyPage = () => ({
     limit: 0
 });
 
-export default class PluginListingQueryService {
-    #daemonClient: ITeamClusterDaemonClient;
-
-    constructor(daemonClient: ITeamClusterDaemonClient) {
-        this.#daemonClient = daemonClient;
-    }
-
+class PluginListingQueryService {
     async getListingRowsByAnalysisId(input: GetListingRowsByAnalysisIdInput): Promise<GetListingRowsByAnalysisIdOutput> {
         const { page, limit } = resolveListingPagination(input);
         const teamClusterId = await resolveAnalysisCluster(input.analysisId);
@@ -129,7 +123,6 @@ export default class PluginListingQueryService {
 
         const rows = await enrichDaemonListingRows({
             rows: await collectAllDaemonPages<DaemonListingRow>(
-                this.#daemonClient,
                 resolved.teamClusterId,
                 ChannelCommands.PluginListingsList,
                 this.#pluginListingFilter(input, resolved.analysisId)
@@ -157,7 +150,7 @@ export default class PluginListingQueryService {
             };
         }
 
-        const daemonResult = await this.#daemonClient.command<DaemonPaginatedResult<DaemonSubListingRow>>(
+        const daemonResult = await teamClusterDaemonClient.command<DaemonPaginatedResult<DaemonSubListingRow>>(
             teamClusterId,
             ChannelCommands.PluginSubListingsList,
             {
@@ -188,7 +181,7 @@ export default class PluginListingQueryService {
     }
 
     #listListings(teamClusterId: string, payload: Record<string, unknown>): Promise<DaemonPaginatedResult> {
-        return this.#daemonClient.command<DaemonPaginatedResult>(
+        return teamClusterDaemonClient.command<DaemonPaginatedResult>(
             teamClusterId,
             ChannelCommands.PluginListingsList,
             payload
@@ -218,3 +211,5 @@ export default class PluginListingQueryService {
         };
     }
 }
+
+export default new PluginListingQueryService();

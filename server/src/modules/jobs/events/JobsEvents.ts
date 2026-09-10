@@ -2,7 +2,7 @@ import { DefineEventGroup, Event } from '@shared/events/EventGroup';
 import teamJobProjectionService from '@modules/jobs/services/TeamJobProjectionService';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 @DefineEventGroup('jobs')
 export default class JobsEvents {

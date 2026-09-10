@@ -1,10 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
 import Team from '@modules/team/models/Team';
-import { CatalogFolderKind } from '@shared/domain/catalog/CatalogFolder';
-import CatalogFolderService from '@shared/domain/catalog/CatalogFolderService';
+import { CatalogFolderKind } from '@shared/catalog/CatalogFolder';
+import CatalogFolderService from '@shared/catalog/CatalogFolderService';
 
 import {
     escapeLikePattern,
@@ -18,13 +18,13 @@ import {
     withFrameSummaries
 } from '@modules/trajectory/services/trajectory/trajectory-record';
 
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 
 import { ILike, In, IsNull } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { TrajectoryStats } from '@volt/contracts/modules/trajectory/domain';
 import type {
     GetTrajectoriesByTeamIdInput,

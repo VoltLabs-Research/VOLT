@@ -5,34 +5,36 @@ import { Body, CurrentUser, Param, Req, Res, schemaBody } from '@shared/http/par
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import PluginService from '@modules/plugin/services/PluginService';
+import pluginCrudService from '@modules/plugin/services/plugin/PluginCrudService';
+import pluginArchiveService, { type RegistryInstallPluginInput } from '@modules/plugin/services/plugin/PluginArchiveService';
+import pluginBinaryStorageService from '@modules/plugin/services/plugin/PluginBinaryStorageService';
+import pipelineExecutionPlanner, { type ExecutePipelineInput } from '@modules/plugin/services/plugin/PipelineExecutionPlanner';
+import registryGateway, { type SearchRegistryPluginsInput } from '@modules/plugin/services/plugin/RegistryGateway';
+import workflowValidatorService, { type ValidateWorkflowInput } from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import pluginExposureArtifactService from '@modules/plugin/services/exposure/PluginExposureArtifactService';
+import pluginListingQueryService from '@modules/plugin/services/listing-row/PluginListingQueryService';
+import analysisListingExportCatalogService from '@modules/plugin/services/listing-row/AnalysisListingExportCatalogService';
+import listingRowsExportService from '@modules/plugin/services/listing-row/ListingRowsExportService';
+import { getPipelineRunsByTrajectoryId } from '@modules/plugin/services/plugin/PipelineRunQueries';
+import { deletePipelineRun, updatePipelineRun } from '@modules/plugin/services/plugin/PipelineRunCommands';
+import { NODE_OUTPUT_PROPERTIES } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import type { ListPluginsInput, UpdatePluginByIdInput } from '@modules/plugin/services/plugin/PluginCrudService';
+import type { DeletePipelineRunInput } from '@modules/plugin/services/plugin/PipelineRunCommands';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { buildControllerParams, readAcceptEncoding } from '@shared/infrastructure/http/controllers/controller-internals';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { buildControllerParams, readAcceptEncoding } from '@shared/http/controllers/controller-internals';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import multer from 'multer';
 
-import type {
-    ClonePluginInput,
-    CreatePluginInput,
-    DownloadPluginBinaryInput,
-    ExecutePipelineInput,
-    ImportPluginInput,
-    ListPluginsInput,
-    PluginIdInput,
-    RegistryInstallPluginInput,
-    SearchRegistryPluginsInput,
-    UpdatePluginByIdInput,
-    CommitBinaryUploadInput,
-    UploadBinaryInput,
-    ValidateWorkflowInput,
-    GetPluginExposureChartInput
-} from '@modules/plugin/services/PluginService';
 import type { GetPipelineRunsByTrajectoryIdInput } from '@modules/plugin/services/plugin/PipelineRunQueries';
+import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
+import type {
+    CommitBinaryUploadInput as WireCommitBinaryUploadInput,
+    UploadBinaryInput as WireUploadBinaryInput
+} from '@volt/contracts/modules/plugin/http';
 import type { UpdatePipelineRunInput } from '@volt/contracts/modules/plugin/http';
-import type { GetPluginByIdInput } from '@shared/contracts/operations/GetPluginById';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type { GetPluginExposurePanelsInput } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
 import type { GetPluginExposureGLBInput } from '@shared/contracts/operations/GetPluginExposureGLB';
@@ -47,7 +49,40 @@ import type {
 import type { GetSubListingInput } from '@shared/contracts/operations/GetSubListing';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { NextFunction, Request, Response } from 'express';
-import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
+import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
+import type { GetPluginExposureChartInput } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
+
+interface PluginIdInput {
+    pluginId: string;
+}
+
+interface ClonePluginInput extends PluginIdInput {
+    teamId: string;
+}
+
+interface CreatePluginInput {
+    workflow: WorkflowProps;
+    teamId: string;
+}
+
+interface DownloadPluginBinaryInput extends PluginIdInput {
+    teamId: string;
+}
+
+interface ImportPluginInput {
+    file: { buffer: Buffer };
+    teamId: string;
+}
+
+interface UploadBinaryInput extends WireUploadBinaryInput, PluginIdInput {
+    teamId: string;
+    userId: string;
+}
+
+interface CommitBinaryUploadInput extends WireCommitBinaryUploadInput, PluginIdInput {
+    teamId: string;
+    userId: string;
+}
 
 const IMPORT_MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -83,8 +118,6 @@ const importUploadSingleFile = (fieldName: string) => (
 
 @Middleware(protect, teamScoped(Resource.PLUGIN))
 export default class PluginController extends Controller {
-    #service = new PluginService();
-
 
     @Route(pluginRoutes.getListingRowsByAnalysisId)
     async getListingRowsByAnalysisId(
@@ -92,7 +125,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetListingRowsByAnalysisIdInput;
-        const value = await this.#service.getListingRowsByAnalysisId(input);
+        const value = await pluginListingQueryService.getListingRowsByAnalysisId(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -102,7 +135,9 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ExportListingRowsByAnalysisIdInput;
-        const output = await this.#service.exportListingRowsByAnalysisId(input);
+        const output = await listingRowsExportService.present(
+            await analysisListingExportCatalogService.buildExportPayload(input)
+        );
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -113,7 +148,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetSubListingInput;
-        const value = await this.#service.getSubListing(input);
+        const value = await pluginListingQueryService.getSubListing(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -123,7 +158,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ExportPluginListingDocumentsInput;
-        const output = await this.#service.exportPluginListingDocuments(input);
+        const output = await pluginListingQueryService.exportPluginListingDocuments(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -134,7 +169,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetPluginListingDocumentsInput;
-        const value = await this.#service.getPluginListingDocuments(input);
+        const value = await pluginListingQueryService.getPluginListingDocuments(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -147,7 +182,7 @@ export default class PluginController extends Controller {
             ...buildControllerParams(req) as unknown as GetPluginExposureGLBInput,
             acceptEncoding: readAcceptEncoding(req)
         };
-        const output = await this.#service.getPluginExposureGLB(input);
+        const output = await pluginExposureArtifactService.getExposureGLB(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -158,7 +193,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetPluginExposurePanelsInput;
-        const value = await this.#service.getPluginExposurePanels({
+        const value = await pluginExposureArtifactService.getExposurePanels({
             ...input,
             timestep: Number(input.timestep)
         });
@@ -171,7 +206,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetPluginExposureChartInput;
-        const output = await this.#service.getPluginExposureChart(input);
+        const output = await pluginExposureArtifactService.getExposureChart(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -182,14 +217,14 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetPluginExposureExportInput;
-        const output = await this.#service.getPluginExposureExport(input);
+        const output = await pluginExposureArtifactService.getExposureExport(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(pluginRoutes.getNodeTypesSchema)
     async getNodeTypesSchema(@Res() res: Response): Promise<void> {
-        const value = await this.#service.getNodeTypesSchema();
+        const value = { nodeTypes: NODE_OUTPUT_PROPERTIES };
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -199,7 +234,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ValidateWorkflowInput;
-        const value = await this.#service.validateWorkflow(input);
+        const value = await workflowValidatorService.validateWorkflow(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -209,7 +244,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as PluginIdInput;
-        const output = await this.#service.exportPlugin(input);
+        const output = await pluginArchiveService.exportPlugin(input.pluginId);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -221,7 +256,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ImportPluginInput;
-        const value = await this.#service.importPlugin(input);
+        const value = await pluginArchiveService.importPlugin(input.file.buffer, input.teamId);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
@@ -231,7 +266,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as SearchRegistryPluginsInput;
-        const value = await this.#service.searchRegistry(input);
+        const value = await registryGateway.search(input.q, input.page, input.limit);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -241,7 +276,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as RegistryInstallPluginInput;
-        const value = await this.#service.installRegistry(input);
+        const value = await pluginArchiveService.installFromRegistry(input);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
@@ -251,7 +286,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ListPluginsInput;
-        const value = await this.#service.listPlugins(input);
+        const value = await pluginCrudService.listPlugins(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -261,7 +296,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as CreatePluginInput;
-        const value = await this.#service.createPlugin(input);
+        const value = await pluginCrudService.createPlugin(input.workflow, input.teamId);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
@@ -271,7 +306,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as CommitBinaryUploadInput;
-        const value = await this.#service.commitBinaryUpload(input);
+        const value = await pluginBinaryStorageService.commitUpload(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -281,7 +316,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as DownloadPluginBinaryInput;
-        const output = await this.#service.downloadBinary(input);
+        const output = await pluginBinaryStorageService.downloadBinary(input.pluginId, input.teamId);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -292,7 +327,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as UploadBinaryInput;
-        const value = await this.#service.uploadBinary(input);
+        const value = await pluginBinaryStorageService.createUploadTarget(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -302,7 +337,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as PluginIdInput;
-        await this.#service.deleteBinary(input);
+        await pluginBinaryStorageService.deleteBinary(input.pluginId);
 
         res.status(HttpStatus.NoContent).send();
     }
@@ -313,7 +348,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ClonePluginInput;
-        const value = await this.#service.clonePlugin(input);
+        const value = await pluginCrudService.clonePlugin(input.pluginId, input.teamId);
         BaseResponse.success(res, value, HttpStatus.Created);
     }
 
@@ -322,8 +357,8 @@ export default class PluginController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const input = buildControllerParams(req) as unknown as GetPluginByIdInput;
-        const value = await this.#service.getPluginById(input);
+        const input = buildControllerParams(req) as unknown as PluginIdInput;
+        const value = await pluginCrudService.getPluginById(input.pluginId);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -333,7 +368,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as UpdatePluginByIdInput;
-        const value = await this.#service.updatePluginById(input);
+        const value = await pluginCrudService.updatePluginById(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -343,7 +378,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as PluginIdInput;
-        await this.#service.deletePluginById(input);
+        await pluginCrudService.deletePluginById(input.pluginId);
 
         res.status(HttpStatus.NoContent).send();
     }
@@ -354,7 +389,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as GetPipelineRunsByTrajectoryIdInput;
-        const value = await this.#service.getPipelineRunsByTrajectoryId(input);
+        const value = await getPipelineRunsByTrajectoryId(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -365,7 +400,7 @@ export default class PluginController extends Controller {
         @Body(schemaBody(typia.createValidate<UpdatePipelineRunInput>())) body: UpdatePipelineRunInput,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#service.updatePipelineRun({
+        const value = await updatePipelineRun({
             teamId,
             pipelineRunId,
             name: body.name
@@ -380,7 +415,7 @@ export default class PluginController extends Controller {
         @CurrentUser() userId: string,
         @Res() res: Response
     ): Promise<void>{
-        await this.#service.deletePipelineRun({
+        await deletePipelineRun({
             teamId,
             pipelineRunId,
             userId
@@ -395,7 +430,7 @@ export default class PluginController extends Controller {
         @Res() res: Response
     ): Promise<void>{
         const input = buildControllerParams(req) as unknown as ExecutePipelineInput;
-        const value = await this.#service.executePipeline(input);
+        const value = await pipelineExecutionPlanner.executePipeline(input);
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 }

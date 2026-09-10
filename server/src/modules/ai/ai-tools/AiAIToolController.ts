@@ -2,7 +2,7 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool, ClientAITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import AiService from '@modules/ai/services/AiService';
+import aiService from '@modules/ai/services/AiService';
 import type {
     ConfigureColorCodingInput,
     ControlPlaybackInput,
@@ -30,8 +30,6 @@ import type {
 } from '@volt/contracts/modules/ai/ai-tools';
 
 export default class AiAIToolController extends AIToolController {
-    #service = new AiService();
-
     @AITool({
         name: 'list_conversations',
         description: 'List all AI conversations for the current user.',
@@ -39,7 +37,7 @@ export default class AiAIToolController extends AIToolController {
         validate: typia.createValidate<ListConversationsInput>()
     })
     async listConversations(input: ListConversationsInput & AIToolScope) {
-        const { total, data } = await this.#service.listConversations(input);
+        const { total, data } = await aiService.listConversations(input);
         return {
             summary: `Found ${total} conversations.`,
             data,
@@ -54,7 +52,7 @@ export default class AiAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateConversationInput>()
     })
     async updateConversation(input: UpdateConversationInput & AIToolScope) {
-        return this.#service.updateConversation(input);
+        return aiService.updateConversation(input);
     }
 
     @AITool({
@@ -64,7 +62,7 @@ export default class AiAIToolController extends AIToolController {
         validate: typia.createValidate<DeleteConversationInput>()
     })
     async deleteConversation(input: DeleteConversationInput & AIToolScope) {
-        await this.#service.deleteConversation(input);
+        await aiService.deleteConversation(input);
         return { deleted: true };
     }
 

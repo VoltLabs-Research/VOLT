@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
-import JwtTokenService from '@modules/auth/services/JwtTokenService';
+import jwtTokenService from '@modules/auth/services/JwtTokenService';
 import Session from '@modules/session/models/Session';
 import type {
     ISocketAuthenticationResult,
@@ -12,11 +12,11 @@ import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
-import { TRACE_ID_HEADER } from '@shared/infrastructure/http/middleware/request-context';
-import logger from '@shared/infrastructure/logger';
-import http from 'http';
+import { TRACE_ID_HEADER } from '@shared/http/middleware/request-context';
+import logger from '@shared/logger';
+import type http from 'http';
 import { randomUUID } from 'node:crypto';
-import { Server, Socket } from 'socket.io';
+import { Server, type Socket } from 'socket.io';
 
 interface SocketConnectionRuntimeData extends ISocketConnectionData {
     traceId?: string;
@@ -63,9 +63,6 @@ export class SocketGateway{
     private io?: Server;
     private initialized = false;
     private modules: ISocketModule[] = [];
-
-    #tokenService = new JwtTokenService();
-
     register(module: ISocketModule): this{
         this.modules.push(module);
         return this;
@@ -176,7 +173,7 @@ export class SocketGateway{
             };
         }
 
-        const decoded = this.#tokenService.verify(token);
+        const decoded = jwtTokenService.verify(token);
         if (!decoded?.id) {
             return {
                 state: 'rejected',

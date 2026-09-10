@@ -1,11 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { ErrorCode } from '@core/constants/error-codes';
 
-import DaemonListingReplicator from '@modules/cluster/services/daemon/DaemonListingReplicator';
-import ClusterRebalancePlanner from '@modules/cluster/services/transfer/ClusterRebalancePlanner';
-import ClusterTransferJobStore from '@modules/cluster/services/transfer/ClusterTransferJobStore';
+import daemonListingReplicator from '@modules/cluster/services/daemon/DaemonListingReplicator';
+import clusterRebalancePlanner from '@modules/cluster/services/transfer/ClusterRebalancePlanner';
+import clusterTransferJobStore from '@modules/cluster/services/transfer/ClusterTransferJobStore';
 import publishTransferJobProjection from '@modules/cluster/services/transfer/ClusterTransferJobProjector';
-import ClusterTransferObjectCopier from '@modules/cluster/services/transfer/ClusterTransferObjectCopier';
+import clusterTransferObjectCopier from '@modules/cluster/services/transfer/ClusterTransferObjectCopier';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import {
     describeClusterTransferJob,
@@ -17,14 +17,14 @@ import type {
 import type { StoragePlacement } from '@modules/cluster/contracts/storage-placement';
 import type { TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
-import { HARD_STORAGE_LIMIT_PCT } from '@shared/application/utilities/cluster-storage-policy';
+import { HARD_STORAGE_LIMIT_PCT } from '@shared/utilities/cluster-storage-policy';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type {
     StoragePlacementScopeType,
     StoragePlacementState
-} from '@shared/domain/contracts/team-cluster';
-import logger from '@shared/infrastructure/logger';
+} from '@shared/contracts/types/team-cluster';
+import logger from '@shared/logger';
 import {
     CLUSTER_TRANSFER_CLAIM_RENEW_INTERVAL_MS,
     CLUSTER_TRANSFER_CLAIM_TTL_MS,
@@ -41,15 +41,8 @@ interface TransferRequestInput {
 }
 
 class ClusterTransferCoordinator {
-    private readonly storagePlacementService = storagePlacementService;
-    private readonly systemMetricsRepository = systemMetricsRepository;
-    private readonly daemonListings = new DaemonListingReplicator();
-    private readonly jobStore = new ClusterTransferJobStore();
-    private readonly objectCopier = new ClusterTransferObjectCopier();
-    private readonly rebalancePlanner = new ClusterRebalancePlanner();
-
     async requestTransfer(input: TransferRequestInput): Promise<ClusterTransferJob> {
-        const placement = await this.storagePlacementService.ensurePlacement(input.scopeType, input.scopeId);
+        const placement = await storagePlacementService.ensurePlacement(input.scopeType, input.scopeId);
         if (placement.props.team !== input.teamId) {
             throw ApplicationError.notFound(ErrorCodes.STORAGE_PLACEMENT_NOT_FOUND, 'Storage placement not found for the requested team');
         }
@@ -64,7 +57,7 @@ class ClusterTransferCoordinator {
         };
 
         if (placement.props.primaryClusterId === input.destinationClusterId) {
-            const settledPlacement = await this.storagePlacementService.switchPrimaryCluster(
+            const settledPlacement = await storagePlacementService.switchPrimaryCluster(
                 input.scopeType,
                 input.scopeId,
                 input.destinationClusterId,
@@ -74,7 +67,7 @@ class ClusterTransferCoordinator {
                 }
             );
 
-            return this.publishJob(await this.jobStore.createTransferJob({
+            return this.publishJob(await clusterTransferJobStore.createTransferJob({
                 ...jobRequest,
                 sourceClusterId: settledPlacement.props.primaryClusterId,
                 buckets: settledPlacement.props.buckets,
@@ -84,7 +77,7 @@ class ClusterTransferCoordinator {
             }));
         }
 
-        const openTransferJob = await this.jobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
+        const openTransferJob = await clusterTransferJobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
         if (openTransferJob && openTransferJob.props.destinationClusterId === input.destinationClusterId) {
             return this.publishJob(openTransferJob);
         }
@@ -92,13 +85,13 @@ class ClusterTransferCoordinator {
         await this.assertTransferClusters(placement, input.destinationClusterId);
 
         try {
-            return this.publishJob(await this.jobStore.createTransferJob({
+            return this.publishJob(await clusterTransferJobStore.createTransferJob({
                 ...jobRequest,
                 sourceClusterId: placement.props.primaryClusterId,
                 buckets: placement.props.buckets
             }));
         } catch (error) {
-            const duplicate = await this.jobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
+            const duplicate = await clusterTransferJobStore.findOpenTransferJobByScope(input.scopeType, input.scopeId);
             if (!duplicate) {
                 throw error;
             }
@@ -111,13 +104,13 @@ class ClusterTransferCoordinator {
         let processedJobs = 0;
 
         while (processedJobs < limit) {
-            const claimedJob = await this.jobStore.claimNextRunnable();
+            const claimedJob = await clusterTransferJobStore.claimNextRunnable();
             if (!claimedJob) {
                 break;
             }
 
             const renewTimer = setInterval(() => {
-                void this.jobStore.renewClaim(claimedJob.id, CLUSTER_TRANSFER_CLAIM_TTL_MS).catch((error) => {
+                void clusterTransferJobStore.renewClaim(claimedJob.id, CLUSTER_TRANSFER_CLAIM_TTL_MS).catch((error) => {
                     logger.warn({
                         error,
                         jobId: claimedJob.id
@@ -130,7 +123,7 @@ class ClusterTransferCoordinator {
                 await this.executeJob(claimedJob.id);
             } finally {
                 clearInterval(renewTimer);
-                await this.jobStore.releaseClaim(claimedJob.id).catch(() => undefined);
+                await clusterTransferJobStore.releaseClaim(claimedJob.id).catch(() => undefined);
             }
             processedJobs += 1;
         }
@@ -139,7 +132,7 @@ class ClusterTransferCoordinator {
     }
 
     async planAutomaticRebalance(): Promise<number> {
-        const plans = await this.rebalancePlanner.planAutomaticRebalance();
+        const plans = await clusterRebalancePlanner.planAutomaticRebalance();
 
         for (const plan of plans) {
             await this.requestTransfer({
@@ -152,7 +145,7 @@ class ClusterTransferCoordinator {
     }
 
     async executeJob(jobId: string): Promise<ClusterTransferJob> {
-        const job = await this.jobStore.findById(jobId);
+        const job = await clusterTransferJobStore.findById(jobId);
         if (!job) {
             throw ApplicationError.notFound(ErrorCodes.CLUSTER_TRANSFER_JOB_NOT_FOUND, 'Cluster transfer job not found');
         }
@@ -162,10 +155,10 @@ class ClusterTransferCoordinator {
         }
 
         const { scopeType, scopeId, sourceClusterId, destinationClusterId } = job.props;
-        const placement = await this.storagePlacementService.ensurePlacement(scopeType, scopeId);
+        const placement = await storagePlacementService.ensurePlacement(scopeType, scopeId);
         await this.assertTransferClusters(placement, destinationClusterId);
 
-        const startedJob = await this.jobStore.setJobState(job.id, 'freezing', {
+        const startedJob = await clusterTransferJobStore.setJobState(job.id, 'freezing', {
             startedAt: job.props.startedAt ?? new Date(),
             errorCode: null,
             errorMessage: null
@@ -174,11 +167,11 @@ class ClusterTransferCoordinator {
         });
 
         try {
-            await this.storagePlacementService.setPlacementState(scopeType, scopeId, 'read-only');
-            const copiedJob = await this.objectCopier.copyPlacement(startedJob, placement);
-            const verifiedBytes = await this.objectCopier.verifyPlacement(copiedJob, placement);
-            await this.daemonListings.replicateDaemonListings(copiedJob);
-            const switchingJob = await this.jobStore.setJobState(copiedJob.id, 'switching', {}, {
+            await storagePlacementService.setPlacementState(scopeType, scopeId, 'read-only');
+            const copiedJob = await clusterTransferObjectCopier.copyPlacement(startedJob, placement);
+            const verifiedBytes = await clusterTransferObjectCopier.verifyPlacement(copiedJob, placement);
+            await daemonListingReplicator.replicateDaemonListings(copiedJob);
+            const switchingJob = await clusterTransferJobStore.setJobState(copiedJob.id, 'switching', {}, {
                 publishUpdate: true
             });
 
@@ -187,7 +180,7 @@ class ClusterTransferCoordinator {
                 sourceClusterId
             ])];
             const settlePlacement = (state: StoragePlacementState, replicas: string[]) => {
-                return this.storagePlacementService.switchPrimaryCluster(scopeType, scopeId, destinationClusterId, {
+                return storagePlacementService.switchPrimaryCluster(scopeType, scopeId, destinationClusterId, {
                     replicaClusterIds: replicas,
                     state,
                     lastVerifiedAt: new Date(),
@@ -197,14 +190,14 @@ class ClusterTransferCoordinator {
             };
 
             await settlePlacement('moving', replicaClusterIds);
-            await this.storagePlacementService.synchronizeScopeStorageOwner(scopeType, scopeId, destinationClusterId);
+            await storagePlacementService.synchronizeScopeStorageOwner(scopeType, scopeId, destinationClusterId);
 
-            const cleaningJob = await this.jobStore.setJobState(switchingJob.id, 'cleaning', {}, {
+            const cleaningJob = await clusterTransferJobStore.setJobState(switchingJob.id, 'cleaning', {}, {
                 publishUpdate: true
             });
-            const deletedObjects = await this.objectCopier.cleanupSourceCopy(sourceClusterId, placement.props.buckets);
-            await this.daemonListings.purgeDaemonListings(sourceClusterId, scopeType, scopeId);
-            const cleanedJob = await this.jobStore.setJobState(cleaningJob.id, 'cleaning', {
+            const deletedObjects = await clusterTransferObjectCopier.cleanupSourceCopy(sourceClusterId, placement.props.buckets);
+            await daemonListingReplicator.purgeDaemonListings(sourceClusterId, scopeType, scopeId);
+            const cleanedJob = await clusterTransferJobStore.setJobState(cleaningJob.id, 'cleaning', {
                 stats: {
                     ...cleaningJob.props.stats,
                     deletedObjects
@@ -213,7 +206,7 @@ class ClusterTransferCoordinator {
 
             await settlePlacement('active', replicaClusterIds.filter((clusterId) => clusterId !== sourceClusterId));
 
-            const completedJob = await this.jobStore.setJobState(cleanedJob.id, 'completed', {
+            const completedJob = await clusterTransferJobStore.setJobState(cleanedJob.id, 'completed', {
                 finishedAt: new Date(),
                 cursor: {
                     bucketIndex: job.props.buckets.length,
@@ -227,8 +220,8 @@ class ClusterTransferCoordinator {
 
             return completedJob;
         } catch (error) {
-            await this.storagePlacementService.setPlacementState(scopeType, scopeId, 'active').catch(() => undefined);
-            const failedJob = await this.jobStore.setJobState(job.id, 'failed', {
+            await storagePlacementService.setPlacementState(scopeType, scopeId, 'active').catch(() => undefined);
+            const failedJob = await clusterTransferJobStore.setJobState(job.id, 'failed', {
                 finishedAt: new Date(),
                 errorCode: error instanceof ApplicationError ? error.code : 'ClusterTransfer::Failed',
                 errorMessage: error instanceof Error ? error.message : 'Cluster transfer failed'
@@ -263,7 +256,7 @@ class ClusterTransferCoordinator {
         unavailableCode: ErrorCode,
         unavailableMessage: string
     ): Promise<TeamCluster> {
-        const cluster = await this.jobStore.findTeamClusterById(clusterId);
+        const cluster = await clusterTransferJobStore.findTeamClusterById(clusterId);
         if (!cluster || cluster.props.team !== teamId || cluster.props.status !== TeamClusterStatus.Connected) {
             throw ApplicationError.conflict(unavailableCode, unavailableMessage);
         }
@@ -302,7 +295,7 @@ class ClusterTransferCoordinator {
             );
         }
 
-        const metrics = await this.systemMetricsRepository.getLatestByClusterId(clusterId);
+        const metrics = await systemMetricsRepository.getLatestByClusterId(clusterId);
         if ((metrics?.disk.usagePercent ?? 0) >= HARD_STORAGE_LIMIT_PCT) {
             throw ApplicationError.conflict(
                 ErrorCodes.CLUSTER_TRANSFER_DESTINATION_CLUSTER_HARD_LIMIT_REACHED,

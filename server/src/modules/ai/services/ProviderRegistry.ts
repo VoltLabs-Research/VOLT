@@ -14,7 +14,7 @@ import { createOllama } from 'ollama-ai-provider-v2';
 import type { LanguageModel } from 'ai';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AIProvider, AI_PROVIDERS } from '@volt/contracts/modules/ai/domain';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 interface SdkOptions{
     apiKey?: string;

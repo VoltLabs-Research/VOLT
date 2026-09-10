@@ -1,4 +1,4 @@
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 interface CascadeDeleteEachOptions {
     label: string;

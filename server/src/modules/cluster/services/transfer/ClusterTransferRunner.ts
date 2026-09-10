@@ -1,13 +1,11 @@
 import clusterTransferCoordinator from '@modules/cluster/services/transfer/ClusterTransferCoordinator';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 const TRANSFER_RUNNER_INTERVAL_MS = 30_000;
 
 export class ClusterTransferRunner {
     private interval: ReturnType<typeof setInterval> | null = null;
     private running = false;
-    private readonly clusterTransferCoordinator = clusterTransferCoordinator;
-
     start(): void {
         if (this.interval) {
             return;
@@ -48,9 +46,9 @@ export class ClusterTransferRunner {
 
         try {
             if (includeAutomaticRebalance) {
-                await this.clusterTransferCoordinator.planAutomaticRebalance();
+                await clusterTransferCoordinator.planAutomaticRebalance();
             }
-            await this.clusterTransferCoordinator.runPendingJobs(jobLimit);
+            await clusterTransferCoordinator.runPendingJobs(jobLimit);
         } finally {
             this.running = false;
         }

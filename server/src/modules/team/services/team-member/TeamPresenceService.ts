@@ -40,7 +40,7 @@ const getOrCreate = <K, V>(map: Map<K, V>, key: K, create: () => V): V => {
     return created;
 };
 
-export default class TeamPresenceService {
+class TeamPresenceService {
     private readonly sessionsByConnection = new Map<string, TeamPresenceSession>();
     private readonly presenceByTeam = new Map<string, Map<string, TeamPresenceState>>();
     private readonly connectionsByUser = new Map<string, Set<string>>();
@@ -162,3 +162,5 @@ export default class TeamPresenceService {
         return elapsedMinutes;
     }
 };
+
+export default new TeamPresenceService();

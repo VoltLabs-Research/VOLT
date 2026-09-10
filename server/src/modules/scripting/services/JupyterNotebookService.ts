@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

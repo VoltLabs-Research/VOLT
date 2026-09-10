@@ -1,5 +1,4 @@
 import { Strategy as MicrosoftStrategy } from 'passport-microsoft';
-import type AuthService from '@modules/auth/services/AuthService';
 import { OAuthProvider } from '@modules/auth/contracts/user';
 import BaseOAuthStrategy from '@modules/auth/services/oauth/BaseOAuthStrategy';
 import type { Profile } from 'passport';
@@ -14,8 +13,8 @@ interface MicrosoftProfile extends Profile {
 }
 
 export default class MicrosoftStrategyWrapper extends BaseOAuthStrategy<MicrosoftProfile> {
-    constructor(authService: AuthService) {
-        super(OAuthProvider.Microsoft, authService, {
+    constructor() {
+        super(OAuthProvider.Microsoft, {
             map: (profile) => {
                 const email = profile.emails?.[0]?.value
                     || profile._json?.mail

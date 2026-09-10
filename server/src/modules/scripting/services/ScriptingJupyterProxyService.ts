@@ -10,10 +10,10 @@ import {
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import reverseWsHttpRelay from '@modules/cluster/services/reverse-channel/ReverseWsHttpRelay';
 import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import logger from '@shared/infrastructure/logger';
-import { writeUpgradeError } from '@shared/infrastructure/utilities/proxy-relay';
-import { buildWebSocketProtocolList } from '@shared/infrastructure/utilities/websocket-protocols';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
+import { writeUpgradeError } from '@shared/utilities/proxy-relay';
+import { buildWebSocketProtocolList } from '@shared/utilities/websocket-protocols';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 

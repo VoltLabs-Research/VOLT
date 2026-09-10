@@ -6,7 +6,7 @@ import {
     headersToObject
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import http from 'node:http';
 import type { RawHttpResponse } from '@modules/cluster/services/object-gateway/object-gateway-responses';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
@@ -56,7 +56,7 @@ const isFastOperation = (operation: ObjectGatewayOperationName): boolean => (
     operation === 'head' || operation === 'list'
 );
 
-export default class ObjectGatewayHttpSessionPool {
+class ObjectGatewayHttpSessionPool {
     private readonly sessions = new Map<string, ObjectGatewayHttpSessionEntry[]>();
 
     async acquire(
@@ -244,3 +244,5 @@ export default class ObjectGatewayHttpSessionPool {
         }
     }
 }
+
+export default new ObjectGatewayHttpSessionPool();

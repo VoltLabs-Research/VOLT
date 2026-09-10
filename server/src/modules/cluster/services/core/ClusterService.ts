@@ -8,7 +8,7 @@ import {
     requireConfirmedPassword,
     requireOwnedTeamCluster
 } from '@modules/cluster/services/core/cluster-access';
-import DaemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
+import daemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCredentialGuard';
 import clusterTransferCoordinator from '@modules/cluster/services/transfer/ClusterTransferCoordinator';
 import clusterTransferRunner from '@modules/cluster/services/transfer/ClusterTransferRunner';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
@@ -38,12 +38,12 @@ import {
 } from '@modules/cluster/contracts/cluster-transfer-job';
 import type { ClusterTransferJobState } from '@volt/contracts/modules/cluster/domain';
 import type { StoragePlacement } from '@modules/cluster/contracts/storage-placement';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import ApplicationError from '@shared/errors/ApplicationError';
+import type { PaginatedResult } from '@shared/persistence/persistence';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import { ILike, In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 
@@ -65,9 +65,7 @@ const TOKEN_REGENERATION_STATUSES = new Set<TeamClusterStatus>([
 
 const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, '\\$&');
 
-export default class ClusterService {
-    readonly #daemonCredentialGuard = new DaemonCredentialGuard();
-
+class ClusterService {
     async create(input: { teamId: string; userId: string; name: string }): Promise<{
         teamCluster: TeamClusterView;
         enrollmentToken: string;
@@ -278,7 +276,7 @@ export default class ClusterService {
         const entity = await requireOwnedTeamCluster(input.teamClusterId, input.teamId);
         await requireConfirmedPassword(input.userId, input.password);
 
-        const daemonPassword = await this.#daemonCredentialGuard.getDecryptedDaemonPassword(toTeamClusterLike(entity));
+        const daemonPassword = await daemonCredentialGuard.getDecryptedDaemonPassword(toTeamClusterLike(entity));
 
         logger.info(`Team cluster daemon credentials revealed teamClusterId=${input.teamClusterId} teamId=${input.teamId} userId=${input.userId}`);
 
@@ -429,3 +427,5 @@ export default class ClusterService {
         return activeTransfersByClusterId;
     }
 }
+
+export default new ClusterService();

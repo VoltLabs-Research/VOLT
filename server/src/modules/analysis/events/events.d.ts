@@ -1,7 +1,7 @@
-import type { AnalysisCreatedEventPayload } from '@shared/contracts/events/AnalysisCreatedPayload';
-import type { AnalysisDeletedEventPayload } from '@shared/contracts/events/AnalysisDeletedPayload';
-import type { AnalysisStageChangedEventPayload } from '@shared/contracts/events/AnalysisStageChangedPayload';
-import type { AnalysisStatusChangedEventPayload } from '@shared/contracts/events/AnalysisStatusChangedPayload';
+import type { AnalysisCreatedEventPayload } from '@shared/events/AnalysisCreatedPayload';
+import type { AnalysisDeletedEventPayload } from '@shared/events/AnalysisDeletedPayload';
+import type { AnalysisStageChangedEventPayload } from '@shared/events/AnalysisStageChangedPayload';
+import type { AnalysisStatusChangedEventPayload } from '@shared/events/AnalysisStatusChangedPayload';
 
 declare global {
     interface EventMap {

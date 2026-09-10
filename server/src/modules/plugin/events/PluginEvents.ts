@@ -1,16 +1,15 @@
 import { DefineEventGroup, Event } from '@shared/events/EventGroup';
 import { cascadeDeleteEach } from '@shared/events/cascadeDeleteEach';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import PluginEntity from '@modules/plugin/models/Plugin';
-import PluginService from '@modules/plugin/services/PluginService';
+import pluginCrudService from '@modules/plugin/services/plugin/PluginCrudService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 interface PluginWarmupCommandPayload extends Record<string, unknown> {
     pluginId: string;
@@ -28,8 +27,6 @@ interface PluginWarmupCommandResponse {
 
 @DefineEventGroup('plugin')
 export default class PluginEvents {
-    #storagePlacementService: IStoragePlacementService = storagePlacementService;
-    #service?: PluginService;
 
     @Event('plugin.deleted')
     async deletePluginExposures({ pluginId }: EventMap['plugin.deleted']) {
@@ -64,7 +61,7 @@ export default class PluginEvents {
             requirementsFile,
             entrypointScript,
             expectedHash: binaryHash,
-            ownerClusterId: (await this.#storagePlacementService.ensurePlacement('plugin-binary', pluginId)).props.primaryClusterId
+            ownerClusterId: (await storagePlacementService.ensurePlacement('plugin-binary', pluginId)).props.primaryClusterId
         };
 
         await Promise.allSettled(teamClusters.map(async (cluster) => {
@@ -111,8 +108,7 @@ export default class PluginEvents {
             label: 'PluginEvents',
             ids: plugins.map((plugin) => plugin.id),
             deleteOne: async (pluginId) => {
-                this.#service ??= new PluginService();
-                await this.#service.deletePluginById({ pluginId });
+                await pluginCrudService.deletePluginById({ pluginId }.pluginId);
             }
         });
     }

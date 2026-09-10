@@ -1,4 +1,4 @@
-import type { UserActivityRecordedPayload } from '@shared/contracts/events/UserActivityRecordedPayload';
+import type { UserActivityRecordedPayload } from '@shared/events/UserActivityRecordedPayload';
 
 declare global {
     interface EventMap {

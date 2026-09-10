@@ -1,7 +1,7 @@
 import { DefineEventGroup, Event } from '@shared/events/EventGroup';
 import { cascadeDeleteEach } from '@shared/events/cascadeDeleteEach';
 import Analysis from '@modules/analysis/models/Analysis';
-import AnalysisService from '@modules/analysis/services/AnalysisService';
+import analysisService from '@modules/analysis/services/AnalysisService';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
@@ -10,10 +10,10 @@ import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamCl
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
-import { getAnalysisStorageCleanupTargets } from '@shared/application/utilities/storage-cleanup-prefixes';
+import { getAnalysisStorageCleanupTargets } from '@shared/utilities/storage-cleanup-prefixes';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import { getKeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
-import logger from '@shared/infrastructure/logger';
+import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
+import logger from '@shared/logger';
 import type { FindOptionsWhere } from 'typeorm';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
@@ -23,7 +23,7 @@ const DAEMON_LISTING_DOCUMENT_TYPES = ['listing', 'sub-listing'] as const;
 
 @DefineEventGroup('analysis')
 export default class AnalysisEvents{
-    #service?: AnalysisService;
+    #service?: typeof analysisService;
 
     @Event('analysis.deleted')
     async purgeJobsAndArtifacts(payload: EventMap['analysis.deleted']){
@@ -114,7 +114,7 @@ export default class AnalysisEvents{
             where,
             select: { id: true }
         });
-        this.#service ??= new AnalysisService();
+        this.#service ??= analysisService;
 
         await cascadeDeleteEach({
             label: 'AnalysisEvents',

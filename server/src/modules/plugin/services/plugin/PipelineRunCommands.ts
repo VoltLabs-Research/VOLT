@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import { toWireRun } from '@modules/plugin/services/plugin/PipelineRunQueries';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 
 const NAME_MAX_LENGTH = 120;

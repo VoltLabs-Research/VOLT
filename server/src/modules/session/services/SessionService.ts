@@ -1,7 +1,7 @@
 import { Not } from 'typeorm';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Session from '@modules/session/models/Session';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { parseUserAgent } from '@volt/contracts/modules/session/user-agent';
 
 const toSessionView = (entity: Session, currentToken?: string) => {
@@ -25,7 +25,7 @@ const toSessionView = (entity: Session, currentToken?: string) => {
     };
 };
 
-export default class SessionService{
+class SessionService{
     async getActiveSessions(userId: string, currentToken?: string){
         const sessions = await Session.find({
             where: {
@@ -75,3 +75,5 @@ export default class SessionService{
         return { revokedCount: result.affected ?? 0 };
     }
 }
+
+export default new SessionService();

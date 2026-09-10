@@ -1,5 +1,5 @@
 import type { AIMessagePart, AIMessageParts } from '@modules/ai/contracts/ai-message';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import { isRecord } from '@shared/utilities/type-guards';
 
 interface AIResponseMessagePartsMappingResult {
     parts: AIMessageParts;

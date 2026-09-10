@@ -20,7 +20,7 @@ import type {
     TeamClusterQueueConcurrencyProps,
     TeamClusterQueueScopeLimitsProps
 } from '@shared/contracts/types/TeamCluster';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 const MB_PER_GB = 1024;
 

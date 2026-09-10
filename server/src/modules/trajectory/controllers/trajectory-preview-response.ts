@@ -1,5 +1,5 @@
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
+import BaseResponse from '@shared/http/responses/BaseResponse';
+import logger from '@shared/logger';
 
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import type { Response } from 'express';

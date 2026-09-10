@@ -28,7 +28,7 @@ const toActivityUser = (user: User | null | undefined) => {
     };
 };
 
-export default class DailyActivityService{
+class DailyActivityService{
     async getTeamActivitySummary(input: GetTeamActivitySummaryInput){
         const range = input.range && input.range > 0 && Number.isFinite(input.range) ? Math.floor(input.range) : 7;
         const startDate = startOfToday();
@@ -104,3 +104,5 @@ export default class DailyActivityService{
         }).save();
     }
 }
+
+export default new DailyActivityService();

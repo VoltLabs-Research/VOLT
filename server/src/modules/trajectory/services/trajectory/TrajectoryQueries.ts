@@ -1,9 +1,9 @@
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import { buildAnalysisRelationOptions } from '@modules/analysis/services/AnalysisQueries';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 
 import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
 
 const ANALYSIS_LIST_DEFAULT_LIMIT = 100;

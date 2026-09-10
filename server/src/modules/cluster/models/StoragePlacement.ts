@@ -1,9 +1,9 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import { StoragePlacementScopeType, StoragePlacementState } from '@modules/cluster/contracts/storage-placement';
-import type { StoragePlacementBucketRef } from '@shared/domain/contracts/team-cluster';
+import type { StoragePlacementBucketRef } from '@shared/contracts/types/team-cluster';
 
 @Entity('storage_placements')
 @Index(['team'])

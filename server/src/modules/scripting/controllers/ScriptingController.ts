@@ -5,31 +5,28 @@ import { Body, schemaBody, Param, Query, CurrentUser, Req, Res } from '@shared/h
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import ScriptingService from '@modules/scripting/services/ScriptingService';
-import ScriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
+import scriptingService from '@modules/scripting/services/ScriptingService';
+import scriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
 import { clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { scriptingRoutes } from '@volt/contracts/modules/scripting/routes';
-import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
+import { type ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type {
     CreateScriptingNotebookInput,
     UpdateScriptingNotebookInput,
     CreateScriptingJupyterSessionInput
 } from '@volt/contracts/modules/scripting/http';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
 
 @Middleware(protect, teamScoped(Resource.SCRIPTING))
 export default class ScriptingController extends Controller {
-    #service = new ScriptingService();
-    #sessions = new ScriptingSessionService();
-
     @Route(scriptingRoutes.listNotebooks)
     listNotebooks(
         @Param('teamId') teamId: string,
         @Query() query: Record<string, string>
     ) {
-        return this.#service.listNotebooks({
+        return scriptingService.listNotebooks({
             teamId,
             trajectoryId: query.trajectoryId,
             scope: query.scope as ScriptingNotebookScope | undefined,
@@ -45,7 +42,7 @@ export default class ScriptingController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateScriptingNotebookInput>())) body: CreateScriptingNotebookInput
     ) {
-        return this.#service.createNotebook({
+        return scriptingService.createNotebook({
             teamId,
             userId,
             title: body.title,
@@ -59,7 +56,7 @@ export default class ScriptingController extends Controller {
         @Param('notebookId') notebookId: string,
         @Body(schemaBody(typia.createValidate<UpdateScriptingNotebookInput>())) body: UpdateScriptingNotebookInput
     ) {
-        return this.#service.updateNotebook({
+        return scriptingService.updateNotebook({
             teamId,
             notebookId,
             title: body.title,
@@ -73,7 +70,7 @@ export default class ScriptingController extends Controller {
         @Param('teamId') teamId: string,
         @Param('notebookId') notebookId: string
     ){
-        await this.#service.deleteNotebook({
+        await scriptingService.deleteNotebook({
             teamId,
             notebookId
         });
@@ -87,7 +84,7 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#sessions.getSessionStatus({
+        const value = await scriptingSessionService.getSessionStatus({
             teamId,
             notebookId,
             userId
@@ -108,7 +105,7 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#sessions.deleteSession({
+        const value = await scriptingSessionService.deleteSession({
             teamId,
             notebookId
         });
@@ -129,7 +126,7 @@ export default class ScriptingController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#sessions.createJupyterSession({
+        const value = await scriptingSessionService.createJupyterSession({
             teamId,
             userId,
             notebookId: body.notebookId,

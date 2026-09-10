@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { Hidden } from '@shared/infrastructure/persistence/Hidden';
+import BaseModel from '@shared/persistence/BaseModel';
+import { Hidden } from '@shared/persistence/Hidden';
 import { OAuthProvider, UserRole } from '@modules/auth/contracts/user';
 
 @Entity('users')

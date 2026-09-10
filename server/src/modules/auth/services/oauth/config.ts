@@ -1,5 +1,4 @@
 import { OAuthProvider } from '@modules/auth/contracts/user';
-import AuthService from '@modules/auth/services/AuthService';
 import GithubStrategyWrapper from '@modules/auth/services/oauth/strategies/GitHubStrategy';
 import GoogleStrategyWrapper from '@modules/auth/services/oauth/strategies/GoogleStrategy';
 import MicrosoftStrategyWrapper from '@modules/auth/services/oauth/strategies/MicrosoftStrategy';
@@ -21,9 +20,8 @@ export const configureOAuthStrategies = (): void => {
     if(configured) return;
     configured = true;
 
-    const authService = new AuthService();
 
-    if(process.env.GITHUB_CLIENT_ID) passport.use(new GithubStrategyWrapper(authService).getStrategy());
-    if(process.env.GOOGLE_CLIENT_ID) passport.use(new GoogleStrategyWrapper(authService).getStrategy());
-    if(process.env.MICROSOFT_CLIENT_ID) passport.use(new MicrosoftStrategyWrapper(authService).getStrategy());
+    if(process.env.GITHUB_CLIENT_ID) passport.use(new GithubStrategyWrapper().getStrategy());
+    if(process.env.GOOGLE_CLIENT_ID) passport.use(new GoogleStrategyWrapper().getStrategy());
+    if(process.env.MICROSOFT_CLIENT_ID) passport.use(new MicrosoftStrategyWrapper().getStrategy());
 };

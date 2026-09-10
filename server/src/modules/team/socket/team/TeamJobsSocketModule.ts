@@ -5,14 +5,12 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
-import logger from '@shared/infrastructure/logger';
-import TeamJobsService from './TeamJobsService';
+import logger from '@shared/logger';
+import teamJobsService from './TeamJobsService';
 
 class TeamJobsSocketModule extends BaseSocketModule {
     public readonly name = 'TeamJobsSocketModule';
     private unsubscribeFromTeamSubscription?: () => void;
-    private readonly teamJobsService = new TeamJobsService();
-
     constructor() {
         super(socketIOEmitter, socketIORoomManager, socketIOEventRegistry);
     }
@@ -41,7 +39,7 @@ class TeamJobsSocketModule extends BaseSocketModule {
         logger.info(`[TeamJobsSocketModule] Connection ${connection.id} joined team room: ${teamRoom}`);
 
         try {
-            const groupedJobs = await this.teamJobsService.getInitialTeamJobs(payload.teamId);
+            const groupedJobs = await teamJobsService.getInitialTeamJobs(payload.teamId);
             this.emitToSocket(connection.id, 'team.jobs.initial', groupedJobs);
             logger.debug(`[TeamJobsSocketModule] Sent ${groupedJobs.groups.length} job groups to connection ${connection.id}`);
         } catch (error) {

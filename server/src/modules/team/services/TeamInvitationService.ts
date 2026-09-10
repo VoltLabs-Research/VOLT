@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SystemRoleNames } from '@core/constants/system-roles';
 import User from '@modules/auth/models/User';
@@ -8,9 +8,9 @@ import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
 import { TeamInvitationStatus } from '@volt/contracts/modules/team/domain';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 import crypto from 'crypto';
 import type {
     SendTeamInvitationInput,
@@ -27,7 +27,7 @@ const assertInvitedUser = (invitation: TeamInvitation, userId: string): void => 
     }
 };
 
-export default class TeamInvitationService{
+class TeamInvitationService{
     async send(teamId: string, userId: string, input: SendTeamInvitationInput): Promise<TeamInvitation>{
         const normalizedEmail = input.email.trim().toLowerCase();
 
@@ -223,3 +223,5 @@ export default class TeamInvitationService{
         return invitation;
     }
 }
+
+export default new TeamInvitationService();

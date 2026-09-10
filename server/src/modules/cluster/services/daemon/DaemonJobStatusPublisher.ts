@@ -1,8 +1,8 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import type { AnalysisStatusChangedEventPayload } from '@shared/contracts/events/AnalysisStatusChangedPayload';
+import eventBus from '@shared/events/PostgresEventBus';
+import type { AnalysisStatusChangedEventPayload } from '@shared/events/AnalysisStatusChangedPayload';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import type { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import type { JobTrajectoryContext } from '@modules/cluster/services/daemon/DaemonJobOwnershipResolver';
 
 const JOB_STATUS_PUBLISH_BATCH_SIZE = 50;
@@ -51,11 +51,9 @@ export type AnalysisStatusPublication = Omit<AnalysisStatusChangedEventPayload, 
     & { trajectoryId?: string };
 
 class DaemonJobStatusPublisher {
-    private readonly eventBus = eventBus;
-
     async publishJobStatusChanged(input: ProjectedJobStatusInput): Promise<void> {
         const { trajectoryContext, ...job } = input;
-        await this.eventBus.emit('job.status.changed', {
+        await eventBus.emit('job.status.changed', {
             ...job,
             ...trajectoryContext,
             source: PROJECTED_JOB_SOURCE,
@@ -71,7 +69,7 @@ class DaemonJobStatusPublisher {
     }
 
     async publishAnalysisStatus(input: AnalysisStatusPublication): Promise<void> {
-        await this.eventBus.emit('analysis.status.changed', {
+        await eventBus.emit('analysis.status.changed', {
             ...input,
             trajectoryId: input.trajectoryId ?? ''
         }).catch(swallow('Failed to publish analysis.status.changed', {
@@ -81,7 +79,7 @@ class DaemonJobStatusPublisher {
     }
 
     async publishAnalysisStageChanged(analysis: Analysis, teamId: string, trajectoryId: string): Promise<void> {
-        await this.eventBus.emit('analysis.stage.changed', {
+        await eventBus.emit('analysis.stage.changed', {
             analysisId: analysis._id,
             trajectoryId,
             teamId,

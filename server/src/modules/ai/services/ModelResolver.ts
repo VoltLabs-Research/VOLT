@@ -2,10 +2,10 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import TeamAIIntegration from '@modules/team/models/TeamAIIntegration';
 import { buildLanguageModel } from '@modules/ai/services/ProviderRegistry';
 import type { ResolvedModel } from '@modules/ai/contracts/provider';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { decrypt } from '@shared/infrastructure/utilities/crypto';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { decrypt } from '@shared/utilities/crypto';
 
-export default class ModelResolver{
+class ModelResolver{
     async resolve(teamId: string, requestedProvider?: string, requestedModel?: string): Promise<ResolvedModel>{
         const integration = await this.#findIntegration(teamId, requestedProvider);
         const modelName = requestedModel || integration.defaultModel;
@@ -58,3 +58,5 @@ export default class ModelResolver{
         return requested;
     }
 }
+
+export default new ModelResolver();

@@ -1,4 +1,4 @@
-import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import { type TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 
 export interface TeamClusterServiceProps {

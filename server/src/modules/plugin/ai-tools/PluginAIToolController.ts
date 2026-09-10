@@ -2,9 +2,8 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import PluginService from '@modules/plugin/services/PluginService';
-import AnalysisResultSummarizer from '@modules/plugin/services/AnalysisResultSummarizer';
-import PluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgumentDescriber';
+import analysisResultSummarizer from '@modules/plugin/services/AnalysisResultSummarizer';
+import pluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgumentDescriber';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { PluginRecord } from '@modules/plugin/contracts/plugin';
 import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
@@ -23,6 +22,13 @@ import type {
     UninstallPluginInput,
     ValidateWorkflowInput
 } from '@volt/contracts/modules/plugin/ai-tools';
+import pluginCrudService from '@modules/plugin/services/plugin/PluginCrudService';
+import pluginArchiveService from '@modules/plugin/services/plugin/PluginArchiveService';
+import pipelineExecutionPlanner from '@modules/plugin/services/plugin/PipelineExecutionPlanner';
+import registryGateway from '@modules/plugin/services/plugin/RegistryGateway';
+import workflowValidatorService from '@modules/plugin/services/plugin/WorkflowValidatorService';
+import pluginListingQueryService from '@modules/plugin/services/listing-row/PluginListingQueryService';
+import analysisListingExportCatalogService from '@modules/plugin/services/listing-row/AnalysisListingExportCatalogService';
 
 interface PluginTopology {
     name: string;
@@ -58,10 +64,6 @@ const diffSets = (a: string[], b: string[]) => ({
 });
 
 export default class PluginAIToolController extends AIToolController {
-    #service = new PluginService();
-    #summarizer = new AnalysisResultSummarizer();
-    #argumentDescriber = new PluginArgumentDescriber();
-
     @AITool({
         name: 'install_plugin',
         description: 'Install a plugin from the registry into the team.',
@@ -69,7 +71,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<InstallPluginInput>()
     })
     async installPlugin(input: InstallPluginInput & AIToolScope) {
-        return this.#service.installRegistry(input);
+        return pluginArchiveService.installFromRegistry(input);
     }
 
     @AITool({
@@ -79,7 +81,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<PluginRefInput>()
     })
     async clonePlugin(input: PluginRefInput & AIToolScope) {
-        return this.#service.clonePlugin(input);
+        return pluginCrudService.clonePlugin(input.pluginId, input.teamId);
     }
 
     @AITool({
@@ -89,7 +91,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<SearchRegistryPluginsInput>()
     })
     async searchRegistryPlugins(input: SearchRegistryPluginsInput & AIToolScope) {
-        const { total, items } = await this.#service.searchRegistry(input);
+        const { total, items } = await registryGateway.search(input.q, input.page, input.limit);
         return {
             summary: `Found ${total} registry plugins.`,
             data: items
@@ -103,7 +105,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<ListPluginsInput>()
     })
     async listPlugins(input: ListPluginsInput & AIToolScope) {
-        const { total, data } = await this.#service.listPlugins({
+        const { total, data } = await pluginCrudService.listPlugins({
             page: 1,
             limit: 50,
             ...input
@@ -121,7 +123,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<PluginRefInput>()
     })
     async getPluginById(input: PluginRefInput) {
-        const plugin = await this.#service.getPluginById(input);
+        const plugin = await pluginCrudService.getPluginById(input.pluginId);
         return {
             summary: `Plugin "${plugin.modifier?.name ?? plugin._id}" (${plugin.status}).`,
             data: plugin
@@ -135,7 +137,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<PluginRefInput>()
     })
     async describePluginArguments(input: PluginRefInput) {
-        const described = await this.#argumentDescriber.describePluginArguments(input);
+        const described = await pluginArgumentDescriber.describePluginArguments(input);
         return {
             summary: `Plugin "${described.name}" accepts ${described.arguments.length} argument(s).`,
             data: described
@@ -150,8 +152,8 @@ export default class PluginAIToolController extends AIToolController {
     })
     async comparePlugins(input: ComparePluginsInput) {
         const [pluginA, pluginB] = await Promise.all([
-            this.#service.getPluginById({ pluginId: input.pluginIdA }),
-            this.#service.getPluginById({ pluginId: input.pluginIdB })
+            pluginCrudService.getPluginById(input.pluginIdA),
+            pluginCrudService.getPluginById(input.pluginIdB)
         ]);
 
         const a = summarize(pluginA);
@@ -181,7 +183,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<ValidateWorkflowInput>()
     })
     async validateWorkflow(input: ValidateWorkflowInput) {
-        const validation = await this.#service.validateWorkflow({
+        const validation = await workflowValidatorService.validateWorkflow({
             ...input,
             workflow: input.workflow as unknown as WorkflowProps
         });
@@ -203,7 +205,7 @@ export default class PluginAIToolController extends AIToolController {
         needsApproval: true
     })
     async publishPlugin(input: PluginRefInput) {
-        const plugin = await this.#service.updatePluginById({
+        const plugin = await pluginCrudService.updatePluginById({
             ...input,
             status: PluginStatus.PUBLISHED
         });
@@ -221,7 +223,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<UninstallPluginInput>()
     })
     async uninstallPlugin(input: UninstallPluginInput) {
-        return this.#service.deletePluginById(input);
+        return pluginCrudService.deletePluginById(input.pluginId);
     }
 
     @AITool({
@@ -232,7 +234,7 @@ export default class PluginAIToolController extends AIToolController {
         needsApproval: true
     })
     async executePipeline(input: ExecutePipelineInput & AIToolScope) {
-        const { runId, stages } = await this.#service.executePipeline({
+        const { runId, stages } = await pipelineExecutionPlanner.executePipeline({
             ...input,
             stages: input.stages.map((stage) => ({
                 kind: 'plugin',
@@ -265,7 +267,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<ListPluginListingDocumentsInput>()
     })
     async listPluginListingDocuments(input: ListPluginListingDocumentsInput & AIToolScope) {
-        const { total, data } = await this.#service.getPluginListingDocuments(input);
+        const { total, data } = await pluginListingQueryService.getPluginListingDocuments(input);
         return {
             summary: `Found ${total} listing rows.`,
             data
@@ -279,7 +281,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<ListAnalysisResultOptionsInput>()
     })
     async listAnalysisResultOptions(input: ListAnalysisResultOptionsInput & AIToolScope) {
-        const options = await this.#service.getAnalysisListingExportOptions(input);
+        const options = await analysisListingExportCatalogService.getExportOptions(input.analysisId);
 
         return {
             summary: `Analysis has ${options.listings.length} listing(s) and ${options.subListings.length} sub-listing(s).`,
@@ -294,7 +296,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<ReadAnalysisResultRowsInput>()
     })
     async readAnalysisResultRows(input: ReadAnalysisResultRowsInput & AIToolScope) {
-        const rows = await this.#service.getListingRowsByAnalysisId(input);
+        const rows = await pluginListingQueryService.getListingRowsByAnalysisId(input);
 
         return {
             summary: `Returned ${rows.data.length} of ${rows.total} result rows (page ${rows.page}/${rows.totalPages || 1}).`,
@@ -309,7 +311,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<GetSubListingInput>()
     })
     async getSubListing(input: GetSubListingInput & AIToolScope) {
-        const subListing = await this.#service.getSubListing(input);
+        const subListing = await pluginListingQueryService.getSubListing(input);
 
         return {
             summary: `Sub-listing "${subListing.subListingName}" returned ${subListing.rows.length} of ${subListing.total} rows (page ${subListing.page}/${subListing.totalPages || 1}).`,
@@ -324,7 +326,7 @@ export default class PluginAIToolController extends AIToolController {
         validate: typia.createValidate<SummarizeAnalysisResultInput>()
     })
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInput & AIToolScope) {
-        const summarized = await this.#summarizer.summarizeAnalysisResult(input);
+        const summarized = await analysisResultSummarizer.summarizeAnalysisResult(input);
 
         if (!summarized.hasResults) {
             return {

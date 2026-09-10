@@ -1,4 +1,4 @@
-import { getKeyValueStore, type KeyValueStore } from '@shared/infrastructure/keyvalue/KeyValueStore';
+import { getKeyValueStore, type KeyValueStore } from '@shared/keyvalue/KeyValueStore';
 
 type WorkspaceStatePatch = Record<string, unknown>;
 

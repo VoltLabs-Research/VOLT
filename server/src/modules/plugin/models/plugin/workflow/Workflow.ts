@@ -1,7 +1,7 @@
 import {
-    EntrypointNodeData,
-    WorkflowEdge,
-    WorkflowNode,
+    type EntrypointNodeData,
+    type WorkflowEdge,
+    type WorkflowNode,
     WorkflowNodeType
 } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 

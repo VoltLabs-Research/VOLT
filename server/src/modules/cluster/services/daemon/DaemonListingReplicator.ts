@@ -7,7 +7,7 @@ import {
 } from '@modules/cluster/contracts/cluster-transfer-job';
 import type {
     StoragePlacementScopeType
-} from '@shared/domain/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster';
 import {
     ChannelCommands,
     type PluginListingTransferKind,
@@ -15,14 +15,12 @@ import {
     type PluginListingTransferImportResult,
     type PluginListingTransferPurgeResult
 } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 const LISTING_TRANSFER_BATCH_SIZE = 200;
 const LISTING_TRANSFER_KINDS: PluginListingTransferKind[] = ['listing', 'sub-listing'];
 
-export default class DaemonListingReplicator{
-    #daemonClient = teamClusterDaemonClient;
-
+class DaemonListingReplicator{
     async replicateDaemonListings(job: ClusterTransferJob): Promise<void> {
         const analysisIds = await this.#resolveReplicationAnalysisIds(
             job.props.scopeType,
@@ -39,7 +37,7 @@ export default class DaemonListingReplicator{
             let skip = 0;
 
             while (true) {
-                const batch = await this.#daemonClient.command<PluginListingTransferExportResult>(
+                const batch = await teamClusterDaemonClient.command<PluginListingTransferExportResult>(
                     job.props.sourceClusterId,
                     ChannelCommands.PluginTransferListingsExport,
                     {
@@ -55,7 +53,7 @@ export default class DaemonListingReplicator{
                 );
 
                 if (batch.rows.length > 0) {
-                    await this.#daemonClient.command<PluginListingTransferImportResult>(
+                    await teamClusterDaemonClient.command<PluginListingTransferImportResult>(
                         job.props.destinationClusterId,
                         ChannelCommands.PluginTransferListingsImport,
                         {
@@ -94,7 +92,7 @@ export default class DaemonListingReplicator{
         let deletedRows = 0;
 
         for (const documentType of LISTING_TRANSFER_KINDS) {
-            const result = await this.#daemonClient.command<PluginListingTransferPurgeResult>(
+            const result = await teamClusterDaemonClient.command<PluginListingTransferPurgeResult>(
                 sourceClusterId,
                 ChannelCommands.PluginTransferListingsPurge,
                 {
@@ -144,3 +142,5 @@ export default class DaemonListingReplicator{
             .map((analysis) => analysis.id);
     }
 }
+
+export default new DaemonListingReplicator();

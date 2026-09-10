@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import type { PluginDependencyResolverService } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
+import pluginDependencyResolverService from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginReferenceArguments';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 
 interface PluginExecutionClosure {
     plugins: Plugin[];
@@ -20,17 +20,16 @@ const rejectOnErrors = (errors: string[]): void => {
 };
 
 export const resolveExecutionClosure = async (
-    dependencyResolver: PluginDependencyResolverService,
     plugin: Plugin,
     config: Record<string, unknown>
 ): Promise<PluginExecutionClosure> => {
-    const references = await dependencyResolver.validateArgumentPluginReferenceExecutions(plugin, config);
+    const references = await pluginDependencyResolverService.validateArgumentPluginReferenceExecutions(plugin, config);
     rejectOnErrors(references.errors);
 
-    const ownDependencies = await dependencyResolver.collectTransitivePublishedDependencies(plugin);
+    const ownDependencies = await pluginDependencyResolverService.collectTransitivePublishedDependencies(plugin);
     rejectOnErrors(ownDependencies.errors);
 
-    const referencedDependencies = await dependencyResolver.collectTransitivePublishedDependenciesForPlugins(
+    const referencedDependencies = await pluginDependencyResolverService.collectTransitivePublishedDependenciesForPlugins(
         references.plugins
     );
     rejectOnErrors(referencedDependencies.errors);

@@ -1,5 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import Analysis from '@modules/analysis/models/Analysis';
 import { AnalysisArtifactStatus } from '@modules/analysis/contracts/analysis';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
@@ -8,10 +8,10 @@ import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like'
 import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
 import { areArtifactsSettled } from '@modules/cluster/services/daemon/analysis-artifact-state';
 import type { TeamClusterDaemonSceneArtifactUpsertItem } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { SceneArtifactBatchUpsertedArtifact } from '@shared/contracts/events/SceneArtifactBatchUpsertedPayload';
+import ApplicationError from '@shared/errors/ApplicationError';
+import type { SceneArtifactBatchUpsertedArtifact } from '@shared/events/SceneArtifactBatchUpsertedPayload';
 import type { AnalysisExpectedArtifact } from '@shared/contracts/types/AnalysisProps';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 export type ProcessDaemonSceneArtifactUpsertInput = TeamClusterDaemonSceneArtifactUpsertItem & {
     teamClusterId: string;

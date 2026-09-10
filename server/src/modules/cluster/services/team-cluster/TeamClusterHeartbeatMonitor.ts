@@ -1,6 +1,6 @@
 import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
-import logger from '@shared/infrastructure/logger';
-import { readNumberEnv } from '@shared/infrastructure/utilities/env';
+import logger from '@shared/logger';
+import { readNumberEnv } from '@shared/utilities/env';
 
 const TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS = readNumberEnv('TEAM_CLUSTER_HEARTBEAT_SWEEP_INTERVAL_MS', 15_000);
 const TEAM_CLUSTER_DELETE_TIMEOUT_MS = readNumberEnv('TEAM_CLUSTER_DELETE_TIMEOUT_MS', 120_000);

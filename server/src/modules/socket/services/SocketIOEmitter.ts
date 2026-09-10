@@ -1,5 +1,5 @@
-import { Server, Socket } from 'socket.io';
-import logger from '@shared/infrastructure/logger';
+import { type Server, type Socket } from 'socket.io';
+import logger from '@shared/logger';
 
 export default class SocketIOEmitter {
     private io?: Server;

@@ -1,12 +1,14 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
-import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
+import type SimulationCell from '@modules/simulation-cell/models/SimulationCell';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
 import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
-import { getTrajectoryRasterPreviewsPrefix } from '@shared/application/utilities/raster-storage-paths';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
+import { getTrajectoryRasterPreviewsPrefix } from '@shared/utilities/raster-storage-paths';
+import type objectGateway from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+
+type ObjectGatewayClient = typeof objectGateway;
 import type {
     TrajectoryFrame as TrajectoryFrameView,
     TrajectoryFrameSimulationCellEmbed
@@ -15,12 +17,12 @@ import type {
 interface ReadTrajectoryPreviewInput{
     trajectoryId: string;
     storageClusterId: string;
-    objectGatewayClient: ITeamClusterObjectGatewayClient;
+    objectGatewayClient: ObjectGatewayClient;
     createOutput: (buffer: Buffer) => TrajectoryPreviewResult | Promise<TrajectoryPreviewResult>;
 }
 
 const firstSortedPreviewKey = async (
-    objectGatewayClient: ITeamClusterObjectGatewayClient,
+    objectGatewayClient: ObjectGatewayClient,
     teamClusterId: string,
     trajectoryId: string
 ): Promise<string | null> => {

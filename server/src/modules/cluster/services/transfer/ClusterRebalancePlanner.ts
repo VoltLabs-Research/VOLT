@@ -1,5 +1,5 @@
 
-import ClusterTransferJobStore from '@modules/cluster/services/transfer/ClusterTransferJobStore';
+import clusterTransferJobStore from '@modules/cluster/services/transfer/ClusterTransferJobStore';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import type { SystemMetrics } from '@modules/system/services/SystemMetrics';
@@ -13,11 +13,11 @@ import {
     HARD_STORAGE_LIMIT_PCT,
     REBALANCE_TARGET_PCT,
     SOFT_STORAGE_LIMIT_PCT
-} from '@shared/application/utilities/cluster-storage-policy';
+} from '@shared/utilities/cluster-storage-policy';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type {
     StoragePlacementScopeType
-} from '@shared/domain/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster';
 
 export interface ClusterRebalancePlan {
     teamId: string;
@@ -27,18 +27,14 @@ export interface ClusterRebalancePlan {
     reason: ClusterTransferJobReason;
 }
 
-export default class ClusterRebalancePlanner{
-    #storagePlacementService = storagePlacementService;
-    #systemMetricsRepository = systemMetricsRepository;
-    #jobStore = new ClusterTransferJobStore();
-
+class ClusterRebalancePlanner{
     async planAutomaticRebalance(): Promise<ClusterRebalancePlan[]> {
         const teamClusterEntities = await TeamClusterEntity.findBy({ status: TeamClusterStatus.Connected });
         const storageClusters = teamClusterEntities
             .map(toTeamClusterLike)
             .filter((cluster) => cluster.effectiveCapabilities.acceptsStorageWrites);
         const metricsByCluster = new Map(await Promise.all(storageClusters.map(
-            async (cluster) => [cluster.id, await this.#systemMetricsRepository.getLatestByClusterId(cluster.id)] as const
+            async (cluster) => [cluster.id, await systemMetricsRepository.getLatestByClusterId(cluster.id)] as const
         )));
         const plans: ClusterRebalancePlan[] = [];
 
@@ -58,7 +54,7 @@ export default class ClusterRebalancePlanner{
                 continue;
             }
 
-            const existingJob = await this.#jobStore.findOpenTransferJobByScope(
+            const existingJob = await clusterTransferJobStore.findOpenTransferJobByScope(
                 candidatePlacement.props.scopeType,
                 candidatePlacement.props.scopeId
             );
@@ -79,7 +75,7 @@ export default class ClusterRebalancePlanner{
     }
 
     async #selectVictimPlacement(sourceCluster: TeamCluster): Promise<StoragePlacement | null> {
-        const placements = await this.#storagePlacementService.resolveTransferPlacementsForCluster(
+        const placements = await storagePlacementService.resolveTransferPlacementsForCluster(
             sourceCluster.props.team,
             sourceCluster.id
         );
@@ -127,3 +123,5 @@ export default class ClusterRebalancePlanner{
         return candidates[0]?.cluster ?? null;
     }
 }
+
+export default new ClusterRebalancePlanner();

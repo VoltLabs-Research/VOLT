@@ -1,6 +1,6 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import AIConversation from '@modules/ai/models/AIConversation';
 import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import type {

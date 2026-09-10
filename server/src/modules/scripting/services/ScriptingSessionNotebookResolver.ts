@@ -3,9 +3,8 @@ import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import { JupyterNotebookService } from '@modules/scripting/services/JupyterNotebookService';
 import { buildScriptingNotebookPath, DEFAULT_SCRIPTING_NOTEBOOK_TITLE } from '@modules/scripting/services/scripting-notebook-defaults';
 import type { CreateJupyterSessionInput } from '@modules/scripting/contracts/notebook-session';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import pRetry from 'p-retry';
 
 const PENDING_NOTEBOOK_WAIT_ATTEMPTS = 5;
@@ -37,9 +36,6 @@ const selectExistingTrajectoryNotebook = (notebooks: ScriptingNotebook[], teamId
 
 class ScriptingSessionNotebookResolver{
     #notebookTemplate = new JupyterNotebookService();
-
-    #teamClusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
-
     async resolve(input: CreateJupyterSessionInput): Promise<ScriptingNotebook>{
         if(input.notebookId){
             const notebook = await ScriptingNotebook.findOneBy({
@@ -77,7 +73,7 @@ class ScriptingSessionNotebookResolver{
         }
 
         const notebookContent = await this.#notebookTemplate.resolveNotebookTemplateContent();
-        const teamClusterId = await this.#teamClusterSelection.resolveConnectedClusterId(input.teamId, input.teamClusterId);
+        const teamClusterId = await teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
 
         return ScriptingNotebook.create({
             team: input.teamId,

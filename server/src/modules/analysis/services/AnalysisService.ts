@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
@@ -12,20 +12,19 @@ import { AnalysisRelation } from '@modules/analysis/contracts/analysis';
 import type { AnalysisRelationName } from '@modules/analysis/contracts/analysis';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
-import TeamJobsService from '@modules/team/socket/team/TeamJobsService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamJobMaintenanceService } from '@shared/contracts/ports/ITeamJobMaintenanceService';
+import teamJobsService from '@modules/team/socket/team/TeamJobsService';
+import ApplicationError from '@shared/errors/ApplicationError';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { ILike } from 'typeorm';
 import type { FindOptionsOrder, FindOptionsWhere } from 'typeorm';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import type { GetAnalysesByTeamIdItemView } from '@shared/contracts/operations/GetAnalysesByTeamId';
 import type { GetAnalysesByTrajectoryIdOutput } from '@shared/contracts/operations/GetAnalysesByTrajectoryId';
 import type {
     GetAnalysisFrameLogInput,
     GetAnalysisFrameLogOutput
 } from '@shared/contracts/operations/GetAnalysisFrameLog';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
+import type { PaginatedResult } from '@shared/persistence/persistence';
 
 const LIST_DEFAULT_LIMIT = 100;
 
@@ -92,13 +91,7 @@ interface FindAllAnalysesOptions{
     limit?: number;
 }
 
-export default class AnalysisService{
-    #executionLogService = analysisExecutionLogService;
-    #teamJobMaintenanceService: ITeamJobMaintenanceService = teamJobMaintenanceService;
-    #teamJobsService = new TeamJobsService();
-
-    #eventBus = eventBus;
-
+class AnalysisService{
     async #searchTrajectoryIdsByTeamAndName(teamId: string, search: string): Promise<string[]>{
         const trajectories = await Trajectory.find({
             where: {
@@ -200,7 +193,7 @@ export default class AnalysisService{
             throw ApplicationError.forbidden(ErrorCodes.TEAM_ACCESS_DENIED, 'Analysis does not belong to this team');
         }
 
-        return this.#executionLogService.getFrameLog({
+        return analysisExecutionLogService.getFrameLog({
             analysisId: input.analysisId,
             teamId: input.teamId,
             trajectoryId: analysis.trajectory,
@@ -212,7 +205,7 @@ export default class AnalysisService{
     async retryFailedFrames(input: RetryFailedFramesInput): Promise<RetryFailedFramesResult>{
         const { analysisId, teamId } = input;
 
-        const teamJobs = await this.#teamJobsService.getFlatTeamJobs(teamId);
+        const teamJobs = await teamJobsService.getFlatTeamJobs(teamId);
         const failedTimesteps: number[] = [];
         const failedJobIds: string[] = [];
         let totalFrames = 0;
@@ -255,7 +248,7 @@ export default class AnalysisService{
             };
         }
 
-        const retryResult = await this.#teamJobMaintenanceService.retryJobs(teamId, failedJobIds);
+        const retryResult = await teamJobMaintenanceService.retryJobs(teamId, failedJobIds);
 
         return {
             message: retryResult.retriedFrames > 0
@@ -300,7 +293,7 @@ export default class AnalysisService{
             throw ApplicationError.notFound(ErrorCodes.ANALYSIS_NOT_FOUND, 'Analysis not found');
         }
 
-        await this.#eventBus.emit('analysis.deleted', {
+        await eventBus.emit('analysis.deleted', {
             analysisId: input.analysisId,
             trajectoryId: analysis.trajectory ?? '',
             pluginId: analysis.plugin ?? '',
@@ -315,3 +308,5 @@ export default class AnalysisService{
         return { success: true };
     }
 }
+
+export default new AnalysisService();

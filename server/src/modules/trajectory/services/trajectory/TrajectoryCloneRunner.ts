@@ -1,5 +1,5 @@
 import trajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 const CLONE_RUNNER_INTERVAL_MS = 15_000;
 

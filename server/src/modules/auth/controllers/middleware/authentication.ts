@@ -5,13 +5,13 @@ import {
     HttpRequestAuthType,
     setHttpRequestContextAuth,
     type HttpRequestAuthContext
-} from '@shared/infrastructure/http/request-context';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
-import logger from '@shared/infrastructure/logger';
+} from '@shared/http/request-context';
+import BaseResponse from '@shared/http/responses/BaseResponse';
+import logger from '@shared/logger';
 import crypto from 'node:crypto';
 
 import User from '@modules/auth/models/User';
-import JwtTokenService from '@modules/auth/services/JwtTokenService';
+import jwtTokenService from '@modules/auth/services/JwtTokenService';
 import Session from '@modules/session/models/Session';
 import { AuthenticationType, type AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { NextFunction, Response } from 'express';
@@ -111,7 +111,7 @@ const authenticateWithUserToken = async (
     token: string
 ): Promise<boolean> => {
     const startTime = Date.now();
-    const tokenService = new JwtTokenService();
+    const tokenService = jwtTokenService;
     const decoded = tokenService.verify(token);
     if (!decoded) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);

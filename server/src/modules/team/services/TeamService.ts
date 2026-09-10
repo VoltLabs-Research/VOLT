@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { Action } from '@core/constants/permissions';
 import { Resource } from '@core/constants/resources';
@@ -6,10 +6,10 @@ import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
 import TeamRole from '@modules/team/models/TeamRole';
-import TeamMembershipService from '@modules/team/services/team/TeamMembershipService';
+import teamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import DeploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import deploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
 import { In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 import type {
@@ -32,10 +32,7 @@ const generateCode = (): string => {
 
 const normalizeInviteCode = (code: string): string => code.trim().toUpperCase();
 
-export default class TeamService{
-    #membership = new TeamMembershipService();
-    #deploymentSettings = new DeploymentSettingsService();
-
+class TeamService{
     async create(userId: string, input: CreateTeamInput): Promise<Team>{
         const { name, description } = input;
 
@@ -123,7 +120,7 @@ export default class TeamService{
     }
 
     async setDefaultForNewUsers(teamId: string, enabled: boolean): Promise<{ defaultTeam: string | null; autoJoinNewMembers: boolean }>{
-        const settings = await this.#deploymentSettings.setDefaultTeam(enabled ? teamId : null, enabled);
+        const settings = await deploymentSettingsService.setDefaultTeam(enabled ? teamId : null, enabled);
         return {
             defaultTeam: settings.props.defaultTeam,
             autoJoinNewMembers: settings.props.autoJoinNewMembers
@@ -187,7 +184,7 @@ export default class TeamService{
         if(!member){
             throw ApplicationError.badRequest(ErrorCodes.TEAM_USER_NOT_MEMBER, 'You are not a member of this team');
         }
-        await this.#membership.removeMemberFromTeam(member.id, teamId);
+        await teamMembershipService.removeMemberFromTeam(member.id, teamId);
     }
 
     async joinByCode(userId: string, code: string): Promise<{ message: string; teamId: string }>{
@@ -204,7 +201,7 @@ export default class TeamService{
             throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITE_CODE_ALREADY_MEMBER, 'You are already a member of this team');
         }
 
-        await this.#membership.addMemberToTeam(userId, team.id, SystemRoleNames.OWNER);
+        await teamMembershipService.addMemberToTeam(userId, team.id, SystemRoleNames.OWNER);
 
         return {
             message: 'Successfully joined team',
@@ -267,3 +264,5 @@ export default class TeamService{
         }
     }
 }
+
+export default new TeamService();

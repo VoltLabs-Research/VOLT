@@ -1,4 +1,4 @@
-import { Resource } from './resources';
+import { type Resource } from './resources';
 
 export type RBACResource = Resource;
 

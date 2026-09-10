@@ -2,8 +2,8 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import ScriptingService from '@modules/scripting/services/ScriptingService';
-import ScriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
+import scriptingService from '@modules/scripting/services/ScriptingService';
+import scriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
 import type {
     CreateScriptingNotebookInput,
     ListScriptingNotebooksInput,
@@ -13,9 +13,6 @@ import type {
 } from '@volt/contracts/modules/scripting/ai-tools';
 
 export default class ScriptingAIToolController extends AIToolController {
-    #service = new ScriptingService();
-    #sessions = new ScriptingSessionService();
-
     @AITool({
         name: 'create_scripting_notebook',
         description: 'Create a new scripting Jupyter notebook.',
@@ -23,7 +20,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<CreateScriptingNotebookInput>()
     })
     createScriptingNotebook(input: CreateScriptingNotebookInput & AIToolScope) {
-        return this.#service.createNotebook(input);
+        return scriptingService.createNotebook(input);
     }
 
     @AITool({
@@ -33,7 +30,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<ListScriptingNotebooksInput>()
     })
     async listScriptingNotebooks(input: ListScriptingNotebooksInput & AIToolScope) {
-        const { total, data } = await this.#service.listNotebooks(input);
+        const { total, data } = await scriptingService.listNotebooks(input);
         return {
             summary: `Found ${total} scripting notebooks.`,
             data
@@ -47,7 +44,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<UpdateScriptingNotebookInput>()
     })
     updateScriptingNotebook(input: UpdateScriptingNotebookInput & AIToolScope) {
-        return this.#service.updateNotebook(input);
+        return scriptingService.updateNotebook(input);
     }
 
     @AITool({
@@ -57,7 +54,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<NotebookRefInput>()
     })
     deleteScriptingNotebook(input: NotebookRefInput & AIToolScope) {
-        return this.#service.deleteNotebook(input);
+        return scriptingService.deleteNotebook(input);
     }
 
     @AITool({
@@ -67,7 +64,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<StartScriptingJupyterSessionInput>()
     })
     async startScriptingJupyterSession(input: StartScriptingJupyterSessionInput & AIToolScope) {
-        const session = await this.#sessions.createJupyterSession(input);
+        const session = await scriptingSessionService.createJupyterSession(input);
         return {
             summary: `Jupyter session started for notebook ${session.notebookId}.`,
             data: session
@@ -81,7 +78,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<NotebookRefInput>()
     })
     async getScriptingSessionStatus(input: NotebookRefInput & AIToolScope) {
-        const session = await this.#sessions.getSessionStatus(input);
+        const session = await scriptingSessionService.getSessionStatus(input);
         return {
             summary: `Session ${session.jupyter.ready ? 'ready' : 'not ready'} for notebook ${session.notebookId}.`,
             data: session
@@ -95,7 +92,7 @@ export default class ScriptingAIToolController extends AIToolController {
         validate: typia.createValidate<NotebookRefInput>()
     })
     async stopScriptingSession(input: NotebookRefInput & AIToolScope) {
-        const session = await this.#sessions.deleteSession(input);
+        const session = await scriptingSessionService.deleteSession(input);
         return {
             summary: `Session ${session.deleted ? 'stopped' : 'not running'} for notebook ${session.notebookId}.`,
             data: session

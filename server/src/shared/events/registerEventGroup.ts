@@ -1,6 +1,6 @@
-import { subscribeHandler } from '@shared/infrastructure/events/event-registry';
+import { subscribeHandler } from '@shared/events/event-registry';
 import { getEventGroup, getEvents } from '@shared/events/EventGroup';
-import type { IDomainEvent } from '@shared/domain/events/IDomainEvent';
+import type { IDomainEvent } from '@shared/events/IDomainEvent';
 
 type PayloadHandler = (payload: unknown) => unknown;
 

@@ -5,9 +5,9 @@ import type {
     PresenceUser,
     SocketEventHandler
 } from '@modules/socket/socket/ISocketModule';
-import SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
-import SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
-import SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
+import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
+import type SocketIOEventRegistry from '@modules/socket/services/SocketIOEventRegistry';
+import type SocketIORoomManager from '@modules/socket/services/SocketIORoomManager';
 
 export default abstract class BaseSocketModule implements ISocketModule{
     public abstract readonly name: string;

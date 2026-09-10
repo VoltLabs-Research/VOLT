@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMember from '@modules/team/models/TeamMember';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type TeamRole from '@modules/team/models/TeamRole';
 
 
@@ -43,21 +43,3 @@ export const requireTeamMembership = async (
     return member;
 };
 
-export const assertAllTeamMembers = async (teamId: string, userIds: string[]): Promise<void> => {
-    const members = await TeamMember.find({
-        where: userIds.map((user) => ({
-            team: teamId,
-            user
-        }))
-    });
-
-    const memberUserIds = new Set(members.map((member) => member.user));
-    const missing = userIds.find((userId) => !memberUserIds.has(userId));
-
-    if (missing !== undefined) {
-        throw ApplicationError.forbidden(
-            ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN,
-            `User ${missing} is not a member of this team`
-        );
-    }
-};

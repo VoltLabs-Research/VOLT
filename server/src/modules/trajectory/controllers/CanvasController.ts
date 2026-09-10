@@ -4,26 +4,24 @@ import { Req, Res } from '@shared/http/params';
 import { authenticateOptional } from '@modules/auth/controllers/middleware/authentication';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
-import PublicCanvasService from '@modules/trajectory/services/PublicCanvasService';
+import publicCanvasService from '@modules/trajectory/services/PublicCanvasService';
 import { respondWithTrajectoryPreview } from '@modules/trajectory/controllers/trajectory-preview-response';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import { trajectoryRoutes } from '@volt/contracts/modules/trajectory/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
-import { pipeStreamToResponse } from '@shared/infrastructure/http/responses/pipe-stream';
+import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
 
 @Middleware(authenticateOptional)
 export default class CanvasController extends TrajectoryControllerBase {
-    #canvas = new PublicCanvasService();
-
     @Route(trajectoryRoutes.canvasBootstrap)
     async canvasBootstrap(
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.bootstrap(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.bootstrap(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -32,7 +30,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.trajectory(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.trajectory(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -43,7 +41,7 @@ export default class CanvasController extends TrajectoryControllerBase {
     ): Promise<void>{
         await respondWithTrajectoryPreview(
             res,
-            () => this.#canvas.preview(this.params(req, this.withOptionalUserId))
+            () => publicCanvasService.preview(this.params(req, this.withOptionalUserId))
         );
     }
 
@@ -52,7 +50,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.#canvas.listAnalyses(this.params(req, this.withOptionalUserId)));
+        this.sendPaginated(res, await publicCanvasService.listAnalyses(this.params(req, this.withOptionalUserId)));
     }
 
     @Route(trajectoryRoutes.canvasDump)
@@ -60,7 +58,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#canvas.dump(this.params(req, this.withOptionalUserId));
+        const output = await publicCanvasService.dump(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -70,7 +68,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#canvas.glb(this.params(req, this.withGlbRequestContext));
+        const output = await publicCanvasService.glb(this.params(req, this.withGlbRequestContext));
 
         await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders({
             contentEncoding: output.contentEncoding,
@@ -91,7 +89,7 @@ export default class CanvasController extends TrajectoryControllerBase {
             return;
         }
 
-        const value = await this.#canvas.atoms({
+        const value = await publicCanvasService.atoms({
             ...this.buildAtomsInput(req),
             userId: req.authType === AuthenticationType.User ? req.userId : undefined
         });
@@ -103,7 +101,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.simulationCell(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.simulationCell(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -112,7 +110,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.#canvas.listSceneArtifacts(this.params(req, this.withOptionalUserId)));
+        this.sendPaginated(res, await publicCanvasService.listSceneArtifacts(this.params(req, this.withOptionalUserId)));
     }
 
     @Route(trajectoryRoutes.canvasColorCodingProperties)
@@ -120,7 +118,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.colorCodingProperties(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.colorCodingProperties(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -129,7 +127,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.colorCodingStats(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.colorCodingStats(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -138,7 +136,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#canvas.coloredModelStream(this.params(req, this.withOptionalUserId));
+        const output = await publicCanvasService.coloredModelStream(this.params(req, this.withOptionalUserId));
         await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders());
     }
 
@@ -147,7 +145,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.particleFilterProperties(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.particleFilterProperties(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -156,7 +154,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.particleFilterUniqueValues(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.particleFilterUniqueValues(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -165,7 +163,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.particleFilterPreview(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.particleFilterPreview(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -174,7 +172,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#canvas.filteredModelStream(this.params(req, this.withOptionalUserId));
+        const output = await publicCanvasService.filteredModelStream(this.params(req, this.withOptionalUserId));
         await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders());
     }
 
@@ -183,7 +181,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.plugin(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.plugin(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -192,7 +190,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        this.sendPaginated(res, await this.#canvas.pluginListing(this.params(req, this.withOptionalUserId)));
+        this.sendPaginated(res, await publicCanvasService.pluginListing(this.params(req, this.withOptionalUserId)));
     }
 
     @Route(trajectoryRoutes.canvasSubListing)
@@ -200,7 +198,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.subListing(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.subListing(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
@@ -210,8 +208,8 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const params = this.params(req, this.withOptionalUserId) as { timestep: unknown };
-        const value = await this.#canvas.exposurePanels({
-            ...(params as Parameters<PublicCanvasService['exposurePanels']>[0]),
+        const value = await publicCanvasService.exposurePanels({
+            ...(params as Parameters<typeof publicCanvasService.exposurePanels>[0]),
             timestep: Number(params.timestep)
         });
         BaseResponse.success(res, value, HttpStatus.OK);
@@ -222,7 +220,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await this.#canvas.pluginExposureGLB(this.params(req, this.withGlbRequestContext));
+        const output = await publicCanvasService.pluginExposureGLB(this.params(req, this.withGlbRequestContext));
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }
@@ -232,7 +230,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const value = await this.#canvas.analysisFrameLog(this.params(req, this.withOptionalUserId));
+        const value = await publicCanvasService.analysisFrameLog(this.params(req, this.withOptionalUserId));
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 }

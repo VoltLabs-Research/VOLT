@@ -1,10 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import User from '@modules/auth/models/User';
-import BcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
+import bcryptPasswordHasher from '@modules/auth/services/BcryptPasswordHasher';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-
-const passwordHasher = new BcryptPasswordHasher();
+import ApplicationError from '@shared/errors/ApplicationError';
 
 export const requireOwnedTeamCluster = async (
     teamClusterId: string,
@@ -31,7 +29,7 @@ export const requireConfirmedPassword = async (userId: string, password: string)
         );
     }
 
-    if (!await passwordHasher.compare(password, user.password)) {
+    if (!await bcryptPasswordHasher.compare(password, user.password)) {
         throw ApplicationError.badRequest(
             ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT,
             'Password confirmation failed'

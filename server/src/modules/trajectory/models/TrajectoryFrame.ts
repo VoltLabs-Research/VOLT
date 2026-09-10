@@ -1,6 +1,6 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, Unique } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import SimulationCell from '@modules/simulation-cell/models/SimulationCell';
 

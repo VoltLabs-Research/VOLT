@@ -1,11 +1,11 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import BaseModel from '@shared/infrastructure/persistence/BaseModel';
-import { Hidden } from '@shared/infrastructure/persistence/Hidden';
-import { ReferenceColumn } from '@shared/infrastructure/persistence/ReferenceColumn';
+import BaseModel from '@shared/persistence/BaseModel';
+import { Hidden } from '@shared/persistence/Hidden';
+import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import User from '@modules/auth/models/User';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/utilities/cluster-capabilities';
 import type {
     TeamClusterEffectiveCapabilitiesProps,
     TeamClusterHostCapabilitiesProps,

@@ -3,8 +3,8 @@ import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, Param, Query, CurrentUser, Ip, UserAgent, Req } from '@shared/http/params';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { RATE_LIMIT_POLICIES } from '@shared/infrastructure/http/routing/rate-limit-policies';
-import AuthService from '@modules/auth/services/AuthService';
+import { RATE_LIMIT_POLICIES } from '@shared/http/routing/rate-limit-policies';
+import authService from '@modules/auth/services/AuthService';
 import { OAuthProvider } from '@modules/auth/contracts/user';
 import { createOAuthCallbackMiddleware, createOAuthLoginRoute } from '@modules/auth/controllers/oauth-route-helpers';
 import { signInBody, signUpBody, updatePasswordBody } from '@modules/auth/controllers/credential-body';
@@ -54,8 +54,6 @@ const appendQueryParameter = (url: string, key: string, value: string): string =
 };
 
 export default class AuthController extends Controller {
-    #service = new AuthService();
-
     @Route(authRoutes.signIn)
     @Middleware(RATE_LIMIT_POLICIES.authPublic)
     @Status(200)
@@ -64,7 +62,7 @@ export default class AuthController extends Controller {
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ){
-        return this.#service.signIn(body, {
+        return authService.signIn(body, {
             ip,
             userAgent
         });
@@ -77,7 +75,7 @@ export default class AuthController extends Controller {
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ){
-        return this.#service.localSignIn({
+        return authService.localSignIn({
             ip,
             userAgent
         });
@@ -90,7 +88,7 @@ export default class AuthController extends Controller {
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ){
-        return this.#service.signUp(body, {
+        return authService.signUp(body, {
             ip,
             userAgent
         });
@@ -98,23 +96,23 @@ export default class AuthController extends Controller {
 
     @Route(authRoutes.checkEmail)
     checkEmail(@Param('email') email: string) {
-        return this.#service.checkEmail(email);
+        return authService.checkEmail(email);
     }
 
     @Route(authRoutes.oauthProviders)
     getOAuthProviders() {
-        return this.#service.getOAuthProviders();
+        return authService.getOAuthProviders();
     }
 
     @Route(authRoutes.guestIdentity)
     getGuestIdentity(@Query('seed') seed: string) {
-        return this.#service.getGuestIdentity(seed);
+        return authService.getGuestIdentity(seed);
     }
 
     @Route(authRoutes.passwordInfo)
     @Middleware(protect)
     getPasswordInfo(@CurrentUser() userId: string) {
-        return this.#service.getPasswordInfo(userId);
+        return authService.getPasswordInfo(userId);
     }
 
     @Route(authRoutes.updatePassword)
@@ -126,7 +124,7 @@ export default class AuthController extends Controller {
         @Ip() ip: string,
         @UserAgent() userAgent: string
     ) {
-        return this.#service.updatePassword(userId, body, {
+        return authService.updatePassword(userId, body, {
             ip,
             userAgent
         });
@@ -135,7 +133,7 @@ export default class AuthController extends Controller {
     @Route(authRoutes.getMyAccount)
     @Middleware(protect)
     getMyAccount(@CurrentUser() userId: string) {
-        return this.#service.getMyAccount(userId);
+        return authService.getMyAccount(userId);
     }
 
     @Route(authRoutes.updateMyAccount)
@@ -146,14 +144,14 @@ export default class AuthController extends Controller {
         @Body() body: UpdateAccountInput,
         @Req() req: AuthenticatedRequest
     ){
-        return this.#service.updateAccount(userId, body, req.file);
+        return authService.updateAccount(userId, body, req.file);
     }
 
     @Route(authRoutes.deleteMyAccount)
     @Middleware(protect)
     @Status(204)
     async deleteMyAccount(@CurrentUser() userId: string): Promise<void> {
-        await this.#service.deleteAccount(userId);
+        await authService.deleteAccount(userId);
     }
 
     #oauthLoginCallback: RequestHandler = (req: AuthenticatedRequest, res: Response): void => {

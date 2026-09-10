@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { isRecord } from '@shared/infrastructure/utilities/type-guards';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { isRecord } from '@shared/utilities/type-guards';
 import type {
     SignInInput,
     SignUpInput,

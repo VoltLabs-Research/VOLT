@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { FilterExpression } from '@modules/trajectory/services/trajectory/AtomPropertiesService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 
 interface ParticleFilterConditionInput {

@@ -3,7 +3,7 @@ import {
     headersToObject,
     type RawHttpResponse
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
-import { readPositiveIntegerEnv } from '@shared/infrastructure/utilities/env';
+import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import http from 'node:http';
 import https from 'node:https';
 import type { ObjectGatewayOperationName, ObjectGatewayRequestOptions } from '@modules/cluster/services/object-gateway/object-gateway-http-session-pool';

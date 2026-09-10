@@ -8,11 +8,10 @@ import {
     type RoutePluginExecutionInput,
     type TrajectoryFramePayload
 } from '@modules/plugin/services/plugin/plugin-dispatch-payload';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IDaemonAnalysisCompletionService } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
-import type { QueuedJobNotification } from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
+import ApplicationError from '@shared/errors/ApplicationError';
+import type { QueuedJobNotification } from '@modules/cluster/contracts/daemon-job-completion';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
 import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 
@@ -61,10 +60,6 @@ const groupJobsByAnalysisId = (jobs: QueuedJobNotification[]): Map<string, Queue
 };
 
 class PluginExecutionRouter {
-    private readonly daemonAnalysisCompletionService: IDaemonAnalysisCompletionService = daemonAnalysisCompletionService;
-
-    private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
     async routePipeline(input: RoutePipelineExecutionInput): Promise<void> {
         const stageDispatches: PipelineStageDispatch[] = [];
         const syncTasks: Promise<void>[] = [];
@@ -116,7 +111,7 @@ class PluginExecutionRouter {
             stages: stageDispatches
         };
 
-        const response = await this.teamClusterDaemonClient.command<DaemonPipelineStartResponse>(
+        const response = await teamClusterDaemonClient.command<DaemonPipelineStartResponse>(
             input.teamClusterId,
             ChannelCommands.PipelineStart,
             pipelinePayload
@@ -137,7 +132,7 @@ class PluginExecutionRouter {
     ): Promise<void> {
         for (const stage of computingStages) {
             const stageJobs = jobsByAnalysisId.get(stage.execution.analysisId) ?? [];
-            await this.daemonAnalysisCompletionService.initializeSession(
+            await daemonAnalysisCompletionService.initializeSession(
                 stage.execution.analysisId,
                 stageJobs.length,
                 input.teamId,
@@ -148,7 +143,7 @@ class PluginExecutionRouter {
                 continue;
             }
 
-            await this.daemonAnalysisCompletionService.handleJobsQueued(
+            await daemonAnalysisCompletionService.handleJobsQueued(
                 stageJobs.map((job) => ({
                     ...job,
                     trajectoryName: input.trajectoryName

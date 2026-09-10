@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
@@ -9,13 +9,12 @@ import type {
     DaemonGlbJobStatusInput,
     DaemonJobCompletionInput,
     DaemonRasterJobStatusInput,
-    IDaemonAnalysisCompletionService,
     QueuedDaemonJobNotification,
     QueuedJobNotification
-} from '@shared/contracts/ports/IDaemonAnalysisCompletionService';
+} from '@modules/cluster/contracts/daemon-job-completion';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
-import logger from '@shared/infrastructure/logger';
-import AnalysisStageProjection from '@modules/cluster/services/daemon/AnalysisStageProjection';
+import logger from '@shared/logger';
+import analysisStageProjection from '@modules/cluster/services/daemon/AnalysisStageProjection';
 import daemonAnalysisSessionStore from '@modules/cluster/services/daemon/DaemonAnalysisSessionStore';
 import daemonJobOwnershipResolver from '@modules/cluster/services/daemon/DaemonJobOwnershipResolver';
 import daemonJobStatusPublisher, {
@@ -39,20 +38,14 @@ const toQueuedJobProjection = (job: QueuedDaemonJobNotification, teamClusterId: 
     }
 });
 
-class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionService {
-    private readonly eventBus = eventBus;
-    private readonly executionLog = analysisExecutionLogService;
-    private readonly sessions = daemonAnalysisSessionStore;
-    private readonly ownership = daemonJobOwnershipResolver;
+class DaemonAnalysisCompletionService {
     private readonly publisher = daemonJobStatusPublisher;
-    private readonly stageProjection = new AnalysisStageProjection();
-
     async initializeSession(analysisId: string, totalJobs: number, teamId: string, trajectoryId?: string): Promise<void> {
-        const keys = this.sessions.analysisKeys(analysisId);
+        const keys = daemonAnalysisSessionStore.analysisKeys(analysisId);
 
         const [session] = await Promise.all([
-            this.sessions.initialize(keys, totalJobs),
-            this.ownership.updateAnalysisById(analysisId, {
+            daemonAnalysisSessionStore.initialize(keys, totalJobs),
+            daemonJobOwnershipResolver.updateAnalysisById(analysisId, {
                 status: 'running',
                 totalFrames: totalJobs,
                 startedAt: new Date()
@@ -74,7 +67,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
     }
 
     async initializeGlbSession(trajectoryId: string, totalJobs: number, teamId: string): Promise<void> {
-        const session = await this.sessions.initialize(this.sessions.glbKeys(trajectoryId), totalJobs);
+        const session = await daemonAnalysisSessionStore.initialize(daemonAnalysisSessionStore.glbKeys(trajectoryId), totalJobs);
         if (session.remainingJobs === 0) {
             await this.finalizeGlbSession(trajectoryId, teamId, session.failedJobs);
         }
@@ -107,13 +100,13 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
     async handleJobCompletion(input: DaemonJobCompletionInput): Promise<void> {
         const { jobId, analysisId, success, error } = input;
-        const resolved = await this.ownership.resolveAnalysisOwnership(input);
+        const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const teamId = resolved.teamId;
         const status = success ? JobStatus.Completed : JobStatus.Failed;
         const trajectoryContext = resolved.trajectoryContext;
 
-        const keys = this.sessions.analysisKeys(analysisId);
-        const accepted = await this.sessions.tryMarkTerminalReceipt(keys, jobId, status);
+        const keys = daemonAnalysisSessionStore.analysisKeys(analysisId);
+        const accepted = await daemonAnalysisSessionStore.tryMarkTerminalReceipt(keys, jobId, status);
         if (!accepted) {
             return;
         }
@@ -131,7 +124,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         });
 
         if (trajectoryContext.timestep !== undefined && trajectoryContext.trajectoryId) {
-            await this.executionLog.sealFrameLog({
+            await analysisExecutionLogService.sealFrameLog({
                 analysisId,
                 teamId,
                 trajectoryId: trajectoryContext.trajectoryId,
@@ -146,10 +139,10 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         }
 
         if (!success) {
-            await this.sessions.recordFailure(keys);
+            await daemonAnalysisSessionStore.recordFailure(keys);
         }
 
-        const drainResult = await this.sessions.decrementAndCheckDrain(keys);
+        const drainResult = await daemonAnalysisSessionStore.decrementAndCheckDrain(keys);
         if (!drainResult.drained) {
             return;
         }
@@ -159,16 +152,16 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
     async handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void> {
         const { jobId, analysisId, status, error } = input;
-        const resolved = await this.ownership.resolveAnalysisOwnership(input);
+        const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const teamId = resolved.teamId;
         const trajectoryContext = resolved.trajectoryContext;
 
-        if (await this.sessions.hasTerminalReceipt(this.sessions.analysisKeys(analysisId), jobId)) {
+        if (await daemonAnalysisSessionStore.hasTerminalReceipt(daemonAnalysisSessionStore.analysisKeys(analysisId), jobId)) {
             return;
         }
 
         if (status === JobStatus.Running && trajectoryContext.timestep !== undefined && trajectoryContext.trajectoryId) {
-            await this.executionLog.markFrameRunning({
+            await analysisExecutionLogService.markFrameRunning({
                 analysisId,
                 teamId,
                 trajectoryId: trajectoryContext.trajectoryId,
@@ -195,32 +188,32 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
     }
 
     async handleAnalysisStageStatus(input: DaemonAnalysisStageStatusInput): Promise<void> {
-        const resolved = await this.ownership.resolveAnalysisOwnership(input);
+        const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const analysis = resolved.analysis;
-        const stage = this.stageProjection.toAnalysisStage(input, resolved.trajectoryContext.timestep);
+        const stage = analysisStageProjection.toAnalysisStage(input, resolved.trajectoryContext.timestep);
         const currentStages = analysis.props.stages ?? [];
-        const previousStage = currentStages.find((candidate) => this.stageProjection.isSameStageIdentity(candidate, stage));
-        if (previousStage && this.stageProjection.shouldIgnoreStaleUpdate(previousStage, stage)) {
+        const previousStage = currentStages.find((candidate) => analysisStageProjection.isSameStageIdentity(candidate, stage));
+        if (previousStage && analysisStageProjection.shouldIgnoreStaleUpdate(previousStage, stage)) {
             return;
         }
 
-        const stages = this.stageProjection.upsertStage(currentStages, stage);
-        const expectedArtifacts = this.stageProjection.updateExpectedArtifactsForStage(
+        const stages = analysisStageProjection.upsertStage(currentStages, stage);
+        const expectedArtifacts = analysisStageProjection.updateExpectedArtifactsForStage(
             analysis.props.expectedArtifacts ?? [],
             stage,
             input.producedArtifacts
         );
-        const childAnalyses = this.stageProjection.upsertChildAnalysisForStage(
+        const childAnalyses = analysisStageProjection.upsertChildAnalysisForStage(
             analysis.props.childAnalyses ?? [],
             stage
         );
-        const artifactStatus = this.stageProjection.resolveArtifactStatusForStage(
+        const artifactStatus = analysisStageProjection.resolveArtifactStatusForStage(
             analysis.props.artifactStatus ?? 'pending',
             expectedArtifacts,
             stage
         );
 
-        const updatedAnalysis = await this.ownership.updateAnalysisById(analysis._id, {
+        const updatedAnalysis = await daemonJobOwnershipResolver.updateAnalysisById(analysis._id, {
             artifactStatus,
             expectedArtifacts,
             stages,
@@ -236,7 +229,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
     }
 
     async handleRasterJobStatus(input: DaemonRasterJobStatusInput): Promise<void> {
-        const resolved = await this.ownership.resolveTrajectoryOwnership(input);
+        const resolved = await daemonJobOwnershipResolver.resolveTrajectoryOwnership(input);
 
         await this.publisher.publishJobStatusChanged({
             jobId: input.jobId,
@@ -251,8 +244,8 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
         if (input.status === JobStatus.Completed && resolved.trajectory.props.hasPreview !== true) {
             try {
-                await this.ownership.updateTrajectoryById(resolved.trajectory._id, { hasPreview: true });
-                await this.eventBus.emit('trajectory.updated', {
+                await daemonJobOwnershipResolver.updateTrajectoryById(resolved.trajectory._id, { hasPreview: true });
+                await eventBus.emit('trajectory.updated', {
                     trajectoryId: resolved.trajectory._id,
                     teamId: resolved.teamId,
                     updates: { hasPreview: true },
@@ -269,18 +262,18 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
 
     async handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void> {
         const { jobId, status, error } = input;
-        const resolved = await this.ownership.resolveTrajectoryOwnership(input);
+        const resolved = await daemonJobOwnershipResolver.resolveTrajectoryOwnership(input);
         const teamId = resolved.teamId;
         const trajectoryId = resolved.trajectory._id;
-        const keys = this.sessions.glbKeys(trajectoryId);
+        const keys = daemonAnalysisSessionStore.glbKeys(trajectoryId);
         const isTerminal = status === JobStatus.Completed || status === JobStatus.Failed;
 
         if (isTerminal) {
-            const accepted = await this.sessions.tryMarkTerminalReceipt(keys, jobId, status);
+            const accepted = await daemonAnalysisSessionStore.tryMarkTerminalReceipt(keys, jobId, status);
             if (!accepted) {
                 return;
             }
-        } else if (await this.sessions.hasTerminalReceipt(keys, jobId)) {
+        } else if (await daemonAnalysisSessionStore.hasTerminalReceipt(keys, jobId)) {
             return;
         }
 
@@ -300,10 +293,10 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         }
 
         if (status === JobStatus.Failed) {
-            await this.sessions.recordFailure(keys);
+            await daemonAnalysisSessionStore.recordFailure(keys);
         }
 
-        const drainResult = await this.sessions.decrementAndCheckDrain(keys);
+        const drainResult = await daemonAnalysisSessionStore.decrementAndCheckDrain(keys);
         if (!drainResult.drained) {
             return;
         }
@@ -312,9 +305,9 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
     }
 
     async handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void> {
-        const resolved = await this.ownership.resolveAnalysisOwnership(input);
-        const updatedAnalysis = await this.ownership.updateAnalysisById(input.analysisId, {
-            artifactStatus: this.stageProjection.resolveArtifactStatusForUpload(
+        const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
+        const updatedAnalysis = await daemonJobOwnershipResolver.updateAnalysisById(input.analysisId, {
+            artifactStatus: analysisStageProjection.resolveArtifactStatusForUpload(
                 resolved.analysis.props.expectedArtifacts ?? [],
                 input.status
             )
@@ -356,10 +349,10 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
         }
 
         const finishedAt = new Date();
-        const currentAnalysis = await this.ownership.findAnalysisById(analysisId);
-        const closedStages = this.stageProjection.closeRunningStages(currentAnalysis?.props.stages, status, finishedAt);
-        const closedChildAnalyses = this.stageProjection.closeRunningChildAnalyses(currentAnalysis?.props.childAnalyses, status, finishedAt);
-        const closedExpectedArtifacts = this.stageProjection.closeGeneratingArtifacts(currentAnalysis?.props.expectedArtifacts, status);
+        const currentAnalysis = await daemonJobOwnershipResolver.findAnalysisById(analysisId);
+        const closedStages = analysisStageProjection.closeRunningStages(currentAnalysis?.props.stages, status, finishedAt);
+        const closedChildAnalyses = analysisStageProjection.closeRunningChildAnalyses(currentAnalysis?.props.childAnalyses, status, finishedAt);
+        const closedExpectedArtifacts = analysisStageProjection.closeGeneratingArtifacts(currentAnalysis?.props.expectedArtifacts, status);
         const analysisUpdates: Partial<Analysis['props']> = {
             status,
             finishedAt,
@@ -371,7 +364,7 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
             analysisUpdates.expectedArtifacts = closedExpectedArtifacts;
         }
 
-        const analysis = (await this.ownership.updateAnalysisById(analysisId, analysisUpdates)
+        const analysis = (await daemonJobOwnershipResolver.updateAnalysisById(analysisId, analysisUpdates)
             .catch(swallow('Failed to finalize analysis status', {
                 analysisId,
                 status
@@ -400,8 +393,8 @@ class DaemonAnalysisCompletionService implements IDaemonAnalysisCompletionServic
     }
 
     private async setTrajectoryStatus(trajectoryId: string, teamId: string, status: TrajectoryStatus): Promise<void> {
-        await this.ownership.updateTrajectoryById(trajectoryId, { status });
-        await this.eventBus.emit('trajectory.updated', {
+        await daemonJobOwnershipResolver.updateTrajectoryById(trajectoryId, { status });
+        await eventBus.emit('trajectory.updated', {
             trajectoryId,
             teamId,
             updates: { status },

@@ -21,7 +21,7 @@ import type { FrameLogRuntimeState } from '@modules/analysis/services/AnalysisFr
 import { readStoredFrameLog } from '@modules/analysis/services/AnalysisFrameLogStore';
 import { emitAnalysisLogChunk } from '@modules/analysis/socket/AnalysisLogSocketProtocol';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type {
     AnalysisFrameLogSnapshot,
     AnalysisFrameLogStatus

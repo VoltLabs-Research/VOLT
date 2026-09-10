@@ -1,5 +1,5 @@
 import type { ParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
-import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
+import { formatValueForPath } from '@shared/utilities/format-value';
 import { createHash } from 'node:crypto';
 
 const DEFAULT_ANALYSIS_ID = 'default';

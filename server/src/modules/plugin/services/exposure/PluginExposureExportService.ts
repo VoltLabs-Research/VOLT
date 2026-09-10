@@ -1,15 +1,15 @@
-import type { IClusterObjectArchiveService } from '@shared/contracts/ports/IClusterObjectArchiveService';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
-import { sanitizeDownloadName } from '@shared/infrastructure/http/responses/download-response';
+import { sanitizeDownloadName } from '@shared/http/responses/download-response';
 
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import path from 'node:path';
 import { v4 } from 'uuid';
 
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 
 type AnalysisFileType = 'data' | 'chart' | 'model';
 
@@ -48,12 +48,7 @@ interface PrefixCollectionConfig {
     extensionFilter: string;
 }
 
-export class PluginExposureExportService {
-    constructor(
-        private readonly objectGatewayClient: ITeamClusterObjectGatewayClient,
-        private readonly archiveService: IClusterObjectArchiveService
-    ) {}
-
+class PluginExposureExportService {
     private async resolveTeamClusterId(trajectoryId: string): Promise<string> {
         const trajectory = await TrajectoryEntity.findOneBy({ id: trajectoryId });
         if (!trajectory) {
@@ -106,7 +101,7 @@ export class PluginExposureExportService {
     ): Promise<AnalysisFileRef[]> {
         const files: AnalysisFileRef[] = [];
 
-        for await (const objectName of this.objectGatewayClient.listAll(teamClusterId, {
+        for await (const objectName of objectGatewayClient.listAll(teamClusterId, {
             bucket: config.bucket,
             prefix: config.prefix
         })) {
@@ -156,7 +151,7 @@ export class PluginExposureExportService {
             throw ApplicationError.notFound(ErrorCodes.FILE_NOT_FOUND, 'File not found');
         }
 
-        return this.archiveService.createArchiveDownload({
+        return clusterObjectArchiveService.createArchiveDownload({
             teamClusterId,
             outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
             outputObjectKey: `exports/plugin-exposures/${params.analysisId}/${v4()}.zip`,
@@ -175,3 +170,5 @@ export class PluginExposureExportService {
         });
     }
 }
+
+export default new PluginExposureExportService();

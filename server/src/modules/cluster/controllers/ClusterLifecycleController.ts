@@ -2,8 +2,8 @@ import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
 import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/ClusterDaemonLifecycleService';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import BaseResponse from '@shared/infrastructure/http/responses/BaseResponse';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import BaseResponse from '@shared/http/responses/BaseResponse';
 import { clusterLifecycleRoutes } from '@volt/contracts/modules/cluster/routes';
 
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';

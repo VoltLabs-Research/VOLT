@@ -5,16 +5,16 @@ import TeamCluster from '@modules/cluster/models/TeamCluster';
 import { createTrajectoryCloneJobStats } from '@modules/trajectory/contracts/trajectory-clone-job';
 
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import trajectoryCloneCoordinator from '@modules/trajectory/services/TrajectoryCloneCoordinator';
 import trajectoryCloneRunner from '@modules/trajectory/services/trajectory/TrajectoryCloneRunner';
-import TrajectoryAccessGuard from '@modules/trajectory/services/trajectory/TrajectoryAccessGuard';
+import trajectoryAccessGuard from '@modules/trajectory/services/trajectory/TrajectoryAccessGuard';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import { replaceTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryFrameStore';
 
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
-import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/domain/utilities/cluster-capabilities';
+import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
+import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/utilities/cluster-capabilities';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 
@@ -22,8 +22,6 @@ import type {
     CloneTrajectoryInput,
     CloneTrajectoryOutput
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
-
-const accessGuard = new TrajectoryAccessGuard();
 
 const resolveDestinationStorageClusterId = async (teamId: string, requestedClusterId?: string): Promise<string> => {
     if (!requestedClusterId) {
@@ -50,7 +48,7 @@ const resolveDestinationStorageClusterId = async (teamId: string, requestedClust
 };
 
 export const cloneTrajectory = async (input: CloneTrajectoryInput): Promise<CloneTrajectoryOutput> => {
-    const source = await accessGuard.assertReadable(input.sourceTrajectoryId, input.userId);
+    const source = await trajectoryAccessGuard.assertReadable(input.sourceTrajectoryId, input.userId);
     const destinationClusterId = await resolveDestinationStorageClusterId(input.teamId, input.targetClusterId);
     const sourceFrames = await getTrajectoryFrames(source.id);
     const now = new Date();

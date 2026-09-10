@@ -2,7 +2,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { ackError, ackOk } from '@modules/socket/socket/socket-ack';
 import realtimeStateService from '@modules/whiteboards/services/WhiteboardRealtimeStateService';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 import type { SocketAck } from '@modules/socket/socket/socket-ack';
 import type { WhiteboardAppState, WhiteboardElement } from '@modules/whiteboards/contracts/whiteboard';

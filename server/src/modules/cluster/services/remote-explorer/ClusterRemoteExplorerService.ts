@@ -12,10 +12,10 @@ import {
     type TeamClusterRemoteExplorerEntryView,
     type TeamClusterRemoteExplorerNodeView
 } from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { readFilenameFromContentDisposition } from '@shared/infrastructure/http/responses/content-disposition';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { readFilenameFromContentDisposition } from '@shared/http/responses/content-disposition';
+import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
+import logger from '@shared/logger';
 import type { Readable } from 'node:stream';
 
 interface RemoteExplorerRequest {

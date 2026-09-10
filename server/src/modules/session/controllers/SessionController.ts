@@ -3,19 +3,17 @@ import { Route } from '@shared/http/route';
 import { Param, Query, CurrentUser, Req } from '@shared/http/params';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
-import SessionService from '@modules/session/services/SessionService';
+import sessionService from '@modules/session/services/SessionService';
 import { sessionRoutes } from '@volt/contracts/modules/session/routes';
 
 @Middleware(protect)
 export default class SessionController extends Controller {
-    #service = new SessionService();
-
     @Route(sessionRoutes.getActiveSessions)
     getActiveSessions(
         @CurrentUser() userId: string,
         @Req() req: AuthenticatedRequest
     ){
-        return this.#service.getActiveSessions(userId, req.token);
+        return sessionService.getActiveSessions(userId, req.token);
     }
 
     @Route(sessionRoutes.getLoginActivity)
@@ -23,7 +21,7 @@ export default class SessionController extends Controller {
         @CurrentUser() userId: string,
         @Query('limit') limit?: string
     ){
-        return this.#service.getLoginActivity(userId, limit ? Number(limit) : undefined);
+        return sessionService.getLoginActivity(userId, limit ? Number(limit) : undefined);
     }
 
     @Route(sessionRoutes.revokeSession)
@@ -31,7 +29,7 @@ export default class SessionController extends Controller {
         @Param('sessionId') sessionId: string,
         @CurrentUser() userId: string
     ){
-        await this.#service.revokeSession(sessionId, userId);
+        await sessionService.revokeSession(sessionId, userId);
     }
 
     @Route(sessionRoutes.revokeAllSessions)
@@ -39,6 +37,6 @@ export default class SessionController extends Controller {
         @CurrentUser() userId: string,
         @Req() req: AuthenticatedRequest
     ){
-        return this.#service.revokeAllSessions(userId, req.token ?? '');
+        return sessionService.revokeAllSessions(userId, req.token ?? '');
     }
 }

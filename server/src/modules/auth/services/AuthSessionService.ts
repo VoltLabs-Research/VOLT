@@ -1,6 +1,6 @@
-import JwtTokenService from '@modules/auth/services/JwtTokenService';
+import jwtTokenService from '@modules/auth/services/JwtTokenService';
 import Session from '@modules/session/models/Session';
-import { SessionActivityType } from '@volt/contracts/modules/session/domain';
+import { type SessionActivityType } from '@volt/contracts/modules/session/domain';
 
 interface CreateSessionInput{
     userId: string;
@@ -9,11 +9,9 @@ interface CreateSessionInput{
     activityType: SessionActivityType;
 }
 
-export default class AuthSessionService{
-    #tokenService = new JwtTokenService();
-
+class AuthSessionService{
     async createSessionWithToken(input: CreateSessionInput): Promise<string>{
-        const token = this.#tokenService.sign(input.userId);
+        const token = jwtTokenService.sign(input.userId);
 
         await Session.create({
             user: input.userId,
@@ -29,3 +27,5 @@ export default class AuthSessionService{
         return token;
     }
 }
+
+export default new AuthSessionService();

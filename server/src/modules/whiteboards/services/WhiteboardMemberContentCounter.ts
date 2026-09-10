@@ -1,7 +1,7 @@
 import type {
     IMemberContentCounter,
     MemberContentCountResult
-} from '@shared/contracts/ports/IMemberContentCounter';
+} from '@shared/contracts/types/IMemberContentCounter';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 
 class WhiteboardMemberContentCounter implements IMemberContentCounter{

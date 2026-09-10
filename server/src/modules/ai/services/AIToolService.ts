@@ -1,4 +1,4 @@
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import type AIToolController from '@shared/ai/AIToolController';
 import type { ToolSet } from 'ai';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';

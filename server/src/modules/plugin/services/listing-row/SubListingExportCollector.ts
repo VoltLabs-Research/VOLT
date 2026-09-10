@@ -11,7 +11,6 @@ import {
 } from '@modules/plugin/services/listing-row/ExportRowAggregation';
 import type { AnalysisSubListingExportData } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 
 const SUB_LISTING_COLUMNS = [
     '_id',
@@ -89,11 +88,7 @@ export const discoverSubListingReferences = (
     });
 };
 
-export class SubListingExportCollector {
-    constructor(
-        private readonly daemonClient: ITeamClusterDaemonClient
-    ) {}
-
+class SubListingExportCollector {
     async collect(
         teamClusterId: string,
         teamId: string,
@@ -163,7 +158,6 @@ export class SubListingExportCollector {
         reference: SubListingReference
     ): Promise<SubListingExportRow[]> {
         const docs = await collectAllDaemonPages<DaemonSubListingRow>(
-            this.daemonClient,
             teamClusterId,
             ChannelCommands.PluginSubListingsList,
             {
@@ -182,3 +176,5 @@ export class SubListingExportCollector {
         }));
     }
 }
+
+export default new SubListingExportCollector();

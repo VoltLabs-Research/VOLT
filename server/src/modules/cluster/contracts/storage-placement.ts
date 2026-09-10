@@ -4,7 +4,7 @@ import type {
     StoragePlacementBucketRef,
     StoragePlacementProps,
     StoragePlacementState as StoragePlacementStateContract
-} from '@shared/domain/contracts/team-cluster';
+} from '@shared/contracts/types/team-cluster';
 
 export type { PersistedStoragePlacement as StoragePlacement, StoragePlacementProps };
 

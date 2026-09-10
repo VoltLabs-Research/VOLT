@@ -5,7 +5,7 @@ import { Body, schemaBody, Param, Query, CurrentUser, Res } from '@shared/http/p
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import AiService from '@modules/ai/services/AiService';
+import aiService from '@modules/ai/services/AiService';
 import { aiRoutes } from '@volt/contracts/modules/ai/routes';
 import type {
     CreateAIConversationInput,
@@ -21,15 +21,13 @@ const streamBodyParser = express.json({ limit: '5mb' });
 
 @Middleware(protect, teamScoped(Resource.AI_CONVERSATION))
 export default class AiController extends Controller {
-    #service = new AiService();
-
     @Route(aiRoutes.listConversations)
     listConversations(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
         @Query() query: Record<string, string>
     ) {
-        return this.#service.listConversations({
+        return aiService.listConversations({
             teamId,
             userId,
             page: Number(query.page),
@@ -45,7 +43,7 @@ export default class AiController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateAIConversationInput>())) body: CreateAIConversationInput
     ) {
-        return this.#service.createConversation({
+        return aiService.createConversation({
             teamId,
             userId,
             ...body
@@ -59,7 +57,7 @@ export default class AiController extends Controller {
         @CurrentUser() userId: string,
         @Query() query: Record<string, string>
     ) {
-        return this.#service.listMessages({
+        return aiService.listMessages({
             teamId,
             userId,
             conversationId,
@@ -77,7 +75,7 @@ export default class AiController extends Controller {
         @Body(schemaBody(typia.createValidate<SendAIConversationMessageInput>())) body: SendAIConversationMessageInput,
         @Res() res: Response
     ): Promise<void> {
-        const value = await this.#service.streamMessage({
+        const value = await aiService.streamMessage({
             teamId,
             conversationId,
             userId,
@@ -97,7 +95,7 @@ export default class AiController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<UpdateAIConversationInput>())) body: UpdateAIConversationInput
     ) {
-        return this.#service.updateConversation({
+        return aiService.updateConversation({
             teamId,
             userId,
             conversationId,
@@ -111,7 +109,7 @@ export default class AiController extends Controller {
         @Param('conversationId') conversationId: string,
         @CurrentUser() userId: string
     ) {
-        await this.#service.deleteConversation({
+        await aiService.deleteConversation({
             teamId,
             userId,
             conversationId

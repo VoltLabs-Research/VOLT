@@ -1,4 +1,3 @@
-import type { ITeamClusterDaemonClient } from '@shared/domain/port/ITeamClusterDaemonClient';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import type { DaemonListingRow } from '@modules/plugin/services/listing-row/DaemonListingMapper';
@@ -7,8 +6,8 @@ import {
     aggregateListingTables,
     buildListingExportOptions
 } from '@modules/plugin/services/listing-row/ListingTableAggregation';
-import {
-    SubListingExportCollector,
+import subListingExportCollector, {
+    
     discoverSubListingReferences
 } from '@modules/plugin/services/listing-row/SubListingExportCollector';
 import type {
@@ -41,15 +40,7 @@ const emptyExcludedExposures = (): ExcludedExposureSet => ({
     names: new Set<string>()
 });
 
-export class AnalysisListingExportCatalogService {
-    #subListingCollector: SubListingExportCollector;
-
-    constructor(
-        private readonly daemonClient: ITeamClusterDaemonClient
-    ) {
-        this.#subListingCollector = new SubListingExportCollector(daemonClient);
-    }
-
+class AnalysisListingExportCatalogService {
     async getExportOptions(analysisId: string): Promise<GetAnalysisListingExportOptionsOutput> {
         const { analysis, teamClusterId, excludedExposures } = await this.resolveContext(analysisId);
         const rows = await this.collectEnrichedListingRows(teamClusterId, analysisId, excludedExposures);
@@ -80,7 +71,7 @@ export class AnalysisListingExportCatalogService {
             config: hasConfig(config) ? config : undefined,
             listings: aggregateListingTables(input.analysisId, rows),
             subListings: teamClusterId
-                ? await this.#subListingCollector.collect(
+                ? await subListingExportCollector.collect(
                     teamClusterId,
                     input.teamId,
                     input.analysisId,
@@ -140,7 +131,6 @@ export class AnalysisListingExportCatalogService {
         }
 
         const listingRows = await collectAllDaemonPages<DaemonListingRow>(
-            this.daemonClient,
             teamClusterId,
             ChannelCommands.PluginListingsList,
             { analysisId }
@@ -152,3 +142,5 @@ export class AnalysisListingExportCatalogService {
         });
     }
 }
+
+export default new AnalysisListingExportCatalogService();

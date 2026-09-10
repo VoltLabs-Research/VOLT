@@ -2,7 +2,7 @@ import { BaseEntity } from 'typeorm';
 import type { DataSource } from 'typeorm';
 import { createDataSource } from '@core/config/database';
 import { getEntities } from '@core/bootstrap/entities';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 
 let dataSource: DataSource | null = null;
 export const connectDatabase = async (): Promise<void> => {

@@ -5,17 +5,16 @@ import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import pluginExecutionRouter, {
     type PipelineStageExecutionInput
 } from '@modules/plugin/services/plugin/PluginExecutionRouter';
-import PluginStagePlanner from '@modules/plugin/services/plugin/PluginStagePlanner';
+import pluginStagePlanner from '@modules/plugin/services/plugin/PluginStagePlanner';
 import { cannotExecute } from '@modules/plugin/services/plugin/plugin-execution-closure';
 import { computeDumpStageHash } from '@modules/plugin/services/plugin/WorkflowProjection';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
-import { generateEntityId } from '@shared/infrastructure/persistence/entity-id';
-import logger from '@shared/infrastructure/logger';
+import { generateEntityId } from '@shared/persistence/entity-id';
+import logger from '@shared/logger';
 import type {
     ExecutePipelineInput as WireExecutePipelineInput,
     ExecutePipelineStageInput
@@ -23,7 +22,6 @@ import type {
 import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 
-export type PipelineStageInput = ExecutePipelineStageInput;
 
 export interface ExecutePipelineInput extends WireExecutePipelineInput {
     trajectoryId: string;
@@ -31,10 +29,7 @@ export interface ExecutePipelineInput extends WireExecutePipelineInput {
     teamId: string;
 }
 
-export default class PipelineExecutionPlanner {
-    #stagePlanner = new PluginStagePlanner();
-    #teamClusterSelectionService: ITeamClusterSelectionService = teamClusterSelectionService;
-
+class PipelineExecutionPlanner {
     async executePipeline(input: ExecutePipelineInput): Promise<ExecutePipelineResponse> {
         if (input.stages.length === 0) {
             throw cannotExecute('Pipeline has no stages to execute');
@@ -46,7 +41,7 @@ export default class PipelineExecutionPlanner {
         }
 
         const storageClusterId = trajectory.storageClusterId;
-        const computeClusterId = await this.#teamClusterSelectionService.resolveComputeClusterId(
+        const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(
             input.teamId,
             input.teamClusterId,
             storageClusterId
@@ -95,7 +90,7 @@ export default class PipelineExecutionPlanner {
                     continue;
                 }
 
-                const planned = await this.#stagePlanner.planPluginStage({
+                const planned = await pluginStagePlanner.planPluginStage({
                     stage,
                     userId: input.userId,
                     teamId: input.teamId,
@@ -179,3 +174,5 @@ export default class PipelineExecutionPlanner {
         ));
     }
 }
+
+export default new PipelineExecutionPlanner();

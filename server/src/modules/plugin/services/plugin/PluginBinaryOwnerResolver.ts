@@ -1,20 +1,14 @@
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
-import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { IStoragePlacementService } from '@shared/contracts/ports/IStoragePlacementService';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
-import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/errors/ApplicationError';
+import logger from '@shared/logger';
 
 class PluginBinaryOwnerResolver {
-    private readonly storagePlacementService: IStoragePlacementService = storagePlacementService;
-
-    private readonly objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClientSingleton;
-
     async resolveOwnerClusterId(plugin: Plugin): Promise<string> {
-        const placement = await this.storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
+        const placement = await storagePlacementService.ensurePlacement('plugin-binary', plugin.id);
         const currentOwnerClusterId = placement.props.primaryClusterId;
         const objectKey = plugin.props.workflow.entrypoint?.binaryObjectPath;
 
@@ -37,7 +31,7 @@ class PluginBinaryOwnerResolver {
                 continue;
             }
 
-            await this.storagePlacementService.switchPrimaryCluster(
+            await storagePlacementService.switchPrimaryCluster(
                 'plugin-binary',
                 plugin.id,
                 candidateCluster.id,
@@ -66,7 +60,7 @@ class PluginBinaryOwnerResolver {
 
     private async binaryExists(ownerClusterId: string, objectKey: string): Promise<boolean> {
         try {
-            await this.objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
+            await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
             return true;
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {

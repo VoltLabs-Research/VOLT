@@ -1,6 +1,6 @@
 import type { ISocketConnection, SocketEventHandler } from '@modules/socket/socket/ISocketModule';
 import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
-import { Socket } from 'socket.io';
+import { type Socket } from 'socket.io';
 
 export default class SocketIOEventRegistry {
     private sockets: Map<string, Socket> = new Map();

@@ -1,13 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
-import { PluginExposureExportService } from '@modules/plugin/services/exposure/PluginExposureExportService';
+import pluginExposureExportService from '@modules/plugin/services/exposure/PluginExposureExportService';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import SceneArtifactEntity from '@modules/trajectory/models/SceneArtifact';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import { getClusterGlbStream } from '@shared/application/utilities/glb-stream-resolution';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
+import ApplicationError from '@shared/errors/ApplicationError';
+import { getClusterGlbStream } from '@shared/utilities/glb-stream-resolution';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type {
@@ -16,14 +15,15 @@ import type {
 } from '@shared/contracts/operations/GetPluginExposureGLB';
 import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
-import { HttpStatus } from '@shared/infrastructure/http/constants/HttpStatus';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
-import logger from '@shared/infrastructure/logger';
+import { HttpStatus } from '@shared/http/constants/HttpStatus';
+import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
+import logger from '@shared/logger';
 import type {
     GetPluginExposurePanelsResponse,
     PanelDocument,
     ResolvedPanelBlock
 } from '@volt/contracts/modules/plugin/panel';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 
 export interface GetPluginExposurePanelsInput {
     teamId: string;
@@ -54,18 +54,7 @@ const matchesExposureParams = (params: SceneArtifactParams | null | undefined, e
         && entries[0][1] === exposureId;
 };
 
-export default class PluginExposureArtifactService {
-    #exposureExportService: PluginExposureExportService;
-    #objectGatewayClient: ITeamClusterObjectGatewayClient;
-
-    constructor(
-        objectGatewayClient: ITeamClusterObjectGatewayClient,
-        exposureExportService: PluginExposureExportService
-    ) {
-        this.#objectGatewayClient = objectGatewayClient;
-        this.#exposureExportService = exposureExportService;
-    }
-
+class PluginExposureArtifactService {
     async getExposureGLB(input: GetPluginExposureGLBInput): Promise<GetPluginExposureGLBOutput> {
         await this.#requireTeamAnalysis(input.analysisId, input.teamId);
 
@@ -88,7 +77,7 @@ export default class PluginExposureArtifactService {
 
         try {
             const response = await getClusterGlbStream(
-                this.#objectGatewayClient,
+                objectGatewayClient,
                 artifact.storageClusterId,
                 artifact.objectName,
                 { acceptEncoding: input.acceptEncoding }
@@ -158,7 +147,7 @@ export default class PluginExposureArtifactService {
         }
 
         try {
-            const response = await this.#objectGatewayClient.getStream(
+            const response = await objectGatewayClient.getStream(
                 artifact.storageClusterId,
                 artifact.storageBucket,
                 artifact.objectName
@@ -190,7 +179,7 @@ export default class PluginExposureArtifactService {
             ? toPluginLike(pluginEntity).props.modifier?.name || analysis.plugin
             : analysis.plugin;
 
-        return this.#exposureExportService.exportAnalysisExposureBundle({
+        return pluginExposureExportService.exportAnalysisExposureBundle({
             analysisId: input.analysisId,
             trajectoryId: analysis.trajectory,
             pluginName
@@ -228,7 +217,7 @@ export default class PluginExposureArtifactService {
             }
 
             try{
-                const buffer = await this.#objectGatewayClient.getBuffer(
+                const buffer = await objectGatewayClient.getBuffer(
                     artifact.storageClusterId,
                     artifact.storageBucket,
                     artifact.objectName
@@ -302,3 +291,5 @@ export default class PluginExposureArtifactService {
         return analysis;
     }
 }
+
+export default new PluginExposureArtifactService();

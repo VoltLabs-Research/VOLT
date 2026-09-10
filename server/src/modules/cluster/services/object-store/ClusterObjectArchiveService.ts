@@ -1,13 +1,12 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import { createDownloadStreamResponse } from '@shared/infrastructure/http/responses/download-response';
+import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 
-import type { IClusterObjectArchiveService } from '@shared/contracts/ports/IClusterObjectArchiveService';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
-interface ClusterArchiveObjectEntry {
+export interface ClusterArchiveObjectEntry {
     type: 'object';
     name: string;
     bucket: string;
@@ -16,26 +15,26 @@ interface ClusterArchiveObjectEntry {
     optional?: boolean;
 }
 
-interface ClusterArchiveInlineEntry {
+export interface ClusterArchiveInlineEntry {
     type: 'inline';
     name: string;
     content: string;
     encoding?: BufferEncoding;
 }
 
-type ClusterArchiveEntry = ClusterArchiveObjectEntry | ClusterArchiveInlineEntry;
+export type ClusterArchiveEntry = ClusterArchiveObjectEntry | ClusterArchiveInlineEntry;
 
-interface ClusterArchiveReference {
+export interface ClusterArchiveReference {
     teamClusterId: string;
     bucket: string;
     objectKey: string;
 }
 
-type ClusterArchiveDownload = DownloadStreamOutput & {
+export type ClusterArchiveDownload = DownloadStreamOutput & {
     clusterObject: ClusterArchiveReference;
 };
 
-interface CreateArchiveDownloadInput {
+export interface CreateArchiveDownloadInput {
     teamClusterId: string;
     entries: ClusterArchiveEntry[];
     outputObjectKey: string;
@@ -44,15 +43,11 @@ interface CreateArchiveDownloadInput {
     cacheControl?: string;
 }
 
-export default class ClusterObjectArchiveService implements IClusterObjectArchiveService {
-        private readonly teamClusterDaemonClient = teamClusterDaemonClient;
-
-    private readonly objectGatewayClient = objectGatewayClient;
-
+class ClusterObjectArchiveService {
     async createArchiveDownload(input: CreateArchiveDownloadInput): Promise<ClusterArchiveDownload> {
         const bucket = input.outputBucket || TEAM_CLUSTER_BUCKETS.TRAJECTORIES;
 
-        await this.teamClusterDaemonClient.command(
+        await teamClusterDaemonClient.command(
             input.teamClusterId,
             ChannelCommands.ObjectStoreArchiveCreate,
             {
@@ -65,7 +60,7 @@ export default class ClusterObjectArchiveService implements IClusterObjectArchiv
             { timeoutClass: 'long-running-control-plane' }
         );
 
-        const response = await this.objectGatewayClient.getStream(
+        const response = await objectGatewayClient.getStream(
             input.teamClusterId,
             bucket,
             input.outputObjectKey,
@@ -89,3 +84,5 @@ export default class ClusterObjectArchiveService implements IClusterObjectArchiv
         };
     }
 }
+
+export default new ClusterObjectArchiveService();

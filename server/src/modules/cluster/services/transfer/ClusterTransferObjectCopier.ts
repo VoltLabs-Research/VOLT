@@ -1,24 +1,23 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 
-import ClusterTransferJobStore from '@modules/cluster/services/transfer/ClusterTransferJobStore';
+import clusterTransferJobStore from '@modules/cluster/services/transfer/ClusterTransferJobStore';
 import {
     describeClusterTransferJob,
     type ClusterTransferJob
 } from '@modules/cluster/contracts/cluster-transfer-job';
 import type { StoragePlacement } from '@modules/cluster/contracts/storage-placement';
-import objectGatewayClientSingleton from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
+import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import {
     TRANSFER_PROGRESS_FLUSH_EVERY_BYTES,
     TRANSFER_PROGRESS_FLUSH_EVERY_OBJECTS
 } from '@modules/cluster/services/transfer/cluster-transfer-constants';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterObjectGatewayClient } from '@shared/contracts/ports/ITeamClusterObjectGatewayClient';
+import ApplicationError from '@shared/errors/ApplicationError';
 import type {
     TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayListEntry
 } from '@shared/contracts/types/TeamClusterObjectGateway';
-import type { StoragePlacementBucketRef } from '@shared/domain/contracts/team-cluster';
-import logger from '@shared/infrastructure/logger';
+import type { StoragePlacementBucketRef } from '@shared/contracts/types/team-cluster';
+import logger from '@shared/logger';
 
 const normalizeOpaqueTag = (value?: string): string | undefined => {
     if (!value) {
@@ -71,17 +70,14 @@ const SKIPPED_OBJECT = {
     bytesTransferred: 0
 };
 
-export default class ClusterTransferObjectCopier{
-    #objectGatewayClient: ITeamClusterObjectGatewayClient = objectGatewayClientSingleton;
-    #jobStore = new ClusterTransferJobStore();
-
+class ClusterTransferObjectCopier{
     async copyPlacement(
         job: ClusterTransferJob,
         placement: StoragePlacement
     ): Promise<ClusterTransferJob> {
         logger.info(`Starting cluster transfer copy phase ${describeClusterTransferJob(job)}`);
 
-        let currentJob = await this.#jobStore.setJobState(job.id, 'copying', {}, {
+        let currentJob = await clusterTransferJobStore.setJobState(job.id, 'copying', {}, {
             publishUpdate: true
         });
 
@@ -100,7 +96,7 @@ export default class ClusterTransferObjectCopier{
             let pendingCopiedBytes = 0;
 
             const flushProgress = async (nextCursor: { bucketIndex: number; lastObjectKey: string | null; }) => {
-                currentJob = await this.#jobStore.setJobState(currentJob.id, 'copying', {
+                currentJob = await clusterTransferJobStore.setJobState(currentJob.id, 'copying', {
                     cursor: nextCursor,
                     stats: {
                         ...currentJob.props.stats,
@@ -115,7 +111,7 @@ export default class ClusterTransferObjectCopier{
                 pendingCopiedBytes = 0;
             };
 
-            const sourceEntries = this.#objectGatewayClient.listAllEntries(job.props.sourceClusterId, {
+            const sourceEntries = objectGatewayClient.listAllEntries(job.props.sourceClusterId, {
                 bucket: bucketRef.bucket,
                 prefix: bucketRef.prefix
             });
@@ -160,7 +156,7 @@ export default class ClusterTransferObjectCopier{
         job: ClusterTransferJob,
         placement: StoragePlacement
     ): Promise<number> {
-        const verifyingJob = await this.#jobStore.setJobState(job.id, 'verifying', {}, {
+        const verifyingJob = await clusterTransferJobStore.setJobState(job.id, 'verifying', {}, {
             publishUpdate: true
         });
         let verifiedObjects = 0;
@@ -169,7 +165,7 @@ export default class ClusterTransferObjectCopier{
         for (const bucketRef of placement.props.buckets) {
             const destinationEntries = await this.#listObjectEntries(job.props.destinationClusterId, bucketRef.bucket, bucketRef.prefix);
             const destinationEntryMap = new Map(destinationEntries.map((entry) => [entry.key, entry]));
-            const sourceEntries = this.#objectGatewayClient.listAllEntries(job.props.sourceClusterId, {
+            const sourceEntries = objectGatewayClient.listAllEntries(job.props.sourceClusterId, {
                 bucket: bucketRef.bucket,
                 prefix: bucketRef.prefix
             });
@@ -200,8 +196,8 @@ export default class ClusterTransferObjectCopier{
                 }
 
                 const [sourceHead, destinationHead] = await Promise.all([
-                    this.#objectGatewayClient.head(job.props.sourceClusterId, bucketRef.bucket, sourceEntry.key),
-                    this.#objectGatewayClient.head(job.props.destinationClusterId, bucketRef.bucket, sourceEntry.key)
+                    objectGatewayClient.head(job.props.sourceClusterId, bucketRef.bucket, sourceEntry.key),
+                    objectGatewayClient.head(job.props.destinationClusterId, bucketRef.bucket, sourceEntry.key)
                 ]);
                 const headComparison = compareObjectHeads(sourceHead, destinationHead);
 
@@ -231,7 +227,7 @@ export default class ClusterTransferObjectCopier{
             }
         }
 
-        await this.#jobStore.setJobState(verifyingJob.id, 'verifying', {
+        await clusterTransferJobStore.setJobState(verifyingJob.id, 'verifying', {
             stats: {
                 ...verifyingJob.props.stats,
                 verifiedObjects,
@@ -251,7 +247,7 @@ export default class ClusterTransferObjectCopier{
         for (const bucketRef of buckets) {
             const sourceEntries = await this.#listObjectEntries(sourceClusterId, bucketRef.bucket, bucketRef.prefix);
             deletedObjects += sourceEntries.length;
-            await this.#objectGatewayClient.deleteByPrefix(sourceClusterId, bucketRef.bucket, bucketRef.prefix);
+            await objectGatewayClient.deleteByPrefix(sourceClusterId, bucketRef.bucket, bucketRef.prefix);
         }
 
         return deletedObjects;
@@ -273,7 +269,7 @@ export default class ClusterTransferObjectCopier{
         }
 
         if (listingComparison === 'inconclusive') {
-            const sourceHead = await this.#objectGatewayClient.head(sourceClusterId, bucket, sourceEntry.key);
+            const sourceHead = await objectGatewayClient.head(sourceClusterId, bucket, sourceEntry.key);
             const destinationHead = await this.#tryHeadObject(destinationClusterId, bucket, sourceEntry.key);
             const headComparison = destinationHead && compareObjectHeads(sourceHead, destinationHead);
 
@@ -286,9 +282,9 @@ export default class ClusterTransferObjectCopier{
             }
         }
 
-        const sourceObject = await this.#objectGatewayClient.getStream(sourceClusterId, bucket, sourceEntry.key);
+        const sourceObject = await objectGatewayClient.getStream(sourceClusterId, bucket, sourceEntry.key);
 
-        await this.#objectGatewayClient.putStream(destinationClusterId, {
+        await objectGatewayClient.putStream(destinationClusterId, {
             bucket,
             objectKey: sourceEntry.key,
             stream: sourceObject.stream,
@@ -310,7 +306,7 @@ export default class ClusterTransferObjectCopier{
         prefix: string
     ): Promise<TeamClusterObjectGatewayListEntry[]> {
         const entries: TeamClusterObjectGatewayListEntry[] = [];
-        const listing = this.#objectGatewayClient.listAllEntries(ownerClusterId, {
+        const listing = objectGatewayClient.listAllEntries(ownerClusterId, {
             bucket,
             prefix
         });
@@ -328,7 +324,7 @@ export default class ClusterTransferObjectCopier{
         objectKey: string
     ): Promise<TeamClusterObjectGatewayHeadResponse | null> {
         try {
-            return await this.#objectGatewayClient.head(ownerClusterId, bucket, objectKey);
+            return await objectGatewayClient.head(ownerClusterId, bucket, objectKey);
         } catch (error) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
                 return null;
@@ -338,3 +334,5 @@ export default class ClusterTransferObjectCopier{
         }
     }
 }
+
+export default new ClusterTransferObjectCopier();

@@ -4,7 +4,7 @@ import PluginEntity from '@modules/plugin/models/Plugin';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 

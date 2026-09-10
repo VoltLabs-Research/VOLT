@@ -1,4 +1,4 @@
-import eventBus from '@shared/infrastructure/events/PostgresEventBus';
+import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import notebookCredentialService from '@modules/scripting/services/NotebookCredentialService';
@@ -9,11 +9,10 @@ import { toScriptingNotebookView } from '@modules/scripting/services/scripting-n
 import type { NotebookIdentityInput, ScriptingNotebookView } from '@modules/scripting/contracts/scripting-notebook';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type { ScriptingNotebookContainerResources } from '@volt/contracts/modules/scripting/domain';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import type { ITeamClusterSelectionService } from '@shared/contracts/ports/ITeamClusterSelectionService';
-import teamClusterSelectionService from '@modules/container/services/TeamClusterSelectionService';
-import type { PaginatedResult } from '@shared/domain/port/persistence';
-import { paginate, readPageRequest, skipFor } from '@shared/infrastructure/persistence/paginate';
+import ApplicationError from '@shared/errors/ApplicationError';
+import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
+import type { PaginatedResult } from '@shared/persistence/persistence';
+import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import { IsNull, Not } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 import { randomUUID } from 'node:crypto';
@@ -79,15 +78,8 @@ const requireContainerResources = (resources: ScriptingNotebookContainerResource
     }
 };
 
-export default class ScriptingService{
-    #credential = notebookCredentialService;
+class ScriptingService{
     #notebookTemplate = new JupyterNotebookService();
-    #terminator = notebookRuntimeTerminator;
-
-    #teamClusterSelection: ITeamClusterSelectionService = teamClusterSelectionService;
-
-    #eventBus = eventBus;
-
     async listNotebooks(input: ListNotebooksInput): Promise<PaginatedResult<ScriptingNotebookView>>{
         const pageRequest = readPageRequest(input.page, input.limit, { defaultLimit: DEFAULT_LIST_LIMIT });
         const where: FindOptionsWhere<ScriptingNotebook> = { team: input.teamId };
@@ -122,7 +114,7 @@ export default class ScriptingService{
 
     async createNotebook(input: CreateNotebookInput): Promise<ScriptingNotebookView>{
         const notebookContent = await this.#notebookTemplate.resolveNotebookTemplateContent();
-        const teamClusterId = await this.#teamClusterSelection.resolveConnectedClusterId(input.teamId, input.teamClusterId);
+        const teamClusterId = await teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
         const notebook = await ScriptingNotebook.create({
             team: input.teamId,
             teamCluster: teamClusterId,
@@ -157,7 +149,7 @@ export default class ScriptingService{
         }
 
         if(input.teamClusterId){
-            const resolvedTeamClusterId = await this.#teamClusterSelection.resolveConnectedClusterId(input.teamId, input.teamClusterId);
+            const resolvedTeamClusterId = await teamClusterSelectionService.resolveConnectedClusterId(input.teamId, input.teamClusterId);
             if(existing.teamCluster !== resolvedTeamClusterId){
                 patch.teamCluster = resolvedTeamClusterId;
                 resetRuntime = true;
@@ -178,7 +170,7 @@ export default class ScriptingService{
         }
 
         if(resetRuntime && existing.teamCluster && existing.runtimeNotebookId){
-            await this.#terminator.terminate(existing.teamCluster, existing.runtimeNotebookId);
+            await notebookRuntimeTerminator.terminate(existing.teamCluster, existing.runtimeNotebookId);
         }
 
         const updated = await Object.assign(existing, patch).save();
@@ -193,13 +185,13 @@ export default class ScriptingService{
         }
 
         if(notebook.teamCluster && notebook.runtimeNotebookId){
-            await this.#terminator.terminate(notebook.teamCluster, notebook.runtimeNotebookId);
+            await notebookRuntimeTerminator.terminate(notebook.teamCluster, notebook.runtimeNotebookId);
         }
 
-        await this.#credential.revokeSecretKey(notebook);
+        await notebookCredentialService.revokeSecretKey(notebook);
         await ScriptingNotebook.delete({ id: input.notebookId });
 
-        await this.#eventBus.emit('notebook.deleted', {
+        await eventBus.emit('notebook.deleted', {
             notebookId: input.notebookId,
             teamId: input.teamId
         });
@@ -207,3 +199,5 @@ export default class ScriptingService{
         return null;
     }
 }
+
+export default new ScriptingService();
