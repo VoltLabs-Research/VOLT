@@ -8,7 +8,7 @@ export const CHANNELS = [
     'window:state'
 ] as const;
 
-export type Channel = typeof CHANNELS[number];
+type Channel = typeof CHANNELS[number];
 
 export interface PhaseSpec{
     id: string;

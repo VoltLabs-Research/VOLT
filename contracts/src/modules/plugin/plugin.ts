@@ -33,8 +33,6 @@ export interface CreatePluginResponse{
     plugin: Plugin;
 }
 
-export type ImportPluginResponse = Plugin;
-
 export interface ClonePluginResponse{
     plugin: Plugin;
 }

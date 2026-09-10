@@ -1,7 +1,7 @@
 import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-export interface StackRuntimeManifest{
+interface StackRuntimeManifest{
     builtAt: string;
     platform: string;
     arch: string;

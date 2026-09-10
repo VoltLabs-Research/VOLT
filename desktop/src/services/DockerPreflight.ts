@@ -181,7 +181,7 @@ const classifyViaCli = async (cliPath: string, platform: NodeJS.Platform): Promi
     });
 };
 
-export const dockerPreflight = async (): Promise<PreflightResult> => {
+const dockerPreflight = async (): Promise<PreflightResult> => {
     const platform = process.platform;
 
     const cliPath = await dockerPath();

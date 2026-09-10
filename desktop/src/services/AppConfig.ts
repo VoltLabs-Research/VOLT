@@ -25,8 +25,6 @@ export interface PluginSeedState{
 export interface DevModeState{
     enabled: boolean;
     voltPath: string;
-
-    clusterDaemonPath?: string;
 }
 
 export interface DeploymentState{
