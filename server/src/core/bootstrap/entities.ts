@@ -1,8 +1,8 @@
 import type { DatabaseEntities } from '@core/config/database';
-import CatalogFolder from '@shared/infrastructure/persistence/models/CatalogFolder';
-import DomainEventSpoolEntry from '@shared/infrastructure/persistence/models/DomainEventSpoolEntry';
-import KeyValueEntry from '@shared/infrastructure/persistence/models/KeyValueEntry';
-import KeyValueSetMember from '@shared/infrastructure/persistence/models/KeyValueSetMember';
+import CatalogFolder from '@shared/persistence/models/CatalogFolder';
+import DomainEventSpoolEntry from '@shared/persistence/models/DomainEventSpoolEntry';
+import KeyValueEntry from '@shared/persistence/models/KeyValueEntry';
+import KeyValueSetMember from '@shared/persistence/models/KeyValueSetMember';
 import AIConversation from '@modules/ai/models/AIConversation';
 import AIMessage from '@modules/ai/models/AIMessage';
 import Analysis from '@modules/analysis/models/Analysis';
@@ -11,7 +11,6 @@ import User from '@modules/auth/models/User';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
-import Container from '@modules/container/models/Container';
 import DailyActivity from '@modules/daily-activity/models/DailyActivity';
 import Notification from '@modules/notification/models/Notification';
 import PipelineRun from '@modules/plugin/models/PipelineRun';
@@ -64,7 +63,6 @@ const ENTITIES: readonly Function[] = [
     PipelineRun,
     Analysis,
     AnalysisProvenance,
-    Container,
     Whiteboard,
     ScriptingNotebook,
     KeyValueEntry,

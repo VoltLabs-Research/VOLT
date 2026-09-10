@@ -1,9 +1,9 @@
-import { singleton } from '@shared/application/utilities/singleton';
-import { DomainEventBridge } from '@shared/infrastructure/events/DomainEventBridge';
-import { getEventDispatcher } from '@shared/infrastructure/events/EventDispatcher';
+import { singleton } from '@shared/utilities/singleton';
+import { DomainEventBridge } from '@shared/events/DomainEventBridge';
+import { getEventDispatcher } from '@shared/events/EventDispatcher';
 import { EVENT_MAPPER_SETS } from '@core/bootstrap/event-mappers';
-import { getVoltEventChannelConnection } from '@modules/container/socket/connection/VoltEventChannelConnection';
-import { logger } from '@shared/infrastructure/logger';
+import { getVoltEventChannelConnection } from '@modules/system/socket/connection/VoltEventChannelConnection';
+import { logger } from '@shared/logger';
 
 export const getDomainEventBridge = singleton((): DomainEventBridge => {
     const bridge = new DomainEventBridge(getVoltEventChannelConnection());

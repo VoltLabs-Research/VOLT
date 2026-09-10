@@ -1,9 +1,9 @@
-export interface ContainerEnvironmentVariable {
+interface ContainerEnvironmentVariable {
     key: string;
     value: string;
 };
 
-export interface ContainerPortMapping {
+interface ContainerPortMapping {
     private: number;
     public?: number;
 };
@@ -24,4 +24,3 @@ export interface CreateContainerRequest {
     cmd?: string[];
 };
 
-export type ContainerAction = 'start' | 'stop' | 'restart';

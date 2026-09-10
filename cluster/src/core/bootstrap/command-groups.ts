@@ -2,9 +2,8 @@ import type { CommandGroupFactory } from '@shared/commands/command';
 import { getAnalysisCommands } from '@modules/analysis/commands/AnalysisCommands';
 import { getDebugCommands } from '@modules/analysis/commands/DebugCommands';
 import { getPipelineCommands } from '@modules/analysis/commands/PipelineCommands';
-import { getContainerCommands } from '@modules/container/commands/ContainerCommands';
-import { getObjectStoreArchiveCommands } from '@modules/container/commands/ObjectStoreArchiveCommands';
-import { getRemoteCommands } from '@modules/container/commands/RemoteCommands';
+import { getObjectStoreArchiveCommands } from '@modules/system/commands/ObjectStoreArchiveCommands';
+import { getRemoteCommands } from '@modules/system/commands/RemoteCommands';
 import { getJobsCommands } from '@modules/jobs/commands/JobsCommands';
 import { getNotebookCommands } from '@modules/notebook/commands/NotebookCommands';
 import { getPluginCommands } from '@modules/plugin/commands/PluginCommands';
@@ -19,7 +18,6 @@ export const COMMAND_GROUPS: readonly CommandGroupFactory[] = [
     getAnalysisCommands,
     getDebugCommands,
     getPipelineCommands,
-    getContainerCommands,
     getObjectStoreArchiveCommands,
     getRemoteCommands,
     getJobsCommands,

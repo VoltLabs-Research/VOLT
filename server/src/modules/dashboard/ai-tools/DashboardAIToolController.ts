@@ -2,7 +2,7 @@ import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
 import { AITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import DashboardService from '@modules/dashboard/services/DashboardService';
+import dashboardService from '@modules/dashboard/services/DashboardService';
 import teamMetricsQueryService from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
 import type {
     GetDashboardMetricsInput,
@@ -10,8 +10,6 @@ import type {
 } from '@volt/contracts/modules/dashboard/ai-tools';
 
 export default class DashboardAIToolController extends AIToolController {
-    #service = new DashboardService();
-
     @AITool({
         name: 'get_dashboard_metrics',
         description: 'Get the dashboard overview metrics for the current team: total counts, last-month counts, '
@@ -33,13 +31,13 @@ export default class DashboardAIToolController extends AIToolController {
 
     @AITool({
         name: 'global_search',
-        description: 'Search across the current team for trajectories, analyses, containers, plugins and teams by name/content. '
+        description: 'Search across the current team for trajectories, analyses, plugins and teams by name/content. '
             + 'Returns matches grouped by type, each with a deepLink the UI can navigate to.',
         parameters: typia.llm.parameters<GlobalSearchInput>(),
         validate: typia.createValidate<GlobalSearchInput>()
     })
     async globalSearch(input: GlobalSearchInput & AIToolScope) {
-        const { analyses, containers, trajectories, teams, plugins } = await this.#service.getGlobalSearch(input);
+        const { analyses, trajectories, teams, plugins } = await dashboardService.getGlobalSearch(input);
 
         const trajectoryItems = trajectories.map((trajectory) => ({
             ...trajectory,
@@ -58,12 +56,6 @@ export default class DashboardAIToolController extends AIToolController {
                 deepLink: `/canvas/${trajectoryId}?analysis=${analysis._id}`
             };
         });
-
-        const containerItems = containers.map((container) => ({
-            ...container,
-            id: container._id,
-            deepLink: `/dashboard/containers/${container._id}`
-        }));
 
         const pluginItems = plugins.map((plugin) => {
             const exposureId = plugin.listingExposures?.exposures?.[0]?.exposureId
@@ -88,16 +80,14 @@ export default class DashboardAIToolController extends AIToolController {
 
         const total = trajectoryItems.length
             + analysisItems.length
-            + containerItems.length
             + pluginItems.length
             + teamItems.length;
 
         return {
-            summary: `Found ${total} result(s) across trajectories, analyses, containers, plugins and teams.`,
+            summary: `Found ${total} result(s) across trajectories, analyses, plugins and teams.`,
             data: {
                 trajectories: trajectoryItems,
                 analyses: analysisItems,
-                containers: containerItems,
                 plugins: pluginItems,
                 teams: teamItems
             }

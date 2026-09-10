@@ -219,53 +219,6 @@ export const protectedRoutes: RouteConfig[] = [
         loader: () => import('@/modules/cluster/components/ClusterMonitoringPage')
     },
     {
-        path: '/dashboard/containers',
-        title: 'Containers',
-        loader: () => import('@/modules/container/components/ContainersListing'),
-        requiredPermissions: ['container:read'],
-        navigation: {
-            section: DashboardNavigationSection.Main,
-            label: 'Containers',
-            icon: DashboardNavigationIconKey.Containers,
-            disabledReason: 'You do not have permission to view containers.'
-        }
-    },
-    {
-        path: '/dashboard/containers/new',
-        title: 'Create Container',
-        loader: () => import('@/modules/container/components/CreateContainer'),
-        requiredPermissions: ['container:create']
-    },
-    {
-        path: '/dashboard/containers/:id',
-        title: 'Container Details',
-        loader: () => import('@/modules/container/components/ContainerDetailsLayout'),
-        requiredPermissions: ['container:read'],
-        children: [
-            {
-                path: '',
-                title: 'Container Overview',
-                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-overview-route'),
-                index: true
-            },
-            {
-                path: 'processes',
-                title: 'Container Processes',
-                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-processes-route')
-            },
-            {
-                path: 'terminal',
-                title: 'Container Terminal',
-                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-terminal-route')
-            },
-            {
-                path: 'storage',
-                title: 'Container Storage',
-                loader: () => import('@/modules/container/components/ContainerDetailsRoutes/container-storage-route')
-            }
-        ]
-    },
-    {
         path: '/dashboard/ai/:conversationId?',
         title: 'AI',
         loader: () => import('@/modules/ai/components/AIPage'),

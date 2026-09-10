@@ -1,10 +1,8 @@
 import type { SileoPosition } from 'sileo';
 
-type ContextualTipSurface = 'page' | 'feature' | 'action';
 type ContextualTipDismissMode = 'manual' | 'auto';
 
 export interface ContextualTipDefinition {
-    surface: ContextualTipSurface;
     dismissMode: ContextualTipDismissMode;
     title: string;
     description?: string;
@@ -16,7 +14,6 @@ export interface ContextualTipDefinition {
 
 const CONTEXTUAL_TIPS = {
     'dashboard-drag-upload': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Drop files to upload',
         description: 'Drag trajectory files anywhere on the dashboard to start an upload without opening another dialog.',
@@ -25,16 +22,14 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'dashboard-global-search': {
-        surface: 'feature',
         dismissMode: 'auto',
         title: 'Search across Volt',
-        description: 'Search trajectories, containers, plugins, and teams, then use Arrow keys and Enter to jump in.',
+        description: 'Search trajectories, plugins, and teams, then use Arrow keys and Enter to jump in.',
         delay: 350,
         duration: 6500,
         position: 'top-center'
     },
     'dashboard-sidebar-collapse': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Maximize your workspace',
         description: 'Collapse the sidebar to give dashboards, tables, and editors more space without leaving the page.',
@@ -43,25 +38,14 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'team-selector-context': {
-        surface: 'feature',
         dismissMode: 'auto',
         title: 'Teams change your context',
-        description: 'Switch teams here to update the dashboards, containers, and resources you are working with.',
+        description: 'Switch teams here to update the dashboards and resources you are working with.',
         delay: 250,
         duration: 6500,
         position: 'top-center'
     },
-    'containers-organization': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Organize containers with folders',
-        description: 'Create folders, move containers, and keep large container lists easier to navigate over time.',
-        buttonLabel: 'Got it',
-        delay: 1600,
-        position: 'top-center'
-    },
     'whiteboards-organization': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Organize whiteboards with folders',
         description: 'Create folders, move whiteboards, and keep large board collections easier to navigate over time.',
@@ -70,7 +54,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'trajectories-organization': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Organize trajectories with folders',
         description: 'Create folders, move trajectories, and keep large trajectory lists easier to navigate over time.',
@@ -78,17 +61,7 @@ const CONTEXTUAL_TIPS = {
         delay: 1600,
         position: 'top-center'
     },
-    'container-details-tabs': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Terminal and files work together',
-        description: 'Use the Terminal and Storage sections together when you need to inspect, debug, or verify changes inside a container.',
-        buttonLabel: 'Got it',
-        delay: 1500,
-        position: 'top-center'
-    },
     'plugin-builder-get-started': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Start by placing a node',
         description: 'Drag a node from the palette into the canvas, then connect outputs and inputs to build your workflow.',
@@ -97,7 +70,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'plugin-builder-shortcuts': {
-        surface: 'feature',
         dismissMode: 'auto',
         title: 'Builder shortcuts help',
         description: 'Use Ctrl+S to save, Delete to remove the selected node, and Ctrl+Z to undo changes.',
@@ -106,7 +78,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'whiteboard-collaboration': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Whiteboards are collaborative',
         description: 'Changes sync live, and the presence indicator shows how many collaborators are active on this board right now.',
@@ -115,7 +86,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'ai-spreadsheet-panel': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Resize the artifact panel',
         description: 'Drag the panel divider to adjust the spreadsheet area, or collapse it to focus on the conversation.',
@@ -124,7 +94,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'secret-keys-quick-create': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Press N to create a key',
         description: 'Use the keyboard shortcut N to start creating a new secret key without reaching for the button.',
@@ -133,7 +102,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'plugins-import-export': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Import and export plugins',
         description: 'Export plugins as .zip to share them, or import .zip files to install plugins from others.',
@@ -141,17 +109,7 @@ const CONTEXTUAL_TIPS = {
         delay: 1600,
         position: 'top-center'
     },
-    'container-create-stepper': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Follow the steps to deploy',
-        description: 'Walk through Image, Configuration, and Review before creating the container.',
-        buttonLabel: 'Got it',
-        delay: 1200,
-        position: 'top-center'
-    },
     'cluster-monitoring-live': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Metrics update in real time',
         description: 'CPU, memory, network, and disk charts refresh automatically to reflect the current cluster state.',
@@ -159,26 +117,7 @@ const CONTEXTUAL_TIPS = {
         delay: 1400,
         position: 'top-center'
     },
-    'notebook-workspace': {
-        surface: 'page',
-        dismissMode: 'manual',
-        title: 'Jupyter runs inside a container',
-        description: 'The notebook starts with its own container. Wait for it to be ready before interacting with cells.',
-        buttonLabel: 'Got it',
-        delay: 1600,
-        position: 'top-center'
-    },
-    'container-env-vars': {
-        surface: 'feature',
-        dismissMode: 'auto',
-        title: 'Edit environment variables live',
-        description: 'Update environment variables and port bindings directly from the overview without redeploying.',
-        delay: 350,
-        duration: 6500,
-        position: 'top-center'
-    },
     'team-roles-permissions': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Roles control access granularly',
         description: 'Assign permissions per resource type to control what each team member can see and do.',
@@ -187,7 +126,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'team-integrations': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Connect AI providers here',
         description: 'Add API keys for AI models, configure Ollama endpoints, and manage which models are available.',
@@ -196,7 +134,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'session-management': {
-        surface: 'page',
         dismissMode: 'manual',
         title: 'Review active sessions',
         description: 'See all devices with active sessions and revoke any you do not recognize.',
@@ -205,7 +142,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'notifications-mark-read': {
-        surface: 'feature',
         dismissMode: 'auto',
         title: 'Mark all notifications as read',
         description: 'Use the header action to clear all unread notifications at once.',
@@ -214,7 +150,6 @@ const CONTEXTUAL_TIPS = {
         position: 'top-center'
     },
     'canvas-models-unified': {
-        surface: 'action',
         dismissMode: 'auto',
         title: 'Models share one simulation cell',
         description: 'Overlapping models snap together and stop drawing duplicated cells. Hold Shift while dragging one to separate it again.',

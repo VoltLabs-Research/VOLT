@@ -1,6 +1,6 @@
 import { SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID } from '@/modules/scripting/contracts/modal-ids';
-import ClusterResourceSelectionPanel from '@/modules/container/components/ClusterResourceSelectionPanel';
-import useTeamClusterResourceSelection from '@/modules/container/hooks/use-team-cluster-resource-selection';
+import ClusterResourceSelectionPanel from '@/modules/cluster/components/ClusterResourceSelectionPanel';
+import useTeamClusterResourceSelection from '@/modules/cluster/hooks/use-team-cluster-resource-selection';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
@@ -13,7 +13,7 @@ import type { ScriptingNotebookDeploymentModalRequest } from '@/modules/scriptin
 
 interface ScriptingNotebookDeploymentModalProps {
     request: ScriptingNotebookDeploymentModalRequest | null;
-    onClose: (options?: { completed?: boolean }) => void;
+    onClose: () => void;
 };
 
 const ScriptingNotebookDeploymentModal = ({
@@ -60,7 +60,7 @@ const ScriptingNotebookDeploymentModal = ({
                 teamClusterId: selectedTeamClusterId
             });
             closeModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
-            onClose({ completed: true });
+            onClose();
         } finally {
             setIsSubmitting(false);
         }

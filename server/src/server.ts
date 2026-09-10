@@ -11,12 +11,10 @@ import { startTempStorageLifecycle } from './core/bootstrap/start-temp-storage-l
 import app from './core/config/express';
 import { mountClientApp, mountShellBridge, resolveClientDistDir } from './core/config/client-app';
 import scriptingJupyterProxyService from './modules/scripting/services/ScriptingJupyterProxyService';
-import socketGateway, { SocketGateway } from './modules/socket/socket/SocketGateway';
+import socketGateway, { type SocketGateway } from './modules/socket/socket/SocketGateway';
 import { socketModules } from './modules/socket/socket/socket-modules';
 import { ClusterTransferRunner } from './modules/cluster/services/transfer/ClusterTransferRunner';
-import containerPortRelayLifecycleService, { ContainerPortRelayLifecycleService } from './modules/container/services/ContainerPortRelayLifecycleService';
-import containerTerminalSocketModule from './modules/container/socket/ContainerTerminalSocketModule';
-import trajectoryCloneRunner, { TrajectoryCloneRunner } from './modules/trajectory/services/trajectory/TrajectoryCloneRunner';
+import trajectoryCloneRunner, { type TrajectoryCloneRunner } from './modules/trajectory/services/trajectory/TrajectoryCloneRunner';
 import canvasWorkspaceSocketModule from './modules/trajectory/socket/CanvasWorkspaceSocketModule';
 import trajectoryPresenceSocketModule from './modules/trajectory/socket/TrajectoryPresenceSocketModule';
 import teamJobsSocketModule from './modules/team/socket/team/TeamJobsSocketModule';
@@ -25,12 +23,12 @@ import whiteboardSocketModule from './modules/whiteboards/socket/WhiteboardSocke
 import pluginDebugSocketModule from './modules/plugin/socket/PluginDebugSocketModule';
 import teamClusterSocketModule from './modules/cluster/socket/TeamClusterSocketModule';
 import analysisLogSocketModule from './modules/analysis/socket/AnalysisLogSocketModule';
-import { flushPendingSubscriptions } from './shared/infrastructure/events/event-registry';
+import { flushPendingSubscriptions } from './shared/events/event-registry';
 import mountEventGroups from './core/bootstrap/mount-event-groups';
-import { httpErrorMiddleware } from './shared/infrastructure/http/middleware/error';
-import logger from './shared/infrastructure/logger';
-import { readNumberEnv } from './shared/infrastructure/utilities/env';
-import { writeUpgradeError } from './shared/infrastructure/utilities/proxy-relay';
+import { httpErrorMiddleware } from './shared/http/middleware/error';
+import logger from './shared/logger';
+import { readNumberEnv } from './shared/utilities/env';
+import { writeUpgradeError } from './shared/utilities/proxy-relay';
 
 const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -45,7 +43,6 @@ let activeTerminator: HttpTerminator | null = null;
 let activeSocketGateway: SocketGateway | null = null;
 let activeClusterTransferRunner: ClusterTransferRunner | null = null;
 let activeTrajectoryCloneRunner: TrajectoryCloneRunner | null = null;
-let activeContainerPortRelayLifecycle: ContainerPortRelayLifecycleService | null = null;
 let shuttingDown = false;
 
 const shutdown = async () => {
@@ -87,11 +84,6 @@ const shutdown = async () => {
         if (activeTrajectoryCloneRunner) {
             activeTrajectoryCloneRunner.stop();
             activeTrajectoryCloneRunner = null;
-        }
-
-        if (activeContainerPortRelayLifecycle) {
-            shutdownTasks.push(activeContainerPortRelayLifecycle.stop());
-            activeContainerPortRelayLifecycle = null;
         }
 
         stopRuntimeStateMaintenance();
@@ -223,13 +215,11 @@ const startServer = async () => {
 
             activeClusterTransferRunner = new ClusterTransferRunner();
             activeTrajectoryCloneRunner = trajectoryCloneRunner;
-            activeContainerPortRelayLifecycle = containerPortRelayLifecycleService;
 
             for (const module of [
                 teamClusterSocketModule,
                 canvasWorkspaceSocketModule,
                 trajectoryPresenceSocketModule,
-                containerTerminalSocketModule,
                 teamJobsSocketModule,
                 teamPresenceSocketModule,
                 whiteboardSocketModule,
@@ -240,10 +230,6 @@ const startServer = async () => {
             }
             for (const module of socketModules) {
                 activeSocketGateway.register(module);
-            }
-
-            if (activeContainerPortRelayLifecycle) {
-                await activeContainerPortRelayLifecycle.start();
             }
             await activeSocketGateway.initialize(server);
             activeClusterTransferRunner?.start();

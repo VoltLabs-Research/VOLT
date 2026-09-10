@@ -1,7 +1,6 @@
 import { DashboardNavigationIconKey } from '@/app/routes/types';
 import {
     BookOpen,
-    Box as CubeIcon,
     KeyRound,
     LayoutGrid,
     MonitorSmartphone,
@@ -10,8 +9,7 @@ import {
     ShieldCheck,
     SlidersHorizontal,
     Sparkles,
-    Users,
-    Workflow
+    Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -24,10 +22,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.AI]: {
         inactive: Sparkles,
         active: Sparkles
-    },
-    [DashboardNavigationIconKey.Containers]: {
-        inactive: CubeIcon,
-        active: CubeIcon
     },
     [DashboardNavigationIconKey.Dashboard]: {
         inactive: LayoutGrid,
@@ -44,10 +38,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
     [DashboardNavigationIconKey.Notebooks]: {
         inactive: BookOpen,
         active: BookOpen
-    },
-    [DashboardNavigationIconKey.Plugins]: {
-        inactive: Workflow,
-        active: Workflow
     },
     [DashboardNavigationIconKey.Whiteboards]: {
         inactive: Paintbrush,

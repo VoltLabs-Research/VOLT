@@ -30,7 +30,6 @@ import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
-import { panelFor } from '@/app/navigation/panels';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -40,11 +39,23 @@ import type {
     DashboardHeaderContext
 } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import Scrollable from '@/shared/ui/components/Scrollable';
+import type { SidebarPanelName } from '@/shared/ui/components/SidebarPanel';
+
+const panelFor = (pathname: string): SidebarPanelName => {
+    if (pathname.startsWith('/dashboard/settings')) {
+        return 'settings';
+    }
+
+    if (pathname.startsWith('/dashboard/ai')) {
+        return 'ai';
+    }
+
+    return 'app';
+};
 
 type SidebarRailState = 'expanded' | 'collapsed' | 'hidden';
 
 const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
-    /^\/dashboard\/containers\/[^/]+/,
     /^\/dashboard\/ai(?=\/|$)/
 ];
 
@@ -81,9 +92,7 @@ const DashboardLayout = () => {
     );
 
     const headerHidden = workspaceChromeState.headerHidden;
-    const collapseRequested = workspaceChromeState.sidebarCollapsed
-        || sidebarCollapsedOverride
-        || sidebarCollapsedPreference;
+    const collapseRequested = sidebarCollapsedOverride || sidebarCollapsedPreference;
     const collapsed = collapseRequested && isRailViewport;
 
     const sidePanelOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);

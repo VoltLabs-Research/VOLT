@@ -1,12 +1,10 @@
 import type { Analysis } from '../analysis/domain';
-import type { Container } from '../container/domain';
 import type { Plugin } from '../plugin/plugin';
 import type { Team } from '../team/domain';
 import type { Trajectory } from '../trajectory/domain';
 
 export interface GlobalSearchResponse{
     analyses: Analysis[];
-    containers: Container[];
     trajectories: Trajectory[];
     teams: Team[];
     plugins: Plugin[];

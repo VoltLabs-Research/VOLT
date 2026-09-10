@@ -50,15 +50,6 @@ export const buildGlobalSearchSections = (results: GlobalSearchResponse): Dashbo
             }))
         },
         {
-            key: 'containers',
-            items: results.containers.map((container) => ({
-                id: container._id,
-                title: container.name,
-                subtitle: container.image,
-                path: `/dashboard/containers/${container._id}`
-            }))
-        },
-        {
             key: 'plugins',
             items: results.plugins.map((plugin) => {
                 const listingExposure = plugin.listingExposures?.exposures[0] ?? getListingRelevantExposures(plugin.exposures)[0];

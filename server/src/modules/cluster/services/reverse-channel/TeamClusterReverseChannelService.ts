@@ -1,7 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import bytePlaneResolver from '@modules/cluster/services/object-gateway/BytePlaneResolver';
-import type { ContainerTerminalAttachment } from '@shared/contracts/ports/ContainerRuntime';
-import containerDeploymentProgressService from '@modules/container/services/ContainerDeploymentProgressService';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
@@ -10,18 +8,17 @@ import {
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     TeamClusterDaemonResponseType,
     type TeamClusterDaemonMessage,
-    type TeamClusterDaemonRuntimeProgressPayload,
     type TeamClusterDaemonSocketChannel,
     type TeamClusterDaemonSocketResponsePayload,
     type TeamClusterDaemonSocketStreamPayload,
     type TeamClusterDaemonSocketStreamStatePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import ApplicationError from '@shared/application/errors/ApplicationError';
-import TeamClusterDaemonConnectionRegistry, {
+import ApplicationError from '@shared/errors/ApplicationError';
+import teamClusterDaemonConnectionRegistry, {
     type ReleasedDaemonConnection
 } from '@modules/cluster/services/team-cluster/TeamClusterDaemonConnectionRegistry';
 import TeamClusterReverseAttachedSessions from '@modules/cluster/services/reverse-channel/TeamClusterReverseAttachedSessions';
-import TeamClusterReverseInboundStreams from '@modules/cluster/services/reverse-channel/TeamClusterReverseInboundStreams';
+import teamClusterReverseInboundStreams from '@modules/cluster/services/reverse-channel/TeamClusterReverseInboundStreams';
 import TeamClusterReverseTunnelSessions from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelSessions';
 import ReverseChannelPendingEntries, {
     createBufferedStream,
@@ -38,7 +35,7 @@ import {
     type TeamClusterTunnelOpenOptions,
     type TeamClusterTunnelOpenRequest
 } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
-import logger from '@shared/infrastructure/logger';
+import logger from '@shared/logger';
 import { randomUUID } from 'node:crypto';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 
@@ -46,10 +43,7 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const DAEMON_CONNECTION_WAIT_TIMEOUT_MS = 30_000;
 
 class TeamClusterReverseChannelService {
-    readonly #connections = new TeamClusterDaemonConnectionRegistry();
     readonly #pending = new ReverseChannelPendingEntries();
-    readonly #inboundStreams = new TeamClusterReverseInboundStreams();
-
     readonly #sessions = new TeamClusterReverseAttachedSessions({
         pending: this.#pending,
         requireSocketId: (teamClusterId) => this.#requireDaemonSocketId(teamClusterId),
@@ -78,16 +72,16 @@ class TeamClusterReverseChannelService {
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
     ): void {
-        const previousSocketId = this.#connections.socketIdFor(teamClusterId, channel);
+        const previousSocketId = teamClusterDaemonConnectionRegistry.socketIdFor(teamClusterId, channel);
         if (previousSocketId && previousSocketId !== socketId) {
             this.unregisterDaemonConnection(previousSocketId);
         }
 
-        this.#connections.bind(socketId, teamClusterId, channel);
+        teamClusterDaemonConnectionRegistry.bind(socketId, teamClusterId, channel);
     }
 
     unregisterDaemonConnection(socketId: string): ReleasedDaemonConnection | null {
-        const released = this.#connections.release(socketId);
+        const released = teamClusterDaemonConnectionRegistry.release(socketId);
 
         if (released?.wasBound) {
             if (released.channel === TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control) {
@@ -102,22 +96,22 @@ class TeamClusterReverseChannelService {
     }
 
     isRegisteredDaemonSocket(socketId: string): boolean {
-        return this.#connections.isRegistered(socketId);
+        return teamClusterDaemonConnectionRegistry.isRegistered(socketId);
     }
 
     getRegisteredTeamClusterId(socketId: string): string | null {
-        return this.#connections.teamClusterIdFor(socketId) ?? null;
+        return teamClusterDaemonConnectionRegistry.teamClusterIdFor(socketId) ?? null;
     }
 
     hasDaemonConnection(teamClusterId: string, channel: TeamClusterDaemonSocketChannel): boolean {
-        return this.#connections.hasConnection(teamClusterId, channel);
+        return teamClusterDaemonConnectionRegistry.hasConnection(teamClusterId, channel);
     }
 
     registerInboundStreamConsumer(
         streamId: string,
         consumer: TeamClusterDaemonInboundStreamConsumer
     ): () => void {
-        return this.#inboundStreams.register(streamId, consumer);
+        return teamClusterReverseInboundStreams.register(streamId, consumer);
     }
 
     async command(
@@ -177,10 +171,6 @@ class TeamClusterReverseChannelService {
         });
     }
 
-    async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        return this.#sessions.attachTerminal(teamClusterId, containerId);
-    }
-
     async attachWebSocket(
         teamClusterId: string,
         targetUrl: string,
@@ -198,7 +188,7 @@ class TeamClusterReverseChannelService {
     }
 
     handleMessage(socketId: string, payload: TeamClusterDaemonMessage): void {
-        const teamClusterId = this.#connections.teamClusterIdFor(socketId);
+        const teamClusterId = teamClusterDaemonConnectionRegistry.teamClusterIdFor(socketId);
         if (!teamClusterId) {
             return;
         }
@@ -245,36 +235,9 @@ class TeamClusterReverseChannelService {
                 this.#tunnels.handleClose(payload);
                 return;
 
-            case 'runtime-progress':
-                this.#handleRuntimeProgress(teamClusterId, payload).catch(() => {
-                    logger.error(`[ReverseChannel] Runtime progress handling failed socketId=${socketId}`);
-                });
-                return;
-
             default:
                 return;
         }
-    }
-
-    async #handleRuntimeProgress(
-        teamClusterId: string,
-        payload: TeamClusterDaemonRuntimeProgressPayload
-    ): Promise<void> {
-        const progress = payload.payload;
-        if (payload.action !== 'container-create' || !progress) {
-            return;
-        }
-
-        await containerDeploymentProgressService.emitToTeam({
-            operationId: progress.operationId,
-            teamClusterId,
-            stage: payload.stage,
-            step: progress.step,
-            image: progress.image,
-            containerName: progress.containerName,
-            containerId: progress.containerId,
-            timestamp: payload.timestamp
-        });
     }
 
     #handleResponse(payload: TeamClusterDaemonSocketResponsePayload): void {
@@ -291,7 +254,6 @@ class TeamClusterReverseChannelService {
                 this.#handleStreamOpenResponse(payload, entry);
                 return;
 
-            case 'terminal':
             case 'websocket':
                 this.#sessions.handleAttachResponse(payload, entry);
                 return;
@@ -337,7 +299,7 @@ class TeamClusterReverseChannelService {
     ): void {
         const entry = this.#pending.get(payload.requestId);
         if (entry?.type !== 'stream') {
-            this.#inboundStreams.dispatchChunk(socketId, teamClusterId, payload);
+            teamClusterReverseInboundStreams.dispatchChunk(socketId, teamClusterId, payload);
             return;
         }
 
@@ -354,7 +316,7 @@ class TeamClusterReverseChannelService {
     #handleStreamEnd(payload: TeamClusterDaemonSocketStreamStatePayload): void {
         const entry = this.#pending.get(payload.requestId);
         if (entry?.type !== 'stream') {
-            this.#inboundStreams.dispatchEnd(payload);
+            teamClusterReverseInboundStreams.dispatchEnd(payload);
             return;
         }
 
@@ -378,7 +340,7 @@ class TeamClusterReverseChannelService {
         teamClusterId: string,
         channel: TeamClusterDaemonSocketChannel = TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL.Control
     ): Promise<string> {
-        return this.#connections.requireSocketId(teamClusterId, channel, DAEMON_CONNECTION_WAIT_TIMEOUT_MS);
+        return teamClusterDaemonConnectionRegistry.requireSocketId(teamClusterId, channel, DAEMON_CONNECTION_WAIT_TIMEOUT_MS);
     }
 }
 

@@ -1,4 +1,3 @@
-import { getModelListingRoute } from './populated-model-routes';
 import { isRecord } from '@/shared/utils/type-guards';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import { PopoverContent, PopoverDialog, PopoverRoot, PopoverTrigger } from '@heroui/react';
@@ -7,12 +6,25 @@ import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { FC, MouseEvent, ReactNode } from 'react';
 
+const populatedModelRoutes: Record<string, string> = {
+    User: '/dashboard/my-team',
+    TeamCluster: '/dashboard/clusters',
+    Trajectory: '/dashboard/trajectories/list',
+    Analysis: '/dashboard/analysis-configs/list',
+    Plugin: '/dashboard/plugins/list',
+    ScriptingNotebook: '/dashboard/notebooks',
+    Whiteboard: '/dashboard/whiteboards',
+    SecretKey: '/dashboard/settings/secret-keys'
+};
+
+const getModelListingRoute = (modelName: string): string | null => {
+    return populatedModelRoutes[modelName] ?? null;
+};
+
 interface PopulatedCellPopoverProps {
     document: object | null;
     modelName: string;
     children: ReactNode;
-    displayFields?: string[];
-    labelMap?: Record<string, string>;
 };
 
 interface FieldEntry {
@@ -65,9 +77,7 @@ const formatFieldLabel = (key: string): string => {
 const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     document: doc,
     modelName,
-    children,
-    displayFields,
-    labelMap
+    children
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const listingRoute = getModelListingRoute(modelName);
@@ -82,7 +92,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
     const fields = useMemo<FieldEntry[]>(() => {
         if (!documentRecord) return [];
 
-        const keys = displayFields ?? Object.keys(documentRecord).filter((k) => !EXCLUDED_FIELDS.has(k));
+        const keys = Object.keys(documentRecord).filter((k) => !EXCLUDED_FIELDS.has(k));
 
         const entries: FieldEntry[] = [];
         for (const key of keys) {
@@ -90,7 +100,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
             const value = resolveFieldValue(raw);
             if (value === null) continue;
 
-            const label = labelMap?.[key] ?? formatFieldLabel(key);
+            const label = formatFieldLabel(key);
             entries.push({
                 key,
                 label,
@@ -99,7 +109,7 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
         }
 
         return entries;
-    }, [displayFields, documentRecord, labelMap]);
+    }, [documentRecord]);
 
     if (!documentRecord) {
         return <>{children}</>;

@@ -1,6 +1,5 @@
 export enum Resource {
     ANALYSIS = 'analysis',
-    CONTAINER = 'container',
     DAILY_ACTIVITY = 'daily-activity',
     PLUGIN = 'plugin',
     SCRIPTING = 'scripting',

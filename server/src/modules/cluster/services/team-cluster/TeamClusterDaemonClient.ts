@@ -1,5 +1,4 @@
 import { ErrorCodes, toErrorCode } from '@core/constants/error-codes';
-import type { ContainerTerminalAttachment } from '@shared/contracts/ports/ContainerRuntime';
 import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
 import type {
     TeamClusterReverseChannelStreamAttachment,
@@ -13,17 +12,25 @@ import type {
     TeamClusterDaemonErrorResult,
     TeamClusterDaemonSocketResponsePayload
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import type {
-    TeamClusterDaemonCommandOptions,
-    TeamClusterDaemonSemanticCommandResult
-} from '@shared/domain/port/ITeamClusterDaemonClient';
-import ApplicationError from '@shared/application/errors/ApplicationError';
+import ApplicationError from '@shared/errors/ApplicationError';
 import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import { getHttpRequestContext } from '@shared/infrastructure/http/request-context';
-import logger from '@shared/infrastructure/logger';
+import { getHttpRequestContext } from '@shared/http/request-context';
+import logger from '@shared/logger';
 import type { Readable } from 'node:stream';
 
-export type { TeamClusterDaemonSemanticCommandResult };
+export interface TeamClusterDaemonCommandOptions {
+    timeoutMs?: number;
+    timeoutClass?: 'default' | 'interactive' | 'long-running-control-plane';
+    retryClass?: 'none' | 'safe-read' | 'idempotent-command';
+}
+
+export interface TeamClusterDaemonSemanticCommandResult<T> {
+    accepted: boolean;
+    data: T;
+    reason?: string;
+    retryClass: NonNullable<TeamClusterDaemonCommandOptions['retryClass']>;
+    timeoutClass: NonNullable<TeamClusterDaemonCommandOptions['timeoutClass']>;
+}
 
 interface TeamClusterDaemonSemanticPayload {
     accepted?: boolean;
@@ -253,10 +260,6 @@ class TeamClusterDaemonClient {
             },
             (body) => `bytes=${body.byteLength}`
         );
-    }
-
-    async attachTerminal(teamClusterId: string, containerId: string): Promise<ContainerTerminalAttachment> {
-        return teamClusterReverseChannelService.attachTerminal(teamClusterId, containerId);
     }
 
     async openTunnel(
