@@ -15,6 +15,7 @@ import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-c
 import type { ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { useNavigate } from 'react-router-dom';
+import { dashboardPathForFolder } from '@/shared/ui/hooks/use-folder-search-param';
 
 interface TopToolbarShareInfo {
     trajectoryId: string;
@@ -44,7 +45,8 @@ const TopToolbar = ({
     const navigate = useNavigate();
     const user = useCurrentUser();
 
-    const handleBack = useCallback(() => navigate('/dashboard'), [navigate]);
+    const folderId = trajectory?.folder ?? null;
+    const handleBack = useCallback(() => navigate(dashboardPathForFolder(folderId)), [navigate, folderId]);
 
     const singleTenant = useSingleTenant();
     const canShowPeers = !singleTenant && Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
