@@ -88,39 +88,13 @@ const PipelineHeaderActions = ({
 
     return (
         <div className='flex flex-row items-center gap-1' onClick={(event) => event.stopPropagation()}>
-            <Popover isOpen={isRunMenuOpen} onOpenChange={setIsRunMenuOpen}>
-                <Button
-                    variant='ghost'
-                    size='sm'
-                    isIconOnly
-                    isDisabled={!canMutateCanvas || !trajectoryId || orderedStageCount === 0}
-                    aria-label='Run pipeline'
-                >
-                    <Play size={13} />
-                </Button>
-                <Popover.Content placement='left top'>
-                    <Popover.Dialog id='canvas-pipeline-run' aria-label='Run pipeline' className='min-w-[min(22rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))]'>
-                        <div className='gap-2 flex min-w-[min(21rem,calc(100vw-3rem))] flex-col origin-top-right'>
-                            <span className='text-xs font-medium text-muted'>Pipeline</span>
-                            <PipelineRunControl
-                                trajectory={trajectory}
-                                trajectoryId={trajectoryId}
-                                currentTimestep={currentTimestep}
-                                canMutateCanvas={canMutateCanvas}
-                                onClose={closeRunMenu}
-                            />
-                        </div>
-                    </Popover.Dialog>
-                </Popover.Content>
-            </Popover>
             <DropdownRoot isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                 <DropdownTrigger
                     isDisabled={!canMutateCanvas || !trajectoryId}
                     aria-label='Add pipeline stage'
                 >
-                    <Button variant='ghost' size='sm' className='text-xs'>
-                        <Plus size={12} />
-                        Add new
+                    <Button variant='ghost' size='sm' isIconOnly>
+                        <Plus size={13} aria-hidden='true' />
                     </Button>
                 </DropdownTrigger>
                 <DropdownPopover placement='bottom start'>
@@ -145,6 +119,31 @@ const PipelineHeaderActions = ({
                     </DropdownMenu>
                 </DropdownPopover>
             </DropdownRoot>
+            <Popover isOpen={isRunMenuOpen} onOpenChange={setIsRunMenuOpen}>
+                <Button
+                    variant='ghost'
+                    size='sm'
+                    isIconOnly
+                    isDisabled={!canMutateCanvas || !trajectoryId || orderedStageCount === 0}
+                    aria-label='Run pipeline'
+                >
+                    <Play size={13} aria-hidden='true' />
+                </Button>
+                <Popover.Content placement='left top'>
+                    <Popover.Dialog id='canvas-pipeline-run' aria-label='Run pipeline' className='min-w-[min(22rem,calc(100vw-2rem))] max-w-[min(24rem,calc(100vw-2rem))]'>
+                        <div className='gap-2 flex min-w-[min(21rem,calc(100vw-3rem))] flex-col origin-top-right'>
+                            <span className='text-xs font-medium text-muted'>Pipeline</span>
+                            <PipelineRunControl
+                                trajectory={trajectory}
+                                trajectoryId={trajectoryId}
+                                currentTimestep={currentTimestep}
+                                canMutateCanvas={canMutateCanvas}
+                                onClose={closeRunMenu}
+                            />
+                        </div>
+                    </Popover.Dialog>
+                </Popover.Content>
+            </Popover>
         </div>
     );
 };

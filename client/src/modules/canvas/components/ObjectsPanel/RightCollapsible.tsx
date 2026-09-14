@@ -64,7 +64,7 @@ const RightCollapsible = ({
                                     {actionsNode}
                                     <button
                                         type='button'
-                                        className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-0 text-muted hover:bg-surface-hover focus-visible:bg-surface-hover [.canvas-objects-panel--analysis-compact_&]:size-5'
+                                        className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-0 text-muted hover:bg-surface-hover focus-visible:bg-surface-hover [.canvas-objects-panel--analysis-compact_&]:size-5'
                                         onClick={toggle}
                                         aria-expanded={expanded}
                                         aria-controls={bodyId}
