@@ -1,6 +1,6 @@
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
 import { AnalysisStatus, normalizeCanvasAnalysisStatus } from './analysis-status';
-import { ANALYSIS_EXECUTION_METADATA_KEY } from './selected-timestep-analysis';
+import { ANALYSIS_EXECUTION_METADATA_KEY, readAnalysisExecutionMetadata } from './selected-timestep-analysis';
 import {
     buildPluginScene,
     isRenderableSceneExporter,
@@ -198,17 +198,46 @@ export const captureFigureRecipe = (
     return { layers };
 };
 
+const coversTimestep = (timesteps: number[] | undefined, timestep: number | undefined): boolean => {
+    if (timestep === undefined || !timesteps?.length) {
+        return true;
+    }
+
+    return timesteps.includes(timestep);
+};
+
+export const analysisCoversTimestep = (
+    analysis: Analysis,
+    pipelineRuns: PipelineRun[],
+    timestep: number | undefined
+): boolean => {
+    const run = analysis.pipelineRunId
+        ? pipelineRuns.find((candidate) => candidate._id === analysis.pipelineRunId)
+        : undefined;
+
+    if (run) {
+        return coversTimestep(run.selectedTimesteps, timestep);
+    }
+
+    return coversTimestep(readAnalysisExecutionMetadata(analysis.config)?.selectedTimesteps, timestep);
+};
+
 export const listFigureCandidates = (
     analyses: Analysis[],
     exposuresByAnalysisId: Map<string, RenderableExposure[]>,
-    recipe: FigureRecipe | null
+    recipe: FigureRecipe | null,
+    pipelineRuns: PipelineRun[] = [],
+    timestep?: number
 ): FigureCandidate[] => {
     if (!recipe) {
         return [];
     }
 
     return analyses
-        .filter((analysis) => normalizeCanvasAnalysisStatus(analysis.status) === AnalysisStatus.Completed)
+        .filter((analysis) => (
+            normalizeCanvasAnalysisStatus(analysis.status) === AnalysisStatus.Completed
+            && analysisCoversTimestep(analysis, pipelineRuns, timestep)
+        ))
         .map((analysis) => {
             const claimed = new Set<string>();
             const missingLayers = recipe.layers.flatMap((layer) => {
@@ -238,7 +267,8 @@ export const listFigureCandidates = (
 
 export const listFigurePipelineCandidates = (
     candidates: FigureCandidate[],
-    pipelineRuns: PipelineRun[]
+    pipelineRuns: PipelineRun[],
+    timestep?: number
 ): FigurePipelineCandidate[] => {
     const ready = candidates.filter((candidate) => candidate.ready);
     const grouped = new Map<string, string[]>();
@@ -249,8 +279,12 @@ export const listFigurePipelineCandidates = (
         grouped.set(candidate.pipelineId, analysisIds);
     });
 
-    return Array.from(grouped.entries()).map(([pipelineId, analysisIds]) => {
+    return Array.from(grouped.entries()).flatMap(([pipelineId, analysisIds]) => {
         const run = pipelineRuns.find((candidate) => candidate._id === pipelineId);
+        if (run && !coversTimestep(run.selectedTimesteps, timestep)) {
+            return [];
+        }
+
         const label = run
             ? resolveRunLabel(run, run.stages.map((stage) => ({
                 kind: 'analysis',
@@ -258,11 +292,11 @@ export const listFigurePipelineCandidates = (
             })))
             : (ready.find((candidate) => candidate.pipelineId === pipelineId)?.label ?? 'Pipeline');
 
-        return {
+        return [{
             pipelineId,
             label,
             analysisIds
-        };
+        }];
     });
 };
 
