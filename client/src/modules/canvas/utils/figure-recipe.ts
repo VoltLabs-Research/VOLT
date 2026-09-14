@@ -10,7 +10,10 @@ import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { isRecord } from '@/shared/utils/type-guards';
 import { humanizeKey } from '../components/AnalysisTreeNode/config-values';
 
+import { resolveRunLabel } from '../components/PipelineRunTreeNode/stage-labels';
+
 import type { Analysis, AnalysisExpectedArtifact } from '@volt/contracts/modules/analysis/domain';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { PluginScene, SceneObjectType, SceneVisualOverride, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
@@ -28,9 +31,16 @@ export interface FigureRecipe {
 
 export interface FigureCandidate {
     analysisId: string;
+    pipelineId: string;
     label: string;
     ready: boolean;
     missingLayers: string[];
+}
+
+export interface FigurePipelineCandidate {
+    pipelineId: string;
+    label: string;
+    analysisIds: string[];
 }
 
 export interface ComposedFigure {
@@ -218,11 +228,42 @@ export const listFigureCandidates = (
 
             return {
                 analysisId: analysis._id,
+                pipelineId: analysis.pipelineRunId ?? `analysis:${analysis._id}`,
                 label: buildAnalysisFigureLabel(analysis),
                 ready: missingLayers.length === 0,
                 missingLayers
             };
         });
+};
+
+export const listFigurePipelineCandidates = (
+    candidates: FigureCandidate[],
+    pipelineRuns: PipelineRun[]
+): FigurePipelineCandidate[] => {
+    const ready = candidates.filter((candidate) => candidate.ready);
+    const grouped = new Map<string, string[]>();
+
+    ready.forEach((candidate) => {
+        const analysisIds = grouped.get(candidate.pipelineId) ?? [];
+        analysisIds.push(candidate.analysisId);
+        grouped.set(candidate.pipelineId, analysisIds);
+    });
+
+    return Array.from(grouped.entries()).map(([pipelineId, analysisIds]) => {
+        const run = pipelineRuns.find((candidate) => candidate._id === pipelineId);
+        const label = run
+            ? resolveRunLabel(run, run.stages.map((stage) => ({
+                kind: 'analysis',
+                stage
+            })))
+            : (ready.find((candidate) => candidate.pipelineId === pipelineId)?.label ?? 'Pipeline');
+
+        return {
+            pipelineId,
+            label,
+            analysisIds
+        };
+    });
 };
 
 export const composeFigureForAnalysis = (

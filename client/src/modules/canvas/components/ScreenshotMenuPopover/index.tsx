@@ -7,7 +7,7 @@ import {
     clampScreenshotDimension,
     resolveScreenshotSize
 } from '@/modules/canvas/utils/screenshot';
-import { Button, Switch, cn } from '@heroui/react';
+import { Button, Switch } from '@heroui/react';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -31,9 +31,9 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
     const [customHeightInput, setCustomHeightInput] = useState(String(lastUsedSettings.customHeight));
     const {
         recipe,
-        candidates,
+        pipelineCandidates,
         selectedAnalysisIds,
-        toggleAnalysis,
+        togglePipeline,
         selectAllReady,
         clearSelection,
         runBatch,
@@ -62,8 +62,9 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
         return `${size.width} × ${size.height} PNG export.`;
     }, [resolvedSettings]);
 
-    const readyCandidates = candidates.filter((candidate) => candidate.ready);
-    const selectedCount = selectedAnalysisIds.length;
+    const selectedPipelineCount = pipelineCandidates.filter((candidate) => (
+        candidate.analysisIds.every((analysisId) => selectedAnalysisIds.includes(analysisId))
+    )).length;
 
     const handleCapture = () => {
         useScreenshotStore.getState().requestCapture(resolvedSettings, {
@@ -140,78 +141,53 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
                 />
             </div>
 
-            {trajectoryId && candidates.length > 0 && (
+            {trajectoryId && pipelineCandidates.length > 0 && (
                 <div className='flex flex-col gap-2 border-t border-border pt-3'>
                     <div className='flex items-center justify-between gap-2'>
                         <p className='text-xs font-medium text-foreground'>
                             Batch figures
                         </p>
-                        {readyCandidates.length > 0 && (
-                            <button
-                                type='button'
-                                className='text-2xs text-muted hover:text-foreground'
-                                onClick={selectedCount === readyCandidates.length ? clearSelection : selectAllReady}
-                            >
-                                {selectedCount === readyCandidates.length ? 'Clear' : 'Select ready'}
-                            </button>
-                        )}
+                        <button
+                            type='button'
+                            className='text-2xs text-muted hover:text-foreground'
+                            onClick={selectedPipelineCount === pipelineCandidates.length ? clearSelection : selectAllReady}
+                        >
+                            {selectedPipelineCount === pipelineCandidates.length ? 'Clear' : 'Select all'}
+                        </button>
                     </div>
-                    {!recipe && (
-                        <p className='text-xs text-muted'>
-                            Compose the look once in the viewport — layers, opacity, line width. That recipe is copied to every selected analysis.
-                        </p>
-                    )}
-                    {recipe && candidates.length === 0 && (
-                        <p className='text-xs text-muted'>
-                            No completed analyses on this trajectory yet.
-                        </p>
-                    )}
-                    {recipe && candidates.length > 0 && (
-                        <Scrollable className='flex max-h-40 flex-col gap-1 pr-1'>
-                            {candidates.map((candidate) => {
-                                const checked = selectedAnalysisIds.includes(candidate.analysisId);
-                                const disabled = !candidate.ready || isBusy;
-                                const labelId = `figure-batch-label-${candidate.analysisId}`;
-                                return (
-                                    <div
-                                        key={candidate.analysisId}
-                                        className={cn(
-                                            'flex items-start justify-between gap-3 rounded-md px-1.5 py-1 text-xs',
-                                            candidate.ready ? 'text-foreground' : 'text-muted'
-                                        )}
+                    <Scrollable className='flex max-h-40 flex-col gap-1 pr-1'>
+                        {pipelineCandidates.map((candidate) => {
+                            const checked = candidate.analysisIds.every((analysisId) => selectedAnalysisIds.includes(analysisId));
+                            const labelId = `figure-batch-label-${candidate.pipelineId}`;
+                            return (
+                                <div
+                                    key={candidate.pipelineId}
+                                    className='flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-xs text-foreground'
+                                >
+                                    <span
+                                        id={labelId}
+                                        className='min-w-0 truncate leading-4'
+                                        title={candidate.label}
                                     >
-                                        <span className='min-w-0 leading-4'>
-                                            <span
-                                                id={labelId}
-                                                className='block truncate'
-                                                title={candidate.label}
-                                            >
-                                                {candidate.label}
-                                            </span>
-                                            {!candidate.ready && (
-                                                <span className='block text-2xs text-muted'>
-                                                    Missing {candidate.missingLayers.join(' and ')}
-                                                </span>
-                                            )}
-                                        </span>
-                                        <Switch
-                                            size='sm'
-                                            isSelected={checked}
-                                            isDisabled={disabled}
-                                            onChange={(next) => toggleAnalysis(candidate.analysisId, next)}
-                                            aria-labelledby={labelId}
-                                        >
-                                            <Switch.Content>
-                                                <Switch.Control>
-                                                    <Switch.Thumb />
-                                                </Switch.Control>
-                                            </Switch.Content>
-                                        </Switch>
-                                    </div>
-                                );
-                            })}
-                        </Scrollable>
-                    )}
+                                        {candidate.label}
+                                    </span>
+                                    <Switch
+                                        size='sm'
+                                        isSelected={checked}
+                                        isDisabled={isBusy}
+                                        onChange={(next) => togglePipeline(candidate.analysisIds, next)}
+                                        aria-labelledby={labelId}
+                                    >
+                                        <Switch.Content>
+                                            <Switch.Control>
+                                                <Switch.Thumb />
+                                            </Switch.Control>
+                                        </Switch.Content>
+                                    </Switch>
+                                </div>
+                            );
+                        })}
+                    </Scrollable>
                 </div>
             )}
 
@@ -238,18 +214,18 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
                     {isCapturing && !isBatching ? undefined : <Image size={14} />}
                     {isCapturing && !isBatching ? 'Capturing...' : 'Capture screenshot'}
                 </Button>
-                {trajectoryId && recipe && (
+                {trajectoryId && pipelineCandidates.length > 0 && (
                     <Button
                         variant='secondary'
                         size='sm'
                         fullWidth
                         isPending={isBatching}
-                        isDisabled={isBusy || selectedCount === 0}
+                        isDisabled={isBusy || selectedPipelineCount === 0}
                         onPress={handleBatch}
                     >
                         {isBatching
-                            ? `Capturing ${progress?.current ?? 0} of ${progress?.total ?? selectedCount}…`
-                            : `Capture ${selectedCount || 'selected'} figure${selectedCount === 1 ? '' : 's'}`}
+                            ? `Capturing ${progress?.current ?? 0} of ${progress?.total ?? selectedPipelineCount}…`
+                            : `Capture ${selectedPipelineCount || 'selected'} pipeline${selectedPipelineCount === 1 ? '' : 's'}`}
                     </Button>
                 )}
             </div>
