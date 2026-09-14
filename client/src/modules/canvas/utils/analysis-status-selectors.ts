@@ -25,6 +25,11 @@ export interface JobStatusCounts {
     failed: number;
 }
 
+export interface LiveLogTarget {
+    analysisId: string;
+    timestep: number;
+}
+
 interface FrameStatusIndex {
     aggregateByTimestep: Map<number, FrameJobGroupStatus>;
 
@@ -154,6 +159,65 @@ export const toTimelineTickTone = (status?: FrameJobGroupStatus): TimelineTickTo
     if (status === FrameJobGroupStatus.Running) return 'running';
     if (status === FrameJobGroupStatus.Queued) return 'queued';
     return undefined;
+};
+
+export const findLiveLogTarget = (
+    groups: readonly TrajectoryJobGroup[],
+    trajectoryId: string | undefined,
+    preferredAnalysisId?: string,
+    preferredTimestep?: number
+): LiveLogTarget | undefined => {
+    if (!trajectoryId) {
+        return undefined;
+    }
+
+    const running: LiveLogTarget[] = [];
+    forEachFrame(groups, trajectoryId, (timestep, jobs) => {
+        for (const job of jobs) {
+            if (job.queueType === ARTIFACT_UPLOAD_QUEUE_TYPE || !isRunningJobStatus(job.status)) {
+                continue;
+            }
+
+            const analysisId = resolveJobAnalysisId(job);
+            if (!analysisId) {
+                continue;
+            }
+
+            running.push({
+                analysisId,
+                timestep
+            });
+        }
+    });
+
+    if (running.length === 0) {
+        return undefined;
+    }
+
+    if (preferredAnalysisId && preferredTimestep !== undefined) {
+        const exact = running.find((target) => (
+            target.analysisId === preferredAnalysisId && target.timestep === preferredTimestep
+        ));
+        if (exact) {
+            return exact;
+        }
+    }
+
+    if (preferredAnalysisId) {
+        const sameAnalysis = running.find((target) => target.analysisId === preferredAnalysisId);
+        if (sameAnalysis) {
+            return sameAnalysis;
+        }
+    }
+
+    if (preferredTimestep !== undefined) {
+        const sameFrame = running.find((target) => target.timestep === preferredTimestep);
+        if (sameFrame) {
+            return sameFrame;
+        }
+    }
+
+    return running[0];
 };
 
 export const toAnalysisFrameActivityStatus = (

@@ -5,6 +5,7 @@ import {
     buildAnalysisStatusMap,
     buildFrameStatusIndex,
     buildJobsByAnalysisId,
+    findLiveLogTarget,
     toTimelineTickTone
 } from '../utils/analysis-status-selectors';
 
@@ -60,6 +61,13 @@ const useCanvasAnalysisStatus = ({
         return frameStatusIndex.byTimestepAndAnalysis.get(timestep)?.get(analysisId);
     }, [frameStatusIndex]);
 
+    const getLiveLogTarget = useCallback((
+        preferredAnalysisId?: string,
+        preferredTimestep?: number
+    ) => {
+        return findLiveLogTarget(groups, trajectoryId, preferredAnalysisId, preferredTimestep);
+    }, [groups, trajectoryId]);
+
     const getFrameTone = useCallback((
         timestep: number,
         analysisId?: string
@@ -75,6 +83,7 @@ const useCanvasAnalysisStatus = ({
         statusMap,
         getAnalysisStatus,
         getAnalysisFrameStatus,
+        getLiveLogTarget,
         getFrameTone
     };
 };

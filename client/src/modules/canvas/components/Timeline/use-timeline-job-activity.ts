@@ -15,7 +15,7 @@ const resolveTimestep = (job: Job): number | undefined => {
 };
 
 const useTimelineJobActivity = (trajectoryId?: string, analysisId?: string) => {
-    const { getFrameTone, getAnalysisFrameStatus } = useCanvasAnalysisStatus({
+    const { getFrameTone, getAnalysisFrameStatus, getLiveLogTarget } = useCanvasAnalysisStatus({
         trajectoryId,
         enabled: !!trajectoryId
     });
@@ -112,7 +112,8 @@ const useTimelineJobActivity = (trajectoryId?: string, analysisId?: string) => {
 
     return {
         getTickTone,
-        getAnalysisFrameStatus
+        getAnalysisFrameStatus,
+        getLiveLogTarget
     };
 };
 

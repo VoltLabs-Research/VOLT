@@ -16,6 +16,8 @@ interface TimelineTabContentProps {
     pluginId?: string;
     currentTimestep: number | undefined;
     currentFrame: number;
+    logAnalysisId?: string;
+    logTimestep?: number;
     analysisFrameStatus?: ComponentProps<typeof AnalysisLogPanel>['activityStatus'];
 }
 
@@ -33,6 +35,8 @@ const TimelineTabContent = ({
     pluginId,
     currentTimestep,
     currentFrame,
+    logAnalysisId,
+    logTimestep,
     analysisFrameStatus
 }: TimelineTabContentProps) => {
     const selectedTeamId = useSelectedTeamId();
@@ -54,12 +58,12 @@ const TimelineTabContent = ({
         );
     }
 
-    if (activeTab === TimelineTab.Log && analysisId) {
+    if (activeTab === TimelineTab.Log && (logAnalysisId ?? analysisId)) {
         return (
             <TabBody>
                 <AnalysisLogPanel
-                    analysisId={analysisId}
-                    timestep={currentFrame}
+                    analysisId={logAnalysisId ?? analysisId}
+                    timestep={logTimestep ?? currentFrame}
                     active
                     live={analysisFrameStatus === 'running'}
                     activityStatus={analysisFrameStatus}
