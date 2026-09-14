@@ -36,7 +36,7 @@ export interface PooledProcessSpawnInput {
 interface PendingRequest {
     resolve: (response: PluginProcessResponse) => void;
     reject: (error: Error) => void;
-    timeout: NodeJS.Timeout;
+    timeout?: NodeJS.Timeout;
 }
 
 export class PluginProcessChannel {
@@ -177,13 +177,15 @@ export class PluginProcessChannel {
         const frame = encodePluginProcessFrame(opId, request);
 
         return new Promise<PluginProcessResponse>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                this.pendingByOpId.delete(opId);
-                this.detachLogSink();
-                reject(new Error(`Plugin request ${opId} timed out after ${timeoutMs}ms`));
-                this.restart(`request-timeout:${opId}`);
-            }, timeoutMs);
-            timeout.unref();
+            const timeout = timeoutMs > 0
+                ? setTimeout(() => {
+                    this.pendingByOpId.delete(opId);
+                    this.detachLogSink();
+                    reject(new Error(`Plugin request ${opId} timed out after ${timeoutMs}ms`));
+                    this.restart(`request-timeout:${opId}`);
+                }, timeoutMs)
+                : undefined;
+            timeout?.unref();
 
             this.activeLogSink = options.logSink;
             this.pendingByOpId.set(opId, {
