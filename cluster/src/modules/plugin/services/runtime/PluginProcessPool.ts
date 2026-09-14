@@ -10,7 +10,7 @@ import {
 import { PluginProcessMemoryGuard } from '@modules/plugin/services/runtime/plugin-process-memory-guard';
 
 
-const DEFAULT_REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 0;
 const SPAWN_IDLE_POOL_ACQUIRE_TIMEOUT_MS = 60_000;
 const SPAWN_SLOT_REPOLL_INTERVAL_MS = 1_000;
 

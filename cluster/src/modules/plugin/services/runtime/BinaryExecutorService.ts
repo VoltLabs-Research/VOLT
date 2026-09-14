@@ -26,9 +26,9 @@ import { spawn } from 'node:child_process';
 
 const MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const DEFAULT_PROCESS_EXECUTION_TIMEOUT_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_EXECUTION_TIMEOUT_MS')
-    ?? 60 * 60 * 1000;
+    ?? 0;
 const DEFAULT_PROCESS_STALL_TIMEOUT_MS = readPositiveIntegerEnv('PLUGIN_PROCESS_STALL_TIMEOUT_MS')
-    ?? 8 * 60 * 1000;
+    ?? 0;
 const PROCESS_KILL_GRACE_PERIOD_MS = 5_000;
 const PROCESS_ABANDON_GRACE_PERIOD_MS = 5_000;
 
