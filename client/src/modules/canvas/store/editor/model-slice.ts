@@ -11,9 +11,38 @@ import {
     PointCloudStyleMode
 } from '@/modules/fractal/contracts/editor/scene-types';
 
-import type { ModelStore, ModelState, PointCloudSettingsState, ModelData, ModelDragOffset } from '@/modules/fractal/contracts/editor/scene-types';
+import type { ModelStore, ModelState, PointCloudSettingsState, ModelData, ModelDragOffset, ViewportPane } from '@/modules/fractal/contracts/editor/scene-types';
 import type { SceneObjectType, SceneVisualOverride } from '@/modules/fractal/contracts/scene';
 import type { StateCreator } from 'zustand';
+
+export const MAX_VIEWPORT_PANES = 4;
+
+const createDefaultPane = (scenes: SceneObjectType[] = [DEFAULT_SCENE], mergeGroups: Record<string, string> = {}): ViewportPane => ({
+    id: uuidv4(),
+    scenes,
+    mergeGroups,
+    analysisId: scenes.find((scene) => scene.source === 'plugin')?.analysisId
+});
+
+const syncFocusedPane = (
+    panes: ViewportPane[],
+    focusedPaneId: string,
+    scenes: SceneObjectType[],
+    mergeGroups: Record<string, string>
+): ViewportPane[] => {
+    return panes.map((pane) => {
+        if (pane.id !== focusedPaneId) {
+            return pane;
+        }
+
+        return {
+            ...pane,
+            scenes,
+            mergeGroups,
+            analysisId: scenes.find((scene) => scene.source === 'plugin')?.analysisId ?? pane.analysisId
+        };
+    });
+};
 
 const POINT_CLOUD_SETTINGS_INITIAL: PointCloudSettingsState = {
     overridesEnabled: false,
@@ -77,10 +106,14 @@ const withSceneRemovedFromMergeGroups = (
     return nextMergeGroups;
 };
 
-const createInitialState = (): ModelState => ({
-    activeModel: null,
+const createInitialState = (): ModelState => {
+    const defaultPane = createDefaultPane();
+    return {
+        activeModel: null,
     activeScene: DEFAULT_SCENE,
     activeScenes: [DEFAULT_SCENE],
+    viewportPanes: [defaultPane],
+    focusedViewportPaneId: defaultPane.id,
     isModelLoading: false,
     pointSizeMultiplier: 1.0,
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
@@ -90,16 +123,21 @@ const createInitialState = (): ModelState => ({
     modelDragOffsets: {},
     sceneMergeGroups: {},
     showSimulationCell: true,
-    isPointCloudScene: false,
-});
+        isPointCloudScene: false
+    };
+};
 
 export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (set, get) => ({
     ...createInitialState(),
 
     setActiveScene(scene: SceneObjectType) {
-        set({
-            activeScene: scene,
-            activeScenes: [scene]
+        set((state) => {
+            const nextScenes = [scene];
+            return {
+                activeScene: scene,
+                activeScenes: nextScenes,
+                viewportPanes: syncFocusedPane(state.viewportPanes, state.focusedViewportPaneId, nextScenes, {})
+            };
         });
     },
 
@@ -113,15 +151,31 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         set((state) => {
             const exists = state.activeScenes.some(s => isSameScene(s, scene));
             if (exists) return state;
-            return { activeScenes: [...state.activeScenes, scene] };
+            const nextScenes = [...state.activeScenes, scene];
+            return {
+                activeScenes: nextScenes,
+                viewportPanes: syncFocusedPane(
+                    state.viewportPanes,
+                    state.focusedViewportPaneId,
+                    nextScenes,
+                    state.sceneMergeGroups
+                )
+            };
         });
     },
 
     setActiveScenes(scenes: SceneObjectType[]) {
-        const nextScenes = scenes.length > 0 ? scenes : [DEFAULT_SCENE];
-        set({
-            activeScene: nextScenes[0],
-            activeScenes: nextScenes
+        set((state) => {
+            return {
+                activeScene: scenes[0] ?? DEFAULT_SCENE,
+                activeScenes: scenes,
+                viewportPanes: syncFocusedPane(
+                    state.viewportPanes,
+                    state.focusedViewportPaneId,
+                    scenes,
+                    state.sceneMergeGroups
+                )
+            };
         });
     },
 
@@ -135,12 +189,18 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
             });
         }
 
-        set({
+        set((state) => ({
             activeScene: nextScenes[0],
             activeScenes: nextScenes,
             sceneMergeGroups: nextMergeGroups,
-            modelDragOffsets: {}
-        });
+            modelDragOffsets: {},
+            viewportPanes: syncFocusedPane(
+                state.viewportPanes,
+                state.focusedViewportPaneId,
+                nextScenes,
+                nextMergeGroups
+            )
+        }));
     },
 
     removeScene(scene: SceneObjectType) {
@@ -148,12 +208,20 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
             const removedKey = getSceneKey(scene);
             const nextOffsets = { ...state.modelDragOffsets };
             delete nextOffsets[removedKey];
+            const nextScenes = state.activeScenes.filter(s => !isSameScene(s, scene));
+            const nextMergeGroups = withSceneRemovedFromMergeGroups(state.sceneMergeGroups, removedKey)
+                ?? state.sceneMergeGroups;
 
             return {
-                activeScenes: state.activeScenes.filter(s => !isSameScene(s, scene)),
+                activeScenes: nextScenes,
                 modelDragOffsets: nextOffsets,
-                sceneMergeGroups: withSceneRemovedFromMergeGroups(state.sceneMergeGroups, removedKey)
-                    ?? state.sceneMergeGroups
+                sceneMergeGroups: nextMergeGroups,
+                viewportPanes: syncFocusedPane(
+                    state.viewportPanes,
+                    state.focusedViewportPaneId,
+                    nextScenes,
+                    nextMergeGroups
+                )
             };
         });
     },
@@ -340,7 +408,15 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 nextMergeGroups[sceneKey] = groupId;
             });
 
-            return { sceneMergeGroups: nextMergeGroups };
+            return {
+                sceneMergeGroups: nextMergeGroups,
+                viewportPanes: syncFocusedPane(
+                    state.viewportPanes,
+                    state.focusedViewportPaneId,
+                    state.activeScenes,
+                    nextMergeGroups
+                )
+            };
         });
     },
 
@@ -351,7 +427,73 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 return state;
             }
 
-            return { sceneMergeGroups: nextMergeGroups };
+            return {
+                sceneMergeGroups: nextMergeGroups,
+                viewportPanes: syncFocusedPane(
+                    state.viewportPanes,
+                    state.focusedViewportPaneId,
+                    state.activeScenes,
+                    nextMergeGroups
+                )
+            };
+        });
+    },
+
+    addViewportPane() {
+        const state = get();
+        if (state.viewportPanes.length >= MAX_VIEWPORT_PANES) {
+            return false;
+        }
+
+        const pane = createDefaultPane([], {});
+        set({
+            viewportPanes: [...state.viewportPanes, pane],
+            focusedViewportPaneId: pane.id,
+            activeScene: DEFAULT_SCENE,
+            activeScenes: [],
+            sceneMergeGroups: {}
+        });
+        return true;
+    },
+
+    focusViewportPane(paneId: string) {
+        set((state) => {
+            const pane = state.viewportPanes.find((candidate) => candidate.id === paneId);
+            if (!pane || pane.id === state.focusedViewportPaneId) {
+                return state;
+            }
+
+            return {
+                focusedViewportPaneId: pane.id,
+                activeScene: pane.scenes[0] ?? DEFAULT_SCENE,
+                activeScenes: pane.scenes,
+                sceneMergeGroups: pane.mergeGroups
+            };
+        });
+    },
+
+    closeViewportPane(paneId: string) {
+        set((state) => {
+            if (state.viewportPanes.length <= 1) {
+                return state;
+            }
+
+            const nextPanes = state.viewportPanes.filter((pane) => pane.id !== paneId);
+            if (nextPanes.length === state.viewportPanes.length) {
+                return state;
+            }
+
+            const nextFocused = state.focusedViewportPaneId === paneId
+                ? nextPanes[0]
+                : nextPanes.find((pane) => pane.id === state.focusedViewportPaneId) ?? nextPanes[0];
+
+            return {
+                viewportPanes: nextPanes,
+                focusedViewportPaneId: nextFocused.id,
+                activeScene: nextFocused.scenes[0] ?? DEFAULT_SCENE,
+                activeScenes: nextFocused.scenes,
+                sceneMergeGroups: nextFocused.mergeGroups
+            };
         });
     }
 });

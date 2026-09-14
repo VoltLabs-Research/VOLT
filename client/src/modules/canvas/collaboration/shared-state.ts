@@ -17,7 +17,9 @@ type SharedValueKey =
     | 'rangeStart'
     | 'rangeEnd'
     | 'modelDragOffsets'
-    | 'sceneMergeGroups';
+    | 'sceneMergeGroups'
+    | 'viewportPanes'
+    | 'focusedViewportPaneId';
 
 type SharedSliceKey =
     | 'lights'
@@ -113,6 +115,8 @@ export const selectSharedCanvasState = (state: EditorStore): SharedCanvasState =
         rangeEnd: state.rangeEnd,
         modelDragOffsets: state.modelDragOffsets,
         sceneMergeGroups: state.sceneMergeGroups,
+        viewportPanes: state.viewportPanes,
+        focusedViewportPaneId: state.focusedViewportPaneId,
         lights: pickDataFields(state.lights, LIGHTS_DATA_KEYS),
         effects: pickDataFields(state.effects, EFFECTS_DATA_KEYS),
         grid: pickDataFields(state.grid, GRID_DATA_KEYS),

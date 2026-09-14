@@ -41,9 +41,18 @@ export interface ModelDragOffset {
     z: number;
 }
 
+export interface ViewportPane {
+    id: string;
+    scenes: SceneObjectType[];
+    mergeGroups: Record<string, string>;
+    analysisId?: string;
+}
+
 export interface ModelState {
     activeScene: SceneObjectType;
     activeScenes: SceneObjectType[];
+    viewportPanes: ViewportPane[];
+    focusedViewportPaneId: string;
     activeModel: ModelData | null;
     isModelLoading: boolean;
     pointSizeMultiplier: number;
@@ -82,6 +91,9 @@ interface ModelActions {
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;
     mergeScenes: (sceneKeys: string[]) => void;
     unmergeScene: (sceneKey: string) => void;
+    addViewportPane: () => boolean;
+    focusViewportPane: (paneId: string) => void;
+    closeViewportPane: (paneId: string) => void;
 }
 
 export type ModelStore = ModelActions & ModelState;

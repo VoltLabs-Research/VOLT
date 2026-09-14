@@ -32,7 +32,7 @@ import PreloadingOverlay from '../PreloadingOverlay';
 import ShortcutFeedback from '../ShortcutFeedback';
 import StatusBar from '../StatusBar';
 import TopToolbar from '../TopToolbar';
-import Viewport from '../Viewport';
+import ViewportGrid from '../ViewportGrid';
 import WorkspaceCursorsOverlay from '../WorkspaceCursorsOverlay';
 
 import AccessDenied from '@/shared/ui/components/AccessDenied';
@@ -305,8 +305,8 @@ const CanvasPage = () => {
                     />
                 )}
 
-                <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-stage'>
-                    <div className='flex flex-col absolute overflow-hidden inset-0 canvas-center-viewport' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
+                <div className='flex min-h-0 flex-1 flex-col overflow-hidden canvas-editor-stage'>
+                    <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden canvas-center-viewport' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'
@@ -314,7 +314,7 @@ const CanvasPage = () => {
                                 useEditorStore.getState().resetModel();
                             }}
                         >
-                            <Viewport
+                            <ViewportGrid
                                 trajectory={trajectory}
                                 currentTimestep={currentTimestep}
                                 sceneConfig={sceneConfig}
