@@ -41,8 +41,8 @@ const WhiteboardCanvas = ({
     <div
         className='w-full h-full rounded-xl overflow-hidden'
         onPasteCapture={onCanvasPasteCapture}
-        onDragOver={onCanvasDragOver}
-        onDrop={onCanvasDrop}
+        onDragOverCapture={onCanvasDragOver}
+        onDropCapture={onCanvasDrop}
     >
         <Excalidraw
             name={name}

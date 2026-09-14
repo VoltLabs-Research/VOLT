@@ -1,6 +1,7 @@
 import useWhiteboardEditor from './use-whiteboard-editor';
 import useWhiteboardSync from './use-whiteboard-sync';
 import { applyWhiteboardDrawRequest } from '@/modules/whiteboards/utils/whiteboard-draw';
+import { rematerializeWhiteboardImageFiles } from '@/modules/whiteboards/utils/excalidraw-images';
 import { useWhiteboardEditorHandleStore } from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
 import type { WhiteboardDrawRequest } from '@/modules/whiteboards/store/use-whiteboard-editor-handle-store';
 import {
@@ -8,6 +9,7 @@ import {
     normalizeWhiteboardRuntimeAppState
 } from '@/modules/whiteboards/utils/whiteboards';
 import { useCallback, useEffect, useRef } from 'react';
+import { sileo } from 'sileo';
 import type {
     ExcalidrawAPI,
     ExcalidrawChangeAppState,
@@ -64,9 +66,11 @@ const useWhiteboardCanvasBridge = ({ whiteboardId }: UseWhiteboardCanvasBridgePr
         isLoading,
         handleChange,
         mergeRemoteState,
-        generateIdForFile,
-        prepareImageAsset
+        generateIdForFile: uploadFileId,
+        prepareImageAsset,
+        ownedFileIdsRef
     } = useWhiteboardEditor({ whiteboardId });
+    const rematerializingRef = useRef(false);
 
     const handleRemoteState = useCallback(
         async (elements: WhiteboardElements, appState: WhiteboardAppState, elementOrder?: string[]) => {
@@ -101,10 +105,66 @@ const useWhiteboardCanvasBridge = ({ whiteboardId }: UseWhiteboardCanvasBridgePr
             }
 
             handleChange(mutableElements, mutableAppState, (files ?? undefined) as WhiteboardFiles | undefined);
-            sendDelta(mutableElements, mutableAppState);
+
+            const hasForeignImage = Boolean(files) && mutableElements.some((element) => (
+                Boolean(element.fileId) && !ownedFileIdsRef.current.has(element.fileId as string)
+            ));
+
+            if (!hasForeignImage) {
+                sendDelta(mutableElements, mutableAppState);
+                return;
+            }
+
+            if (rematerializingRef.current) {
+                return;
+            }
+
+            rematerializingRef.current = true;
+            void rematerializeWhiteboardImageFiles({
+                elements: mutableElements,
+                files: files as WhiteboardFiles,
+                ownedFileIds: ownedFileIdsRef.current,
+                prepareFile: prepareImageAsset
+            }).then((result) => {
+                const api = excalidrawApiRef.current;
+                if (!api) {
+                    return;
+                }
+
+                if (!result.changed) {
+                    sendDelta(mutableElements, mutableAppState);
+                    return;
+                }
+
+                if (result.assets.length > 0) {
+                    api.addFiles(result.assets);
+                }
+
+                ignoredSceneSignatureRef.current = createSceneSignature(
+                    result.elements as WhiteboardElements,
+                    mutableAppState
+                );
+                api.updateScene({
+                    elements: result.elements as unknown as ExcalidrawChangeElements,
+                    appState
+                });
+                handleChange(result.elements as WhiteboardElements, mutableAppState, result.files);
+                sendDelta(result.elements as WhiteboardElements, mutableAppState);
+            }).finally(() => {
+                rematerializingRef.current = false;
+            });
         },
-        [handleChange, sendDelta]
+        [handleChange, ownedFileIdsRef, prepareImageAsset, sendDelta]
     );
+
+    const generateIdForFile = useCallback(async (file: File): Promise<string> => {
+        try {
+            return await uploadFileId(file);
+        } catch {
+            sileo.error({ title: 'Failed to upload asset' });
+            throw new Error('Failed to upload whiteboard asset');
+        }
+    }, [uploadFileId]);
 
     const handleExcalidrawAPI = useCallback((api: ExcalidrawAPI) => {
         excalidrawApiRef.current = api;

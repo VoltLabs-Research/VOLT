@@ -59,6 +59,99 @@ const resolveExcalidrawImageMimeType = (mimeType: string): PreparedWhiteboardIma
     return 'image/png';
 };
 
+export const dataURLToFile = (dataURL: string, fileName: string, mimeType: string): File => {
+    const [header, payload = ''] = dataURL.split(',');
+    const resolvedMime = header.match(/data:([^;,]+)/)?.[1] || mimeType || 'image/png';
+    const binary = header.includes(';base64') ? atob(payload) : decodeURIComponent(payload);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+    }
+
+    return new File([bytes], fileName, { type: resolvedMime });
+};
+
+const isPreparedWhiteboardImageAsset = (value: unknown): value is PreparedWhiteboardImageAsset => {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const candidate = value as Partial<PreparedWhiteboardImageAsset>;
+    return typeof candidate.dataURL === 'string' && candidate.dataURL.startsWith('data:');
+};
+
+export const rematerializeWhiteboardImageFiles = async ({
+    elements,
+    files,
+    ownedFileIds,
+    prepareFile
+}: {
+    elements: Array<{ id: string; fileId?: string | null; [key: string]: unknown }>;
+    files: Record<string, unknown>;
+    ownedFileIds: Set<string>;
+    prepareFile: (file: File) => Promise<PreparedWhiteboardImageAsset | null>;
+}): Promise<{
+    elements: Array<{ id: string; fileId?: string | null; [key: string]: unknown }>;
+    files: Record<string, unknown>;
+    assets: PreparedWhiteboardImageAsset[];
+    changed: boolean;
+}> => {
+    const nextElements = [...elements];
+    const nextFiles = { ...files };
+    const assets: PreparedWhiteboardImageAsset[] = [];
+    const rematerializedIds = new Map<string, PreparedWhiteboardImageAsset>();
+    let changed = false;
+
+    for (let index = 0; index < nextElements.length; index += 1) {
+        const element = nextElements[index];
+        const fileId = element.fileId;
+        if (!fileId || ownedFileIds.has(fileId)) {
+            continue;
+        }
+
+        let prepared = rematerializedIds.get(fileId);
+        if (!prepared) {
+            const source = nextFiles[fileId];
+            if (!isPreparedWhiteboardImageAsset(source)) {
+                continue;
+            }
+
+            const file = dataURLToFile(
+                source.dataURL,
+                `whiteboard-image-${fileId}`,
+                source.mimeType || 'image/png'
+            );
+            prepared = await prepareFile(file);
+            if (!prepared) {
+                continue;
+            }
+
+            rematerializedIds.set(fileId, prepared);
+            nextFiles[prepared.id] = prepared;
+            delete nextFiles[fileId];
+            assets.push(prepared);
+        }
+
+        nextElements[index] = {
+            ...element,
+            fileId: prepared.id,
+            status: 'saved',
+            version: Number(element.version ?? 0) + 1,
+            versionNonce: Math.floor(Math.random() * 2 ** 31),
+            updated: Date.now()
+        };
+        changed = true;
+    }
+
+    return {
+        elements: nextElements,
+        files: nextFiles,
+        assets,
+        changed
+    };
+};
+
 export const createWhiteboardImageAsset = async (
     assetId: string,
     source: Blob
