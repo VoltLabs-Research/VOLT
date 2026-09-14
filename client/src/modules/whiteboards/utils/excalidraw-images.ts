@@ -122,11 +122,12 @@ export const rematerializeWhiteboardImageFiles = async ({
                 `whiteboard-image-${fileId}`,
                 source.mimeType || 'image/png'
             );
-            prepared = await prepareFile(file);
-            if (!prepared) {
+            const uploaded = await prepareFile(file);
+            if (!uploaded) {
                 continue;
             }
 
+            prepared = uploaded;
             rematerializedIds.set(fileId, prepared);
             nextFiles[prepared.id] = prepared;
             delete nextFiles[fileId];
