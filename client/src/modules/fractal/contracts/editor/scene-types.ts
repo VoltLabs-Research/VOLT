@@ -1,5 +1,5 @@
 import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/contracts/model';
-import type { SceneObjectType, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
+import type { SceneObjectType, SceneVisualOverride, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 
 export enum PointCloudDetailLevel {
@@ -49,6 +49,7 @@ export interface ModelState {
     pointSizeMultiplier: number;
     pointCloudSettings: PointCloudSettingsState;
     sceneVisualOverrides: SceneVisualOverrides;
+    sceneLoadStates: Record<string, ModelLoadingState>;
     modelWorldBounds: ModelWorldBounds | null;
     modelDragOffsets: Record<string, ModelDragOffset>;
     sceneMergeGroups: Record<string, string>;
@@ -64,15 +65,18 @@ interface ModelActions {
     setActiveScene: (scene: SceneObjectType) => void;
     clearTimestepScopedScenes: () => void;
     addScene: (scene: SceneObjectType) => void;
+    setActiveScenes: (scenes: SceneObjectType[]) => void;
+    setComposedScenes: (scenes: SceneObjectType[]) => void;
     removeScene: (scene: SceneObjectType) => void;
     setPointSizeMultiplier: (multiplier: number) => void;
     increasePointSize: () => void;
     decreasePointSize: () => void;
-    setPointCloudSettings: (partial: Partial<PointCloudSettingsState>) => void;
     setSceneOpacity: (sceneKey: string, opacity: number) => void;
     setSceneLineWidth: (sceneKey: string, lineWidth: number) => void;
     setSceneColor: (sceneKey: string, color: string | undefined) => void;
     setSceneEdges: (sceneKey: string, edges: boolean) => void;
+    applySceneVisualOverride: (sceneKey: string, override: SceneVisualOverride) => void;
+    setSceneLoadingState: (sceneKey: string, state: ModelLoadingState) => void;
     setShowSimulationCell: (show: boolean) => void;
     setIsPointCloudScene: (isPointCloud: boolean) => void;
     setModelDragOffsetForScene: (sceneKey: string, offset: ModelDragOffset) => void;

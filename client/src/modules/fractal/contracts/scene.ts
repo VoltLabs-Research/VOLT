@@ -34,7 +34,7 @@ export interface SceneRenderMetadata {
     defaultLineWidth?: number;
 }
 
-interface SceneVisualOverride {
+export interface SceneVisualOverride {
     opacity?: number;
     lineWidth?: number;
     color?: string;

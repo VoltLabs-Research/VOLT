@@ -32,6 +32,12 @@ export const isMeshScene = (scene: SceneObjectType | null | undefined): boolean 
     return scene.sceneRenderMetadata?.exporter === Exporter.MESH;
 };
 
+export const isLineScene = (scene: SceneObjectType | null | undefined): boolean => {
+    if (scene?.source !== 'plugin') return false;
+
+    return scene.sceneRenderMetadata?.exporter === Exporter.LINE;
+};
+
 export const getRenderableScenes = (scenes: SceneObjectType[], forceDefaultScene: boolean) => {
     if (forceDefaultScene) return [DEFAULT_SCENE];
     return scenes.filter((scene) => !isChartScene(scene));

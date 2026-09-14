@@ -326,7 +326,6 @@ const CanvasPage = () => {
                                 bodyContent={viewportBodyContent}
                                 analysisOverlay={analysisOverlay}
                                 renderScene={!showNoFramesState}
-                                showSceneActions={!showNoFramesState}
                             />
                         </ErrorBoundary>
                         <WorkspaceCursorsOverlay

@@ -10,6 +10,8 @@ export interface ScreenshotSettings {
 
 export interface ScreenshotRequest extends ScreenshotSettings {
     id: number;
+    filename?: string;
+    silent?: boolean;
 }
 
 interface ScreenshotSize {

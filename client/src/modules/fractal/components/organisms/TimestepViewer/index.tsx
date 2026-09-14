@@ -1,5 +1,6 @@
 import SingleModelViewer from '@/modules/fractal/components/molecules/SingleModelViewer';
 import BondsModelViewer from '@/modules/fractal/components/molecules/BondsModelViewer';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { DEFAULT_LINE_WIDTH } from '@/modules/canvas/utils/plugin-exposure-export';
 import { resolveBondLineSettings } from '@/modules/fractal/services/bond-render';
@@ -34,7 +35,7 @@ interface TimestepViewerProps {
     setModelWorldBounds?: (bounds: ModelWorldBounds | null) => void;
     activeModelBounds?: BoundsInfo | null;
     onModelBoundsChanged?: (bounds: BoundsInfo) => void;
-    onLoadingStateChanged?: (state: ModelLoadingState) => void;
+    onLoadingStateChanged?: (state: ModelLoadingState, sceneKey: string) => void;
     rotation?: OptionalPosition;
     position?: OptionalPosition;
     scale?: number;
@@ -109,6 +110,7 @@ const TimestepViewer = ({
 }: TimestepViewerProps) => {
     const scenesToRender = getRenderableScenes(storeActiveScenes, forceDefaultScene);
     const camera = useThree((state) => state.camera);
+    const sceneMergeGroups = useEditorStore((state) => state.sceneMergeGroups);
     const scenePositionsRef = useRef<Map<string, OptionalPosition>>(new Map());
     const [selectedModelIndex, setSelectedModelIndex] = useState<number | null>(null);
 
@@ -127,22 +129,31 @@ const TimestepViewer = ({
         const sceneKey = getSceneKey(scene);
         const cached = scenePositionsRef.current.get(sceneKey);
         if (cached) return cached;
+
+        const origin: OptionalPosition = {
+            x: position.x ?? 0,
+            y: position.y ?? 0,
+            z: position.z ?? 0
+        };
+        const groupId = sceneMergeGroups[sceneKey];
+        if (groupId) {
+            const leaderKey = scenesToRender
+                .map(getSceneKey)
+                .find((key) => sceneMergeGroups[key] === groupId && scenePositionsRef.current.has(key));
+            const shared = leaderKey ? scenePositionsRef.current.get(leaderKey) : origin;
+            const spawn = shared ?? origin;
+            scenePositionsRef.current.set(sceneKey, spawn);
+            return spawn;
+        }
+
         const isFirst = scenesToRender.length <= 1;
         let spawn: OptionalPosition;
         if (isFirst) {
-            spawn = {
-                x: position.x ?? 0,
-                y: position.y ?? 0,
-                z: position.z ?? 0
-            };
+            spawn = origin;
         } else {
             const existing = Array.from(scenePositionsRef.current.values());
             spawn = existing.length === 0
-                ? {
-                    x: position.x ?? 0,
-                    y: position.y ?? 0,
-                    z: position.z ?? 0
-                }
+                ? origin
                 : computeSpawnPosition(camera, existing);
         }
         scenePositionsRef.current.set(sceneKey, spawn);
@@ -197,7 +208,9 @@ const TimestepViewer = ({
                             setModelWorldBounds={setModelWorldBounds}
                             activeModelBounds={activeModelBounds}
                             onModelBoundsChanged={onModelBoundsChanged}
-                            onLoadingStateChanged={onLoadingStateChanged}
+                            onLoadingStateChanged={onLoadingStateChanged
+                                ? (state) => onLoadingStateChanged(state, sceneKey)
+                                : undefined}
                             rotation={rotation}
                             scale={scale}
                             autoFit={autoFit}

@@ -12,7 +12,7 @@ import {
 } from '@/modules/fractal/contracts/editor/scene-types';
 
 import type { ModelStore, ModelState, PointCloudSettingsState, ModelData, ModelDragOffset } from '@/modules/fractal/contracts/editor/scene-types';
-import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
+import type { SceneObjectType, SceneVisualOverride } from '@/modules/fractal/contracts/scene';
 import type { StateCreator } from 'zustand';
 
 const POINT_CLOUD_SETTINGS_INITIAL: PointCloudSettingsState = {
@@ -85,6 +85,7 @@ const createInitialState = (): ModelState => ({
     pointSizeMultiplier: 1.0,
     pointCloudSettings: POINT_CLOUD_SETTINGS_INITIAL,
     sceneVisualOverrides: {},
+    sceneLoadStates: {},
     modelWorldBounds: null,
     modelDragOffsets: {},
     sceneMergeGroups: {},
@@ -113,6 +114,32 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
             const exists = state.activeScenes.some(s => isSameScene(s, scene));
             if (exists) return state;
             return { activeScenes: [...state.activeScenes, scene] };
+        });
+    },
+
+    setActiveScenes(scenes: SceneObjectType[]) {
+        const nextScenes = scenes.length > 0 ? scenes : [DEFAULT_SCENE];
+        set({
+            activeScene: nextScenes[0],
+            activeScenes: nextScenes
+        });
+    },
+
+    setComposedScenes(scenes: SceneObjectType[]) {
+        const nextScenes = scenes.length > 0 ? scenes : [DEFAULT_SCENE];
+        const nextMergeGroups: Record<string, string> = {};
+        if (nextScenes.length > 1) {
+            const groupId = uuidv4();
+            nextScenes.forEach((scene) => {
+                nextMergeGroups[getSceneKey(scene)] = groupId;
+            });
+        }
+
+        set({
+            activeScene: nextScenes[0],
+            activeScenes: nextScenes,
+            sceneMergeGroups: nextMergeGroups,
+            modelDragOffsets: {}
         });
     },
 
@@ -177,15 +204,6 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
         }));
     },
 
-    setPointCloudSettings(partial: Partial<PointCloudSettingsState>) {
-        set((state) => ({
-            pointCloudSettings: {
-                ...state.pointCloudSettings,
-                ...partial
-            }
-        }));
-    },
-
     setSceneOpacity(sceneKey: string, opacity: number) {
         const nextOpacity = Math.max(0, Math.min(1, opacity));
 
@@ -238,6 +256,39 @@ export const createModelSlice: StateCreator<EditorStore, [], [], ModelStore> = (
                 }
             }
         }));
+    },
+
+    applySceneVisualOverride(sceneKey: string, override: SceneVisualOverride) {
+        set((state) => ({
+            sceneVisualOverrides: {
+                ...state.sceneVisualOverrides,
+                [sceneKey]: {
+                    ...state.sceneVisualOverrides[sceneKey],
+                    ...override
+                }
+            }
+        }));
+    },
+
+    setSceneLoadingState(sceneKey: string, loadingState: ModelLoadingState) {
+        set((state) => {
+            const current = state.sceneLoadStates[sceneKey];
+            if (
+                current
+                && current.isLoading === loadingState.isLoading
+                && current.progress === loadingState.progress
+                && current.error === loadingState.error
+            ) {
+                return state;
+            }
+
+            return {
+                sceneLoadStates: {
+                    ...state.sceneLoadStates,
+                    [sceneKey]: loadingState
+                }
+            };
+        });
     },
 
     setShowSimulationCell(show: boolean) {
