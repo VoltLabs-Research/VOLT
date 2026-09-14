@@ -9,11 +9,7 @@ import {
     DropdownRoot,
     DropdownTrigger,
     Skeleton,
-    Tab,
-    TabIndicator,
-    TabList,
-    TabListContainer,
-    TabsRoot
+    cn
 } from '@heroui/react';
 import { Columns3, Ellipsis, Plus } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
@@ -176,24 +172,26 @@ const DocumentListingHeader = <TRow,>({
             </div>
 
             {!hideTabs && tabs.length >= 2 && (
-                <div>
-                    <div className='px-8 max-md:px-4'>
-                        <TabsRoot
-                            className='w-fit'
-                            selectedKey={preferences.activeTabId}
-                            onSelectionChange={(tabId) => preferences.selectTab(String(tabId))}
-                        >
-                            <TabListContainer>
-                                <TabList aria-label='Listing views'>
-                                    {tabs.map((tab) => (
-                                        <Tab key={tab.id} id={tab.id} className='whitespace-nowrap'>
-                                            {tab.label}
-                                            <TabIndicator />
-                                        </Tab>
-                                    ))}
-                                </TabList>
-                            </TabListContainer>
-                        </TabsRoot>
+                <div className='px-8 max-md:px-4' role='tablist' aria-label='Listing views'>
+                    <div className='flex flex-row flex-wrap items-center gap-0.5'>
+                        {tabs.map((tab) => {
+                            const isActive = preferences.activeTabId === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type='button'
+                                    role='tab'
+                                    aria-selected={isActive}
+                                    className={cn(
+                                        'inline-flex h-7 min-h-7 cursor-pointer items-center justify-center whitespace-nowrap rounded-md border border-transparent px-2.5 text-xs font-medium leading-none select-none transition-colors duration-150 ease-out',
+                                        isActive ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
+                                    )}
+                                    onClick={() => preferences.selectTab(tab.id)}
+                                >
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}
