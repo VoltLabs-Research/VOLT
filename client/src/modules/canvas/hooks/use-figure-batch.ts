@@ -200,11 +200,11 @@ const useFigureBatch = ({ trajectoryId }: UseFigureBatchParams) => {
     }, [analyses, exposureQueries]);
 
     const candidates = useMemo<FigureCandidate[]>(() => {
-        return listFigureCandidates(analyses, exposuresByAnalysisId, recipe);
-    }, [analyses, exposuresByAnalysisId, recipe]);
+        return listFigureCandidates(analyses, exposuresByAnalysisId, recipe, pipelineRuns, currentTimestep);
+    }, [analyses, currentTimestep, exposuresByAnalysisId, pipelineRuns, recipe]);
     const pipelineCandidates = useMemo(() => {
-        return listFigurePipelineCandidates(candidates, pipelineRuns);
-    }, [candidates, pipelineRuns]);
+        return listFigurePipelineCandidates(candidates, pipelineRuns, currentTimestep);
+    }, [candidates, currentTimestep, pipelineRuns]);
 
     useEffect(() => {
         const readyIds = new Set(
