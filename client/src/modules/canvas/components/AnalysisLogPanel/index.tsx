@@ -78,23 +78,23 @@ const AnalysisLogPanel = ({
             return error;
         }
 
-        if (isLoading) {
+        if (isLoading && segments.length === 0) {
             return 'Loading execution log...';
+        }
+
+        if (segments.length > 0) {
+            return null;
+        }
+
+        if (live || activityStatus === 'running') {
+            return 'Waiting for plugin output...';
         }
 
         if (activityStatus === 'queued') {
             return 'Frame is queued for execution.';
         }
 
-        if (live && segments.length === 0) {
-            return 'Waiting for plugin output...';
-        }
-
-        if (segments.length === 0) {
-            return 'No execution output was captured for this frame.';
-        }
-
-        return null;
+        return 'No execution output was captured for this frame.';
     }, [activityStatus, error, isLoading, live, segments.length]);
 
     return (

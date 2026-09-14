@@ -40,7 +40,7 @@ const Timeline = ({
         trajectory,
         analysisId
     });
-    const { getTickTone, getAnalysisFrameStatus } = useTimelineJobActivity(trajectory?._id, analysisId);
+    const { getTickTone, getAnalysisFrameStatus, getLiveLogTarget } = useTimelineJobActivity(trajectory?._id, analysisId);
 
     const {
         playSpeed,
@@ -97,8 +97,11 @@ const Timeline = ({
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];
     const currentFrame = currentTimestep ?? startFrame;
-    const analysisFrameStatus = analysisId
-        ? toAnalysisFrameActivityStatus(getAnalysisFrameStatus(analysisId, currentFrame))
+    const liveLogTarget = getLiveLogTarget(analysisId, currentFrame);
+    const logAnalysisId = liveLogTarget?.analysisId ?? analysisId;
+    const logTimestep = liveLogTarget?.timestep ?? currentFrame;
+    const analysisFrameStatus = logAnalysisId
+        ? toAnalysisFrameActivityStatus(getAnalysisFrameStatus(logAnalysisId, logTimestep))
         : undefined;
 
     const { rulerRef, playheadLeft, rulerHandlers } = useTimelineScrubber({
@@ -182,6 +185,8 @@ const Timeline = ({
                 pluginId={pluginId}
                 currentTimestep={currentTimestep}
                 currentFrame={currentFrame}
+                logAnalysisId={logAnalysisId}
+                logTimestep={logTimestep}
                 analysisFrameStatus={analysisFrameStatus}
             />
         </div>
