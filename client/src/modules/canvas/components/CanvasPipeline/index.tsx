@@ -124,7 +124,7 @@ const CanvasPipeline = ({
                     const canToggle = isLiveToggleStage(stage) || stage.executed;
 
                     return (
-                        <div className={cn('group overflow-hidden rounded-lg border border-border', dragId === stage.id && 'opacity-50')}
+                        <div className={cn('group overflow-hidden rounded-md border border-border', dragId === stage.id && 'opacity-50')}
                             key={stage.id}
                             draggable
                             onDragStart={() => setDragId(stage.id)}
@@ -165,7 +165,7 @@ const CanvasPipeline = ({
                                 <div className='flex shrink-0 flex-row items-center gap-1'>
                                     <button
                                         type='button'
-                                        className={cn('flex cursor-pointer items-center rounded-lg border-none bg-transparent p-0.5 text-muted hover:text-foreground', 'opacity-0 transition-opacity duration-[120ms] ease-out hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100')}
+                                        className={cn('flex cursor-pointer items-center rounded-md border-none bg-transparent p-0.5 text-muted hover:text-foreground', 'opacity-0 transition-opacity duration-[120ms] ease-out hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100')}
                                         onClick={() => removeStage(stage.id, trajectoryId)}
                                         aria-label='Remove stage'
                                         title='Remove'

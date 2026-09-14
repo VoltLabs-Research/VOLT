@@ -1,4 +1,5 @@
 import { Button, Popover } from '@heroui/react';
+import { Share2 } from 'lucide-react';
 import { useState } from 'react';
 import TrajectorySharePanel from '@/modules/canvas/components/TrajectorySharePanel';
 
@@ -23,10 +24,10 @@ const TrajectorySharePanelPopover = ({
             <Button
                 variant='ghost'
                 size='sm'
-                className='text-xs'
+                isIconOnly
                 aria-label={triggerLabel}
             >
-                Share
+                <Share2 size={14} aria-hidden='true' />
             </Button>
             <Popover.Content placement='bottom end'>
                 <Popover.Dialog id={`trajectory-share-${trajectoryId}`} aria-label={triggerLabel} className='flex max-h-[360px] w-full max-w-[320px] flex-col overflow-hidden p-0'>

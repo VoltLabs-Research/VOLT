@@ -114,7 +114,7 @@ const TimelineHeader = ({
                 role='tab'
                 aria-selected={isActive}
                 className={cn(
-                    'inline-flex h-[1.875rem] min-h-[2.1rem] cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-sm font-medium leading-none select-none transition-colors duration-150 ease-out',
+                    'inline-flex h-7 min-h-7 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2.5 text-xs font-medium leading-none select-none transition-colors duration-150 ease-out',
                     isActive ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
                 )}
                 onClick={() => onTabChange(tab.id)}
@@ -166,7 +166,7 @@ const TimelineHeader = ({
                 <Scrollable orientation='horizontal' className='flex flex-[0_1_auto] flex-row flex-nowrap items-center overflow-y-hidden whitespace-nowrap max-w-[min(55vw,500px)] max-[900px]:max-w-full max-md:hidden [&>*]:shrink-0 [mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0,black_14px,black_calc(100%_-_14px),transparent_100%)]' role='tablist' aria-label='Timeline tabs' data-tour-id='canvas-timeline-tabs'>
                     {tabs.map(renderTab)}
                 </Scrollable>
-                <div className='hidden max-md:block max-md:overflow-hidden max-md:rounded-xl max-md:bg-surface-secondary max-md:pointer-events-auto' data-tour-id='canvas-timeline-tab-selector'>
+                <div className='hidden max-md:block max-md:overflow-hidden max-md:rounded-md max-md:bg-surface-secondary max-md:pointer-events-auto' data-tour-id='canvas-timeline-tab-selector'>
                     <CanvasOptionSelect
                         ariaLabel='Timeline tab'
                         options={tabSelectOptions}
@@ -178,7 +178,7 @@ const TimelineHeader = ({
                 </div>
             </div>
             <div className='contents max-md:order-3 max-md:flex max-md:w-full max-md:flex-none max-md:items-center max-md:justify-between max-md:gap-2 max-md:self-stretch max-md:pointer-events-none max-md:[&_button]:pointer-events-auto max-md:[&_input]:pointer-events-auto max-md:[&_select]:pointer-events-auto max-md:[&_[role=button]]:pointer-events-auto max-md:[&_[data-popover-trigger]]:pointer-events-auto'>
-                <div className='pointer-events-none absolute left-1/2 top-1/2 z-[2] flex -translate-x-1/2 -translate-y-1/2 flex-row items-center justify-center px-1.5 max-[900px]:static max-[900px]:order-3 max-[900px]:w-full max-[900px]:transform-none max-[900px]:justify-center max-[900px]:p-0 max-md:w-auto max-md:flex-none max-md:justify-start max-md:rounded-xl max-md:border-0 max-md:bg-surface-secondary'>
+                <div className='pointer-events-none absolute left-1/2 top-1/2 z-[2] flex -translate-x-1/2 -translate-y-1/2 flex-row items-center justify-center px-1.5 max-[900px]:static max-[900px]:order-3 max-[900px]:w-full max-[900px]:transform-none max-[900px]:justify-center max-[900px]:p-0 max-md:w-auto max-md:flex-none max-md:justify-start max-md:rounded-md max-md:border-0 max-md:bg-surface-secondary'>
                     <div className='pointer-events-auto flex w-max flex-row items-center justify-center max-[900px]:w-full max-md:contents max-md:w-auto'>
                         <TransportControls
                             trajectoryId={trajectoryId}
@@ -194,14 +194,14 @@ const TimelineHeader = ({
                             options={availableTimesteps}
                             onChange={onRangeStartChange}
                             title='Start timestep'
-                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary'
+                            groupClassName='max-md:h-7 max-md:min-h-7 max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-md max-md:bg-surface-secondary'
                         />
                         <FrameCombobox
                             value={endFrame}
                             options={availableTimesteps}
                             onChange={onRangeEndChange}
                             title='End timestep'
-                            groupClassName='max-md:h-[1.875rem] max-md:min-h-[1.875rem] max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-xl max-md:bg-surface-secondary'
+                            groupClassName='max-md:h-7 max-md:min-h-7 max-md:w-[clamp(3.25rem,17vw,4.5rem)] max-md:rounded-md max-md:bg-surface-secondary'
                         />
                         <Separator orientation='vertical' className='h-4 shrink-0 max-md:hidden' />
                         <PresetPopover
