@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import RightCollapsible from '../ObjectsPanel/RightCollapsible';
 import PanelResultsTable from './PanelResultsTable';
 
+import type { PanelResultsStatus } from './PanelResultsTable';
 import type { IPanelTable } from '@volt/contracts/modules/plugin/exposure';
 
 interface AnalysisResultsSectionProps {
@@ -19,6 +20,7 @@ interface ResolvedPanelTable {
 
 const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: AnalysisResultsSectionProps) => {
     const [expanded, setExpanded] = useState(true);
+    const [statusByKey, setStatusByKey] = useState<Record<string, PanelResultsStatus>>({});
     const { pluginsById } = usePluginSelectors();
     const plugin = pluginId ? pluginsById[pluginId] : undefined;
 
@@ -34,8 +36,46 @@ const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: Analy
         });
     }, [plugin]);
 
-    if (!analysisId || tables.length === 0) {
+    const handleStatusChange = useCallback((key: string, status: PanelResultsStatus) => {
+        setStatusByKey((current) => {
+            if (current[key] === status) {
+                return current;
+            }
+
+            return {
+                ...current,
+                [key]: status
+            };
+        });
+    }, []);
+
+    useEffect(() => {
+        setStatusByKey({});
+    }, [analysisId, currentTimestep]);
+
+    const hasResults = tables.some((entry) => statusByKey[entry.key] === 'ready');
+
+    if (!analysisId || tables.length === 0 || currentTimestep === undefined) {
         return null;
+    }
+
+    const tablesNode = (
+        <div className='flex flex-col gap-1'>
+            {tables.map(({ key, exposureId, table }) => (
+                <PanelResultsTable
+                    key={key}
+                    table={table}
+                    analysisId={analysisId}
+                    exposureId={exposureId}
+                    timestep={currentTimestep}
+                    onStatusChange={(status) => handleStatusChange(key, status)}
+                />
+            ))}
+        </div>
+    );
+
+    if (!hasResults) {
+        return <div className='hidden'>{tablesNode}</div>;
     }
 
     return (
@@ -44,21 +84,7 @@ const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: Analy
             expanded={expanded}
             onExpandedChange={setExpanded}
         >
-            {currentTimestep === undefined ? (
-                <span className='px-2 py-1 text-2xs text-muted'>Select a frame to see results.</span>
-            ) : (
-                <div className='flex flex-col gap-1'>
-                    {tables.map(({ key, exposureId, table }) => (
-                        <PanelResultsTable
-                            key={key}
-                            table={table}
-                            analysisId={analysisId}
-                            exposureId={exposureId}
-                            timestep={currentTimestep}
-                        />
-                    ))}
-                </div>
-            )}
+            {tablesNode}
         </RightCollapsible>
     );
 };
