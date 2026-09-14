@@ -40,6 +40,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     const currentElementsRef = useRef<WhiteboardElements>([]);
     const currentAppStateRef = useRef<WhiteboardAppState>({});
     const currentFilesRef = useRef<WhiteboardFiles>({});
+    const ownedFileIdsRef = useRef(new Set<string>());
     const loadingFilesRef = useRef(new Map<string, Promise<PreparedWhiteboardImageAsset>>());
 
     const updateSceneState = useCallback((nextState: WhiteboardStoredScene) => {
@@ -65,6 +66,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         currentElementsRef.current = [];
         currentAppStateRef.current = {};
         currentFilesRef.current = {};
+        ownedFileIdsRef.current.clear();
         loadingFilesRef.current.clear();
         setWhiteboard(null);
         setInitialState(null);
@@ -96,6 +98,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
                 try {
                     loadedFiles[assetId] = await filePromise;
+                    ownedFileIdsRef.current.add(assetId);
                 } finally {
                     loadingFilesRef.current.delete(assetId);
                 }
@@ -220,16 +223,12 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     }, []);
 
     const generateIdForFile = useCallback(async (file: File): Promise<string> => {
-        try {
-            const result = await service.uploadWhiteboardAsset({
-                whiteboardId,
-                file
-            });
-            return result.assetId;
-        } catch {
-            sileo.error({ title: 'Failed to upload asset' });
-            return crypto.randomUUID();
-        }
+        const result = await service.uploadWhiteboardAsset({
+            whiteboardId,
+            file
+        });
+        ownedFileIdsRef.current.add(result.assetId);
+        return result.assetId;
     }, [whiteboardId]);
 
     const prepareImageAsset = useCallback(async (file: File): Promise<PreparedWhiteboardImageAsset | null> => {
@@ -240,6 +239,7 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
             });
             const preparedAsset = await createWhiteboardImageAsset(assetId, file);
 
+            ownedFileIdsRef.current.add(assetId);
             currentFilesRef.current = {
                 ...currentFilesRef.current,
                 [assetId]: preparedAsset
@@ -259,7 +259,8 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
         handleChange,
         mergeRemoteState,
         generateIdForFile,
-        prepareImageAsset
+        prepareImageAsset,
+        ownedFileIdsRef
     };
 };
 

@@ -66,6 +66,7 @@ const useWhiteboardImageInsertion = ({
         }
 
         event.preventDefault();
+        event.stopPropagation();
         event.dataTransfer.dropEffect = 'copy';
     }, []);
 
