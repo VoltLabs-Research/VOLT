@@ -111,6 +111,10 @@ export default class FetchHttpClient implements HttpClient {
             return response.blob() as Promise<T>;
         }
 
+        if (req.responseType === 'arraybuffer') {
+            return response.arrayBuffer() as Promise<T>;
+        }
+
         if (req.responseType === 'text') {
             return response.text() as Promise<T>;
         }
