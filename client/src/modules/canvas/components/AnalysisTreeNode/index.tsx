@@ -8,7 +8,7 @@ import {
     nextTreeIndent,
     treeIndentClass
 } from '../CanvasTree';
-import { Tooltip, cn } from '@heroui/react';
+import { cn } from '@heroui/react';
 import { CanvasAnalysisStatusEnum, isCanvasAnalysisInProgress, isCanvasAnalysisSettled, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { buildArtifactRows } from './artifact-rows';
@@ -18,8 +18,23 @@ import ExposureRow from './ExposureRow';
 import PendingArtifactRow from './PendingArtifactRow';
 import useDownloadAnalysisListings from '../../hooks/use-download-analysis-listings';
 import useRecentlyReadyArtifacts from './use-recently-ready-artifacts';
+import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
+import {
+    FloatingPortal,
+    autoUpdate,
+    flip,
+    offset,
+    safePolygon,
+    shift,
+    useDismiss,
+    useFloating,
+    useFocus,
+    useHover,
+    useInteractions,
+    useRole
+} from '@floating-ui/react';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { AnalysisActivityTone } from '../../utils/analysis-status-selectors';
 import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { CanvasAnalysisStatus } from '../../utils/analysis-status';
@@ -88,27 +103,34 @@ const AnalysisTreeNode = ({
 
     const hasConfig = Object.keys(analysis.config).length > 0;
     const hasWorkflowPluginNodes = hasPluginWorkflowNodes(plugin);
-
-    const tooltipContent = isAnalysisInProgress || hasConfig || hasWorkflowPluginNodes ? (
-        <div className='flex flex-col'>
-            {isAnalysisInProgress && (
-                <div className='border-b border-border px-3 py-2 text-xs text-warning'>
-                    Analysis still running. Some options will be disabled until it finishes.
-                </div>
-            )}
-            <Scrollable className='max-h-[min(22rem,calc(100dvh-6rem))] overscroll-contain'>
-                {hasConfig || hasWorkflowPluginNodes ? (
-                    <ExecutionConfigSummary
-                        config={analysis.config}
-                        plugin={plugin}
-                        pluginsById={pluginsById}
-                    />
-                ) : (
-                    <div className='p-3 text-xs text-muted'>No execution config captured for this analysis.</div>
-                )}
-            </Scrollable>
-        </div>
-    ) : null;
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const floatingRoot = useFloatingRoot();
+    const { refs, floatingStyles, context } = useFloating({
+        open: isDetailsOpen,
+        onOpenChange: setIsDetailsOpen,
+        placement: 'left-start',
+        strategy: 'fixed',
+        middleware: [
+            offset(8),
+            flip({
+                fallbackPlacements: ['right-start', 'left-end', 'right-end'],
+                padding: 12
+            }),
+            shift({ padding: 12 })
+        ],
+        whileElementsMounted: autoUpdate
+    });
+    const hover = useHover(context, {
+        delay: {
+            open: 80,
+            close: 120
+        },
+        handleClose: safePolygon()
+    });
+    const focus = useFocus(context);
+    const dismiss = useDismiss(context);
+    const role = useRole(context, { role: 'tooltip' });
+    const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
 
     const handleSelectAnalysis = () => {
         if (isAnalysisInProgress) {
@@ -167,50 +189,73 @@ const AnalysisTreeNode = ({
                 id={`canvas-ctx-analysis-${analysis._id}`}
                 options={analysisMenuOptions}
             >
-                <Tooltip isDisabled={!tooltipContent}>
-                    <Tooltip.Trigger
-                        className={cn(
-                            'flex cursor-pointer select-none items-center gap-2 text-xs text-muted',
-                            TREE_ROW_CLASS,
-                            'hover:rounded-md hover:bg-surface-hover',
-                            treeIndentClass(indent),
-                            isCurrentAnalysis && 'text-accent'
-                        )}
-                        onClick={handleSelectAnalysis}
-                        role='treeitem'
-                        aria-selected={isCurrentAnalysis}
-                        tabIndex={0}
-                        data-tour-id={tourTargetId}
-                    >
-                        <span className='flex min-w-0 flex-[0_1_auto] items-center gap-1.5'>
-                            <span className={nameClassName} title={analysis.pluginDisplayName}>
-                                {analysis.pluginDisplayName}
-                            </span>
-                            {badge}
-                        </span>
-                        <span className='flex-1' />
-                        <button
-                            type='button'
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onToggle(analysis._id);
-                            }}
-                            className={cn('flex cursor-pointer items-center justify-center', 'size-auto min-h-0 min-w-0 border-0 bg-transparent p-0 text-muted')}
-                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
-                        >
-                            {isExpanded
-                                ? <ChevronDown style={CHEVRON_STYLE} />
-                                : <ChevronRight style={CHEVRON_STYLE} />
-                            }
-                        </button>
-                    </Tooltip.Trigger>
-                    {tooltipContent && (
-                        <Tooltip.Content placement='right' className='pointer-events-auto w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] whitespace-normal border border-border bg-surface p-0'>
-                            {tooltipContent}
-                        </Tooltip.Content>
+                <div
+                    ref={refs.setReference}
+                    className={cn(
+                        'flex w-full cursor-pointer select-none items-center gap-2 text-xs text-muted',
+                        TREE_ROW_CLASS,
+                        'hover:rounded-md hover:bg-surface-hover',
+                        treeIndentClass(indent),
+                        isCurrentAnalysis && 'text-accent'
                     )}
-                </Tooltip>
+                    role='treeitem'
+                    aria-selected={isCurrentAnalysis}
+                    tabIndex={0}
+                    data-tour-id={tourTargetId}
+                    {...getReferenceProps({ onClick: handleSelectAnalysis })}
+                >
+                    <span className='flex min-w-0 flex-[0_1_auto] items-center gap-1.5'>
+                        <span className={nameClassName} title={analysis.pluginDisplayName}>
+                            {analysis.pluginDisplayName}
+                        </span>
+                        {badge}
+                    </span>
+                    <span className='flex-1' />
+                    <button
+                        type='button'
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggle(analysis._id);
+                        }}
+                        className={cn('flex cursor-pointer items-center justify-center', 'size-auto min-h-0 min-w-0 border-0 bg-transparent p-0 text-muted')}
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    >
+                        {isExpanded
+                            ? <ChevronDown style={CHEVRON_STYLE} />
+                            : <ChevronRight style={CHEVRON_STYLE} />
+                        }
+                    </button>
+                </div>
             </MaybeContextMenu>
+            {isDetailsOpen && (
+                <FloatingPortal root={floatingRoot}>
+                    <div
+                        ref={refs.setFloating}
+                        className='pointer-events-auto z-[var(--z-floating)] w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] overflow-hidden rounded-xl border border-border bg-surface shadow-overlay'
+                        style={floatingStyles}
+                        {...getFloatingProps()}
+                    >
+                        <div className='flex flex-col'>
+                            {isAnalysisInProgress && (
+                                <div className='border-b border-border px-3 py-2 text-xs text-warning'>
+                                    Analysis still running. Some options will be disabled until it finishes.
+                                </div>
+                            )}
+                            <Scrollable className='max-h-[min(22rem,calc(100dvh-6rem))] overscroll-contain'>
+                                {hasConfig || hasWorkflowPluginNodes ? (
+                                    <ExecutionConfigSummary
+                                        config={analysis.config}
+                                        plugin={plugin}
+                                        pluginsById={pluginsById}
+                                    />
+                                ) : (
+                                    <div className='p-3 text-xs text-muted'>No execution config captured for this analysis.</div>
+                                )}
+                            </Scrollable>
+                        </div>
+                    </div>
+                </FloatingPortal>
+            )}
 
             {isExpanded && entry.state === 'loading' && !analysis.expectedArtifacts?.length && (
                 <CanvasTreeSkeletonRows count={1} compact indent={childIndent} />
