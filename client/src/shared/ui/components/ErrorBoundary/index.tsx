@@ -80,7 +80,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             );
         }
 
-        return this.props.children;
+        return (
+            <div className='flex min-h-0 w-full flex-1 flex-col overflow-hidden'>
+                {this.props.children}
+            </div>
+        );
     }
 };
 

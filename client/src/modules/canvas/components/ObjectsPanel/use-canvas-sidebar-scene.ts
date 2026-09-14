@@ -211,6 +211,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     useEffect(() => {
         if (!analysisConfigId) return;
         if (useScreenshotStore.getState().isFigureBatchActive) return;
+        if (useEditorStore.getState().activeScenes.length === 0) return;
 
         const entry = getEntry(analysisConfigId);
         if (entry.state !== 'loaded') return;

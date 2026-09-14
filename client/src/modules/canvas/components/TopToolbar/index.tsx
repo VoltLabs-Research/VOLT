@@ -52,7 +52,7 @@ const TopToolbar = ({
     const canShowPeers = !singleTenant && Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
 
     return (
-        <header className='absolute left-0 right-0 top-0 z-[4] flex select-none items-stretch bg-chrome px-4 min-h-[var(--canvas-header-height,55px)] max-md:h-[var(--canvas-header-height,40px)] max-md:min-h-[var(--canvas-header-height,40px)] max-md:px-3 canvas-top-toolbar'>
+        <header className='relative z-[4] flex h-[var(--canvas-header-height,55px)] shrink-0 select-none items-stretch bg-chrome px-4 max-md:px-3 canvas-top-toolbar'>
             <div className='grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,420px)_minmax(0,1fr)] items-center gap-2 max-md:h-[var(--canvas-header-height,40px)] max-md:grid-cols-[auto_minmax(0,1fr)]'>
                 <div className='flex min-w-0 flex-row flex-nowrap items-center overflow-hidden'>
                     <Button

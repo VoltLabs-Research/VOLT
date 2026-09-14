@@ -19,6 +19,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import type { FractalSceneConfig } from '@/modules/fractal/contracts/scene-config';
 import type { ScreenshotComposition } from '@/modules/fractal/contracts/screenshot-composition';
+import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode, RefObject } from 'react';
 
@@ -34,6 +35,11 @@ interface ViewportProps {
     bodyContent?: ReactNode;
     analysisOverlay?: ReactNode;
     renderScene: boolean;
+    paneScenes?: SceneObjectType[];
+    paneMergeGroups?: Record<string, string>;
+    paneAnalysisId?: string;
+    screenshotEnabled?: boolean;
+    playbackEnabled?: boolean;
 }
 
 const resolveTrajectoryTeamId = (trajectory: Trajectory | null | undefined): string | undefined => {
@@ -69,14 +75,19 @@ const Viewport = ({
     sceneRef,
     bodyContent,
     analysisOverlay,
-    renderScene
+    renderScene,
+    paneScenes,
+    paneMergeGroups,
+    paneAnalysisId,
+    screenshotEnabled = true,
+    playbackEnabled = true
 }: ViewportProps) => {
     const selectedTeamId = useSelectedTeamId() ?? undefined;
     const teamId = resolveTrajectoryTeamId(trajectory) ?? selectedTeamId;
-    const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
+    const screenshotRequest = useScreenshotStore((s) => screenshotEnabled ? s.pendingRequest : null);
     const isFigureBatchActive = useScreenshotStore((s) => s.isFigureBatchActive);
     const {
-        activeScenes,
+        storeActiveScenes,
         sceneVisualOverrides,
         activeModelBounds,
         modelWorldBounds,
@@ -87,7 +98,7 @@ const Viewport = ({
         setIsPointCloudScene,
         sceneMergeGroups
     } = useEditorStore(useShallow((s) => ({
-        activeScenes: s.activeScenes,
+        storeActiveScenes: s.activeScenes,
         sceneVisualOverrides: s.sceneVisualOverrides,
         activeModelBounds: s.activeModel?.modelBounds,
         modelWorldBounds: s.modelWorldBounds,
@@ -98,6 +109,9 @@ const Viewport = ({
         setIsPointCloudScene: s.setIsPointCloudScene,
         sceneMergeGroups: s.sceneMergeGroups
     })));
+    const activeScenes = paneScenes ?? storeActiveScenes;
+    const resolvedMergeGroups = paneMergeGroups ?? sceneMergeGroups;
+    const resolvedAnalysisId = paneAnalysisId ?? analysisId;
 
     const currentFrame = useMemo(() => {
         return getTrajectoryFrameByTimestep(trajectory, currentTimestep);
@@ -139,7 +153,7 @@ const Viewport = ({
         }
 
         const isMergedOverlay = renderableScenes.length > 1
-            && renderableScenes.every((scene) => Boolean(sceneMergeGroups[getSceneKey(scene)]));
+            && renderableScenes.every((scene) => Boolean(resolvedMergeGroups[getSceneKey(scene)]));
         if ((renderableScenes.length !== 1 && !isMergedOverlay) || !modelWorldBounds) {
             return undefined;
         }
@@ -149,7 +163,7 @@ const Viewport = ({
             cropBoundsWorld: modelWorldBounds,
             cropSource: 'simulation-cell'
         };
-    }, [localAutoSimulationCellWorldBounds, localGlbMode, modelWorldBounds, renderableScenes, sceneMergeGroups]);
+    }, [localAutoSimulationCellWorldBounds, localGlbMode, modelWorldBounds, renderableScenes, resolvedMergeGroups]);
 
     const handleLoadingStateChanged = useCallback((state: Parameters<typeof setModelLoadingState>[0], sceneKey: string) => {
         setSceneLoadingState(sceneKey, state);
@@ -184,13 +198,13 @@ const Viewport = ({
         <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='relative min-h-0 flex-1'>
                 {bodyContent && (
-                    <div className='relative flex h-full w-full min-h-0 flex-1'>
+                    <div className='relative flex min-h-0 w-full flex-1'>
                         {bodyContent}
                     </div>
                 )}
 
                 {renderScene && sceneConfig && (
-                    <div className='relative w-full h-full' style={bodyContent ? { display: 'none' } : undefined}>
+                    <div className='absolute inset-0' style={bodyContent ? { display: 'none' } : undefined}>
                         <FractalScene
                             ref={sceneRef}
                             config={sceneConfig}
@@ -202,7 +216,7 @@ const Viewport = ({
                             screenshotComposition={screenshotComposition}
                             onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
                         >
-                            <PlaybackTicker />
+                            {playbackEnabled && <PlaybackTicker />}
                             {localGlbMode && forcedGlbUrl && (
                                 <LocalGlbViewer
                                     url={forcedGlbUrl}
@@ -214,7 +228,7 @@ const Viewport = ({
                                     teamId={teamId}
                                     trajectoryId={trajectory?._id ?? '__local_glb__'}
                                     currentTimestep={resolvedTimestep}
-                                    analysisId={analysisId}
+                                    analysisId={resolvedAnalysisId}
                                     activeScenes={activeScenes}
                                     pointCloudSettings={sceneConfig.pointCloudSettings}
                                     boxBounds={currentFrameBoxBounds}
@@ -228,6 +242,7 @@ const Viewport = ({
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
                                     autoFit={!isFigureBatchActive}
                                     autoFitKeyOverride={trajectory?._id ?? null}
+                                    mergeGroups={resolvedMergeGroups}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}

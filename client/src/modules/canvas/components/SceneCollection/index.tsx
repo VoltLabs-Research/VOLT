@@ -71,7 +71,6 @@ const SceneCollection = ({
     expandedSections,
     toggleSection,
     showSectionsSkeleton,
-    activeScene,
     onSelectScene,
     isSceneInActiveScenes,
     addScene,
@@ -145,7 +144,7 @@ const SceneCollection = ({
         sceneType: 'trajectory',
         source: 'default' as const
     };
-    const isDefaultActive = activeScene?.source === 'default';
+    const isDefaultActive = isSceneInActiveScenes(defaultScene);
 
     const defaultSceneKey = getSceneKey(defaultScene);
     const defaultOpacity = sceneVisualOverrides[defaultSceneKey]?.opacity ?? 1;

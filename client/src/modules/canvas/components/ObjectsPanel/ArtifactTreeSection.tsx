@@ -81,8 +81,8 @@ const ArtifactTreeSection = ({
                     setCurrentTimestep(artifact.timestep);
                     onAddScene(scene);
                 },
-                onRemove: () => onRemoveScene(scene)
-            }),
+                    onRemove: () => onRemoveScene(scene)
+                }),
             transparencyOption(buildTransparencySubmenu(sceneVisualOverrides[sceneKey]?.opacity ?? 1, (value) => setSceneOpacity(sceneKey, value))),
             colorOption(buildColorSubmenu(sceneVisualOverrides[sceneKey]?.color, (value) => setSceneColor(sceneKey, value)))
         ];

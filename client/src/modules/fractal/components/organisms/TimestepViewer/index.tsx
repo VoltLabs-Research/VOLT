@@ -46,6 +46,7 @@ interface TimestepViewerProps {
     updateThrottle?: number;
     forceDefaultScene?: boolean;
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
+    mergeGroups?: Record<string, string>;
 }
 
 const WORLD_MODEL_EXTENT = 8;
@@ -106,11 +107,13 @@ const TimestepViewer = ({
     enableSlice = true,
     updateThrottle = 16,
     forceDefaultScene = false,
-    onContentTypeDetected
+    onContentTypeDetected,
+    mergeGroups
 }: TimestepViewerProps) => {
     const scenesToRender = getRenderableScenes(storeActiveScenes, forceDefaultScene);
     const camera = useThree((state) => state.camera);
-    const sceneMergeGroups = useEditorStore((state) => state.sceneMergeGroups);
+    const storeMergeGroups = useEditorStore((state) => state.sceneMergeGroups);
+    const sceneMergeGroups = mergeGroups ?? storeMergeGroups;
     const scenePositionsRef = useRef<Map<string, OptionalPosition>>(new Map());
     const [selectedModelIndex, setSelectedModelIndex] = useState<number | null>(null);
 
