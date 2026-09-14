@@ -11,8 +11,8 @@
 }
 
 @theme {
-    --font-sans: 'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;
+    --font-sans: 'Geist Variable', Geist, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'Geist Mono Variable', 'Geist Mono', 'Cascadia Code', 'Cascadia Mono', 'SF Mono', Consolas, monospace;
 
     --text-2xs: 0.6875rem;
     --text-2xs--line-height: 1rem;
