@@ -316,16 +316,18 @@ const ObjectsPanel = ({
             </Scrollable>
 
             {!isAnalysisCompact && (
-                <div className='flex flex-none flex-col border-t border-border'>
-                    <Scrollable className='flex max-h-[40vh] flex-col'>
-                        <AnalysisResultsSection
-                            analysisId={resultsAnalysisId}
-                            pluginId={resultsPluginId}
-                            currentTimestep={currentTimestep}
-                        />
-                    </Scrollable>
-                    {artifactSections.map(renderArtifactSection)}
-                </div>
+                <>
+                    <AnalysisResultsSection
+                        analysisId={resultsAnalysisId}
+                        pluginId={resultsPluginId}
+                        currentTimestep={currentTimestep}
+                    />
+                    {populatedSections.length > 0 && (
+                        <div className='flex flex-none flex-col border-t border-border'>
+                            {populatedSections.map(renderArtifactSection)}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
