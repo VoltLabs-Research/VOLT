@@ -7,7 +7,8 @@ import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import {
     captureFigureRecipe,
     composeFigureForAnalysis,
-    listFigureCandidates
+    listFigureCandidates,
+    listFigurePipelineCandidates
 } from '../utils/figure-recipe';
 import { buildScreenshotFilename } from '../utils/screenshot-filename';
 import { isRenderableSceneExport } from '../utils/plugin-exposure-export';
@@ -201,31 +202,39 @@ const useFigureBatch = ({ trajectoryId }: UseFigureBatchParams) => {
     const candidates = useMemo<FigureCandidate[]>(() => {
         return listFigureCandidates(analyses, exposuresByAnalysisId, recipe);
     }, [analyses, exposuresByAnalysisId, recipe]);
+    const pipelineCandidates = useMemo(() => {
+        return listFigurePipelineCandidates(candidates, pipelineRuns);
+    }, [candidates, pipelineRuns]);
 
     useEffect(() => {
         const readyIds = new Set(
-            candidates.filter((candidate) => candidate.ready).map((candidate) => candidate.analysisId)
+            pipelineCandidates.flatMap((candidate) => candidate.analysisIds)
         );
         const next = selectedAnalysisIds.filter((analysisId) => readyIds.has(analysisId));
         if (next.length !== selectedAnalysisIds.length) {
             useScreenshotStore.getState().setSelectedFigureAnalysisIds(next);
         }
-    }, [candidates, selectedAnalysisIds]);
+    }, [pipelineCandidates, selectedAnalysisIds]);
 
-    const toggleAnalysis = useCallback((analysisId: string, selected: boolean) => {
+    const togglePipeline = useCallback((analysisIds: string[], selected: boolean) => {
         const current = useScreenshotStore.getState().selectedFigureAnalysisIds;
-        useScreenshotStore.getState().setSelectedFigureAnalysisIds(
-            selected
-                ? (current.includes(analysisId) ? current : [...current, analysisId])
-                : current.filter((id) => id !== analysisId)
-        );
+        const selectedSet = new Set(current);
+        analysisIds.forEach((analysisId) => {
+            if (selected) {
+                selectedSet.add(analysisId);
+                return;
+            }
+
+            selectedSet.delete(analysisId);
+        });
+        useScreenshotStore.getState().setSelectedFigureAnalysisIds(Array.from(selectedSet));
     }, []);
 
     const selectAllReady = useCallback(() => {
         useScreenshotStore.getState().setSelectedFigureAnalysisIds(
-            candidates.filter((candidate) => candidate.ready).map((candidate) => candidate.analysisId)
+            pipelineCandidates.flatMap((candidate) => candidate.analysisIds)
         );
-    }, [candidates]);
+    }, [pipelineCandidates]);
 
     const clearSelection = useCallback(() => {
         useScreenshotStore.getState().setSelectedFigureAnalysisIds([]);
@@ -366,8 +375,9 @@ const useFigureBatch = ({ trajectoryId }: UseFigureBatchParams) => {
     return {
         recipe,
         candidates,
+        pipelineCandidates,
         selectedAnalysisIds,
-        toggleAnalysis,
+        togglePipeline,
         selectAllReady,
         clearSelection,
         resolveFilename,
