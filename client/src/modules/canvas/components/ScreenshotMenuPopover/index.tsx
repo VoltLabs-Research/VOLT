@@ -30,7 +30,6 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
     const [customWidthInput, setCustomWidthInput] = useState(String(lastUsedSettings.customWidth));
     const [customHeightInput, setCustomHeightInput] = useState(String(lastUsedSettings.customHeight));
     const {
-        recipe,
         pipelineCandidates,
         selectedAnalysisIds,
         togglePipeline,
