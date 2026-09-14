@@ -1,7 +1,7 @@
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD';
 
 export type HttpQuery = Record<string, unknown>;
-export type HttpResponseType = 'json' | 'blob' | 'text';
+export type HttpResponseType = 'json' | 'blob' | 'text' | 'arraybuffer';
 
 export interface HttpProgressEvent {
     loaded: number;

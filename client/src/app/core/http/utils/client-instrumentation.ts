@@ -82,7 +82,7 @@ export const createInstrumentedHttpClient = ({
             const requestStart = performance.now();
             const explicitTimeoutMs = Reflect.get(request, 'timeoutMs') as number | undefined;
             const requestTimeoutMs = explicitTimeoutMs
-                ?? (request.responseType === 'blob'
+                ?? (request.responseType === 'blob' || request.responseType === 'arraybuffer'
                     ? DISABLED_HTTP_TIMEOUT_MS
                     : timeout);
 

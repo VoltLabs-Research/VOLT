@@ -72,7 +72,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         }
     }
 
-    private static async fetchBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+    private static async fetchArrayBuffer(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {
         const response = await fetch(url, {
             signal,
             credentials: 'omit'
@@ -80,22 +80,22 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         if (!response.ok) {
             throw new Error(`Failed to load GLB asset (status ${response.status})`);
         }
-        return response.blob();
+        return response.arrayBuffer();
     }
 
-    private static async requestBlob(url: string, signal?: AbortSignal): Promise<Blob> {
+    private static async requestArrayBuffer(url: string, signal?: AbortSignal): Promise<ArrayBuffer> {
         if (
             FractalAssetLoader.isDirectBrowserAssetUrl(url)
             || FractalAssetLoader.isExternalAssetUrl(url)
         ) {
-            return FractalAssetLoader.fetchBlob(url, signal);
+            return FractalAssetLoader.fetchArrayBuffer(url, signal);
         }
 
-        return http.request<Blob>({
+        return http.request<ArrayBuffer>({
             method: 'GET',
             url,
             signal,
-            responseType: 'blob'
+            responseType: 'arraybuffer'
         });
     }
 
@@ -135,10 +135,9 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         if (geometryPool.get(resourceKey)) return;
         const existing = await geometryPool.readFromOpfs(resourceKey);
         if (existing) return;
-        const blob = await FractalAssetLoader.requestBlob(url, signal);
+        const fetched = await FractalAssetLoader.requestArrayBuffer(url, signal);
         if (signal?.aborted) return;
-        const arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
-        if (signal?.aborted) return;
+        const arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(fetched);
         await geometryPool.writeToOpfs(resourceKey, arrayBuffer);
     }
 
@@ -163,10 +162,9 @@ export class FractalAssetLoader implements IFractalAssetLoader {
 
         let arrayBuffer = await geometryPool.readFromOpfs(resourceKey);
         if (!arrayBuffer) {
-            const blob = await FractalAssetLoader.requestBlob(url, signal);
+            const fetched = await FractalAssetLoader.requestArrayBuffer(url, signal);
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
-            arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(await blob.arrayBuffer());
-            if (signal?.aborted) throw FractalAssetLoader.createAbortError();
+            arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(fetched);
             debugFractal('asset-loader.fetch-complete', {
                 url,
                 resourceKey,
