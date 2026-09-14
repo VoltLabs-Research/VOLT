@@ -236,11 +236,3 @@ export const resolveOutputColorSpace = (colorSpace: OutputCS): string => {
 
 export type RendererCreateState = RendererCreateSettings;
 export type RendererRuntimeState = RendererRuntimeSettings;
-
-interface RendererSettingsActions {
-    setCreate: (partial: Partial<RendererCreateState>) => void;
-    setRuntime: (partial: Partial<RendererRuntimeState>) => void;
-    reset: () => void;
-};
-
-export type RendererSettingsStore = RendererSettings & RendererSettingsActions;
