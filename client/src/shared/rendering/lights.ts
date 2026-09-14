@@ -85,18 +85,6 @@ export interface LightsState {
     rectArea: RectAreaLightCfg;
 };
 
-interface LightsActions {
-    setGlobal: (g: Partial<LightsGlobal>) => void;
-    setDirectional: (d: Partial<DirLight>) => void;
-    setPoint: (p: Partial<PointLight>) => void;
-    setSpot: (s: Partial<SpotLight>) => void;
-    setHemisphere: (h: Partial<HemiLight>) => void;
-    setRectArea: (r: Partial<RectAreaLightCfg>) => void;
-    reset: () => void;
-};
-
-export type LightsStore = LightsState & LightsActions;
-
 export enum LightingPreset {
     Trajectory = 'trajectory',
     Defect = 'defect'

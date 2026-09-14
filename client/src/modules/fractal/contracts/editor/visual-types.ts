@@ -1,19 +1,8 @@
 import type {
     CameraSettings,
-    OrthographicCameraSettings,
-    OrbitControlsSettings,
-    PerspectiveCameraSettings
+    OrbitControlsSettings
 } from '@/shared/rendering/camera';
-import type {
-    BloomSettings,
-    ChromaticAberrationSettings,
-    DepthOfFieldSettings,
-    EffectsSettings,
-    NoiseSettings,
-    SSAOEffectSettings,
-    SepiaSettings,
-    VignetteSettings
-} from '@/shared/rendering/effects';
+import type { EffectsSettings } from '@/shared/rendering/effects';
 import type { EnvironmentSettings, FogSettings } from '@/shared/rendering/environment';
 
 export interface CanvasGridSettingsState {
@@ -45,27 +34,11 @@ interface EnvironmentConfigActions {
 }
 
 interface CameraSettingsActions {
-    setType: (type: CameraSettingsState['type']) => void;
     setPosition: (position: CameraSettingsState['position']) => void;
     setUp: (up: CameraSettingsState['up']) => void;
-    setPerspective: (partial: Partial<PerspectiveSettings>) => void;
-    setOrthographic: (partial: Partial<OrthographicSettings>) => void;
     reset: () => void;
 }
 
-interface EffectsConfigActions {
-    setSSAOEffect: (config: Partial<SSAOEffectConfig>) => void;
-    setBloomEffect: (config: Partial<BloomEffectConfig>) => void;
-    setChromaticAberration: (config: Partial<ChromaticAberrationConfig>) => void;
-    setVignette: (config: Partial<VignetteEffectConfig>) => void;
-    setDepthOfField: (config: Partial<DepthOfFieldConfig>) => void;
-    setNoise: (config: Partial<NoiseEffectConfig>) => void;
-    setSepia: (config: Partial<SepiaEffectConfig>) => void;
-    reset: () => void;
-}
-
-type PerspectiveSettings = PerspectiveCameraSettings;
-type OrthographicSettings = OrthographicCameraSettings;
 export type CameraSettingsState = CameraSettings;
 export type CameraSettingsStore = CameraSettingsState & CameraSettingsActions;
 export type OrbitControlsState = OrbitControlsSettings;
@@ -74,18 +47,9 @@ export type CanvasGridSettingsStore = CanvasGridSettingsState & CanvasGridSettin
 export type FogConfig = FogSettings;
 export type EnvironmentConfigState = EnvironmentSettings;
 export type EnvironmentConfigStore = EnvironmentConfigState & EnvironmentConfigActions;
-export type SSAOEffectConfig = SSAOEffectSettings;
-export type BloomEffectConfig = BloomSettings;
-export type ChromaticAberrationConfig = ChromaticAberrationSettings;
-export type VignetteEffectConfig = VignetteSettings;
-export type DepthOfFieldConfig = DepthOfFieldSettings;
-export type NoiseEffectConfig = NoiseSettings;
-export type SepiaEffectConfig = SepiaSettings;
 export type EffectsConfigState = EffectsSettings;
-export type EffectsConfigStore = EffectsConfigState & EffectsConfigActions;
 
 interface OrbitControlsActions {
-    set: (partial: Partial<OrbitControlsState>) => void;
     setTarget: (t: [number, number, number]) => void;
     reset: () => void;
 }

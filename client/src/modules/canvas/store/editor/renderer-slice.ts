@@ -1,15 +1,17 @@
-import { mergeNestedSectionState, resetSectionState } from './store-section';
+import { resetSectionState } from './store-section';
 import {
     getDefaultRendererCreateSettings,
     getDefaultRendererRuntimeSettings
 } from '@/shared/rendering/renderer';
 
 import type { EditorStore } from './types';
-import type { RendererCreateState, RendererRuntimeState, RendererSettings, RendererSettingsStore } from '@/shared/rendering/renderer';
+import type { RendererSettings } from '@/shared/rendering/renderer';
 import type { StateCreator } from 'zustand';
 
 export interface RendererSlice {
-    rendererSettings: RendererSettingsStore;
+    rendererSettings: RendererSettings & {
+        reset: () => void;
+    };
 }
 
 const getInitialRendererSettings = (): RendererSettings => ({
@@ -20,8 +22,6 @@ const getInitialRendererSettings = (): RendererSettings => ({
 export const createRendererSlice: StateCreator<EditorStore, [], [], RendererSlice> = (set) => ({
     rendererSettings: {
         ...getInitialRendererSettings(),
-        setCreate: (partial: Partial<RendererCreateState>) => set((state) => mergeNestedSectionState(state, 'rendererSettings', 'create', partial)),
-        setRuntime: (partial: Partial<RendererRuntimeState>) => set((state) => mergeNestedSectionState(state, 'rendererSettings', 'runtime', partial)),
         reset: () => set((state) => resetSectionState(state, 'rendererSettings', getInitialRendererSettings()))
     }
 });
