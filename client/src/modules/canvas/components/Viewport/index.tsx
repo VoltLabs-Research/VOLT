@@ -1,7 +1,6 @@
 import { setSceneInteracting } from '../../hooks/use-scene-interaction';
 import AIViewerActivityBadge from './AIViewerActivityBadge';
 import PlaybackTicker from '../PlaybackTicker';
-import ViewportFloatingControls from '../ViewportFloatingControls';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { useLocalGlbStore } from '@/modules/canvas/store/use-local-glb-store';
 import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store';
@@ -10,7 +9,7 @@ import LocalGlbViewer from '@/modules/fractal/components/organisms/LocalGlbViewe
 import TimestepViewer from '@/modules/fractal/components/organisms/TimestepViewer';
 import { debugFractal } from '@/modules/fractal/utils/debug-log';
 import { getFrameBoxBounds, getTrajectoryFrameByTimestep, hasFrameBoxBounds } from '@/modules/fractal/utils/frame-box-bounds';
-import { getRenderableScenes } from '@/modules/fractal/utils/scene-utils';
+import { getRenderableScenes, getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { selectHasMergedScenes } from '@/modules/canvas/store/editor/selectors';
 import useTip from '@/shared/tips/use-tip';
@@ -35,7 +34,6 @@ interface ViewportProps {
     bodyContent?: ReactNode;
     analysisOverlay?: ReactNode;
     renderScene: boolean;
-    showSceneActions: boolean;
 }
 
 const resolveTrajectoryTeamId = (trajectory: Trajectory | null | undefined): string | undefined => {
@@ -71,12 +69,12 @@ const Viewport = ({
     sceneRef,
     bodyContent,
     analysisOverlay,
-    renderScene,
-    showSceneActions
+    renderScene
 }: ViewportProps) => {
     const selectedTeamId = useSelectedTeamId() ?? undefined;
     const teamId = resolveTrajectoryTeamId(trajectory) ?? selectedTeamId;
     const screenshotRequest = useScreenshotStore((s) => s.pendingRequest);
+    const isFigureBatchActive = useScreenshotStore((s) => s.isFigureBatchActive);
     const {
         activeScenes,
         sceneVisualOverrides,
@@ -85,7 +83,9 @@ const Viewport = ({
         setModelBounds,
         setModelWorldBounds,
         setModelLoadingState,
-        setIsPointCloudScene
+        setSceneLoadingState,
+        setIsPointCloudScene,
+        sceneMergeGroups
     } = useEditorStore(useShallow((s) => ({
         activeScenes: s.activeScenes,
         sceneVisualOverrides: s.sceneVisualOverrides,
@@ -94,7 +94,9 @@ const Viewport = ({
         setModelBounds: s.setModelBounds,
         setModelWorldBounds: s.setModelWorldBounds,
         setModelLoadingState: s.setModelLoadingState,
-        setIsPointCloudScene: s.setIsPointCloudScene
+        setSceneLoadingState: s.setSceneLoadingState,
+        setIsPointCloudScene: s.setIsPointCloudScene,
+        sceneMergeGroups: s.sceneMergeGroups
     })));
 
     const currentFrame = useMemo(() => {
@@ -136,7 +138,9 @@ const Viewport = ({
             };
         }
 
-        if (renderableScenes.length !== 1 || !modelWorldBounds) {
+        const isMergedOverlay = renderableScenes.length > 1
+            && renderableScenes.every((scene) => Boolean(sceneMergeGroups[getSceneKey(scene)]));
+        if ((renderableScenes.length !== 1 && !isMergedOverlay) || !modelWorldBounds) {
             return undefined;
         }
 
@@ -145,7 +149,12 @@ const Viewport = ({
             cropBoundsWorld: modelWorldBounds,
             cropSource: 'simulation-cell'
         };
-    }, [localAutoSimulationCellWorldBounds, localGlbMode, modelWorldBounds, renderableScenes.length]);
+    }, [localAutoSimulationCellWorldBounds, localGlbMode, modelWorldBounds, renderableScenes, sceneMergeGroups]);
+
+    const handleLoadingStateChanged = useCallback((state: Parameters<typeof setModelLoadingState>[0], sceneKey: string) => {
+        setSceneLoadingState(sceneKey, state);
+        setModelLoadingState(state);
+    }, [setModelLoadingState, setSceneLoadingState]);
 
     const handleContentTypeDetected = useCallback((info: { hasPointClouds: boolean }) => {
         debugFractal('viewport.content-type-detected', {
@@ -213,11 +222,11 @@ const Viewport = ({
                                     setModelWorldBounds={setModelWorldBounds}
                                     activeModelBounds={activeModelBounds}
                                     onModelBoundsChanged={setModelBounds}
-                                    onLoadingStateChanged={setModelLoadingState}
+                                    onLoadingStateChanged={handleLoadingStateChanged}
                                     scale={TIMESTEP_VIEWER_DEFAULTS.scale}
                                     rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
                                     position={TIMESTEP_VIEWER_DEFAULTS.position}
-                                    autoFit
+                                    autoFit={!isFigureBatchActive}
                                     autoFitKeyOverride={trajectory?._id ?? null}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
@@ -230,8 +239,6 @@ const Viewport = ({
                 {analysisOverlay}
 
                 <AIViewerActivityBadge />
-
-                {showSceneActions && <ViewportFloatingControls />}
             </div>
         </div>
     );

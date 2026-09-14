@@ -16,6 +16,7 @@ import {
     getSelectedTimestepsForAnalysis
 } from '../../utils/selected-timestep-analysis';
 import { useEditorStore } from '@/modules/canvas/store/editor';
+import { useScreenshotStore } from '@/modules/canvas/store/use-screenshot-store';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 
@@ -209,6 +210,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     useEffect(() => {
         if (!analysisConfigId) return;
+        if (useScreenshotStore.getState().isFigureBatchActive) return;
 
         const entry = getEntry(analysisConfigId);
         if (entry.state !== 'loaded') return;
@@ -302,6 +304,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         if (previousTimestep === currentTimestep) return;
+        if (useScreenshotStore.getState().isFigureBatchActive) return;
         setActiveScene(DEFAULT_SCENE);
         setAnalysisId(undefined, { replace: true });
     }, [currentTimestep, analysisConfigId, selectedAnalysis, trajectoryTimesteps, setActiveScene, setAnalysisId, setCurrentTimestep]);

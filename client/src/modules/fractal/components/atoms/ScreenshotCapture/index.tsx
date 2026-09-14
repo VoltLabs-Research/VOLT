@@ -34,6 +34,9 @@ interface ScreenshotViewSnapshot {
 type PointScaleSnapshot = Array<{ material: ShaderMaterial; pointScale: number }>;
 
 interface PendingCapture {
+    requestId: number;
+    filename?: string;
+    silentToast: boolean;
     framesRemaining: number;
     originalDpr: number;
     originalSize: { width: number; height: number };
@@ -42,6 +45,7 @@ interface PendingCapture {
     snapshot: ScreenshotViewSnapshot;
     screenshotComposition?: ScreenshotComposition;
     captureInFlight: boolean;
+    settleError?: Error;
 }
 
 const scalePointCloudMaterials = (scene: Scene, scale: number): PointScaleSnapshot => {
@@ -160,17 +164,22 @@ const ScreenshotCapture = ({
                 pending.screenshotComposition?.cropBoundsWorld
             );
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            triggerBrowserDownload(blob, `volt-screenshot-${timestamp}.png`);
+            triggerBrowserDownload(blob, pending.filename ?? `volt-screenshot-${timestamp}.png`);
             dismissToast();
             onStatusChange?.('Screenshot captured and downloaded.');
-            sileo.success({ title: 'Screenshot captured' });
-        } catch {
+            if (!pending.silentToast) {
+                sileo.success({ title: 'Screenshot captured' });
+            }
+        } catch (error) {
             dismissToast();
             onStatusChange?.('Screenshot failed. Could not capture the viewport.');
-            sileo.error({
-                title: 'Screenshot failed',
-                description: 'Could not capture the viewport.'
-            });
+            if (!pending.silentToast) {
+                sileo.error({
+                    title: 'Screenshot failed',
+                    description: 'Could not capture the viewport.'
+                });
+            }
+            pending.settleError = error instanceof Error ? error : new Error('Screenshot failed.');
         } finally {
             restorePointCloudMaterials(pending.pointCloudScaleSnapshot);
             restoreSnapshot(pending.snapshot);
@@ -180,6 +189,7 @@ const ScreenshotCapture = ({
             setSize(pending.originalSize.width, pending.originalSize.height);
             pendingRef.current = null;
             useScreenshotStore.getState().setIsCapturing(false);
+            useScreenshotStore.getState().notifyCaptureSettled(pending.requestId, pending.settleError);
             invalidate();
         }
     }, [camera, dismissToast, gl, invalidate, onStatusChange, restoreSnapshot, setDpr, setSize]);
@@ -213,6 +223,9 @@ const ScreenshotCapture = ({
         applyAnglePreset(captureRequest);
 
         pendingRef.current = {
+            requestId: captureRequest.id,
+            filename: captureRequest.filename,
+            silentToast: Boolean(captureRequest.silent),
             framesRemaining: 2,
             originalDpr,
             originalSize: {
@@ -291,6 +304,13 @@ const ScreenshotCapture = ({
     useEffect(() => {
         return () => {
             dismissToast();
+            const pending = pendingRef.current;
+            if (pending) {
+                useScreenshotStore.getState().notifyCaptureSettled(
+                    pending.requestId,
+                    new Error('Screenshot capture cancelled.')
+                );
+            }
             useScreenshotStore.getState().setIsCapturing(false);
         };
     }, [dismissToast]);
