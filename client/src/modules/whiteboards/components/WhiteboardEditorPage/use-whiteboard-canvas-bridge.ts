@@ -27,16 +27,18 @@ interface UseWhiteboardCanvasBridgeProps {
     whiteboardId: string;
 };
 
-const createSceneSignature = (elements: WhiteboardElements, appState: WhiteboardAppState): string => JSON.stringify({
-    elements: elements.map((element) => [
-        element.id,
-        element.version,
-        element.versionNonce,
-        element.updated,
-        element.isDeleted
-    ]),
-    appState: filterPersistableAppState(appState)
-});
+const createSceneSignature = (elements: WhiteboardElements, appState: WhiteboardAppState): string => {
+    const persistable = filterPersistableAppState(appState);
+    let versionSum = elements.length;
+    let nonceSum = persistable.gridSize === undefined ? 0 : Number(persistable.gridSize) || 0;
+
+    for (const element of elements) {
+        versionSum = (versionSum + element.version + element.updated) | 0;
+        nonceSum = (nonceSum + element.versionNonce) | 0;
+    }
+
+    return `${elements.length}:${versionSum}:${nonceSum}:${String(persistable.viewBackgroundColor ?? '')}`;
+};
 
 const syncSceneFiles = (api: ExcalidrawAPI, files?: WhiteboardFiles) => {
     const nextFiles = Object.values(files ?? {});

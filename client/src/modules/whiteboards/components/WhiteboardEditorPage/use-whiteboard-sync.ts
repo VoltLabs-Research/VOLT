@@ -1,6 +1,4 @@
 import {
-    cloneWhiteboardAppState,
-    cloneWhiteboardElements,
     computeWhiteboardSceneDelta,
     filterPersistableAppState,
     mergeWhiteboardAppState,
@@ -47,7 +45,7 @@ interface UseWhiteboardSyncProps {
     ) => Promise<void> | void;
 };
 
-const DELTA_DEBOUNCE_MS = 80;
+const DELTA_DEBOUNCE_MS = 160;
 
 const CONFLICT_TOAST_THROTTLE_MS = 5000;
 
@@ -97,8 +95,8 @@ const useWhiteboardSync = ({
         if (ack.accepted) {
             hasSnapshotRef.current = true;
             syncedSceneRef.current = {
-                elements: cloneWhiteboardElements(sentState.elements),
-                appState: cloneWhiteboardAppState(filterPersistableAppState(sentState.appState))
+                elements: sentState.elements,
+                appState: filterPersistableAppState(sentState.appState)
             };
         }
     }, []);
@@ -180,8 +178,8 @@ const useWhiteboardSync = ({
         }
 
         queuedStateRef.current = {
-            elements: cloneWhiteboardElements(elements),
-            appState: cloneWhiteboardAppState(filterPersistableAppState(appState))
+            elements,
+            appState: filterPersistableAppState(appState)
         };
 
         if (debounceTimerRef.current) {
@@ -215,20 +213,20 @@ const useWhiteboardSync = ({
 
         if (mode === 'snapshot') {
             syncedSceneRef.current = {
-                elements: cloneWhiteboardElements(payload.elements),
-                appState: cloneWhiteboardAppState(filterPersistableAppState(payload.appState))
+                elements: payload.elements,
+                appState: filterPersistableAppState(payload.appState)
             };
         } else {
             syncedSceneRef.current = {
-                elements: cloneWhiteboardElements(mergeWhiteboardElements(
+                elements: mergeWhiteboardElements(
                     syncedSceneRef.current.elements,
                     payload.elements,
                     payload.elementOrder
-                )),
-                appState: cloneWhiteboardAppState(mergeWhiteboardAppState(
+                ),
+                appState: mergeWhiteboardAppState(
                     syncedSceneRef.current.appState,
                     payload.appState
-                ))
+                )
             };
         }
 
