@@ -14,7 +14,11 @@ interface WhiteboardSceneDelta {
     elementOrder?: string[];
 };
 
-const cloneSerializable = <T,>(value: T): T => {
+const clonePersistableValue = <T,>(value: T): T => {
+    if (value === null || typeof value !== 'object') {
+        return value;
+    }
+
     try {
         return JSON.parse(JSON.stringify(value)) as T;
     } catch {
@@ -55,12 +59,18 @@ const normalizeWhiteboardCollaborators = (
     return nextAppState;
 };
 
-const hasEquivalentElementPayload = (current: WhiteboardElement, incoming: WhiteboardElement): boolean => {
-    try {
-        return JSON.stringify(current) === JSON.stringify(incoming);
-    } catch {
-        return false;
-    }
+export const isSameElementRevision = (
+    current: WhiteboardElement,
+    incoming: WhiteboardElement
+): boolean => {
+    return current === incoming
+        || (
+            current.id === incoming.id
+            && current.version === incoming.version
+            && current.versionNonce === incoming.versionNonce
+            && current.updated === incoming.updated
+            && current.isDeleted === incoming.isDeleted
+        );
 };
 
 const areStringArraysEqual = (left: string[], right: string[]): boolean => {
@@ -144,7 +154,7 @@ const shouldReplaceElement = (current: WhiteboardElement | undefined, incoming: 
         return versionNonceDelta > 0;
     }
 
-    return !hasEquivalentElementPayload(current, incoming);
+    return !isSameElementRevision(current, incoming);
 };
 
 export const filterPersistableAppState = (appState: WhiteboardAppState): WhiteboardAppState => {
@@ -159,20 +169,20 @@ export const filterPersistableAppState = (appState: WhiteboardAppState): Whitebo
 
 export const cloneWhiteboardElements = (
     elements: WhiteboardElement[]
-): WhiteboardElement[] => cloneSerializable(elements);
+): WhiteboardElement[] => elements.slice();
 
 export const cloneWhiteboardAppState = (
     appState: WhiteboardAppState
 ): WhiteboardAppState => normalizeWhiteboardCollaborators(
     appState,
-    cloneSerializable(appState)
+    { ...appState }
 );
 
 export const normalizeWhiteboardRuntimeAppState = (
     appState: WhiteboardAppState
 ): WhiteboardAppState => normalizeWhiteboardCollaborators(appState, { ...appState });
 
-export const cloneWhiteboardFiles = (files: WhiteboardFiles): WhiteboardFiles => cloneSerializable(files);
+export const cloneWhiteboardFiles = (files: WhiteboardFiles): WhiteboardFiles => ({ ...files });
 
 export const mergeWhiteboardElements = (
     currentElements: WhiteboardElement[],
@@ -235,7 +245,7 @@ export const computeWhiteboardSceneDelta = (
     for (const element of nextElements) {
         nextOrder.push(element.id);
         const currentElement = currentElementsById.get(element.id);
-        if (!currentElement || !hasEquivalentElementPayload(currentElement, element)) {
+        if (!currentElement || !isSameElementRevision(currentElement, element)) {
             changedElements.push(element);
         }
     }
@@ -246,7 +256,7 @@ export const computeWhiteboardSceneDelta = (
 
     for (const [key, value] of Object.entries(nextPersistableAppState)) {
         if (!Object.is(currentPersistableAppState[key], value)) {
-            changedAppState[key] = value;
+            changedAppState[key] = clonePersistableValue(value);
         }
     }
 

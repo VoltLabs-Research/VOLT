@@ -1,9 +1,6 @@
 import service from '@/modules/whiteboards/api/service';
 import { useUpdateWhiteboardMutation, whiteboardQuery } from '@/modules/whiteboards/hooks/queries';
 import {
-    cloneWhiteboardAppState,
-    cloneWhiteboardElements,
-    cloneWhiteboardFiles,
     extractWhiteboardFileIds,
     filterPersistableAppState,
     mergeWhiteboardAppState,
@@ -45,9 +42,9 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
 
     const updateSceneState = useCallback((nextState: WhiteboardStoredScene) => {
         const resolvedState = {
-            elements: cloneWhiteboardElements(nextState.elements),
-            appState: cloneWhiteboardAppState(nextState.appState),
-            files: cloneWhiteboardFiles(nextState.files ?? {})
+            elements: nextState.elements,
+            appState: nextState.appState,
+            files: nextState.files ?? currentFilesRef.current
         } satisfies WhiteboardStoredScene;
 
         currentElementsRef.current = resolvedState.elements;
@@ -173,11 +170,11 @@ const useWhiteboardEditor = ({ whiteboardId }: UseWhiteboardEditorProps) => {
     }, [hydrateFiles, resetEditorState, updateSceneState, whiteboardId]);
 
     const handleChange = useCallback((elements: WhiteboardElements, appState: WhiteboardAppState, files?: WhiteboardFiles) => {
-        currentElementsRef.current = cloneWhiteboardElements(elements);
-        currentAppStateRef.current = cloneWhiteboardAppState(appState);
-        currentFilesRef.current = files
-            ? cloneWhiteboardFiles(files)
-            : currentFilesRef.current;
+        currentElementsRef.current = elements;
+        currentAppStateRef.current = appState;
+        if (files) {
+            currentFilesRef.current = files;
+        }
 
         const incomingTitle = typeof appState['name'] === 'string' ? appState['name'] : null;
         if (incomingTitle && incomingTitle !== titleRef.current) {
