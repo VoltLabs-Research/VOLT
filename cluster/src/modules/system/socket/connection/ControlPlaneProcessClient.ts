@@ -31,6 +31,7 @@ interface ChildMessage {
 }
 
 const CONTROL_PROCESS_RESTART_DELAY_MS = 2_000;
+const CONTROL_CONNECT_TIMEOUT_MS = 30_000;
 
 export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
     private ready = false;
@@ -63,9 +64,20 @@ export class ControlPlaneProcessClient extends PlaneProcessSupervisor {
         }
 
         return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error(`Control plane did not register within ${CONTROL_CONNECT_TIMEOUT_MS / 1000}s`));
+            }, CONTROL_CONNECT_TIMEOUT_MS);
+            timeout.unref();
+
             this.connectWaiters.push({
-                resolve,
-                reject
+                resolve: () => {
+                    clearTimeout(timeout);
+                    resolve();
+                },
+                reject: (error) => {
+                    clearTimeout(timeout);
+                    reject(error);
+                }
             });
         });
     }
