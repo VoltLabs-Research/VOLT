@@ -2,6 +2,7 @@ import { BaseEntity, BeforeInsert, CreateDateColumn, PrimaryColumn, UpdateDateCo
 import type { Repository } from 'typeorm';
 import { ENTITY_ID_LENGTH, generateEntityId } from '@shared/persistence/entity-id';
 import { getHiddenFields } from '@shared/persistence/Hidden';
+import { resolvePublicFileUrl } from '@shared/services/FilesystemStorageService';
 
 const WIRE_ID = '_id';
 
@@ -36,7 +37,9 @@ export default abstract class BaseModel extends BaseEntity{
 
         for(const [key, value] of Object.entries(this)){
             if(key === 'id' || hidden.has(key) || relationProperties.has(key)) continue;
-            output[key] = value;
+            output[key] = key === 'avatar' && typeof value === 'string'
+                ? resolvePublicFileUrl(value) ?? value
+                : value;
         }
 
         for(const { relationProperty, wireProperty } of references){

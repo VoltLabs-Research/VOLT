@@ -2,6 +2,7 @@ import { MoreThanOrEqual } from 'typeorm';
 import type { ActivityType } from '@volt/contracts/modules/daily-activity/domain';
 import DailyActivity from '@modules/daily-activity/models/DailyActivity';
 import type User from '@modules/auth/models/User';
+import { resolvePublicFileUrl } from '@shared/services/FilesystemStorageService';
 
 interface GetTeamActivitySummaryInput {
     teamId: string;
@@ -24,7 +25,7 @@ const toActivityUser = (user: User | null | undefined) => {
         _id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        avatar: user.avatar ?? undefined
+        avatar: resolvePublicFileUrl(user.avatar)
     };
 };
 

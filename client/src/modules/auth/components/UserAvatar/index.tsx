@@ -1,5 +1,5 @@
 import { AvatarFallback, AvatarImage, AvatarRoot, cn } from '@heroui/react';
-import { getInitialsFromUser } from '@/shared/utils/user';
+import { getInitialsFromUser, resolveAvatarUrl } from '@/shared/utils/user';
 
 interface AvatarUser {
     firstName?: string | null;
@@ -21,12 +21,13 @@ const UserAvatar = ({
 }: UserAvatarProps) => {
     const initials = user ? getInitialsFromUser(user) : '?';
     const altText = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'Avatar';
+    const avatarSrc = resolveAvatarUrl(user?.avatar);
 
     return (
         <AvatarRoot
             className='relative shrink-0 overflow-hidden rounded-full bg-surface-tertiary text-muted size-8'
         >
-            {user?.avatar && <AvatarImage src={user.avatar} alt={altText} className='object-cover' />}
+            {avatarSrc && <AvatarImage src={avatarSrc} alt={altText} className='object-cover' />}
             <AvatarFallback
                 className='bg-surface-tertiary font-semibold text-muted text-xs'
             >

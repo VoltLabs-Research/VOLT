@@ -11,6 +11,7 @@ import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { Monitor, Moon, Sun, Trash2 } from 'lucide-react';
+import { resolveAvatarUrl } from '@/shared/utils/user';
 import { useMemo, useState } from 'react';
 import type { Key } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/ProfileForm/validation-schema';
@@ -95,7 +96,7 @@ const GeneralSettings = () => {
                     description="Update your personal information and profile picture" />
                 <div className='flex flex-col gap-4'>
                     <AvatarUpload
-                        avatarUrl={user?.avatar || null}
+                        avatarUrl={resolveAvatarUrl(user?.avatar) || null}
                         isUploading={isUploadingAvatar}
                         onUpload={handleAvatarUpload} />
                     <ProfileForm

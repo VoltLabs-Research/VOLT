@@ -4,6 +4,7 @@ import TeamMember from '@modules/team/models/TeamMember';
 import teamRoomPresenceService from '@modules/team/services/team-member/TeamRoomPresenceService';
 import teamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import ApplicationError from '@shared/errors/ApplicationError';
+import { resolvePublicFileUrl } from '@shared/services/FilesystemStorageService';
 import type { IMemberContentCounter } from '@shared/contracts/types/IMemberContentCounter';
 import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMemberContentCounter';
@@ -56,7 +57,7 @@ class TeamMemberService{
                     : {
                         _id: userRef.id,
                         email: userRef.email,
-                        avatar: userRef.avatar,
+                        avatar: resolvePublicFileUrl(userRef.avatar) ?? userRef.avatar,
                         firstName: userRef.firstName,
                         lastName: userRef.lastName,
                         createdAt: userRef.createdAt,
