@@ -5,17 +5,20 @@ import { CHANNELS } from '@/types/events';
 import LocalDeploy from '@/services/LocalDeploy';
 import AppConfig, { DevModeState, ThemePreference } from '@/services/AppConfig';
 import { probeRemoteEndpoint } from '@/services/RemoteProbe';
-import { openExternalUrl, sendToShell } from '@/services/WindowSecurity';
+import { isTrustedChromeUrl, openExternalUrl, sendToShell } from '@/services/WindowSecurity';
 import type { ConfirmOptions } from '@/types/global';
 
 interface IpcDeps{
     deploy: LocalDeploy;
     appConfig: AppConfig;
     loadShell: (hash?: string) => void;
+    allowedOrigins: () => Promise<readonly string[]>;
 };
 
+const senderUrlOf = (event: IpcMainInvokeEvent): string => event.senderFrame?.url ?? '';
+
 const isShellSender = (event: IpcMainInvokeEvent): boolean => {
-    const senderUrl = event.senderFrame?.url ?? '';
+    const senderUrl = senderUrlOf(event);
     if(!senderUrl) return false;
 
     const devUrl = process.env['ELECTRON_RENDERER_URL'];
@@ -31,6 +34,20 @@ const handleFromShell = <TResult>(
     ipcMain.handle(channel, (event, ...args) => {
         if(!isShellSender(event)){
             throw new Error(`Channel ${channel} is only available to the Volt shell`);
+        }
+
+        return handler(event, ...args as never[]);
+    });
+};
+
+const handleFromTrusted = <TResult>(
+    channel: string,
+    allowedOrigins: () => Promise<readonly string[]>,
+    handler: (event: IpcMainInvokeEvent, ...args: never[]) => TResult
+): void => {
+    ipcMain.handle(channel, async (event, ...args) => {
+        if(!isTrustedChromeUrl(senderUrlOf(event), await allowedOrigins())){
+            throw new Error(`Channel ${channel} is only available to the Volt window`);
         }
 
         return handler(event, ...args as never[]);
@@ -63,11 +80,11 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
 
     handleFromShell('remote:recent', () => deps.appConfig.getRecentEndpoints());
 
-    handleFromShell('deployment:get', () => deps.appConfig.getDeployment());
+    handleFromTrusted('deployment:get', deps.allowedOrigins, () => deps.appConfig.getDeployment());
     handleFromShell('deployment:setLocal', () => deps.appConfig.setDeployment({ mode: 'local' }));
     handleFromShell('deployment:reset', () => deps.appConfig.clearDeployment());
 
-    handleFromShell('shell:openExternal', (_e, url: string) => openExternalUrl(url));
+    handleFromTrusted('shell:openExternal', deps.allowedOrigins, (_e, url: string) => openExternalUrl(url));
 
     handleFromShell('dialog:pickDirectory', async () => {
         const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
@@ -92,9 +109,9 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
 
     handleFromShell('devmode:apply', (_e, payload: DevModeState) => deps.deploy.applyDevMode(payload));
 
-    handleFromShell('window:minimize', () => win.minimize());
-    handleFromShell('window:maximize', () => win.isMaximized() ? win.unmaximize() : win.maximize());
-    handleFromShell('window:close', () => win.close());
+    handleFromTrusted('window:minimize', deps.allowedOrigins, () => win.minimize());
+    handleFromTrusted('window:maximize', deps.allowedOrigins, () => win.isMaximized() ? win.unmaximize() : win.maximize());
+    handleFromTrusted('window:close', deps.allowedOrigins, () => win.close());
 
     handleFromShell('app:openClient', async () => {
         const deployment = await deps.appConfig.getDeployment();
@@ -108,7 +125,7 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
         void win.loadURL(url).catch(() => { });
     });
 
-    handleFromShell('app:openShell', (_e, intent?: string) => {
+    handleFromTrusted('app:openShell', deps.allowedOrigins, (_e, intent?: string) => {
         deps.loadShell(intent || 'launcher');
     });
 
