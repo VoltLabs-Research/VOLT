@@ -53,6 +53,16 @@
       ],
       "artifactName": "VOLT Desktop ${version}.${ext}"
     },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Volt"
+    },
     "linux": {
       "maintainer": "Volt Labs <voltlabs-research@users.noreply.github.com>",
       "target": [

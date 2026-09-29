@@ -3,6 +3,25 @@ import { appendFileSync, closeSync, mkdirSync, openSync, readSync, statSync } fr
 import path from 'node:path';
 import bus from '@/services/EventBus';
 
+const killProcessTree = (child: ChildProcess, hard: boolean): void => {
+    const pid = child.pid;
+    if(pid === undefined) return;
+
+    if(process.platform === 'win32'){
+        spawn('taskkill', ['/PID', String(pid), '/T', '/F'], {
+            windowsHide: true,
+            stdio: 'ignore'
+        }).on('error', () => {
+            try{ child.kill(); }catch{ /* already gone */ }
+        });
+        return;
+    }
+
+    try{
+        child.kill(hard ? 'SIGKILL' : 'SIGTERM');
+    }catch{ /* already gone */ }
+};
+
 interface ManagedProcessProps{
     name: string;
     command: string;
@@ -88,9 +107,9 @@ export default class ManagedProcess{
             return;
         }
 
-        child.kill('SIGTERM');
+        killProcessTree(child, false);
         const killTimer = setTimeout(() => {
-            if(this.running) child.kill('SIGKILL');
+            if(this.running) killProcessTree(child, true);
         }, STOP_GRACE_MS);
         killTimer.unref();
 

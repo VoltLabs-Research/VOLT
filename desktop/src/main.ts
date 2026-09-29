@@ -12,6 +12,7 @@ import { registerIpc } from '@/ipc';
 app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
+if(process.platform === 'win32') app.setAppUserModelId('com.voltlabs.volt');
 
 const isDev = !!process.env['ELECTRON_RENDERER_URL'];
 
@@ -44,8 +45,7 @@ const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     }
     if(process.platform === 'win32'){
         return {
-            backgroundMaterial: 'acrylic',
-            backgroundColor: '#00000000'
+            backgroundColor: '#0c0c0c'
         };
     }
     return {
