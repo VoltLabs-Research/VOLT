@@ -2,7 +2,7 @@ import { hasResolvedBackendEndpoint } from '@/app/core/http/utils/backend-origin
 import { Navigate, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
-const ENDPOINTLESS_ALLOWED_PATHS = ['/connect', '/error', '/canvas/glb'];
+const ENDPOINTLESS_ALLOWED_PATHS = ['/', '/connect', '/error', '/canvas/glb', '/home'];
 
 interface EndpointGuardProps {
     children: ReactNode;
