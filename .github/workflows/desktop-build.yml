@@ -51,6 +51,8 @@ jobs:
     env:
       # Build the macOS app unsigned (no Apple certs in CI).
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
+      electron_config_cache: ${{ github.workspace }}/.cache/electron
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -73,8 +75,25 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('desktop/package-lock.json') }}
+
       - name: Install desktop dependencies
-        run: npm ci
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if npm ci; then
+              exit 0
+            fi
+            echo "npm ci failed (attempt ${attempt}/3)"
+            if [ "${attempt}" -eq 3 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 15))
+          done
 
       - name: Set release version
         if: startsWith(github.ref, 'refs/tags/v')
