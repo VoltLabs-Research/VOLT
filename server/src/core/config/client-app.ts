@@ -15,7 +15,7 @@ const BOOTSTRAP_PAGE = `<!doctype html>
     var token = new URLSearchParams(location.search).get('token');
     if(token){ localStorage.setItem('authToken', token); }
   }catch(e){}
-  location.replace('/');
+  location.replace('/dashboard');
 })();
 </script></body></html>
 `;

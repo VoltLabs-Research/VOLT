@@ -1,15 +1,23 @@
 import '@/modules/marketing/landing.css';
 import { useDesktopDownload } from '@/modules/marketing/hooks/use-desktop-download';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 const DOCS = 'https://docs.voltcloud.dev';
 const REGISTRY = 'https://registry.voltcloud.dev';
 const APP = '/auth/sign-in';
 
+const isDesktopShell = (): boolean =>
+    document.documentElement.dataset.voltDesktop === 'true'
+    || navigator.userAgent.includes('Electron');
+
 const LandingPage = () => {
     usePageTitle('The Platform for Modern Materials Research');
     const download = useDesktopDownload();
+
+    if (isDesktopShell()) {
+        return <Navigate to='/dashboard' replace />;
+    }
 
     return (
         <div id='top' className='landing min-h-dvh overflow-x-hidden' data-theme='dark'>

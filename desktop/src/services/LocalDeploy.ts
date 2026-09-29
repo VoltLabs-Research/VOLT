@@ -92,7 +92,7 @@ export default class LocalDeploy{
         const origin = this.serverOrigin();
         if(!origin) return null;
         const token = (await this.props.appConfig.getBootstrap())?.authToken;
-        return token ? `${origin}/__bootstrap.html?token=${encodeURIComponent(token)}` : origin;
+        return token ? `${origin}/__bootstrap.html?token=${encodeURIComponent(token)}` : `${origin}/dashboard`;
     }
 
     start(){
