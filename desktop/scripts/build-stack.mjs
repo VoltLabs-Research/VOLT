@@ -61,6 +61,13 @@ const buildClient = async () => {
 
 const materializeLinkedSdk = async (target) => {
     const linkPath = path.join(target, 'node_modules', '@voltstack', 'daemon-cluster-client');
+    const packagedSdk = path.join(outDir, 'sdk', 'node', 'DaemonClusterClient');
+    if (await exists(packagedSdk)) {
+        await rm(linkPath, { recursive: true, force: true });
+        await cp(packagedSdk, linkPath, { recursive: true, dereference: true });
+        return;
+    }
+
     const stat = await lstat(linkPath).catch(() => null);
     if (!stat?.isSymbolicLink()) return;
     const source = await realpath(linkPath);
@@ -68,9 +75,14 @@ const materializeLinkedSdk = async (target) => {
     await cp(source, linkPath, { recursive: true, dereference: true });
 };
 
+const assertSdkLoads = async (target) => {
+    await run(process.execPath, ['-e', "require('@voltstack/daemon-cluster-client')"], target);
+};
+
 const installProductionDependencies = async (target) => {
     await run(npmCommand, ['ci', '--omit=dev', '--no-audit', '--no-fund'], target, { NODE_ENV: 'production' });
     await materializeLinkedSdk(target);
+    await assertSdkLoads(target);
 };
 
 const buildServer = async () => {

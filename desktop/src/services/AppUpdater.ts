@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import electronUpdater, { type AppUpdater } from 'electron-updater';
+import electronUpdater, { NsisUpdater, type AppUpdater } from 'electron-updater';
 
 const CHECK_DELAY_MS = 3_000;
 
@@ -22,6 +22,7 @@ export const startAppUpdater = (): void => {
     updater.autoDownload = true;
     updater.autoInstallOnAppQuit = true;
     updater.disableWebInstaller = true;
+    if(updater instanceof NsisUpdater) updater.verifyUpdateCodeSignature = async () => null;
     updater.logger = {
         info: (message) => console.info('[updater]', message),
         warn: (message) => console.warn('[updater]', message),
