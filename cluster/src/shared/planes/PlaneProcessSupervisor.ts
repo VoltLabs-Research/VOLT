@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { logger } from '@shared/logger';
 import { applyPreferredPlaneProcessPriority } from '@shared/utilities/process-priority';
@@ -12,18 +13,46 @@ interface PlaneProcessOptions {
     advancedSerialization?: boolean;
 }
 
+const resolveDistRoot = (): string | null => {
+    const packaged = path.join(process.cwd(), 'dist');
+    if (existsSync(path.join(packaged, 'control-plane.js')) && existsSync(path.join(packaged, 'daemon.js'))) {
+        return packaged;
+    }
+
+    let dir = __dirname;
+    while (true) {
+        if (existsSync(path.join(dir, 'control-plane.js')) && existsSync(path.join(dir, 'daemon.js'))) {
+            return dir;
+        }
+        const parent = path.dirname(dir);
+        if (parent === dir) return null;
+        dir = parent;
+    }
+};
+
 const resolveProcessCommand = (script: string, extraArgs: readonly string[]): { execPath: string; args: string[] } => {
     const runningFromDist = __filename.endsWith('.js') && __dirname.includes(`${path.sep}dist${path.sep}`);
 
     if (runningFromDist) {
+        const distRoot = resolveDistRoot();
+        const scriptPath = distRoot
+            ? path.join(distRoot, `${script}.js`)
+            : path.join(process.cwd(), 'dist', `${script}.js`);
+        if (!existsSync(scriptPath)) {
+            throw new Error(`Plane script missing: ${scriptPath}`);
+        }
         return {
             execPath: process.execPath,
-            args: [path.resolve(__dirname, '..', '..', '..', `${script}.js`), ...extraArgs]
+            args: [scriptPath, ...extraArgs]
         };
     }
 
+    const tsx = process.platform === 'win32'
+        ? path.resolve(process.cwd(), 'node_modules', '.bin', 'tsx.cmd')
+        : path.resolve(process.cwd(), 'node_modules', '.bin', 'tsx');
+
     return {
-        execPath: path.resolve(process.cwd(), 'node_modules', '.bin', 'tsx'),
+        execPath: tsx,
         args: [path.resolve(process.cwd(), 'src', `${script}.ts`), ...extraArgs]
     };
 };
@@ -46,10 +75,12 @@ export abstract class PlaneProcessSupervisor {
                 ...env
             },
             stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+            windowsHide: true,
             ...(advancedSerialization ? { serialization: 'advanced' as const } : {})
         });
 
         this.child = child;
+        logger.info(`${label} spawned pid=${child.pid ?? 'unknown'} script=${command.args[0]}`);
         applyPreferredPlaneProcessPriority(child.pid, label);
 
         child.stdout?.on('data', (chunk: Buffer) => {

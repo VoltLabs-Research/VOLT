@@ -112,10 +112,19 @@ const buildDaemon = async () => {
     }
     await mkdir(path.join(target, 'scripts'), { recursive: true });
     await cp(path.join(daemonDir, 'scripts', 'start.js'), path.join(target, 'scripts', 'start.js'));
+    for (const script of ['control-plane', 'heartbeat-plane', 'socket-channel-plane']) {
+        const plane = path.join(target, 'dist', `${script}.js`);
+        if (!await exists(plane)) {
+            throw new Error(`daemon runtime is missing ${path.relative(target, plane)}`);
+        }
+    }
     for (const file of ['package.json', 'package-lock.json']) {
         await cp(path.join(daemonDir, file), path.join(target, file));
     }
     await installProductionDependencies(target);
+    for (const script of ['daemon', 'control-plane', 'heartbeat-plane', 'socket-channel-plane']) {
+        await run(process.execPath, ['--check', path.join(target, 'dist', `${script}.js`)], target);
+    }
 };
 
 const bundleNode = async () => {

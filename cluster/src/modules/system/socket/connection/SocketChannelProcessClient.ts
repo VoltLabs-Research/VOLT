@@ -64,10 +64,7 @@ export class SocketChannelProcessClient extends PlaneProcessSupervisor {
                 resolve();
             };
             const onError = (error: Error): void => {
-                if (settled) return;
-                settled = true;
-                cleanup();
-                reject(error);
+                logger.warn(`${this.label} still connecting after ${error.message}`);
             };
 
             this.onConnected(onConnected);

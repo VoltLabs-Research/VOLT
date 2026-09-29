@@ -37,7 +37,7 @@ export const ensureStackEnvDefaults = async (appConfig: AppConfig): Promise<Reco
 const baseEnv = (): Record<string, string> => {
     const env: Record<string, string> = {};
     for(const [key, value] of Object.entries(process.env)){
-        if(value !== undefined && key !== 'NODE_OPTIONS' && key !== 'ELECTRON_RUN_AS_NODE') env[key] = value;
+        if(value !== undefined && key !== 'NODE_OPTIONS' && key !== 'ELECTRON_RUN_AS_NODE' && key !== 'ELECTRON_NO_ASAR') env[key] = value;
     }
     return env;
 };

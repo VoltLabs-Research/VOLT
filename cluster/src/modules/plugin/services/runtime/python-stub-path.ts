@@ -4,6 +4,7 @@ import fs from 'node:fs';
 export const resolvePythonStubPath = (): string => {
     const candidates = [
         path.resolve(__dirname, '..', 'python', 'volt_plugin_stub.py'),
+        path.join(process.cwd(), 'dist', 'modules', 'plugin', 'services', 'python', 'volt_plugin_stub.py'),
         path.resolve(process.cwd(), 'src', 'modules', 'plugin', 'services', 'python', 'volt_plugin_stub.py')
     ];
     for (const candidate of candidates) {

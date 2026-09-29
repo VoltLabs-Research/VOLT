@@ -148,9 +148,16 @@ export class DaemonExposureRegistry {
 
     private async runSync(): Promise<void> {
         const includeStoppedContainers = true;
-        const containers = await this.dockerRuntime.listContainers(includeStoppedContainers, {
-            label: [`${VOLT_MANAGED_CONTAINER_LABEL_KEY}=${VOLT_MANAGED_CONTAINER_LABEL_VALUE}`]
-        });
+        let containers: ContainerInfo[] = [];
+        try {
+            containers = await this.dockerRuntime.listContainers(includeStoppedContainers, {
+                label: [`${VOLT_MANAGED_CONTAINER_LABEL_KEY}=${VOLT_MANAGED_CONTAINER_LABEL_VALUE}`]
+            });
+        } catch (error) {
+            logger.warn(`Daemon exposure sync skipped Docker listing: ${errorMessage(error)}`);
+            this.publishExposures([]);
+            return;
+        }
         this.forgetReadinessForMissingContainers(containers);
         const exposureContexts = await Promise.all(containers.map((container) => this.readContainerExposureContext(container)));
         const nextExposures = exposureContexts.flatMap((context) => {
