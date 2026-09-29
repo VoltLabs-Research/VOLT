@@ -1,4 +1,19 @@
+import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
 import { getCategoricalColor } from '@/shared/ui/utils/categorical-palette';
+
+const USER_FILES_PREFIX = '/api/files/';
+
+export const resolveAvatarUrl = (value: string | null | undefined): string | undefined => {
+    if(!value) return undefined;
+
+    try{
+        const parsed = new URL(value, `${getBackendOrigin()}/`);
+        if(!parsed.pathname.startsWith(USER_FILES_PREFIX)) return value;
+        return `${getBackendOrigin()}${parsed.pathname}${parsed.search}`;
+    }catch{
+        return value;
+    }
+};
 
 interface InitialsUserSource {
     firstName?: string | null;

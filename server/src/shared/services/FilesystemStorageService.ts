@@ -65,4 +65,16 @@ class FilesystemStorageService {
     }
 }
 
+export const resolvePublicFileUrl = (value: string | null | undefined): string | undefined => {
+    if(!value) return undefined;
+
+    try{
+        const parsed = new URL(value, `${PUBLIC_ORIGIN}/`);
+        if(!parsed.pathname.startsWith(`${USER_FILES_BASE_PATH}/`)) return value;
+        return `${PUBLIC_ORIGIN}${parsed.pathname}${parsed.search}`;
+    }catch{
+        return value;
+    }
+};
+
 export default new FilesystemStorageService();

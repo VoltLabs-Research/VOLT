@@ -13,6 +13,7 @@ import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventReg
 import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManager';
 import { toSocketConnection } from '@modules/socket/socket/SocketConnectionMapper';
 import { TRACE_ID_HEADER } from '@shared/http/middleware/request-context';
+import { resolvePublicFileUrl } from '@shared/services/FilesystemStorageService';
 import logger from '@shared/logger';
 import type http from 'http';
 import { randomUUID } from 'node:crypto';
@@ -215,7 +216,7 @@ export class SocketGateway{
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
-                avatar: user.avatar ?? undefined,
+                avatar: resolvePublicFileUrl(user.avatar),
                 teams: user.teams ?? [],
                 role: user.role
             }

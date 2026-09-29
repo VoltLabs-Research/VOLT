@@ -7,6 +7,7 @@ import {
     requireWhiteboardStorageClusterId
 } from '@modules/whiteboards/contracts/whiteboard';
 import ApplicationError from '@shared/errors/ApplicationError';
+import { resolvePublicFileUrl } from '@shared/services/FilesystemStorageService';
 import eventBus from '@shared/events/PostgresEventBus';
 import clusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
@@ -37,7 +38,7 @@ const presentWhiteboard = (whiteboard: Whiteboard) => {
                 firstName: editor.firstName,
                 lastName: editor.lastName,
                 email: editor.email,
-                avatar: editor.avatar ?? undefined
+                avatar: resolvePublicFileUrl(editor.avatar)
             }
             : whiteboard.lastEditedBy,
         createdAt: whiteboard.createdAt,

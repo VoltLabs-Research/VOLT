@@ -1,5 +1,5 @@
 import { Avatar, cn } from '@heroui/react';
-import { getInitialsFromUser } from '@/shared/utils/user';
+import { getInitialsFromUser, resolveAvatarUrl } from '@/shared/utils/user';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 
@@ -33,6 +33,7 @@ const renderAvatarButton = (
         lastName: user.lastName,
         email: user.email
     });
+    const avatarSrc = resolveAvatarUrl(user.avatar);
 
     return (
         <button
@@ -47,7 +48,7 @@ const renderAvatarButton = (
             aria-label={`Open ${fullName} workspace`}
         >
             <Avatar className='size-6'>
-                {user.avatar && <Avatar.Image src={user.avatar} alt={fullName} />}
+                {avatarSrc && <Avatar.Image src={avatarSrc} alt={fullName} />}
                 <Avatar.Fallback className='text-2xs font-semibold'>{initials}</Avatar.Fallback>
             </Avatar>
         </button>

@@ -8,6 +8,7 @@ import {
 } from '@modules/team/services/secret-key/SecretKeyUsageAnalyticsQueries';
 import { toKeyMetrics, toTeamMetrics } from '@modules/team/services/secret-key/SecretKeyUsageMetricsMapper';
 import ApplicationError from '@shared/errors/ApplicationError';
+import { resolvePublicFileUrl } from '@shared/services/FilesystemStorageService';
 import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import type { PaginatedResult } from '@shared/persistence/persistence';
 import crypto from 'node:crypto';
@@ -113,7 +114,7 @@ class SecretKeyService{
                     firstName: secretKey.createdByRef.firstName,
                     lastName: secretKey.createdByRef.lastName,
                     email: secretKey.createdByRef.email,
-                    avatar: secretKey.createdByRef.avatar
+                    avatar: resolvePublicFileUrl(secretKey.createdByRef.avatar) ?? secretKey.createdByRef.avatar,
                 },
             isActive: secretKey.isActive,
             lastUsedAt: secretKey.lastUsedAt,
