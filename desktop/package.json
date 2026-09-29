@@ -14,10 +14,10 @@
     "deploy": "tsx src/cli.ts",
     "dev": "electron-vite dev -- --no-sandbox",
     "lint": "eslint .",
-    "package": "npm run stack:build && electron-vite build && electron-builder",
+    "package": "npm run stack:build && electron-vite build && electron-builder --publish never",
     "typecheck": "tsc --noEmit",
     "stack:build": "node scripts/build-stack.mjs",
-    "package:only": "electron-vite build && electron-builder"
+    "package:only": "electron-vite build && electron-builder --publish never"
   },
   "build": {
     "appId": "com.voltlabs.volt",
@@ -34,6 +34,11 @@
         "to": "stack"
       }
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "voltlabs-research",
+      "repo": "volt"
+    },
     "mac": {
       "target": [
         "dmg"
@@ -63,6 +68,7 @@
     "@clack/prompts": "1.5.1",
     "@heroui/react": "^3.2.4",
     "dockerode": "^5.0.0",
+    "electron-updater": "^6.8.9",
     "extract-zip": "^2.0.1",
     "lucide-react": "^1.17.0",
     "octokit": "^5.0.5",

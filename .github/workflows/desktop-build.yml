@@ -35,9 +35,13 @@ jobs:
             artifacts: |
               desktop/dist/*.AppImage
               desktop/dist/*.deb
+              desktop/dist/latest-linux.yml
           - os: windows-latest
             label: windows
-            artifacts: desktop/dist/*.exe
+            artifacts: |
+              desktop/dist/*.exe
+              desktop/dist/*.exe.blockmap
+              desktop/dist/latest.yml
           - os: macos-latest
             label: macos
             artifacts: desktop/dist/*.dmg
