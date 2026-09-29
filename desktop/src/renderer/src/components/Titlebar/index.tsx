@@ -5,13 +5,11 @@ import type { ThemePreference } from '@/renderer/src/theme';
 
 interface TitlebarProps{
     busy: boolean;
-    showDeployTools: boolean;
     theme: ThemePreference;
     onThemeChange: (theme: ThemePreference) => void;
     onOpenDevMode: () => void;
     onReset: () => void;
     onStopStack: () => void;
-    onSwitchDeployment: () => void;
 }
 
 const HOMEPAGE = 'https://github.com/voltlabs-research/volt';
@@ -39,13 +37,11 @@ const THEME_OPTION = 'flex-1 cursor-pointer rounded-[5px] px-2 py-[5px] text-xs'
 
 const Titlebar = ({
     busy,
-    showDeployTools,
     theme,
     onThemeChange,
     onOpenDevMode,
     onReset,
-    onStopStack,
-    onSwitchDeployment
+    onStopStack
 }: TitlebarProps) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const wrapRef = useRef<HTMLDivElement>(null);
@@ -129,28 +125,19 @@ const Titlebar = ({
                             ref={menuRef}
                             onKeyDown={onMenuKeyDown}
                         >
-                            {showDeployTools && (
-                                <>
-                                    <li role='none'>
-                                        <button type='button' role='menuitem' data-menu-item className={MENU_ITEM} disabled={busy} onClick={() => runAction(onOpenDevMode)}>
-                                            Dev Mode
-                                        </button>
-                                    </li>
-                                    <li role='none'>
-                                        <button type='button' role='menuitem' data-menu-item className={cn(MENU_ITEM, 'text-danger')} disabled={busy} onClick={() => runAction(onReset)}>
-                                            Reset &amp; Redeploy
-                                        </button>
-                                    </li>
-                                    <li role='none'>
-                                        <button type='button' role='menuitem' data-menu-item className={MENU_ITEM} disabled={busy} onClick={() => runAction(onStopStack)}>
-                                            Stop stack
-                                        </button>
-                                    </li>
-                                </>
-                            )}
                             <li role='none'>
-                                <button type='button' role='menuitem' data-menu-item className={MENU_ITEM} disabled={busy} onClick={() => runAction(onSwitchDeployment)}>
-                                    Switch deployment
+                                <button type='button' role='menuitem' data-menu-item className={MENU_ITEM} disabled={busy} onClick={() => runAction(onOpenDevMode)}>
+                                    Dev Mode
+                                </button>
+                            </li>
+                            <li role='none'>
+                                <button type='button' role='menuitem' data-menu-item className={cn(MENU_ITEM, 'text-danger')} disabled={busy} onClick={() => runAction(onReset)}>
+                                    Reset &amp; Redeploy
+                                </button>
+                            </li>
+                            <li role='none'>
+                                <button type='button' role='menuitem' data-menu-item className={MENU_ITEM} disabled={busy} onClick={() => runAction(onStopStack)}>
+                                    Stop stack
                                 </button>
                             </li>
                             <li role='none'>

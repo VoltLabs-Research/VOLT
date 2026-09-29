@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Toaster } from 'sileo';
 import { Button, Spinner, cn } from '@heroui/react';
-import type { DevModeState, DeploymentState } from '@/services/AppConfig';
+import type { DevModeState } from '@/services/AppConfig';
 import Titlebar from '@/renderer/src/components/Titlebar';
 import DevModeModal from '@/renderer/src/components/DevModeModal';
-import Onboarding from '@/renderer/src/components/Onboarding';
 import { useDeploy, type DeployState, type PhaseStatus } from '@/renderer/src/hooks/useDeploy';
 import { getResolvedTheme, getThemePreference, setThemePreference, subscribeToThemeChange, type ThemePreference } from '@/renderer/src/theme';
 
-type Mode = 'loading' | 'choose' | 'local' | 'remote';
+type Mode = 'loading' | 'local';
 
 const HEADING: Record<DeployState, string> = {
     idle: 'Preparing…',
@@ -39,8 +38,6 @@ const LOGS_READABLE = 'select-text overflow-y-auto [mask-image:none]';
 
 const TERM_LINE = 'min-h-[1.7em] shrink-0 grow-0';
 
-const READY_LINK = 'cursor-pointer px-3 py-2.5 text-[13px] text-muted transition-colors duration-150 ease-out-fluid hover:text-foreground hover:underline hover:underline-offset-2';
-
 const StepIcon = ({ status }: { status: PhaseStatus }) => {
     if(status === 'running') return <Spinner size='sm' color='current' className='shrink-0' aria-hidden='true' />;
     if(status === 'done') return (
@@ -59,7 +56,6 @@ const StepIcon = ({ status }: { status: PhaseStatus }) => {
 const App = () => {
     const { state, phases, phaseState, logs, busy, reset, run, start } = useDeploy({ autoStart: false });
     const [mode, setMode] = useState<Mode>('loading');
-    const [deployment, setDeployment] = useState<DeploymentState | null>(null);
     const [devModeOpen, setDevModeOpen] = useState(false);
     const [bootError, setBootError] = useState<string | null>(null);
     const [logsCopied, setLogsCopied] = useState(false);
@@ -107,42 +103,10 @@ const App = () => {
         run(() => window.volt.deploy.stop(), () => { openedRef.current = false; setBootError(null); });
     };
 
-    const useLocal = () => {
-        setPaused(false);
-        setMode('local');
-        void window.volt.deployment.setLocal();
-        void start();
-    };
-
-    const connectRemote = async (endpoint: string) => {
-        const result = await window.volt.remote.connect(endpoint);
-        if(result.ok){
-            setPaused(false);
-            setMode('remote');
-            setDeployment({
-                mode: 'remote',
-                remote: {
-                    serverEndpoint: result.serverEndpoint,
-                    clientUrl: result.clientUrl
-                }
-            });
-            openClient();
-        }
-        return result;
-    };
-
-    const switchDeployment = () => {
-        void window.volt.deployment.reset();
-        resetBoot();
-        setDeployment(null);
-        setMode('choose');
-    };
-
     const openVolt = () => {
         setPaused(false);
         setBootError(null);
-        if(mode === 'local') void start();
-        else openClient();
+        void start();
     };
 
     const changeTheme = (pref: ThemePreference) => {
@@ -174,30 +138,37 @@ const App = () => {
             })
             .catch(() => {});
 
-        window.volt.deployment.get()
-            .then((current) => {
-                if(cancelled) return;
-                setDeployment(current);
-                const next: Mode = (current?.mode === 'remote' && current.remote) ? 'remote'
-                    : current?.mode === 'local' ? 'local' : 'choose';
+        if(intent === 'devmode'){
+            setMode('local');
+            setPaused(true);
+            setDevModeOpen(true);
+            return () => { cancelled = true; };
+        }
+        if(intent === 'reset'){
+            setMode('local');
+            setPaused(true);
+            void resetAndRedeploy();
+            return () => { cancelled = true; };
+        }
+        if(intent === 'stop'){
+            setMode('local');
+            stopStack();
+            return () => { cancelled = true; };
+        }
+        if(intent === 'client-error'){
+            setMode('local');
+            setPaused(true);
+            setBootError('The Volt client failed to load. It may still be starting — give it a moment and try again.');
+            return () => { cancelled = true; };
+        }
 
-                if(intent === 'switch'){ switchDeployment(); return; }
-                if(intent === 'devmode'){ setMode(next); setPaused(true); setDevModeOpen(true); return; }
-                if(intent === 'reset'){ setMode(next); setPaused(true); void resetAndRedeploy(); return; }
-                if(intent === 'stop'){ setMode(next); stopStack(); return; }
-                if(intent === 'client-error'){
-                    setMode(next);
-                    setPaused(true);
-                    setBootError('The Volt client failed to load. It may still be starting — give it a moment and try again.');
-                    return;
-                }
+        setMode('local');
+        if(intent === 'launcher'){
+            setPaused(true);
+            return () => { cancelled = true; };
+        }
 
-                setMode(next);
-                if(intent === 'launcher'){ setPaused(true); return; }
-                if(next === 'remote') openClient();
-                else if(next === 'local') void start();
-            })
-            .catch(() => { if(!cancelled) setMode('choose'); });
+        void start();
         return () => { cancelled = true; };
     }, []);
 
@@ -205,22 +176,15 @@ const App = () => {
         if(mode === 'local' && state === 'up') openClient();
     }, [mode, state, openClient]);
 
-    const isLocal = mode === 'local';
-    const deploymentSummary = isLocal
-        ? 'Running locally on this machine.'
-        : deployment?.remote?.clientUrl ?? deployment?.remote?.serverEndpoint ?? null;
-
     return (
         <div className='flex h-full flex-col'>
             <Titlebar
                 busy={busy}
-                showDeployTools={isLocal}
                 theme={themePref}
                 onThemeChange={changeTheme}
                 onOpenDevMode={() => setDevModeOpen(true)}
                 onReset={resetAndRedeploy}
                 onStopStack={stopStack}
-                onSwitchDeployment={switchDeployment}
             />
             <div className='relative min-h-0 flex-auto'>
                 {mode === 'loading' && (
@@ -232,40 +196,25 @@ const App = () => {
                     </main>
                 )}
 
-                {mode === 'choose' && (
-                    <Onboarding onConnectRemote={connectRemote} onUseLocal={useLocal} />
-                )}
-
-                {paused && mode !== 'choose' && mode !== 'loading' && (
+                {paused && mode === 'local' && (
                     <main className={PANEL_CENTER}>
                         <div className='flex max-w-[460px] flex-col items-center gap-3 text-center'>
-                            <span className='text-xs font-semibold uppercase tracking-[0.04em] text-muted/75'>{isLocal ? 'Local deployment' : 'Remote deployment'}</span>
+                            <span className='text-xs font-semibold uppercase tracking-[0.04em] text-muted/75'>Local stack</span>
                             <span className={BOOT_HEADING}>Volt is ready</span>
-                            {deploymentSummary && <span className='break-all text-[13px] text-muted'>{deploymentSummary}</span>}
+                            <span className='break-all text-[13px] text-muted'>Running locally on this machine.</span>
                             {bootError && <span className='max-w-[38ch] text-[13px] leading-[1.5] text-danger'>{bootError}</span>}
 
                             <div className='mt-2 flex flex-wrap items-center justify-center gap-2.5'>
                                 <Button variant='primary' size='sm' onPress={openVolt}>Open Volt</Button>
-                                {isLocal && <Button variant='outline' size='sm' onPress={stopStack}>Stop stack</Button>}
-                                <button type='button' className={READY_LINK} onClick={switchDeployment}>Switch deployment</button>
+                                <Button variant='outline' size='sm' onPress={stopStack}>Stop stack</Button>
                             </div>
 
-                            {isLocal && (
-                                <p className='mt-1 max-w-[42ch] text-xs leading-[1.5] text-muted/75'>Quitting Volt shuts the local stack down. Use “Stop stack” to stop it while the window stays open.</p>
-                            )}
+                            <p className='mt-1 max-w-[42ch] text-xs leading-[1.5] text-muted/75'>Quitting Volt shuts the local stack down. Use “Stop stack” to stop it while the window stays open.</p>
                         </div>
                     </main>
                 )}
 
-                {!paused && mode === 'remote' && (
-                    <main className={PANEL_CENTER}>
-                        <div className='flex min-w-0 flex-1 flex-col items-center gap-7 text-center'>
-                            <span className={`${BOOT_HEADING} animate-pulse`}>Connecting…</span>
-                        </div>
-                    </main>
-                )}
-
-                {!paused && isLocal && (
+                {!paused && mode === 'local' && (
                     <main className={PANEL}>
                         <div className='flex min-w-0 flex-1 flex-col items-start gap-7'>
                             <span className={cn(

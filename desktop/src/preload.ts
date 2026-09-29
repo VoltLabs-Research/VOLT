@@ -25,18 +25,8 @@ contextBridge.exposeInMainWorld('volt', {
         openClient: () => ipcRenderer.invoke('app:openClient'),
         openShell: (intent?: string) => ipcRenderer.invoke('app:openShell', intent)
     },
-    remote: {
-        probe: (endpoint: string) => ipcRenderer.invoke('remote:probe', endpoint),
-        connect: (endpoint: string) => ipcRenderer.invoke('remote:connect', endpoint),
-        recent: () => ipcRenderer.invoke('remote:recent')
-    },
     theme: {
         set: (theme: string) => ipcRenderer.invoke('theme:set', theme)
-    },
-    deployment: {
-        get: () => ipcRenderer.invoke('deployment:get'),
-        setLocal: () => ipcRenderer.invoke('deployment:setLocal'),
-        reset: () => ipcRenderer.invoke('deployment:reset')
     },
     window: {
         minimize: () => ipcRenderer.invoke('window:minimize'),
