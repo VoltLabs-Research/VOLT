@@ -174,6 +174,15 @@ export default class LocalDeploy{
             server: await findFreePort(Number(stackEnv.SERVER_PORT)),
             daemon: await findFreePort(Number(stackEnv.DAEMON_PORT))
         };
+
+        if(String(this.#ports.server) !== stackEnv.SERVER_PORT || String(this.#ports.daemon) !== stackEnv.DAEMON_PORT){
+            await this.props.appConfig.setStackEnv({
+                ...stackEnv,
+                SERVER_PORT: String(this.#ports.server),
+                DAEMON_PORT: String(this.#ports.daemon)
+            });
+        }
+
         return this.#ports;
     }
 

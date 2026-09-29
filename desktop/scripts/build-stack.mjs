@@ -81,6 +81,7 @@ const buildServer = async () => {
     const target = path.join(outDir, 'server');
     await copyTree(path.join(serverDir, 'dist'), path.join(target, 'dist'));
     await copyTree(path.join(serverDir, 'static'), path.join(target, 'static'));
+    await copyTree(path.join(serverDir, 'static'), path.join(target, 'dist', 'static'));
     for (const file of ['package.json', 'package-lock.json']) {
         await cp(path.join(serverDir, file), path.join(target, file));
     }

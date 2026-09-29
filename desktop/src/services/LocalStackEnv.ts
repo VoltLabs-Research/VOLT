@@ -69,6 +69,7 @@ export const buildServerEnv = (input: {
         CLIENT_DIST_DIR: input.runtime.clientDir,
         DATABASE_URL: `sqlite:${path.join(dataDir, 'server.sqlite')}`,
         SERVER_DATA_DIR: dataDir,
+        STATIC_ROOT: path.join(input.runtime.serverDir, 'static'),
         SECRET_KEY: input.stackEnv.SECRET_KEY,
         SSH_ENCRYPTION_KEY: input.stackEnv.SSH_KEY
     };
