@@ -93,6 +93,7 @@ export default tseslint.config(
     {
         ignores: [
             'dist/**',
+            'dist-mockup/**',
             'node_modules/**',
             'coverage/**'
         ]
