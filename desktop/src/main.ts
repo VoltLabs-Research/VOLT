@@ -6,6 +6,7 @@ import LocalDeploy from '@/services/LocalDeploy';
 import { resolveAppPaths } from '@/services/AppPaths';
 import bus from '@/services/EventBus';
 import { applyWindowSecurity } from '@/services/WindowSecurity';
+import { startAppUpdater } from '@/services/AppUpdater';
 import { registerIpc } from '@/ipc';
 
 app.commandLine.appendSwitch('disable-http-cache');
@@ -146,7 +147,7 @@ app.whenReady().then(async () => {
         if(quitting) return;
         quitting = true;
         event.preventDefault();
-        deploy.stop().catch(() => {}).finally(() => app.exit(0));
+        deploy.stop().catch(() => {}).finally(() => app.quit());
     });
 
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());
@@ -196,6 +197,7 @@ app.whenReady().then(async () => {
         appConfig,
         loadShell: (hash?: string) => loadShell(win, hash)
     });
+    startAppUpdater();
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();
         win.focus();
