@@ -1,30 +1,20 @@
 import { cn } from '@heroui/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Settings } from 'lucide-react';
 
 type Volt = {
     window?: { minimize: () => void; maximize: () => void; close: () => void };
     app?: { openShell?: (intent?: string) => void };
     shell?: { openExternal?: (url: string) => void };
-    deployment?: { get?: () => Promise<{ mode?: string } | null> };
 };
 const volt = (): Volt | undefined => (window as unknown as { volt?: Volt }).volt;
 
 const HOMEPAGE = 'https://github.com/voltlabs-research/volt';
 
-
-
-
-
 const WindowControls = () => {
     const win = volt()?.window;
     const openShell = volt()?.app?.openShell;
     const [menuOpen, setMenuOpen] = useState(false);
-    const [isLocal, setIsLocal] = useState(false);
-
-    useEffect(() => {
-        volt()?.deployment?.get?.().then((d) => setIsLocal(d?.mode === 'local')).catch(() => {});
-    }, []);
 
     if (!win) return null;
 
@@ -42,10 +32,9 @@ const WindowControls = () => {
                         <>
                             <div className='fixed inset-0 z-40 [-webkit-app-region:no-drag]' onClick={() => setMenuOpen(false)} />
                             <ul className='absolute right-0 top-8 z-[41] m-0 min-w-[188px] list-none rounded-xl border border-border bg-surface-secondary p-1.5 shadow-lg'>
-                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('devmode')}>Dev Mode</li>}
-                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('reset')}>Reset &amp; Redeploy</li>}
-                                {isLocal && <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('stop')}>Stop stack</li>}
-                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('switch')}>Switch deployment</li>
+                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('devmode')}>Dev Mode</li>
+                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('reset')}>Reset &amp; Redeploy</li>
+                                <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={() => pick('stop')}>Stop stack</li>
                                 <li className='cursor-pointer whitespace-nowrap rounded-md px-3 py-2 text-sm text-foreground hover:bg-surface-hover' onClick={openAbout}>About Volt</li>
                             </ul>
                         </>

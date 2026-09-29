@@ -60,7 +60,7 @@
         "deb"
       ],
       "category": "Development",
-      "synopsis": "Connect to a VOLT deployment, or run the whole stack on this machine",
+      "synopsis": "Run the VOLT stack on this machine",
       "syncDesktopName": true
     }
   },

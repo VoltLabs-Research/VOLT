@@ -27,14 +27,6 @@ export interface DevModeState{
     voltPath: string;
 }
 
-export interface DeploymentState{
-    mode: 'local' | 'remote';
-    remote?: {
-        serverEndpoint: string;
-        clientUrl: string;
-    };
-}
-
 export interface WindowBounds{
     x?: number;
     y?: number;
@@ -46,8 +38,6 @@ export interface WindowBounds{
 export type ThemePreference = 'system' | 'light' | 'dark';
 
 export type DeployMode = 'server' | 'cluster';
-
-const MAX_RECENT_ENDPOINTS = 5;
 
 export default class AppConfig{
     constructor(private readonly props: AppConfigProps){}
@@ -153,20 +143,6 @@ export default class AppConfig{
         await this.#update({ devMode: state });
     }
 
-    async getDeployment(): Promise<DeploymentState | null>{
-        return await this.#field<DeploymentState>('deployment') ?? null;
-    }
-
-    async setDeployment(state: DeploymentState){
-        await this.#update({ deployment: state });
-    }
-
-    async clearDeployment(){
-        const current = await this.get();
-        delete current.deployment;
-        await this.#write(current);
-    }
-
     async getWindowBounds(): Promise<WindowBounds | null>{
         const bounds = await this.#field<WindowBounds>('windowBounds');
         if(!bounds || typeof bounds.width !== 'number' || typeof bounds.height !== 'number') return null;
@@ -179,16 +155,5 @@ export default class AppConfig{
 
     async setTheme(theme: ThemePreference){
         await this.#update({ theme });
-    }
-
-    async getRecentEndpoints(): Promise<string[]>{
-        const list = await this.#field<unknown[]>('recentEndpoints');
-        return Array.isArray(list) ? list.filter((item): item is string => typeof item === 'string') : [];
-    }
-
-    async addRecentEndpoint(endpoint: string){
-        const existing = await this.getRecentEndpoints();
-        const next = [endpoint, ...existing.filter((item) => item !== endpoint)].slice(0, MAX_RECENT_ENDPOINTS);
-        await this.#update({ recentEndpoints: next });
     }
 };

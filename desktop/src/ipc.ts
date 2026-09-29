@@ -4,7 +4,6 @@ import bus from '@/services/EventBus';
 import { CHANNELS } from '@/types/events';
 import LocalDeploy from '@/services/LocalDeploy';
 import AppConfig, { DevModeState, ThemePreference } from '@/services/AppConfig';
-import { probeRemoteEndpoint } from '@/services/RemoteProbe';
 import { isTrustedChromeUrl, openExternalUrl, sendToShell } from '@/services/WindowSecurity';
 import type { ConfirmOptions } from '@/types/global';
 
@@ -61,29 +60,6 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
 
     handleFromShell('config:get', () => deps.appConfig.get());
 
-    handleFromShell('remote:probe', (_e, endpoint: string) => probeRemoteEndpoint(endpoint));
-
-    handleFromShell('remote:connect', async (_e, endpoint: string) => {
-        const result = await probeRemoteEndpoint(endpoint);
-        if(result.ok){
-            await deps.appConfig.setDeployment({
-                mode: 'remote',
-                remote: {
-                    serverEndpoint: result.serverEndpoint,
-                    clientUrl: result.clientUrl
-                }
-            });
-            await deps.appConfig.addRecentEndpoint(result.serverEndpoint).catch(() => {});
-        }
-        return result;
-    });
-
-    handleFromShell('remote:recent', () => deps.appConfig.getRecentEndpoints());
-
-    handleFromTrusted('deployment:get', deps.allowedOrigins, () => deps.appConfig.getDeployment());
-    handleFromShell('deployment:setLocal', () => deps.appConfig.setDeployment({ mode: 'local' }));
-    handleFromShell('deployment:reset', () => deps.appConfig.clearDeployment());
-
     handleFromTrusted('shell:openExternal', deps.allowedOrigins, (_e, url: string) => openExternalUrl(url));
 
     handleFromShell('dialog:pickDirectory', async () => {
@@ -114,10 +90,7 @@ export const registerIpc = (win: BrowserWindow, deps: IpcDeps) => {
     handleFromTrusted('window:close', deps.allowedOrigins, () => win.close());
 
     handleFromShell('app:openClient', async () => {
-        const deployment = await deps.appConfig.getDeployment();
-        const url = (deployment?.mode === 'remote' && deployment.remote)
-            ? deployment.remote.clientUrl
-            : await deps.deploy.clientUrl();
+        const url = await deps.deploy.clientUrl();
         if(!url){
             deps.loadShell('launcher');
             return;

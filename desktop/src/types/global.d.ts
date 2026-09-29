@@ -1,6 +1,5 @@
 import type { AppEvents } from '@/types/events';
-import type { DevModeState, DeploymentState, ThemePreference } from '@/services/AppConfig';
-import type { RemoteProbeResult } from '@/services/RemoteProbe';
+import type { DevModeState, ThemePreference } from '@/services/AppConfig';
 
 export interface ConfirmOptions{
     title: string;
@@ -37,18 +36,8 @@ declare global{
                 openClient: () => Promise<void>;
                 openShell: (intent?: string) => Promise<void>;
             };
-            remote: {
-                probe: (endpoint: string) => Promise<RemoteProbeResult>;
-                connect: (endpoint: string) => Promise<RemoteProbeResult>;
-                recent: () => Promise<string[]>;
-            };
             theme: {
                 set: (theme: ThemePreference) => Promise<void>;
-            };
-            deployment: {
-                get: () => Promise<DeploymentState | null>;
-                setLocal: () => Promise<void>;
-                reset: () => Promise<void>;
             };
             window: {
                 minimize: () => Promise<void>;

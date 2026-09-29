@@ -153,17 +153,7 @@ app.whenReady().then(async () => {
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());
     const win = createWindow(initialBounds);
 
-    const allowedOrigins = async (): Promise<readonly string[]> => {
-        const deployment = await appConfig.getDeployment();
-        const remoteClientUrl = deployment?.mode === 'remote' ? deployment.remote?.clientUrl : undefined;
-        if(!remoteClientUrl) return [];
-
-        try{
-            return [new URL(remoteClientUrl).origin];
-        }catch{
-            return [];
-        }
-    };
+    const allowedOrigins = async (): Promise<readonly string[]> => [];
 
     applyWindowSecurity(win, { allowedOrigins });
 
