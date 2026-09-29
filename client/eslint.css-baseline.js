@@ -55,6 +55,7 @@ export const cssBaseline = [
     'src/modules/dashboard/components/JobsDrawer/index.tsx',
     'src/modules/jobs/components/JobGroup/index.tsx',
     'src/modules/jobs/components/JobQueue/index.tsx',
+    'src/modules/marketing/components/LandingPage.tsx',
     'src/modules/notification/components/NotificationItem/index.tsx',
     'src/modules/notification/components/NotificationList/index.tsx',
     'src/modules/notification/components/NotificationsPopover/index.tsx',

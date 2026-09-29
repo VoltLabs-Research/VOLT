@@ -1,8 +1,17 @@
-import RootDashboardRedirect from '@/app/routes/RootDashboardRedirect';
 import { DashboardNavigationIconKey, DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
 import type { RouteConfig } from '@/app/routes/types';
 
 export const publicRoutes: RouteConfig[] = [
+    {
+        path: '/',
+        title: 'VOLT',
+        loader: () => import('@/modules/marketing/components/LandingPage')
+    },
+    {
+        path: '/home',
+        title: 'VOLT',
+        loader: () => import('@/modules/marketing/components/LandingPage')
+    },
     {
         path: '/error',
         title: 'Error',
@@ -16,11 +25,6 @@ export const publicRoutes: RouteConfig[] = [
 ];
 
 export const protectedRoutes: RouteConfig[] = [
-    {
-        path: '/',
-        title: 'Dashboard',
-        component: RootDashboardRedirect
-    },
     {
         path: '/dashboard',
         title: 'Dashboard',

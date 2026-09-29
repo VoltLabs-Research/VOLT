@@ -55,7 +55,16 @@ export class FractalAssetLoader implements IFractalAssetLoader {
     }
 
     private static isDirectBrowserAssetUrl(url: string): boolean {
-        return url.startsWith('blob:') || url.startsWith('data:');
+        if (url.startsWith('blob:') || url.startsWith('data:')) {
+            return true;
+        }
+
+        try {
+            const assetUrl = new URL(url, window.location.href);
+            return assetUrl.origin === window.location.origin && assetUrl.pathname.startsWith('/samples/');
+        } catch {
+            return false;
+        }
     }
 
     private static isExternalAssetUrl(url: string): boolean {
