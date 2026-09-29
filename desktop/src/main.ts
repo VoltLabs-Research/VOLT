@@ -153,19 +153,19 @@ app.whenReady().then(async () => {
     const initialBounds = visibleBounds(await appConfig.getWindowBounds());
     const win = createWindow(initialBounds);
 
-    applyWindowSecurity(win, {
-        allowedOrigins: async () => {
-            const deployment = await appConfig.getDeployment();
-            const remoteClientUrl = deployment?.mode === 'remote' ? deployment.remote?.clientUrl : undefined;
-            if(!remoteClientUrl) return [];
+    const allowedOrigins = async (): Promise<readonly string[]> => {
+        const deployment = await appConfig.getDeployment();
+        const remoteClientUrl = deployment?.mode === 'remote' ? deployment.remote?.clientUrl : undefined;
+        if(!remoteClientUrl) return [];
 
-            try{
-                return [new URL(remoteClientUrl).origin];
-            }catch{
-                return [];
-            }
+        try{
+            return [new URL(remoteClientUrl).origin];
+        }catch{
+            return [];
         }
-    });
+    };
+
+    applyWindowSecurity(win, { allowedOrigins });
 
     let persistTimer: NodeJS.Timeout | null = null;
     const persistBounds = (): void => {
@@ -195,7 +195,8 @@ app.whenReady().then(async () => {
     registerIpc(win, {
         deploy,
         appConfig,
-        loadShell: (hash?: string) => loadShell(win, hash)
+        loadShell: (hash?: string) => loadShell(win, hash),
+        allowedOrigins
     });
     startAppUpdater();
     app.on('second-instance', () => {

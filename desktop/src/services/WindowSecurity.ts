@@ -15,8 +15,21 @@ const parseUrl = (value: string): URL | null => {
 
 const shellUrlPrefix = (): string => process.env['ELECTRON_RENDERER_URL'] ?? 'file://';
 
-const isShellUrl = (url: string): boolean => {
+export const isShellUrl = (url: string): boolean => {
     return url.length > 0 && url.startsWith(shellUrlPrefix());
+};
+
+export const isLoopbackHttpUrl = (value: string): boolean => {
+    const url = parseUrl(value);
+    if(!url) return false;
+    return (url.protocol === 'http:' || url.protocol === 'https:') && LOOPBACK_HOSTNAMES.has(url.hostname);
+};
+
+export const isTrustedChromeUrl = (value: string, allowedOrigins: readonly string[]): boolean => {
+    if(isShellUrl(value)) return true;
+    if(isLoopbackHttpUrl(value)) return true;
+    const url = parseUrl(value);
+    return url !== null && allowedOrigins.includes(url.origin);
 };
 
 interface NavigationPolicy {
