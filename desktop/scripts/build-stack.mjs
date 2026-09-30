@@ -120,7 +120,11 @@ const buildDaemon = async () => {
     if (!await exists(dumpTransformBin)) {
         throw new Error(`daemon runtime is missing ${path.relative(target, dumpTransformBin)}`);
     }
-    await run(zstdBin, ['--version'], target);
+    const zstdLib = path.join(target, 'vendor', 'zstd', 'lib');
+    await run(zstdBin, ['--version'], target, {
+        LD_LIBRARY_PATH: zstdLib,
+        DYLD_LIBRARY_PATH: zstdLib
+    });
     await mkdir(path.join(target, 'scripts'), { recursive: true });
     await cp(path.join(daemonDir, 'scripts', 'start.js'), path.join(target, 'scripts', 'start.js'));
     for (const script of ['control-plane', 'heartbeat-plane', 'socket-channel-plane']) {

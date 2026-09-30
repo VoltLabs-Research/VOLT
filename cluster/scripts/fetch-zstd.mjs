@@ -45,12 +45,78 @@ const findFile = async (dir, name) => {
     return null;
 };
 
+const copyLibNamed = async (sourceDir, destDir, prefix) => {
+    if (!await exists(sourceDir)) return false;
+    let copied = false;
+    for (const entry of await readdir(sourceDir, { withFileTypes: true })) {
+        if (!entry.name.startsWith(prefix)) continue;
+        await copyFile(path.join(sourceDir, entry.name), path.join(destDir, entry.name));
+        copied = true;
+    }
+    return copied;
+};
+
+const linkedLibraryPaths = (binaryPath) => {
+    if (os.platform() === 'darwin') {
+        const result = spawnSync('otool', ['-L', binaryPath], { encoding: 'utf8' });
+        return (result.stdout || '')
+            .split('\n')
+            .map((line) => line.trim().split(' ')[0])
+            .filter((line) => line.includes('libzstd') && line.startsWith('/'));
+    }
+    if (os.platform() === 'linux') {
+        const result = spawnSync('ldd', [binaryPath], { encoding: 'utf8' });
+        return (result.stdout || '')
+            .split('\n')
+            .map((line) => {
+                const match = line.match(/libzstd\.so[^ ]*\s+=>\s+(\S+)/);
+                return match?.[1];
+            })
+            .filter((line) => typeof line === 'string' && line.startsWith('/'));
+    }
+    return [];
+};
+
+const vendorSharedLibraries = async (sourceBinary, destLibDir) => {
+    await mkdir(destLibDir, { recursive: true });
+    const searchDirs = [
+        path.join(path.dirname(sourceBinary), '..', 'lib'),
+        path.dirname(sourceBinary),
+        ...linkedLibraryPaths(sourceBinary).map((file) => path.dirname(file))
+    ];
+
+    let copied = false;
+    for (const dir of [...new Set(searchDirs)]) {
+        if (await copyLibNamed(dir, destLibDir, 'libzstd')) copied = true;
+    }
+    return copied;
+};
+
+const assertZstdRuns = (binaryPath) => {
+    const result = spawnSync(binaryPath, ['--version'], {
+        encoding: 'utf8',
+        env: {
+            ...process.env,
+            DYLD_LIBRARY_PATH: path.join(vendorDir, 'lib'),
+            LD_LIBRARY_PATH: path.join(vendorDir, 'lib')
+        }
+    });
+    if (result.status !== 0) {
+        throw new Error(`vendored zstd failed to run: ${result.stderr || result.stdout || result.error?.message || `exit ${result.status}`}`);
+    }
+    log((result.stdout || result.stderr || '').trim());
+};
+
 const installBinary = async (source) => {
     await rm(vendorDir, { recursive: true, force: true });
     await mkdir(path.join(vendorDir, 'bin'), { recursive: true });
     const target = path.join(vendorDir, 'bin', binaryName());
     await copyFile(source, target);
     if (os.platform() !== 'win32') await chmod(target, 0o755);
+    if (os.platform() !== 'win32') {
+        await vendorSharedLibraries(source, path.join(vendorDir, 'lib'));
+    }
+    assertZstdRuns(target);
     return target;
 };
 
