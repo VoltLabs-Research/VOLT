@@ -17,13 +17,18 @@ const digestOf = (ownerClusterId: string, binaryObjectPath: string, expectedHash
     return digest;
 };
 
+export const windowsExecutableName = (fileName: string): string => {
+    if (process.platform !== 'win32') return fileName;
+    return path.extname(fileName) ? fileName : `${fileName}.exe`;
+};
+
 export const buildArtifactCacheKey = (
     binaryObjectPath: string,
     ownerClusterId: string,
     expectedHash?: string
 ): string => {
     const digest = digestOf(ownerClusterId, binaryObjectPath, expectedHash);
-    return `${digest.digest('hex')}-${path.basename(binaryObjectPath)}`;
+    return `${digest.digest('hex')}-${windowsExecutableName(path.basename(binaryObjectPath))}`;
 };
 
 export const buildRuntimeCacheKey = (

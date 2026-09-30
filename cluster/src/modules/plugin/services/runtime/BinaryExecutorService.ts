@@ -115,7 +115,8 @@ export class BinaryExecutorService {
                 cwd,
                 stdio: ['ignore', 'pipe', 'pipe'],
                 env: buildPluginProcessEnv(env),
-                detached: true
+                windowsHide: true,
+                detached: process.platform !== 'win32'
             });
             registerProcess(jobId, child);
 
@@ -131,7 +132,7 @@ export class BinaryExecutorService {
 
             const signalTree = (signal: NodeJS.Signals): void => {
                 try {
-                    if (child.pid !== undefined) {
+                    if (process.platform !== 'win32' && child.pid !== undefined) {
                         process.kill(-child.pid, signal);
                         return;
                     }

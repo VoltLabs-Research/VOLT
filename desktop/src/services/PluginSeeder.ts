@@ -2,6 +2,7 @@ import AppConfig, { BootstrapState } from '@/services/AppConfig';
 import bus from '@/services/EventBus';
 import type ServerApi from '@/services/ServerApi';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
+import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 
 const DEFAULT_PLUGINS = [
     '@voltlabs/polyhedral-template-matching',
@@ -57,8 +58,9 @@ export default class PluginSeeder{
     constructor(private readonly props: PluginSeederProps){}
 
     async ensure(state: BootstrapState): Promise<void>{
+        const platform = await this.#clusterPlatform(state);
         const seed = await this.props.appConfig.getPluginSeed();
-        if(seed?.done && seed.teamId === state.teamId) return;
+        if(seed?.done && seed.teamId === state.teamId && seed.platform === platform) return;
 
         const installedBefore = await this.#installedCount(state);
         if(installedBefore > 0 && !seed){
@@ -66,12 +68,18 @@ export default class PluginSeeder{
             await this.props.appConfig.setPluginSeed({
                 done: true,
                 teamId: state.teamId,
-                installed: []
+                installed: [],
+                platform
             });
             return;
         }
 
-        const installed = new Set(seed?.teamId === state.teamId ? seed.installed : []);
+        if(seed?.teamId === state.teamId && seed.platform && seed.platform !== platform){
+            log('stdout', `reinstalling default plugins for ${platform} (previously ${seed.platform})`);
+            await this.props.appConfig.clearPluginSeed();
+        }
+
+        const installed = new Set(seed?.teamId === state.teamId && seed.platform === platform ? seed.installed : []);
         const pending = DEFAULT_PLUGINS.filter((name) => !installed.has(name));
         const failures: string[] = [];
         let finished = 0;
@@ -93,7 +101,8 @@ export default class PluginSeeder{
                 await this.props.appConfig.setPluginSeed({
                     done: false,
                     teamId: state.teamId,
-                    installed: [...installed]
+                    installed: [...installed],
+                    platform
                 });
             }catch(err){
                 failures.push(name);
@@ -104,12 +113,28 @@ export default class PluginSeeder{
         await this.props.appConfig.setPluginSeed({
             done: failures.length === 0,
             teamId: state.teamId,
-            installed: [...installed]
+            installed: [...installed],
+            platform
         });
 
         if(failures.length > 0){
             log('stderr', `${failures.length} plugin(s) could not be installed; they will be retried next start`);
         }
+    }
+
+    async #clusterPlatform(state: BootstrapState): Promise<string>{
+        const view = await this.props.api.request<{
+            teamCluster?: { hostCapabilities?: { platform?: string | null } | null };
+        }>(teamClusterRoutes.getById, {
+            params: {
+                teamId: state.teamId,
+                teamClusterId: state.teamClusterId
+            },
+            token: state.authToken
+        });
+        const platform = view.teamCluster?.hostCapabilities?.platform;
+        if(!platform) throw new Error('The compute daemon has not reported its host platform yet');
+        return platform;
     }
 
     async #installedCount(state: BootstrapState): Promise<number>{
