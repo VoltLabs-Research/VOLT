@@ -81,15 +81,31 @@ const daemonHeapMb = (): number => {
 };
 
 export const buildDaemonEnv = (input: {
+    runtime?: StackRuntimeLayout;
     stackEnv: Record<string, string>;
     stackDataDir: string;
     ports: StackPorts;
     bootstrap: BootstrapState;
 }): Record<string, string> => {
     const gatewayOrigin = `http://127.0.0.1:${input.ports.daemon}`;
+    const zstdBin = input.runtime
+        ? path.join(input.runtime.daemonDir, 'vendor', 'zstd', 'bin', process.platform === 'win32' ? 'zstd.exe' : 'zstd')
+        : undefined;
+    const dumpTransformBin = input.runtime
+        ? path.join(input.runtime.daemonDir, 'vendor', 'volt-dump-transform', 'bin', process.platform === 'win32' ? 'volt-dump-transform.exe' : 'volt-dump-transform')
+        : undefined;
+    const vendorBin = input.runtime
+        ? [
+            path.join(input.runtime.daemonDir, 'vendor', 'zstd', 'bin'),
+            path.join(input.runtime.daemonDir, 'vendor', 'volt-dump-transform', 'bin')
+        ].join(path.delimiter)
+        : '';
 
     return {
         ...baseEnv(),
+        ...(vendorBin ? { PATH: `${vendorBin}${path.delimiter}${process.env.PATH ?? ''}` } : {}),
+        ...(zstdBin ? { VOLT_ZSTD_BIN: zstdBin } : {}),
+        ...(dumpTransformBin ? { VOLT_DUMP_TRANSFORM_BIN: dumpTransformBin } : {}),
         VOLT_EXIT_WITH_PARENT: '1',
         VOLT_PARENT_PID: String(process.pid),
         NODE_ENV: 'production',

@@ -6,6 +6,7 @@ import { ensureExtractedProject } from '@modules/plugin/services/binaries/zip-pr
 import { resolvePythonEntrypoint } from '@modules/plugin/services/binaries/extracted-entrypoint-resolver';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
 import { prependPathEntries } from '@shared/utilities/process-path';
+import { missingPythonMessage, resolveSystemPython } from '@shared/utilities/system-python';
 
 
 export const PYTHON_VENV_DIRECTORY = 'venv';
@@ -18,7 +19,7 @@ const STUB_MSGPACK_REQUIREMENT = 'msgpack';
 const IS_WINDOWS = process.platform === 'win32';
 const VENV_BIN_DIRECTORY = IS_WINDOWS ? 'Scripts' : 'bin';
 const VENV_PYTHON_EXECUTABLE = IS_WINDOWS ? 'python.exe' : 'python3';
-const SYSTEM_PYTHON_COMMAND = process.env.VOLT_PYTHON || (IS_WINDOWS ? 'python' : 'python3');
+const SYSTEM_PYTHON_COMMAND = resolveSystemPython();
 
 export const PYTHON_RUNTIME_WARM_ENTRIES = [
     PYTHON_VENV_DIRECTORY,
@@ -82,7 +83,11 @@ export const providePythonRuntime = async (input: {
     }
 
     if (!await pathExists(pythonPath, fs.constants.X_OK)) {
-        await runCommand(SYSTEM_PYTHON_COMMAND, ['-m', 'venv', venvPath], runtimeDirectory);
+        try {
+            await runCommand(SYSTEM_PYTHON_COMMAND, ['-m', 'venv', venvPath], runtimeDirectory);
+        } catch (error) {
+            throw new Error(missingPythonMessage(SYSTEM_PYTHON_COMMAND), { cause: error });
+        }
     }
 
     if (!await pathExists(installMarkerPath, fs.constants.F_OK)) {

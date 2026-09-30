@@ -75,6 +75,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install zstd (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y zstd
+        working-directory: ${{ github.workspace }}
+
+      - name: Install zstd (macOS)
+        if: runner.os == 'macOS'
+        run: brew install zstd
+        working-directory: ${{ github.workspace }}
+
       - name: Cache Electron binaries
         uses: actions/cache@v4
         with:

@@ -1,18 +1,13 @@
 import { singleton } from '@shared/utilities/singleton';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { currentPlatformTag } from '@shared/utilities/platform-tag';
+import { firstExistingPath, vendorBinaryCandidates, vendorBinaryName } from '@shared/utilities/vendor-binaries';
 
 import { BinaryExecutorService, getBinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import type { AnalysisValueMap } from '@shared/contracts/types/http-analysis';
 
-const DUMP_TRANSFORM_BINARY_NAME = process.platform === 'win32' ? 'volt-dump-transform.exe' : 'volt-dump-transform';
-
-const dumpTransformCandidates = (): string[] => [
-    path.join(process.cwd(), 'vendor', 'volt-dump-transform', 'bin', DUMP_TRANSFORM_BINARY_NAME),
-    path.resolve(__dirname, '..', '..', '..', '..', 'vendor', 'volt-dump-transform', 'bin', DUMP_TRANSFORM_BINARY_NAME),
-    path.resolve(__dirname, '..', '..', '..', '..', '..', 'vendor', 'volt-dump-transform', 'bin', DUMP_TRANSFORM_BINARY_NAME)
-];
+const dumpTransformCandidates = (): string[] =>
+    vendorBinaryCandidates('volt-dump-transform', vendorBinaryName('volt-dump-transform'));
 
 const resolveDumpTransformBinary = async (): Promise<string> => {
     const override = process.env.VOLT_DUMP_TRANSFORM_BIN;
@@ -20,11 +15,8 @@ const resolveDumpTransformBinary = async (): Promise<string> => {
         return override;
     }
 
-    for (const candidate of dumpTransformCandidates()) {
-        if (await fs.access(candidate).then(() => true, () => false)) {
-            return candidate;
-        }
-    }
+    const found = firstExistingPath(dumpTransformCandidates());
+    if (found) return found;
 
     throw new Error(
         `volt-dump-transform is not installed for ${currentPlatformTag()} (expected ${dumpTransformCandidates()[0]}); `

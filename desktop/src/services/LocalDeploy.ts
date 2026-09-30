@@ -215,6 +215,7 @@ export default class LocalDeploy{
 
         await this.#phase('daemon', async () => {
             await stack.startDaemon(buildDaemonEnv({
+                runtime: stack.runtime,
                 stackEnv,
                 stackDataDir: this.props.paths.stackDataDir,
                 ports,

@@ -75,8 +75,7 @@ const main = async () => {
         log(`downloading ${assetName} from ${pin.repository}@${pin.release}`);
         const archive = await download(`${baseUrl}/${assetName}`);
         if (!archive) {
-            log(`no ${TOOL} build is published for ${platform}; slice/select/merge pipeline stages will not run on this host`);
-            return;
+            throw new Error(`no ${TOOL} build is published for ${platform} at ${baseUrl}/${assetName}`);
         }
         const checksum = await download(`${baseUrl}/${assetName}.sha256`);
         if (!checksum) throw new Error(`${assetName}.sha256 is missing from the release`);
