@@ -94,6 +94,9 @@ export const buildDaemonEnv = (input: {
     const dumpTransformBin = input.runtime
         ? path.join(input.runtime.daemonDir, 'vendor', 'volt-dump-transform', 'bin', process.platform === 'win32' ? 'volt-dump-transform.exe' : 'volt-dump-transform')
         : undefined;
+    const vendorLib = input.runtime
+        ? path.join(input.runtime.daemonDir, 'vendor', 'zstd', 'lib')
+        : '';
     const vendorBin = input.runtime
         ? [
             path.join(input.runtime.daemonDir, 'vendor', 'zstd', 'bin'),
@@ -104,6 +107,10 @@ export const buildDaemonEnv = (input: {
     return {
         ...baseEnv(),
         ...(vendorBin ? { PATH: `${vendorBin}${path.delimiter}${process.env.PATH ?? ''}` } : {}),
+        ...(vendorLib ? {
+            LD_LIBRARY_PATH: `${vendorLib}${path.delimiter}${process.env.LD_LIBRARY_PATH ?? ''}`,
+            DYLD_LIBRARY_PATH: `${vendorLib}${path.delimiter}${process.env.DYLD_LIBRARY_PATH ?? ''}`
+        } : {}),
         ...(zstdBin ? { VOLT_ZSTD_BIN: zstdBin } : {}),
         ...(dumpTransformBin ? { VOLT_DUMP_TRANSFORM_BIN: dumpTransformBin } : {}),
         VOLT_EXIT_WITH_PARENT: '1',
