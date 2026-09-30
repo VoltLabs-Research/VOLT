@@ -1,18 +1,32 @@
 import { PassThrough, Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { firstExistingPath, vendorBinaryCandidates, vendorBinaryName } from '@shared/utilities/vendor-binaries';
 
 interface ZstdStreamResult {
     stream: Readable;
     completion: Promise<void>;
 }
 
-const ZSTD_NOT_INSTALLED_MESSAGE = 'zstd binary is not installed in the runtime image';
 const DEFAULT_ZSTD_THREADS = 2;
+
+const resolveZstdBinary = (): string => {
+    const override = process.env.VOLT_ZSTD_BIN;
+    if (override && override.length > 0) return override;
+
+    const found = firstExistingPath(vendorBinaryCandidates('zstd', vendorBinaryName('zstd')));
+    if (found) return found;
+    return vendorBinaryName('zstd');
+};
+
+const zstdMissingMessage = (): string => {
+    const expected = vendorBinaryCandidates('zstd', vendorBinaryName('zstd'))[0];
+    return `zstd is not installed (expected ${expected}). Run "npm run fetch:tools" in the daemon package or set VOLT_ZSTD_BIN.`;
+};
 
 const rejectSpawnError = (reject: (error: Error) => void) => (error: NodeJS.ErrnoException): void => {
     if (error.code === 'ENOENT') {
-        reject(new Error(ZSTD_NOT_INSTALLED_MESSAGE));
+        reject(new Error(zstdMissingMessage()));
         return;
     }
 
@@ -33,7 +47,7 @@ const resolveZstdExit = (
 };
 
 const createZstdStream = (args: string[], input: Readable | null = null): ZstdStreamResult => {
-    const child = spawn('zstd', args, {
+    const child = spawn(resolveZstdBinary(), args, {
         stdio: ['pipe', 'pipe', 'pipe']
     });
     const output = new PassThrough();
@@ -73,7 +87,7 @@ export const createZstdDecompressionStream = (input: Readable): ZstdStreamResult
 };
 
 const runZstdCommand = async (args: string[]): Promise<void> => {
-    const child = spawn('zstd', args, {
+    const child = spawn(resolveZstdBinary(), args, {
         stdio: ['ignore', 'ignore', 'pipe']
     });
 

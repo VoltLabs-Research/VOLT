@@ -18,7 +18,17 @@ export const runCommand = (commandPath: string, args: string[], cwd: string): Pr
                 stderrBytes += chunk.length;
             }
         });
-        child.on('error', (error) => reject(error));
+        child.on('error', (error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT') {
+                reject(new Error(
+                    commandPath === 'python' || commandPath === 'python3' || commandPath.endsWith('python.exe')
+                        ? `Python 3.12+ is required but "${commandPath}" is not available. Install Python and add it to PATH, or set VOLT_PYTHON.`
+                        : `Command not found: ${commandPath}`
+                ));
+                return;
+            }
+            reject(error);
+        });
         child.on('close', (code) => {
             if (code === 0) {
                 resolve();

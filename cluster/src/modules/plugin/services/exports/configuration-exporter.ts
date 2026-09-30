@@ -6,10 +6,10 @@ import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
 import type { ConfigurationExporterOptions, ConfigurationExportFormat, ExportExecutionInput } from '@modules/plugin/services/exports/export-node-processor-types';
 import { logger } from '@shared/logger';
+import { missingPythonMessage, resolveSystemPython } from '@shared/utilities/system-python';
 
 const BRIDGE_SCRIPT = path.join(__dirname, '../../../trajectory/services/parsing/ase_export_bridge.py');
-const ASE_PYTHON = process.env['ASE_PYTHON'] ??
-    path.join(__dirname, '../../../../../../../.venv-pyatomsk/bin/python');
+const ASE_PYTHON = resolveSystemPython();
 
 const FORMAT_EXTENSIONS: Record<ConfigurationExportFormat, string> = {
     'lammps-dump': 'dump',
@@ -45,7 +45,13 @@ const runBridge = (
     const stderrChunks: Buffer[] = [];
     proc.stderr?.on('data', (chunk: Buffer) => stderrChunks.push(chunk));
 
-    proc.on('error', reject);
+    proc.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+            reject(new Error(missingPythonMessage(ASE_PYTHON)));
+            return;
+        }
+        reject(error);
+    });
     proc.on('close', (code) => {
         if (code === 0) {
             resolve();

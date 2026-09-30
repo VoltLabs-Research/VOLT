@@ -90,21 +90,22 @@ const GeneralSettings = () => {
 
     return (
         <SettingsPage title="General Settings">
-            <div className='flex flex-col gap-4'>
-                <SettingsSectionHeader
-                    title="Profile"
-                    description="Update your personal information and profile picture" />
+            {!singleTenant && (
                 <div className='flex flex-col gap-4'>
-                    <AvatarUpload
-                        avatarUrl={resolveAvatarUrl(user?.avatar) || null}
-                        isUploading={isUploadingAvatar}
-                        onUpload={handleAvatarUpload} />
-                    <ProfileForm
-                        initialValues={profileInitialValues}
-                        onUpdate={handleProfileUpdate}
-                        hideEmail={singleTenant} />
+                    <SettingsSectionHeader
+                        title="Profile"
+                        description="Update your personal information and profile picture" />
+                    <div className='flex flex-col gap-4'>
+                        <AvatarUpload
+                            avatarUrl={resolveAvatarUrl(user?.avatar) || null}
+                            isUploading={isUploadingAvatar}
+                            onUpload={handleAvatarUpload} />
+                        <ProfileForm
+                            initialValues={profileInitialValues}
+                            onUpdate={handleProfileUpdate} />
+                    </div>
                 </div>
-            </div>
+            )}
             <div className='flex flex-col gap-4'>
                 <SettingsSectionHeader
                     title="Appearance"

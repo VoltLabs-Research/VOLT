@@ -107,9 +107,20 @@ const buildDaemon = async () => {
 
     const target = path.join(outDir, 'daemon');
     await copyTree(path.join(daemonDir, 'dist'), path.join(target, 'dist'));
-    if (await exists(path.join(daemonDir, 'vendor'))) {
-        await copyTree(path.join(daemonDir, 'vendor'), path.join(target, 'vendor'));
+    const vendorDir = path.join(daemonDir, 'vendor');
+    if (!await exists(vendorDir)) {
+        throw new Error('daemon runtime is missing vendor/ (run npm run fetch:tools in cluster/)');
     }
+    await copyTree(vendorDir, path.join(target, 'vendor'));
+    const zstdBin = path.join(target, 'vendor', 'zstd', 'bin', process.platform === 'win32' ? 'zstd.exe' : 'zstd');
+    const dumpTransformBin = path.join(target, 'vendor', 'volt-dump-transform', 'bin', process.platform === 'win32' ? 'volt-dump-transform.exe' : 'volt-dump-transform');
+    if (!await exists(zstdBin)) {
+        throw new Error(`daemon runtime is missing ${path.relative(target, zstdBin)}`);
+    }
+    if (!await exists(dumpTransformBin)) {
+        throw new Error(`daemon runtime is missing ${path.relative(target, dumpTransformBin)}`);
+    }
+    await run(zstdBin, ['--version'], target);
     await mkdir(path.join(target, 'scripts'), { recursive: true });
     await cp(path.join(daemonDir, 'scripts', 'start.js'), path.join(target, 'scripts', 'start.js'));
     for (const script of ['control-plane', 'heartbeat-plane', 'socket-channel-plane']) {
