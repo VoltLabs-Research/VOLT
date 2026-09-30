@@ -68,7 +68,8 @@ export class PluginProcessChannel {
             {
                 cwd: input.pluginRoot,
                 env: buildPluginProcessEnv(input.env, { PYTHONUNBUFFERED: '1' }),
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
+                windowsHide: true
             }
         ) as ChildProcessWithoutNullStreams;
 

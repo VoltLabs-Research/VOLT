@@ -45,7 +45,8 @@ export interface RegistryInstallPluginInput {
     version?: string;
 }
 
-const DEFAULT_REGISTRY_INSTALL_PLATFORM = 'linux-x86_64';
+const PLATFORM_WAIT_MS = 1_000;
+const PLATFORM_WAIT_ATTEMPTS = 30;
 
 class PluginArchiveService {
     async installFromRegistry(input: RegistryInstallPluginInput): Promise<PluginRecord> {
@@ -54,7 +55,7 @@ class PluginArchiveService {
         }
 
         const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(input.teamId);
-        const platform = await teamClusterSelectionService.resolveClusterPlatform(computeClusterId) ?? DEFAULT_REGISTRY_INSTALL_PLATFORM;
+        const platform = await this.resolveInstallPlatform(computeClusterId);
         const tarball = await registryGateway.resolveTarball(input.name, input.version, platform);
 
         const installed = await teamClusterDaemonClient.command<TeamClusterDaemonRegistryInstallResult>(
@@ -250,6 +251,19 @@ class PluginArchiveService {
         const match = candidates.find((candidate) => candidate.modifier?.key?.trim() === modifierKey);
 
         return match ? PluginEntity.findOneBy({ id: match.id }) : null;
+    }
+
+    private async resolveInstallPlatform(computeClusterId: string): Promise<string> {
+        for (let attempt = 0; attempt < PLATFORM_WAIT_ATTEMPTS; attempt += 1) {
+            const platform = await teamClusterSelectionService.resolveClusterPlatform(computeClusterId);
+            if (platform) return platform;
+            await new Promise((resolve) => { setTimeout(resolve, PLATFORM_WAIT_MS); });
+        }
+
+        throw ApplicationError.serviceUnavailable(
+            ErrorCodes.REGISTRY_PLATFORM_UNAVAILABLE,
+            'The compute daemon has not reported its host platform yet. Wait until the cluster is connected and try again.'
+        );
     }
 
     private async publishIfValid(plugin: Plugin): Promise<Plugin> {

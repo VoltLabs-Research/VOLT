@@ -30,7 +30,10 @@ interface LocalDeployProps{
 type DeployState = AppEvents['deploy:state']['state'];
 
 interface ClusterView{
-    teamCluster?: { status?: string };
+    teamCluster?: {
+        status?: string;
+        hostCapabilities?: { platform?: string | null } | null;
+    };
     status?: string;
 }
 
@@ -250,7 +253,7 @@ export default class LocalDeploy{
                     token: state.authToken
                 });
                 lastStatus = view.teamCluster?.status ?? view.status ?? lastStatus;
-                if(lastStatus === TeamClusterStatus.Connected) return;
+                if(lastStatus === TeamClusterStatus.Connected && view.teamCluster?.hostCapabilities?.platform) return;
             }catch(err){
                 lastStatus = `unreachable (${errMessage(err)})`;
             }

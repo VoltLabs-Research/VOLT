@@ -36,6 +36,7 @@ export default class ApplicationError extends Error {
     public static notFound = withStatus(404);
     public static conflict = withStatus(409);
     public static unprocessableEntity = withStatus(422);
+    public static serviceUnavailable = withStatus(503);
 
     public static internalServerError(message: string): ApplicationError {
         return new ApplicationError(ErrorCodes.INTERNAL_SERVER_ERROR, message, 500);

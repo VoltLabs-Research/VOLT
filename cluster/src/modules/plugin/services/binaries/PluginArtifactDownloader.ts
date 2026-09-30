@@ -7,6 +7,7 @@ import { logger } from '@shared/logger';
 import { DAEMON_PATHS } from '@core/config/paths';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
+import { assertNativePluginBinary } from '@modules/plugin/services/binaries/native-plugin-binary';
 import { buildArtifactCacheKey } from '@modules/plugin/services/binaries/runtime-cache-keys';
 
 
@@ -77,9 +78,10 @@ export class PluginArtifactDownloader {
         const hashMarkerPath = `${localPath}${HASH_MARKER_FILENAME_SUFFIX}`;
 
         try {
-            await fs.access(localPath, fs.constants.X_OK);
+            await fs.access(localPath, fs.constants.F_OK);
             const cachedHash = await fs.readFile(hashMarkerPath, 'utf-8').catch(() => null);
             if (!source.expectedHash || cachedHash === source.expectedHash) {
+                await assertNativePluginBinary(localPath);
                 return localPath;
             }
 
@@ -126,6 +128,7 @@ export class PluginArtifactDownloader {
                 }
             }
 
+            await assertNativePluginBinary(tempPath);
             await fs.chmod(tempPath, 0o755);
             await fs.rename(tempPath, localPath);
 

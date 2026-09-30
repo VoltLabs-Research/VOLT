@@ -20,6 +20,7 @@ export interface PluginSeedState{
     done: boolean;
     teamId: string;
     installed: string[];
+    platform?: string;
 }
 
 export interface DevModeState{
@@ -115,7 +116,8 @@ export default class AppConfig{
         return {
             done: seed.done === true,
             teamId: seed.teamId,
-            installed: Array.isArray(seed.installed) ? seed.installed.filter((item): item is string => typeof item === 'string') : []
+            installed: Array.isArray(seed.installed) ? seed.installed.filter((item): item is string => typeof item === 'string') : [],
+            platform: typeof seed.platform === 'string' ? seed.platform : undefined
         };
     }
 
