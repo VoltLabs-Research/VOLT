@@ -1,0 +1,37 @@
+packages:
+  - packages/apps/*
+  - packages/infra/*
+  - packages/shared/*
+  - packages/sdk/*
+
+# Native addons and binaries whose install scripts must run.
+onlyBuiltDependencies:
+  - '@voltstack/headless-rasterizer'
+  - '@voltstack/lammps-io'
+  - '@voltstack/spatial-assembler'
+  - better-sqlite3
+  - canvas
+  - electron
+  - electron-winstaller
+  - esbuild
+  - sharp
+
+# Optional native accelerators; these packages work without them.
+ignoredBuiltDependencies:
+  - cpu-features
+  - protobufjs
+  - ssh2
+
+# These packages load `typescript` at runtime without declaring it (`@typia/core` declares the
+# peer from 12.2 on). As a peer it binds to the TypeScript of the package that runs them instead
+# of whichever copy pnpm hoists.
+packageExtensions:
+  ts-patch:
+    peerDependencies:
+      typescript: '*'
+  '@typia/core':
+    peerDependencies:
+      typescript: '*'
+  '@typia/transform':
+    peerDependencies:
+      typescript: '*'

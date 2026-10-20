@@ -2,11 +2,10 @@ import { singleton } from '@shared/utilities/singleton';
 import { getDaemonExposureRegistry } from '@modules/system/services/access/DaemonExposureRegistry';
 import { TTLCache } from '@isaacs/ttlcache';
 import { logger } from '@shared/logger';
-import { REVERSE_CHANNEL } from '@core/constants/reverse-channel';
 import { WebSocketSessionManager } from '@modules/system/services/sessions/WebSocketSessionManager';
 import { TunnelSessionManager, type TunnelMessageTransport } from '@modules/system/services/sessions/TunnelSessionManager';
 import { createReverseChannelCommandHandler } from '@modules/system/socket/reverse-channel-command-handler';
-import type { TeamClusterDaemonSessionAttachPayload } from '@voltstack/daemon-cluster-client';
+import { REVERSE_CHANNEL, type TeamClusterDaemonSessionAttachPayload } from '@voltstack/daemon-cluster-client';
 import type {
     BinarySessionInputPayload,
     ReverseChannelInboundMessage,

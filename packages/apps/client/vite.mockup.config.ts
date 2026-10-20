@@ -9,10 +9,8 @@ export default defineConfig({
     plugins: [react(), tailwindcss()],
     resolve: {
         alias: [
-            { find: '@volt/contracts', replacement: path.resolve(__dirname, '../contracts/src') },
             { find: '@', replacement: path.resolve(__dirname, './src') }
         ]
     },
-    server: { fs: { allow: [path.resolve(__dirname, '..')] } },
     build: { outDir: path.resolve(__dirname, 'dist-mockup'), emptyOutDir: true }
 });

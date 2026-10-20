@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/publish-jupyter-scripting.yml'
-      - 'cluster/image-contexts/jupyter-scripting/**'
+      - 'packages/infra/cluster/image-contexts/jupyter-scripting/**'
   workflow_dispatch:
 
 env:
@@ -48,8 +48,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: ./cluster/image-contexts/jupyter-scripting
-          file: ./cluster/image-contexts/jupyter-scripting/Dockerfile
+          context: ./packages/infra/cluster/image-contexts/jupyter-scripting
+          file: ./packages/infra/cluster/image-contexts/jupyter-scripting/Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

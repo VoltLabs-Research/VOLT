@@ -1,5 +1,5 @@
 .opencode/
-server/storage/
+packages/infra/server/storage/
 
 .agents/
 out/
@@ -17,6 +17,7 @@ npm-debug.log*
 *.env
 
 node_modules/
+.pnpm-store/
 
 dist
 dist-mockup

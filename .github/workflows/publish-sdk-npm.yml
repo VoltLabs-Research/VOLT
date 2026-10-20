@@ -1,6 +1,6 @@
 name: Publish VoltSDK to npm
 
-# Publishes the Node.js SDKs that live in this monorepo (sdk/node/*) to the
+# Publishes the Node.js SDKs that live in this monorepo (packages/sdk/*) to the
 # public npm registry under the @voltstack scope. Bump the package version
 # before publishing: npm rejects re-publishing an existing version.
 
@@ -35,24 +35,29 @@ jobs:
         package: [voltclient, daemon-cluster-client]
         include:
           - package: voltclient
-            directory: sdk/node/VoltClient
+            directory: packages/sdk/voltclient
           - package: daemon-cluster-client
-            directory: sdk/node/DaemonClusterClient
+            directory: packages/sdk/daemon-cluster-client
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
 
       - name: Build SDK
-        working-directory: ${{ matrix.directory }}
         run: |
-          npm install --no-audit --no-fund
-          npm run build
+          pnpm install --frozen-lockfile --filter "@voltstack/${{ matrix.package }}"
+          pnpm --filter "@voltstack/${{ matrix.package }}" build
 
       - name: Publish to npm
         working-directory: ${{ matrix.directory }}

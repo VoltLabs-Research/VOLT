@@ -6,12 +6,10 @@ on:
       - 'v*'
   pull_request:
     paths:
-      - 'desktop/**'
-      - 'server/**'
-      - 'cluster/**'
-      - 'client/**'
-      - 'contracts/**'
-      - 'sdk/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
       - '.github/workflows/desktop-build.yml'
   workflow_dispatch:
 
@@ -33,21 +31,21 @@ jobs:
           - os: ubuntu-latest
             label: linux
             artifacts: |
-              desktop/dist/*.AppImage
-              desktop/dist/*.deb
-              desktop/dist/latest-linux.yml
+              packages/apps/desktop/dist/*.AppImage
+              packages/apps/desktop/dist/*.deb
+              packages/apps/desktop/dist/latest-linux.yml
           - os: windows-latest
             label: windows
             artifacts: |
-              desktop/dist/*.exe
-              desktop/dist/*.exe.blockmap
-              desktop/dist/latest.yml
+              packages/apps/desktop/dist/*.exe
+              packages/apps/desktop/dist/*.exe.blockmap
+              packages/apps/desktop/dist/latest.yml
           - os: macos-latest
             label: macos
-            artifacts: desktop/dist/*.dmg
+            artifacts: packages/apps/desktop/dist/*.dmg
     defaults:
       run:
-        working-directory: desktop
+        working-directory: packages/apps/desktop
     env:
       # Build the macOS app unsigned (no Apple certs in CI).
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -57,18 +55,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      # Node 22 is what the bundled server and daemon run on: the build copies this
-      # runner's node binary into the installer as the stack's runtime.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
+      # Node 22 (.nvmrc) is what the bundled server and daemon run on: the build copies
+      # this runner's node binary into the installer as the stack's runtime.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: 'npm'
-          cache-dependency-path: |
-            desktop/package-lock.json
-            server/package-lock.json
-            cluster/package-lock.json
-            client/package-lock.json
+          node-version-file: .nvmrc
 
       - name: Set up Python (node-gyp fallback for native modules without a prebuild)
         uses: actions/setup-python@v5
@@ -89,16 +87,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.cache/electron
-          key: electron-${{ runner.os }}-${{ hashFiles('desktop/package-lock.json') }}
+          key: electron-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-      - name: Install desktop dependencies
+      - name: Install dependencies
         shell: bash
         run: |
           for attempt in 1 2 3; do
-            if npm ci; then
+            if pnpm install --frozen-lockfile; then
               exit 0
             fi
-            echo "npm ci failed (attempt ${attempt}/3)"
+            echo "pnpm install failed (attempt ${attempt}/3)"
             if [ "${attempt}" -eq 3 ]; then
               exit 1
             fi
@@ -110,14 +108,14 @@ jobs:
         shell: bash
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
 
-      # Assembles desktop/stack-runtime (client bundle, compiled server and daemon with
+      # Assembles stack-runtime (client bundle, compiled server and daemon with
       # production node_modules, the SDK, and this runner's node binary), then packages
       # it under resources/stack. No Docker is involved at build or run time.
       - name: Build the local stack runtime
-        run: npm run stack:build
+        run: pnpm run stack:build
 
       - name: Package installers
-        run: npm run package:only
+        run: pnpm run package:only
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

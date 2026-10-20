@@ -15,11 +15,6 @@ export default defineConfig(({ mode }) => {
             allowedHosts: ['5173--main--volt-development--rodyherrera--frda5i519n648.pit-1.try.coder.app'],
             port: 5173,
             strictPort: true,
-            fs: {
-                allow: [
-                    path.resolve(__dirname, '..')
-                ]
-            },
             proxy: {
                 '/api': {
                     target: backendTarget,
@@ -36,10 +31,6 @@ export default defineConfig(({ mode }) => {
         resolve: {
             alias: [
                 {
-                    find: '@volt/contracts',
-                    replacement: path.resolve(__dirname, '../contracts/src')
-                },
-                {
                     find: '@',
                     replacement: path.resolve(__dirname, './src')
                 }
@@ -47,7 +38,6 @@ export default defineConfig(({ mode }) => {
             dedupe: [
                 'react',
                 'react-dom',
-                'react-router',
                 'react-router-dom',
                 'lucide-react',
                 'framer-motion',

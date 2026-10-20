@@ -10,6 +10,10 @@ name: Verify
 # `@volt/contracts` has no toolchain of its own by design; it is compiled from
 # source by both consumers, so the server typecheck and the client build are what
 # verify it.
+#
+# Each job installs only its package and the workspace packages it depends on
+# (`--filter <name>...`), then builds those dependencies (`<name>^...`): the SDKs'
+# package.json types point at dist/.
 
 on:
   push:
@@ -31,50 +35,44 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: server/package-lock.json
+          node-version-file: .nvmrc
 
-      # tsconfig maps @voltstack/daemon-cluster-client to the SDK in this repo,
-      # and its package.json types point at dist/, so build the SDK first.
-      - name: Build cluster SDK
-        working-directory: sdk/node/DaemonClusterClient
-        run: |
-          npm install --no-audit --no-fund
-          npm run build
-
-      # `postinstall` runs `ts-patch install`, which typia's transform needs.
       - name: Install dependencies
-        working-directory: server
-        run: npm ci
+        run: pnpm install --frozen-lockfile --filter volt-server...
+
+      - name: Build workspace dependencies
+        run: pnpm --filter "volt-server^..." build
 
       - name: Typecheck
-        working-directory: server
-        run: npm run typecheck
+        run: pnpm --filter volt-server typecheck
 
       - name: Lint
-        working-directory: server
-        run: npm run lint
+        run: pnpm --filter volt-server lint
 
       # `no-cross-module-imports` and `no-circular` are `warn` with known debt, so
       # this fails only on an `error`-severity rule. The debt ratchet below is what
       # keeps the warnings from growing.
       - name: Layering rules
-        working-directory: server
-        run: npm run depcruise
+        run: pnpm --filter volt-server depcruise
 
       - name: Layering debt ratchet
-        working-directory: server
+        working-directory: packages/infra/server
         env:
           # Baseline measured on the commit that introduced this workflow. Lower it
           # when you remove violations; raising it needs a reason in the PR.
           MAX_VIOLATIONS: 226
         run: |
           set -uo pipefail
-          output="$(npm run --silent depcruise 2>&1 || true)"
+          output="$(pnpm run --silent depcruise 2>&1 || true)"
           count="$(printf '%s' "$output" | sed 's/\x1b\[[0-9;]*m//g' \
             | grep -oE '^x [0-9]+ dependency violations' | grep -oE '[0-9]+' | head -1)"
 
@@ -90,6 +88,10 @@ jobs:
             exit 1
           fi
 
+      # `tspc` applies typia's transform; the build is what proves it still runs.
+      - name: Build
+        run: pnpm --filter volt-server build
+
   cluster:
     name: Cluster daemon
     runs-on: ubuntu-latest
@@ -97,15 +99,19 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: cluster/package-lock.json
+          node-version-file: .nvmrc
 
-      # `npm ci` builds native modules (duckdb, canvas), so the toolchain has to be
-      # present before install rather than after.
+      # The install builds native modules (duckdb, canvas), so the toolchain has to
+      # be present before install rather than after.
       - name: Install build toolchain for native modules
         run: |
           sudo apt-get update
@@ -119,41 +125,32 @@ jobs:
             librsvg2-dev \
             zstd
 
-      # The daemon links @voltstack/daemon-cluster-client from the repository, and
-      # the link's package.json exports point at dist/, so build the SDK first.
-      - name: Build cluster SDK
-        working-directory: sdk/node/DaemonClusterClient
-        run: |
-          npm install --no-audit --no-fund
-          npm run build
-
       - name: Install dependencies
-        working-directory: cluster
-        run: npm ci
+        run: pnpm install --frozen-lockfile --filter cluster-daemon...
+
+      - name: Build workspace dependencies
+        run: pnpm --filter "cluster-daemon^..." build
 
       - name: Typecheck
-        working-directory: cluster
-        run: npm run typecheck
+        run: pnpm --filter cluster-daemon typecheck
 
       - name: Lint
-        working-directory: cluster
-        run: npm run lint
+        run: pnpm --filter cluster-daemon lint
 
       # Fails only on an `error`-severity rule; `no-cross-module-imports` and
       # `no-circular` are `warn` with known debt, which the ratchet below bounds.
       - name: Layering rules
-        working-directory: cluster
-        run: npm run depcruise
+        run: pnpm --filter cluster-daemon depcruise
 
       - name: Layering debt ratchet
-        working-directory: cluster
+        working-directory: packages/infra/cluster
         env:
           # Baseline measured on the commit that introduced this workflow. Lower it
           # when you remove violations; raising it needs a reason in the PR.
           MAX_VIOLATIONS: 65
         run: |
           set -uo pipefail
-          output="$(npm run --silent depcruise 2>&1 || true)"
+          output="$(pnpm run --silent depcruise 2>&1 || true)"
           count="$(printf '%s' "$output" | sed 's/\x1b\[[0-9;]*m//g' \
             | grep -oE '^x [0-9]+ dependency violations' | grep -oE '[0-9]+' | head -1)"
 
@@ -170,8 +167,7 @@ jobs:
           fi
 
       - name: Build
-        working-directory: cluster
-        run: npm run build
+        run: pnpm --filter cluster-daemon build
 
   client:
     name: Client
@@ -180,34 +176,30 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-
-      # The client links @voltstack/voltclient from the repository, and the link's
-      # package.json exports point at dist/, so build the SDK first.
-      - name: Build VoltClient SDK
-        working-directory: sdk/node/VoltClient
-        run: |
-          npm install --no-audit --no-fund
-          npm run build
+          node-version-file: .nvmrc
 
       - name: Install dependencies
-        working-directory: client
-        run: npm ci
+        run: pnpm install --frozen-lockfile --filter volt-webapp...
+
+      - name: Build workspace dependencies
+        run: pnpm --filter "volt-webapp^..." build
 
       - name: Lint
-        working-directory: client
-        run: npm run lint
+        run: pnpm --filter volt-webapp lint
 
       # `tsc -b` then `vite build`: the only check that catches a bundler-level
-      # break, and it typechecks `../contracts/src` through the paths map.
+      # break, and it typechecks `@volt/contracts` from source.
       - name: Build
-        working-directory: client
-        run: npm run build
+        run: pnpm --filter volt-webapp build
 
   desktop:
     name: Desktop
@@ -216,30 +208,33 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          node-version-file: .nvmrc
 
       - name: Cache Electron binaries
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.cache/electron
-          key: electron-${{ runner.os }}-${{ hashFiles('desktop/package-lock.json') }}
+          key: electron-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies
-        working-directory: desktop
         env:
           ELECTRON_CACHE: ${{ github.workspace }}/.cache/electron
           electron_config_cache: ${{ github.workspace }}/.cache/electron
         run: |
           for attempt in 1 2 3; do
-            if npm ci; then
+            if pnpm install --frozen-lockfile --filter volt-desktop...; then
               exit 0
             fi
-            echo "npm ci failed (attempt ${attempt}/3)"
+            echo "pnpm install failed (attempt ${attempt}/3)"
             if [ "${attempt}" -eq 3 ]; then
               exit 1
             fi
@@ -247,24 +242,20 @@ jobs:
           done
 
       - name: Typecheck
-        working-directory: desktop
-        run: npm run typecheck
+        run: pnpm --filter volt-desktop typecheck
 
       - name: Lint
-        working-directory: desktop
-        run: npm run lint
+        run: pnpm --filter volt-desktop lint
 
       # Catches a break in the main/preload/renderer bundles without packaging
       # installers, which the release workflow already does per OS.
       - name: Build
-        working-directory: desktop
-        run: npm run build
+        run: pnpm --filter volt-desktop build
 
       # The CLI is shipped as a release asset, so its bundle has to keep resolving
-      # the `@volt/contracts` alias.
+      # `@volt/contracts` from the workspace.
       - name: Build CLI bundle
-        working-directory: desktop
-        run: npm run cli:build
+        run: pnpm --filter volt-desktop cli:build
 
   stack:
     name: Stack compose
@@ -277,7 +268,7 @@ jobs:
       # overlay swaps in the published images. A typo in either only shows up on a
       # user's first launch otherwise.
       - name: Validate compose (build from source)
-        working-directory: desktop/stack
+        working-directory: packages/apps/desktop/stack
         env:
           VOLT_SOURCE_DIR: /tmp/volt-source
           TEAM_CLUSTER_ID: validation
@@ -286,7 +277,7 @@ jobs:
           docker compose -f compose.yml --profile enrolled config > /dev/null
 
       - name: Validate compose (prebuilt images)
-        working-directory: desktop/stack
+        working-directory: packages/apps/desktop/stack
         env:
           VOLT_SOURCE_DIR: /tmp/volt-source
           TEAM_CLUSTER_ID: validation
@@ -295,7 +286,7 @@ jobs:
 
       # The overlay is only useful if it actually replaces every build.
       - name: Assert the overlay leaves no build step
-        working-directory: desktop/stack
+        working-directory: packages/apps/desktop/stack
         env:
           VOLT_SOURCE_DIR: /tmp/volt-source
           TEAM_CLUSTER_ID: validation

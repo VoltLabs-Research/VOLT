@@ -1,14 +1,13 @@
 {
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.alias.json",
+    "build": "tspc -p tsconfig.build.json && tsc-alias -p tsconfig.alias.json",
     "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
     "lint": "eslint .",
-    "postinstall": "ts-patch install -s || echo 'ts-patch unavailable (runtime-only install); skipping TypeScript patch'",
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register -r tsconfig-paths/register src/server.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "depcruise:ratchet": "node scripts/check-depcruise-ratchet.mjs",
-    "start:dist": "node dist/server/src/server.js"
+    "start:dist": "node dist/infra/server/src/server.js"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.6.1",
@@ -20,6 +19,7 @@
     "@types/http-proxy": "^1.17.17",
     "@types/identicon.js": "^2.3.5",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/ms": "^2.1.0",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.0.8",
     "@types/passport": "^1.0.17",
@@ -29,6 +29,7 @@
     "@types/pg": "^8.15.5",
     "@types/unzipper": "^0.10.11",
     "@types/ws": "^8.18.1",
+    "@volt/contracts": "workspace:*",
     "eslint": "^9.39.2",
     "pino-pretty": "^13.1.2",
     "ts-node": "^10.9.2",
@@ -50,7 +51,7 @@
     "@ai-sdk/openai": "^3.0.37",
     "@ai-sdk/togetherai": "^2.0.35",
     "@ai-sdk/xai": "^3.0.60",
-    "@voltstack/daemon-cluster-client": "file:../sdk/node/DaemonClusterClient",
+    "@voltstack/daemon-cluster-client": "workspace:*",
     "ai": "^6.0.105",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
@@ -92,5 +93,9 @@
   "version": "2.0.0",
   "description": "",
   "keywords": [],
-  "type": "commonjs"
+  "type": "commonjs",
+  "files": [
+    "dist",
+    "static"
+  ]
 }

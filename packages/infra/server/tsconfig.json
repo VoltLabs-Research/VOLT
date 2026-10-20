@@ -31,10 +31,7 @@
         "src/shared/*"
       ],
       "@volt/contracts/*": [
-        "../contracts/src/*"
-      ],
-      "@voltstack/daemon-cluster-client": [
-        "../sdk/node/DaemonClusterClient"
+        "../../shared/contracts/src/*"
       ],
       "typia": [
         "node_modules/typia"

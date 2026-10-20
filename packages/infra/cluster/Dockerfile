@@ -1,8 +1,7 @@
 FROM tailscale/tailscale:stable AS tailscale-bin
 
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS system
 ENV DEBIAN_FRONTEND=noninteractive
-WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -53,24 +52,41 @@ RUN apt-get update \
         libxcb1 \
     && rm -rf /var/lib/apt/lists/*
 
-# The daemon consumes @voltstack/daemon-cluster-client from the repository
-# (file: link), so the SDK package must exist before `npm ci` can link it, and
-# its dist must be built before the daemon's own build typechecks against it.
-COPY cluster/package.json cluster/package-lock.json ./cluster/
-COPY sdk/node/DaemonClusterClient/package.json ./sdk/node/DaemonClusterClient/
-RUN cd cluster && npm ci
+# Build context is the workspace root. The daemon links @voltstack/daemon-cluster-client
+# from the workspace, so the SDK's manifest must be present for the install and its dist
+# built before the daemon runs or builds against it.
+FROM system AS source
+RUN npm install -g pnpm@10
+WORKDIR /app
 
-COPY sdk/node/DaemonClusterClient ./sdk/node/DaemonClusterClient
-RUN cd sdk/node/DaemonClusterClient && npm install --no-audit --no-fund && npm run build
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/infra/cluster/package.json packages/infra/cluster/
+COPY packages/sdk/daemon-cluster-client/package.json packages/sdk/daemon-cluster-client/
+RUN pnpm install --frozen-lockfile --filter cluster-daemon...
 
-COPY cluster/tsconfig.json cluster/tsconfig.build.json ./cluster/
-COPY cluster/src ./cluster/src
-COPY cluster/scripts ./cluster/scripts
+COPY packages/sdk/daemon-cluster-client packages/sdk/daemon-cluster-client
+RUN pnpm --filter @voltstack/daemon-cluster-client build
+
+COPY packages/infra/cluster packages/infra/cluster
+WORKDIR /app/packages/infra/cluster
+
+# The desktop app's single-machine stack runs the daemon from source.
+FROM source AS dev
+RUN pnpm run fetch:tools
+CMD ["pnpm", "run", "dev"]
+
+# `pnpm deploy` copies the daemon and its production dependencies into a self-contained
+# directory, with the SDK copied in instead of linked to the workspace. vendor/ is copied
+# on its own because deploy drops the shared-library symlinks it contains.
+FROM source AS build
+RUN pnpm run build && pnpm --filter cluster-daemon --prod deploy --legacy /deploy
+
+FROM system
 COPY --from=tailscale-bin /usr/local/bin/tailscale /usr/local/bin/tailscale
-
-RUN cd cluster && npm run build && npm prune --omit=dev
+COPY --from=build /deploy /app
+COPY --from=build /app/packages/infra/cluster/vendor /app/vendor
 
 ENV NODE_ENV=production
 
-WORKDIR /app/cluster
+WORKDIR /app
 CMD ["npm", "run", "start"]

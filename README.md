@@ -7,13 +7,13 @@ Run the full VOLT stack on your own machine. Requires `docker`, `node`, and `cur
 **Deploy** (interactive — prompts for host, account, team, and cluster):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/voltlabs-research/volt/main/desktop/scripts/deploy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/voltlabs-research/volt/main/packages/apps/desktop/scripts/deploy.sh | bash
 ```
 
 **Update** an existing deployment to the latest release (keeps your data):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/voltlabs-research/volt/main/desktop/scripts/deploy.sh | bash -s -- --update
+curl -fsSL https://raw.githubusercontent.com/voltlabs-research/volt/main/packages/apps/desktop/scripts/deploy.sh | bash -s -- --update
 ```
 
 ### Desktop app

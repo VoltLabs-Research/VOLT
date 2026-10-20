@@ -22,10 +22,10 @@ import type { TeamClusterRuntimeRoleConfigProps } from '@shared/contracts/types/
 import type { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import {
     ChannelCommands,
-    TEAM_CLUSTER_DAEMON_EVENT,
     TEAM_CLUSTER_EVENT
 } from '@shared/contracts/types/team-cluster-daemon-channel';
 import {
+    DaemonSocketEvent,
     REVERSE_CHANNEL,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     type TeamClusterDaemonCommandMessage,
@@ -230,9 +230,9 @@ export {
 
 export const TEAM_CLUSTER_LIFECYCLE_EVENT = TEAM_CLUSTER_EVENT.lifecycleUpdated;
 export const TEAM_CLUSTER_SUBSCRIPTION_EVENT = 'subscribe_to_team_cluster';
-export const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = TEAM_CLUSTER_DAEMON_EVENT.register;
-export const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = TEAM_CLUSTER_DAEMON_EVENT.registered;
-export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = TEAM_CLUSTER_DAEMON_EVENT.message;
+export const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = DaemonSocketEvent.TeamClusterDaemonRegister;
+export const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = DaemonSocketEvent.TeamClusterDaemonRegistered;
+export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = DaemonSocketEvent.TeamClusterDaemonMessage;
 
 export const getTeamClusterRoom = (teamClusterId: string): string => {
     return `team-cluster:${teamClusterId}`;
