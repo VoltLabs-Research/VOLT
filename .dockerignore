@@ -1,23 +1,17 @@
-# Listed per-app rather than as `**/node_modules` so a nested module directory
+# Listed per-package rather than as `**/node_modules` so a nested module directory
 # that the build genuinely needs cannot be emptied by a blanket glob — that is what
 # once made the client image unbuildable.
-client/node_modules
-server/node_modules
-cluster/node_modules
-cluster/dist
-cluster/.runtime
-sdk/node_modules
-sdk/node/node_modules
-sdk/node/VoltClient/node_modules
-sdk/node/VoltClient/dist
-sdk/node/DaemonClusterClient/node_modules
-sdk/node/DaemonClusterClient/dist
-sdk/python3
-client/dist
+node_modules
+packages/*/*/node_modules
+packages/*/*/dist
+packages/infra/cluster/.runtime
+# Host-platform binaries; the image build fetches its own.
+packages/infra/cluster/vendor
+packages/infra/server/storage
+packages/sdk/python
+packages/apps/desktop
 **/*.tsbuildinfo
 **/npm-debug.log
 **/*.env
 .git
 .volt-deploy
-desktop
-server/storage

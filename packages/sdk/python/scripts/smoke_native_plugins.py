@@ -58,7 +58,7 @@ def _package_native_root() -> Path:
 
         return native_root()
     except ModuleNotFoundError:
-        repo_python = Path(__file__).resolve().parents[2] / "python3" / "voltsdk"
+        repo_python = Path(__file__).resolve().parents[1] / "voltsdk"
         if (repo_python / "__init__.py").exists():
             sys.path.insert(0, str(repo_python.parent))
         from voltsdk.native import root as native_root

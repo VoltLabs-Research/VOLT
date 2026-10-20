@@ -1,9 +1,10 @@
 import { io, type Socket } from 'socket.io-client';
+import { DaemonSocketEvent } from '@voltstack/daemon-cluster-client';
 import { logger } from '@shared/logger';
 
-const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = 'team-cluster-daemon:register';
-const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = 'team-cluster-daemon:registered';
-export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = 'team-cluster-daemon:message';
+const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = DaemonSocketEvent.TeamClusterDaemonRegister;
+const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = DaemonSocketEvent.TeamClusterDaemonRegistered;
+export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = DaemonSocketEvent.TeamClusterDaemonMessage;
 
 const SKIP_PER_MESSAGE_DEFLATE = false as unknown as { threshold: number };
 

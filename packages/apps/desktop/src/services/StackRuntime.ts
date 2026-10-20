@@ -26,7 +26,7 @@ export interface StackRuntimeLayout{
 const exists = (target: string): Promise<boolean> => access(target).then(() => true, () => false);
 
 export const stackRuntimeHint = (root: string): string =>
-    `No packaged Volt stack at ${root}. Run "npm run stack:build" in desktop/ (or point dev mode at a VOLT checkout whose desktop/stack-runtime is built).`;
+    `No packaged Volt stack at ${root}. Run "pnpm run stack:build" in packages/apps/desktop/ (or point dev mode at a VOLT checkout whose packages/apps/desktop/stack-runtime is built).`;
 
 export const resolveStackRuntime = async (root: string): Promise<StackRuntimeLayout> => {
     const manifestPath = path.join(root, 'manifest.json');
@@ -51,4 +51,4 @@ export const resolveStackRuntime = async (root: string): Promise<StackRuntimeLay
     return layout;
 };
 
-export const runtimeRootForCheckout = (voltPath: string): string => path.join(voltPath, 'desktop', 'stack-runtime');
+export const runtimeRootForCheckout = (voltPath: string): string => path.join(voltPath, 'packages', 'apps', 'desktop', 'stack-runtime');

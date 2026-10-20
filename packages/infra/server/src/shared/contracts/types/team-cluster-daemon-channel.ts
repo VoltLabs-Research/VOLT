@@ -9,12 +9,6 @@ export const TEAM_CLUSTER_EVENT = Object.freeze({
     lifecycleUpdated: 'team-cluster.updated'
 });
 
-export const TEAM_CLUSTER_DAEMON_EVENT = Object.freeze({
-    register: 'team-cluster-daemon:register',
-    registered: 'team-cluster-daemon:registered',
-    message: 'team-cluster-daemon:message'
-});
-
 export const ChannelCommands = Object.freeze({
     AnalysisStart: 'analysis.start',
     AnalysisCleanupRuntimeState: 'analysis.cleanup-runtime-state',

@@ -1,8 +1,8 @@
 # Client image for the single-machine stack: static bundle behind nginx, which
 # also reverse-proxies /api and /socket.io to volt-server on the same origin.
 #
-# Build context is the VOLT root, because the client compiles `@volt/contracts`
-# from source.
+# Build context is the workspace root, because the client compiles `@volt/contracts`
+# from source and links @voltstack/voltclient from the workspace.
 #
 # Deliberately no VITE_SERVER_ENDPOINT build arg: `backend-origin.ts` falls back
 # to `window.location.origin`, and nginx proxies the API on that same origin. That
@@ -10,29 +10,27 @@
 # per endpoint.
 
 FROM node:22-bookworm-slim AS build
-WORKDIR /app/client
+RUN npm install -g pnpm@10
+WORKDIR /app
 
-COPY client/package*.json ./
-# The client links @voltstack/voltclient from the repository, so the SDK package
-# must exist before `npm ci` can link it, and its dist must be built before the
-# client's own build typechecks against it.
-COPY sdk/node/VoltClient/package.json /app/sdk/node/VoltClient/
-RUN --mount=type=cache,target=/root/.npm npm ci
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/apps/client/package.json packages/apps/client/
+COPY packages/shared/contracts/package.json packages/shared/contracts/
+COPY packages/sdk/voltclient/package.json packages/sdk/voltclient/
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter volt-webapp...
 
-COPY contracts /app/contracts
-COPY sdk/node/VoltClient /app/sdk/node/VoltClient
-RUN --mount=type=cache,target=/root/.npm cd /app/sdk/node/VoltClient && npm install --no-audit --no-fund && npm run build
-
-COPY client .
-RUN npm run build
+COPY packages/shared/contracts packages/shared/contracts
+COPY packages/sdk/voltclient packages/sdk/voltclient
+COPY packages/apps/client packages/apps/client
+RUN pnpm --filter volt-webapp... build
 
 
 FROM nginx:1.27-alpine AS runtime
 
-COPY --from=build /app/client/dist /usr/share/nginx/html
+COPY --from=build /app/packages/apps/client/dist /usr/share/nginx/html
 
 # The desktop shell's bootstrap page and navigation bridge are served by volt-server
-# (see server/src/core/config/client-app.ts) and proxied below, so this image only
+# (see packages/infra/server/src/core/config/client-app.ts) and proxied below, so this image only
 # injects the script tag that loads the bridge.
 RUN sed -i 's#</body>#<script src="/__nav-bridge.js"></script></body>#' /usr/share/nginx/html/index.html
 

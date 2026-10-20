@@ -13,58 +13,29 @@ export enum DaemonDistributionMode {
     Image = 'image'
 }
 
-const DAEMON_SOURCE_ROOT_CANDIDATES = [
-    path.resolve(process.cwd(), '..', '..', 'ClusterDaemon'),
-    path.resolve(process.cwd(), '..', 'cluster')
-];
-
-const SDK_PACKAGE_RELATIVE_PATH = ['sdk', 'node', 'DaemonClusterClient'];
-
-const SDK_SOURCE_ROOT_CANDIDATES = [
-    path.resolve(process.cwd(), '..', ...SDK_PACKAGE_RELATIVE_PATH),
-    path.resolve(process.cwd(), '..', '..', ...SDK_PACKAGE_RELATIVE_PATH)
-];
-
-const resolveExistingPath = async (candidatePaths: readonly string[]): Promise<string | null> => {
-    for (const candidatePath of candidatePaths) {
-        try {
-            await access(candidatePath);
-            return candidatePath;
-        } catch {
-            continue;
-        }
-    }
-
-    return null;
-};
-
-const resolveDaemonPackageRoot = async (): Promise<string | null> => {
-    return resolveExistingPath(DAEMON_SOURCE_ROOT_CANDIDATES);
-};
-
-const resolveSdkPackageRoot = async (): Promise<string | null> => {
-    return resolveExistingPath(SDK_SOURCE_ROOT_CANDIDATES);
-};
-
-const requireDaemonPackageRoot = async (): Promise<string> => {
-    const daemonPackageRoot = await resolveDaemonPackageRoot();
-    if (!daemonPackageRoot) {
-        throw ApplicationError.internalServerError('Unable to locate local ClusterDaemon source directory for build distribution mode');
-    }
-
-    return daemonPackageRoot;
-};
-
-const requireSdkPackageRoot = async (): Promise<string> => {
-    const sdkPackageRoot = await resolveSdkPackageRoot();
-    if (!sdkPackageRoot) {
-        throw ApplicationError.internalServerError('Unable to locate local DaemonClusterClient SDK source directory for build distribution mode');
-    }
-
-    return sdkPackageRoot;
-};
+// Build mode ships the slice of the pnpm workspace that packages/infra/cluster/Dockerfile
+// builds from: the root manifests plus the daemon and the SDK it links, at their repository
+// paths. The server runs from packages/infra/server, so the workspace root is three levels up.
+const WORKSPACE_ROOT = path.resolve(process.cwd(), '..', '..', '..');
+const WORKSPACE_ROOT_FILES = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'];
+const WORKSPACE_PACKAGE_DIRS = ['packages/infra/cluster', 'packages/sdk/daemon-cluster-client'];
 
 const DAEMON_MANIFEST_SKIPPED_ENTRIES = new Set(['node_modules', 'dist', '.git', '.runtime']);
+
+const pathExists = async (candidatePath: string): Promise<boolean> => {
+    try {
+        await access(candidatePath);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+const hasDaemonBuildContext = async (): Promise<boolean> => {
+    const entries = [...WORKSPACE_ROOT_FILES, ...WORKSPACE_PACKAGE_DIRS];
+    const found = await Promise.all(entries.map((entry) => pathExists(path.join(WORKSPACE_ROOT, entry))));
+    return found.every(Boolean);
+};
 
 const decodeManifestText = (contents: Buffer): string | null => {
     try {
@@ -74,7 +45,21 @@ const decodeManifestText = (contents: Buffer): string | null => {
     }
 };
 
-const walkManifestFiles = async (sourceRoot: string, currentPath: string): Promise<DaemonManifestFile[]> => {
+const readManifestFile = async (absolutePath: string): Promise<DaemonManifestFile | null> => {
+    const relativePath = path.relative(WORKSPACE_ROOT, absolutePath);
+    const contents = decodeManifestText(await readFile(absolutePath));
+    if (contents === null) {
+        logger.warn(`@install-manifest: skipped non-UTF-8 file ${relativePath}`);
+        return null;
+    }
+
+    return {
+        relativePath,
+        contents
+    };
+};
+
+const walkManifestFiles = async (currentPath: string): Promise<DaemonManifestFile[]> => {
     const manifestFiles: DaemonManifestFile[] = [];
     const entries = await readdir(currentPath, {
         withFileTypes: true
@@ -87,20 +72,14 @@ const walkManifestFiles = async (sourceRoot: string, currentPath: string): Promi
 
         const absolutePath = path.join(currentPath, entry.name);
         if (entry.isDirectory()) {
-            manifestFiles.push(...await walkManifestFiles(sourceRoot, absolutePath));
+            manifestFiles.push(...await walkManifestFiles(absolutePath));
             continue;
         }
 
-        const contents = decodeManifestText(await readFile(absolutePath));
-        if (contents === null) {
-            logger.warn(`@install-manifest: skipped non-UTF-8 file ${path.relative(sourceRoot, absolutePath)}`);
-            continue;
+        const manifestFile = await readManifestFile(absolutePath);
+        if (manifestFile) {
+            manifestFiles.push(manifestFile);
         }
-
-        manifestFiles.push({
-            relativePath: path.relative(sourceRoot, absolutePath),
-            contents
-        });
     }
 
     return manifestFiles;
@@ -116,23 +95,29 @@ export const getTeamClusterDaemonDistributionMode = async (): Promise<DaemonDist
         return DaemonDistributionMode.Image;
     }
 
-    if (await resolveDaemonPackageRoot() && await resolveSdkPackageRoot()) {
+    if (await hasDaemonBuildContext()) {
         return DaemonDistributionMode.Build;
     }
 
     return DaemonDistributionMode.Image;
 };
 
-const sortByRelativePath = (manifestFiles: DaemonManifestFile[]): DaemonManifestFile[] => {
+export const readTeamClusterDaemonBuildContextFiles = async (): Promise<DaemonManifestFile[]> => {
+    if (!await hasDaemonBuildContext()) {
+        throw ApplicationError.internalServerError('Unable to locate the VOLT workspace sources (cluster daemon and SDK) for build distribution mode');
+    }
+
+    const manifestFiles: DaemonManifestFile[] = [];
+    for (const rootFile of WORKSPACE_ROOT_FILES) {
+        const manifestFile = await readManifestFile(path.join(WORKSPACE_ROOT, rootFile));
+        if (manifestFile) {
+            manifestFiles.push(manifestFile);
+        }
+    }
+
+    for (const packageDir of WORKSPACE_PACKAGE_DIRS) {
+        manifestFiles.push(...await walkManifestFiles(path.join(WORKSPACE_ROOT, packageDir)));
+    }
+
     return manifestFiles.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
-};
-
-export const readTeamClusterDaemonManifestFiles = async (): Promise<DaemonManifestFile[]> => {
-    const daemonRoot = await requireDaemonPackageRoot();
-    return sortByRelativePath(await walkManifestFiles(daemonRoot, daemonRoot));
-};
-
-export const readTeamClusterSdkManifestFiles = async (): Promise<DaemonManifestFile[]> => {
-    const sdkRoot = await requireSdkPackageRoot();
-    return sortByRelativePath(await walkManifestFiles(sdkRoot, sdkRoot));
 };

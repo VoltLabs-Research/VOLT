@@ -69,7 +69,7 @@ A `CredentialProvider` returns a bearer token (sync or async). Presets:
 ## Develop
 
 ```bash
-npm run build       # bundle to dist/ (ESM + CJS + d.ts)
-npm run typecheck   # tsc --noEmit
-npm test            # node:test suite over tests/
+pnpm run build       # bundle to dist/ (ESM + CJS + d.ts)
+pnpm run typecheck   # tsc --noEmit
+pnpm test            # node:test suite over tests/
 ```

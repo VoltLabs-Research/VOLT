@@ -30,7 +30,7 @@ export const isClusterInstallPlatform = (value: string): value is ClusterInstall
     return CLUSTER_INSTALL_PLATFORM_OPTIONS.some((option) => option.id === value);
 };
 
-const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/VOLT/main/cluster/scripts';
+const CLUSTER_DAEMON_SCRIPTS_BASE_URL = 'https://raw.githubusercontent.com/voltlabs-research/VOLT/main/packages/infra/cluster/scripts';
 
 const escapePowerShellSingleQuotedString = (value: string): string => {
     return value.replace(/'/g, "''");

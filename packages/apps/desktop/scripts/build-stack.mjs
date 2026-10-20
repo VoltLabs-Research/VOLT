@@ -1,21 +1,21 @@
 #!/usr/bin/env node
-import { cp, mkdir, readFile, rm, writeFile, chmod, access, lstat, realpath } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile, chmod, access } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const desktopDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const voltDir = path.resolve(desktopDir, '..');
+const workspaceDir = path.resolve(desktopDir, '..', '..', '..');
 const outDir = path.join(desktopDir, 'stack-runtime');
 
 const args = new Set(process.argv.slice(2));
 const skipClient = args.has('--skip-client');
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 const log = (line) => process.stdout.write(`[stack] ${line}\n`);
 
 const run = (command, commandArgs, cwd, env = {}) => new Promise((resolve, reject) => {
-    log(`${path.relative(voltDir, cwd) || '.'}$ ${command} ${commandArgs.join(' ')}`);
+    log(`${path.relative(workspaceDir, cwd) || '.'}$ ${command} ${commandArgs.join(' ')}`);
     const child = spawn(command, commandArgs, {
         cwd,
         stdio: 'inherit',
@@ -28,11 +28,6 @@ const run = (command, commandArgs, cwd, env = {}) => new Promise((resolve, rejec
 
 const exists = (target) => access(target).then(() => true, () => false);
 
-const ensureInstalled = async (dir) => {
-    if (await exists(path.join(dir, 'node_modules'))) return;
-    await run(npmCommand, ['ci', '--no-audit', '--no-fund'], dir);
-};
-
 const copyTree = async (from, to) => {
     await mkdir(path.dirname(to), { recursive: true });
     await cp(from, to, { recursive: true, dereference: true, force: true });
@@ -40,76 +35,36 @@ const copyTree = async (from, to) => {
 
 const readJson = async (file) => JSON.parse(await readFile(file, 'utf-8'));
 
-const buildSdk = async () => {
-    const sdkDir = path.join(voltDir, 'sdk', 'node', 'DaemonClusterClient');
-    await ensureInstalled(sdkDir);
-    await run(npmCommand, ['run', 'build'], sdkDir);
+const packageDir = (...segments) => path.join(workspaceDir, 'packages', ...segments);
 
-    const target = path.join(outDir, 'sdk', 'node', 'DaemonClusterClient');
-    await copyTree(path.join(sdkDir, 'dist'), path.join(target, 'dist'));
-    await cp(path.join(sdkDir, 'package.json'), path.join(target, 'package.json'));
+const ensureInstalled = async () => {
+    if (await exists(path.join(workspaceDir, 'node_modules'))) return;
+    await run(pnpmCommand, ['install', '--frozen-lockfile'], workspaceDir);
 };
 
-const buildClient = async () => {
-    const clientDir = path.join(voltDir, 'client');
-    if (!skipClient) {
-        await ensureInstalled(clientDir);
-        await run(npmCommand, ['run', 'build'], clientDir);
-    }
-    await copyTree(path.join(clientDir, 'dist'), path.join(outDir, 'client'));
+// `<name>...` also selects the workspace packages each one depends on (the SDKs), and
+// pnpm builds those first.
+const buildPackages = async () => {
+    const names = ['volt-server', 'cluster-daemon', ...(skipClient ? [] : ['volt-webapp'])];
+    await run(pnpmCommand, [...names.flatMap((name) => ['--filter', `${name}...`]), 'build'], workspaceDir);
 };
 
-const materializeLinkedSdk = async (target) => {
-    const linkPath = path.join(target, 'node_modules', '@voltstack', 'daemon-cluster-client');
-    const packagedSdk = path.join(outDir, 'sdk', 'node', 'DaemonClusterClient');
-    if (await exists(packagedSdk)) {
-        await rm(linkPath, { recursive: true, force: true });
-        await cp(packagedSdk, linkPath, { recursive: true, dereference: true });
-        return;
-    }
-
-    const stat = await lstat(linkPath).catch(() => null);
-    if (!stat?.isSymbolicLink()) return;
-    const source = await realpath(linkPath);
-    await rm(linkPath, { recursive: true, force: true });
-    await cp(source, linkPath, { recursive: true, dereference: true });
-};
-
-const assertSdkLoads = async (target) => {
+// `pnpm deploy` copies a package's `files` and production dependencies into a standalone
+// directory, with the SDK copied in instead of linked to the workspace. The hoisted linker
+// keeps that node_modules flat and free of symlinks, so it survives being packaged.
+const deploy = async (name, target) => {
+    await run(pnpmCommand, ['--filter', name, '--prod', 'deploy', '--legacy', '--config.node-linker=hoisted', target], workspaceDir);
     await run(process.execPath, ['-e', "require('@voltstack/daemon-cluster-client')"], target);
 };
 
-const installProductionDependencies = async (target) => {
-    await run(npmCommand, ['ci', '--omit=dev', '--no-audit', '--no-fund'], target, { NODE_ENV: 'production' });
-    await materializeLinkedSdk(target);
-    await assertSdkLoads(target);
-};
-
-const buildServer = async () => {
-    const serverDir = path.join(voltDir, 'server');
-    await ensureInstalled(serverDir);
-    await run(npmCommand, ['run', 'build'], serverDir);
-
-    const target = path.join(outDir, 'server');
-    await copyTree(path.join(serverDir, 'dist'), path.join(target, 'dist'));
-    await copyTree(path.join(serverDir, 'static'), path.join(target, 'static'));
-    await copyTree(path.join(serverDir, 'static'), path.join(target, 'dist', 'static'));
-    for (const file of ['package.json', 'package-lock.json']) {
-        await cp(path.join(serverDir, file), path.join(target, file));
-    }
-    await installProductionDependencies(target);
-};
-
-const buildDaemon = async () => {
-    const daemonDir = path.join(voltDir, 'cluster');
-    await ensureInstalled(daemonDir);
-    await run(npmCommand, ['run', 'build'], daemonDir);
-
+const assembleDaemon = async () => {
     const target = path.join(outDir, 'daemon');
-    await copyTree(path.join(daemonDir, 'dist'), path.join(target, 'dist'));
-    const vendorDir = path.join(daemonDir, 'vendor');
+    await deploy('cluster-daemon', target);
+
+    // Copied on its own, dereferenced, because deploy drops the shared-library symlinks in it.
+    const vendorDir = packageDir('infra', 'cluster', 'vendor');
     if (!await exists(vendorDir)) {
-        throw new Error('daemon runtime is missing vendor/ (run npm run fetch:tools in cluster/)');
+        throw new Error('daemon runtime is missing vendor/ (run pnpm run fetch:tools in packages/infra/cluster/)');
     }
     await copyTree(vendorDir, path.join(target, 'vendor'));
     const zstdBin = path.join(target, 'vendor', 'zstd', 'bin', process.platform === 'win32' ? 'zstd.exe' : 'zstd');
@@ -125,20 +80,12 @@ const buildDaemon = async () => {
         LD_LIBRARY_PATH: zstdLib,
         DYLD_LIBRARY_PATH: zstdLib
     });
-    await mkdir(path.join(target, 'scripts'), { recursive: true });
-    await cp(path.join(daemonDir, 'scripts', 'start.js'), path.join(target, 'scripts', 'start.js'));
-    for (const script of ['control-plane', 'heartbeat-plane', 'socket-channel-plane']) {
-        const plane = path.join(target, 'dist', `${script}.js`);
-        if (!await exists(plane)) {
-            throw new Error(`daemon runtime is missing ${path.relative(target, plane)}`);
-        }
-    }
-    for (const file of ['package.json', 'package-lock.json']) {
-        await cp(path.join(daemonDir, file), path.join(target, file));
-    }
-    await installProductionDependencies(target);
     for (const script of ['daemon', 'control-plane', 'heartbeat-plane', 'socket-channel-plane']) {
-        await run(process.execPath, ['--check', path.join(target, 'dist', `${script}.js`)], target);
+        const entry = path.join(target, 'dist', `${script}.js`);
+        if (!await exists(entry)) {
+            throw new Error(`daemon runtime is missing ${path.relative(target, entry)}`);
+        }
+        await run(process.execPath, ['--check', entry], target);
     }
 };
 
@@ -153,9 +100,9 @@ const bundleNode = async () => {
 
 const writeManifest = async (nodeBinary) => {
     const [server, daemon, client] = await Promise.all([
-        readJson(path.join(voltDir, 'server', 'package.json')),
-        readJson(path.join(voltDir, 'cluster', 'package.json')),
-        readJson(path.join(voltDir, 'client', 'package.json'))
+        readJson(packageDir('infra', 'server', 'package.json')),
+        readJson(packageDir('infra', 'cluster', 'package.json')),
+        readJson(packageDir('apps', 'client', 'package.json'))
     ]);
     await writeFile(path.join(outDir, 'manifest.json'), JSON.stringify({
         builtAt: new Date().toISOString(),
@@ -163,7 +110,7 @@ const writeManifest = async (nodeBinary) => {
         arch: process.arch,
         node: process.version,
         nodeBinary: path.relative(outDir, nodeBinary),
-        server: { version: server.version, entry: 'server/dist/server/src/server.js' },
+        server: { version: server.version, entry: 'server/dist/infra/server/src/server.js' },
         daemon: { version: daemon.version, entry: 'daemon/scripts/start.js' },
         client: { version: client.version, dir: 'client' }
     }, null, 2) + '\n');
@@ -174,11 +121,11 @@ const main = async () => {
     await rm(outDir, { recursive: true, force: true });
     await mkdir(outDir, { recursive: true });
 
-    await buildSdk();
-    await buildClient();
-    await buildServer();
-    await buildDaemon();
-    await rm(path.join(outDir, 'sdk'), { recursive: true, force: true });
+    await ensureInstalled();
+    await buildPackages();
+    await copyTree(packageDir('apps', 'client', 'dist'), path.join(outDir, 'client'));
+    await deploy('volt-server', path.join(outDir, 'server'));
+    await assembleDaemon();
     const nodeBinary = await bundleNode();
     await writeManifest(nodeBinary);
 

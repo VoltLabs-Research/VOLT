@@ -7,13 +7,12 @@ on:
     paths:
       - '.github/workflows/publish-cluster-daemon.yml'
       - '.dockerignore'
-      - 'cluster/Dockerfile'
-      - 'cluster/package.json'
-      - 'cluster/package-lock.json'
-      - 'cluster/tsconfig.json'
-      - 'cluster/src/**'
-      # The daemon consumes @voltstack/daemon-cluster-client from the repository.
-      - 'sdk/node/DaemonClusterClient/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'packages/infra/cluster/**'
+      # The daemon consumes @voltstack/daemon-cluster-client from the workspace.
+      - 'packages/sdk/daemon-cluster-client/**'
   workflow_dispatch:
 
 env:
@@ -62,7 +61,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./
-          file: cluster/Dockerfile
+          file: packages/infra/cluster/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: false

@@ -17,8 +17,8 @@ services:
 
   volt-server:
     build:
-      context: ${VOLT_SOURCE_DIR}/server
-      dockerfile: Dockerfile.dev
+      context: ${VOLT_SOURCE_DIR}
+      dockerfile: packages/infra/server/Dockerfile.dev
     image: volt-server:local
     restart: unless-stopped
     healthcheck:
@@ -43,17 +43,12 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - volt-server-data:/var/lib/volt-server
-      - ${VOLT_SOURCE_DIR}/server:/app
-      - ${VOLT_SOURCE_DIR}/contracts:/contracts:ro
-      - ${VOLT_SOURCE_DIR}/cluster:/ClusterDaemon:ro
-      - ${VOLT_SOURCE_DIR}/sdk:/sdk:ro
-      - volt-server-node-modules:/app/node_modules
     ports: ["${SERVER_PORT:-8100}:8000"]
 
   volt-client:
     build:
       context: ${VOLT_SOURCE_DIR}
-      dockerfile: client/Dockerfile.stack
+      dockerfile: packages/apps/client/Dockerfile.stack
     image: volt-client:local
     restart: unless-stopped
     depends_on: [volt-server]
@@ -63,7 +58,8 @@ services:
     profiles: [enrolled]
     build:
       context: ${VOLT_SOURCE_DIR}
-      dockerfile: cluster/Dockerfile.dev
+      dockerfile: packages/infra/cluster/Dockerfile
+      target: dev
     image: cluster-daemon:local
     restart: unless-stopped
     cap_add:
@@ -86,8 +82,6 @@ services:
       volt-server:   { condition: service_healthy }
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${VOLT_SOURCE_DIR}/cluster:/app/cluster
-      - cluster-daemon-node-modules:/app/cluster/node_modules
       - cluster-daemon-data:/var/lib/volt-daemon
     ports: ["${DAEMON_PORT:-18080}:${DAEMON_PORT:-18080}"]
 
@@ -95,5 +89,3 @@ volumes:
   volt-postgres-data:
   volt-server-data:
   cluster-daemon-data:
-  volt-server-node-modules:
-  cluster-daemon-node-modules:

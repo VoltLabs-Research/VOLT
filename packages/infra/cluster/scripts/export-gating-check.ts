@@ -6,7 +6,7 @@ import type { WorkflowValueMap } from '@shared/contracts/types/workflow.types';
 
 const PLUGIN_JSON = resolve(
     __dirname,
-    '../../../packages/opendxa/plugin.json'
+    '../../../../../packages/opendxa/plugin.json'
 );
 
 interface CheckResult {

@@ -4,8 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
 const alias = {
-    '@': resolve('src'),
-    '@volt/contracts': resolve('../contracts/src')
+    '@': resolve('src')
 };
 
 export default defineConfig({

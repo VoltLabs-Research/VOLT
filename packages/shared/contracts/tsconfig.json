@@ -7,11 +7,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "typia": ["../server/node_modules/typia"]
-    }
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src"]
 }

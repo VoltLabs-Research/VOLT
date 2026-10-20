@@ -25,6 +25,14 @@ export type {
 } from './contracts/events';
 
 export { REVERSE_CHANNEL, TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL } from './contracts/reverseChannel';
+export {
+    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER,
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER
+} from './contracts/objectGateway';
 export type {
     TeamClusterDaemonResponseType,
     TeamClusterDaemonSessionKind,

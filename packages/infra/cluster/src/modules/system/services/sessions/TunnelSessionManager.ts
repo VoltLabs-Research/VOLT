@@ -1,12 +1,11 @@
 import { errorMessage } from '@shared/utilities/error-message';
-import { REVERSE_CHANNEL } from '@core/constants/reverse-channel';
 import { SESSION_ATTACH_TIMEOUT_MS } from '@core/constants/reverse-channel';
 import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/service-exposure';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { encodeStreamChunk, decodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
 import net from 'node:net';
 import type { DaemonExposureRegistry } from '@modules/system/services/access/DaemonExposureRegistry';
-import type { TeamClusterDaemonTunnelOpenPayload, TeamClusterDaemonTunnelStatePayload } from '@voltstack/daemon-cluster-client';
+import { REVERSE_CHANNEL, type TeamClusterDaemonTunnelOpenPayload, type TeamClusterDaemonTunnelStatePayload } from '@voltstack/daemon-cluster-client';
 import type {
     BinaryTunnelDataPayload,
     BinaryTunnelDrainPayload,

@@ -9,8 +9,7 @@ import type {
 import {
     DaemonDistributionMode,
     getTeamClusterDaemonDistributionMode,
-    readTeamClusterDaemonManifestFiles,
-    readTeamClusterSdkManifestFiles
+    readTeamClusterDaemonBuildContextFiles
 } from '@modules/cluster/services/install-manifest/TeamClusterDaemonManifestSource';
 import {
     buildTeamClusterInstallManifestFiles,
@@ -26,10 +25,6 @@ import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 
-const DAEMON_BUILD_CONTEXT_PREFIX = 'cluster/';
-const SDK_BUILD_CONTEXT_PREFIX = 'sdk/';
-const BUILD_CONTEXT_PREFIXES = [DAEMON_BUILD_CONTEXT_PREFIX, SDK_BUILD_CONTEXT_PREFIX];
-
 const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     files: TeamClusterInstallManifestFileView[]
 ): Promise<string> => {
@@ -42,10 +37,6 @@ const createTeamClusterDaemonBuildContextArchiveBase64 = async (
     archive.pipe(output);
 
     for (const file of files) {
-        if (!BUILD_CONTEXT_PREFIXES.some((prefix) => file.path.startsWith(prefix))) {
-            continue;
-        }
-
         archive.append(`${file.contents}\n`, {
             name: file.path,
             mode: parseInt(file.mode, 8)
@@ -75,20 +66,12 @@ class TeamClusterInstallManifestService {
 
         let daemonFiles: TeamClusterInstallManifestFileView[] = [];
         if (daemonDistributionMode === DaemonDistributionMode.Build) {
-            const toBuildContextFile = (prefix: string) => {
-                return (file: { relativePath: string; contents: string }): TeamClusterInstallManifestFileView => ({
-                    path: path.posix.join(prefix, file.relativePath.split(path.sep).join(path.posix.sep)),
-                    contents: file.contents,
-                    mode: '0644'
-                });
-            };
-
-            const daemonManifestFiles = await readTeamClusterDaemonManifestFiles();
-            const sdkManifestFiles = await readTeamClusterSdkManifestFiles();
-            daemonFiles = [
-                ...daemonManifestFiles.map(toBuildContextFile('cluster')),
-                ...sdkManifestFiles.map(toBuildContextFile(path.posix.join('sdk', 'node', 'DaemonClusterClient')))
-            ];
+            const buildContextFiles = await readTeamClusterDaemonBuildContextFiles();
+            daemonFiles = buildContextFiles.map((file) => ({
+                path: file.relativePath.split(path.sep).join(path.posix.sep),
+                contents: file.contents,
+                mode: '0644'
+            }));
         }
 
         const files = buildTeamClusterInstallManifestFiles({
@@ -104,7 +87,7 @@ class TeamClusterInstallManifestService {
 
         let buildContextArchiveBase64: string | undefined;
         if (daemonDistributionMode === DaemonDistributionMode.Build) {
-            buildContextArchiveBase64 = await createTeamClusterDaemonBuildContextArchiveBase64(files);
+            buildContextArchiveBase64 = await createTeamClusterDaemonBuildContextArchiveBase64(daemonFiles);
         }
 
         return {

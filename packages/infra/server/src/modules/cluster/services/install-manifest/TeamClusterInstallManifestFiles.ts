@@ -35,7 +35,7 @@ const buildComposeFile = (daemonDistributionMode: DaemonDistributionMode): strin
         ? [
             '    build:',
             '      context: .',
-            '      dockerfile: cluster/Dockerfile',
+            '      dockerfile: packages/infra/cluster/Dockerfile',
             '    pull_policy: build'
         ]
         : [];

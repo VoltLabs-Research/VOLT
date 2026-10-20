@@ -1,7 +1,7 @@
 name: Publish Stack Images
 
 # Prebuilds the images the desktop app runs, so a user's first launch is a pull
-# instead of apt-get + `npm ci` inside three local image builds.
+# instead of apt-get + `pnpm install` inside three local image builds.
 #
 # Built per architecture on native runners and then joined into one manifest:
 # the server image installs texlive and compiles native modules, which under QEMU
@@ -13,14 +13,16 @@ on:
       - main
     paths:
       - '.github/workflows/publish-stack-images.yml'
-      - 'server/Dockerfile.dev'
-      - 'server/package.json'
-      - 'server/package-lock.json'
-      - 'client/Dockerfile.stack'
-      - 'client/package.json'
-      - 'client/package-lock.json'
-      - 'client/src/**'
-      - 'contracts/src/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'packages/infra/server/**'
+      - 'packages/apps/client/**'
+      - 'packages/shared/contracts/**'
+      - 'packages/sdk/voltclient/**'
+      - 'packages/sdk/daemon-cluster-client/**'
+      # The server image carries the daemon sources it ships in build distribution mode.
+      - 'packages/infra/cluster/**'
   workflow_dispatch:
 
 env:
@@ -57,12 +59,10 @@ jobs:
           owner="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           if [ "${{ matrix.component }}" = "server" ]; then
             echo "image=${{ env.REGISTRY }}/${owner}/volt-server-stack" >> "$GITHUB_OUTPUT"
-            echo "context=server" >> "$GITHUB_OUTPUT"
-            echo "dockerfile=server/Dockerfile.dev" >> "$GITHUB_OUTPUT"
+            echo "dockerfile=packages/infra/server/Dockerfile.dev" >> "$GITHUB_OUTPUT"
           else
             echo "image=${{ env.REGISTRY }}/${owner}/volt-client-stack" >> "$GITHUB_OUTPUT"
-            echo "context=." >> "$GITHUB_OUTPUT"
-            echo "dockerfile=client/Dockerfile.stack" >> "$GITHUB_OUTPUT"
+            echo "dockerfile=packages/apps/client/Dockerfile.stack" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up Docker Buildx
@@ -79,7 +79,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: ${{ steps.inputs.outputs.context }}
+          context: .
           file: ${{ steps.inputs.outputs.dockerfile }}
           platforms: linux/${{ matrix.arch }}
           push: true
