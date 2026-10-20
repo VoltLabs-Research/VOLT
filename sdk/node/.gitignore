@@ -1,9 +1,0 @@
-node_modules/
-dist/
-*.tsbuildinfo
-# Repowise
-.repowise
-
-# MCP and Claude
-.mcp.json
-.claude
