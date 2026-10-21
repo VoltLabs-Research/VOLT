@@ -49,8 +49,10 @@ const sendOutput = (stream: 'stdout' | 'stderr', chunk: Uint8Array): void => {
 };
 
 // Node realms have no `onmessage` event handler. A program assigning one as a plain global (as
-// Emscripten's pthreads do, reading parentPort themselves) must not also receive this protocol.
+// Emscripten's pthreads do, reading parentPort themselves) must not also receive this protocol. Nor
+// do they have a read-only `self`, which the same programs assign the global to.
 Object.defineProperty(globalThis, 'onmessage', { value: null, writable: true, configurable: true });
+Object.defineProperty(globalThis, 'self', { value: globalThis, writable: true, configurable: true });
 
 let isThread = false;
 
