@@ -1,11 +1,12 @@
 // Node's `worker_threads`: a Worker runs one of the runtime's bundled programs in a nested worker
 // that shares this realm's file system, with workerData, parentPort and exit codes as in Node.
 import { EventEmitter } from 'events';
+import pathModule from 'path';
 import { BrowserWorker } from './browser-worker';
 import { createFsChannel } from './fs/client';
 import { forgetChildRoutes, handleChildLoopbackMessage } from './loopback';
 import type { LoopbackConnectMessage, LoopbackListenMessage } from './loopback';
-import { resolveNodeProgram } from './child-process';
+import { nodeWorkerFor } from './child-process';
 import type { BackendBootMessage, BackendWorkerMessage, ParentToChildMessage } from '../workers/protocol';
 
 interface ThreadContext {
@@ -82,8 +83,8 @@ export class Worker extends EventEmitter {
         super();
         nextThreadId += 1;
         this.threadId = nextThreadId;
-        const scriptPath = filename instanceof URL ? decodeURIComponent(filename.pathname) : filename;
-        const workerUrl = resolveNodeProgram(scriptPath);
+        const scriptPath = pathModule.resolve(process.cwd(), filename instanceof URL ? decodeURIComponent(filename.pathname) : filename);
+        const workerUrl = nodeWorkerFor(scriptPath);
         if(!workerUrl){
             throw Object.assign(new Error(`Cannot find module '${scriptPath}'`), { code: 'MODULE_NOT_FOUND' });
         }
@@ -95,7 +96,7 @@ export class Worker extends EventEmitter {
             }else if(message.kind === 'ipc'){
                 this.emit('message', message.message);
             }else if(message.kind === 'output'){
-                (message.stream === 'stdout' ? process.stdout : process.stderr).write(message.text);
+                (message.stream === 'stdout' ? process.stdout : process.stderr).write(message.chunk);
             }else if(message.kind === 'exit'){
                 this.end(message.code);
             }else if(message.kind === 'failed'){
@@ -111,6 +112,7 @@ export class Worker extends EventEmitter {
         this.worker.postMessage({
             kind: 'boot',
             env,
+            script: scriptPath,
             argv: options.argv ?? [],
             cwd: process.cwd(),
             fs: { channel: createFsChannel() },

@@ -4,6 +4,7 @@
 import { Readable, Writable } from 'stream';
 import pathModule from 'path';
 import { callFs } from './fs/client';
+import { readStdinSync } from './stdio';
 import { errnoOf } from './os';
 import { constants } from './fs/constants';
 
@@ -60,7 +61,7 @@ export class Stats {
     isFile(): boolean { return (this.mode & constants.S_IFMT) === constants.S_IFREG; }
     isDirectory(): boolean { return (this.mode & constants.S_IFMT) === constants.S_IFDIR; }
     isSymbolicLink(): boolean { return false; }
-    isFIFO(): boolean { return false; }
+    isFIFO(): boolean { return (this.mode & constants.S_IFMT) === constants.S_IFIFO; }
     isSocket(): boolean { return false; }
     isBlockDevice(): boolean { return false; }
     isCharacterDevice(): boolean { return false; }
@@ -236,39 +237,74 @@ export const openSync = (target: unknown, flags?: string | number): number => (
 );
 
 export const closeSync = (fd: number): void => {
-    callFs('close', [fd]);
+    if(!isStandardStream(fd)){
+        callFs('close', [fd]);
+    }
 };
 
 type ReadOptions = { offset?: number; length?: number; position?: number | bigint | null };
+
+// Descriptors 0-2 are the process's standard streams (src/platform/stdio.ts), not files.
+const STDIN_FD = 0;
+const STDOUT_FD = 1;
+
+const isStandardStream = (fd: number): boolean => fd >= 0 && fd <= 2;
+
+const badDescriptor = (syscall: string): Error => Object.assign(new Error(`EBADF: bad file descriptor, ${syscall}`), {
+    code: 'EBADF',
+    errno: errnoOf('EBADF'),
+    syscall
+});
+
+const readDescriptor = (fd: number, target: Uint8Array, at: number | null): number => {
+    if(isStandardStream(fd)){
+        if(fd !== STDIN_FD){
+            throw badDescriptor('read');
+        }
+        return readStdinSync(target);
+    }
+    const { body } = callFs('read', [fd, target.byteLength, at]);
+    target.set(body);
+    return body.byteLength;
+};
+
+const writeDescriptor = (fd: number, bytes: Uint8Array, at: number | null): number => {
+    if(isStandardStream(fd)){
+        if(fd === STDIN_FD){
+            throw badDescriptor('write');
+        }
+        (fd === STDOUT_FD ? process.stdout : process.stderr).write(bytes);
+        return bytes.byteLength;
+    }
+    return callFs('write', [fd, at], bytes).value as number;
+};
 
 export const readSync = (fd: number, buffer: Uint8Array, offsetOrOptions?: number | ReadOptions, length?: number, position?: number | bigint | null): number => {
     const options: ReadOptions = typeof offsetOrOptions === 'object' ? offsetOrOptions : { offset: offsetOrOptions, length, position };
     const offset = options.offset ?? 0;
     const count = options.length ?? buffer.byteLength - offset;
     const at = options.position === null || options.position === undefined ? null : Number(options.position);
-    const { body } = callFs('read', [fd, count, at]);
-    buffer.set(body, offset);
-    return body.byteLength;
+    return readDescriptor(fd, buffer.subarray(offset, offset + count), at);
 };
 
 export const writeSync = (fd: number, data: Uint8Array | string, offsetOrPosition?: number | null, lengthOrEncoding?: number | BufferEncoding, position?: number | null): number => {
     if(typeof data === 'string'){
         const at = typeof offsetOrPosition === 'number' ? offsetOrPosition : null;
-        return callFs('write', [fd, at], toBytes(data, typeof lengthOrEncoding === 'string' ? lengthOrEncoding : 'utf8')).value as number;
+        return writeDescriptor(fd, toBytes(data, typeof lengthOrEncoding === 'string' ? lengthOrEncoding : 'utf8'), at);
     }
     const offset = offsetOrPosition ?? 0;
     const length = typeof lengthOrEncoding === 'number' ? lengthOrEncoding : data.byteLength - offset;
-    return callFs('write', [fd, position ?? null], data.subarray(offset, offset + length)).value as number;
+    return writeDescriptor(fd, data.subarray(offset, offset + length), position ?? null);
 };
 
 // Vectored I/O is one request for all the buffers, as writev(2)/readv(2) are one system call.
 export const writevSync = (fd: number, buffers: readonly Uint8Array[], position?: number | null): number => (
-    callFs('write', [fd, position ?? null], Buffer.concat(buffers)).value as number
+    writeDescriptor(fd, Buffer.concat(buffers), position ?? null)
 );
 
 export const readvSync = (fd: number, buffers: readonly Uint8Array[], position?: number | null): number => {
     const total = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
-    const { body } = callFs('read', [fd, total, position ?? null]);
+    const body = new Uint8Array(total).subarray(0, readDescriptor(fd, new Uint8Array(total), position ?? null));
     let offset = 0;
     for(const buffer of buffers){
         if(offset >= body.byteLength){
@@ -281,7 +317,10 @@ export const readvSync = (fd: number, buffers: readonly Uint8Array[], position?:
     return body.byteLength;
 };
 
-export const fstatSync = (fd: number): Stats => new Stats(callFs('fstat', [fd]).value as EntryMetadata);
+// A standard stream is a pipe, as a spawned process's are.
+export const fstatSync = (fd: number): Stats => new Stats(isStandardStream(fd)
+    ? { kind: 'file', size: 0, mtimeMs: Date.now(), birthtimeMs: 0, mode: constants.S_IFIFO | 0o600 }
+    : callFs('fstat', [fd]).value as EntryMetadata);
 
 export const ftruncateSync = (fd: number, length = 0): void => {
     callFs('ftruncate', [fd, length]);
