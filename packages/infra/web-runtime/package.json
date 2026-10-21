@@ -12,12 +12,15 @@
   "devDependencies": {
     "@types/node": "^22.20.5",
     "cluster-daemon": "workspace:*",
+    "emnapi": "1.11.3",
     "esbuild": "0.27.7",
     "puppeteer-core": "24.10.0",
     "typescript": "^5.9.3",
     "volt-server": "workspace:*"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "1.32.0",
+    "@emnapi/runtime": "1.11.3",
     "@noble/hashes": "^1.8.0",
     "@sqlite.org/sqlite-wasm": "3.50.4-build1",
     "crypto-browserify": "3.12.1",
