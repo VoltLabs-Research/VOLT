@@ -10,6 +10,7 @@ import { calculateBoxTransforms, getGroundOffset } from '@/modules/fractal/utils
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { resolveGlbResource } from '@/modules/fractal/services/compute-glb-url';
+import { useWasmSceneGlb } from '@/modules/canvas-wasm/use-wasm-canvas';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utils/camera-fit';
 import { useThree } from '@react-three/fiber';
@@ -172,8 +173,9 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
     );
 
     const canvasMode = useCanvasAccessMode();
+    const wasmGlbResource = useWasmSceneGlb(trajectoryId, currentTimestep, sceneConfig);
     const glbResource = useMemo(() =>
-        resolveGlbResource({
+        wasmGlbResource ?? resolveGlbResource({
             teamId: teamId || '',
             trajectoryId,
             currentTimestep,
@@ -181,7 +183,7 @@ const SingleModelViewer: FC<SingleModelViewerProps> = ({
             activeScene: sceneConfig,
             mode: canvasMode
         }),
-        [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig, canvasMode]
+        [wasmGlbResource, teamId, trajectoryId, currentTimestep, analysisId, sceneConfig, canvasMode]
     );
 
     const sceneKey = getSceneKey(sceneConfig);

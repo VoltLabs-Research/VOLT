@@ -126,7 +126,7 @@ const Viewport = ({
     const hasMergedScenes = useEditorStore(selectHasMergedScenes);
     useTip('canvas-models-unified', { enabled: hasMergedScenes });
 
-    const localGlbMode = Boolean(forcedGlbUrl && !trajectory?._id);
+    const localGlbMode = Boolean(forcedGlbUrl);
     const localModelWorldBounds = useLocalGlbStore((s) => s.localModelWorldBounds);
     const localAutoSimulationCellWorldBounds = useLocalGlbStore((s) => s.localAutoSimulationCellWorldBounds);
     const renderableScenes = useMemo(() => {
@@ -198,7 +198,7 @@ const Viewport = ({
         <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='relative min-h-0 flex-1'>
                 {bodyContent && (
-                    <div className='relative flex min-h-0 w-full flex-1'>
+                    <div className='absolute inset-0 flex min-h-0'>
                         {bodyContent}
                     </div>
                 )}
@@ -220,10 +220,11 @@ const Viewport = ({
                             {localGlbMode && forcedGlbUrl && (
                                 <LocalGlbViewer
                                     url={forcedGlbUrl}
+                                    boxBounds={currentFrameBoxBounds}
                                     onContentTypeDetected={handleContentTypeDetected}
                                 />
                             )}
-                            {currentFrameBoxBounds && currentFrame && currentTimestep !== undefined && (
+                            {!localGlbMode && currentFrameBoxBounds && currentFrame && currentTimestep !== undefined && (
                                 <TimestepViewer
                                     teamId={teamId}
                                     trajectoryId={trajectory?._id ?? '__local_glb__'}

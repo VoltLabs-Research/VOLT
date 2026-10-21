@@ -3,6 +3,7 @@ import { tokenStorage } from '@/shared/auth/token-storage';
 import { createSocketTraceAuth } from '@/app/core/http/utils/client-instrumentation';
 import { getBackendOrigin } from '@/app/core/http/utils/backend-origin';
 import { SocketConnectionStatus } from '@/modules/socket/utils/socket-connection-status';
+import { isWasmCanvasLocation } from '@/modules/canvas-wasm/constants';
 import type { ISocketService } from '@/modules/socket/contracts/socket-service';
 
 type SocketAuth = Record<string, unknown>;
@@ -29,6 +30,11 @@ class SocketService implements ISocketService {
     ) {}
 
     connect(): Promise<void> {
+        // The WASM canvas runs fully in the browser and must not depend on the backend.
+        if (isWasmCanvasLocation()) {
+            return Promise.resolve();
+        }
+
         this.syncAuth();
 
         if (this.transport.isConnected()) {
@@ -79,6 +85,10 @@ class SocketService implements ISocketService {
     }
 
     emitWithoutAck(event: string, data?: unknown): void {
+        if (isWasmCanvasLocation()) {
+            return;
+        }
+
         this.syncAuth();
 
         if (!this.transport.isConnected()) {
@@ -140,6 +150,10 @@ class SocketService implements ISocketService {
     private async ensureConnectedForEmit(event: string): Promise<void> {
         if (this.transport.isConnected()) {
             return;
+        }
+
+        if (isWasmCanvasLocation()) {
+            throw this.createUnavailableError(event, this.transport.getConnectionStatus());
         }
 
         const status = this.transport.getConnectionStatus();

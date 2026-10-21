@@ -16,7 +16,11 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 };
 
-const CanvasPluginSearch = () => {
+interface CanvasPluginSearchProps {
+    isDisabled?: boolean;
+}
+
+const CanvasPluginSearch = ({ isDisabled = false }: CanvasPluginSearchProps) => {
     const { modifiers } = usePluginSelectors();
     const addStage = useCanvasPipelineStore((s) => s.addStage);
     const floatingRoot = useFloatingRoot();
@@ -60,6 +64,11 @@ const CanvasPluginSearch = () => {
     }, [modifiers, query]);
 
     useEffect(() => {
+        if (isDisabled) {
+            setQuery('');
+            setIsOpen(false);
+            return;
+        }
         const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
             if (isEditableTarget(event.target)) return;
             if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
@@ -89,7 +98,7 @@ const CanvasPluginSearch = () => {
         };
         document.addEventListener('keydown', handleGlobalKeyDown);
         return () => document.removeEventListener('keydown', handleGlobalKeyDown);
-    }, []);
+    }, [isDisabled]);
 
     useEffect(() => { setActiveIndex(-1); }, [query]);
 
@@ -138,6 +147,7 @@ const CanvasPluginSearch = () => {
                 aria-label='Search plugins'
                 value={query}
                 onChange={(next) => { setQuery(next); setIsOpen(true); setActiveIndex(-1); }}
+                isDisabled={isDisabled}
                 fullWidth
             >
                 <SearchField.Group>
