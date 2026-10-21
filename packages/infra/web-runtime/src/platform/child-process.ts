@@ -272,15 +272,16 @@ const nodeProgram = (workerUrl: string | URL, script: string, argv: string[]): S
             end(1, null);
         });
         const env = Object.fromEntries(Object.entries(options.env ?? process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
+        const fs = createFsChannel();
         worker.postMessage({
             kind: 'boot',
             env,
             script,
             argv,
             cwd: options.cwd ?? process.cwd(),
-            fs: { channel: createFsChannel() },
+            fs,
             child: { serialization, stdin }
-        } satisfies BackendBootMessage);
+        } satisfies BackendBootMessage, [fs.service]);
     }
 });
 

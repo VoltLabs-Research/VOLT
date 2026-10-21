@@ -7,7 +7,7 @@ import { acceptLoopbackConnection, attachLoopbackParent } from '../platform/loop
 import type { LoopbackConnectMessage, MessageTarget } from '../platform/loopback';
 import { fetch } from '../platform/fetch';
 import { WebSocketConstructor } from '../platform/ws';
-import { attachFsChannel, startFsService } from '../platform/fs/client';
+import { attachFs, startFsService } from '../platform/fs/client';
 import { initSqlite } from '../platform/better-sqlite3';
 import { registerNodeProgram, registerNodeRunner } from '../platform/child-process';
 import { attachStdin } from '../platform/stdio';
@@ -84,7 +84,7 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
     if('directory' in message.fs){
         await startFsService(new URL('./fs.worker.js', import.meta.url), message.fs.directory);
     }else{
-        attachFsChannel(message.fs.channel);
+        attachFs(message.fs);
     }
     // The directories every Linux machine has, which libraries create their files under.
     for(const directory of [tmpdir(), homedir(), browserProcess.cwd()]){

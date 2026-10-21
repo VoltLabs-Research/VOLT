@@ -1,4 +1,4 @@
-import type { FsChannelBuffers } from '../platform/fs/channel';
+import type { FsAttachment } from '../platform/fs/channel';
 import type { PipeBuffers } from '../platform/pipe';
 
 // Messages between a worker and the realm that started it (the host page for a backend, the backend
@@ -12,7 +12,7 @@ export interface BackendBootMessage {
     argv: string[];
     cwd: string;
     // A backend mounts its own OPFS directory; a process it spawns shares the backend's.
-    fs: { directory: string } | { channel: FsChannelBuffers };
+    fs: { directory: string } | FsAttachment;
     // OPFS directory for the worker's SQLite databases, when it opens any.
     sqliteDirectory?: string;
     // Set for a spawned process: its stdout/stderr and process.send() go to the parent, and its stdin

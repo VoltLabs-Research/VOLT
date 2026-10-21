@@ -109,15 +109,16 @@ export class Worker extends EventEmitter {
             this.end(1);
         });
         const env = Object.fromEntries(Object.entries(options.env ?? process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
+        const fs = createFsChannel();
         this.worker.postMessage({
             kind: 'boot',
             env,
             script: scriptPath,
             argv: options.argv ?? [],
             cwd: process.cwd(),
-            fs: { channel: createFsChannel() },
+            fs,
             thread: { threadId: this.threadId, workerData: options.workerData }
-        } satisfies BackendBootMessage);
+        } satisfies BackendBootMessage, [fs.service]);
         queueMicrotask(() => this.emit('online'));
     }
 

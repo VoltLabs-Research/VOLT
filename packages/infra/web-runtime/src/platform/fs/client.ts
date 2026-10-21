@@ -9,24 +9,26 @@ import {
 } from './channel';
 import { BrowserWorker } from '../browser-worker';
 import { errnoOf } from '../os';
-import type { FsChannelBuffers, FsReply } from './channel';
+import type { FsAttachment, FsChannelBuffers, FsReply } from './channel';
 
 let control: Int32Array | null = null;
 let data: Uint8Array | null = null;
 
-export const attachFsChannel = (buffers: FsChannelBuffers): void => {
+const attachFsChannel = (buffers: FsChannelBuffers): void => {
     control = new Int32Array(buffers.control);
     data = new Uint8Array(buffers.data);
 };
 
-// Starts the file system service for `directory` and attaches this worker to it. Workers this one
-// starts (plugins) attach to the same service with buffers from createFsChannel().
-let service: Worker | null = null;
+// Starts the file system service for `directory` and attaches this worker to it. The workers it
+// starts, and the ones they start (an addon's threads in a worker thread), attach to the same service
+// with an attachment from createFsChannel().
+let service: Worker | MessagePort | null = null;
 
 export const startFsService = (serviceUrl: string | URL, directory: string): Promise<void> => {
-    service = new BrowserWorker(serviceUrl, { type: 'module', name: 'fs' });
+    const worker = new BrowserWorker(serviceUrl, { type: 'module', name: 'fs' });
+    service = worker;
     const mounted = new Promise<void>((resolve, reject) => {
-        service?.addEventListener('message', (event: MessageEvent<{ kind: string; message?: string }>) => {
+        worker.addEventListener('message', (event: MessageEvent<{ kind: string; message?: string }>) => {
             if(event.data.kind === 'mounted'){
                 resolve();
             }else if(event.data.kind === 'failed'){
@@ -34,18 +36,26 @@ export const startFsService = (serviceUrl: string | URL, directory: string): Pro
             }
         });
     });
-    service.postMessage({ kind: 'mount', directory });
-    attachFsChannel(createFsChannel());
+    worker.postMessage({ kind: 'mount', directory });
+    attachFsChannel(createFsChannel().channel);
     return mounted;
 };
 
-export const createFsChannel = (): FsChannelBuffers => {
+export const attachFs = (attachment: FsAttachment): void => {
+    attachFsChannel(attachment.channel);
+    service = attachment.service;
+};
+
+// A channel for a worker this one starts, and the port it attaches its own workers through. The port
+// is transferred with the worker's boot message.
+export const createFsChannel = (): FsAttachment => {
     if(!service){
         throw new Error('fs: the file system service has not been started');
     }
     const buffers = createChannelBuffers();
-    service.postMessage({ kind: 'attach', buffers });
-    return buffers;
+    const { port1, port2 } = new MessageChannel();
+    service.postMessage({ kind: 'attach', buffers, port: port2 }, [port2]);
+    return { channel: buffers, service: port1 };
 };
 
 const exchange = (controlWords: Int32Array, area: Uint8Array, message: Uint8Array): Uint8Array => {
