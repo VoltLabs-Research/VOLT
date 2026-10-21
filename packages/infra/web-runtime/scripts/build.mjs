@@ -9,8 +9,9 @@ import stdLibBrowser from 'node-stdlib-browser';
 import http2 from 'node:http2';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { cp, mkdir, readFile } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { buildNativeAddon, isNativeAddon } from './native-addons.mjs';
 
 const require = createRequire(import.meta.url);
@@ -30,6 +31,8 @@ const BACKENDS = [
         root: packageRoot('volt-server'),
         mountPoint: '/app/server',
         entry: 'dist/infra/server/src/server.js',
+        vendor: [],
+        globalPackages: [],
         programs: []
     },
     {
@@ -37,6 +40,10 @@ const BACKENDS = [
         root: packageRoot('cluster-daemon'),
         mountPoint: '/app/daemon',
         entry: 'dist/infra/cluster/src/daemon.js',
+        // The tools of its vendor/, which its fetch scripts install on a native machine.
+        vendor: ['volt-dump-transform', 'zstd'],
+        // The analysis plugins it runs keep their tables in DuckDB.
+        globalPackages: ['@duckdb/duckdb-wasm'],
         programs: [
             'dist/infra/cluster/src/control-plane.js',
             'dist/infra/cluster/src/heartbeat-plane.js',
@@ -162,7 +169,7 @@ const programsOf = (backend) => [
         .map((program) => ({ ...program, workerFile: `${backend.name}-${path.posix.basename(program.installed).replace(/\.c?js$/, '')}.worker.js` }))
 ];
 
-const buildProgram = async (backend, program) => {
+const buildProgram = async (backend, program, installs = []) => {
     const nodePrograms = Object.fromEntries(programsOf(backend).slice(1).map((spawned) => [spawned.installed, `./${spawned.workerFile}`]));
     await esbuild.build({
         entryPoints: { [program.workerFile.replace(/\.js$/, '')]: path.join(packageDir, 'src', 'workers', 'backend.ts') },
@@ -182,6 +189,7 @@ const buildProgram = async (backend, program) => {
             'process.env.NODE_ENV': 'globalThis.process.env.NODE_ENV',
             VOLT_PROGRAM_PATH: JSON.stringify(program.installed),
             VOLT_NODE_PROGRAMS: JSON.stringify(nodePrograms),
+            VOLT_INSTALLS: JSON.stringify(installs),
             VOLT_HTTP2_CONSTANTS: JSON.stringify(http2.constants),
             VOLT_HTTP2_DEFAULT_SETTINGS: JSON.stringify(http2.getDefaultSettings())
         },
@@ -201,21 +209,42 @@ const selected = requested.length > 0 ? BACKENDS.filter((backend) => requested.i
 
 await mkdir(outDir, { recursive: true });
 await cp(require.resolve('@sqlite.org/sqlite-wasm/sqlite3.wasm'), path.join(outDir, 'sqlite3.wasm'));
-// The machine's global npm packages (src/platform/global-packages.ts): each package's files, its
-// CommonJS entry bundled with its dependencies, so that it loads without a node_modules tree.
+// What a backend's machine has installed besides it (src/platform/installs.ts): directories of dist,
+// each with the install.json that says where it goes and what it holds.
+const writeInstall = async (source, target) => {
+    const directory = path.join(outDir, source);
+    const files = (await readdir(directory, { recursive: true, withFileTypes: true }))
+        .filter((entry) => entry.isFile() && entry.name !== 'install.json')
+        .map((entry) => path.relative(directory, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'))
+        .sort();
+    const digest = createHash('sha256');
+    for(const file of files){
+        digest.update(file).update(await readFile(path.join(directory, file)));
+    }
+    await writeFile(path.join(directory, 'install.json'), JSON.stringify({ target, files, version: digest.digest('hex') }));
+    return source;
+};
+
+// The global folder Node's require searches for the runtime's /usr/local/bin/node: $PREFIX/lib/node.
+const GLOBAL_MODULES = '/usr/local/lib/node';
+// Each global npm package: its files, its CommonJS entry bundled with its dependencies, so that it
+// loads without a node_modules tree.
 const GLOBAL_PACKAGES = {
     '@duckdb/duckdb-wasm': { entry: 'dist/duckdb-node-blocking.cjs', files: ['dist/duckdb-mvp.wasm', 'dist/duckdb-eh.wasm', 'package.json'] }
 };
-for(const [name, { entry, files }] of Object.entries(GLOBAL_PACKAGES)){
+const installGlobalPackage = async (name) => {
+    const { entry, files } = GLOBAL_PACKAGES[name];
     // The package root, from the entry: packages with "exports" need not export their package.json.
-    const source = require.resolve(`${name}/${entry}`).slice(0, -entry.length - 1);
-    const target = path.join(outDir, 'node', name);
+    const root = require.resolve(`${name}/${entry}`).slice(0, -entry.length - 1);
+    const source = `node/${name}`;
+    const target = path.join(outDir, source);
+    await rm(target, { recursive: true, force: true });
     for(const file of files){
         await mkdir(path.dirname(path.join(target, file)), { recursive: true });
-        await cp(path.join(source, file), path.join(target, file));
+        await cp(path.join(root, file), path.join(target, file));
     }
     await esbuild.build({
-        entryPoints: [path.join(source, entry)],
+        entryPoints: [path.join(root, entry)],
         outfile: path.join(target, entry),
         bundle: true,
         format: 'cjs',
@@ -225,7 +254,34 @@ for(const [name, { entry, files }] of Object.entries(GLOBAL_PACKAGES)){
         external: ['bufferutil', 'utf-8-validate'],
         logLevel: 'warning'
     });
-}
+    return writeInstall(source, path.posix.join(GLOBAL_MODULES, name));
+};
+
+// A tool of a backend's vendor/: the wasm-wasm32 build of the CoreToolkit release the daemon pins,
+// installed by the daemon's own script, or, for a local CoreToolkit build, the programs in
+// VOLT_WASM_TOOLS_DIR (the install prefix of CoreToolkit's scripts/build-wasm-plugin.sh, run without a
+// plugin). Resolves null when there is neither, as a native machine goes without a tool its release lacks.
+const { installCoreToolkitTool } = await import(pathToFileURL(path.join(packageRoot('cluster-daemon'), 'scripts', 'coretoolkit-tool.mjs')).href);
+const installVendorTool = async (backend, tool) => {
+    const source = `${backend.name}/vendor/${tool}`;
+    const target = path.join(outDir, source);
+    await rm(target, { recursive: true, force: true });
+    const local = process.env.VOLT_WASM_TOOLS_DIR;
+    if(local){
+        await mkdir(path.join(target, 'bin'), { recursive: true });
+        await cp(path.join(local, 'bin', tool), path.join(target, 'bin', tool));
+    }else{
+        const vendorDir = path.join(packageDir, 'node_modules', '.cache', 'vendor', tool);
+        const log = (line) => console.log(`[web-runtime] ${tool}: ${line}`);
+        if(!(await installCoreToolkitTool({ tool, platform: 'wasm-wasm32', vendorDir, log }))){
+            console.warn(`[web-runtime] no wasm-wasm32 build of ${tool} is published; set VOLT_WASM_TOOLS_DIR to a local CoreToolkit wasm build`);
+            return null;
+        }
+        await cp(path.join(vendorDir, 'bin'), path.join(target, 'bin'), { recursive: true });
+    }
+    return writeInstall(source, path.posix.join(backend.mountPoint, 'vendor', tool));
+};
+
 // A classic script: module service workers are not supported by every browser.
 await esbuild.build({
     entryPoints: { 'service-worker': path.join(packageDir, 'src', 'service-worker.ts') },
@@ -254,7 +310,17 @@ await buildProgram(RUNNER, { source: path.join(packageDir, RUNNER.entry), instal
 
 for(const backend of selected){
     backend.addons = await nativeAddonsOf(backend);
-    for(const program of programsOf(backend)){
+    const installs = [];
+    for(const name of backend.globalPackages){
+        installs.push(await installGlobalPackage(name));
+    }
+    for(const tool of backend.vendor){
+        installs.push(await installVendorTool(backend, tool));
+    }
+    // Its entry point installs them; the programs it spawns find them installed.
+    const [entry, ...programs] = programsOf(backend);
+    await buildProgram(backend, entry, installs.filter(Boolean));
+    for(const program of programs){
         await buildProgram(backend, program);
     }
 }

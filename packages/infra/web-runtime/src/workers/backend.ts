@@ -11,7 +11,7 @@ import { attachFsChannel, startFsService } from '../platform/fs/client';
 import { initSqlite } from '../platform/better-sqlite3';
 import { registerNodeProgram, registerNodeRunner } from '../platform/child-process';
 import { attachStdin } from '../platform/stdio';
-import { installGlobalPackage } from '../platform/global-packages';
+import { install } from '../platform/installs';
 import { ownBytes } from '../platform/bytes';
 import { deliverToParentPort, enterThread } from '../platform/worker-threads';
 import { existsSync, mkdirSync, writeFileSync } from '../platform/fs';
@@ -22,6 +22,9 @@ import type { BackendBootMessage, BackendWorkerMessage, ParentToChildMessage } f
 // Defined by scripts/build.mjs for each bundle.
 declare const VOLT_PROGRAM_PATH: string;
 declare const VOLT_NODE_PROGRAMS: Record<string, string>;
+// What the backend's machine has installed besides it (src/platform/installs.ts), which its entry
+// point installs at boot; the processes it spawns share its file system.
+declare const VOLT_INSTALLS: string[];
 
 // The parts of DedicatedWorkerGlobalScope used here (the WebWorker lib cannot be combined with DOM).
 interface BackendWorkerScope extends MessageTarget {
@@ -92,8 +95,8 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
             writeFileSync(scriptPath, `// Runs as ${VOLT_NODE_PROGRAMS[scriptPath]}, provided by @volt/web-runtime.\n`);
         }
     }
-    for(const name of message.globalPackages ?? []){
-        await installGlobalPackage(name);
+    for(const source of VOLT_INSTALLS){
+        await install(source);
     }
     if(message.sqliteDirectory){
         await initSqlite(message.sqliteDirectory);
