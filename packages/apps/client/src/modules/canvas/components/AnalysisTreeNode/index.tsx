@@ -231,7 +231,7 @@ const AnalysisTreeNode = ({
                 <FloatingPortal root={floatingRoot}>
                     <div
                         ref={refs.setFloating}
-                        className='pointer-events-auto z-[var(--z-floating)] w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] overflow-hidden rounded-xl border border-border bg-surface shadow-overlay'
+                        className='pointer-events-auto z-[var(--z-floating)] w-[min(32rem,calc(100vw-2rem))] max-w-[32rem] overflow-hidden glass-panel p-0'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >

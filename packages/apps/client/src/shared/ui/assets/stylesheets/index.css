@@ -95,6 +95,8 @@
     --surface-tertiary-solid: oklch(0.9373 0.0013 286.37);
 
     --overlay-solid: #ffffff;
+    --overlay-alpha: 72%;
+    --glass-panel-alpha: 90%;
     --chrome-solid: oklch(0.9702 0 0);
 
     --glass-filter: blur(16px) saturate(1.4) brightness(1.06);
@@ -126,6 +128,8 @@
     --surface-tertiary-solid: #1d1d20;
 
     --overlay-solid: #0d0d0d;
+    --overlay-alpha: 68%;
+    --glass-panel-alpha: 85%;
     --chrome-solid: #0c0c0e;
 
     --glass-filter: blur(16px) saturate(1.4) brightness(0.82);
@@ -157,7 +161,7 @@
     --surface: color-mix(in srgb, var(--surface-solid) var(--glass-alpha), transparent);
     --surface-secondary: color-mix(in srgb, var(--surface-secondary-solid) var(--glass-alpha), transparent);
     --surface-tertiary: color-mix(in srgb, var(--surface-tertiary-solid) var(--glass-alpha), transparent);
-    --overlay: var(--overlay-solid);
+    --overlay: color-mix(in srgb, var(--overlay-solid) var(--overlay-alpha), transparent);
     --chrome: color-mix(in srgb, var(--chrome-solid) var(--glass-alpha), transparent);
 }
 
@@ -168,8 +172,32 @@
     .dark,
     [data-theme='dark'] {
         --glass-alpha: 100%;
+        --overlay-alpha: 100%;
+        --glass-panel-alpha: 100%;
         --glass-filter: none;
     }
+}
+
+/* Everything that floats over the page (menus, popovers, listboxes, tooltips, dialogs) is frosted
+   glass: --overlay is translucent and what is behind it is blurred. .glass-surface gives the same
+   look to floating panels that are not HeroUI components. */
+.glass-surface,
+.glass-panel,
+.toast,
+.tooltip,
+.popover,
+.autocomplete__popover,
+.combo-box__popover,
+.color-picker__popover,
+.date-picker__popover,
+.date-range-picker__popover,
+.dropdown__popover,
+.select__popover,
+.modal__dialog,
+.alert-dialog__dialog,
+.drawer__dialog {
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
 }
 
 :root,
@@ -432,16 +460,77 @@ html[data-volt-desktop][data-volt-maximized] #root {
         }
     }
 
-    /* Only the docked chrome is translucent, and only the surfaces that actually
-       overlay the viewport get the blur. Menus and popovers read --overlay, which is
-       opaque on purpose (content showing through a menu is noise), so a filter there
-       would cost a repaint and blur nothing. The right panel is a flex sibling with
-       only --background behind it, so it is excluded for the same reason. */
+    /* The docked chrome that overlays the viewport. The right panel is a flex sibling
+       with only --background behind it, so a filter there would blur nothing. */
     .canvas-top-toolbar,
     .canvas-viewport-floating-controls,
     #canvas-center-timeline {
         -webkit-backdrop-filter: var(--glass-filter);
         backdrop-filter: var(--glass-filter);
+    }
+
+    /* Floating surfaces are rounded like Pollium's, which keeps HeroUI's own radius scale
+       (--radius: 0.5rem). VOLT's scale is tighter, so the containers get those radii here
+       rather than through --radius, which would also change the buttons and fields inside
+       dialogs. Same layer as HeroUI, so its variants (full-screen modal, drawer sides) still win. */
+    .popover,
+    .dropdown__popover,
+    .select__popover,
+    .combo-box__popover,
+    .autocomplete__popover,
+    .modal__dialog,
+    .alert-dialog__dialog {
+        border-radius: 1.5rem;
+    }
+
+    .color-picker__popover,
+    .date-picker__popover,
+    .date-range-picker__popover {
+        border-radius: 1.25rem;
+    }
+
+    .tooltip {
+        border-radius: 0.75rem;
+    }
+
+    .menu-item,
+    .list-box-item {
+        border-radius: 1rem;
+    }
+
+    /* HeroUI sets popover text with text-sm, 14px in Pollium; VOLT's text-sm is 13px, and its
+       14px step (same line height) is text-base. */
+    .popover,
+    .dropdown__popover,
+    .select__popover,
+    .combo-box__popover,
+    .autocomplete__popover {
+        @apply text-base;
+    }
+
+    /* Pollium's own floating lists (context menu, command picker, slash menu): a 12px glass
+       panel of 8px rows, highlighted with 6% of the foreground. */
+    .glass-panel {
+        @apply rounded-[0.75rem] border border-foreground/10 p-1.5 shadow-lg;
+        background-color: color-mix(in srgb, var(--background) var(--glass-panel-alpha), transparent);
+    }
+
+    .glass-panel-item {
+        @apply flex w-full shrink-0 items-center gap-2.5 rounded-[0.5rem] border-0 bg-transparent px-2.5 py-1.5 text-start text-base text-foreground outline-none;
+    }
+
+    /* Listbox options follow the highlighted option (keyboard or pointer); menu items, the pointer and focus. */
+    .glass-panel-item:is([aria-selected='true'], [data-active='true']),
+    .glass-panel-item:not([role='option'], :disabled):is(:hover, :focus-visible) {
+        @apply bg-foreground/[0.06];
+    }
+
+    .glass-panel-item:disabled {
+        @apply opacity-40;
+    }
+
+    .glass-panel-separator {
+        @apply my-1 h-px shrink-0 bg-foreground/[0.06];
     }
 }
 

@@ -54,8 +54,8 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             ref={ref}
             type='button'
             className={cn(
-                'menu-item',
-                { default: 'menu-item--default', danger: 'menu-item--danger' }[variant],
+                'glass-panel-item relative cursor-pointer',
+                variant === 'danger' && 'text-danger',
                 isLoading && 'pointer-events-none text-transparent'
             )}
             disabled={isInert}
@@ -80,7 +80,13 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             )}
 
             {icon && (
-                <span className='flex shrink-0 items-center justify-center' aria-hidden='true'>
+                <span
+                    className={cn(
+                        'flex size-4 shrink-0 items-center justify-center',
+                        !isLoading && (variant === 'danger' ? 'text-danger' : 'text-muted')
+                    )}
+                    aria-hidden='true'
+                >
                     {icon}
                 </span>
             )}

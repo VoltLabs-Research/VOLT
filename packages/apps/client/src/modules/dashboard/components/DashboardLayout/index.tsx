@@ -151,7 +151,7 @@ const DashboardLayout = () => {
 
                 <div
                     className={cn(
-                        'fixed inset-0 z-[99] hidden bg-[color-mix(in_srgb,var(--overlay)_78%,transparent)] backdrop-blur-[8px] backdrop-saturate-[1.4]',
+                        'fixed inset-0 z-[99] hidden bg-[color-mix(in_srgb,var(--overlay-solid)_78%,transparent)] backdrop-blur-[8px] backdrop-saturate-[1.4]',
                         sidebarOpen && 'max-[1024px]:block'
                     )}
                     onClick={() => setSidebarOpen(false)}

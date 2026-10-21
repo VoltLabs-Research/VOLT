@@ -272,7 +272,7 @@ const CanvasPage = () => {
             {isNarrowViewport && rightDrawerOpen && (
                 <button
                     type='button'
-                    className='absolute inset-0 z-[4] cursor-pointer border-none p-0 bg-[color-mix(in_srgb,var(--overlay)_55%,transparent)] backdrop-blur-[6px] backdrop-saturate-[1.3] animate-[canvas-drawer-backdrop-in_180ms_ease-out] max-md:z-[130] max-md:bg-transparent max-md:backdrop-filter-none'
+                    className='absolute inset-0 z-[4] cursor-pointer border-none p-0 bg-[color-mix(in_srgb,var(--overlay-solid)_55%,transparent)] backdrop-blur-[6px] backdrop-saturate-[1.3] animate-[canvas-drawer-backdrop-in_180ms_ease-out] max-md:z-[130] max-md:bg-transparent max-md:backdrop-filter-none'
                     aria-label='Close panel'
                     onClick={closeRightDrawer}
                 />
