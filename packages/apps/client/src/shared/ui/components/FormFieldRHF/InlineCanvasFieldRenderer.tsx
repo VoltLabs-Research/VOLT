@@ -276,23 +276,21 @@ const InlineCanvasFieldRenderer = ({
 
             {tokenAutocomplete.isOpen && (
                 <FloatingPortal root={floatingRoot}>
-                    <Scrollable ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu popover flex flex-col max-h-[180px] z-[var(--z-floating)]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
+                    <Scrollable ref={tokenAutocomplete.refs.setFloating} className='form-field-autocomplete-menu glass-panel flex flex-col gap-0.5 max-h-[180px] z-[var(--z-floating)]' data-floating-owner-ids={floatingOwnerIdsAttribute} style={tokenAutocomplete.floatingStyles} {...tokenAutocomplete.getFloatingProps()}>
                         {tokenAutocomplete.options.map((option, index) => (
                             <button
                                 type='button'
                                 key={`${option.value}-${index}`}
-                                className={cn(
-                                    'form-field-autocomplete-option w-full flex flex-col items-start gap-0.5 min-h-10 px-2 py-1.5 border-0 bg-transparent text-foreground text-left cursor-pointer hover:bg-surface-hover',
-                                    index === tokenAutocomplete.activeIndex && 'is-active bg-surface-hover'
-                                )}
+                                className='form-field-autocomplete-option glass-panel-item flex-col items-start gap-0 cursor-pointer'
+                                data-active={index === tokenAutocomplete.activeIndex}
                                 onMouseDown={(event) => {
                                     event.preventDefault();
                                     tokenAutocomplete.applyOption(option.value);
                                 }}
                             >
-                                <span className='form-field-autocomplete-option-label text-xs leading-[1.2]'>{option.label}</span>
+                                <span className='form-field-autocomplete-option-label truncate'>{option.label}</span>
                                 {option.label !== option.value && (
-                                    <span className='form-field-autocomplete-option-value text-xs leading-[1.1] text-muted'>{option.value}</span>
+                                    <span className='form-field-autocomplete-option-value truncate text-xs leading-snug text-muted'>{option.value}</span>
                                 )}
                             </button>
                         ))}

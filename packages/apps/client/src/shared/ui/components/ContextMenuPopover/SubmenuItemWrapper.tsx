@@ -25,7 +25,7 @@ const MENU_ICON_SIZES: Record<'sm' | 'md', number> = {
     md: 16
 };
 
-const NESTED_FLOATING_SELECTOR = '.popover, .select-dropdown, .form-field-autocomplete-menu';
+const NESTED_FLOATING_SELECTOR = '.popover, .glass-panel, .select-dropdown, .form-field-autocomplete-menu';
 
 const CONTEXT_MENU_PANEL_SELECTOR = "[data-context-menu-panel='true']";
 
@@ -182,7 +182,7 @@ const SubmenuItemWrapper = ({ option, size = 'md', onOpen }: SubmenuItemWrapperP
                     <Scrollable
                         ref={composeRefs(submenuPanelRef, refs.setFloating)}
                         id={submenuId}
-                        className='context-menu-submenu-panel popover z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overscroll-contain p-1'
+                        className='context-menu-submenu-panel glass-panel z-[2] min-w-[180px] max-h-[min(22rem,calc(100dvh-2rem))] overscroll-contain'
                         data-floating-submenu-panel='true'
                         data-side={placement.startsWith('left') ? 'left' : 'right'}
                         role='dialog'

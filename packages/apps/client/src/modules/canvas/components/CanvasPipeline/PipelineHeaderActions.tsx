@@ -92,10 +92,9 @@ const PipelineHeaderActions = ({
                 <DropdownTrigger
                     isDisabled={!canMutateCanvas || !trajectoryId}
                     aria-label='Add pipeline stage'
+                    className='button button--sm button--ghost button--icon-only'
                 >
-                    <Button variant='ghost' size='sm' isIconOnly>
-                        <Plus size={13} aria-hidden='true' />
-                    </Button>
+                    <Plus size={13} aria-hidden='true' />
                 </DropdownTrigger>
                 <DropdownPopover placement='bottom start'>
                     <DropdownMenu

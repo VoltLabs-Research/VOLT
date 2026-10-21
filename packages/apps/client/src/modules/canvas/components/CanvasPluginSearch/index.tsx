@@ -162,7 +162,7 @@ const CanvasPluginSearch = () => {
                 <FloatingPortal root={floatingRoot}>
                     <Scrollable
                         ref={refs.setFloating}
-                        className='popover max-h-[60vh] min-h-36 z-[var(--z-floating)]'
+                        className='glass-panel max-h-[60vh] min-h-36 z-[var(--z-floating)]'
                         style={floatingStyles}
                         {...getFloatingProps()}
                     >
@@ -180,7 +180,7 @@ const CanvasPluginSearch = () => {
                                 </EmptyState>
                             </div>
                         ) : (
-                            <div className='flex flex-col gap-1 p-2'
+                            <div className='flex flex-col gap-0.5'
                                 id={resultsListId}
                                 role='listbox'
                                 aria-label='Plugin search results'
@@ -195,12 +195,12 @@ const CanvasPluginSearch = () => {
                                             type='button'
                                             role='option'
                                             aria-selected={isActive}
-                                            className={isActive ? 'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left hover:bg-surface-hover bg-surface-hover' : 'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left hover:bg-surface-hover'}
+                                            className='glass-panel-item cursor-pointer'
                                             onMouseEnter={() => setActiveIndex(index)}
                                             onMouseDown={(e) => e.preventDefault()}
                                             onClick={() => handleSelect(index)}
                                         >
-                                            <span className='text-sm text-muted truncate'>{modifier.name}</span>
+                                            <span className='truncate'>{modifier.name}</span>
                                         </button>
                                     );
                                 })}

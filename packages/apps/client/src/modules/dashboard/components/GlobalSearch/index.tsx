@@ -107,10 +107,10 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         const optionId = `${resultsListId}-option-${itemIndex}`;
 
         return (
-            <div className={cn('flex w-full min-w-0 cursor-pointer flex-col items-start gap-1 rounded-lg p-3 shadow-[inset_0_0_0_1px_transparent] transition-[background-color,box-shadow] duration-200 ease-[ease] hover:bg-surface-tertiary focus-visible:outline-none focus-visible:bg-surface-tertiary focus-visible:shadow-[0_0_0_2px_var(--focus)] active:bg-surface-hover', isActive && 'bg-surface-tertiary shadow-[inset_0_0_0_1px_var(--border)]', isDisabled && 'opacity-45 cursor-not-allowed pointer-events-none')} key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title}>
-                <p className='m-0 text-sm font-medium truncate w-full' title={item.title}>{item.title}</p>
+            <div className={cn('glass-panel-item min-w-0 cursor-pointer flex-col items-start gap-0 hover:bg-foreground/[0.06]', isDisabled && 'opacity-40 cursor-not-allowed pointer-events-none')} key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title}>
+                <p className='m-0 w-full truncate' title={item.title}>{item.title}</p>
                 {item.subtitle ? (
-                    <p className='m-0 text-xs text-muted truncate w-full' title={item.subtitle}>{item.subtitle}</p>
+                    <p className='m-0 w-full truncate text-xs leading-snug text-muted' title={item.subtitle}>{item.subtitle}</p>
                 ) : null}
             </div>
         );
@@ -125,12 +125,12 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         }
 
         return (
-            <div className='py-1 border-b border-border last:border-b-0' key={key} role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
-                <div className='flex flex-row items-center gap-2 p-3 pb-2 text-base text-muted' id={`${resultsListId}-${key}-label`}>
+            <div className='py-1 border-b border-foreground/[0.06] last:border-b-0' key={key} role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
+                <div className='flex flex-row items-center gap-2 px-2.5 pt-1.5 pb-1 text-muted' id={`${resultsListId}-${key}-label`}>
                     <span aria-hidden='true'>{icon}</span>
                     <p className='text-xs font-medium'>{title}</p>
                 </div>
-                <div className='flex flex-col gap-1 px-2'>
+                <div className='flex flex-col gap-0.5'>
                     {items.map(renderItem)}
                 </div>
             </div>
@@ -178,7 +178,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
-                    <Scrollable ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] rounded-xl border border-border bg-surface shadow-overlay z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
+                    <Scrollable ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] glass-panel z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
                         <p className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
                             {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
                         </p>
@@ -204,7 +204,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                         )}
 
                         {!isLoading && totalResults > 0 && (
-                            <div className='flex flex-col py-1' id={resultsListId} role='listbox' aria-label='Global search results'>
+                            <div className='flex flex-col' id={resultsListId} role='listbox' aria-label='Global search results'>
                                 {SECTIONS.map(renderSection)}
                             </div>
                         )}

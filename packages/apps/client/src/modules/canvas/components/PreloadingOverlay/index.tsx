@@ -16,7 +16,7 @@ const PreloadingOverlay = ({
     const hasProgress = progress !== undefined;
 
     return (
-        <div className='flex flex-row items-center justify-center absolute inset-0 bg-overlay z-[1000]'>
+        <div className='flex flex-row items-center justify-center absolute inset-0 bg-[var(--overlay-solid)] z-[1000]'>
             <ProgressBar
                 className='w-[min(320px,70%)]'
                 size='sm'

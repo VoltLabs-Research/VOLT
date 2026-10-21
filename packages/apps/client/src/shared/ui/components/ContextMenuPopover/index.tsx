@@ -211,7 +211,7 @@ const ContextMenuPopover = ({
                             ref={handleFloatingRef}
                             id={id}
                             className={cn(
-                                'popover z-[var(--z-floating)] max-w-[320px] overflow-visible text-foreground',
+                                'glass-panel z-[var(--z-floating)] max-w-[320px] overflow-visible text-foreground',
                                 { sm: 'min-w-[124px]', md: 'min-w-[180px]' }[size],
                                 className
                             )}
@@ -225,7 +225,7 @@ const ContextMenuPopover = ({
                             <FloatingOwnerIdsContext.Provider value={nextFloatingOwnerIds}>
                                 <FloatingRootContext.Provider value={floatingElement ?? floatingRoot}>
                                     {hasCustomContent ? (
-                                        <div className={cn('flex flex-col p-2', { sm: 'min-w-[180px]', md: 'min-w-[min(22rem,calc(100vw-2rem))]' }[size])}>
+                                        <div className={cn('flex flex-col p-1', { sm: 'min-w-[180px]', md: 'min-w-[min(22rem,calc(100vw-2rem))]' }[size])}>
                                             {typeof content === 'function' ? content(close) : content}
                                         </div>
                                     ) : (
