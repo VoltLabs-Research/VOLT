@@ -315,7 +315,7 @@ const SignInTemplate = () => {
                             variant='ghost'
                             size='sm'
                             fullWidth
-                            onPress={resetBackendEndpoint}
+                            onPress={() => void resetBackendEndpoint()}
                         >
                             Change server
                         </Button>

@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="@volt/web-runtime/virtual" />
 import '@react-three/fiber';
 
 interface ImportMetaEnv {
