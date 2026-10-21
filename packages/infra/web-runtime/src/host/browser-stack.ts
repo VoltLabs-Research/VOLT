@@ -13,6 +13,8 @@ export interface BrowserStackOptions {
     runtimeUrl: URL;
     // The origin the web client is served from.
     clientOrigin: string;
+    // The plugin registry, when not the public one.
+    registryUrl?: string;
     store?: BrowserStackStore;
     log?: ProvisioningLog;
     phase?: PhaseRunner;
@@ -56,7 +58,8 @@ export const startBrowserStack = async (options: BrowserStackOptions): Promise<B
                         dataDir: '/data/server',
                         databasePath: '/data/server/server.sqlite',
                         secrets,
-                        clientOrigin: options.clientOrigin
+                        clientOrigin: options.clientOrigin,
+                        registryUrl: options.registryUrl
                     }),
                     argv: [],
                     cwd: '/app/server',

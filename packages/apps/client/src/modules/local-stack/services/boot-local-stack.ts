@@ -53,6 +53,7 @@ export const bootLocalStack = async (observer: LocalStackBootObserver): Promise<
     await startBrowserStack({
         runtimeUrl,
         clientOrigin: window.location.origin,
+        registryUrl: import.meta.env.VITE_REGISTRY_URL || undefined,
         log: observer.onLog,
         phase: async (id, run) => {
             observer.onPhase(id, 'running');
