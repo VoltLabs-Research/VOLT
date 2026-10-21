@@ -30,9 +30,11 @@ export interface FsServiceMountMessage {
     directory: string;
 }
 
+// A worker's channel, and the port its own workers' channels are attached through.
 export interface FsServiceAttachMessage {
     kind: 'attach';
     buffers: FsChannelBuffers;
+    port: MessagePort;
 }
 
 class FsError extends Error {
@@ -551,12 +553,17 @@ const serve = async (buffers: FsChannelBuffers): Promise<void> => {
 
 let mounted: Promise<void> | null = null;
 
+const attach = (message: FsServiceAttachMessage): void => {
+    message.port.onmessage = (event: MessageEvent<FsServiceAttachMessage>) => attach(event.data);
+    void (mounted ?? Promise.resolve()).then(() => serve(message.buffers));
+};
+
 scope.addEventListener('message', (event) => {
     const message = event.data;
     if(message.kind === 'mount'){
         mounted = mount(message.directory);
         mounted.then(() => scope.postMessage({ kind: 'mounted' }), (error: Error) => scope.postMessage({ kind: 'failed', message: error.message }));
     }else if(message.kind === 'attach'){
-        void (mounted ?? Promise.resolve()).then(() => serve(message.buffers));
+        attach(message);
     }
 });

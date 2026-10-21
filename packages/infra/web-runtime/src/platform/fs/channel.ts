@@ -18,6 +18,12 @@ export interface FsChannelBuffers {
     data: SharedArrayBuffer;
 }
 
+// What a worker is given to use its parent's file system: its channel, and a port to the service.
+export interface FsAttachment {
+    channel: FsChannelBuffers;
+    service: MessagePort;
+}
+
 export const createChannelBuffers = (): FsChannelBuffers => ({
     control: new SharedArrayBuffer(CONTROL_WORDS * Int32Array.BYTES_PER_ELEMENT),
     data: new SharedArrayBuffer(DATA_BYTES)
