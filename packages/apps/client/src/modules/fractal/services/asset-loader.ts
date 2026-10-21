@@ -142,12 +142,14 @@ export class FractalAssetLoader implements IFractalAssetLoader {
     static async preload(url: string, signal?: AbortSignal, resourceKeyOverride?: string): Promise<void> {
         const resourceKey = resourceKeyOverride || url;
         if (geometryPool.get(resourceKey)) return;
-        const existing = await geometryPool.readFromOpfs(resourceKey);
+        // blob:/data: URLs are unique to this page; persisting them would only leave orphaned OPFS files.
+        const persist = !FractalAssetLoader.isDirectBrowserAssetUrl(url);
+        const existing = persist ? await geometryPool.readFromOpfs(resourceKey) : null;
         if (existing) return;
         const fetched = await FractalAssetLoader.requestArrayBuffer(url, signal);
         if (signal?.aborted) return;
         const arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(fetched);
-        await geometryPool.writeToOpfs(resourceKey, arrayBuffer);
+        if (persist) await geometryPool.writeToOpfs(resourceKey, arrayBuffer);
     }
 
     async load(
@@ -169,7 +171,8 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             return this.wrapGeometry(cached);
         }
 
-        let arrayBuffer = await geometryPool.readFromOpfs(resourceKey);
+        const persist = !FractalAssetLoader.isDirectBrowserAssetUrl(url);
+        let arrayBuffer = persist ? await geometryPool.readFromOpfs(resourceKey) : null;
         if (!arrayBuffer) {
             const fetched = await FractalAssetLoader.requestArrayBuffer(url, signal);
             if (signal?.aborted) throw FractalAssetLoader.createAbortError();
@@ -179,7 +182,7 @@ export class FractalAssetLoader implements IFractalAssetLoader {
                 resourceKey,
                 bytes: arrayBuffer.byteLength
             });
-            void geometryPool.writeToOpfs(resourceKey, arrayBuffer);
+            if (persist) void geometryPool.writeToOpfs(resourceKey, arrayBuffer);
         } else {
             debugFractal('asset-loader.opfs-hit', {
                 url,

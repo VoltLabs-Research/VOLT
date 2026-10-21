@@ -1,6 +1,8 @@
 import { FractalAssetLoader } from '@/modules/fractal/services/asset-loader';
 import { useLocalGlbStore } from '@/modules/canvas/store/use-local-glb-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
+import SimulationCellBox from '@/modules/fractal/components/molecules/SimulationCellBox';
+import type { BoxBounds } from '@volt/contracts/modules/trajectory/domain';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import { disposeObject3DResources } from '@/modules/fractal/utils/resource-disposal';
 import { fitPerspectiveCameraToBox } from '@/modules/fractal/utils/camera-fit';
@@ -12,6 +14,7 @@ import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 
 interface LocalGlbViewerProps {
     url: string;
+    boxBounds?: BoxBounds | null;
     onContentTypeDetected?: (info: { hasPointClouds: boolean }) => void;
 }
 
@@ -116,7 +119,7 @@ const applyPointSizeMultiplier = (root: THREE.Object3D, multiplier: number) => {
     });
 };
 
-const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => {
+const LocalGlbViewer = ({ url, boxBounds, onContentTypeDetected }: LocalGlbViewerProps) => {
     const containerRef = useRef<THREE.Group>(null);
     const modelRef = useRef<THREE.Group | null>(null);
     const materialPipelineRef = useRef(new MaterialPipeline());
@@ -172,7 +175,7 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
                 applyPointSizeMultiplier(model, useEditorStore.getState().pointSizeMultiplier);
 
                 const originalBounds = new THREE.Box3().setFromObject(model);
-                if (!originalBounds.isEmpty()) {
+                if (!originalBounds.isEmpty() && !boxBounds) {
                     const center = originalBounds.getCenter(new THREE.Vector3());
                     model.position.sub(center);
                     model.updateMatrixWorld(true);
@@ -226,7 +229,8 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
         onContentTypeDetected,
         setLocalAutoSimulationCellWorldBounds,
         setLocalModelWorldBounds,
-        url
+        url,
+        boxBounds
     ]);
 
     useEffect(() => {
@@ -248,7 +252,9 @@ const LocalGlbViewer = ({ url, onContentTypeDetected }: LocalGlbViewerProps) => 
     }, [camera, controls, invalidate, url]);
 
     return (
-        <group ref={containerRef} userData={{ isScreenshotCaptureTarget: true }} />
+        <SimulationCellBox sceneKey='local-glb' boxBounds={boxBounds ?? undefined}>
+            <group ref={containerRef} userData={{ isScreenshotCaptureTarget: true }} />
+        </SimulationCellBox>
     );
 };
 

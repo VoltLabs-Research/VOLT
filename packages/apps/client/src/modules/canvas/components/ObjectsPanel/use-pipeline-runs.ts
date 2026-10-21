@@ -11,6 +11,8 @@ import {
     useUpdatePipelineRunMutation
 } from '@/modules/plugin/hooks/plugin/queries';
 import { useCanvasAccessMode } from '@/modules/canvas/api/access/use-canvas-access-store';
+import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
+import { useWasmCanvasStore } from '@/modules/canvas-wasm/store';
 import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
 import { buildPipelineRunSections } from '../../utils/pipeline-run-sections';
 import { toDraftStages } from '../../utils/pipeline-run-restore';
@@ -45,6 +47,9 @@ const usePipelineRuns = ({
 }: UsePipelineRunsProps) => {
     const mode = useCanvasAccessMode();
     const isRbac = mode !== 'public';
+    // /canvas/wasm has no server: its runs live in the WASM store and are renamed/deleted there.
+    const isWasm = isWasmLocalTrajectoryId(trajectoryId);
+    const wasmRuns = useWasmCanvasStore((state) => state.pipelineRuns);
     const replaceStages = useCanvasPipelineStore((state) => state.replaceStages);
     const renameMutation = useUpdatePipelineRunMutation();
     const deleteMutation = useDeletePipelineRunMutation();
@@ -55,10 +60,10 @@ const usePipelineRuns = ({
             page: 1,
             limit: RUNS_PAGE_LIMIT
         },
-        { enabled: isRbac && !!trajectoryId }
+        { enabled: isRbac && !!trajectoryId && !isWasm }
     );
 
-    const pipelineRuns = data?.data ?? EMPTY_RUNS;
+    const pipelineRuns = isWasm ? wasmRuns : data?.data ?? EMPTY_RUNS;
 
     const runSections = useMemo(
         () => buildPipelineRunSections({
@@ -68,18 +73,21 @@ const usePipelineRuns = ({
         [sections, pipelineRuns]
     );
 
-    const autoExpandedTrajectoryRef = useRef<string | undefined>(undefined);
+    const autoExpandedKeyRef = useRef<string | undefined>(undefined);
     const newestRunId = runSections[0]?.runId;
 
+    // The newest run opens once per trajectory; the WASM trajectory never changes, so there each
+    // new run opens as it appears.
     useEffect(() => {
         if (!trajectoryId || newestRunId === undefined) return;
-        if (autoExpandedTrajectoryRef.current === trajectoryId) return;
+        const autoExpandKey = isWasm ? newestRunId : trajectoryId;
+        if (autoExpandedKeyRef.current === autoExpandKey) return;
 
-        autoExpandedTrajectoryRef.current = trajectoryId;
+        autoExpandedKeyRef.current = autoExpandKey;
         if (!expandedSections.has(newestRunId)) {
             expandSection(newestRunId);
         }
-    }, [trajectoryId, newestRunId, expandedSections, expandSection]);
+    }, [trajectoryId, isWasm, newestRunId, expandedSections, expandSection]);
 
     const restoreRun = useCallback((run: PipelineRun) => {
         if (!trajectoryId) return;
@@ -102,6 +110,10 @@ const usePipelineRuns = ({
 
     const renameRun = useCallback(async (run: PipelineRun, name: string) => {
         if (!trajectoryId) return;
+        if (isWasm) {
+            useWasmCanvasStore.getState().renamePipelineRun(run._id, name);
+            return;
+        }
 
         try {
             await renameMutation.mutateAsync({
@@ -115,12 +127,22 @@ const usePipelineRuns = ({
                 fallbackTitle: 'Failed to rename run'
             });
         }
-    }, [renameMutation, trajectoryId]);
+    }, [isWasm, renameMutation, trajectoryId]);
 
     const deleteRun = useCallback(async (run: PipelineRun) => {
         if (!trajectoryId) return;
 
         const ownedAnalysisIds = collectOwnedAnalysisIds(run);
+        const removedDescription = ownedAnalysisIds.length > 0
+            ? `${ownedAnalysisIds.length} analysis${ownedAnalysisIds.length === 1 ? '' : 'es'} removed with it.`
+            : undefined;
+
+        if (isWasm) {
+            ownedAnalysisIds.forEach((analysisId) => applyDeletedAnalysisLocally?.(analysisId));
+            useWasmCanvasStore.getState().removePipelineRun(run._id);
+            sileo.success({ title: 'Run deleted', description: removedDescription });
+            return;
+        }
 
         await showPromise(
             deleteMutation.mutateAsync({
@@ -140,14 +162,12 @@ const usePipelineRuns = ({
                 loading: { title: 'Deleting run...' },
                 success: {
                     title: 'Run deleted',
-                    description: ownedAnalysisIds.length > 0
-                        ? `${ownedAnalysisIds.length} analysis${ownedAnalysisIds.length === 1 ? '' : 'es'} removed with it.`
-                        : undefined
+                    description: removedDescription
                 },
                 error: { title: 'Failed to delete run' }
             }
         );
-    }, [applyDeletedAnalysisLocally, deleteMutation, trajectoryId]);
+    }, [applyDeletedAnalysisLocally, deleteMutation, isWasm, trajectoryId]);
 
     return {
         runSections,

@@ -1,6 +1,7 @@
 import { CORE_TABS, TimelineTab } from '../TimelineHeader';
 import useCanvasTimelineTabs from './use-canvas-timeline-tabs';
 import useCanvasUrlState from '@/modules/canvas/hooks/use-canvas-url-state';
+import { useTimelineTabRequestStore } from '@/modules/canvas/store/use-timeline-tab-request-store';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { TimelineTabOption } from '../TimelineHeader';
@@ -53,6 +54,16 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
             setTimelineExposureId(undefined, { replace: true });
         }
     }, [setTimelineExposureId, timelineExposureId]);
+
+    const requestedTab = useTimelineTabRequestStore((state) => state.requestedTab);
+    const clearTabRequest = useTimelineTabRequestStore((state) => state.clearRequest);
+    const canOpenRequestedTab = requestedTab !== null && tabs.some((tab) => tab.id === requestedTab);
+
+    useEffect(() => {
+        if (!requestedTab || !canOpenRequestedTab) return;
+        handleTabChange(requestedTab);
+        clearTabRequest();
+    }, [canOpenRequestedTab, clearTabRequest, handleTabChange, requestedTab]);
 
     useEffect(() => {
         const selectTimelineTab = () => handleTabChange(TimelineTab.Timeline);

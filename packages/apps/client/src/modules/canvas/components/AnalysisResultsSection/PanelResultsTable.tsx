@@ -1,4 +1,6 @@
 import { useSubListingInfiniteQuery } from '@/modules/plugin/hooks/listing/queries';
+import { useIsWasmCanvas } from '@/modules/canvas-wasm/use-is-wasm-canvas';
+import { useWasmAnalysisFrames } from '@/modules/canvas-wasm/use-wasm-canvas';
 import { formatPanelValue, resolveSwatchColor } from './panel-formatting';
 import { useEffect } from 'react';
 
@@ -17,6 +19,10 @@ interface PanelResultsTableProps {
 const MAX_PANEL_ROWS = 64;
 
 const PanelResultsTable = ({ table, analysisId, exposureId, timestep, onStatusChange }: PanelResultsTableProps) => {
+    // /canvas/wasm keeps sub-listings in the local session instead of the API.
+    const isWasmCanvas = useIsWasmCanvas();
+    const wasmRows = useWasmAnalysisFrames(isWasmCanvas ? analysisId : undefined)[timestep]
+        ?.listings[exposureId]?.subListings[table.source];
     const query = useSubListingInfiniteQuery(
         {
             analysisId,
@@ -27,11 +33,13 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep, onStatusCh
         },
         {
             getNextPageParam: () => undefined,
-            enabled: Boolean(analysisId && exposureId)
+            enabled: Boolean(analysisId && exposureId) && !isWasmCanvas
         }
     );
 
-    const rows = query.data?.pages.flatMap((page) => page.rows) ?? [];
+    const rows = isWasmCanvas
+        ? (wasmRows ?? []).slice(0, MAX_PANEL_ROWS)
+        : query.data?.pages.flatMap((page) => page.rows) ?? [];
     const status: PanelResultsStatus = query.isLoading ? 'loading' : (rows.length > 0 ? 'ready' : 'empty');
 
     useEffect(() => {

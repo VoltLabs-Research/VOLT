@@ -2,14 +2,25 @@ import useAnalysisFrameLog from './use-analysis-frame-log';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
+import { cn } from '@heroui/react';
 
 interface AnalysisLogPanelProps {
+    // Plugin whose output is shown; the panel follows the running stage, so it can change mid-run.
+    title?: string;
     analysisId?: string;
     timestep?: number;
     active?: boolean;
     live?: boolean;
     activityStatus?: 'queued' | 'running' | 'completed' | 'failed';
 }
+
+// The status is carried by the plugin name's color, same tones as the viewport execution overlay.
+const TITLE_TONE: Record<NonNullable<AnalysisLogPanelProps['activityStatus']>, string> = {
+    queued: 'text-muted',
+    running: 'text-accent',
+    completed: 'text-success',
+    failed: 'text-danger'
+};
 
 const formatOccurredAt = (value: string): string => {
     const parsed = new Date(value);
@@ -21,6 +32,7 @@ const formatOccurredAt = (value: string): string => {
 };
 
 const AnalysisLogPanel = ({
+    title,
     analysisId,
     timestep,
     active = false,
@@ -98,14 +110,26 @@ const AnalysisLogPanel = ({
     }, [activityStatus, error, isLoading, live, segments.length]);
 
     return (
-        <div className='flex h-full min-h-0 flex-1 flex-col'>
+        <div className='relative flex h-full min-h-0 flex-1 flex-col'>
+            {title && (
+                <div className='pointer-events-none absolute inset-x-0 top-0 z-[1] flex h-8 flex-row items-center gap-2 bg-transparent px-4 text-xs backdrop-blur-[6px]'>
+                    <span className={cn('truncate font-medium', activityStatus ? TITLE_TONE[activityStatus] : 'text-foreground')}>
+                        {title}
+                    </span>
+                    {activityStatus && <span className='sr-only'>{activityStatus}</span>}
+                    {timestep !== undefined && <span className='shrink-0 text-muted'>Frame {timestep}</span>}
+                </div>
+            )}
             <Scrollable className='min-h-0 flex-1 bg-surface' ref={scrollRef}>
                 {helperText ? (
                     <div className='flex min-h-0 flex-1 flex-row items-center justify-center p-4'>
                         <p className='text-xs text-muted'>{helperText}</p>
                     </div>
                 ) : (
-                    <pre className='m-0 whitespace-pre-wrap break-words px-4 pb-4 pt-3.5 font-mono text-xs leading-[1.55] text-foreground'>
+                    <pre className={cn(
+                        'm-0 whitespace-pre-wrap break-words px-4 pb-4 font-mono text-xs leading-[1.55] text-foreground',
+                        title ? 'pt-9' : 'pt-3.5'
+                    )}>
                         {segments.map((segment, index) => (
                             <span
                                 key={`${segment.occurredAt}-${index}`}

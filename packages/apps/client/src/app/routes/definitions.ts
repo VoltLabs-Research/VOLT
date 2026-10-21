@@ -294,6 +294,11 @@ export const optionalAuthRoutes: RouteConfig[] = [
         loader: () => import('@/modules/canvas/components/CanvasPage')
     },
     {
+        path: '/canvas/wasm',
+        title: 'WASM Canvas',
+        loader: () => import('@/modules/canvas/components/CanvasPage')
+    },
+    {
         path: '/canvas/:trajectoryId',
         loader: () => import('@/modules/canvas/components/CanvasPage')
     },

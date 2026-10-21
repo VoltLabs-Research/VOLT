@@ -12,6 +12,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sileo } from 'sileo';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
 
+import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
+import { useWasmCanvasStore } from '@/modules/canvas-wasm/store';
 import type { RenderableExposure } from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import type { RenderableExposurePayload, ListSceneArtifactsInput } from '@/modules/trajectory/api/services/scene-artifacts-service';
 
@@ -62,14 +64,17 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         [trackedAnalysisIds]
     );
 
+    const wasmRecords = useWasmCanvasStore((state) => state.records);
+    const isWasm = isWasmLocalTrajectoryId(trajectoryId);
     const queryResults = useSceneArtifactsQueries(
-        analysisIdArray.map((analysisId) => buildParams(trajectoryId!, analysisId))
+        isWasm ? [] : analysisIdArray.map((analysisId) => buildParams(trajectoryId!, analysisId))
     );
 
     useEffect(() => {
         for (let i = 0; i < analysisIdArray.length; i++) {
             const analysisId = analysisIdArray[i];
             const result = queryResults[i];
+            if (!result) continue;
 
             if (result.isError && result.error && !reportedErrorsRef.current.has(analysisId)) {
                 reportedErrorsRef.current.add(analysisId);
@@ -115,6 +120,17 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
     const exposureEntries = useMemo(() => {
         const map = new Map<string, ExposureEntry>();
 
+        if (isWasm) {
+            for (const analysisId of analysisIdArray) {
+                const record = wasmRecords[analysisId];
+                map.set(analysisId, {
+                    state: record ? 'loaded' : 'idle',
+                    exposures: record?.exposures ?? []
+                });
+            }
+            return map;
+        }
+
         for (let i = 0; i < analysisIdArray.length; i++) {
             const analysisId = analysisIdArray[i];
             const result = queryResults[i];
@@ -145,7 +161,7 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         }
 
         return map;
-    }, [analysisIdArray, queryResults]);
+    }, [analysisIdArray, isWasm, queryResults, wasmRecords]);
 
     const exposureEntriesRef = useRef(exposureEntries);
     exposureEntriesRef.current = exposureEntries;
@@ -168,6 +184,17 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
 
     const loadExposuresForAnalysis = useCallback(async (analysisId: string) => {
         if (!trajectoryId) return;
+        if (isWasmLocalTrajectoryId(trajectoryId)) {
+            setTrackedAnalysisIds((prev) => {
+                if (prev.has(analysisId)) {
+                    return prev;
+                }
+                const next = new Set(prev);
+                next.add(analysisId);
+                return next;
+            });
+            return;
+        }
 
         if (trackedIdsRef.current.has(analysisId)) {
             const queryKey = buildSceneArtifactsQueryOptions(buildParams(trajectoryId, analysisId)).queryKey;
