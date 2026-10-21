@@ -1,15 +1,13 @@
 import { rm } from 'node:fs/promises';
 import AppConfig, { DevModeState } from '@/services/AppConfig';
-import Bootstrap, { ProvisionAccount } from '@volt/local-stack/bootstrap';
+import type { ProvisionAccount } from '@volt/local-stack/bootstrap';
 import bus, { deployLog } from '@/services/EventBus';
 import LocalStack from '@/services/LocalStack';
 import { buildDaemonEnv, buildServerEnv, ensureStackEnvDefaults } from '@/services/LocalStackEnv';
 import { serverOriginFor } from '@volt/local-stack/defaults';
 import type { StackPorts } from '@volt/local-stack/stack-env';
-import PluginSeeder from '@volt/local-stack/plugin-seeder';
-import { waitForCluster } from '@volt/local-stack/wait-for-cluster';
+import { LOCAL_STACK_PHASES, provisionLocalStack } from '@volt/local-stack/provision';
 import { findFreePort } from '@/services/ports';
-import ServerApi from '@volt/local-stack/server-api';
 import { resolveStackRuntime, runtimeRootForCheckout, stackRuntimeHint } from '@/services/StackRuntime';
 import { AppEvents, PhaseSpec } from '@/types/events';
 import { isUp } from '@/shared/health';
@@ -35,22 +33,7 @@ const errMessage = (err: unknown): string => (err instanceof Error ? err.message
 
 
 const START_PHASES: PhaseSpec[] = [
-    {
-        id: 'server',
-        label: 'Start API server'
-    },
-    {
-        id: 'bootstrap',
-        label: 'Provision workspace'
-    },
-    {
-        id: 'daemon',
-        label: 'Start compute daemon'
-    },
-    {
-        id: 'plugins',
-        label: 'Install default plugins'
-    },
+    ...LOCAL_STACK_PHASES,
     {
         id: 'web',
         label: 'Open Volt'
@@ -186,46 +169,36 @@ export default class LocalDeploy{
         const stackEnv = await ensureStackEnvDefaults(this.props.appConfig);
         const ports = await this.#ensurePorts(stackEnv, stack);
         const origin = serverOriginFor(ports.server);
-        const api = new ServerApi(origin);
 
         bus.emit('deploy:log', {
             stream: 'stdout',
             line: `[stack] runtime ${stack.runtime.root} (server ${stack.runtime.manifest.server.version}, daemon ${stack.runtime.manifest.daemon.version}, node ${stack.runtime.manifest.node})`
         });
 
-        await this.#phase('server', () => stack.startServer(buildServerEnv({
-            runtime: stack.runtime,
-            stackEnv,
-            stackDataDir: this.props.paths.stackDataDir,
-            ports
-        }), origin));
-
-        const state = await this.#phase('bootstrap', () => new Bootstrap({
-            store: this.props.appConfig,
-            log: deployLog,
-            serverOrigin: origin,
-            account: this.props.account
-        }).ensure());
-
-        await this.#phase('daemon', async () => {
-            await stack.startDaemon(buildDaemonEnv({
-                runtime: stack.runtime,
-                stackEnv,
-                stackDataDir: this.props.paths.stackDataDir,
-                ports,
-                bootstrap: state
-            }));
-            await waitForCluster(api, state, {
+        await provisionLocalStack({
+            backends: {
+                startServer: () => stack.startServer(buildServerEnv({
+                    runtime: stack.runtime,
+                    stackEnv,
+                    stackDataDir: this.props.paths.stackDataDir,
+                    ports
+                }), origin),
+                startDaemon: (state) => stack.startDaemon(buildDaemonEnv({
+                    runtime: stack.runtime,
+                    stackEnv,
+                    stackDataDir: this.props.paths.stackDataDir,
+                    ports,
+                    bootstrap: state
+                })),
                 daemonFailure: () => stack.daemonExitedEarly() ? `The compute daemon exited during startup. See ${stack.daemonLogFile}` : null,
                 logHint: `See ${stack.daemonLogFile}`
-            });
-        });
-
-        await this.#phase('plugins', () => new PluginSeeder({
+            },
+            serverOrigin: origin,
             store: this.props.appConfig,
             log: deployLog,
-            api
-        }).ensure(state));
+            phase: (id, run) => this.#phase(id, run),
+            account: this.props.account
+        });
 
         await this.#phase('web', async () => {
             if(!await isUp(`${origin}/`)) throw new Error('The web client is not being served by the API server');
