@@ -3,6 +3,7 @@
 // APIs and the streams are built on the synchronous calls.
 import { Readable, Writable } from 'stream';
 import pathModule from 'path';
+import { ownBuffer } from './own-buffer';
 import { callFs } from './fs/client';
 import { readStdinSync } from './stdio';
 import { errnoOf } from './os';
@@ -97,7 +98,7 @@ const encodingOf = (options: EncodingOption): Encoding => (
 );
 
 const decode = (bytes: Uint8Array, encoding: Encoding): string | Buffer => {
-    const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const buffer = ownBuffer(bytes);
     return encoding && encoding !== 'buffer' ? buffer.toString(encoding) : buffer;
 };
 
