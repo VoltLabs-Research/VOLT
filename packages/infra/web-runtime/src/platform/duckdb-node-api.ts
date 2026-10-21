@@ -294,16 +294,48 @@ export class DuckDBAppender {
     }
 }
 
+// duckdb-wasm binds parameters by position: each `$name` of the statement, outside its strings, quoted
+// identifiers and comments, becomes the position of its value, as node-api binds an object by name.
+const NAMED_PARAMETER = /'(?:[^']|'')*'|"(?:[^"]|"")*"|--[^\n]*|\/\*[\s\S]*?\*\/|\$([A-Za-z_][A-Za-z0-9_]*)/g;
+
+const positional = (sql: string, values: Record<string, unknown>): { sql: string; values: unknown[] } => {
+    const positions = new Map<string, number>();
+    const ordered: unknown[] = [];
+    const rewritten = sql.replace(NAMED_PARAMETER, (token: string, name: string | undefined) => {
+        if(!name){
+            return token;
+        }
+        if(!(name in values)){
+            throw new Error(`duckdb: no value for parameter $${name}`);
+        }
+        let position = positions.get(name);
+        if(position === undefined){
+            ordered.push(values[name]);
+            position = ordered.length;
+            positions.set(name, position);
+        }
+        return `$${position}`;
+    });
+    return { sql: rewritten, values: ordered };
+};
+
+// duckdb-wasm hands a statement's parameters to the engine as JSON, which has no bigint: one goes as
+// the number it is when that is exact, otherwise as its digits, which DuckDB casts as it does a literal.
+const jsonParameter = (value: unknown): unknown => {
+    if(typeof value !== 'bigint'){
+        return value;
+    }
+    return value >= BigInt(Number.MIN_SAFE_INTEGER) && value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value.toString();
+};
+
 const bindValues = (connection: WasmConnection, sql: string, values?: readonly unknown[] | Record<string, unknown>): Table => {
-    if(!values || (Array.isArray(values) && values.length === 0)){
-        return connection.query(sql);
+    const bound = values && !Array.isArray(values) ? positional(sql, values as Record<string, unknown>) : { sql, values: values ?? [] };
+    if(bound.values.length === 0){
+        return connection.query(bound.sql);
     }
-    if(!Array.isArray(values)){
-        throw new Error('duckdb: named parameters are not supported in the browser');
-    }
-    const statement = connection.prepare(sql);
+    const statement = connection.prepare(bound.sql);
     try{
-        return statement.query(...values);
+        return statement.query(...bound.values.map(jsonParameter));
     }finally{
         statement.close();
     }
