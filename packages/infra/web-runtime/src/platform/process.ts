@@ -1,6 +1,8 @@
 // The `process` global the backends read: env, argv, stdout/stderr, nextTick, hrtime and the events
 // they subscribe to. exit() is reported to the host page, which owns the worker's lifetime.
 import { EventEmitter } from 'events';
+import { constants as fsConstants } from './fs/constants';
+import { constants as osConstants } from './os';
 
 interface ProcessStream {
     fd: number;
@@ -77,6 +79,26 @@ class BrowserProcess extends EventEmitter {
     browser = true;
     private workingDirectory = '/app';
     onExit: (code: number) => void = () => {};
+    // Present only in a spawned process, as in Node, where process.send exists only with an IPC channel.
+    send?: (message: unknown, ...rest: unknown[]) => boolean;
+    connected = false;
+
+    // A spawned process writes its output to the parent's pipes instead of the console.
+    redirectOutput(write: (stream: 'stdout' | 'stderr', text: string) => void): void {
+        for(const name of ['stdout', 'stderr'] as const){
+            this[name].write = (chunk, encodingOrCallback, callback) => {
+                write(name, typeof chunk === 'string' ? chunk : decoder.decode(chunk));
+                const done = typeof encodingOrCallback === 'function' ? encodingOrCallback as () => void : callback;
+                done?.();
+                return true;
+            };
+        }
+    }
+
+    disconnect(): void {
+        this.connected = false;
+        this.emit('disconnect');
+    }
 
     cwd(): string {
         return this.workingDirectory;
@@ -142,8 +164,13 @@ class BrowserProcess extends EventEmitter {
         return this.exit(134);
     }
 
-    binding(): never {
-        throw new Error('process.binding is not supported');
+    // Node keeps the deprecated `constants` binding for code that reads open(2) flags from it
+    // (Emscripten's NODERAWFS does); there are no other bindings without Node's C++ side.
+    binding(name: string): unknown {
+        if(name === 'constants'){
+            return { fs: fsConstants, os: osConstants };
+        }
+        throw new Error(`No such module: ${name}`);
     }
 }
 

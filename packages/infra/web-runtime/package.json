@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Runs the VOLT server and cluster daemon unchanged inside browser workers. src/platform implements the Node APIs they use (loopback http, better-sqlite3 over sql.js, fs over OPFS, crypto, child_process); scripts/build.mjs bundles each backend's built dist against it.",
+  "description": "Runs the VOLT server and cluster daemon unchanged inside browser workers. src/platform implements the Node APIs they use (loopback http, fs over OPFS, better-sqlite3 and DuckDB over their WebAssembly builds, child_process and worker_threads as workers); native addons are compiled to WebAssembly from their own sources; scripts/build.mjs bundles each backend's built dist against it.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "smoke": "node scripts/smoke.mjs",
@@ -23,7 +23,13 @@
     "@emnapi/runtime": "1.11.3",
     "@noble/hashes": "^1.8.0",
     "@sqlite.org/sqlite-wasm": "3.50.4-build1",
+    "@volt/contracts": "workspace:*",
+    "@volt/local-stack": "workspace:*",
+    "apache-arrow": "^17.0.0",
+    "browserify-zlib": "0.2.0",
+    "chart.js": "^4.5.1",
     "crypto-browserify": "3.12.1",
-    "node-stdlib-browser": "1.3.1"
+    "node-stdlib-browser": "1.3.1",
+    "path-browserify": "1.0.1"
   }
 }

@@ -11,7 +11,7 @@ export const isIPv6 = (input: string): boolean => IPV6.test(input.replace(/%.*$/
 
 export const isIP = (input: string): 0 | 4 | 6 => isIPv4(input) ? 4 : isIPv6(input) ? 6 : 0;
 
-const unsupported = (operation: string): Error => (
+export const unsupported = (operation: string): Error => (
     Object.assign(new Error(`${operation}: raw TCP sockets are not available in the browser`), { code: 'ENOTSUP' })
 );
 

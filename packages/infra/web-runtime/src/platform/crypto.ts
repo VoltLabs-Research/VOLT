@@ -79,6 +79,11 @@ export const {
     getCiphers
 } = browserCrypto;
 
+// The curves crypto-browserify's createECDH implements (create-ecdh's table, aliases included).
+const CURVES = ['p192', 'p224', 'p256', 'p384', 'p521', 'prime192v1', 'prime256v1', 'secp192r1', 'secp224r1', 'secp256k1', 'secp256r1', 'secp384r1', 'secp521r1'];
+
+export const getCurves = (): string[] => [...CURVES];
+
 export const randomInt = (minOrMax: number, maybeMax?: number): number => {
     const min = maybeMax === undefined ? 0 : minOrMax;
     const max = maybeMax === undefined ? minOrMax : maybeMax;
@@ -92,6 +97,7 @@ export default {
     scryptSync,
     randomUUID,
     randomInt,
+    getCurves,
     timingSafeEqual,
     getRandomValues,
     webcrypto,

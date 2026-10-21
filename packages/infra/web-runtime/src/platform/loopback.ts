@@ -1,7 +1,8 @@
 // The loopback network the backends talk over: what is 127.0.0.1 between Node processes on the
-// desktop is, here, MessagePorts between workers. A worker that listens on a port registers it with
-// the host page, which forwards connections for that port to it; connections to a port the same
-// worker listens on never leave it.
+// desktop is, here, MessagePorts between workers. Every realm (the page, a backend worker, a worker a
+// backend starts) routes a connection to the port's listener: its own, one of its child workers', or
+// its parent's. Children announce the ports they listen on to their parent, which announces them
+// upwards, so any realm can reach any port.
 
 export interface LoopbackRequestHead {
     method: string;
@@ -40,14 +41,15 @@ export type LoopbackChannelMessage =
     | { type: 'close'; code: number; reason: string }
     | { type: 'error'; message: string };
 
+export type MessageTarget = { postMessage(message: unknown, transfer?: Transferable[]): void };
+
 type ConnectionListener = (connection: LoopbackConnection) => void;
 
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '0.0.0.0', '::1', '[::1]']);
 
 const listeners = new Map<number, ConnectionListener>();
-
-// The page that hosts the workers, or a stand-in when the backends run in the page itself.
-let host: Pick<MessagePort, 'postMessage'> | null = null;
+const childRoutes = new Map<number, MessageTarget>();
+let parent: MessageTarget | null = null;
 
 export const isLoopbackHost = (hostname: string): boolean => LOOPBACK_HOSTS.has(hostname);
 
@@ -55,46 +57,84 @@ export const isLoopbackHost = (hostname: string): boolean => LOOPBACK_HOSTS.has(
 // from (during development that is a localhost origin too, and its assets come from the network).
 export const isLoopbackUrl = (url: URL): boolean => isLoopbackHost(url.hostname) && url.origin !== globalThis.location?.origin;
 
-export const attachLoopbackHost = (target: Pick<MessagePort, 'postMessage'>): void => {
-    host = target;
-    for(const port of listeners.keys()){
+const refuse = (channel: MessagePort, port: number): void => {
+    channel.postMessage({ type: 'error', message: `connect ECONNREFUSED 127.0.0.1:${port}` } satisfies LoopbackChannelMessage);
+    channel.close();
+};
+
+// A connection for a port this realm or one of its children serves; null when neither does.
+const deliver = (message: LoopbackConnectMessage, channel: MessagePort): boolean => {
+    const listener = listeners.get(message.port);
+    if(listener){
+        listener({ kind: message.connection, head: message.head, channel });
+        return true;
+    }
+    const child = childRoutes.get(message.port);
+    if(child){
+        child.postMessage(message, [channel]);
+        return true;
+    }
+    return false;
+};
+
+const route = (message: LoopbackConnectMessage, channel: MessagePort): void => {
+    if(deliver(message, channel)){
+        return;
+    }
+    if(parent){
+        parent.postMessage(message, [channel]);
+        return;
+    }
+    refuse(channel, message.port);
+};
+
+export const attachLoopbackParent = (target: MessageTarget): void => {
+    parent = target;
+    for(const port of [...listeners.keys(), ...childRoutes.keys()]){
         target.postMessage({ kind: 'listen', port } satisfies LoopbackListenMessage);
     }
 };
 
 export const listenLoopback = (port: number, listener: ConnectionListener): void => {
-    if(listeners.has(port)){
+    if(listeners.has(port) || childRoutes.has(port)){
         throw Object.assign(new Error(`listen EADDRINUSE: address already in use 127.0.0.1:${port}`), { code: 'EADDRINUSE' });
     }
     listeners.set(port, listener);
-    host?.postMessage({ kind: 'listen', port } satisfies LoopbackListenMessage);
+    parent?.postMessage({ kind: 'listen', port } satisfies LoopbackListenMessage);
 };
 
 export const closeLoopback = (port: number): void => {
     listeners.delete(port);
 };
 
-// Delivers a connection the host forwarded to this worker.
+// A connection the parent forwarded down to this realm. It never goes back up, so a port nobody
+// serves is refused instead of bouncing between realms.
 export const acceptLoopbackConnection = (message: LoopbackConnectMessage, channel: MessagePort): void => {
-    const listener = listeners.get(message.port);
-    if(!listener){
-        channel.postMessage({ type: 'error', message: `connect ECONNREFUSED 127.0.0.1:${message.port}` } satisfies LoopbackChannelMessage);
-        channel.close();
+    if(!deliver(message, channel)){
+        refuse(channel, message.port);
+    }
+};
+
+// Loopback messages from a child worker: the ports it listens on, and the connections it opens.
+export const handleChildLoopbackMessage = (child: MessageTarget, message: LoopbackListenMessage | LoopbackConnectMessage, ports: readonly MessagePort[]): void => {
+    if(message.kind === 'listen'){
+        childRoutes.set(message.port, child);
+        parent?.postMessage(message);
         return;
     }
-    listener({ kind: message.connection, head: message.head, channel });
+    route(message, ports[0]);
+};
+
+export const forgetChildRoutes = (child: MessageTarget): void => {
+    for(const [port, target] of childRoutes){
+        if(target === child){
+            childRoutes.delete(port);
+        }
+    }
 };
 
 export const connectLoopback = (port: number, connection: LoopbackConnectionKind, head: LoopbackRequestHead): MessagePort => {
     const { port1, port2 } = new MessageChannel();
-    const message: LoopbackConnectMessage = { kind: 'connect', port, connection, head };
-    if(listeners.has(port)){
-        acceptLoopbackConnection(message, port2);
-    }else if(host){
-        host.postMessage(message, [port2]);
-    }else{
-        port2.postMessage({ type: 'error', message: `connect ECONNREFUSED 127.0.0.1:${port}` } satisfies LoopbackChannelMessage);
-        port2.close();
-    }
+    route({ kind: 'connect', port, connection, head }, port2);
     return port1;
 };

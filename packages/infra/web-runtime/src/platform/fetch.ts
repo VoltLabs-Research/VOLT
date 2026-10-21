@@ -26,6 +26,11 @@ export const loopbackFetch = (request: Request): Promise<Response> => {
     request.headers.forEach((value, name) => {
         headers[name] = value;
     });
+    // A Request's body is a stream of unknown length, and body parsers skip a request that declares
+    // neither a length nor chunked encoding, so it goes out chunked as Node's http does for streams.
+    if(request.body){
+        headers['transfer-encoding'] = 'chunked';
+    }
     const channel = connectLoopback(Number(url.port || 80), 'http', {
         method: request.method,
         url: `${url.pathname}${url.search}`,

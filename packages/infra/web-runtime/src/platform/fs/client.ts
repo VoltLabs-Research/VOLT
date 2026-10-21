@@ -7,6 +7,8 @@ import {
     decodeMessage,
     encodeMessage
 } from './channel';
+import { BrowserWorker } from '../browser-worker';
+import { errnoOf } from '../os';
 import type { FsChannelBuffers, FsReply } from './channel';
 
 let control: Int32Array | null = null;
@@ -22,7 +24,7 @@ export const attachFsChannel = (buffers: FsChannelBuffers): void => {
 let service: Worker | null = null;
 
 export const startFsService = (serviceUrl: string | URL, directory: string): Promise<void> => {
-    service = new Worker(serviceUrl, { type: 'module', name: 'fs' });
+    service = new BrowserWorker(serviceUrl, { type: 'module', name: 'fs' });
     const mounted = new Promise<void>((resolve, reject) => {
         service?.addEventListener('message', (event: MessageEvent<{ kind: string; message?: string }>) => {
             if(event.data.kind === 'mounted'){
@@ -93,8 +95,6 @@ export interface FsCallError extends Error {
     errno: number;
 }
 
-const ERRNO: Record<string, number> = { ENOENT: -2, EIO: -5, EBADF: -9, EEXIST: -17, ENOTDIR: -20, EISDIR: -21, EINVAL: -22, ENOTEMPTY: -39, ENOSYS: -38 };
-
 export const callFs = (op: string, args: unknown[], body?: Uint8Array): { value: unknown; body: Uint8Array } => {
     if(!control || !data){
         throw new Error('fs: this worker is not attached to a file system service');
@@ -105,7 +105,7 @@ export const callFs = (op: string, args: unknown[], body?: Uint8Array): { value:
             code: header.code,
             syscall: header.syscall,
             path: header.path,
-            errno: ERRNO[header.code] ?? -1
+            errno: errnoOf(header.code)
         }) as FsCallError;
     }
     return { value: header.value, body: replyBody };
