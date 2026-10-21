@@ -11,8 +11,6 @@ import { restoreQueryDataSnapshot } from '@/shared/query/cache-utils';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { useCallback } from 'react';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { useIsWasmCanvas } from '@/modules/canvas-wasm/use-is-wasm-canvas';
-import { useWasmCanvasStore } from '@/modules/canvas-wasm/store';
 
 import type { RefObject } from 'react';
 import type { QueryDataSnapshot } from '@/shared/query/cache-utils';
@@ -60,14 +58,12 @@ const useSidebarSceneAnalysisDeletion = ({
     sectionState
 }: UseSidebarSceneAnalysisDeletionInput) => {
     const { forgetAnalysis, snapshot, restore } = sectionState;
-    const isWasmCanvas = useIsWasmCanvas();
 
     const applyDeletedAnalysisLocally = useCallback((analysisId: string) => {
         removeAnalysisCaches(analysisId);
         removeSceneArtifactsForAnalysisFromCache(analysisId);
         removeAnalysisScenes(analysisId);
         forgetAnalysis(analysisId);
-        useWasmCanvasStore.getState().removeAnalysis(analysisId);
 
         if (selectedAnalysisIdRef.current === analysisId) {
             setAnalysisId(undefined, { replace: true });
@@ -117,11 +113,6 @@ const useSidebarSceneAnalysisDeletion = ({
     });
 
     const deleteAnalysis = async (analysisId: string) => {
-        if (isWasmCanvas) {
-            applyDeletedAnalysisLocally(analysisId);
-            return;
-        }
-
         await showPromise(
             deleteAnalysisMutation.mutateAsync(analysisId),
             {

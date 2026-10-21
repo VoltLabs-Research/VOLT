@@ -94,8 +94,6 @@ interface CanvasPipelineStore {
     updateStageConfig: (id: string, config: Partial<StageConfig>, trajectoryId?: string) => void;
     toggleStageEnabled: (id: string, trajectoryId?: string) => void;
     markStagesExecuted: (ids: string[], trajectoryId?: string) => void;
-    // The stages stay, but none of them has results any more (another file was opened in /canvas/wasm).
-    clearExecutedStages: (trajectoryId?: string) => void;
     replaceStages: (stages: NewStage[], trajectoryId?: string) => void;
 }
 
@@ -212,20 +210,6 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                                     executed: true
                                 } : stage
                             )
-                        }
-                    }));
-                },
-
-                clearExecutedStages: (trajectoryId) => {
-                    const target = resolveTrajectoryId(trajectoryId);
-                    if (!target) return;
-                    set((state) => ({
-                        byTrajectory: {
-                            ...state.byTrajectory,
-                            [target]: (state.byTrajectory[target] ?? EMPTY_STAGES).map((stage) => ({
-                                ...stage,
-                                executed: false
-                            }))
                         }
                     }));
                 },

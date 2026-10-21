@@ -2,8 +2,6 @@ import { simulationCellByTrajectoryQuery } from './queries';
 import type { SimulationCell } from '@volt/contracts/modules/simulation-cell/domain';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
-import { useWasmCanvasStore } from '@/modules/canvas-wasm/store';
 
 interface UseSimulationCellParams {
     trajectoryId?: string;
@@ -23,13 +21,6 @@ const useSimulationCell = ({
     timestep,
     enabled = true
 }: UseSimulationCellParams = {}): UseSimulationCellResult => {
-    const isWasm = isWasmLocalTrajectoryId(trajectoryId);
-    const wasmCell = useWasmCanvasStore((state) => {
-        if (!isWasm || timestep === undefined) {
-            return null;
-        }
-        return state.simulationCells[timestep] ?? Object.values(state.simulationCells)[0] ?? null;
-    });
     const {
         data,
         isLoading,
@@ -40,7 +31,7 @@ const useSimulationCell = ({
             timestep
         },
         {
-            enabled: enabled && Boolean(trajectoryId) && !isWasm,
+            enabled: enabled && Boolean(trajectoryId),
             retry: (failureCount, error) => {
                 if (isAccessDeniedError(error)) {
                     return false;
@@ -54,9 +45,9 @@ const useSimulationCell = ({
     const accessDenied = isAccessDeniedError(queryError);
 
     return {
-        simulationCell: isWasm ? wasmCell : (data ?? null),
-        isLoading: isWasm ? false : isLoading,
-        accessDenied: isWasm ? false : accessDenied,
+        simulationCell: data ?? null,
+        isLoading,
+        accessDenied,
         accessDeniedMessage: accessDenied
             ? reportError(queryError, { surface: ErrorSurface.Silent }).title
             : undefined

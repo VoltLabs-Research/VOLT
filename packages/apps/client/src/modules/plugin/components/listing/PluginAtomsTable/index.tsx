@@ -4,8 +4,6 @@ import PluginCompactTable, { type PluginTableColumnConfig } from '@/modules/plug
 import { getCategoricalColorByIndex } from '@/shared/ui/utils/categorical-palette';
 import { useTrajectoryAtomsInfiniteQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { atomsToAoS } from '@/modules/trajectory/utils/decode-atoms-binary';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
-import { useWasmAtomRows } from '@/modules/canvas-wasm/use-wasm-canvas';
 
 import type { AtomData, GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 import formatAtomValue from '@/modules/trajectory/utils/format-atom-value';
@@ -72,8 +70,6 @@ const BASE_ATOM_COLUMN_KEYS = new Set(BASE_ATOM_COLUMNS.map((column) => column.k
 
 const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const isWasm = isWasmLocalTrajectoryId(trajectoryId);
-    const wasmRows = useWasmAtomRows(isWasm, analysisId, currentTimestep);
 
     const baseAtomsParams = useMemo(() => ({
         trajectoryId,
@@ -91,15 +87,12 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         hasNextPage,
         error
     } = useTrajectoryAtomsInfiniteQuery(baseAtomsParams, {
-        enabled: Boolean(trajectoryId && currentTimestep !== undefined && !isWasm)
+        enabled: Boolean(trajectoryId && currentTimestep !== undefined)
     });
 
     const aosCacheRef = useRef(new WeakMap<GetAtomsResponse, AtomData[]>());
 
     const rows: AtomData[] = useMemo(() => {
-        if (isWasm) {
-            return wasmRows;
-        }
         if (!infiniteData?.pages) return [];
         const cache = aosCacheRef.current;
         return infiniteData.pages.flatMap((page) => {
@@ -110,21 +103,16 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
             }
             return pageRows;
         });
-    }, [infiniteData, isWasm, wasmRows]);
+    }, [infiniteData]);
 
     const properties: string[] = useMemo(() => {
-        if (isWasm) {
-            const first = wasmRows[0];
-            if (!first) return [];
-            return Object.keys(first).filter((key) => !BASE_ATOM_COLUMN_KEYS.has(key));
-        }
         if (!infiniteData?.pages?.length) return [];
         for (let i = infiniteData.pages.length - 1; i >= 0; i--) {
             const props = infiniteData.pages[i].propertyNames;
             if (props?.length) return props;
         }
         return [];
-    }, [infiniteData, isWasm, wasmRows]);
+    }, [infiniteData]);
 
     const columns: PluginTableColumnConfig[] = useMemo(() => [
         ...BASE_ATOM_COLUMNS,
@@ -148,8 +136,8 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId }: PluginAtomsT
         <PluginCompactTable
             columns={columns}
             data={rows}
-            hasMore={isWasm ? false : hasNextPage}
-            isLoading={isWasm ? false : isLoading}
+            hasMore={hasNextPage}
+            isLoading={isLoading}
             isFetchingMore={isFetchingNextPage}
             onLoadMore={handleLoadMore}
             error={error}

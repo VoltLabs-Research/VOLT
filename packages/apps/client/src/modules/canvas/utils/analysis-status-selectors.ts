@@ -30,7 +30,7 @@ export interface LiveLogTarget {
     timestep: number;
 }
 
-export interface FrameStatusIndex {
+interface FrameStatusIndex {
     aggregateByTimestep: Map<number, FrameJobGroupStatus>;
 
     byTimestepAndAnalysis: Map<number, Map<string, FrameJobGroupStatus>>;
@@ -161,42 +161,6 @@ export const toTimelineTickTone = (status?: FrameJobGroupStatus): TimelineTickTo
     return undefined;
 };
 
-// Among the frames running right now, the one closest to what the user is looking at.
-export const pickLiveLogTarget = (
-    running: readonly LiveLogTarget[],
-    preferredAnalysisId?: string,
-    preferredTimestep?: number
-): LiveLogTarget | undefined => {
-    if (running.length === 0) {
-        return undefined;
-    }
-
-    if (preferredAnalysisId && preferredTimestep !== undefined) {
-        const exact = running.find((target) => (
-            target.analysisId === preferredAnalysisId && target.timestep === preferredTimestep
-        ));
-        if (exact) {
-            return exact;
-        }
-    }
-
-    if (preferredAnalysisId) {
-        const sameAnalysis = running.find((target) => target.analysisId === preferredAnalysisId);
-        if (sameAnalysis) {
-            return sameAnalysis;
-        }
-    }
-
-    if (preferredTimestep !== undefined) {
-        const sameFrame = running.find((target) => target.timestep === preferredTimestep);
-        if (sameFrame) {
-            return sameFrame;
-        }
-    }
-
-    return running[0];
-};
-
 export const findLiveLogTarget = (
     groups: readonly TrajectoryJobGroup[],
     trajectoryId: string | undefined,
@@ -226,7 +190,34 @@ export const findLiveLogTarget = (
         }
     });
 
-    return pickLiveLogTarget(running, preferredAnalysisId, preferredTimestep);
+    if (running.length === 0) {
+        return undefined;
+    }
+
+    if (preferredAnalysisId && preferredTimestep !== undefined) {
+        const exact = running.find((target) => (
+            target.analysisId === preferredAnalysisId && target.timestep === preferredTimestep
+        ));
+        if (exact) {
+            return exact;
+        }
+    }
+
+    if (preferredAnalysisId) {
+        const sameAnalysis = running.find((target) => target.analysisId === preferredAnalysisId);
+        if (sameAnalysis) {
+            return sameAnalysis;
+        }
+    }
+
+    if (preferredTimestep !== undefined) {
+        const sameFrame = running.find((target) => target.timestep === preferredTimestep);
+        if (sameFrame) {
+            return sameFrame;
+        }
+    }
+
+    return running[0];
 };
 
 export const toAnalysisFrameActivityStatus = (

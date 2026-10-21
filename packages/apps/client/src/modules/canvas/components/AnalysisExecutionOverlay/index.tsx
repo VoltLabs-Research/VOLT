@@ -4,7 +4,6 @@ import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
 import useCanvasAnalysisStatus from '@/modules/canvas/hooks/use-canvas-analysis-status';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
 import { buildAnalysisExecutionRows } from './execution-rows';
 
 import type { Analysis, AnalysisChildAnalysis, AnalysisStage } from '@volt/contracts/modules/analysis/domain';
@@ -70,7 +69,7 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
             page: 1,
             limit: 100
         },
-        { enabled: Boolean(trajectoryId && analysisId && !isWasmLocalTrajectoryId(trajectoryId)) }
+        { enabled: Boolean(trajectoryId && analysisId) }
     );
     const analysesData = analysesQuery.data?.data;
     const analyses = useMemo(() => analysesData ?? [], [analysesData]);

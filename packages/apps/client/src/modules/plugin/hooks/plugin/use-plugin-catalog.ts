@@ -2,19 +2,16 @@ import { useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 import useAccessDenied from '@/shared/ui/hooks/use-access-denied';
-import { usePluginCatalogQuery, usePluginCatalogQueryKey } from './catalog-query';
-import { useIsWasmCanvas } from '@/modules/canvas-wasm/use-is-wasm-canvas';
+import { PLUGIN_CATALOG_ALL_QUERY_KEY, usePluginCatalogQuery } from './catalog-query';
 
 const usePluginCatalog = () => {
     const queryClient = useQueryClient();
     const { checkAccessDeniedError } = useAccessDenied();
-    const isWasmCanvas = useIsWasmCanvas();
-    const catalogQueryKey = usePluginCatalogQueryKey();
 
     const allPluginsQuery = usePluginCatalogQuery({ enabled: false });
 
     const loadAllPlugins = useCallback(async (): Promise<void> => {
-        const currentPlugins = queryClient.getQueryData<Plugin[]>(catalogQueryKey);
+        const currentPlugins = queryClient.getQueryData<Plugin[]>(PLUGIN_CATALOG_ALL_QUERY_KEY);
         if (currentPlugins?.length) return;
 
         try {
@@ -23,19 +20,14 @@ const usePluginCatalog = () => {
             checkAccessDeniedError(error);
             throw error;
         }
-    }, [allPluginsQuery, catalogQueryKey, checkAccessDeniedError, queryClient]);
+    }, [allPluginsQuery, queryClient, checkAccessDeniedError]);
 
     const ensurePluginById = useCallback(async (id: string): Promise<Plugin | null> => {
         if (!id) return null;
 
-        const cached = queryClient.getQueryData<Plugin[]>(catalogQueryKey);
+        const cached = queryClient.getQueryData<Plugin[]>(PLUGIN_CATALOG_ALL_QUERY_KEY);
         const existing = cached?.find((p) => p._id === id);
         if (existing) return existing;
-
-        if (isWasmCanvas) {
-            const { data } = await allPluginsQuery.refetch();
-            return data?.find((plugin) => plugin._id === id) ?? null;
-        }
 
         const { fetchPluginById, syncPluginEntityCaches } = await import('./queries');
         return fetchPluginById({ pluginId: id }, {
@@ -47,7 +39,7 @@ const usePluginCatalog = () => {
             checkAccessDeniedError(error);
             throw error;
         });
-    }, [allPluginsQuery, catalogQueryKey, checkAccessDeniedError, isWasmCanvas, queryClient]);
+    }, [queryClient, checkAccessDeniedError]);
 
     return {
         loadAllPlugins,

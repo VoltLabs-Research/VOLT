@@ -2,7 +2,6 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import useUpdateTrajectory from './use-update-trajectory';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import { useCallback } from 'react';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
 
 interface EditableTrajectoryNameProps {
     trajectoryId: string;
@@ -28,7 +27,7 @@ export default function EditableTrajectoryName({
         }
     }, [name, trajectoryId, updateTrajectory]);
 
-    if (readOnly || !user || isWasmLocalTrajectoryId(trajectoryId)) {
+    if (readOnly || !user) {
         return (
             <p className={`editable-name ${className}`} title={name}>
                 {name}
