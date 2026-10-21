@@ -201,8 +201,30 @@ const selected = requested.length > 0 ? BACKENDS.filter((backend) => requested.i
 
 await mkdir(outDir, { recursive: true });
 await cp(require.resolve('@sqlite.org/sqlite-wasm/sqlite3.wasm'), path.join(outDir, 'sqlite3.wasm'));
-for(const file of ['duckdb-mvp.wasm', 'duckdb-eh.wasm']){
-    await cp(require.resolve(`@duckdb/duckdb-wasm/dist/${file}`), path.join(outDir, file));
+// The machine's global npm packages (src/platform/global-packages.ts): each package's files, its
+// CommonJS entry bundled with its dependencies, so that it loads without a node_modules tree.
+const GLOBAL_PACKAGES = {
+    '@duckdb/duckdb-wasm': { entry: 'dist/duckdb-node-blocking.cjs', files: ['dist/duckdb-mvp.wasm', 'dist/duckdb-eh.wasm', 'package.json'] }
+};
+for(const [name, { entry, files }] of Object.entries(GLOBAL_PACKAGES)){
+    // The package root, from the entry: packages with "exports" need not export their package.json.
+    const source = require.resolve(`${name}/${entry}`).slice(0, -entry.length - 1);
+    const target = path.join(outDir, 'node', name);
+    for(const file of files){
+        await mkdir(path.dirname(path.join(target, file)), { recursive: true });
+        await cp(path.join(source, file), path.join(target, file));
+    }
+    await esbuild.build({
+        entryPoints: [path.join(source, entry)],
+        outfile: path.join(target, entry),
+        bundle: true,
+        format: 'cjs',
+        platform: 'node',
+        target: 'es2022',
+        // ws's optional native accelerators, which it loads only when installed.
+        external: ['bufferutil', 'utf-8-validate'],
+        logLevel: 'warning'
+    });
 }
 // A classic script: module service workers are not supported by every browser.
 await esbuild.build({

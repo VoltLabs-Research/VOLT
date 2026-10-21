@@ -109,6 +109,14 @@ const builtinName = (request: string): string | null => {
     return name in BUILTINS ? name : null;
 };
 
+// The folders Node searches after node_modules: NODE_PATH's, the user's, and $PREFIX/lib/node, where
+// the machine's global packages are (src/platform/global-packages.ts).
+const globalFolders = (): string[] => [
+    ...(process.env.NODE_PATH ?? '').split(':').filter(Boolean),
+    ...(process.env.HOME ? [path.join(process.env.HOME, '.node_modules'), path.join(process.env.HOME, '.node_libraries')] : []),
+    path.resolve(path.dirname(process.execPath), '..', 'lib', 'node')
+];
+
 const resolveRequest = (request: string, parent: string): string => {
     const directory = path.dirname(parent);
     if(request.startsWith('./') || request.startsWith('../') || request.startsWith('/') || request === '.' || request === '..'){
@@ -124,9 +132,16 @@ const resolveRequest = (request: string, parent: string): string => {
             return file;
         }
         if(current === path.dirname(current)){
-            throw notFound(request, parent);
+            break;
         }
     }
+    for(const folder of globalFolders()){
+        const file = resolveFile(path.join(folder, request));
+        if(file){
+            return file;
+        }
+    }
+    throw notFound(request, parent);
 };
 
 const createRequire = (module: CommonJsModule): NodeRequire => {
