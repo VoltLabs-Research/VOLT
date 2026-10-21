@@ -64,7 +64,8 @@ const PLATFORM_MODULES = {
     path: platform('path.cjs'),
     perf_hooks: platform('perf-hooks.ts'),
     zlib: platform('zlib.cjs'),
-    http2: platform('http2.cjs')
+    http2: platform('http2.cjs'),
+    timers: platform('timers.cjs')
 };
 
 const PACKAGE_MODULES = {
