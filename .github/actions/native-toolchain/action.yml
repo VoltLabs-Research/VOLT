@@ -1,0 +1,18 @@
+name: Native module toolchain
+description: 'What installing the cluster daemon needs: its native modules (duckdb, canvas) build on install, and its build fetches the host''s zstd.'
+runs:
+  using: composite
+  steps:
+    - name: Install build toolchain for native modules
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          pkg-config \
+          libcairo2-dev \
+          libpango1.0-dev \
+          libjpeg-dev \
+          libgif-dev \
+          librsvg2-dev \
+          zstd
