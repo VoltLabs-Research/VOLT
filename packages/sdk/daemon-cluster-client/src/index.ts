@@ -42,6 +42,8 @@ export type {
     TeamClusterDirectAccessTokenClaims
 } from './contracts/objectGateway';
 
+export { signTeamClusterDirectAccessToken, verifyTeamClusterDirectAccessToken } from './contracts/directAccessToken';
+
 export { TEAM_CLUSTER_SERVICE_EXPOSURE } from './contracts/exposure';
 export type {
     TeamClusterServiceExposure,

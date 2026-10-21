@@ -70,7 +70,7 @@ class DaemonScriptingSessionOrchestrator {
         );
 
         const jupyter = response.jupyter;
-        const accessGrant = this.accessTokenService.createAccessGrant({
+        const accessGrant = await this.accessTokenService.createAccessGrant({
             teamId: input.teamId,
             runtimeNotebookId,
             userId: input.userId

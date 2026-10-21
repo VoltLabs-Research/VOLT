@@ -109,15 +109,15 @@ export const planUploadFiles = (
     };
 });
 
-export const signUploadFiles = (input: SignUploadFilesInput): TrajectoryUploadSessionFileView[] => (
-    input.files.map((file) => ({
+export const signUploadFiles = (input: SignUploadFilesInput): Promise<TrajectoryUploadSessionFileView[]> => Promise.all(
+    input.files.map(async (file) => ({
         index: file.index,
         originalName: file.originalName,
         size: file.size,
         ...(file.contentType ? { contentType: file.contentType } : {}),
         finalObjectKey: file.finalObjectKey,
-        parts: file.parts.map((part) => {
-            const signed = clusterObjectSignedUrlService.createToken({
+        parts: await Promise.all(file.parts.map(async (part) => {
+            const signed = await clusterObjectSignedUrlService.createToken({
                 kind: 'cluster-object',
                 operation: 'write',
                 teamId: input.teamId,
@@ -140,6 +140,6 @@ export const signUploadFiles = (input: SignUploadFilesInput): TrajectoryUploadSe
                 url: signed.url,
                 expiresAt: signed.expiresAt
             };
-        })
+        }))
     }))
 );

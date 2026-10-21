@@ -53,7 +53,7 @@ class PluginBinaryStorageService {
 
         const originalName = normalizeBinaryFileName(input.fileName);
         const objectPath = `plugin-binaries/${input.pluginId}/${v4()}${path.extname(originalName)}`;
-        const signed = clusterObjectSignedUrlService.createToken({
+        const signed = await clusterObjectSignedUrlService.createToken({
             kind: 'cluster-object',
             operation: 'write',
             teamId: input.teamId,

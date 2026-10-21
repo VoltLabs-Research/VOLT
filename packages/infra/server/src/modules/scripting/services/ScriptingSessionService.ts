@@ -146,7 +146,7 @@ class ScriptingSessionService{
             };
         }
 
-        const accessGrant = this.#accessToken.createAccessGrant({
+        const accessGrant = await this.#accessToken.createAccessGrant({
             teamId: input.teamId,
             runtimeNotebookId,
             userId: input.userId

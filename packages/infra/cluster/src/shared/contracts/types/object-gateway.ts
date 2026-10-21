@@ -8,5 +8,5 @@ export interface ObjectGatewayDirectAccessClaims {
 }
 
 export interface ObjectGatewaySecurity {
-    verifyDirectAccessToken?: (token: string) => ObjectGatewayDirectAccessClaims | null;
+    verifyDirectAccessToken?: (token: string) => Promise<ObjectGatewayDirectAccessClaims | null>;
 }

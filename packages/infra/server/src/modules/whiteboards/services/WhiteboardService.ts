@@ -194,7 +194,7 @@ class WhiteboardService{
         const whiteboard = await this.#getOwned(teamId, whiteboardId);
 
         const assetId = uuidv4();
-        const signed = clusterObjectSignedUrlService.createToken({
+        const signed = await clusterObjectSignedUrlService.createToken({
             kind: 'cluster-object',
             operation: 'write',
             teamId,

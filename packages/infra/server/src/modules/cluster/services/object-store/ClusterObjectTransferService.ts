@@ -30,7 +30,7 @@ class ClusterObjectTransferService {
         token: string | undefined,
         input: ClusterObjectTransferWriteInput
     ): Promise<void> {
-        const claims = this.#resolveClaims(teamId, token, 'write');
+        const claims = await this.#resolveClaims(teamId, token, 'write');
         const contentLength = this.#requireContentLength(input.contentLength);
 
         if (claims.contentLength !== undefined && claims.contentLength !== contentLength) {
@@ -55,7 +55,7 @@ class ClusterObjectTransferService {
         teamId: string | undefined,
         token: string | undefined
     ): Promise<TeamClusterObjectGatewayHeadResponse> {
-        const claims = this.#resolveClaims(teamId, token, 'read');
+        const claims = await this.#resolveClaims(teamId, token, 'read');
         return objectGatewayClient.head(
             claims.ownerClusterId,
             claims.bucket,
@@ -68,7 +68,7 @@ class ClusterObjectTransferService {
         token: string | undefined,
         options: ClusterObjectTransferReadOptions = {}
     ): Promise<TeamClusterObjectGatewayStreamResponse> {
-        const claims = this.#resolveClaims(teamId, token, 'read');
+        const claims = await this.#resolveClaims(teamId, token, 'read');
         return objectGatewayClient.getStream(
             claims.ownerClusterId,
             claims.bucket,
@@ -80,12 +80,12 @@ class ClusterObjectTransferService {
         );
     }
 
-    #resolveClaims(
+    async #resolveClaims(
         teamId: string | undefined,
         token: string | undefined,
         operation: ClusterObjectOperation
-    ): ClusterObjectAccessClaims {
-        const claims = token ? clusterObjectSignedUrlService.verify(token) : null;
+    ): Promise<ClusterObjectAccessClaims> {
+        const claims = token ? await clusterObjectSignedUrlService.verify(token) : null;
 
         if (!claims || claims.operation !== operation || claims.teamId !== teamId) {
             throw ApplicationError.unauthorized(

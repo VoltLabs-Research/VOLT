@@ -131,7 +131,7 @@ class TrajectoryUploadSessionService {
                 id: uploadSession.id,
                 chunkSize: UPLOAD_CHUNK_SIZE,
                 expiresAt: expiresAt.toISOString(),
-                files: signUploadFiles({
+                files: await signUploadFiles({
                     teamId,
                     userId,
                     storageClusterId,

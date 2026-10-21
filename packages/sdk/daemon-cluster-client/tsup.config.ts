@@ -7,6 +7,6 @@ export default defineConfig({
     splitting: false,
     sourcemap: true,
     clean: true,
-    external: ['socket.io-client'],
+    external: ['socket.io-client', 'jose'],
     treeshake: true
 });

@@ -14,7 +14,6 @@ import type { DaemonConfig } from '@core/config/daemon';
 import ApplicationError from '@shared/errors/ApplicationError';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { verifyTeamClusterDirectAccessToken } from '@shared/http/team-cluster-direct-access-token';
 import { parseRangeHeader, type ObjectByteRange } from '@shared/http/object-gateway-range';
 import { writeJson, writeRequestFailure } from '@shared/http/object-gateway-response';
 import {
@@ -28,6 +27,7 @@ import {
     TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER,
     TEAM_CLUSTER_SERVICE_EXPOSURE,
+    verifyTeamClusterDirectAccessToken,
     type TeamClusterServiceExposure
 } from '@voltstack/daemon-cluster-client';
 
@@ -138,12 +138,7 @@ export class ObjectGatewayServer {
     private configureRoutes(): void {
         this.app.disable('x-powered-by');
         this.app.use((request, _response, next) => {
-            try {
-                this.authorizeRequest(request);
-                next();
-            } catch (error) {
-                next(error);
-            }
+            this.authorizeRequest(request).then(() => next(), next);
         });
 
         this.app.get(OBJECT_COLLECTION_ROUTE, (request, response, next) => {
@@ -385,7 +380,7 @@ export class ObjectGatewayServer {
         }
     }
 
-    private authorizeRequest(request: Request): void {
+    private async authorizeRequest(request: Request): Promise<void> {
         const token = request.get(TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER);
         if (!token) {
             throw new ApplicationError(ErrorCodes.OBJECT_GATEWAY_DIRECT_ACCESS_TOKEN_REQUIRED, 'Direct access token is required', 401);
@@ -393,7 +388,7 @@ export class ObjectGatewayServer {
 
         const verifyDirectAccessToken = this.security.verifyDirectAccessToken;
         const claims: ObjectGatewayDirectAccessClaims | null = verifyDirectAccessToken
-            ? verifyDirectAccessToken(token)
+            ? await verifyDirectAccessToken(token)
             : null;
 
         if (
@@ -411,6 +406,6 @@ export class ObjectGatewayServer {
 export const getObjectGatewayServer = singleton((): ObjectGatewayServer => {
     const config = getConfig();
     return new ObjectGatewayServer(config, getFilesystemObjectStore(), {
-        verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(config.daemonPassword, token)
+        verifyDirectAccessToken: (token) => verifyTeamClusterDirectAccessToken(token, config.daemonPassword)
     });
 });
