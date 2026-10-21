@@ -1,4 +1,5 @@
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import { BookOpen, Braces, PlugZap } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
@@ -30,11 +31,11 @@ const GlobalContextMenu = ({ children }: GlobalContextMenuProps) => {
 
     const menuOptions = useMemo<MenuOption[]>(() => {
         return [
-            {
+            ...(localStackMode.isEnabled() ? [] : [{
                 label: 'Connect new cluster',
                 icon: PlugZap,
                 onClick: () => navigate('/onboarding/cluster/setup')
-            },
+            }]),
             {
                 label: 'Read the docs',
                 icon: BookOpen,
