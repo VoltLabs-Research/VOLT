@@ -77,7 +77,7 @@ const run = async (): Promise<void> => {
             },
             argv: [],
             cwd: '/app/server',
-            fsDirectory: 'volt-smoke-server-fs',
+            fs: { directory: 'volt-smoke-server-fs' },
             sqliteDirectory: '.volt-smoke-server-sqlite'
         }
     });

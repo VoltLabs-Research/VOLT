@@ -4,6 +4,10 @@
 import { Readable, Writable } from 'stream';
 import pathModule from 'path';
 import { callFs } from './fs/client';
+import { errnoOf } from './os';
+import { constants } from './fs/constants';
+
+export { constants };
 
 interface EntryMetadata {
     kind: 'file' | 'directory';
@@ -13,13 +17,6 @@ interface EntryMetadata {
     mode: number;
 }
 
-export const constants = {
-    F_OK: 0, R_OK: 4, W_OK: 2, X_OK: 1,
-    O_RDONLY: 0, O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_EXCL: 128, O_NOCTTY: 256, O_TRUNC: 512, O_APPEND: 1024,
-    O_DIRECTORY: 65536, O_NOFOLLOW: 131072, O_SYNC: 1052672, O_DSYNC: 4096,
-    S_IFMT: 0o170000, S_IFREG: 0o100000, S_IFDIR: 0o040000, S_IFLNK: 0o120000,
-    COPYFILE_EXCL: 1, COPYFILE_FICLONE: 2, COPYFILE_FICLONE_FORCE: 4, UV_FS_O_FILEMAP: 0
-};
 
 const normalize = (target: unknown): string => {
     const value = target instanceof URL ? decodeURIComponent(target.pathname) : Buffer.isBuffer(target) ? target.toString() : String(target);
@@ -264,6 +261,26 @@ export const writeSync = (fd: number, data: Uint8Array | string, offsetOrPositio
     return callFs('write', [fd, position ?? null], data.subarray(offset, offset + length)).value as number;
 };
 
+// Vectored I/O is one request for all the buffers, as writev(2)/readv(2) are one system call.
+export const writevSync = (fd: number, buffers: readonly Uint8Array[], position?: number | null): number => (
+    callFs('write', [fd, position ?? null], Buffer.concat(buffers)).value as number
+);
+
+export const readvSync = (fd: number, buffers: readonly Uint8Array[], position?: number | null): number => {
+    const total = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+    const { body } = callFs('read', [fd, total, position ?? null]);
+    let offset = 0;
+    for(const buffer of buffers){
+        if(offset >= body.byteLength){
+            break;
+        }
+        const chunk = body.subarray(offset, offset + buffer.byteLength);
+        buffer.set(chunk);
+        offset += chunk.byteLength;
+    }
+    return body.byteLength;
+};
+
 export const fstatSync = (fd: number): Stats => new Stats(callFs('fstat', [fd]).value as EntryMetadata);
 
 export const ftruncateSync = (fd: number, length = 0): void => {
@@ -312,6 +329,12 @@ export const chmodSync = (target: unknown, mode: number | string): void => {
 
 export const chownSync = (): void => {};
 
+// Permissions and owners are kept per path; a descriptor's are its file's, which OPFS does not
+// track through descriptors.
+export const fchmodSync = (): void => {};
+
+export const fchownSync = chownSync;
+
 let temporaryCounter = 0;
 
 export const mkdtempSync = (prefix: string): string => {
@@ -326,11 +349,11 @@ export const mkdtempSync = (prefix: string): string => {
 };
 
 export const readlinkSync = (target: unknown): never => {
-    throw Object.assign(new Error(`EINVAL: invalid argument, readlink '${normalize(target)}'`), { code: 'EINVAL', syscall: 'readlink', errno: -22 });
+    throw Object.assign(new Error(`EINVAL: invalid argument, readlink '${normalize(target)}'`), { code: 'EINVAL', syscall: 'readlink', errno: errnoOf('EINVAL') });
 };
 
 export const symlinkSync = (): never => {
-    throw Object.assign(new Error('EPERM: symbolic links are not supported on OPFS'), { code: 'EPERM', syscall: 'symlink', errno: -1 });
+    throw Object.assign(new Error('EPERM: symbolic links are not supported on OPFS'), { code: 'EPERM', syscall: 'symlink', errno: errnoOf('EPERM') });
 };
 
 export const linkSync = symlinkSync;
@@ -381,6 +404,14 @@ class FileHandle {
 
     write = deferred((data: Uint8Array | string, offsetOrPosition?: number | null, lengthOrEncoding?: number | BufferEncoding, position?: number | null) => (
         { bytesWritten: writeSync(this.fd, data, offsetOrPosition, lengthOrEncoding, position), buffer: data }
+    ));
+
+    readv = deferred((buffers: Uint8Array[], position?: number | null) => (
+        { bytesRead: readvSync(this.fd, buffers, position), buffers }
+    ));
+
+    writev = deferred((buffers: Uint8Array[], position?: number | null) => (
+        { bytesWritten: writevSync(this.fd, buffers, position), buffers }
     ));
 
     readFile = deferred((options?: EncodingOption) => readFileSync(this.fd, options));
@@ -666,6 +697,12 @@ export const read = withCallback((fd: number, buffer: Uint8Array, offset: number
 export const write = withCallback((fd: number, data: Uint8Array | string, offsetOrPosition?: number | null, lengthOrEncoding?: number | BufferEncoding, position?: number | null) => (
     [writeSync(fd, data, offsetOrPosition, lengthOrEncoding, position), data]
 ), true);
+export const writev = withCallback((fd: number, buffers: readonly Uint8Array[], position?: number | null) => (
+    [writevSync(fd, buffers, position), buffers]
+), true);
+export const readv = withCallback((fd: number, buffers: readonly Uint8Array[], position?: number | null) => (
+    [readvSync(fd, buffers, position), buffers]
+), true);
 export const exists = (target: unknown, callback: (exists: boolean) => void): void => {
     queueMicrotask(() => callback(existsSync(target)));
 };
@@ -679,12 +716,12 @@ export const unwatchFile = (): void => {};
 const fs = {
     constants, promises, Stats, Dirent, ReadStream, WriteStream,
     statSync, lstatSync, existsSync, accessSync, realpathSync, readdirSync, mkdirSync, rmSync, rmdirSync,
-    unlinkSync, renameSync, copyFileSync, cpSync, openSync, closeSync, readSync, writeSync, fstatSync,
+    unlinkSync, renameSync, copyFileSync, cpSync, openSync, closeSync, readSync, writeSync, readvSync, writevSync, fstatSync,
     ftruncateSync, truncateSync, fsyncSync, fdatasyncSync, readFileSync, writeFileSync, appendFileSync,
-    utimesSync, chmodSync, chownSync, mkdtempSync, readlinkSync, symlinkSync, linkSync,
+    utimesSync, chmodSync, chownSync, fchmodSync, fchownSync, mkdtempSync, readlinkSync, symlinkSync, linkSync,
     access, stat, lstat, realpath, readdir, mkdir, mkdtemp, readFile, writeFile, appendFile, rm, rmdir,
     unlink, rename, copyFile, cp, truncate, utimes, futimes, chmod, fchmod, chown, fchown, lchown, symlink,
-    link, readlink, open, close, fstat, ftruncate, fsync, fdatasync, read, write, exists,
+    link, readlink, open, close, fstat, ftruncate, fsync, fdatasync, read, write, readv, writev, exists,
     createReadStream, createWriteStream, watch, watchFile, unwatchFile,
     F_OK: constants.F_OK, R_OK: constants.R_OK, W_OK: constants.W_OK, X_OK: constants.X_OK
 };

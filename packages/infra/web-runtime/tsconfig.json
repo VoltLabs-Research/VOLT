@@ -10,7 +10,10 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "esModuleInterop": true,
-    "allowJs": false
+    "allowJs": false,
+    "paths": {
+      "@duckdb/duckdb-wasm/dist/duckdb-node-blocking": ["./node_modules/@duckdb/duckdb-wasm/dist/duckdb-node-blocking.d.ts"]
+    }
   },
   "include": ["src", "smoke"]
 }

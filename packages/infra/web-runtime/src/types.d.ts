@@ -22,3 +22,15 @@ interface FileSystemSyncAccessHandle {
 interface FileSystemFileHandle {
     createSyncAccessHandle(): Promise<FileSystemSyncAccessHandle>;
 }
+declare module 'path-browserify' {
+    import path from 'path';
+    export default path.posix;
+}
+declare module 'browserify-zlib' {
+    import zlib from 'zlib';
+    export default zlib;
+}
+declare module 'browserify-zlib/lib/binding' {
+    const binding: Record<string, unknown>;
+    export default binding;
+}

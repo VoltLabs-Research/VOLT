@@ -15,9 +15,12 @@ const TIMEOUT_MS = Number(process.env.SMOKE_TIMEOUT_MS ?? 120_000);
 
 const CONTENT_TYPES = { '.js': 'text/javascript', '.html': 'text/html', '.wasm': 'application/wasm', '.map': 'application/json' };
 
+// `node scripts/smoke.mjs stack` runs smoke/stack.ts; the default is smoke/page.ts.
+const smokePage = process.argv[2] ?? 'page';
+
 await esbuild.build({
-    entryPoints: [path.join(packageDir, 'smoke', 'page.ts')],
-    outfile: path.join(distDir, 'smoke', 'page.js'),
+    entryPoints: [path.join(packageDir, 'smoke', `${smokePage}.ts`)],
+    outfile: path.join(distDir, 'smoke', `${smokePage}.js`),
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -34,7 +37,7 @@ const server = http.createServer((request, response) => {
     const headers = { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'require-corp' };
     if(!file){
         response.writeHead(200, { ...headers, 'content-type': 'text/html' });
-        response.end('<!doctype html><script type="module" src="/smoke/page.js"></script>');
+        response.end(`<!doctype html><script type="module" src="/smoke/${smokePage}.js"></script>`);
         return;
     }
     if(!file.startsWith(distDir) || !existsSync(file)){
