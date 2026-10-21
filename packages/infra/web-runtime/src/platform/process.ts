@@ -4,41 +4,62 @@ import { EventEmitter } from 'events';
 import { constants as fsConstants } from './fs/constants';
 import { constants as osConstants } from './os';
 
-interface ProcessStream {
-    fd: number;
-    isTTY: false;
-    columns: number;
-    write(chunk: string | Uint8Array, encodingOrCallback?: unknown, callback?: () => void): boolean;
-    on(): ProcessStream;
-    once(): ProcessStream;
-    end(): void;
-}
-
 const decoder = new TextDecoder();
+const encoder = new TextEncoder();
 
-const createStream = (fd: number, sink: (line: string) => void): ProcessStream => {
-    let pending = '';
-    const stream: ProcessStream = {
-        fd,
-        isTTY: false,
-        columns: 120,
-        write(chunk, encodingOrCallback, callback){
-            pending += typeof chunk === 'string' ? chunk : decoder.decode(chunk);
-            const lines = pending.split('\n');
-            pending = lines.pop() ?? '';
-            for(const line of lines){
-                sink(line);
-            }
-            const done = typeof encodingOrCallback === 'function' ? encodingOrCallback as () => void : callback;
-            done?.();
-            return true;
-        },
-        on: () => stream,
-        once: () => stream,
-        end: () => {}
-    };
-    return stream;
+const bytesOf = (chunk: string | Uint8Array, encoding: unknown): Uint8Array => {
+    if(typeof chunk !== 'string'){
+        return chunk;
+    }
+    const NodeBuffer = (globalThis as { Buffer?: { from(value: string, encoding?: string): Uint8Array } }).Buffer;
+    return NodeBuffer && typeof encoding === 'string' ? NodeBuffer.from(chunk, encoding) : encoder.encode(chunk);
 };
+
+// process.stdout/stderr: the console, line by line, until a parent takes the bytes (redirect()).
+// An EventEmitter rather than a stream.Writable: `stream` itself reads this module's `process`.
+class OutputStream extends EventEmitter {
+    readonly isTTY = false;
+    readonly writable = true;
+    columns = 120;
+    private pending = '';
+    private sink: ((chunk: Uint8Array) => void) | null = null;
+
+    constructor(readonly fd: number, private readonly log: (line: string) => void){
+        super();
+    }
+
+    redirect(sink: (chunk: Uint8Array) => void): void {
+        this.sink = sink;
+    }
+
+    write(chunk: string | Uint8Array, encodingOrCallback?: unknown, callback?: () => void): boolean {
+        const bytes = bytesOf(chunk, encodingOrCallback);
+        if(this.sink){
+            this.sink(bytes);
+        }else{
+            this.pending += decoder.decode(bytes, { stream: true });
+            const lines = this.pending.split('\n');
+            this.pending = lines.pop() ?? '';
+            for(const line of lines){
+                this.log(line);
+            }
+        }
+        const done = typeof encodingOrCallback === 'function' ? encodingOrCallback as () => void : callback;
+        done?.();
+        return true;
+    }
+
+    end(chunk?: string | Uint8Array): this {
+        if(chunk){
+            this.write(chunk);
+        }
+        this.emit('finish');
+        return this;
+    }
+
+    cork(): void {}
+    uncork(): void {}
+}
 
 const startedAt = performance.now();
 
@@ -72,27 +93,23 @@ class BrowserProcess extends EventEmitter {
     pid = 1;
     ppid = 0;
     exitCode: number | undefined = undefined;
-    stdout = createStream(1, (line) => console.log(line));
-    stderr = createStream(2, (line) => console.error(line));
-    stdin = createStream(0, () => {});
+    stdout = new OutputStream(1, (line) => console.log(line));
+    stderr = new OutputStream(2, (line) => console.error(line));
+    // A stream.Readable the worker entry installs (src/workers/stdin.ts), which `stream` needs first.
+    stdin: unknown = null;
     hrtime = hrtime;
     browser = true;
     private workingDirectory = '/app';
     onExit: (code: number) => void = () => {};
+    private exiting = false;
     // Present only in a spawned process, as in Node, where process.send exists only with an IPC channel.
     send?: (message: unknown, ...rest: unknown[]) => boolean;
     connected = false;
 
     // A spawned process writes its output to the parent's pipes instead of the console.
-    redirectOutput(write: (stream: 'stdout' | 'stderr', text: string) => void): void {
-        for(const name of ['stdout', 'stderr'] as const){
-            this[name].write = (chunk, encodingOrCallback, callback) => {
-                write(name, typeof chunk === 'string' ? chunk : decoder.decode(chunk));
-                const done = typeof encodingOrCallback === 'function' ? encodingOrCallback as () => void : callback;
-                done?.();
-                return true;
-            };
-        }
+    redirectOutput(write: (stream: 'stdout' | 'stderr', chunk: Uint8Array) => void): void {
+        this.stdout.redirect((chunk) => write('stdout', chunk));
+        this.stderr.redirect((chunk) => write('stderr', chunk));
     }
 
     disconnect(): void {
@@ -154,9 +171,15 @@ class BrowserProcess extends EventEmitter {
         return true;
     }
 
+    // Ends the program; a second call while it unwinds (an 'exit' listener, a runtime exiting again)
+    // only unwinds further, as the process is already gone in Node.
     exit(code = this.exitCode ?? 0): never {
-        this.emit('exit', code);
-        this.onExit(code);
+        if(!this.exiting){
+            this.exiting = true;
+            this.exitCode = code;
+            this.emit('exit', code);
+            this.onExit(code);
+        }
         throw Object.assign(new Error(`process.exit(${code})`), { name: 'ProcessExit', code });
     }
 

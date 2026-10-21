@@ -9,7 +9,9 @@ import { fetch } from '../platform/fetch';
 import { WebSocketConstructor } from '../platform/ws';
 import { attachFsChannel, startFsService } from '../platform/fs/client';
 import { initSqlite } from '../platform/better-sqlite3';
-import { registerNodeProgram } from '../platform/child-process';
+import { registerNodeProgram, registerNodeRunner } from '../platform/child-process';
+import { attachStdin } from '../platform/stdio';
+import { ownBytes } from '../platform/bytes';
 import { deliverToParentPort, enterThread } from '../platform/worker-threads';
 import { existsSync, mkdirSync, writeFileSync } from '../platform/fs';
 import path from 'path';
@@ -34,7 +36,13 @@ const scope = globalThis as unknown as BackendWorkerScope;
 // own `postMessage` global (Emscripten's pthreads point it at worker_threads' parentPort).
 const parent: MessageTarget = { postMessage: scope.postMessage.bind(scope) };
 
-const send = (message: BackendWorkerMessage): void => parent.postMessage(message);
+const send = (message: BackendWorkerMessage, transfer: Transferable[] = []): void => parent.postMessage(message, transfer);
+
+// Output goes to the parent as bytes of its own, transferred.
+const sendOutput = (stream: 'stdout' | 'stderr', chunk: Uint8Array): void => {
+    const bytes = ownBytes(chunk);
+    send({ kind: 'output', stream, chunk: bytes }, [bytes.buffer]);
+};
 
 // Node realms have no `onmessage` event handler. A program assigning one as a plain global (as
 // Emscripten's pthreads do, reading parentPort themselves) must not also receive this protocol.
@@ -45,7 +53,7 @@ let isThread = false;
 const isProcessExit = (value: unknown): boolean => (value as { name?: string } | undefined)?.name === 'ProcessExit';
 
 const attachToParent = ({ serialization }: NonNullable<BackendBootMessage['child']>): void => {
-    browserProcess.redirectOutput((stream, text) => send({ kind: 'output', stream, text }));
+    browserProcess.redirectOutput(sendOutput);
     browserProcess.connected = true;
     browserProcess.send = (message, ...rest) => {
         const callback = rest.find((arg): arg is (error: Error | null) => void => typeof arg === 'function');
@@ -57,13 +65,15 @@ const attachToParent = ({ serialization }: NonNullable<BackendBootMessage['child
 
 const boot = async (message: BackendBootMessage): Promise<void> => {
     Object.assign(browserProcess.env, message.env);
-    browserProcess.argv = ['/usr/local/bin/node', VOLT_PROGRAM_PATH, ...message.argv];
+    browserProcess.argv = ['/usr/local/bin/node', message.script ?? VOLT_PROGRAM_PATH, ...message.argv];
     browserProcess.chdir(message.cwd);
+    browserProcess.stdin = attachStdin(message.child?.stdin);
     browserProcess.onExit = (code) => send({ kind: 'exit', code });
     Object.assign(globalThis, { fetch, WebSocket: WebSocketConstructor });
     for(const [scriptPath, workerFile] of Object.entries(VOLT_NODE_PROGRAMS)){
         registerNodeProgram(scriptPath, new URL(workerFile, import.meta.url));
     }
+    registerNodeRunner(new URL('./node-runner.worker.js', import.meta.url));
 
     if('directory' in message.fs){
         await startFsService(new URL('./fs.worker.js', import.meta.url), message.fs.directory);
@@ -89,7 +99,7 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
     }
     if(message.thread){
         isThread = true;
-        browserProcess.redirectOutput((stream, text) => send({ kind: 'output', stream, text }));
+        browserProcess.redirectOutput(sendOutput);
         enterThread({ ...message.thread, port: parent });
     }
 

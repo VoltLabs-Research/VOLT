@@ -1,5 +1,6 @@
 // The fetch() backend workers see: requests to a loopback host are served over the loopback network,
 // everything else goes to the network.
+import { ownBytes } from './bytes';
 import { connectLoopback, isLoopbackUrl } from './loopback';
 import type { LoopbackChannelMessage, LoopbackConnector } from './loopback';
 
@@ -13,7 +14,7 @@ const sendBody = async (channel: MessagePort, body: ReadableStream<Uint8Array> |
             if(done){
                 break;
             }
-            const chunk = value.slice();
+            const chunk = ownBytes(value);
             channel.postMessage({ type: 'data', chunk } satisfies LoopbackChannelMessage, [chunk.buffer]);
         }
     }

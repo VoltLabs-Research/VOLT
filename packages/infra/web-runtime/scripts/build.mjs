@@ -225,6 +225,11 @@ await esbuild.build({
     sourcemap: true,
     logLevel: 'warning'
 });
+// The worker that runs any Node program of a backend's file system (src/workers/node-runner.ts): the
+// platform alone, which every backend spawns its programs with.
+const RUNNER = { name: 'node-runner', root: packageDir, mountPoint: '/usr/local/lib/node-runner', entry: 'src/workers/node-runner.ts', programs: [], addons: [] };
+await buildProgram(RUNNER, { source: path.join(packageDir, RUNNER.entry), installed: path.posix.join(RUNNER.mountPoint, RUNNER.entry), workerFile: 'node-runner.worker.js' });
+
 for(const backend of selected){
     backend.addons = await nativeAddonsOf(backend);
     for(const program of programsOf(backend)){
