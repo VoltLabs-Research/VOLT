@@ -31,8 +31,27 @@ export {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER,
-    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_BUCKET
 } from './contracts/objectGateway';
+export type {
+    TeamClusterObjectStoreBucket,
+    TeamClusterObjectGatewayJsonListEntry,
+    TeamClusterObjectGatewayJsonListResponse,
+    TeamClusterObjectGatewayJsonError,
+    TeamClusterDirectAccessTokenClaims
+} from './contracts/objectGateway';
+
+export { TEAM_CLUSTER_SERVICE_EXPOSURE } from './contracts/exposure';
+export type {
+    TeamClusterServiceExposure,
+    TeamClusterServiceExposureAccessMode,
+    TeamClusterServiceExposureStatus,
+    TeamClusterServiceExposureSourceKind
+} from './contracts/exposure';
+
+export { encodeStreamChunk, decodeStreamChunk, toBytes } from './contracts/binaryEnvelope';
+export type { BinaryChunk } from './contracts/binaryEnvelope';
 export type {
     TeamClusterDaemonResponseType,
     TeamClusterDaemonSessionKind,
@@ -78,6 +97,11 @@ export type {
     TeamClusterDaemonQueueScopeLimits,
     TeamClusterDaemonQueueConcurrency,
     TeamClusterDaemonHostCapabilities,
+    TeamClusterDaemonRuntimeConfig,
+    TeamClusterDaemonRoleApplyPayload,
+    TeamClusterDaemonRoleApplyResult,
+    TeamClusterDaemonQueueConcurrencyApplyPayload,
+    TeamClusterDaemonQueueConcurrencyApplyResult,
     TeamClusterDaemonMemoryMetrics,
     TeamClusterDaemonDiskMetrics,
     TeamClusterDaemonDiskOperationMetrics,
@@ -86,6 +110,11 @@ export type {
     TeamClusterDaemonHeartbeatCommand,
     TeamClusterDaemonLifecycleCommand,
     TeamClusterDaemonDeleteCompletedCommand
+} from './contracts/runtime';
+export {
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
+    createDefaultTeamClusterRuntimeRoleConfig
 } from './contracts/runtime';
 
 export type {

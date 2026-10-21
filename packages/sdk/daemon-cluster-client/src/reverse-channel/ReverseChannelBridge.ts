@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { Socket } from 'socket.io-client';
-import { DaemonSocketEvent, REVERSE_CHANNEL } from '../contracts/index';
+import { DaemonSocketEvent } from '../contracts/events';
+import { REVERSE_CHANNEL } from '../contracts/reverseChannel';
 import { DaemonClientError } from '../errors/DaemonClientError';
 import type { ReverseChannelHandler } from './ReverseChannelHandler';
 import type { CommandResult } from './types';

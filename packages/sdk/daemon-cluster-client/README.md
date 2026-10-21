@@ -50,6 +50,14 @@ resolves with the server's response data. A single response dispatcher routes
 replies by `requestId`, so many concurrent commands do not stack per-call socket
 listeners. Pending commands are rejected on disconnect.
 
+## Protocol types
+
+The package also exports the transport-level protocol both sides of the connection share:
+socket event and channel names, reverse-channel message types, the binary stream-chunk codec
+(`encodeStreamChunk`, `decodeStreamChunk`, `toBytes`), service exposures, the object gateway's
+headers, buckets and JSON bodies, and the runtime configuration (role, queue concurrency, queue
+scope limits) with its defaults and apply payloads.
+
 ## Errors
 
 All failures throw `DaemonClientError` with a discriminable `code`
