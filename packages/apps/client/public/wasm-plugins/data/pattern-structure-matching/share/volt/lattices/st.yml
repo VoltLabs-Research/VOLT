@@ -1,0 +1,25 @@
+# -----------------------------------------------------------------------------
+# Simple Tetragonal Lattice
+# -----------------------------------------------------------------------------
+#
+# For additional examples, detailed explanations, and the full specification,
+# please refer to the official documentation:
+#
+#   https://docs.voltcloud.dev
+#   https://github.com/voltlabs-research/
+#
+# -----------------------------------------------------------------------------
+
+name: st
+coordination_number: 10
+
+cell:
+  - [1.0, 0.0, 0.0]
+  - [0.0, 1.0, 0.0]
+  - [0.0, 0.0, 1.2]
+
+coordinate_mode: fractional
+
+basis:
+  - species: 1
+    position: [0.0, 0.0, 0.0]

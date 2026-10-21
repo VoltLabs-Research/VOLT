@@ -1,0 +1,154 @@
+{
+  "plugins": [
+    {
+      "binary": "ackland-jones",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "atomic-strain",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "chill-plus",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "cluster-analysis",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "common-neighbor-analysis",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "coordination-analysis",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "displacement-analysis",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "elastic-strain",
+      "files": [
+        "share/volt/lattices/a7.yml",
+        "share/volt/lattices/a7_bi.yml",
+        "share/volt/lattices/bcc.yml",
+        "share/volt/lattices/bct.yml",
+        "share/volt/lattices/cubic_diamond.yml",
+        "share/volt/lattices/fcc.yml",
+        "share/volt/lattices/fct.yml",
+        "share/volt/lattices/hcp.yml",
+        "share/volt/lattices/hex_diamond.yml",
+        "share/volt/lattices/sc.yml",
+        "share/volt/lattices/st.yml"
+      ],
+      "args": [
+        "--lattice_dir",
+        "/plugin/share/volt/lattices"
+      ]
+    },
+    {
+      "binary": "grain-segmentation",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "identify-diamond",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "ilda",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "opendxa",
+      "files": [
+        "share/volt/lattices/a7.yml",
+        "share/volt/lattices/a7_bi.yml",
+        "share/volt/lattices/bcc.yml",
+        "share/volt/lattices/bct.yml",
+        "share/volt/lattices/cubic_diamond.yml",
+        "share/volt/lattices/fcc.yml",
+        "share/volt/lattices/fct.yml",
+        "share/volt/lattices/hcp.yml",
+        "share/volt/lattices/hex_diamond.yml",
+        "share/volt/lattices/sc.yml",
+        "share/volt/lattices/st.yml"
+      ],
+      "args": [
+        "--lattice_dir",
+        "/plugin/share/volt/lattices"
+      ]
+    },
+    {
+      "binary": "pattern-structure-matching",
+      "files": [
+        "share/volt/lattices/9R.yml",
+        "share/volt/lattices/L12.yml",
+        "share/volt/lattices/a7.yml",
+        "share/volt/lattices/bcc.yml",
+        "share/volt/lattices/bct.yml",
+        "share/volt/lattices/cubic_diamond.yml",
+        "share/volt/lattices/fcc.yml",
+        "share/volt/lattices/fct.yml",
+        "share/volt/lattices/hcp.yml",
+        "share/volt/lattices/hex_diamond.yml",
+        "share/volt/lattices/omega.yml",
+        "share/volt/lattices/sc.yml",
+        "share/volt/lattices/st.yml",
+        "share/volt/opendxa_lattices/bcc.yml",
+        "share/volt/opendxa_lattices/bct.yml",
+        "share/volt/opendxa_lattices/cubic_diamond.yml",
+        "share/volt/opendxa_lattices/fcc.yml",
+        "share/volt/opendxa_lattices/fct.yml",
+        "share/volt/opendxa_lattices/hcp.yml",
+        "share/volt/opendxa_lattices/hex_diamond.yml",
+        "share/volt/opendxa_lattices/sc.yml",
+        "share/volt/opendxa_lattices/st.yml"
+      ],
+      "args": [
+        "--lattice_dir",
+        "/plugin/share/volt/lattices",
+        "--reference_lattice_dir",
+        "/plugin/share/volt/opendxa_lattices"
+      ]
+    },
+    {
+      "binary": "polyhedral-template-matching",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "reference-crystal-matching",
+      "files": [
+        "share/volt/structures/Kyanite.lmp",
+        "share/volt/structures/cementite.yml",
+        "share/volt/structures/cementite_ref.lmp",
+        "share/volt/structures/forsterite.yml",
+        "share/volt/structures/forsterite_ref.lmp",
+        "share/volt/structures/kyanite.yml"
+      ],
+      "args": []
+    },
+    {
+      "binary": "voronoi-analysis",
+      "files": [],
+      "args": []
+    },
+    {
+      "binary": "wigner-seitz-defect-analysis",
+      "files": [],
+      "args": []
+    }
+  ]
+}
