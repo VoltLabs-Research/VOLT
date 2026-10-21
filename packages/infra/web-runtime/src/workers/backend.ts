@@ -25,6 +25,7 @@ interface BackendWorkerScope extends MessageTarget {
     addEventListener(type: 'message', listener: (event: MessageEvent<BackendBootMessage | LoopbackConnectMessage | ParentToChildMessage>) => void): void;
     addEventListener(type: 'error', listener: (event: ErrorEvent) => void): void;
     addEventListener(type: 'unhandledrejection', listener: (event: PromiseRejectionEvent) => void): void;
+    close(): void;
 }
 
 const scope = globalThis as unknown as BackendWorkerScope;
@@ -92,24 +93,44 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
         enterThread({ ...message.thread, port: parent });
     }
 
+    // As in Node: an error the program handles goes no further, and one it does not handle ends the
+    // process. Neither reaches the page as an error of its own.
     scope.addEventListener('error', (event) => {
+        event.preventDefault();
         if(isProcessExit(event.error)){
-            event.preventDefault();
             return;
         }
-        browserProcess.emit('uncaughtException', event.error);
+        if(browserProcess.listenerCount('uncaughtException') > 0){
+            browserProcess.emit('uncaughtException', event.error, 'uncaughtException');
+            return;
+        }
+        crash(event.error);
     });
     scope.addEventListener('unhandledrejection', (event) => {
+        event.preventDefault();
         if(isProcessExit(event.reason)){
-            event.preventDefault();
             return;
         }
-        browserProcess.emit('unhandledRejection', event.reason, event.promise);
+        if(browserProcess.listenerCount('unhandledRejection') > 0){
+            browserProcess.emit('unhandledRejection', event.reason, event.promise);
+            return;
+        }
+        if(browserProcess.listenerCount('uncaughtException') > 0){
+            browserProcess.emit('uncaughtException', event.reason, 'unhandledRejection');
+            return;
+        }
+        crash(event.reason);
     });
 
     attachLoopbackParent(parent);
     send({ kind: 'booted' });
     await import('volt-backend-entry');
+};
+
+const crash = (error: unknown): void => {
+    browserProcess.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+    send({ kind: 'exit', code: 1 });
+    scope.close();
 };
 
 const SIGNAL_NUMBERS: Record<string, number> = { SIGHUP: 1, SIGINT: 2, SIGTERM: 15 };
