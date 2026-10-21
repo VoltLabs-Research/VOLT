@@ -4,7 +4,7 @@
 // which hosts the backends' workers. Responses from the network get the COOP/COEP headers that make
 // the page cross-origin isolated, which the backends' SharedArrayBuffers need, wherever it is hosted.
 import { connectLoopbackThrough, isLoopbackHost, type MessageTarget } from './platform/loopback';
-import { loopbackFetch } from './platform/fetch';
+import { bodyLength, loopbackFetch } from './platform/fetch';
 import { DEFAULT_SERVER_PORT, serverOriginFor } from '@volt/local-stack/defaults';
 
 // The parts of ServiceWorkerGlobalScope used here (the WebWorker lib cannot be combined with DOM).
@@ -63,16 +63,17 @@ const relay = async (event: FetchEvent, target: URL): Promise<Response> => {
         return new Response('No page of this origin is running the local stack', { status: 503 });
     }
     const request = event.request;
-    const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
+    // A page's request bodies have a length, which the browser keeps from the worker's headers; the
+    // body read whole has it again (servers that store what they receive require it).
+    const body = request.method !== 'GET' && request.method !== 'HEAD' ? await request.arrayBuffer() : undefined;
     const forwarded = new Request(target, {
         method: request.method,
         headers: request.headers,
-        body: hasBody ? (request.body ?? await request.arrayBuffer()) : undefined,
+        body,
         redirect: 'manual',
-        signal: request.signal,
-        duplex: 'half'
-    } as RequestInit);
-    return loopbackFetch(forwarded, connectLoopbackThrough(host));
+        signal: request.signal
+    });
+    return loopbackFetch(forwarded, connectLoopbackThrough(host), bodyLength(body));
 };
 
 scope.addEventListener('install', () => {
