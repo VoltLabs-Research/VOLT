@@ -11,6 +11,7 @@ import { attachFsChannel, startFsService } from '../platform/fs/client';
 import { initSqlite } from '../platform/better-sqlite3';
 import { registerNodeProgram, registerNodeRunner } from '../platform/child-process';
 import { attachStdin } from '../platform/stdio';
+import { installGlobalPackage } from '../platform/global-packages';
 import { ownBytes } from '../platform/bytes';
 import { deliverToParentPort, enterThread } from '../platform/worker-threads';
 import { existsSync, mkdirSync, writeFileSync } from '../platform/fs';
@@ -90,6 +91,9 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
             mkdirSync(path.dirname(scriptPath), { recursive: true });
             writeFileSync(scriptPath, `// Runs as ${VOLT_NODE_PROGRAMS[scriptPath]}, provided by @volt/web-runtime.\n`);
         }
+    }
+    for(const name of message.globalPackages ?? []){
+        await installGlobalPackage(name);
     }
     if(message.sqliteDirectory){
         await initSqlite(message.sqliteDirectory);

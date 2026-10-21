@@ -5,7 +5,8 @@ import { NODE_RUNTIME, VoidLogger, createDuckDB } from '@duckdb/duckdb-wasm/dist
 import type { DuckDBConnection as WasmConnection, DuckDBBindings } from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import { Table, Type, vectorFromArray, Float32, Float64, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Utf8, Bool } from 'apache-arrow';
 import type { DataType, Vector } from 'apache-arrow';
-import { existsSync, mkdirSync, writeFileSync } from './fs';
+import { installGlobalPackage } from './global-packages';
+import path from 'path';
 
 export enum DuckDBTypeId {
     INVALID = 0, BOOLEAN = 1, TINYINT = 2, SMALLINT = 3, INTEGER = 4, BIGINT = 5, UTINYINT = 6, USMALLINT = 7,
@@ -16,35 +17,15 @@ export enum DuckDBTypeId {
     TIME_NS = 39
 }
 
-// The engine's wasm lives in the file system, where the blocking build reads it from.
-const DUCKDB_WASM_VERSION = '1.32.0';
-const WASM_DIRECTORY = '/app/.volt-runtime';
-const WASM_FILES = {
-    mvp: 'duckdb-mvp.wasm',
-    eh: 'duckdb-eh.wasm'
-} as const;
-
-const installWasm = async (file: string): Promise<string> => {
-    const target = `${WASM_DIRECTORY}/duckdb-${DUCKDB_WASM_VERSION}-${file}`;
-    if(!existsSync(target)){
-        const response = await fetch(new URL(`./${file}`, import.meta.url));
-        if(!response.ok){
-            throw new Error(`duckdb: could not load ${file} (${response.status})`);
-        }
-        mkdirSync(WASM_DIRECTORY, { recursive: true });
-        writeFileSync(target, new Uint8Array(await response.arrayBuffer()));
-    }
-    return target;
-};
-
+// The engine's wasm is read from the file system, where the installed package has it.
 let database: Promise<DuckDBBindings> | null = null;
 
 const openDatabase = (): Promise<DuckDBBindings> => {
     database ??= (async () => {
-        const [mvp, eh] = await Promise.all([installWasm(WASM_FILES.mvp), installWasm(WASM_FILES.eh)]);
+        const directory = await installGlobalPackage('@duckdb/duckdb-wasm');
         const bindings = await createDuckDB({
-            mvp: { mainModule: mvp, mainWorker: '' },
-            eh: { mainModule: eh, mainWorker: '' }
+            mvp: { mainModule: path.join(directory, 'dist', 'duckdb-mvp.wasm'), mainWorker: '' },
+            eh: { mainModule: path.join(directory, 'dist', 'duckdb-eh.wasm'), mainWorker: '' }
         }, new VoidLogger(), NODE_RUNTIME);
         await bindings.instantiate();
         bindings.open({});

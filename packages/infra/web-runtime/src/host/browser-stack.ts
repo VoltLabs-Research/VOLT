@@ -76,7 +76,9 @@ export const startBrowserStack = async (options: BrowserStackOptions): Promise<B
                         argv: [],
                         cwd: '/app/daemon',
                         fs: { directory: `${prefix}-daemon` },
-                        sqliteDirectory: `.${prefix}-daemon-sqlite`
+                        sqliteDirectory: `.${prefix}-daemon-sqlite`,
+                        // The analysis plugins it runs keep their tables in DuckDB.
+                        globalPackages: ['@duckdb/duckdb-wasm']
                     }
                 }).catch((error: Error) => {
                     daemonFailure = error.message;
