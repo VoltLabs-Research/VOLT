@@ -1,0 +1,6 @@
+{
+    "total": 32,
+    "counts": {
+        "no-cross-module-imports": 32
+    }
+}

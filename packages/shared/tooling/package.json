@@ -1,0 +1,22 @@
+{
+  "name": "@volt/tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lint and layering configuration shared by the VOLT backends (server and cluster daemon). Each backend keeps only what differs: its ignores, its kernel modules and its layering debt baseline.",
+  "exports": {
+    "./eslint-backend": "./eslint-backend.mjs",
+    "./depcruise-backend": "./depcruise-backend.cjs"
+  },
+  "bin": {
+    "volt-layering": "./layering.mjs"
+  },
+  "dependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "dependency-cruiser": "^17.4.3",
+    "typescript-eslint": "^8.65.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.39.0",
+    "typescript": "^5.9.0"
+  }
+}

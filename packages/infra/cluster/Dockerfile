@@ -64,6 +64,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/infra/cluster/package.json packages/infra/cluster/
 COPY packages/sdk/daemon-cluster-client/package.json packages/sdk/daemon-cluster-client/
 COPY packages/shared/contracts/package.json packages/shared/contracts/
+COPY packages/shared/tooling packages/shared/tooling
 RUN pnpm install --frozen-lockfile --filter cluster-daemon...
 
 COPY packages/sdk/daemon-cluster-client packages/sdk/daemon-cluster-client

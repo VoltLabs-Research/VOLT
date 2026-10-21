@@ -3,7 +3,7 @@ name: Verify
 # The checks that stand in for a test suite.
 #
 # `.agents/testing.md` states this repo deliberately has no tests, and names
-# typecheck + depcruise + lint + the client build as the substitute.
+# typecheck + layering + lint + the client build as the substitute.
 # Until now none of them ran in CI: the other workflows only built and published,
 # so a broken typecheck or a new layering violation reached an image unchallenged.
 #
@@ -57,35 +57,10 @@ jobs:
       - name: Lint
         run: pnpm --filter volt-server lint
 
-      # `no-cross-module-imports` and `no-circular` are `warn` with known debt, so
-      # this fails only on an `error`-severity rule. The debt ratchet below is what
-      # keeps the warnings from growing.
-      - name: Layering rules
-        run: pnpm --filter volt-server depcruise
-
-      - name: Layering debt ratchet
-        working-directory: packages/infra/server
-        env:
-          # Baseline measured on the commit that introduced this workflow. Lower it
-          # when you remove violations; raising it needs a reason in the PR.
-          MAX_VIOLATIONS: 226
-        run: |
-          set -uo pipefail
-          output="$(pnpm run --silent depcruise 2>&1 || true)"
-          count="$(printf '%s' "$output" | sed 's/\x1b\[[0-9;]*m//g' \
-            | grep -oE '^x [0-9]+ dependency violations' | grep -oE '[0-9]+' | head -1)"
-
-          if [ -z "$count" ]; then
-            echo "Could not read the violation count from depcruise output:"
-            printf '%s\n' "$output" | tail -20
-            exit 1
-          fi
-
-          echo "dependency violations: $count (max $MAX_VIOLATIONS)"
-          if [ "$count" -gt "$MAX_VIOLATIONS" ]; then
-            echo "::error::Layering debt grew from $MAX_VIOLATIONS to $count. Route the new edge through @shared/contracts instead of adding to the debt."
-            exit 1
-          fi
+      # Fails on any layering rule error, and on growth of the debt pinned in
+      # depcruise-baseline.json (lower it with `pnpm run layering:update`).
+      - name: Layering
+        run: pnpm --filter volt-server layering
 
       # `tspc` applies typia's transform; the build is what proves it still runs.
       - name: Build
@@ -136,34 +111,10 @@ jobs:
       - name: Lint
         run: pnpm --filter cluster-daemon lint
 
-      # Fails only on an `error`-severity rule; `no-cross-module-imports` and
-      # `no-circular` are `warn` with known debt, which the ratchet below bounds.
-      - name: Layering rules
-        run: pnpm --filter cluster-daemon depcruise
-
-      - name: Layering debt ratchet
-        working-directory: packages/infra/cluster
-        env:
-          # Baseline measured on the commit that introduced this workflow. Lower it
-          # when you remove violations; raising it needs a reason in the PR.
-          MAX_VIOLATIONS: 65
-        run: |
-          set -uo pipefail
-          output="$(pnpm run --silent depcruise 2>&1 || true)"
-          count="$(printf '%s' "$output" | sed 's/\x1b\[[0-9;]*m//g' \
-            | grep -oE '^x [0-9]+ dependency violations' | grep -oE '[0-9]+' | head -1)"
-
-          if [ -z "$count" ]; then
-            echo "Could not read the violation count from depcruise output:"
-            printf '%s\n' "$output" | tail -20
-            exit 1
-          fi
-
-          echo "dependency violations: $count (max $MAX_VIOLATIONS)"
-          if [ "$count" -gt "$MAX_VIOLATIONS" ]; then
-            echo "::error::Layering debt grew from $MAX_VIOLATIONS to $count. Route the new edge through @shared/contracts instead of adding to the debt."
-            exit 1
-          fi
+      # Fails on any layering rule error, and on growth of the debt pinned in
+      # depcruise-baseline.json (lower it with `pnpm run layering:update`).
+      - name: Layering
+        run: pnpm --filter cluster-daemon layering
 
       - name: Build
         run: pnpm --filter cluster-daemon build
