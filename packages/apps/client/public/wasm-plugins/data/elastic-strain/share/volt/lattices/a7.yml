@@ -1,0 +1,23 @@
+# -----------------------------------------------------------------------------
+# A7 Rhombohedral Lattice Reference (Bi/Sb/As family)
+# -----------------------------------------------------------------------------
+#
+# Single-atom Bravais sublattice of the A7 structure: rhombohedral primitive
+# cell with 6 nearest neighbors at rhombohedral angle 57.2 deg, used to feed
+# OpenDXA a coordination-6 ideal graph for crystals like A7 bismuth.
+#
+# Vectors are normalized to the rhombohedral edge a; physical scale (e.g. Bi
+# a = 4.7458 A) is recovered by RCM's metric_rescale.
+# -----------------------------------------------------------------------------
+
+name: a7
+
+coordination_number: 6
+
+neighbor_vectors:
+  - [ 1.000000,  0.000000,  0.000000]
+  - [-1.000000,  0.000000,  0.000000]
+  - [ 0.541218,  0.840882,  0.000000]
+  - [-0.541218, -0.840882,  0.000000]
+  - [ 0.541218,  0.295286,  0.787330]
+  - [-0.541218, -0.295286, -0.787330]

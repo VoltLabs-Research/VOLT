@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------------
+# Face-Centered Cubic Lattice Reference
+# -----------------------------------------------------------------------------
+#
+# For additional examples, detailed explanations, and the full specification,
+# please refer to the official documentation:
+#
+#   https://docs.voltcloud.dev
+#   https://github.com/voltlabs-research/
+#
+# -----------------------------------------------------------------------------
+
+# Unique identifier for the lattice.
+name: fcc
+
+# Number of nearest neighbors per atom.
+coordination_number: 12
+
+# Relative vectors from the central atom to each of its neighbors.
+# These define the ideal local geometry.
+neighbor_vectors:
+  - [0.5, 0.5, 0]
+  - [0, 0.5, 0.5]
+  - [0.5, 0, 0.5]
+  - [-0.5, -0.5, 0]
+  - [0, -0.5, -0.5]
+  - [-0.5, 0, -0.5]
+  - [-0.5, 0.5, 0]
+  - [0, -0.5, 0.5]
+  - [-0.5, 0, 0.5]
+  - [0.5, -0.5, 0]
+  - [0, 0.5, -0.5]
+  - [0.5, 0, -0.5]

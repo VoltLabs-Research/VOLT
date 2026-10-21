@@ -1,0 +1,237 @@
+{
+  "workflow": {
+    "nodes": [
+      {
+        "id": "plugin-metadata",
+        "type": "modifier",
+        "position": {
+          "x": 240,
+          "y": 160
+        },
+        "data": {
+          "modifier": {
+            "name": "Ackland-Jones Analysis",
+            "key": "ackland-jones",
+            "icon": "HiCubeTransparent",
+            "author": "VoltLabs Research",
+            "license": "MIT",
+            "version": "1.0.6",
+            "homepage": "https://github.com/voltlabs-research/ackland-jones",
+            "description": "Identifies FCC, HCP, BCC and ICO crystal structures using adaptive nearest-neighbor bond-angle analysis. No cutoff parameter required (Ackland & Jones, PRB 2006)."
+          }
+        }
+      },
+      {
+        "id": "plugin-arguments",
+        "type": "arguments",
+        "position": {
+          "x": 528,
+          "y": 208
+        },
+        "data": {
+          "arguments": {
+            "arguments": []
+          }
+        }
+      },
+      {
+        "id": "trajectory-context",
+        "type": "context",
+        "position": {
+          "x": 816,
+          "y": 160
+        },
+        "data": {
+          "context": {
+            "source": "trajectory_dumps"
+          }
+        }
+      },
+      {
+        "id": "foreach-trajectory-dumps",
+        "type": "forEach",
+        "position": {
+          "x": 1088,
+          "y": 208
+        },
+        "data": {
+          "forEach": {
+            "iterableSource": "{{ trajectory-context.trajectory_dumps }}"
+          }
+        }
+      },
+      {
+        "id": "analysis-entrypoint",
+        "type": "entrypoint",
+        "position": {
+          "x": 1392,
+          "y": 208
+        },
+        "data": {
+          "entrypoint": {
+            "type": "executable",
+            "binary": "ackland-jones",
+            "binaryObjectPath": "__UPLOAD_BINARY_OBJECT_PATH__",
+            "binaryFileName": "ackland-jones",
+            "arguments": "{{ foreach-trajectory-dumps.currentValue.path }} {{ foreach-trajectory-dumps.outputPath }}",
+            "timeout": -1
+          }
+        }
+      },
+      {
+        "id": "structure-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 1712,
+          "y": 208
+        },
+        "data": {
+          "exposure": {
+            "name": "Ackland-Jones Structure",
+            "icon": "HiCubeTransparent",
+            "results": "atoms.parquet",
+            "iterable": "",
+            "properties": [
+              {
+                "key": "structure_type",
+                "label": "Structure Type",
+                "type": "int64",
+                "enum": {
+                  "0": "OTHER",
+                  "1": "FCC",
+                  "2": "HCP",
+                  "3": "BCC",
+                  "4": "ICO"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "structure-export",
+        "type": "export",
+        "position": {
+          "x": 2032,
+          "y": 208
+        },
+        "data": {
+          "export": {
+            "exporter": "AtomisticExporter",
+            "type": "glb",
+            "options": {
+              "propertyColors": {
+                "OTHER": [
+                  0.949,
+                  0.949,
+                  0.949,
+                  1
+                ],
+                "FCC": [
+                  0.4,
+                  1,
+                  0.4,
+                  1
+                ],
+                "HCP": [
+                  1,
+                  0.4,
+                  0.4,
+                  1
+                ],
+                "BCC": [
+                  0.4,
+                  0.4,
+                  1,
+                  1
+                ],
+                "ICO": [
+                  1,
+                  0.6471,
+                  0,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "summary-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 1712,
+          "y": 336
+        },
+        "data": {
+          "exposure": {
+            "name": "Ackland-Jones Summary",
+            "icon": "HiChartBar",
+            "results": "ackland_jones.parquet",
+            "iterable": "",
+            "hasListing": false
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-metadata-arguments",
+        "source": "plugin-metadata",
+        "sourceHandle": "output",
+        "target": "plugin-arguments",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-arguments-context",
+        "source": "plugin-arguments",
+        "sourceHandle": "output",
+        "target": "trajectory-context",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-context-foreach",
+        "source": "trajectory-context",
+        "sourceHandle": "output",
+        "target": "foreach-trajectory-dumps",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-foreach-entrypoint",
+        "source": "foreach-trajectory-dumps",
+        "sourceHandle": "output",
+        "target": "analysis-entrypoint",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-structure-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "structure-exposure",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-structure-exposure-export",
+        "source": "structure-exposure",
+        "sourceHandle": "output",
+        "target": "structure-export",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-summary-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "summary-exposure",
+        "targetHandle": "input"
+      }
+    ]
+  },
+  "interface": {
+    "version": 2,
+    "provides": {
+      "volt/per-atom-properties@1": {
+        "atoms": "atoms.parquet"
+      }
+    }
+  }
+}

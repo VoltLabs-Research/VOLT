@@ -1,0 +1,234 @@
+{
+  "workflow": {
+    "nodes": [
+      {
+        "id": "plugin-metadata",
+        "type": "modifier",
+        "position": {
+          "x": 240,
+          "y": 160
+        },
+        "data": {
+          "modifier": {
+            "name": "Wigner-Seitz Defect Analysis",
+            "key": "wigner-seitz-defect-analysis",
+            "icon": "HiViewGridAdd",
+            "author": "Rodolfo Herrera",
+            "license": "MIT",
+            "version": "1.0.6",
+            "homepage": "https://github.com/rodyherrera/Volterra",
+            "description": "Identifica vacancias, intersticiales y antisitios comparando la configuración actual con una red de referencia mediante celdas de Wigner-Seitz."
+          }
+        }
+      },
+      {
+        "id": "plugin-arguments",
+        "type": "arguments",
+        "position": {
+          "x": 528,
+          "y": 208
+        },
+        "data": {
+          "arguments": {
+            "arguments": [
+              {
+                "argument": "reference",
+                "type": "frame",
+                "label": "Reference Frame",
+                "required": true
+              },
+              {
+                "argument": "affineMapping",
+                "type": "select",
+                "label": "Affine Mapping",
+                "default": "off",
+                "options": [
+                  {
+                    "key": "off",
+                    "label": "Off"
+                  },
+                  {
+                    "key": "toReference",
+                    "label": "Map to Reference Cell"
+                  },
+                  {
+                    "key": "toCurrent",
+                    "label": "Map to Current Cell"
+                  }
+                ]
+              },
+              {
+                "argument": "eliminateCellDeformation",
+                "type": "boolean",
+                "label": "Eliminate Cell Deformation",
+                "default": false
+              },
+              {
+                "argument": "minimumImageConvention",
+                "type": "boolean",
+                "label": "Minimum Image Convention",
+                "default": true
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "trajectory-context",
+        "type": "context",
+        "position": {
+          "x": 816,
+          "y": 160
+        },
+        "data": {
+          "context": {
+            "source": "trajectory_dumps"
+          }
+        }
+      },
+      {
+        "id": "foreach-trajectory-dumps",
+        "type": "forEach",
+        "position": {
+          "x": 1088,
+          "y": 208
+        },
+        "data": {
+          "forEach": {
+            "iterableSource": "{{ trajectory-context.trajectory_dumps }}"
+          }
+        }
+      },
+      {
+        "id": "analysis-entrypoint",
+        "type": "entrypoint",
+        "position": {
+          "x": 1392,
+          "y": 208
+        },
+        "data": {
+          "entrypoint": {
+            "type": "executable",
+            "binary": "wigner-seitz-defect-analysis",
+            "binaryObjectPath": "__UPLOAD_BINARY_OBJECT_PATH__",
+            "binaryFileName": "wigner-seitz-defect-analysis",
+            "arguments": "{{ foreach-trajectory-dumps.currentValue.path }} {{ foreach-trajectory-dumps.outputPath }} {{ plugin-arguments.as_str }}",
+            "timeout": -1
+          }
+        }
+      },
+      {
+        "id": "primary-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 1712,
+          "y": 208
+        },
+        "data": {
+          "exposure": {
+            "name": "Wigner-Seitz Sites",
+            "icon": "HiViewGridAdd",
+            "results": "wigner_seitz.parquet",
+            "iterable": ""
+          }
+        }
+      },
+      {
+        "id": "wigner-seitz-model-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 1712,
+          "y": 336
+        },
+        "data": {
+          "exposure": {
+            "name": "Wigner-Seitz Model",
+            "icon": "HiViewGridAdd",
+            "results": "atoms.parquet",
+            "iterable": "",
+            "properties": [
+              {
+                "key": "occupancy",
+                "label": "Site occupancy",
+                "type": "int"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "wigner-seitz-model-export",
+        "type": "export",
+        "position": {
+          "x": 2032,
+          "y": 336
+        },
+        "data": {
+          "export": {
+            "exporter": "AtomisticExporter",
+            "type": "glb"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-metadata-arguments",
+        "source": "plugin-metadata",
+        "sourceHandle": "output",
+        "target": "plugin-arguments",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-arguments-context",
+        "source": "plugin-arguments",
+        "sourceHandle": "output",
+        "target": "trajectory-context",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-context-foreach",
+        "source": "trajectory-context",
+        "sourceHandle": "output",
+        "target": "foreach-trajectory-dumps",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-foreach-entrypoint",
+        "source": "foreach-trajectory-dumps",
+        "sourceHandle": "output",
+        "target": "analysis-entrypoint",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "primary-exposure",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-model-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "wigner-seitz-model-exposure",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-model-exposure-export",
+        "source": "wigner-seitz-model-exposure",
+        "sourceHandle": "output",
+        "target": "wigner-seitz-model-export",
+        "targetHandle": "input"
+      }
+    ]
+  },
+  "interface": {
+    "version": 2,
+    "provides": {
+      "volt/per-atom-properties@1": {
+        "atoms": "atoms.parquet"
+      }
+    }
+  }
+}

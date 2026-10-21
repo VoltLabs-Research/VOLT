@@ -1,0 +1,695 @@
+{
+  "workflow": {
+    "nodes": [
+      {
+        "id": "plugin-metadata",
+        "type": "modifier",
+        "position": {
+          "x": 240,
+          "y": 160
+        },
+        "data": {
+          "modifier": {
+            "name": "Interfacial Line Defect Analysis",
+            "key": "ilda",
+            "icon": "HiCube",
+            "author": "/",
+            "license": "MIT",
+            "version": "1.0.5",
+            "homepage": "https://github.com/voltlabs-research/ilda",
+            "description": ""
+          }
+        }
+      },
+      {
+        "id": "plugin-arguments",
+        "type": "arguments",
+        "position": {
+          "x": 528,
+          "y": 208
+        },
+        "data": {
+          "arguments": {
+            "arguments": [
+              {
+                "argument": "grain-atoms",
+                "type": "string",
+                "label": "Grain Atoms",
+                "inferFromContext": true,
+                "plugins": [
+                  "grain-segmentation"
+                ]
+              },
+              {
+                "argument": "grains",
+                "type": "string",
+                "label": "Grains",
+                "inferFromContext": true,
+                "plugins": [
+                  "grain-segmentation"
+                ]
+              },
+              {
+                "argument": "atomA",
+                "type": "number",
+                "label": "Atom A (Particle Identifier)",
+                "default": 0,
+                "min": 0,
+                "step": 1
+              },
+              {
+                "argument": "atomB",
+                "type": "number",
+                "label": "Atom B (Particle Identifier)",
+                "default": 0,
+                "min": 0,
+                "step": 1
+              },
+              {
+                "argument": "aA",
+                "type": "number",
+                "label": "Lattice constant a (Grain A)",
+                "default": 1.0,
+                "min": 0,
+                "step": 0.001
+              },
+              {
+                "argument": "cA",
+                "type": "number",
+                "label": "Lattice constant c (Grain A)",
+                "default": 0.0,
+                "min": 0,
+                "step": 0.001
+              },
+              {
+                "argument": "aB",
+                "type": "number",
+                "label": "Lattice constant a (Grain B)",
+                "default": 1.0,
+                "min": 0,
+                "step": 0.001
+              },
+              {
+                "argument": "cB",
+                "type": "number",
+                "label": "Lattice constant c (Grain B)",
+                "default": 0.0,
+                "min": 0,
+                "step": 0.001
+              },
+              {
+                "argument": "typeA",
+                "type": "number",
+                "label": "Structure type A (-1 = derive)",
+                "default": -1,
+                "step": 1
+              },
+              {
+                "argument": "typeB",
+                "type": "number",
+                "label": "Structure type B (-1 = derive)",
+                "default": -1,
+                "step": 1
+              },
+              {
+                "argument": "Rsphere",
+                "type": "number",
+                "label": "Probe sphere radius",
+                "default": 10.0,
+                "min": 0,
+                "step": 0.1
+              },
+              {
+                "argument": "htol",
+                "type": "number",
+                "label": "Step height tolerance",
+                "default": 0.5,
+                "min": 0,
+                "step": 0.01
+              },
+              {
+                "argument": "btol",
+                "type": "number",
+                "label": "Burgers length tolerance",
+                "default": 0.01,
+                "min": 0,
+                "step": 0.001
+              },
+              {
+                "argument": "angtol",
+                "type": "number",
+                "label": "Burgers angular tolerance (deg)",
+                "default": 5.0,
+                "min": 0,
+                "max": 360,
+                "step": 0.5
+              },
+              {
+                "argument": "distF",
+                "type": "number",
+                "label": "Interface skin distance",
+                "default": 10.0,
+                "min": 0,
+                "step": 0.1
+              },
+              {
+                "argument": "cis_tol",
+                "type": "number",
+                "label": "Co-incidence site tolerance",
+                "default": 0.0,
+                "min": 0,
+                "step": 0.01
+              },
+              {
+                "argument": "rmsd",
+                "type": "number",
+                "label": "PTM RMSD cutoff",
+                "default": 0.1,
+                "min": 0,
+                "step": 0.001
+              },
+              {
+                "argument": "estimateF",
+                "type": "boolean",
+                "label": "Estimate coherent reference frame",
+                "default": true
+              },
+              {
+                "argument": "single_circuit",
+                "type": "boolean",
+                "label": "Single circuit",
+                "default": false
+              },
+              {
+                "argument": "extract_lines",
+                "type": "boolean",
+                "label": "Extract lines",
+                "default": false
+              },
+              {
+                "argument": "selection_only",
+                "type": "boolean",
+                "label": "Use only selected particles",
+                "default": false
+              },
+              {
+                "argument": "print_results",
+                "type": "boolean",
+                "label": "Print results summary",
+                "default": false
+              },
+              {
+                "argument": "circuitAtom1",
+                "type": "number",
+                "label": "Single-circuit atom 1",
+                "default": 0,
+                "min": 0,
+                "step": 1
+              },
+              {
+                "argument": "circuitAtom2",
+                "type": "number",
+                "label": "Single-circuit atom 2",
+                "default": 0,
+                "min": 0,
+                "step": 1
+              },
+              {
+                "argument": "n",
+                "type": "tuple",
+                "label": "Interface plane normal",
+                "default": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 1
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "X",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Y",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Z",
+                    "default": 1,
+                    "step": 0.1
+                  }
+                ]
+              },
+              {
+                "argument": "xA",
+                "type": "tuple",
+                "label": "Orientation x (Grain A)",
+                "visibleWhen": {
+                  "argument": "estimateF",
+                  "operator": "equals",
+                  "value": false
+                },
+                "default": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "X",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Y",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Z",
+                    "default": 0,
+                    "step": 0.1
+                  }
+                ]
+              },
+              {
+                "argument": "yA",
+                "type": "tuple",
+                "label": "Orientation y (Grain A)",
+                "visibleWhen": {
+                  "argument": "estimateF",
+                  "operator": "equals",
+                  "value": false
+                },
+                "default": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "X",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Y",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Z",
+                    "default": 0,
+                    "step": 0.1
+                  }
+                ]
+              },
+              {
+                "argument": "xB",
+                "type": "tuple",
+                "label": "Orientation x (Grain B)",
+                "visibleWhen": {
+                  "argument": "estimateF",
+                  "operator": "equals",
+                  "value": false
+                },
+                "default": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "X",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Y",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Z",
+                    "default": 0,
+                    "step": 0.1
+                  }
+                ]
+              },
+              {
+                "argument": "yB",
+                "type": "tuple",
+                "label": "Orientation y (Grain B)",
+                "visibleWhen": {
+                  "argument": "estimateF",
+                  "operator": "equals",
+                  "value": false
+                },
+                "default": {
+                  "x": 0,
+                  "y": 0,
+                  "z": 0
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "X",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Y",
+                    "default": 0,
+                    "step": 0.1
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Z",
+                    "default": 0,
+                    "step": 0.1
+                  }
+                ]
+              },
+              {
+                "argument": "EcohA",
+                "type": "list",
+                "label": "Coherency strain (Grain A, 3x3 rows)",
+                "visibleWhen": {
+                  "argument": "estimateF",
+                  "operator": "equals",
+                  "value": false
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "Row X",
+                    "default": 0,
+                    "step": 0.0001
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Row Y",
+                    "default": 0,
+                    "step": 0.0001
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Row Z",
+                    "default": 0,
+                    "step": 0.0001
+                  }
+                ]
+              },
+              {
+                "argument": "EcohB",
+                "type": "list",
+                "label": "Coherency strain (Grain B, 3x3 rows)",
+                "visibleWhen": {
+                  "argument": "estimateF",
+                  "operator": "equals",
+                  "value": false
+                },
+                "listArguments": [
+                  {
+                    "argument": "x",
+                    "type": "number",
+                    "label": "Row X",
+                    "default": 0,
+                    "step": 0.0001
+                  },
+                  {
+                    "argument": "y",
+                    "type": "number",
+                    "label": "Row Y",
+                    "default": 0,
+                    "step": 0.0001
+                  },
+                  {
+                    "argument": "z",
+                    "type": "number",
+                    "label": "Row Z",
+                    "default": 0,
+                    "step": 0.0001
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "trajectory-context",
+        "type": "context",
+        "position": {
+          "x": 816,
+          "y": 160
+        },
+        "data": {
+          "context": {
+            "source": "trajectory_dumps"
+          }
+        }
+      },
+      {
+        "id": "foreach-trajectory-dumps",
+        "type": "forEach",
+        "position": {
+          "x": 1088,
+          "y": 208
+        },
+        "data": {
+          "forEach": {
+            "iterableSource": "{{ trajectory-context.trajectory_dumps }}"
+          }
+        }
+      },
+      {
+        "id": "analysis-entrypoint",
+        "type": "entrypoint",
+        "position": {
+          "x": 1696,
+          "y": 208
+        },
+        "data": {
+          "entrypoint": {
+            "type": "executable",
+            "binary": "ilda",
+            "binaryObjectPath": "__UPLOAD_BINARY_OBJECT_PATH__",
+            "binaryFileName": "ilda",
+            "arguments": "{{ foreach-trajectory-dumps.currentValue.path }} {{ foreach-trajectory-dumps.outputPath }} {{ plugin-arguments.as_str }}",
+            "timeout": -1
+          }
+        }
+      },
+      {
+        "id": "primary-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 2016,
+          "y": 208
+        },
+        "data": {
+          "exposure": {
+            "name": "Line Defects",
+            "icon": "HiCube",
+            "results": "bonds.parquet",
+            "iterable": "",
+            "properties": [
+              {
+                "key": "burgers_id",
+                "label": "Burgers ID",
+                "type": "number"
+              },
+              {
+                "key": "magnitude",
+                "label": "Burgers magnitude",
+                "type": "number"
+              },
+              {
+                "key": "step_height",
+                "label": "Step height",
+                "type": "number"
+              },
+              {
+                "key": "ideal_step_height_a",
+                "label": "Ideal step height A",
+                "type": "number"
+              },
+              {
+                "key": "ideal_step_height_b",
+                "label": "Ideal step height B",
+                "type": "number"
+              },
+              {
+                "key": "length",
+                "label": "Segment length",
+                "type": "number"
+              },
+              {
+                "key": "atom_a",
+                "label": "Node A",
+                "type": "number"
+              },
+              {
+                "key": "atom_b",
+                "label": "Node B",
+                "type": "number"
+              },
+              {
+                "key": "distance",
+                "label": "Distance",
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "primary-export",
+        "type": "export",
+        "position": {
+          "x": 2336,
+          "y": 208
+        },
+        "data": {
+          "export": {
+            "exporter": "BondExporter",
+            "type": "glb",
+            "options": {
+              "radius": 0.4,
+              "colorBy": "color",
+              "material": {
+                "metallic": 0,
+                "roughness": 0.8,
+                "emissive": [
+                  0,
+                  0,
+                  0
+                ],
+                "baseColor": [
+                  1,
+                  0.5,
+                  0,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "summary-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 2016,
+          "y": 420
+        },
+        "data": {
+          "exposure": {
+            "name": "Disconnection Modes",
+            "icon": "HiTable",
+            "results": "disconnection_summary.parquet",
+            "iterable": ""
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-metadata-arguments",
+        "source": "plugin-metadata",
+        "sourceHandle": "output",
+        "target": "plugin-arguments",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-arguments-context",
+        "source": "plugin-arguments",
+        "sourceHandle": "output",
+        "target": "trajectory-context",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-context-foreach",
+        "source": "trajectory-context",
+        "sourceHandle": "output",
+        "target": "foreach-trajectory-dumps",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-foreach-entrypoint",
+        "source": "foreach-trajectory-dumps",
+        "sourceHandle": "output",
+        "target": "analysis-entrypoint",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "primary-exposure",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-exposure-export",
+        "source": "primary-exposure",
+        "sourceHandle": "output",
+        "target": "primary-export",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-summary",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "summary-exposure",
+        "targetHandle": "input"
+      }
+    ]
+  },
+  "interface": {
+    "version": 2,
+    "requires": [
+      {
+        "id": "grains",
+        "capability": "volt/grain-segmentation@1",
+        "bind": {
+          "grains": "--grains",
+          "grain_atoms": "--grain-atoms"
+        }
+      }
+    ],
+    "provides": {}
+  }
+}

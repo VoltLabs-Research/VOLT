@@ -1,0 +1,251 @@
+{
+  "workflow": {
+    "nodes": [
+      {
+        "id": "plugin-metadata",
+        "type": "modifier",
+        "position": {
+          "x": 240,
+          "y": 160
+        },
+        "data": {
+          "modifier": {
+            "name": "Identify Diamond Structure",
+            "key": "identify-diamond",
+            "icon": "HiCubeTransparent",
+            "author": "VoltLabs Research",
+            "license": "MIT",
+            "version": "1.0.6",
+            "homepage": "https://github.com/voltlabs-research/identify-diamond",
+            "description": "Identifies cubic and hexagonal diamond structures using 2nd-nearest-neighbour shell CNA. Labels core atoms and first/second neighbour shells."
+          }
+        }
+      },
+      {
+        "id": "plugin-arguments",
+        "type": "arguments",
+        "position": {
+          "x": 528,
+          "y": 208
+        },
+        "data": {
+          "arguments": {
+            "arguments": []
+          }
+        }
+      },
+      {
+        "id": "trajectory-context",
+        "type": "context",
+        "position": {
+          "x": 816,
+          "y": 160
+        },
+        "data": {
+          "context": {
+            "source": "trajectory_dumps"
+          }
+        }
+      },
+      {
+        "id": "foreach-trajectory-dumps",
+        "type": "forEach",
+        "position": {
+          "x": 1088,
+          "y": 208
+        },
+        "data": {
+          "forEach": {
+            "iterableSource": "{{ trajectory-context.trajectory_dumps }}"
+          }
+        }
+      },
+      {
+        "id": "analysis-entrypoint",
+        "type": "entrypoint",
+        "position": {
+          "x": 1392,
+          "y": 208
+        },
+        "data": {
+          "entrypoint": {
+            "type": "executable",
+            "binary": "identify-diamond",
+            "binaryObjectPath": "__UPLOAD_BINARY_OBJECT_PATH__",
+            "binaryFileName": "identify-diamond",
+            "arguments": "{{ foreach-trajectory-dumps.currentValue.path }} {{ foreach-trajectory-dumps.outputPath }}",
+            "timeout": -1
+          }
+        }
+      },
+      {
+        "id": "structure-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 1712,
+          "y": 208
+        },
+        "data": {
+          "exposure": {
+            "name": "Diamond Structure",
+            "icon": "HiCubeTransparent",
+            "results": "atoms.parquet",
+            "iterable": "",
+            "properties": [
+              {
+                "key": "structure_type",
+                "label": "Structure Type",
+                "type": "int64",
+                "enum": {
+                  "0": "OTHER",
+                  "5": "CUBIC_DIAMOND",
+                  "6": "HEX_DIAMOND",
+                  "9": "CUBIC_DIAMOND_FIRST_NEIGH",
+                  "10": "CUBIC_DIAMOND_SECOND_NEIGH",
+                  "11": "HEX_DIAMOND_FIRST_NEIGH",
+                  "12": "HEX_DIAMOND_SECOND_NEIGH"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "structure-export",
+        "type": "export",
+        "position": {
+          "x": 2032,
+          "y": 208
+        },
+        "data": {
+          "export": {
+            "exporter": "AtomisticExporter",
+            "type": "glb",
+            "options": {
+              "propertyColors": {
+                "OTHER": [
+                  0.949,
+                  0.949,
+                  0.949,
+                  1
+                ],
+                "CUBIC_DIAMOND": [
+                  0.0745,
+                  0.6275,
+                  0.9961,
+                  1
+                ],
+                "CUBIC_DIAMOND_FIRST_NEIGH": [
+                  0,
+                  0.9961,
+                  0.9608,
+                  1
+                ],
+                "CUBIC_DIAMOND_SECOND_NEIGH": [
+                  0.4941,
+                  0.9961,
+                  0.7098,
+                  1
+                ],
+                "HEX_DIAMOND": [
+                  0.9961,
+                  0.5373,
+                  0,
+                  1
+                ],
+                "HEX_DIAMOND_FIRST_NEIGH": [
+                  0.9961,
+                  0.8627,
+                  0,
+                  1
+                ],
+                "HEX_DIAMOND_SECOND_NEIGH": [
+                  0.8,
+                  0.898,
+                  0.3176,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": "summary-exposure",
+        "type": "exposure",
+        "position": {
+          "x": 1712,
+          "y": 336
+        },
+        "data": {
+          "exposure": {
+            "name": "Diamond Summary",
+            "icon": "HiChartBar",
+            "results": "identify_diamond.parquet",
+            "iterable": "",
+            "hasListing": false
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-metadata-arguments",
+        "source": "plugin-metadata",
+        "sourceHandle": "output",
+        "target": "plugin-arguments",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-arguments-context",
+        "source": "plugin-arguments",
+        "sourceHandle": "output",
+        "target": "trajectory-context",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-context-foreach",
+        "source": "trajectory-context",
+        "sourceHandle": "output",
+        "target": "foreach-trajectory-dumps",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-foreach-entrypoint",
+        "source": "foreach-trajectory-dumps",
+        "sourceHandle": "output",
+        "target": "analysis-entrypoint",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-structure-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "structure-exposure",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-structure-exposure-export",
+        "source": "structure-exposure",
+        "sourceHandle": "output",
+        "target": "structure-export",
+        "targetHandle": "input"
+      },
+      {
+        "id": "edge-entrypoint-summary-exposure",
+        "source": "analysis-entrypoint",
+        "sourceHandle": "output",
+        "target": "summary-exposure",
+        "targetHandle": "input"
+      }
+    ]
+  },
+  "interface": {
+    "version": 2,
+    "provides": {
+      "volt/per-atom-properties@1": {
+        "atoms": "atoms.parquet"
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+# -----------------------------------------------------------------------------
+# Omega Lattice
+# -----------------------------------------------------------------------------
+#
+# For additional examples, detailed explanations, and the full specification,
+# please refer to the official documentation:
+#
+#   https://docs.voltcloud.dev
+#   https://github.com/voltlabs-research/
+#
+# -----------------------------------------------------------------------------
+
+name: omega
+coordination_number: 14
+
+cell:
+  - [1.0, 0.0, 0.0]
+  - [0.5, 0.86602540378443864676, 0.0]
+  - [0.0, 0.0, 0.6123724356957945]
+
+coordinate_mode: cartesian
+
+basis:
+  - species: 1
+    position: [0.0, 0.0, 0.0]
+  - species: 1
+    position: [0.5, 0.2886751345948129, 0.30618621784789724]
+  - species: 1
+    position: [0.0, 0.5773502691896258, 0.30618621784789724]

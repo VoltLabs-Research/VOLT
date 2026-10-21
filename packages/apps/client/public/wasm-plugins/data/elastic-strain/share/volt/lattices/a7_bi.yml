@@ -1,0 +1,46 @@
+# -----------------------------------------------------------------------------
+# A7 Bismuth Lattice Reference (real, distorted structure)
+# -----------------------------------------------------------------------------
+#
+# Full physical A7 bismuth structure, R-3m hexagonal setting, a=4.5460 A,
+# c=11.8622 A, Bi on Wyckoff 6c at z=0.2339 - the same perfect crystal as
+# generalized-template-matching's lattices/a7_bi.lmp, which this topology was
+# derived from.
+#
+# This is NOT the same lattice as a7.yml. a7.yml is the idealized single-atom
+# rhombohedral sublattice (equivalent to generalized-template-matching's
+# lattices/a7.lmp): it assumes the 6c site sits at z=1/4, which gives every
+# atom 6 equal-length neighbors at the rhombohedral angle. The real z=0.2339
+# site is displaced off that ideal position, so each atom's coordination-6
+# shell splits into two distinct bond lengths - the Peierls-like "pairing"
+# distortion characteristic of A7 (As/Sb/Bi):
+#
+#   3 short (intralayer) bonds at 3.0713 A
+#   3 long  (interlayer) bonds at 3.5290 A   (ratio long/short = 1.14901)
+#
+# That ratio is set by the internal (Wyckoff) coordinate, not by the cell
+# shape, so no --metric_rescale on top of a7.yml's uniform template can
+# reproduce it - it needs its own topology. Vectors below are normalized to
+# the short bond (= 1.0); recover the physical scale via --metric_rescale.
+#
+# Site symmetry at the 6c position is C3 (3-fold axis only, no mirrors, no
+# inversion), matching generalized-template-matching's own SOFI-derived
+# point group for this reference (pg=C3v, ops=3 after retaining only the
+# proper rotations).
+# -----------------------------------------------------------------------------
+
+# Unique identifier for the lattice.
+name: a7_bi
+
+# Number of nearest neighbors per atom.
+coordination_number: 6
+
+# Relative vectors from the central atom to each of its neighbors.
+# These define the ideal local geometry.
+neighbor_vectors:
+  - [ 0.0000000000, -0.8545646383, -0.5193450481]
+  - [-0.7400746859,  0.4272823191, -0.5193450481]
+  - [ 0.7400746859,  0.4272823191, -0.5193450481]
+  - [ 0.0000000000,  0.8545646383,  0.7680745060]
+  - [-0.7400746859, -0.4272823191,  0.7680745060]
+  - [ 0.7400746859, -0.4272823191,  0.7680745060]
