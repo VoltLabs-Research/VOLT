@@ -87,17 +87,7 @@ jobs:
       # The install builds native modules (duckdb, canvas), so the toolchain has to
       # be present before install rather than after.
       - name: Install build toolchain for native modules
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            pkg-config \
-            libcairo2-dev \
-            libpango1.0-dev \
-            libjpeg-dev \
-            libgif-dev \
-            librsvg2-dev \
-            zstd
+        uses: ./.github/actions/native-toolchain
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter cluster-daemon...
@@ -137,6 +127,18 @@ jobs:
         with:
           node-version-file: .nvmrc
 
+      # The client ships @volt/web-runtime, which bundles the server and the cluster
+      # daemon: installing them builds the daemon's native modules, and the runtime
+      # compiles its native addons to WebAssembly with Emscripten.
+      - name: Install build toolchain for native modules
+        uses: ./.github/actions/native-toolchain
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+          actions-cache-folder: emsdk-cache
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter volt-webapp...
 
@@ -145,6 +147,19 @@ jobs:
 
       - name: Lint
         run: pnpm --filter volt-webapp lint
+
+      - name: Typecheck the web runtime
+        run: pnpm --filter @volt/web-runtime typecheck
+
+      # The runtime's smoke pages in headless Chrome: Node's platform in a worker, the
+      # Node programs a backend spawns, and the whole local stack provisioned.
+      - name: Smoke-test the web runtime
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          for page in page programs stack; do
+            pnpm --filter @volt/web-runtime smoke "$page"
+          done
 
       # `tsc -b` then `vite build`: the only check that catches a bundler-level
       # break, and it typechecks `@volt/contracts` from source.
