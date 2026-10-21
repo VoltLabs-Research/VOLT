@@ -210,16 +210,19 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/onboarding/cluster/setup',
         title: 'Cluster Setup',
+        requiresMachine: true,
         loader: () => import('@/modules/cluster/components/ClusterOnboardingPage')
     },
     {
         path: '/dashboard/clusters',
         title: 'Clusters',
+        requiresMachine: true,
         loader: () => import('@/modules/cluster/components/ClustersListing')
     },
     {
         path: '/dashboard/clusters/:clusterId',
         title: 'Cluster Monitoring',
+        requiresMachine: true,
         loader: () => import('@/modules/cluster/components/ClusterMonitoringPage')
     },
     {
@@ -237,6 +240,7 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/notebooks',
         title: 'Notebooks',
+        requiresMachine: true,
         loader: () => import('@/modules/scripting/components/NotebooksListing'),
         requiredPermissions: ['plugin:read'],
         navigation: {

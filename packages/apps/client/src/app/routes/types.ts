@@ -45,5 +45,8 @@ export interface RouteConfig {
     children?: RouteConfig[];
     requiredPermissions?: string[];
     permissionMode?: RoutePermissionMode;
+    // What the page needs is on a machine: Jupyter kernels, or clusters that reach their server. A
+    // backend running in this browser's tab has neither, so the page is not offered there.
+    requiresMachine?: boolean;
     navigation?: RouteNavigationConfig;
 };

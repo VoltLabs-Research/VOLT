@@ -6,6 +6,7 @@ import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
+import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import NavItem from '@/shared/ui/components/NavItem';
 import SidebarPanel from '@/shared/ui/components/SidebarPanel';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
@@ -216,16 +217,19 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                 onRequestExpand={onExpandSidebar}
             />
 
-            <NavTreeSection
-                label='Clusters'
-                icon={Server}
-                isActive={clustersActive}
-                items={clustersItems}
-                collapsed={collapsed}
-                tooltip='Clusters'
-                isTooltipDisabled={!collapsed}
-                onRequestExpand={onExpandSidebar}
-            />
+            {/* The cluster of a backend in this tab is the tab itself (app/routes/types.ts, requiresMachine). */}
+            {!localStackMode.isEnabled() && (
+                <NavTreeSection
+                    label='Clusters'
+                    icon={Server}
+                    isActive={clustersActive}
+                    items={clustersItems}
+                    collapsed={collapsed}
+                    tooltip='Clusters'
+                    isTooltipDisabled={!collapsed}
+                    onRequestExpand={onExpandSidebar}
+                />
+            )}
 
             {visibleNavigationItems(SECONDARY_NAVIGATION_ITEMS).map(renderNavItem)}
 

@@ -9,7 +9,8 @@ import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
 import { RoutePermissionMode } from '@/app/routes/types';
-import { Route } from 'react-router-dom';
+import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
+import { Navigate, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import type { ComponentType, LazyExoticComponent, ReactNode } from 'react';
 import type { RouteConfig, RouteLoader } from '@/app/routes/types';
@@ -67,6 +68,10 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
     const permissions = route.requiredPermissions ?? [];
     const mode = route.permissionMode ?? RoutePermissionMode.Any;
     const isDashboardRoute = route.path.startsWith(DASHBOARD_ROUTE_PREFIX);
+
+    if (route.requiresMachine && localStackMode.isEnabled()) {
+        return <Navigate to={DASHBOARD_ROUTE_PREFIX} replace />;
+    }
 
     if (permissions.length === 0) {
         return <>{children}</>;
