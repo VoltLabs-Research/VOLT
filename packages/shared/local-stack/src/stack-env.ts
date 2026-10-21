@@ -24,6 +24,8 @@ export const localServerEnv = (input: {
     logLevel?: string;
     // Where the web client is served from: the server itself on the desktop, the page in a browser.
     clientOrigin?: string;
+    // The plugin registry, when not the public one.
+    registryUrl?: string;
 }): Record<string, string> => {
     const origin = serverOriginFor(input.ports.server);
     return {
@@ -37,7 +39,8 @@ export const localServerEnv = (input: {
         DATABASE_URL: `sqlite:${input.databasePath}`,
         SERVER_DATA_DIR: input.dataDir,
         SECRET_KEY: input.secrets.secretKey,
-        SSH_ENCRYPTION_KEY: input.secrets.sshKey
+        SSH_ENCRYPTION_KEY: input.secrets.sshKey,
+        ...(input.registryUrl ? { REGISTRY_URL: input.registryUrl } : {})
     };
 };
 
