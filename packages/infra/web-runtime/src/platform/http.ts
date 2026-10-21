@@ -2,6 +2,7 @@
 // connections, and `http.request` to a loopback host opens one. Express, engine.io and the object
 // gateway client see the same objects they get from Node.
 import { EventEmitter } from 'events';
+import { ownBytes } from './bytes';
 import { Readable, Writable } from 'stream';
 import {
     closeLoopback,
@@ -51,7 +52,7 @@ const toBytes = (chunk: unknown, encoding?: BufferEncoding): Uint8Array => {
 const post = (channel: MessagePort, message: LoopbackChannelMessage): void => {
     if(message.type === 'data'){
         // Copied so the sender may reuse its buffer; the copy is transferred, not cloned again.
-        const chunk = message.chunk.slice();
+        const chunk = ownBytes(message.chunk);
         channel.postMessage({ type: 'data', chunk }, [chunk.buffer]);
         return;
     }

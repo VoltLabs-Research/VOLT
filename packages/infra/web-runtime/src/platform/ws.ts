@@ -2,6 +2,7 @@
 // (WebSocketServer.handleUpgrade and the per-connection socket); the client side is the browser
 // WebSocket, which engine.io-client and socket.io-client construct. Frames are not encoded: each
 // message crosses the channel as one string or ArrayBuffer.
+import { ownBytes } from './bytes';
 import { EventEmitter } from 'events';
 import { connectLoopback, isLoopbackUrl } from './loopback';
 import type { LoopbackChannelMessage } from './loopback';
@@ -20,10 +21,10 @@ const toTransferable = (data: unknown): string | ArrayBuffer => {
         return data.slice(0);
     }
     if(ArrayBuffer.isView(data)){
-        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength).slice().buffer;
+        return ownBytes(data).buffer;
     }
     if(Array.isArray(data)){
-        return Buffer.concat(data as Buffer[]).buffer.slice(0);
+        return ownBytes(Buffer.concat(data as Buffer[])).buffer;
     }
     return String(data);
 };
