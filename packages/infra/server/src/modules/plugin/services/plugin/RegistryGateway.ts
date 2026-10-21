@@ -58,27 +58,26 @@ class RegistryGateway {
         return (await response.json()) as RegistrySearchResult;
     }
 
+    // The daemon downloads the tarball from the registry: a native one is redirected to the storage
+    // that serves it, and one running in a browser is served it by the registry, which pages may
+    // read. What the tarball is comes as JSON, which code reads wherever it runs (a browser hides a
+    // redirect's status and headers).
     async resolveTarball(fullName: string, version: string | undefined, platform: string): Promise<ResolvedRegistryTarball> {
         const { username, name } = parsePackageName(fullName);
         const resolvedVersion = version ?? (await this.resolveLatestVersion(username, name));
         const path = `/packages/${encodeURIComponent(username)}/${encodeURIComponent(name)}/${encodeURIComponent(resolvedVersion)}/-/${encodeURIComponent(platform)}.tgz`;
 
-        const response = await this.fetch(path, { redirect: 'manual' });
-        const location = response.headers.get('location');
-        if (response.status !== 307 && response.status !== 302) {
+        const response = await this.fetch(path, { headers: { accept: 'application/json' } });
+        if (!response.ok) {
             throw this.unavailable(`tarball resolution failed with status ${response.status}`);
         }
-        if (!location) {
-            throw this.unavailable('registry redirect is missing the Location header');
-        }
-
-        const sha256 = response.headers.get('x-volt-sha256');
+        const { sha256 } = (await response.json()) as { sha256?: string };
         if (!sha256) {
-            throw this.unavailable('registry redirect is missing the X-Volt-Sha256 header');
+            throw this.unavailable('registry tarball resolution is missing its sha256');
         }
 
         return {
-            downloadUrl: location,
+            downloadUrl: `${this.baseUrl}${path}`,
             sha256,
             fileName: `${name}-${resolvedVersion}-${platform}.tgz`,
             version: resolvedVersion
