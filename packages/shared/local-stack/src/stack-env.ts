@@ -22,6 +22,8 @@ export const localServerEnv = (input: {
     databasePath: string;
     secrets: StackSecrets;
     logLevel?: string;
+    // Where the web client is served from: the server itself on the desktop, the page in a browser.
+    clientOrigin?: string;
 }): Record<string, string> => {
     const origin = serverOriginFor(input.ports.server);
     return {
@@ -31,7 +33,7 @@ export const localServerEnv = (input: {
         SERVER_HOST: '127.0.0.1',
         SERVER_PORT: String(input.ports.server),
         SERVER_ENDPOINT: origin,
-        CLIENT_HOST: origin,
+        CLIENT_HOST: input.clientOrigin ?? origin,
         DATABASE_URL: `sqlite:${input.databasePath}`,
         SERVER_DATA_DIR: input.dataDir,
         SECRET_KEY: input.secrets.secretKey,
