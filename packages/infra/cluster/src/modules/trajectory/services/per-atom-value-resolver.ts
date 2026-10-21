@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { toBytes, type InboundChunk } from '@shared/contracts/channel/binary-envelope';
+import { toBytes, type BinaryChunk } from '@voltstack/daemon-cluster-client';
 import type { ParsedTrajectory, TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { ModifierScalarValues, PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 
@@ -11,14 +11,14 @@ interface PerAtomValueSource {
     property: string;
     analysisId?: string;
     exposureId?: string;
-    externalValues?: InboundChunk;
+    externalValues?: BinaryChunk;
 }
 
 type ResolvedPerAtomValues =
     | { parsed: ParsedTrajectory; valueType: 'number'; values: Float32Array }
     | { parsed: ParsedTrajectory; valueType: 'string'; values: Array<string | null> };
 
-const decodeExternalFloat32Values = (externalValues: InboundChunk): Float32Array => {
+const decodeExternalFloat32Values = (externalValues: BinaryChunk): Float32Array => {
     if (externalValues instanceof Float32Array) {
         return externalValues;
     }

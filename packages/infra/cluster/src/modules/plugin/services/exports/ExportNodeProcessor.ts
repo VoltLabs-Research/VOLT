@@ -16,7 +16,6 @@ import type {
     ConfigurationExportFormat,
     ConfigurationExporterOptions,
     ExportExecutionInput,
-    ExporterName,
     LineExportData,
     LineExportOptions,
     MeshExportOptions,
@@ -26,9 +25,16 @@ import type {
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject } from '@shared/contracts/types/json';
 import { isRecord } from '@shared/utilities/is-record';
+import { Exporter, WorkflowExportType } from '@volt/contracts/modules/plugin/enums';
 
 const CHART_TYPES: ReadonlySet<string> = new Set<ChartExportOptions['chartType']>(['line', 'bar', 'scatter', 'area']);
-const CONFIGURATION_FORMATS: ReadonlySet<string> = new Set<ConfigurationExportFormat>(['lammps-dump', 'lammps-data', 'extxyz', 'poscar', 'cif']);
+const CONFIGURATION_FORMATS: ReadonlySet<string> = new Set<ConfigurationExportFormat>([
+    WorkflowExportType.LAMMPS_DUMP,
+    WorkflowExportType.LAMMPS_DATA,
+    WorkflowExportType.EXTXYZ,
+    WorkflowExportType.POSCAR,
+    WorkflowExportType.CIF
+]);
 
 type NarrowedOptions<TOptions> = Record<string, unknown> & TOptions;
 
@@ -57,7 +63,7 @@ const isPanelExportOptions = (
 const isEnabledOctreeOptions = (value: unknown): value is OctreeExportOptions =>
     isRecord(value) && value.enabled === true;
 
-const exportContext = (input: ExportExecutionInput, exporter: ExporterName) => ({
+const exportContext = (input: ExportExecutionInput, exporter: Exporter) => ({
     analysisId: input.executionData.analysisId,
     exposure: input.exposure.name,
     exposureId: input.exposure.nodeId,
@@ -67,7 +73,7 @@ const exportContext = (input: ExportExecutionInput, exporter: ExporterName) => (
 
 const runEntries = async <TExportData>(
     input: ExportExecutionInput,
-    exporter: ExporterName,
+    exporter: Exporter,
     type: string,
     run: (exportData: TExportData, objectPath: string) => Promise<boolean>
 ): Promise<boolean> => {
@@ -112,10 +118,10 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<bo
     }
 
     const options = (exportConfig.options ?? {}) as Record<string, unknown>;
-    const exporter = exportConfig.exporter as ExporterName;
+    const exporter = exportConfig.exporter;
 
     switch (exporter) {
-        case 'ChartExporter': {
+        case Exporter.CHART: {
             if (!isChartExportOptions(options)) {
                 logger.warn(exportContext(input, exporter), 'ChartExporter: invalid or missing options');
                 return false;
@@ -128,7 +134,7 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<bo
                 }, objectPath, ownerClusterId, options)
             ));
         }
-        case 'PanelExporter': {
+        case Exporter.PANEL: {
             if (!isPanelExportOptions(options)) {
                 logger.warn(exportContext(input, exporter), 'PanelExporter: options declare no usable blocks');
                 return false;
@@ -138,7 +144,7 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<bo
                 exportPanelArtifact(input, exportData, objectPath, ownerClusterId, options)
             ));
         }
-        case 'AtomisticExporter': {
+        case Exporter.ATOMISTIC: {
             const octreeOptions = isEnabledOctreeOptions(options.octree) ? options.octree : undefined;
             return runEntries<AtomisticExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportAtomisticArtifact(
@@ -151,19 +157,19 @@ export const processExportNode = async (input: ExportExecutionInput): Promise<bo
                 )
             ));
         }
-        case 'MeshExporter':
+        case Exporter.MESH:
             return runEntries<MeshInput>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportMeshArtifact(input, exportData, objectPath, ownerClusterId, options as MeshExportOptions)
             ));
-        case 'LineExporter':
+        case Exporter.LINE:
             return runEntries<LineExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportLineArtifact(input, exportData, objectPath, ownerClusterId, options as LineExportOptions)
             ));
-        case 'BondExporter':
+        case Exporter.BOND:
             return runEntries<BondExportData>(input, exporter, exportConfig.type, (exportData, objectPath) => (
                 exportBondArtifact(input, exportData, objectPath, ownerClusterId, options as BondExportOptions)
             ));
-        case 'ConfigurationExporter': {
+        case Exporter.CONFIGURATION: {
             if (!isConfigurationExporterOptions(options)) {
                 logger.warn(exportContext(input, exporter), 'ConfigurationExporter: invalid or missing options');
                 return false;

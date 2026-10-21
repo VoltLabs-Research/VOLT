@@ -1,9 +1,9 @@
 import type { PluginExecutionRuntimeInput } from '@shared/contracts/types/plugin-execution';
 import type {
     WorkflowEntrypointExecutionOptions,
-    WorkflowExecutionContext,
-    WorkflowNode
+    WorkflowExecutionContext
 } from '@shared/contracts/types/workflow.types';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 export interface WorkflowEntrypointConfig extends PluginExecutionRuntimeInput {
     argumentsTemplate: string;
@@ -11,13 +11,13 @@ export interface WorkflowEntrypointConfig extends PluginExecutionRuntimeInput {
 
 export interface WorkflowEntrypointExecutionRequest {
     context: WorkflowExecutionContext;
-    node: WorkflowNode;
+    node: IWorkflowNode;
     entrypoint: WorkflowEntrypointConfig;
     execution: WorkflowEntrypointExecutionOptions;
 }
 
 export const resolveEntrypointConfig = (
-    node: WorkflowNode,
+    node: IWorkflowNode,
     execution: WorkflowEntrypointExecutionOptions
 ): WorkflowEntrypointConfig => {
     const entrypointData = node.data.entrypoint;

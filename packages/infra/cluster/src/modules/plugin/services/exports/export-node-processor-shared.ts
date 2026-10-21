@@ -1,9 +1,10 @@
 import path from 'node:path';
 import { logger } from '@shared/logger';
-import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
-import type { ExportExecutionInput, ExporterEntry, ExporterName } from '@modules/plugin/services/exports/export-node-processor-types';
+import type { ExportExecutionInput, ExporterEntry } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject, JsonValue } from '@shared/contracts/types/json';
-import type { ObjectBucketName } from '@shared/contracts/types/http-object-store';
+import type { TeamClusterObjectStoreBucket } from '@voltstack/daemon-cluster-client';
+import { Exporter, WorkflowExportType } from '@volt/contracts/modules/plugin/enums';
+import type { SceneArtifactUpsertItem } from '@volt/contracts/modules/cluster/daemon-events';
 
 export const YIELD_INTERVAL = 50_000;
 
@@ -25,13 +26,13 @@ export const getNestedValue = (data: JsonObject, key: string): JsonValue | undef
 
 export const buildObjectPath = (
     input: ExportExecutionInput,
-    exporter: ExporterName,
+    exporter: Exporter,
     type: string,
     arrayIndex?: number
 ): string => {
-    const isChart = exporter === 'ChartExporter' || type === 'chart-png';
-    const isSim = exporter === 'ConfigurationExporter';
-    const isPanel = exporter === 'PanelExporter' || type === 'panel-json';
+    const isChart = exporter === Exporter.CHART || type === WorkflowExportType.CHART_PNG;
+    const isSim = exporter === Exporter.CONFIGURATION;
+    const isPanel = exporter === Exporter.PANEL || type === WorkflowExportType.PANEL_JSON;
     const folder = isChart ? 'charts' : isSim ? 'simulation' : isPanel ? 'panels' : 'glb';
     const extension = isChart ? 'png' : isPanel ? 'json' : type;
     const suffix = arrayIndex != null ? `_${arrayIndex}` : '';
@@ -41,7 +42,7 @@ export const buildObjectPath = (
 
 export const resolveExporterEntries = (
     decodedPayload: JsonObject,
-    exporter: ExporterName
+    exporter: Exporter
 ): ExporterEntry[] => {
     const rawExport = decodedPayload.export;
 
@@ -87,12 +88,12 @@ export const resolveExporterEntries = (
 
 const buildArtifactReportInput = (
     input: ExportExecutionInput,
-    exporter: ExporterName,
+    exporter: Exporter,
     exportConfig: NonNullable<ExportExecutionInput['exposure']['export']>,
     objectPath: string,
     storageBucket: string,
     arrayIndex?: number
-): ReportArtifactInput => {
+): SceneArtifactUpsertItem => {
     const displayName = arrayIndex != null
         ? `${input.exposure.name} [${arrayIndex}]`
         : input.exposure.name;
@@ -126,8 +127,8 @@ const buildArtifactReportInput = (
 export const stageExportBufferUpload = (
     input: ExportExecutionInput,
     args: {
-        exporter: ExporterName;
-        bucket: ObjectBucketName;
+        exporter: Exporter;
+        bucket: TeamClusterObjectStoreBucket;
         buffer: Buffer;
         contentType: string;
         objectPath: string;

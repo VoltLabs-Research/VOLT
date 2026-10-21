@@ -3,16 +3,14 @@ import { singleton } from '@shared/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
-import type { TeamClusterDaemonRuntimeConfig } from '@shared/contracts/types/team-cluster-runtime';
 import type { ReverseChannelOutboundMessage } from '@shared/contracts/channel/binary-messages';
 import { ControlPlaneProcessClient } from '@modules/system/socket/connection/ControlPlaneProcessClient';
-import { TeamClusterStatus } from '@shared/contracts/types/container-types';
-
-interface RuntimeLifecycleUpdateRequest {
-    teamClusterId: string;
-    daemonPassword: string;
-    status: TeamClusterStatus;
-};
+import type {
+    TeamClusterDaemonRuntimeConfig,
+    TeamClusterDaemonLifecycleCommand
+} from '@voltstack/daemon-cluster-client';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 export class VoltCloudConnection {
     private connectedToCloud = false;
@@ -77,11 +75,11 @@ export class VoltCloudConnection {
         const startedAt = Date.now();
 
         try {
-            await this.client.sendCommand('runtime.lifecycle', {
+            await this.client.sendCommand(DaemonCommand.RuntimeLifecycle, {
                 teamClusterId: this.client.getTeamClusterId(),
                 daemonPassword: this.client.getDaemonPassword(),
                 status: TeamClusterStatus.DeleteFailed
-            } satisfies RuntimeLifecycleUpdateRequest);
+            } satisfies TeamClusterDaemonLifecycleCommand);
             logger.info(`Reported daemon lifecycle status to VoltCloud: status=${TeamClusterStatus.DeleteFailed}, durationMs=${Date.now() - startedAt}`);
         } catch (error) {
             logger.warn(`Failed to send lifecycle status to VoltCloud: status=${TeamClusterStatus.DeleteFailed}, durationMs=${Date.now() - startedAt}, error=${errorMessage(error)}`);
@@ -90,7 +88,7 @@ export class VoltCloudConnection {
 
     async getRuntimeConfig(): Promise<TeamClusterDaemonRuntimeConfig> {
         const runtimeConfig = await this.client.sendCommand<TeamClusterDaemonRuntimeConfig>(
-            'runtime.config.get',
+            DaemonCommand.RuntimeConfigGet,
             {}
         );
         if (!runtimeConfig) {

@@ -16,6 +16,7 @@ import type {
     ElementTableEntry
 } from '@shared/catalog/element-table';
 import type { LammpsUnits } from '@shared/catalog/units';
+import type { NativeAtomsPage, NativeAtomRow } from '@volt/contracts/modules/trajectory/daemon';
 
 interface ParsedTrajectoryMetadata {
     headers: string[];
@@ -43,19 +44,7 @@ export interface AtomsPageInput extends TrajectoryFrameLookupInput {
     limit: number;
 }
 
-interface AtomsPageRow {
-    id: number;
-    type: number;
-    x: number;
-    y: number;
-    z: number;
-    [property: string]: number;
-}
-
-interface AtomsPageResult {
-    atoms: AtomsPageRow[];
-    totalAtoms: number;
-    nativeProperties: string[];
+interface AtomsPageResult extends NativeAtomsPage {
     propertyDtypes: Record<string, ColumnDType>;
     units: LammpsUnits;
     elementTable: ElementTableEntry[];
@@ -227,10 +216,10 @@ export class TrajectoryParser {
         for (const propName of nativeProperties) {
             propertyDtypes[propName] = properties[propName].dtype;
         }
-        const atoms: AtomsPageRow[] = [];
+        const atoms: NativeAtomRow[] = [];
 
         for (let index = startIndex; index < endIndex; index++) {
-            const atom: AtomsPageRow = {
+            const atom: NativeAtomRow = {
                 id: parsed.ids ? parsed.ids[index] : pageOffset + index + 1,
                 type: parsed.types[index],
                 x: parsed.positions[index * 3],

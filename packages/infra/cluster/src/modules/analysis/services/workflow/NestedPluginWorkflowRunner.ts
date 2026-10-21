@@ -1,5 +1,4 @@
 import { stringifyWorkflowValue } from '@shared/utilities/serialization';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { WorkflowPlanner } from '@modules/analysis/services/workflow/WorkflowPlanner';
 import { WorkflowScheduler } from '@modules/analysis/services/workflow/WorkflowScheduler';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
@@ -16,25 +15,24 @@ import { dir as createTempDir } from 'tmp-promise';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
-import type { DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
-import type {
-    NestedPluginDefinition,
-    TrajectoryDumpDescriptor,
-    TrajectoryFrame,
-    WorkflowDefinition,
-    WorkflowNodeDefinition
-} from '@shared/contracts/types/http-workflow';
+import type { TrajectoryDumpDescriptor } from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowDumpTarget,
     WorkflowLogSinkFactory,
-    WorkflowNode,
     WorkflowNodeOutput,
     WorkflowOutputs
 } from '@shared/contracts/types/workflow.types';
 import type { BinaryExecutor, PluginRuntimeProvider } from '@shared/contracts/types/plugin-execution';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
-import type { AnalysisStageStatus } from '@shared/contracts/channel/reverse-channel-analysis';
 import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
+import { NodeType, PluginNodeOutputPathMode } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflow, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
+import type { AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
+import type {
+    DaemonAnalysisDocument,
+    NestedPluginDefinition,
+    TrajectoryFrame
+} from '@volt/contracts/modules/analysis/daemon';
 
 interface NestedPluginWorkflowInput {
     nestedPlugins: NestedPluginDefinition[];
@@ -54,8 +52,8 @@ interface NestedPluginWorkflowInput {
 }
 
 export interface NestedPluginNodeInput extends NestedPluginWorkflowInput {
-    node: Pick<WorkflowNodeDefinition, 'id' | 'type' | 'data'>;
-    workflow?: WorkflowDefinition;
+    node: Pick<IWorkflowNode, 'id' | 'type' | 'data'>;
+    workflow?: IWorkflow;
     captureTrace?: boolean;
 }
 
@@ -91,8 +89,8 @@ const toInlineDumpDescriptor = (dumpTarget: WorkflowDumpTarget): TrajectoryDumpD
     originalPath: dumpTarget.originalPath
 });
 
-const readWorkflowDisplayName = (workflow: WorkflowDefinition): string | null => {
-    const name = workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier)?.data.modifier?.name;
+const readWorkflowDisplayName = (workflow: IWorkflow): string | null => {
+    const name = workflow.nodes.find((node) => node.type === NodeType.MODIFIER)?.data.modifier?.name;
     return typeof name === 'string' && name.trim().length > 0 ? name : null;
 };
 
@@ -106,7 +104,7 @@ const collectExposureArtifacts = (session: WorkflowSession): WorkflowExposureArt
     const artifacts: WorkflowExposureArtifact[] = [];
 
     for (const node of session.context.workflow.nodes) {
-        if (node.type !== WorkflowNodeType.Exposure) {
+        if (node.type !== NodeType.EXPOSURE) {
             continue;
         }
 
@@ -146,7 +144,7 @@ export class NestedPluginWorkflowRunner {
 
         const reportStage = this.createStageReporter(input, execution, nestedPlugin.workflow);
         await fs.mkdir(input.outputDir, { recursive: true });
-        const nestedOutputDir = execution.outputPathMode === 'parent'
+        const nestedOutputDir = execution.outputPathMode === PluginNodeOutputPathMode.PARENT
             ? input.outputDir
             : (await createTempDir({
                 tmpdir: input.outputDir,
@@ -183,7 +181,7 @@ export class NestedPluginWorkflowRunner {
     private createStageReporter(
         input: NestedPluginWorkflowInput,
         execution: ResolvedPluginExecution,
-        workflow: WorkflowDefinition
+        workflow: IWorkflow
     ): NestedStageReporter {
         const { pluginId } = execution;
         const pluginDisplayName = readWorkflowDisplayName(workflow) ?? pluginId;
@@ -209,7 +207,7 @@ export class NestedPluginWorkflowRunner {
     private createNestedSession(
         input: NestedPluginWorkflowInput,
         execution: ResolvedPluginExecution,
-        workflow: WorkflowDefinition,
+        workflow: IWorkflow,
         nestedOutputDir: string
     ): WorkflowSession {
         const { pluginId } = execution;
@@ -270,7 +268,7 @@ export class NestedPluginWorkflowRunner {
             input.dumpTarget.localPath,
             { originalPath: input.dumpTarget.originalPath }
         );
-        const appendNode = (node: WorkflowNode, startedAt: number, entry: PlanningTraceEntry): void => {
+        const appendNode = (node: IWorkflowNode, startedAt: number, entry: PlanningTraceEntry): void => {
             trace.append({
                 nodeId: node.id,
                 nodeType: node.type,
@@ -285,7 +283,7 @@ export class NestedPluginWorkflowRunner {
             shouldSkipNode: (node) => !isPlanningNodeType(node.type),
             hooks: {
                 afterNodeExecuted: ({ node, output, startedAt }) => {
-                    const finalOutput = node.type === WorkflowNodeType.Context
+                    const finalOutput = node.type === NodeType.CONTEXT
                         ? session.setOutput(node.id, WorkflowSession.createLocalizedContextOutput(
                             output,
                             localizedDumpTarget,

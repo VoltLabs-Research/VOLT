@@ -1,10 +1,9 @@
 import { errorMessage } from '@shared/utilities/error-message';
 import { SESSION_ATTACH_TIMEOUT_MS, WEBSOCKET_BUFFERED_AMOUNT_BYTES_CAP, WEBSOCKET_PENDING_MESSAGE_BYTES_CAP } from '@core/constants/reverse-channel';
-import { decodeStreamChunk, encodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
 import { createSessionAttachFailureResult, failSessionAttach } from '@modules/system/services/sessions/session-transitions';
 import { WebSocket } from 'ws';
 import type { CloseEvent, Data, MessageEvent } from 'ws';
-import type { TeamClusterDaemonSessionAttachPayload } from '@voltstack/daemon-cluster-client';
+import { decodeStreamChunk, encodeStreamChunk, type TeamClusterDaemonSessionAttachPayload } from '@voltstack/daemon-cluster-client';
 import type { BinarySessionInputPayload, ReverseChannelOutboundMessage } from '@shared/contracts/channel/binary-messages';
 import type { SessionCommandResult, SessionTransitionCoordinator } from '@modules/system/services/sessions/session-transitions';
 
@@ -229,7 +228,8 @@ export class WebSocketSessionManager {
 
         let rawBuffer: Buffer;
         try {
-            rawBuffer = decodeStreamChunk(payload.chunk);
+            const bytes = decodeStreamChunk(payload.chunk);
+            rawBuffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         } catch (error) {
             this.endSessionWithError(payload.sessionId, `Malformed websocket input envelope: ${errorMessage(error)}`);
             return true;

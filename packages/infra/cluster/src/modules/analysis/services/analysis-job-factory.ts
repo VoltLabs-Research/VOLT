@@ -3,9 +3,9 @@ import { ANALYSIS_QUEUE_NAME } from '@core/constants/queue-names';
 import type {
     AnalysisJobMetadata,
     AnalysisQueueJobPayload,
-    AnalysisStartRequest,
     PlannedExecutionItem
 } from '@shared/contracts/types/http-analysis';
+import type { AnalysisStartRequest } from '@volt/contracts/modules/analysis/daemon';
 
 interface AnalysisJobFactoryContext {
     input: AnalysisStartRequest;
@@ -54,11 +54,7 @@ export const buildItemAnalysisJob = (
             inputFile,
             itemIndex: index,
             forEachItem: item,
-            forEachIndex: index,
-            windowMode: item.windowMode,
-            windowSize: item.windowSize,
-            referenceTimestep: item.referenceTimestep,
-            windowTimesteps: item.windowTimesteps
+            forEachIndex: index
         }
     };
 };

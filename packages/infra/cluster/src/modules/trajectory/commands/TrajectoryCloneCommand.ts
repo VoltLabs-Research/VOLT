@@ -2,11 +2,12 @@ import ApplicationError from '@shared/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { toTrajectoryFrameDumpObjectKey } from '@shared/storage/storage-codec';
 import { getObjectStore } from '@shared/storage/ClusterObjectStore';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { mapLimited } from '@shared/utilities/map-limited';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 interface TrajectoryCloneFramePayload {
     timestep: number | string;
@@ -41,13 +42,12 @@ const readFrameTimestep = (frame: TrajectoryCloneFramePayload): number => {
     return timestep;
 };
 
-@CommandGroup('trajectory')
 export class TrajectoryCloneCommand {
     constructor(
         private readonly objectStore: ClusterObjectStore
     ) {}
 
-    @Command('clone')
+    @Command(DaemonCommand.TrajectoryClone)
     async clone(payload: TrajectoryClonePayload): Promise<TrajectoryCloneResult> {
         if (!payload.sourceTrajectoryId || !payload.destinationTrajectoryId) {
             throw new Error('trajectory.clone requires sourceTrajectoryId and destinationTrajectoryId');
@@ -74,7 +74,7 @@ export class TrajectoryCloneCommand {
         const destinationObjectKey = toTrajectoryFrameDumpObjectKey(payload.destinationTrajectoryId, timestep);
         const source = await this.objectStore.getStream(
             payload.sourceClusterId,
-            ObjectBucketName.Dumps,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
             sourceObjectKey
         );
         const contentLength = source.contentLength ?? frame.size;
@@ -85,7 +85,7 @@ export class TrajectoryCloneCommand {
 
         await this.objectStore.putObjectStream({
             ownerClusterId: payload.destinationClusterId,
-            bucket: ObjectBucketName.Dumps,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
             objectKey: destinationObjectKey,
             stream: source.stream,
             size: contentLength,

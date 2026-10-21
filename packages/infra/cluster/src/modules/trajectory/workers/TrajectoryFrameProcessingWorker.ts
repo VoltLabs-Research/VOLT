@@ -26,7 +26,6 @@ import {
     toTrajectoryFrameJobKey,
     toTrajectoryFrameJobKeyPrefix
 } from '@core/constants/queue-names';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
@@ -49,6 +48,7 @@ import {
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import { readFrame } from '@voltstack/lammps-io';
 import spatialAssembler from '@voltstack/spatial-assembler';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const DRAIN_CLAIM_TTL_SECONDS = 30 * 60;
 
@@ -107,7 +107,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
 
     private async processFrame(payload: FrameProcessingQueueJobPayload, job: QueueJobHandle<FrameProcessingQueueJobPayload>): Promise<void> {
         const { trajectoryId, timestep, stagingObjectKey, ownerClusterId } = payload;
-        const bucket = ObjectBucketName.Dumps;
+        const bucket = TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps;
 
         await withNativeProcessingTempDir('trajectory-frame-processing', async (tempDirectory) => {
             const localRawPath = path.join(tempDirectory, `timestep-${timestep}.dump`);
@@ -213,7 +213,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
     private async hasFrameDump(trajectoryId: string, timestep: number): Promise<boolean> {
         try {
             await this.localObjectStore.statObject(
-                ObjectBucketName.Dumps,
+                TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
                 toTrajectoryFrameDumpObjectKey(trajectoryId, timestep)
             );
             return true;
@@ -229,7 +229,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
 
         do {
             const page = await this.localObjectStore.listObjectsPage({
-                bucket: ObjectBucketName.Dumps,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
                 prefix,
                 limit: DUMP_LIST_PAGE_SIZE,
                 cursor
@@ -281,7 +281,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         const modelObjectKey = toTrajectoryFrameModelObjectKey(trajectoryId, timestep);
         await this.objectStore.putObjectStream({
             ownerClusterId,
-            bucket: ObjectBucketName.Models,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             objectKey: modelObjectKey,
             stream: createReadStream(glbCompressedPath),
             size: glbStats.size,

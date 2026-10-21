@@ -18,6 +18,7 @@ import type { ResultProcessorService } from '@shared/contracts/types/result-proc
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
 import fs from 'node:fs/promises';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 const isParquetExposure = (resultsFileName: string): boolean =>
     resultsFileName.toLowerCase().endsWith('.parquet');
@@ -93,7 +94,7 @@ class DefaultResultProcessor implements ResultProcessorService {
         await reportStage('running');
 
         try {
-            const skipSubListings = exposure.export?.exporter === 'MeshExporter';
+            const skipSubListings = exposure.export?.exporter === Exporter.MESH;
 
             let {
                 listing: listingPayload,
@@ -105,7 +106,7 @@ class DefaultResultProcessor implements ResultProcessorService {
                 exportData: exportPayload
             } = await readWorkflowExposurePayload(outputFilePath, { skipSubListings });
 
-            const isChartOnlyExposure = exposure.export?.exporter === 'ChartExporter';
+            const isChartOnlyExposure = exposure.export?.exporter === Exporter.CHART;
             if (!isChartOnlyExposure) {
                 const propertyStorage = await this.pluginPropertyStore.writeExposureProperties({
                     trajectoryId,

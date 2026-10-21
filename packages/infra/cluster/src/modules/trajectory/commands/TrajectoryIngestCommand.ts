@@ -9,12 +9,11 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import unzipper from 'unzipper';
 import type { File as ZipEntry } from 'unzipper';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { QueueService } from '@shared/queues/QueueService';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, toTrajectoryFrameJobKey } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
@@ -22,11 +21,13 @@ import { scanTrajectoryFrames, type ParsedFrameMetadata } from '@modules/traject
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import { mapLimited } from '@shared/utilities/map-limited';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const INGEST_FRAME_CONCURRENCY = readPositiveIntegerEnv('TRAJECTORY_INGEST_CONCURRENCY') ?? 8;
 const DEFAULT_FRAME_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_FRAME_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_FRAME_JOB_BACKOFF_MS') ?? 2000;
-const INGEST_BUCKET = ObjectBucketName.Dumps;
+const INGEST_BUCKET = TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps;
 const ZIP_ENTRY_JUNK_BASENAMES = new Set(['__MACOSX', '.DS_Store', 'Thumbs.db']);
 
 interface TrajectoryIngestStagedObject {
@@ -73,7 +74,6 @@ const isUnsupportedContentError = (error: unknown): boolean => (
     /unsupported trajectory format/i.test(error instanceof Error ? error.message : '')
 );
 
-@CommandGroup('trajectory')
 export class TrajectoryIngestCommand {
     constructor(
         private readonly config: DaemonConfig,
@@ -81,7 +81,7 @@ export class TrajectoryIngestCommand {
         private readonly queueService: QueueService
     ) {}
 
-    @Command('ingest')
+    @Command(DaemonCommand.TrajectoryIngest)
     async ingest(payload: TrajectoryIngestPayload): Promise<TrajectoryIngestResult> {
         const { trajectoryId, teamId, stagedObjects } = payload;
 

@@ -6,9 +6,9 @@ import { pipeline } from 'node:stream/promises';
 import { logger } from '@shared/logger';
 import { DAEMON_PATHS } from '@core/config/paths';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { assertNativePluginBinary } from '@modules/plugin/services/binaries/native-plugin-binary';
 import { buildArtifactCacheKey } from '@modules/plugin/services/binaries/runtime-cache-keys';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 
 const HASH_MARKER_FILENAME_SUFFIX = '.sha256';
@@ -43,7 +43,7 @@ export class PluginArtifactDownloader {
         const resolvedOwnerClusterId = ownerClusterId || this.defaultOwnerClusterId;
         const { metadata } = await this.objectStore.head(
             resolvedOwnerClusterId,
-            ObjectBucketName.Plugins,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             binaryObjectPath
         );
 
@@ -105,7 +105,7 @@ export class PluginArtifactDownloader {
         const tempPath = `${localPath}.partial-${process.pid}-${Date.now()}`;
         const response = await this.objectStore.getStream(
             source.ownerClusterId,
-            ObjectBucketName.Plugins,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             binaryObjectPath,
             { skipMetadata: true }
         );

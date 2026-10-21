@@ -13,31 +13,12 @@ interface PlaneProcessOptions {
     advancedSerialization?: boolean;
 }
 
-const resolveDistRoot = (): string | null => {
-    const packaged = path.join(process.cwd(), 'dist');
-    if (existsSync(path.join(packaged, 'control-plane.js')) && existsSync(path.join(packaged, 'daemon.js'))) {
-        return packaged;
-    }
-
-    let dir = __dirname;
-    while (true) {
-        if (existsSync(path.join(dir, 'control-plane.js')) && existsSync(path.join(dir, 'daemon.js'))) {
-            return dir;
-        }
-        const parent = path.dirname(dir);
-        if (parent === dir) return null;
-        dir = parent;
-    }
-};
+// This file sits in <source root>/shared/planes both in src and in the compiled dist.
+const SOURCE_ROOT = path.resolve(__dirname, '..', '..');
 
 const resolveProcessCommand = (script: string, extraArgs: readonly string[]): { execPath: string; args: string[] } => {
-    const runningFromDist = __filename.endsWith('.js') && __dirname.includes(`${path.sep}dist${path.sep}`);
-
-    if (runningFromDist) {
-        const distRoot = resolveDistRoot();
-        const scriptPath = distRoot
-            ? path.join(distRoot, `${script}.js`)
-            : path.join(process.cwd(), 'dist', `${script}.js`);
+    if (__filename.endsWith('.js')) {
+        const scriptPath = path.join(SOURCE_ROOT, `${script}.js`);
         if (!existsSync(scriptPath)) {
             throw new Error(`Plane script missing: ${scriptPath}`);
         }
@@ -53,7 +34,7 @@ const resolveProcessCommand = (script: string, extraArgs: readonly string[]): { 
 
     return {
         execPath: tsx,
-        args: [path.resolve(process.cwd(), 'src', `${script}.ts`), ...extraArgs]
+        args: [path.join(SOURCE_ROOT, `${script}.ts`), ...extraArgs]
     };
 };
 

@@ -19,19 +19,19 @@ import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-
 import { logAndSwallow } from '@shared/utilities/error-message';
 import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import type { ArtifactUploadBatchJobPayload } from '@shared/contracts/types/artifact-upload';
-import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
 import type { BaseArtifactUploadEventData } from '@modules/plugin/events/plugin-events';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { compressFileWithZstd } from '@shared/storage/storage-codec';
 import { mapLimited } from '@shared/utilities/map-limited';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
+import type { SceneArtifactUpsertItem } from '@volt/contracts/modules/cluster/daemon-events';
 
 const DEFAULT_PER_JOB_UPLOAD_CONCURRENCY = 4;
 
 interface ArtifactUploadReporter {
     flushPendingArtifacts(): Promise<void>;
-    reportArtifact(input: ReportArtifactInput): Promise<void>;
+    reportArtifact(input: SceneArtifactUpsertItem): Promise<void>;
 }
 
 const DEFAULT_ARTIFACT_UPLOAD_CONCURRENCY = readPositiveIntegerEnv('ARTIFACT_UPLOAD_CONCURRENCY') ?? 8;

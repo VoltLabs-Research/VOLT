@@ -1,18 +1,8 @@
-type ExecutionLogStream = 'stdout' | 'stderr' | 'system';
+import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
 
-export interface ExecutionLogSegmentMetadata {
-    executionPath?: string[];
-    nodeId?: string;
-    nodeLabel?: string;
-    nodeType?: string;
-    pluginId?: string;
-}
+type ExecutionLogStream = ExecutionLogSegment['stream'];
 
-export interface ExecutionLogSegment extends ExecutionLogSegmentMetadata {
-    occurredAt: string;
-    stream: ExecutionLogStream;
-    text: string;
-}
+export type ExecutionLogSegmentMetadata = Omit<ExecutionLogSegment, 'occurredAt' | 'stream' | 'text'>;
 
 export interface ProcessExecutionLogChunk {
     stream: ExecutionLogStream;

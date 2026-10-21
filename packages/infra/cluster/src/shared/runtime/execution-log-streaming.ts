@@ -1,10 +1,10 @@
 import { logger } from '@shared/logger';
 import type {
-    ExecutionLogSegment,
     ExecutionLogSegmentMetadata,
     ProcessExecutionLogChunk,
     ProcessExecutionLogSink
 } from '@shared/contracts/types/execution-log';
+import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
 
 interface AnalysisExecutionLogReporter {
     reportAnalysisLogChunk(input: AnalysisExecutionLogChunkReport): Promise<void>;

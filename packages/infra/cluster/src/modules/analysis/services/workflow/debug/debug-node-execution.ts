@@ -1,4 +1,3 @@
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { executeDebugExportNode } from '@modules/analysis/services/workflow/debug/debug-export-node';
 import type { DebugEnvironment, DebugEnvironmentState } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import type { DebugSession, NodeExecutionOutcome } from '@modules/analysis/services/workflow/debug/debug-session';
@@ -6,7 +5,9 @@ import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/W
 import type { WorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import type { BinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
-import type { WorkflowExecutionContext, WorkflowNode } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext } from '@shared/contracts/types/workflow.types';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 interface DebugNodeExecutionDependencies {
     nodeExecutor: WorkflowNodeExecutor;
@@ -16,7 +17,7 @@ interface DebugNodeExecutionDependencies {
     binaryExecutorService: BinaryExecutorService;
 }
 
-export type DebugNodeRunner = (session: DebugSession, node: WorkflowNode) => Promise<NodeExecutionOutcome>;
+export type DebugNodeRunner = (session: DebugSession, node: IWorkflowNode) => Promise<NodeExecutionOutcome>;
 
 export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): DebugNodeRunner => {
     const ensureEnvironment = async (session: DebugSession): Promise<DebugEnvironmentState> => {
@@ -36,9 +37,9 @@ export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): Deb
         return preparedExecution;
     };
 
-    const buildContext = async (session: DebugSession, node: WorkflowNode): Promise<WorkflowExecutionContext> => {
-        const isEntrypoint = node.type === WorkflowNodeType.Entrypoint;
-        if (!isEntrypoint && node.type !== WorkflowNodeType.Exposure) {
+    const buildContext = async (session: DebugSession, node: IWorkflowNode): Promise<WorkflowExecutionContext> => {
+        const isEntrypoint = node.type === NodeType.ENTRYPOINT;
+        if (!isEntrypoint && node.type !== NodeType.EXPOSURE) {
             return session.context;
         }
 
@@ -79,7 +80,7 @@ export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): Deb
         };
     };
 
-    const runPluginNode = async (session: DebugSession, node: WorkflowNode): Promise<NodeExecutionOutcome> => {
+    const runPluginNode = async (session: DebugSession, node: IWorkflowNode): Promise<NodeExecutionOutcome> => {
         const { dumpPath, outputDir, selectedDump } = await ensureEnvironment(session);
         const { context } = session;
         const execution = await deps.workflowRuntime.executePluginNode({
@@ -114,11 +115,11 @@ export const createDebugNodeRunner = (deps: DebugNodeExecutionDependencies): Deb
     };
 
     return async (session, node) => {
-        if (node.type === WorkflowNodeType.Plugin) {
+        if (node.type === NodeType.PLUGIN) {
             return runPluginNode(session, node);
         }
 
-        if (node.type === WorkflowNodeType.Export) {
+        if (node.type === NodeType.EXPORT) {
             return executeDebugExportNode(session, node, await ensureEnvironment(session));
         }
 

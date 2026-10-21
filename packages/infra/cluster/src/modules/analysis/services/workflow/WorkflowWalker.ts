@@ -1,9 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import type {
     WorkflowExecutionContext,
     WorkflowGraph,
-    WorkflowNode,
     WorkflowNodeOutput,
     WorkflowValue,
     WorkflowValueMap
@@ -12,6 +10,8 @@ import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/W
 import type { WorkflowScheduler } from '@modules/analysis/services/workflow/WorkflowScheduler';
 import type { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import ApplicationError from '@shared/errors/ApplicationError';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 type InlineWorkflowTraceStatus = 'completed' | 'skipped' | 'error';
 
@@ -114,17 +114,17 @@ interface WorkflowWalkerPluginExecution {
 
 export interface WorkflowWalkerDelegate {
 
-    executePlugin(node: WorkflowNode, executionPath: string[]): Promise<WorkflowWalkerPluginExecution>;
+    executePlugin(node: IWorkflowNode, executionPath: string[]): Promise<WorkflowWalkerPluginExecution>;
 
-    buildNodeContext(node: WorkflowNode, executionPath: string[]): WorkflowExecutionContext;
+    buildNodeContext(node: IWorkflowNode, executionPath: string[]): WorkflowExecutionContext;
 
-    resolveExportOutput?(node: WorkflowNode): WorkflowNodeOutput | undefined;
+    resolveExportOutput?(node: IWorkflowNode): WorkflowNodeOutput | undefined;
 
-    reportNodeRunning?(node: WorkflowNode): void | Promise<void>;
+    reportNodeRunning?(node: IWorkflowNode): void | Promise<void>;
 
-    reportNodeCompleted?(node: WorkflowNode): void | Promise<void>;
+    reportNodeCompleted?(node: IWorkflowNode): void | Promise<void>;
 
-    reportNodeFailed?(node: WorkflowNode, error: unknown): void | Promise<void>;
+    reportNodeFailed?(node: IWorkflowNode, error: unknown): void | Promise<void>;
 }
 
 interface WorkflowWalkerOptions {
@@ -167,13 +167,13 @@ export class WorkflowWalker {
         return this.trace;
     }
 
-    async walkFrom(startNodes: WorkflowNode[], basePath: string[] = []): Promise<void> {
+    async walkFrom(startNodes: IWorkflowNode[], basePath: string[] = []): Promise<void> {
         for (const startNode of startNodes) {
             await this.walkNode(startNode, [...basePath, startNode.id]);
         }
     }
 
-    private async walkNode(node: WorkflowNode, executionPath: string[]): Promise<void> {
+    private async walkNode(node: IWorkflowNode, executionPath: string[]): Promise<void> {
         if (this.visitedNodeIds.has(node.id)) {
             return;
         }
@@ -181,7 +181,7 @@ export class WorkflowWalker {
 
         const startedAt = Date.now();
 
-        if (node.type === WorkflowNodeType.Export) {
+        if (node.type === NodeType.EXPORT) {
             const exportOutput = this.delegate.resolveExportOutput?.(node);
             if (exportOutput !== undefined) {
                 this.session.setOutput(node.id, exportOutput);
@@ -196,7 +196,7 @@ export class WorkflowWalker {
         }
 
         try {
-            if (node.type === WorkflowNodeType.Plugin) {
+            if (node.type === NodeType.PLUGIN) {
                 const execution = await this.delegate.executePlugin(node, executionPath);
                 this.session.setOutput(node.id, execution.output);
                 this.appendTrace(node, {
@@ -261,7 +261,7 @@ export class WorkflowWalker {
     }
 
     private async walkChildren(
-        node: WorkflowNode,
+        node: IWorkflowNode,
         executionPath: string[],
         output?: WorkflowNodeOutput
     ): Promise<void> {
@@ -279,7 +279,7 @@ export class WorkflowWalker {
         }
     }
 
-    private appendTrace(node: WorkflowNode, entry: WorkflowWalkerTraceEntry): void {
+    private appendTrace(node: IWorkflowNode, entry: WorkflowWalkerTraceEntry): void {
         const sanitized = entry.output !== undefined
             ? {
                 ...entry,

@@ -1,7 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { EntrypointType } from '@shared/contracts/types/http-runtime';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
 import { buildItemAnalysisJob } from '@modules/analysis/services/analysis-job-factory';
 import type {
@@ -14,6 +12,7 @@ import type {
     AnalysisStartRequestWithTrace,
     PlannedExecutionItem
 } from '@shared/contracts/types/http-analysis';
+import { NodeType, EntrypointType } from '@volt/contracts/modules/plugin/enums';
 
 interface PlanAnalysisWorkflowInput {
     input: AnalysisStartRequestWithTrace;
@@ -31,7 +30,7 @@ export const planAnalysisWorkflow = async (
 ): Promise<PlanAnalysisWorkflowResult> => {
     const { input, workflowEngine, serializedTraceContext } = params;
     const workflow = input.workflow;
-    const entrypoint = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint)?.data.entrypoint;
+    const entrypoint = workflow.nodes.find((node) => node.type === NodeType.ENTRYPOINT)?.data.entrypoint;
 
     if (!entrypoint?.binaryObjectPath || !entrypoint.arguments) {
         throw ApplicationError.badRequest(
@@ -79,7 +78,7 @@ export const planAnalysisWorkflow = async (
             binaryObjectPath: entrypoint.binaryObjectPath,
             ownerClusterId: entrypoint.ownerClusterId,
             arguments: entrypoint.arguments,
-            type: entrypoint.type ?? EntrypointType.Executable,
+            type: entrypoint.type ?? EntrypointType.EXECUTABLE,
             requirementsFile: entrypoint.requirementsFile,
             entrypointScript: entrypoint.entrypointScript
         },
@@ -97,7 +96,6 @@ export const planAnalysisWorkflow = async (
             pluginReferenceExecutions: input.pluginReferenceExecutions,
             exposures: WorkflowSession.collectExposureDefinitions(workflow, input.config),
             forEachNodeId: plan.forEachNodeId,
-            trajectoryWindowNodeId: plan.trajectoryWindowNodeId,
             nodeOutputSnapshots: plan.nodeOutputSnapshots
         },
         trajectoryFrames: input.trajectoryFrames,

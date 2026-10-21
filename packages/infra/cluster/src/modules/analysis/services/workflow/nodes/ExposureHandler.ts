@@ -7,16 +7,16 @@ import {
 import type {
     WorkflowExecutionContext,
     WorkflowExposureExecutionOptions,
-    WorkflowNode,
     WorkflowNodeOutput
 } from '@shared/contracts/types/workflow.types';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import type { WorkflowGraph } from '@shared/contracts/types/workflow.types';
 import fs from 'node:fs/promises';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
-const exportDescendantCache = new WeakMap<WorkflowGraph, Map<string, WorkflowNode | null>>();
+const exportDescendantCache = new WeakMap<WorkflowGraph, Map<string, IWorkflowNode | null>>();
 
-const resolveExportDescendant = (workflow: WorkflowGraph, nodeId: string): WorkflowNode | null => {
+const resolveExportDescendant = (workflow: WorkflowGraph, nodeId: string): IWorkflowNode | null => {
     let cache = exportDescendantCache.get(workflow);
     if (!cache) {
         cache = new Map();
@@ -27,15 +27,15 @@ const resolveExportDescendant = (workflow: WorkflowGraph, nodeId: string): Workf
         return cache.get(nodeId) ?? null;
     }
 
-    const exportNode = workflow.findDescendantByType(nodeId, WorkflowNodeType.Export);
+    const exportNode = workflow.findDescendantByType(nodeId, NodeType.EXPORT);
     cache.set(nodeId, exportNode);
     return exportNode;
 };
 
 export class WorkflowExposureHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.Exposure;
+    readonly type = NodeType.EXPOSURE;
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
+    async execute(node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
         const execution = context.execution?.exposure;
         if (!execution) {
             throw new Error(`Exposure ${node.id} cannot be executed without workflow execution context`);
@@ -61,7 +61,7 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
     }
 
     private resolveExposureDefinition(
-        node: WorkflowNode,
+        node: IWorkflowNode,
         context: WorkflowExecutionContext
     ): AnalysisExposureDefinition | null {
         const exposureData = node.data.exposure;
@@ -112,7 +112,7 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
     }
 
     private async executeDebugExposure(
-        node: WorkflowNode,
+        node: IWorkflowNode,
         context: WorkflowExecutionContext,
         execution: WorkflowExposureExecutionOptions,
         exposure: AnalysisExposureDefinition
@@ -132,7 +132,7 @@ export class WorkflowExposureHandler implements WorkflowNodeHandler {
     }
 
     private async executeInlineExposure(
-        node: WorkflowNode,
+        node: IWorkflowNode,
         execution: WorkflowExposureExecutionOptions,
         exposure: AnalysisExposureDefinition
     ): Promise<WorkflowNodeOutput> {

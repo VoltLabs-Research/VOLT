@@ -1,7 +1,7 @@
-import type { WorkflowIfCondition } from '@shared/contracts/types/http-workflow';
-import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { NodeType, ConditionHandler, ConditionType } from '@volt/contracts/modules/plugin/enums';
+import type { ICondition, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 interface WorkflowIfStatementOutput extends WorkflowNodeOutput {
     result: boolean;
@@ -9,12 +9,12 @@ interface WorkflowIfStatementOutput extends WorkflowNodeOutput {
 }
 
 export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.IfStatement;
+    readonly type = NodeType.IF_STATEMENT;
     private static readonly INITIAL_CONDITION_RESULT = true;
 
     constructor(private readonly registry: WorkflowNodeRegistry){}
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowIfStatementOutput> {
+    async execute(node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowIfStatementOutput> {
         const ifStatement = node.data.ifStatement;
         const conditions = ifStatement?.conditions ?? [];
 
@@ -44,17 +44,17 @@ export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
 
     private async reduceConditionResult(
         currentResult: boolean | undefined,
-        condition: WorkflowIfCondition,
+        condition: ICondition,
         index: number,
         context: WorkflowExecutionContext,
         nodeId: string
     ): Promise<boolean> {
         const [left, right] = await Promise.all([
-            this.registry.createValueResolver(context, nodeId).resolveExpressionValue(condition.leftExpression ?? ''),
-            this.registry.createValueResolver(context, nodeId).resolveExpressionValue(condition.rightExpression ?? '')
+            this.registry.createValueResolver(context, nodeId).resolveExpressionValue(condition.leftExpr ?? ''),
+            this.registry.createValueResolver(context, nodeId).resolveExpressionValue(condition.rightExpr ?? '')
         ]);
 
-        const isMatch = condition.handler === 'is_equal_to'
+        const isMatch = condition.handler === ConditionHandler.IS_EQUAL_TO
             ? left == right
             : left != right;
 
@@ -62,6 +62,6 @@ export class WorkflowIfStatementHandler implements WorkflowNodeHandler {
             return isMatch;
         }
 
-        return condition.type === 'and' ? (currentResult && isMatch) : (currentResult || isMatch);
+        return condition.type === ConditionType.AND ? (currentResult && isMatch) : (currentResult || isMatch);
     }
 };

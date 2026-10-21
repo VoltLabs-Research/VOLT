@@ -1,8 +1,8 @@
 import { createDomainEvent } from '@shared/events/create-domain-event';
-import type { SceneArtifactUpsertBatch } from '@shared/contracts/channel/reverse-channel-plugin';
-import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
+import type { Failed } from '@shared/contracts/types/job-identity';
+import type { ArtifactUploadJobStatusReport, SceneArtifactUpsertBatch } from '@volt/contracts/modules/cluster/daemon-events';
 
-export type BaseArtifactUploadEventData = JobIdentity;
+export type BaseArtifactUploadEventData = Omit<ArtifactUploadJobStatusReport, 'status' | 'error'>;
 export type ArtifactUploadFailedEventData = Failed<BaseArtifactUploadEventData>;
 
 export const ArtifactUploadStartedEvent = createDomainEvent<BaseArtifactUploadEventData>('plugin.artifact-upload.started');

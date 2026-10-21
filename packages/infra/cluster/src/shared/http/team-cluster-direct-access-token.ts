@@ -1,17 +1,5 @@
-import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/service-exposure';
 import jwt from 'jsonwebtoken';
-
-interface TeamClusterDirectAccessTokenClaims {
-    requesterKind: 'daemon' | 'server';
-    requesterId: string;
-    ownerClusterId: string;
-    teamId: string;
-    exposureId: string;
-    exposureName: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-    iat?: number;
-    exp?: number;
-}
+import type { TeamClusterDirectAccessTokenClaims } from '@voltstack/daemon-cluster-client';
 
 export const verifyTeamClusterDirectAccessToken = (
     secret: string,

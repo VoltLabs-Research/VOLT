@@ -5,6 +5,7 @@ import { createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import fg from 'fast-glob';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 
 
 interface RegistryEntrypoint {
@@ -62,7 +63,7 @@ export const readRegistryWorkflow = async (extractDir: string): Promise<unknown>
 
 export const resolveRegistryEntrypoint = (workflow: unknown): RegistryEntrypoint => {
     const nodes = (workflow as { nodes?: RegistryEntrypointNode[] }).nodes ?? [];
-    const entrypoint = nodes.find((node) => node.type === 'entrypoint')?.data?.entrypoint;
+    const entrypoint = nodes.find((node) => node.type === NodeType.ENTRYPOINT)?.data?.entrypoint;
     if (!entrypoint || !(entrypoint.binaryFileName ?? entrypoint.binary)) {
         throw new ApplicationError(ErrorCodes.PLUGIN_REGISTRY_BINARY_MISSING, 'Workflow entrypoint does not declare a binary', { statusCode: 422 });
     }

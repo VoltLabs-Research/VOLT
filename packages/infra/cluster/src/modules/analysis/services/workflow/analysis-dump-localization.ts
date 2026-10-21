@@ -4,12 +4,13 @@ import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump
 import { decodeCliArgumentsToken, encodeCliArgumentsToken } from '@shared/utilities/serialization';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
-import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
+import { ArgumentType, NodeType } from '@volt/contracts/modules/plugin/enums';
 
 interface DumpLocalizationState {
     outputs: Map<string, WorkflowNodeOutput>;
-    dumpTargets: WorkflowDumpTarget[];
+    dumpTarget: WorkflowDumpTarget | null;
     dumpLocalPaths: string[];
 }
 
@@ -91,7 +92,7 @@ export const materializeFrameArgumentDumps = async (
     executionData: AnalysisJobExecutionData
 ): Promise<void> => {
     const dumpPathByTimestep = new Map<number, string>(
-        state.dumpTargets.map((target) => [target.timestep, target.localPath])
+        state.dumpTarget ? [[state.dumpTarget.timestep, state.dumpTarget.localPath]] : []
     );
 
     const resolveDumpPath = async (timestep: number): Promise<string> => {
@@ -116,7 +117,7 @@ export const materializeFrameArgumentDumps = async (
     };
 
     const materialize = async (
-        definition: WorkflowArgumentDefinition,
+        definition: IArgumentDefinition,
         values: WorkflowNodeOutput,
         replacements: Map<string, string>
     ): Promise<void> => {
@@ -125,7 +126,7 @@ export const materializeFrameArgumentDumps = async (
             return;
         }
 
-        if (definition.type === 'frame') {
+        if (definition.type === ArgumentType.FRAME) {
             const timestep = parseFrameArgumentTimestep(values[argumentKey]);
             if (timestep === null) {
                 return;
@@ -138,7 +139,7 @@ export const materializeFrameArgumentDumps = async (
         }
 
         const items = values[argumentKey];
-        if (definition.type !== 'list' || !definition.listArguments?.length || !Array.isArray(items)) {
+        if (definition.type !== ArgumentType.LIST || !definition.listArguments?.length || !Array.isArray(items)) {
             return;
         }
 
@@ -154,7 +155,7 @@ export const materializeFrameArgumentDumps = async (
     };
 
     for (const node of executionData.workflow.definition.nodes) {
-        const output = node.type === 'arguments' ? state.outputs.get(node.id) : undefined;
+        const output = node.type === NodeType.ARGUMENTS ? state.outputs.get(node.id) : undefined;
         if (!output) {
             continue;
         }

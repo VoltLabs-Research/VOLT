@@ -5,24 +5,24 @@ import type {
     GlbConversionQueueJobPayload,
     TrajectoryRuntimeCleanupRequest
 } from '@shared/contracts/types/queue-trajectory';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import { logger } from '@shared/logger';
 import type { QueueService } from '@shared/queues/QueueService';
 import { TRAJECTORY_GLB_QUEUE_NAME } from '@core/constants/queue-names';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const DEFAULT_TRAJECTORY_GLB_JOB_ATTEMPTS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_ATTEMPTS') ?? 3;
 const DEFAULT_TRAJECTORY_GLB_JOB_BACKOFF_MS = readPositiveIntegerEnv('TRAJECTORY_GLB_JOB_BACKOFF_MS') ?? 2000;
 
-@CommandGroup('trajectory')
 export class TrajectoryQueueCommands {
     constructor(
         private readonly queueService: QueueService,
         private readonly runtimeStateCleanupControl: RuntimeStateCleanupControl
     ) {}
 
-    @Command('enqueue-preprocessing')
+    @Command(DaemonCommand.TrajectoryEnqueuePreprocessing)
     async enqueuePreprocessing(payload: EnqueuePreprocessingRequest) {
         const result: EnqueuePreprocessingResponse = {
             queuedJobs: 0,
@@ -80,7 +80,7 @@ export class TrajectoryQueueCommands {
         return result;
     }
 
-    @Command('cleanup-runtime-state')
+    @Command(DaemonCommand.TrajectoryCleanupRuntimeState)
     cleanupRuntimeState(payload: TrajectoryRuntimeCleanupRequest) {
         return this.runtimeStateCleanupControl.cleanupTrajectoryRuntimeState(payload);
     }

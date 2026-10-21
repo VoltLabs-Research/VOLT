@@ -1,29 +1,29 @@
 import { getAnalysisDispatcher } from '@modules/analysis/services/AnalysisDispatcher';
 import type {
     AnalysisRuntimeCleanupRequest,
-    AnalysisStartRequest,
     AnalysisStartRequestWithTrace,
     AnalysisStartTransportPayload
 } from '@shared/contracts/types/http-analysis';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import { extractDaemonTraceContext } from '@shared/observability/daemon-instrumentation';
 import { inflateBase64GzipJson } from '@shared/utilities/gzip-base64-json';
 import type { AnalysisDispatcher } from '@modules/analysis/services/AnalysisDispatcher';
 import { RuntimeStateCleanupControl, getRuntimeStateCleanupControl } from '@modules/jobs/services/RuntimeStateCleanupControl';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { AnalysisStartRequest } from '@volt/contracts/modules/analysis/daemon';
 
-@CommandGroup('analysis')
 export class AnalysisCommands {
     constructor(
         private readonly analysisDispatcher: AnalysisDispatcher,
         private readonly runtimeStateCleanupControl: RuntimeStateCleanupControl
     ) {}
 
-    @Command('start')
+    @Command(DaemonCommand.AnalysisStart)
     async start(payload: AnalysisStartTransportPayload) {
         return this.analysisDispatcher.startAnalysis(await this.readAnalysisStartRequest(payload));
     }
 
-    @Command('cleanup-runtime-state')
+    @Command(DaemonCommand.AnalysisCleanupRuntimeState)
     cleanupRuntimeState(payload: AnalysisRuntimeCleanupRequest) {
         return this.runtimeStateCleanupControl.cleanupAnalysisRuntimeState(payload);
     }

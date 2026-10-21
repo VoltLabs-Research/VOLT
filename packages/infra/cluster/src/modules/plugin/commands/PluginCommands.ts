@@ -3,24 +3,9 @@ import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getPluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import { getQueueService } from '@shared/queues/QueueService';
 import { getConfig } from '@core/config/daemon';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
-import {
-    type PluginSyncRequest,
-    type PluginWarmupRequest,
-    type PluginWarmupResponse
-} from '@shared/contracts/types/http-analysis';
-import {
-    type PluginListingTransferExportPayload,
-    type PluginListingTransferImportPayload,
-    type PluginListingTransferPurgePayload
-} from '@shared/contracts/types/listing-transfer-payloads';
-import {
-    type TeamClusterDaemonRegistryInstallPayload,
-    type TeamClusterDaemonRegistryInstallResult
-} from '@shared/contracts/types/registry-install';
 import type { PluginListingRepository } from '@modules/plugin/models/PluginListingRepository';
 import type {
     PluginListingFilter,
@@ -47,8 +32,24 @@ import { pipeline } from 'node:stream/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as tar from 'tar';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    PluginSyncRequest,
+    PluginWarmupRequest,
+    PluginWarmupResult,
+    PluginRegistryInstallRequest,
+    PluginRegistryInstallResult,
+    PluginListingTransferExportRequest,
+    PluginListingTransferImportRequest,
+    PluginListingTransferPurgeRequest,
+    PluginSyncResult,
+    PluginListingTransferExportResult,
+    PluginListingTransferImportResult,
+    PluginListingTransferPurgeResult
+} from '@volt/contracts/modules/plugin/daemon';
 
-@CommandGroup('plugin')
 export class PluginCommands {
     constructor(
         private readonly objectStore: ClusterObjectStore,
@@ -57,10 +58,10 @@ export class PluginCommands {
         private readonly config: DaemonConfig
     ) {}
 
-    @Command('sync')
-    async sync(payload: PluginSyncRequest) {
+    @Command(DaemonCommand.PluginSync)
+    async sync(payload: PluginSyncRequest): Promise<PluginSyncResult> {
         try {
-            await this.objectStore.head(payload.ownerClusterId, ObjectBucketName.Plugins, payload.objectKey);
+            await this.objectStore.head(payload.ownerClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins, payload.objectKey);
             return {
                 synced: true,
                 objectKey: payload.objectKey
@@ -84,8 +85,8 @@ export class PluginCommands {
         }
     }
 
-    @Command('warmup')
-    async warmup(payload: PluginWarmupRequest): Promise<PluginWarmupResponse> {
+    @Command(DaemonCommand.PluginWarmup)
+    async warmup(payload: PluginWarmupRequest): Promise<PluginWarmupResult> {
         const jobId = `plugin-warmup:${payload.pluginId}:${payload.expectedHash ?? payload.binaryObjectPath}`;
         const warmupPayload: PluginWarmupJobPayload = {
             jobId,
@@ -104,8 +105,8 @@ export class PluginCommands {
         };
     }
 
-    @Command('registry.install')
-    async registryInstall(payload: TeamClusterDaemonRegistryInstallPayload): Promise<TeamClusterDaemonRegistryInstallResult> {
+    @Command(DaemonCommand.PluginRegistryInstall)
+    async registryInstall(payload: PluginRegistryInstallRequest): Promise<PluginRegistryInstallResult> {
         return withNativeProcessingTempDir('plugin-registry-install', async (dir) => {
             const tarball = await downloadVerifiedTarball(payload.downloadUrl, payload.sha256);
             const tgzPath = path.join(dir, 'package.tgz');
@@ -122,7 +123,7 @@ export class PluginCommands {
             const entrypoint = resolveRegistryEntrypoint(workflow);
             const fileName = path.basename(entrypoint.binaryFileName ?? entrypoint.binary ?? '');
             let body: Buffer;
-            if (entrypoint.type === 'executable') {
+            if (entrypoint.type === EntrypointType.EXECUTABLE) {
                 body = await fs.readFile(await locateRegistryExecutable(extractDir, fileName));
             } else {
                 const zipPath = path.join(dir, fileName);
@@ -141,7 +142,7 @@ export class PluginCommands {
             }, '@plugin-registry-install: uploading binary');
             await this.objectStore.putObject({
                 ownerClusterId: this.config.teamClusterId,
-                bucket: ObjectBucketName.Plugins,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                 objectKey: objectPath,
                 body,
                 metadata: {
@@ -164,30 +165,30 @@ export class PluginCommands {
         });
     }
 
-    @Command('listings.list')
+    @Command(DaemonCommand.PluginListingsList)
     listListings(payload: PluginListingFilter) {
         return this.pluginListingRepository.listPluginListings(payload);
     }
 
-    @Command('sub-listings.list')
+    @Command(DaemonCommand.PluginSubListingsList)
     listSubListings(payload: PluginSubListingFilter) {
         return this.pluginListingRepository.listPluginSubListings(payload);
     }
 
-    @Command('transfer.listings.export')
-    exportListings(payload: PluginListingTransferExportPayload) {
+    @Command(DaemonCommand.PluginTransferListingsExport)
+    exportListings(payload: PluginListingTransferExportRequest): Promise<PluginListingTransferExportResult> {
         return this.pluginListingRepository.exportListingRows(payload);
     }
 
-    @Command('transfer.listings.import')
-    async importListings(payload: PluginListingTransferImportPayload) {
+    @Command(DaemonCommand.PluginTransferListingsImport)
+    async importListings(payload: PluginListingTransferImportRequest): Promise<PluginListingTransferImportResult> {
         return {
             importedRows: await this.pluginListingRepository.importListingRows(payload)
         };
     }
 
-    @Command('transfer.listings.purge')
-    async purgeListings(payload: PluginListingTransferPurgePayload) {
+    @Command(DaemonCommand.PluginTransferListingsPurge)
+    async purgeListings(payload: PluginListingTransferPurgeRequest): Promise<PluginListingTransferPurgeResult> {
         return {
             deletedRows: await this.pluginListingRepository.purgeListingRows(payload)
         };

@@ -1,4 +1,4 @@
-import type { TeamClusterDaemonQueueConcurrency } from '@shared/contracts/types/team-cluster-runtime';
+import type { TeamClusterDaemonQueueConcurrency } from '@voltstack/daemon-cluster-client';
 
 type WorkerStartScope = 'always' | 'compute';
 

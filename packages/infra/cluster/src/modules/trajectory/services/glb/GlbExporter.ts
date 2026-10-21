@@ -2,7 +2,6 @@ import { singleton } from '@shared/utilities/singleton';
 import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getTrajectoryRasterQueue } from '@modules/trajectory/services/raster/TrajectoryRasterQueue';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { logger } from '@shared/logger';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -14,6 +13,7 @@ import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-
 import { compressFileWithZstd } from '@shared/storage/storage-codec';
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import spatialAssembler from '@voltstack/spatial-assembler';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 interface PreprocessTrajectoryInput {
     trajectoryId: string;
@@ -80,7 +80,7 @@ export class GlbExporter {
 
             await this.objectStore.putObjectStream({
                 ownerClusterId,
-                bucket: ObjectBucketName.Models,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
                 objectKey: modelObjectKey,
                 stream: createReadStream(tempCompressedGlbPath),
                 size: glbStats.size,

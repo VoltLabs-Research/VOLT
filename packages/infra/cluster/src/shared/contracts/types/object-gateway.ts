@@ -1,4 +1,4 @@
-import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/service-exposure';
+import type { TeamClusterServiceExposureAccessMode } from '@voltstack/daemon-cluster-client';
 
 export interface ObjectGatewayDirectAccessClaims {
     ownerClusterId: string;

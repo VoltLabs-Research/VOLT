@@ -1,6 +1,8 @@
 import { singleton } from '@shared/utilities/singleton';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@shared/contracts/types/team-cluster-runtime';
-import type { TeamClusterDaemonQueueScopeLimits } from '@shared/contracts/types/team-cluster-runtime';
+import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
+    type TeamClusterDaemonQueueScopeLimits
+} from '@voltstack/daemon-cluster-client';
 
 export type QueueScopeKey = keyof TeamClusterDaemonQueueScopeLimits;
 

@@ -1,5 +1,4 @@
-import type { JobIdentity } from '@shared/contracts/types/job-identity';
-import type { SceneArtifactUpsertBatchItem } from '@shared/contracts/channel/reverse-channel-plugin';
+import type { SceneArtifactUpsertItem, DaemonJobIdentity } from '@volt/contracts/modules/cluster/daemon-events';
 
 export interface ArtifactStageInput {
     bucket: string;
@@ -12,7 +11,7 @@ export type ArtifactStageBufferInput = ArtifactStageInput & {
     buffer: Buffer;
 };
 
-export interface ArtifactUploadBatchContext extends Omit<JobIdentity, 'jobId'> {
+export interface ArtifactUploadBatchContext extends Omit<DaemonJobIdentity, 'jobId'> {
     analysisId: string;
     analysisJobId: string;
     trajectoryId: string;
@@ -22,7 +21,7 @@ export interface ArtifactUploadStageInput extends ArtifactStageInput {
     ownerClusterId: string;
     contentEncoding?: string;
     metadata?: Record<string, string>;
-    reportArtifact?: SceneArtifactUpsertBatchItem;
+    reportArtifact?: SceneArtifactUpsertItem;
 }
 
 type ArtifactUploadStageFileInput = ArtifactUploadStageInput & {
@@ -35,7 +34,7 @@ export type ArtifactUploadStageBufferInput = ArtifactUploadStageInput & {
 
 export type ArtifactUploadBatchUpload = Omit<ArtifactUploadStageFileInput, 'fileName'>;
 
-export interface ArtifactUploadBatchJobPayload extends JobIdentity {
+export interface ArtifactUploadBatchJobPayload extends DaemonJobIdentity {
     analysisId: string;
     analysisJobId: string;
     trajectoryId: string;

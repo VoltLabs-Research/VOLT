@@ -1,5 +1,4 @@
 import { logger } from '@shared/logger';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { getNestedValue, stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
 
 import type {
@@ -13,6 +12,8 @@ import type {
     PanelTableBlockDeclaration
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject, JsonValue } from '@shared/contracts/types/json';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 const PANEL_MAX_TABLE_ROWS = 512;
 const PANEL_MAX_CHART_POINTS = 2048;
@@ -327,8 +328,8 @@ export const exportPanelArtifact = async (
     }
 
     await stageExportBufferUpload(input, {
-        exporter: 'PanelExporter',
-        bucket: ObjectBucketName.Plugins,
+        exporter: Exporter.PANEL,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
         buffer,
         contentType: 'application/json',
         objectPath,

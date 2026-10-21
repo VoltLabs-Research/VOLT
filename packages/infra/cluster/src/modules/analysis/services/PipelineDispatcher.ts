@@ -12,14 +12,13 @@ import { QueueService, getQueueService } from '@shared/queues/QueueService';
 import { planAnalysisWorkflow } from '@modules/analysis/services/plan-analysis-workflow';
 import type {
     AnalysisStartRequestWithTrace,
-    AnalysisStartResponse,
     PipelinePlannedStage,
     PipelineQueueJobPayload,
-    PipelineStartRequestWithTrace,
-    PipelineStartResolvedStage,
-    QueuedJobNotification
+    PipelineStartRequestWithTrace
 } from '@shared/contracts/types/http-analysis';
 import type { AnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
+import type { QueuedAnalysisJobNotification } from '@volt/contracts/modules/cluster/daemon-events';
+import type { AnalysisStartResponse, PipelineStartResolvedStage } from '@volt/contracts/modules/analysis/daemon';
 
 interface PreparedComputeStage {
     plan: PipelinePlannedStage;
@@ -63,7 +62,7 @@ export class PipelineDispatcher {
             }
         }
 
-        const jobs: QueuedJobNotification[] = [];
+        const jobs: QueuedAnalysisJobNotification[] = [];
         const runToken = randomUUID();
         const payloads: PipelineQueueJobPayload[] = [];
         for (const timestep of timesteps) {

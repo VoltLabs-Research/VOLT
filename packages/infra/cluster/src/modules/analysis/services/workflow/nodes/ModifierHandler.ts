@@ -1,6 +1,7 @@
-import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 interface WorkflowModifierOutput extends WorkflowNodeOutput {
     pluginId: string;
@@ -12,9 +13,9 @@ interface WorkflowModifierOutput extends WorkflowNodeOutput {
 }
 
 export class WorkflowModifierHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.Modifier;
+    readonly type = NodeType.MODIFIER;
 
-    execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowModifierOutput> {
+    execute(node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowModifierOutput> {
         const modifier = node.data.modifier;
 
         return Promise.resolve({

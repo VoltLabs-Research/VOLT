@@ -1,27 +1,20 @@
 import {
-    getCommandGroupMetadata,
+    getGroupCommands,
     type CommandGroupFactory,
     type CommandMethodMetadata
 } from '@shared/commands/command';
 import { logger } from '@shared/logger';
 import type { CommandTransport } from '@shared/contracts/channel/command-transport';
+import type { ReverseChannelCommandResult } from '@shared/contracts/channel/reverse-channel-messaging';
 
-interface CommandResult {
-    status?: number;
-    data?: object | null;
-    body?: Buffer;
-    headers?: Record<string, string>;
-    stream?: ReadableStream<Uint8Array>;
-}
-
-const normalizeCommandResult = (result: unknown, command: CommandMethodMetadata): CommandResult => {
+const normalizeCommandResult = (result: unknown, command: CommandMethodMetadata): ReverseChannelCommandResult => {
     if (command.options.raw === true) {
-        return result as CommandResult;
+        return result as ReverseChannelCommandResult;
     }
 
     return {
         status: command.options.status,
-        data: (result ?? null) as CommandResult['data']
+        data: (result ?? null) as ReverseChannelCommandResult['data']
     };
 };
 
@@ -32,13 +25,13 @@ export const registerCommandGroups = (
     const commandNames = new Set<string>();
 
     for (const factory of factories) {
-        const metadata = getCommandGroupMetadata(factory.group);
-        if (!metadata) {
-            throw new Error(`Command group "${factory.group.name}" is missing @CommandGroup metadata.`);
+        const commands = getGroupCommands(factory.group);
+        if (commands.length === 0) {
+            throw new Error(`Command group "${factory.group.name}" declares no @Command methods.`);
         }
 
-        for (const method of metadata.commands) {
-            const commandName = `${metadata.namespace}.${method.name}`;
+        for (const method of commands) {
+            const commandName = method.name;
             if (commandNames.has(commandName)) {
                 throw new Error(`Command already registered: ${commandName}`);
             }

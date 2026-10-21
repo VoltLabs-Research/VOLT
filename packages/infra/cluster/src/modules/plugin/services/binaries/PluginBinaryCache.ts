@@ -9,7 +9,6 @@ import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { EntrypointType } from '@shared/contracts/types/http-runtime';
 import {
     PluginArtifactDownloader,
     type PluginArtifactSource
@@ -21,6 +20,7 @@ import {
 import { buildRuntimeCacheKey } from '@modules/plugin/services/binaries/runtime-cache-keys';
 import { providePythonRuntime } from '@modules/plugin/services/binaries/python-runtime-provisioner';
 import { providePackagedRuntime } from '@modules/plugin/services/binaries/packaged-runtime-provisioner';
+import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
 
 
 export class PluginBinaryCache {
@@ -35,8 +35,8 @@ export class PluginBinaryCache {
     }
 
     async getExecutionRuntime(input: PluginExecutionRuntimeInput): Promise<PluginExecutionRuntime> {
-        const entrypointType = input.entrypointType ?? EntrypointType.Executable;
-        if (entrypointType === EntrypointType.PythonScript) {
+        const entrypointType = input.entrypointType ?? EntrypointType.EXECUTABLE;
+        if (entrypointType === EntrypointType.PYTHON_SCRIPT) {
             return this.getPythonRuntime(
                 input.binaryObjectPath,
                 input.ownerClusterId,
@@ -44,7 +44,7 @@ export class PluginBinaryCache {
                 input.entrypointScript
             );
         }
-        if (entrypointType === EntrypointType.PackagedExecutable) {
+        if (entrypointType === EntrypointType.PACKAGED_EXECUTABLE) {
             if (!input.entrypointScript) {
                 throw new Error('Packaged executable entrypointScript is required');
             }

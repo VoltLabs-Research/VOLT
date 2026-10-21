@@ -13,12 +13,12 @@ import type { QueueService } from '@shared/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
 import { isFinalAttempt, withJobLifecycle } from '@shared/queues/with-job-lifecycle';
 import { TRAJECTORY_RASTER_QUEUE_NAME } from '@core/constants/queue-names';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { type RasterQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
 import { logAndSwallow } from '@shared/utilities/error-message';
 import type { Rasterizer } from '@modules/trajectory/services/raster/Rasterizer';
 import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
     protected readonly queueName = TRAJECTORY_RASTER_QUEUE_NAME;
@@ -65,7 +65,7 @@ export class TrajectoryRasterWorker extends BaseWorker<RasterQueueJobPayload> {
                 }
             },
             () => this.rasterizer.rasterizePreview({
-                inputBucket: ObjectBucketName.Models,
+                inputBucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
                 inputObjectKey: payload.modelObjectKey,
                 inputOwnerClusterId: payload.modelOwnerClusterId,
                 outputObjectKey: payload.outputObjectKey,

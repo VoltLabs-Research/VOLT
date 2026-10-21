@@ -4,7 +4,7 @@ import { getTrajectoryParser } from '@modules/trajectory/services/parsing/Trajec
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import spatialAssembler from '@voltstack/spatial-assembler';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { toBytes, type InboundChunk } from '@shared/contracts/channel/binary-envelope';
+import { toBytes, type BinaryChunk } from '@voltstack/daemon-cluster-client';
 import {
     buildCategoricalColors,
     buildHighlightColors,
@@ -21,6 +21,7 @@ import { type ClusterObjectStore } from '@shared/contracts/types/cluster-object-
 import type { ComparisonOperator } from '@modules/trajectory/services/particle-filter-kernels';
 import type { ParsedTrajectory, TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
+import type { NativeFilterPreview } from '@volt/contracts/modules/trajectory/daemon';
 
 export interface PreviewFilterInput {
     trajectoryId: string;
@@ -31,13 +32,7 @@ export interface PreviewFilterInput {
     value: number | string;
     analysisId?: string;
     exposureId?: string;
-    externalValues?: InboundChunk;
-}
-
-interface PreviewFilterResult {
-    mask: Uint8Array;
-    matchCount: number;
-    totalAtoms: number;
+    externalValues?: BinaryChunk;
 }
 
 export interface ExportColoredModelInput {
@@ -51,7 +46,7 @@ export interface ExportColoredModelInput {
     gradient: string;
     analysisId?: string;
     exposureId?: string;
-    externalValues?: InboundChunk;
+    externalValues?: BinaryChunk;
 }
 
 interface ExportColoredModelResult {
@@ -64,7 +59,7 @@ export interface ExportParticleFilterModelInput {
     ownerClusterId: string;
     objectKey: string;
     action: 'delete' | 'highlight';
-    mask: InboundChunk;
+    mask: BinaryChunk;
 }
 
 interface ExportParticleFilterModelResult {
@@ -79,7 +74,7 @@ export class FilterEvaluator {
         private readonly pluginPropertyStore: PluginPropertyStore
     ) {}
 
-    async previewFilter(input: PreviewFilterInput): Promise<PreviewFilterResult> {
+    async previewFilter(input: PreviewFilterInput): Promise<NativeFilterPreview> {
         const resolved = await resolvePerAtomValues(this.trajectoryParser, this.pluginPropertyStore, input);
         const { mask, matchCount } = resolved.valueType === 'string'
             ? evaluateStringComparison(resolved.values, input.operator, String(input.value))

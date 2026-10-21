@@ -1,8 +1,5 @@
 import { logger } from '@shared/logger';
-import type {
-    ProcessExecutionLogSink,
-    ProcessExecutionLogStream
-} from '@shared/contracts/types/execution-log';
+import type { ProcessExecutionLogSink, ProcessExecutionLogStream } from '@shared/contracts/types/execution-log';
 
 
 export const forwardLogChunk = (

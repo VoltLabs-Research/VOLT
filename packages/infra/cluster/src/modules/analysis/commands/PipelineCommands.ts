@@ -1,22 +1,24 @@
 import { getPipelineDispatcher } from '@modules/analysis/services/PipelineDispatcher';
 import type {
-    AnalysisStartRequest,
-    AnalysisStartTransportRequest,
     PipelineStartRequestWithTrace,
-    PipelineStartResolvedStage,
-    PipelineStartTransportPayload,
-    PipelineStageTransport
+    PipelineStartTransportPayload
 } from '@shared/contracts/types/http-analysis';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import { extractDaemonTraceContext } from '@shared/observability/daemon-instrumentation';
 import { inflateBase64GzipJson } from '@shared/utilities/gzip-base64-json';
 import type { PipelineDispatcher } from '@modules/analysis/services/PipelineDispatcher';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    AnalysisStartRequest,
+    AnalysisStartTransportRequest,
+    PipelineStageTransport,
+    PipelineStartResolvedStage
+} from '@volt/contracts/modules/analysis/daemon';
 
-@CommandGroup('pipeline')
 export class PipelineCommands {
     constructor(private readonly pipelineDispatcher: PipelineDispatcher) {}
 
-    @Command('start')
+    @Command(DaemonCommand.PipelineStart)
     async start(payload: PipelineStartTransportPayload) {
         return this.pipelineDispatcher.startPipeline(await this.readPipelineStartRequest(payload));
     }

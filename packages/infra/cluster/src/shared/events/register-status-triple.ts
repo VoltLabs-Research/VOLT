@@ -1,7 +1,7 @@
 import type { DomainEventClass } from '@shared/events/create-domain-event';
-import type { AuthenticatedMessageContext } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { TeamClusterDaemonServerEventMessage } from '@shared/contracts/channel/server-event';
 import type { DomainEventBridge } from '@shared/events/DomainEventBridge';
+import type { DaemonIdentity } from '@volt/contracts/modules/cluster/daemon-events';
 
 type StatusTripleEventMap<TPayload extends object, TStatus extends string> = {
     readonly [K in TStatus]: DomainEventClass<TPayload> | DomainEventClass<TPayload & { error: string }>;
@@ -11,7 +11,7 @@ interface StatusTripleOptions<TPayload extends object, TStatus extends string> {
     readonly bridge: DomainEventBridge;
     readonly events: StatusTripleEventMap<TPayload, TStatus>;
     readonly buildMessage: (
-        ctx: AuthenticatedMessageContext,
+        ctx: DaemonIdentity,
         payload: TPayload,
         status: TStatus
     ) => TeamClusterDaemonServerEventMessage;

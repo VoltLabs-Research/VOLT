@@ -3,11 +3,6 @@ import { singleton } from '@shared/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
 import { getFilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@shared/contracts/types/service-exposure';
-import {
-    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
-    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
-} from '@shared/contracts/types/http-object-store';
 import type {
     LocalClusterObjectComposeInput,
     LocalClusterObjectStat
@@ -17,7 +12,6 @@ import type { ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@sh
 import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import ApplicationError from '@shared/errors/ApplicationError';
-import type { TeamClusterServiceExposure } from '@shared/contracts/types/service-exposure';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { verifyTeamClusterDirectAccessToken } from '@shared/http/team-cluster-direct-access-token';
@@ -30,6 +24,12 @@ import {
 } from '@shared/http/object-gateway-headers';
 import type { Readable } from 'node:stream';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import {
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER,
+    TEAM_CLUSTER_SERVICE_EXPOSURE,
+    type TeamClusterServiceExposure
+} from '@voltstack/daemon-cluster-client';
 
 interface ObjectGatewayRouteParams {
     bucket: string;
@@ -89,16 +89,16 @@ export class ObjectGatewayServer {
             id: OBJECT_GATEWAY_EXPOSURE_ID,
             teamClusterId: this.config.teamClusterId,
             teamId: this.config.teamId ?? this.config.teamClusterId,
-            sourceKind: TeamClusterServiceExposureSourceKind.Daemon,
+            sourceKind: TEAM_CLUSTER_SERVICE_EXPOSURE.SourceKind.Daemon,
             exposureName: OBJECT_GATEWAY_EXPOSURE_NAME,
-            accessModes: [TeamClusterServiceExposureAccessMode.Http],
+            accessModes: [TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http],
             targetHost: isWildcardHost ? LOOPBACK_HOST : address.address,
             targetPort: address.port,
-            status: TeamClusterServiceExposureStatus.Active,
+            status: TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Active,
             labels: {
                 'volt.exposure.api-version': 'v1',
                 'volt.exposure.service': OBJECT_GATEWAY_EXPOSURE_NAME,
-                'volt.exposure.source-kind': TeamClusterServiceExposureSourceKind.Daemon,
+                'volt.exposure.source-kind': TEAM_CLUSTER_SERVICE_EXPOSURE.SourceKind.Daemon,
                 ...(this.config.objectGatewayPublicBaseUrl
                     ? { 'volt.exposure.base-url': this.config.objectGatewayPublicBaseUrl }
                     : {})
@@ -401,7 +401,7 @@ export class ObjectGatewayServer {
             || claims.ownerClusterId !== this.config.teamClusterId
             || claims.exposureId !== OBJECT_GATEWAY_EXPOSURE_ID
             || claims.exposureName !== OBJECT_GATEWAY_EXPOSURE_NAME
-            || claims.accessMode !== TeamClusterServiceExposureAccessMode.Http
+            || claims.accessMode !== TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http
         ) {
             throw new ApplicationError(ErrorCodes.OBJECT_GATEWAY_INVALID_DIRECT_ACCESS_TOKEN, 'Direct access token is invalid or expired', 401);
         }

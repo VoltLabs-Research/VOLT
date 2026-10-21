@@ -6,7 +6,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const sharedExposureKey = (
     trajectoryId: string,
@@ -57,7 +57,7 @@ export class PipelineSharedExposureStore {
 
         await this.objectStore.putObjectStream({
             ownerClusterId: input.ownerClusterId,
-            bucket: ObjectBucketName.Plugins,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             objectKey,
             stream: createReadStream(input.sourcePath),
             size: stat.size
@@ -76,7 +76,7 @@ export class PipelineSharedExposureStore {
         );
         const response = await this.objectStore.getStream(
             input.ownerClusterId,
-            ObjectBucketName.Plugins,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             objectKey,
             { skipMetadata: true }
         );
@@ -92,7 +92,7 @@ export class PipelineSharedExposureStore {
 
         do {
             const page = await this.objectStore.list(input.ownerClusterId, {
-                bucket: ObjectBucketName.Plugins,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                 prefix,
                 cursor,
                 limit: 200

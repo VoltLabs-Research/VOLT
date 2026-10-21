@@ -1,33 +1,30 @@
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import type {
-    WorkflowExecutionContext,
-    WorkflowNode,
-    WorkflowNodeOutput
-} from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 interface WorkflowPlannerExecutedEvent {
-    node: WorkflowNode;
+    node: IWorkflowNode;
     output: WorkflowNodeOutput;
 
     startedAt: number;
 }
 
 interface WorkflowPlannerSkippedEvent {
-    node: WorkflowNode;
+    node: IWorkflowNode;
     reason?: string;
     startedAt: number;
 }
 
 interface WorkflowPlannerForEachEvent {
-    node: WorkflowNode;
+    node: IWorkflowNode;
     output: WorkflowNodeOutput;
     items: WorkflowNodeOutput[];
     startedAt: number;
 }
 
 interface WorkflowPlannerErrorEvent {
-    node: WorkflowNode;
+    node: IWorkflowNode;
     error: unknown;
     startedAt: number;
 }
@@ -46,14 +43,14 @@ interface WorkflowPlannerHooks {
 }
 
 interface WorkflowPlanParams {
-    nodes: WorkflowNode[];
+    nodes: IWorkflowNode[];
     context: WorkflowExecutionContext;
-    shouldSkipNode: (node: WorkflowNode) => boolean;
+    shouldSkipNode: (node: IWorkflowNode) => boolean;
     hooks?: WorkflowPlannerHooks;
 }
 
 interface WorkflowPlannerForEachResult {
-    node: WorkflowNode;
+    node: IWorkflowNode;
     items: WorkflowNodeOutput[];
 }
 
@@ -107,11 +104,11 @@ export class WorkflowPlanner {
                     output = transformed;
                 }
 
-                if (node.type === WorkflowNodeType.Context) {
+                if (node.type === NodeType.CONTEXT) {
                     contextNodeId = node.id;
                 }
 
-                if (node.type === WorkflowNodeType.ForEach) {
+                if (node.type === NodeType.FOREACH) {
                     const items = (output as WorkflowForEachItemsOutput).items;
                     forEach = {
                         node,

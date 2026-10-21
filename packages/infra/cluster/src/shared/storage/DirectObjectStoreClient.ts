@@ -1,12 +1,5 @@
 import { singleton } from '@shared/utilities/singleton';
 import { getConfig } from '@core/config/daemon';
-import {
-    TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
-    TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
-    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
-    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
-    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
-} from '@shared/contracts/types/http-object-store';
 import type { DaemonConfig } from '@core/config/daemon';
 import type {
     ClusterObjectHeadResponse,
@@ -21,6 +14,16 @@ import type {
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { Readable } from 'node:stream';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
+import {
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
+    TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
+    TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER,
+    type TeamClusterObjectGatewayJsonListEntry,
+    type TeamClusterObjectGatewayJsonListResponse,
+    type TeamClusterObjectGatewayJsonError
+} from '@voltstack/daemon-cluster-client';
 
 interface DirectObjectStoreRequestInit {
     method: string;
@@ -32,17 +35,6 @@ interface DirectObjectStoreFetchInit extends RequestInit {
     duplex?: 'half';
 }
 
-interface RawDirectObjectStoreListResponse {
-    keys?: string[];
-    objects?: ClusterObjectListEntry[];
-    nextCursor?: string;
-}
-
-interface ObjectStoreErrorPayload {
-    code?: string;
-    message?: string;
-}
-
 const OBJECT_STORE_PROXY_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv(
     'TEAM_CLUSTER_OBJECT_STORE_PROXY_REQUEST_TIMEOUT_MS'
 ) ?? 10 * 60 * 1000;
@@ -50,7 +42,15 @@ const OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS = readPositiveIntegerEnv(
     'TEAM_CLUSTER_OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS'
 ) ?? 45_000;
 
-const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): ClusterObjectListResponse => {
+const toListEntry = (entry: TeamClusterObjectGatewayJsonListEntry): ClusterObjectListEntry => ({
+    key: entry.key,
+    contentLength: entry.contentLength,
+    etag: entry.etag,
+    lastModified: entry.lastModified ? new Date(entry.lastModified) : undefined
+});
+
+// Older gateways may send only keys or only objects.
+const normalizeListResponse = (payload: Partial<TeamClusterObjectGatewayJsonListResponse>): ClusterObjectListResponse => {
     const objects = payload.objects ?? [];
     const keys = payload.keys ?? [];
     const resolvedKeys = keys.length > 0 ? keys : objects.map((object) => object.key);
@@ -58,15 +58,15 @@ const normalizeListResponse = (payload: RawDirectObjectStoreListResponse): Clust
     return {
         keys: resolvedKeys,
         objects: objects.length > 0
-            ? objects
+            ? objects.map(toListEntry)
             : resolvedKeys.map((key) => ({ key })),
         nextCursor: payload.nextCursor
     };
 };
 
-const parseErrorPayload = (payloadText: string): ObjectStoreErrorPayload | null => {
+const parseErrorPayload = (payloadText: string): TeamClusterObjectGatewayJsonError | null => {
     try {
-        const parsed = JSON.parse(payloadText) as ObjectStoreErrorPayload;
+        const parsed = JSON.parse(payloadText) as TeamClusterObjectGatewayJsonError;
         return typeof parsed?.message === 'string' ? parsed : null;
     } catch {
         return null;
@@ -124,7 +124,7 @@ export class DirectObjectStoreClient {
             { method: 'GET' },
             OBJECT_STORE_PROXY_FAST_REQUEST_TIMEOUT_MS
         );
-        return normalizeListResponse(await response.json() as RawDirectObjectStoreListResponse);
+        return normalizeListResponse(await response.json() as Partial<TeamClusterObjectGatewayJsonListResponse>);
     }
 
     readonly head = async (ownerClusterId: string, bucket: string, objectKey: string): Promise<ClusterObjectHeadResponse> => {

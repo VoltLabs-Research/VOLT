@@ -1,11 +1,16 @@
 import { errorMessage } from '@shared/utilities/error-message';
 import { SESSION_ATTACH_TIMEOUT_MS } from '@core/constants/reverse-channel';
-import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/service-exposure';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
-import { encodeStreamChunk, decodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
 import net from 'node:net';
 import type { DaemonExposureRegistry } from '@modules/system/services/access/DaemonExposureRegistry';
-import { REVERSE_CHANNEL, type TeamClusterDaemonTunnelOpenPayload, type TeamClusterDaemonTunnelStatePayload } from '@voltstack/daemon-cluster-client';
+import {
+    REVERSE_CHANNEL,
+    decodeStreamChunk,
+    encodeStreamChunk,
+    type TeamClusterDaemonTunnelOpenPayload,
+    type TeamClusterDaemonTunnelStatePayload,
+    TEAM_CLUSTER_SERVICE_EXPOSURE
+} from '@voltstack/daemon-cluster-client';
 import type {
     BinaryTunnelDataPayload,
     BinaryTunnelDrainPayload,
@@ -101,7 +106,7 @@ export class TunnelSessionManager {
                 payload.sessionId,
                 tunnelState,
                 chunk,
-                payload.accessMode !== TeamClusterServiceExposureAccessMode.Http
+                payload.accessMode !== TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http
             );
         };
         const onError = (error: Error) => {
@@ -185,7 +190,8 @@ export class TunnelSessionManager {
 
         let chunk: Buffer;
         try {
-            chunk = decodeStreamChunk(payload.chunk);
+            const bytes = decodeStreamChunk(payload.chunk);
+            chunk = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
         } catch (error) {
             this.closeWithError(
                 payload.sessionId,

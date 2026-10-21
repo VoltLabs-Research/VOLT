@@ -1,6 +1,7 @@
 import { logger } from '@shared/logger';
 import ApplicationError from '@shared/errors/ApplicationError';
 import type { Response } from 'express';
+import type { TeamClusterObjectGatewayJsonError } from '@voltstack/daemon-cluster-client';
 
 interface StatusCodeError extends Error {
     code?: string;
@@ -25,7 +26,7 @@ export const writeRequestFailure = (response: Response, error: Error): void => {
         writeJson(response, error.statusCode, {
             code: error.code,
             message: error.message
-        });
+        } satisfies TeamClusterObjectGatewayJsonError);
         return;
     }
 
@@ -34,7 +35,7 @@ export const writeRequestFailure = (response: Response, error: Error): void => {
         writeJson(response, statusCodeError.statusCode, {
             code: statusCodeError.code,
             message: error.message
-        });
+        } satisfies TeamClusterObjectGatewayJsonError);
         return;
     }
 

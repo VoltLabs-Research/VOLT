@@ -10,20 +10,20 @@ import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 import type { PluginSubListingRowDocument } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import type { PaginatedResult } from '@shared/contracts/types/pagination';
 import type {
-    PluginListingTransferKind,
-    PluginListingTransferExportPayload,
-    PluginListingTransferImportPayload,
-    PluginListingTransferPurgePayload
-} from '@shared/contracts/types/listing-transfer-payloads';
-import type {
     BulkUpsertOperation,
     ListingPaginatedResult,
     PluginListingFilter,
     PluginListingTransferRow,
-    PluginListingTransferExportResult,
     PluginSubListingFilter,
     ReplaceSubListingRowsInput
 } from '@modules/plugin/models/plugin-listing-repository-contract';
+import type {
+    PluginListingTransferExportRequest,
+    PluginListingTransferImportRequest,
+    PluginListingTransferKind,
+    PluginListingTransferPurgeRequest,
+    PluginListingTransferExportResult
+} from '@volt/contracts/modules/plugin/daemon';
 
 const WRITE_CHUNK_SIZE = 1000;
 
@@ -37,7 +37,7 @@ const SUB_LISTING_COLUMNS = [
     '_id', 'analysis', 'exposureId', 'timestep', 'subListingName', 'row'
 ] as const;
 
-const pickColumns = <T extends ObjectLiteral>(row: PluginListingTransferRow, columns: readonly string[]): T => {
+const pickColumns = <T extends ObjectLiteral>(row: Record<string, unknown>, columns: readonly string[]): T => {
     const picked: Record<string, unknown> = {};
     for (const column of columns) {
         if (row[column] !== undefined) {
@@ -203,7 +203,7 @@ class TypeOrmPluginListingRepository {
         });
     }
 
-    async exportListingRows(input: PluginListingTransferExportPayload): Promise<PluginListingTransferExportResult> {
+    async exportListingRows(input: PluginListingTransferExportRequest): Promise<PluginListingTransferExportResult> {
         const analysisIds = normalizeAnalysisIds(input.analysisIds);
         const skip = Math.max(0, input.skip ?? 0);
         const limit = Math.min(500, Math.max(1, input.limit ?? 200));
@@ -237,7 +237,7 @@ class TypeOrmPluginListingRepository {
         };
     }
 
-    async importListingRows(input: PluginListingTransferImportPayload): Promise<number> {
+    async importListingRows(input: PluginListingTransferImportRequest): Promise<number> {
         const columns = input.documentType === 'listing' ? LISTING_COLUMNS : SUB_LISTING_COLUMNS;
         const rows = input.rows
             .filter((row) => typeof row._id === 'string' && (row._id as string).length > 0)
@@ -254,7 +254,7 @@ class TypeOrmPluginListingRepository {
         return rows.length;
     }
 
-    async purgeListingRows(input: PluginListingTransferPurgePayload): Promise<number> {
+    async purgeListingRows(input: PluginListingTransferPurgeRequest): Promise<number> {
         const analysisIds = normalizeAnalysisIds(input.analysisIds);
         if (analysisIds.length === 0) {
             return 0;

@@ -1,71 +1,50 @@
-import {
-    type AuthenticatedMessageContext,
-    type AuthenticatedReverseChannelMessage
-} from '@shared/contracts/channel/reverse-channel-messaging';
 import type {
-    GlbFailedEventData,
-    RasterFailedEventData,
-    TimedTrajectoryJobEventData
-} from '@modules/trajectory/events/trajectory-events';
+    DaemonIdentity,
+    DaemonJobStatus,
+    GlbJobStatusEvent,
+    RasterJobStatusEvent,
+    TrajectoryJobStatusReport
+} from '@volt/contracts/modules/cluster/daemon-events';
 
-type TimedTrajectoryStatus = 'running' | 'completed' | 'failed';
+type TrajectoryJobStatusPayload = Omit<TrajectoryJobStatusReport, 'status'>;
 
-type TimedTrajectoryJobStatusPayload = TimedTrajectoryJobEventData | RasterFailedEventData | GlbFailedEventData;
-
-const mergeError = (payload: object): { error?: string } =>
-    'error' in payload && typeof (payload as { error?: unknown }).error === 'string'
-        ? { error: (payload as { error: string }).error }
-        : {};
-
-export type RasterJobStatusMessage = AuthenticatedReverseChannelMessage<
-    'trajectory-raster-job-status',
-    TimedTrajectoryJobEventData & { status: TimedTrajectoryStatus; error?: string }
->;
-
-export type GlbJobStatusMessage = AuthenticatedReverseChannelMessage<
-    'trajectory-glb-job-status',
-    TimedTrajectoryJobEventData & { status: TimedTrajectoryStatus; error?: string }
->;
-
-const pickJobIdentity = <T extends TimedTrajectoryJobStatusPayload>(payload: T) => ({
+const toStatusReport = (payload: TrajectoryJobStatusPayload, status: DaemonJobStatus): TrajectoryJobStatusReport => ({
     jobId: payload.jobId,
     teamId: payload.teamId,
     trajectoryId: payload.trajectoryId,
-    ...('timestep' in payload ? { timestep: (payload as { timestep?: number }).timestep } : {})
+    ...(payload.timestep !== undefined ? { timestep: payload.timestep } : {}),
+    ...(payload.error !== undefined ? { error: payload.error } : {}),
+    status
 });
 
 export const createRasterJobStatusMessage = (
-    context: AuthenticatedMessageContext,
-    payload: TimedTrajectoryJobStatusPayload,
-    status: TimedTrajectoryStatus
-): RasterJobStatusMessage => ({
+    context: DaemonIdentity,
+    payload: TrajectoryJobStatusPayload,
+    status: DaemonJobStatus
+): RasterJobStatusEvent => ({
     type: 'trajectory-raster-job-status',
     ...context,
-    ...pickJobIdentity(payload),
-    ...mergeError(payload),
-    status
+    ...toStatusReport(payload, status)
 });
 
 export const createGlbJobStatusMessage = (
-    context: AuthenticatedMessageContext,
-    payload: TimedTrajectoryJobStatusPayload,
-    status: TimedTrajectoryStatus
-): GlbJobStatusMessage => ({
+    context: DaemonIdentity,
+    payload: TrajectoryJobStatusPayload,
+    status: DaemonJobStatus
+): GlbJobStatusEvent => ({
     type: 'trajectory-glb-job-status',
     ...context,
-    ...pickJobIdentity(payload),
-    ...mergeError(payload),
-    status
+    ...toStatusReport(payload, status)
 });
 
 export const createRasterJobStatusDedupeKey = (
-    payload: Pick<TimedTrajectoryJobEventData, 'jobId' | 'timestep'>,
-    status: TimedTrajectoryStatus
+    payload: Pick<TrajectoryJobStatusReport, 'jobId' | 'timestep'>,
+    status: DaemonJobStatus
 ): string =>
     `trajectory.raster-job-status:${payload.jobId}:${status}:${payload.timestep ?? 'none'}`;
 
 export const createGlbJobStatusDedupeKey = (
-    payload: Pick<TimedTrajectoryJobEventData, 'jobId' | 'timestep'>,
-    status: TimedTrajectoryStatus
+    payload: Pick<TrajectoryJobStatusReport, 'jobId' | 'timestep'>,
+    status: DaemonJobStatus
 ): string =>
     `trajectory.glb-job-status:${payload.jobId}:${status}:${payload.timestep ?? 'none'}`;

@@ -2,7 +2,7 @@ import { getGlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
 import { getTrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
 import { getFilterEvaluator } from '@modules/trajectory/services/FilterEvaluator';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { GlbExporter } from '@modules/trajectory/services/glb/GlbExporter';
@@ -20,12 +20,12 @@ import type {
     PreviewFilterInput
 } from '@modules/trajectory/services/FilterEvaluator';
 import type { TrajectoryFrameLookupInput } from '@shared/contracts/types/trajectory-frame-store';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 interface AtomsCommandInput extends AtomsPageInput {
     analysisId?: string;
 }
 
-@CommandGroup('trajectory.native')
 export class TrajectoryNativeCommands {
     constructor(
         private readonly glbExporter: GlbExporter,
@@ -34,22 +34,22 @@ export class TrajectoryNativeCommands {
         private readonly filterEvaluator: FilterEvaluator
     ) {}
 
-    @Command('metadata')
+    @Command(DaemonCommand.TrajectoryNativeMetadata)
     metadata(payload: TrajectoryFrameLookupInput) {
         return this.trajectoryParser.getTrajectoryMetadata(payload);
     }
 
-    @Command('property-stats')
+    @Command(DaemonCommand.TrajectoryNativePropertyStats)
     propertyStats(payload: PropertyStatsInput) {
         return this.trajectoryParser.getPropertyStats(payload);
     }
 
-    @Command('unique-values')
+    @Command(DaemonCommand.TrajectoryNativeUniqueValues)
     uniqueValues(payload: UniqueValuesInput) {
         return this.trajectoryParser.getUniqueValues(payload);
     }
 
-    @Command('atoms')
+    @Command(DaemonCommand.TrajectoryNativeAtoms)
     async atoms(payload: AtomsCommandInput) {
         const nativeResult = await this.trajectoryParser.getAtomsPage(payload);
         if (!payload.analysisId) {
@@ -79,17 +79,17 @@ export class TrajectoryNativeCommands {
         };
     }
 
-    @Command('filter-preview')
+    @Command(DaemonCommand.TrajectoryNativeFilterPreview)
     filterPreview(payload: PreviewFilterInput) {
         return this.filterEvaluator.previewFilter(payload);
     }
 
-    @Command('color-model')
+    @Command(DaemonCommand.TrajectoryNativeColorModel)
     colorModel(payload: ExportColoredModelInput) {
         return this.filterEvaluator.exportColoredModel(payload);
     }
 
-    @Command('particle-filter-model')
+    @Command(DaemonCommand.TrajectoryNativeParticleFilterModel)
     particleFilterModel(payload: ExportParticleFilterModelInput) {
         return this.filterEvaluator.exportParticleFilterModel(payload);
     }

@@ -1,5 +1,5 @@
-import type { ExecutionLogSegment } from '@shared/contracts/types/execution-log';
 import type { InlineWorkflowTraceNode } from '@modules/analysis/services/workflow/WorkflowWalker';
+import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
 
 const MAX_SERIALIZED_OUTPUT_LENGTH = 16 * 1024;
 

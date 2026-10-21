@@ -1,24 +1,8 @@
-import type { TeamClusterServiceExposure } from '@shared/contracts/types/service-exposure';
+import type { TeamClusterDaemonExposureSnapshotPayload } from '@voltstack/daemon-cluster-client';
 
-export const TeamClusterStatus = Object.freeze({
-    WaitingForConnection: 'waiting-for-connection',
-    HealthcheckReceived: 'healthcheck-received',
-    PreparingEnvironment: 'preparing-environment',
-    OperatingSystemNotSupported: 'operating-system-not-supported',
-    Connected: 'connected',
-    Disconnected: 'disconnected',
-    Deleting: 'deleting',
-    DeleteFailed: 'delete-failed',
-    Updating: 'updating',
-    UpdateFailed: 'update-failed'
-} as const);
-export type TeamClusterStatus = typeof TeamClusterStatus[keyof typeof TeamClusterStatus];
+export type ExposureSnapshotMessage = TeamClusterDaemonExposureSnapshotPayload;
 
-export interface ExposureSnapshotPayload {
-    exposures: TeamClusterServiceExposure[];
-}
-
-export type ExposureSnapshotMessage = ExposureSnapshotPayload & { type: 'exposure-snapshot' };
+export type ExposureSnapshotPayload = Omit<ExposureSnapshotMessage, 'type'>;
 
 export const createExposureSnapshotMessage = (
     payload: ExposureSnapshotPayload

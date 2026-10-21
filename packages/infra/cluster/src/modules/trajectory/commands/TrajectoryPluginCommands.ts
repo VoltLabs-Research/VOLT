@@ -1,34 +1,34 @@
 import { getPluginPropertyStore } from '@modules/plugin/services/ParquetPluginPropertyStore';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import type { PluginPropertyStore } from '@modules/plugin/services/properties/PluginPropertyStore';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
-@CommandGroup('trajectory.plugin')
 export class TrajectoryPluginCommands {
     constructor(
         private readonly pluginPropertyStore: PluginPropertyStore
     ) {}
 
-    @Command('property-names')
+    @Command(DaemonCommand.TrajectoryPluginPropertyNames)
     propertyNames(payload: Parameters<PluginPropertyStore['discoverPerAtomPropertyNames']>[0]) {
         return this.pluginPropertyStore.discoverPerAtomPropertyNames(payload);
     }
 
-    @Command('property-schema')
+    @Command(DaemonCommand.TrajectoryPluginPropertySchema)
     propertySchema(payload: Parameters<PluginPropertyStore['discoverPerAtomPropertySchemas']>[0]) {
         return this.pluginPropertyStore.discoverPerAtomPropertySchemas(payload);
     }
 
-    @Command('atom-index')
+    @Command(DaemonCommand.TrajectoryPluginAtomIndex)
     atomIndex(payload: Parameters<PluginPropertyStore['buildPluginIndexForAtomIds']>[0]) {
         return this.pluginPropertyStore.buildPluginIndexForAtomIds(payload);
     }
 
-    @Command('modifier-stats')
+    @Command(DaemonCommand.TrajectoryPluginModifierStats)
     modifierStats(payload: Parameters<PluginPropertyStore['getModifierStats']>[0]) {
         return this.pluginPropertyStore.getModifierStats(payload);
     }
 
-    @Command('modifier-unique-values')
+    @Command(DaemonCommand.TrajectoryPluginModifierUniqueValues)
     modifierUniqueValues(payload: Parameters<PluginPropertyStore['getModifierUniqueValues']>[0]) {
         return this.pluginPropertyStore.getModifierUniqueValues(payload);
     }

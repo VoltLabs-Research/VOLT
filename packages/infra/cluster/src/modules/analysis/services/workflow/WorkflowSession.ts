@@ -1,16 +1,6 @@
 import { toTrajectoryFrameDumpObjectKey } from '@shared/storage/storage-codec';
-import type {
-    AnalysisExposureDefinition,
-    DaemonAnalysisDocument
-} from '@shared/contracts/types/http-analysis';
-import type {
-    NestedPluginDefinition,
-    TrajectoryDumpDescriptor,
-    TrajectoryFrame,
-    WorkflowArgumentDefinition,
-    WorkflowDefinition
-} from '@shared/contracts/types/http-workflow';
-import { matchesArgumentCondition } from '@modules/analysis/services/workflow/nodes/argument-visibility';
+import type { AnalysisExposureDefinition } from '@shared/contracts/types/http-analysis';
+import type { TrajectoryDumpDescriptor } from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowExecutionOptions,
     WorkflowExecutionContext,
@@ -18,8 +8,16 @@ import type {
     WorkflowOutputs,
     WorkflowValueMap
 } from '@shared/contracts/types/workflow.types';
-import { WorkflowGraph, WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { WorkflowGraph } from '@shared/contracts/types/workflow.types';
 import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import { matchesArgumentCondition } from '@volt/contracts/modules/plugin/arguments';
+import type {
+    DaemonAnalysisDocument,
+    NestedPluginDefinition,
+    TrajectoryFrame
+} from '@volt/contracts/modules/analysis/daemon';
 
 export interface WorkflowOutputsSnapshot {
     [nodeId: string]: WorkflowNodeOutput;
@@ -46,7 +44,7 @@ interface WorkflowSessionParams {
 }
 
 interface WorkflowSessionDefinitionParams extends Omit<WorkflowSessionParams, 'workflow'> {
-    workflow: WorkflowDefinition;
+    workflow: IWorkflow;
 }
 
 interface WorkflowDumpSelection {
@@ -157,7 +155,7 @@ export class WorkflowSession {
 
     static resolveSelectedDump(context: WorkflowExecutionContext): WorkflowDumpSelection | null {
         const selectedTimestep = context.selectedTimestep;
-        const forEachNode = context.workflow.nodes.find((node) => node.type === WorkflowNodeType.ForEach);
+        const forEachNode = context.workflow.nodes.find((node) => node.type === NodeType.FOREACH);
         const forEachSelection = selectDumpFromItems(
             forEachNode
                 ? context.outputs.get(forEachNode.id)?.items as TrajectoryDumpDescriptor[] | undefined
@@ -169,7 +167,7 @@ export class WorkflowSession {
             return forEachSelection;
         }
 
-        const contextNode = context.workflow.nodes.find((node) => node.type === WorkflowNodeType.Context);
+        const contextNode = context.workflow.nodes.find((node) => node.type === NodeType.CONTEXT);
         return selectDumpFromItems(
             contextNode
                 ? context.outputs.get(contextNode.id)?.trajectory_dumps as TrajectoryDumpDescriptor[] | undefined
@@ -215,7 +213,7 @@ export class WorkflowSession {
     }
 
     static buildExposureMaps(
-        workflowInput: WorkflowDefinition,
+        workflowInput: IWorkflow,
         argumentValues?: WorkflowValueMap
     ): WorkflowExposureMaps {
         const workflow = new WorkflowGraph(workflowInput);
@@ -226,7 +224,7 @@ export class WorkflowSession {
             : WorkflowSession.readArgumentDefinitions(workflow);
 
         for (const node of workflow.nodes) {
-            if (node.type !== WorkflowNodeType.Exposure) {
+            if (node.type !== NodeType.EXPOSURE) {
                 continue;
             }
 
@@ -242,7 +240,7 @@ export class WorkflowSession {
                 continue;
             }
 
-            const exportNode = workflow.findDescendantByType(node.id, WorkflowNodeType.Export);
+            const exportNode = workflow.findDescendantByType(node.id, NodeType.EXPORT);
             if (exportNode) {
                 exportNodeToExposureNodeId.set(exportNode.id, node.id);
             }
@@ -262,13 +260,13 @@ export class WorkflowSession {
         };
     }
 
-    private static readArgumentDefinitions(workflow: WorkflowGraph): WorkflowArgumentDefinition[] {
-        const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+    private static readArgumentDefinitions(workflow: WorkflowGraph): IArgumentDefinition[] {
+        const argumentsNode = workflow.nodes.find((node) => node.type === NodeType.ARGUMENTS);
         return argumentsNode?.data.arguments?.arguments ?? [];
     }
 
     static collectExposureDefinitions(
-        workflowInput: WorkflowDefinition,
+        workflowInput: IWorkflow,
         argumentValues?: WorkflowValueMap
     ): AnalysisExposureDefinition[] {
         return Array.from(
@@ -296,7 +294,7 @@ export class WorkflowSession {
         currentIndex: number,
         outputDir: string
     ): void {
-        const forEachNode = this.context.workflow.nodes.find((node) => node.type === WorkflowNodeType.ForEach);
+        const forEachNode = this.context.workflow.nodes.find((node) => node.type === NodeType.FOREACH);
         if (!forEachNode) {
             return;
         }
@@ -316,7 +314,7 @@ export class WorkflowSession {
         outputDir: string
     ): void {
         const localizedDump = WorkflowSession.createLocalDumpDescriptor(selection.dump, localPath);
-        const contextNode = this.context.workflow.nodes.find((node) => node.type === WorkflowNodeType.Context);
+        const contextNode = this.context.workflow.nodes.find((node) => node.type === NodeType.CONTEXT);
 
         if (contextNode) {
             const currentContextOutput = this.outputs.get(contextNode.id);

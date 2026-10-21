@@ -1,13 +1,13 @@
 import { inspectWorkflowExposureOutput } from '@modules/analysis/services/workflow/exposure-payload-reader';
 import { processExportNode } from '@modules/plugin/services/exports/ExportNodeProcessor';
 import { createDebugArtifactBatch } from '@modules/analysis/services/workflow/debug/debug-artifact-batch';
-import type { WorkflowNode } from '@shared/contracts/types/workflow.types';
 import type { DebugEnvironmentState } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import type { DebugSession, NodeExecutionOutcome } from '@modules/analysis/services/workflow/debug/debug-session';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 export const executeDebugExportNode = async (
     session: DebugSession,
-    node: WorkflowNode,
+    node: IWorkflowNode,
     preparedExecution: DebugEnvironmentState
 ): Promise<NodeExecutionOutcome> => {
     const exposureNodeId = session.exportNodeToExposureNodeId.get(node.id);

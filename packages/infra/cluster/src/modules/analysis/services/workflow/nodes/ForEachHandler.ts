@@ -1,6 +1,7 @@
-import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 interface WorkflowForEachOutput {
     items: WorkflowNodeOutput[];
@@ -10,11 +11,11 @@ interface WorkflowForEachOutput {
 }
 
 export class WorkflowForEachHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.ForEach;
+    readonly type = NodeType.FOREACH;
 
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
-    execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowForEachOutput> {
+    execute(node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowForEachOutput> {
         const rawRef = node.data.forEach?.iterableSource;
         if (!rawRef) {
             throw new Error('ForEach iterable source is required');

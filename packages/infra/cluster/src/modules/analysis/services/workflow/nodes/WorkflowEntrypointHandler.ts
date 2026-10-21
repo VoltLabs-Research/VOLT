@@ -2,8 +2,7 @@ import { errorMessage } from '@shared/utilities/error-message';
 import { logger } from '@shared/logger';
 import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
 import type { PluginExecutionRuntime } from '@shared/contracts/types/plugin-execution';
-import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import {
     resolveEntrypointArgs,
     type ResolvedWorkflowEntrypointArgs
@@ -18,11 +17,13 @@ import {
 } from '@modules/analysis/services/workflow/nodes/entrypoint-process-outcome';
 import { runPersistentEntrypoint } from '@modules/analysis/services/workflow/nodes/persistent-entrypoint-runner';
 import fs from 'node:fs/promises';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 export class WorkflowEntrypointHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.Entrypoint;
+    readonly type = NodeType.ENTRYPOINT;
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
+    async execute(node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
         const execution = context.execution?.entrypoint;
         if (!execution) {
             throw new Error(`Entrypoint ${node.id} cannot be executed without workflow execution context`);

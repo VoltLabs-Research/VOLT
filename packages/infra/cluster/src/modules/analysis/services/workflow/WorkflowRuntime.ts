@@ -7,7 +7,6 @@ import { type WorkflowNodeRegistry, getWorkflowNodeRegistry } from '@modules/ana
 import { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/WorkflowNodeExecutor';
 import { WorkflowScheduler } from '@modules/analysis/services/workflow/WorkflowScheduler';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { withEntrypointLogSink } from '@modules/analysis/services/workflow/entrypoint-node-context';
 import { InlineTraceRecorder } from '@modules/analysis/services/workflow/InlineTraceRecorder';
 import { NestedPluginWorkflowRunner, type NestedPluginExecutionOutcome, type NestedPluginNodeInput } from '@modules/analysis/services/workflow/NestedPluginWorkflowRunner';
@@ -28,24 +27,25 @@ import type {
     WorkflowDumpTarget,
     WorkflowExecutionOptions,
     WorkflowLogSinkFactory,
-    WorkflowNode,
     WorkflowNodeOutput,
     WorkflowOutputs
 } from '@shared/contracts/types/workflow.types';
 import type { BinaryExecutor, PluginRuntimeProvider } from '@shared/contracts/types/plugin-execution';
-import type { AnalysisExecutionIdentity, AnalysisJobExecutionData, DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
+import type { AnalysisExecutionIdentity, AnalysisJobExecutionData } from '@shared/contracts/types/http-analysis';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { ResultProcessorService } from '@shared/contracts/types/result-processor-service';
 import type { TrajectoryFrameStore } from '@shared/contracts/types/trajectory-frame-store';
 import type { AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
 import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
+import type { DaemonAnalysisDocument } from '@volt/contracts/modules/analysis/daemon';
 
 interface WorkflowExecuteInput {
     jobId: string;
     executionData: AnalysisJobExecutionData;
     outputs: WorkflowOutputs;
-    dumpTargets: WorkflowDumpTarget[];
-    primaryFrameIndex: number;
+    dumpTarget: WorkflowDumpTarget | null;
     outputDir: string;
     timestep: number;
     artifactUploadBatch: ArtifactUploadBatch;
@@ -94,7 +94,7 @@ export class WorkflowRuntime {
             pluginId: identity.pluginId,
             teamId: identity.teamId,
             execution: this.buildRuntimeExecutionOptions(input),
-            selectedTimestep: this.resolvePrimaryDumpTarget(input).timestep,
+            selectedTimestep: input.timestep,
             workflow: workflow.definition,
             nestedPlugins: workflow.nestedPlugins,
             pipelineContext: input.pipelineContext
@@ -195,11 +195,11 @@ export class WorkflowRuntime {
     ): WorkflowWalkerDelegate {
         const { identity } = input.executionData;
         const reportEntrypointStage = async (
-            node: WorkflowNode,
+            node: IWorkflowNode,
             stageStatus: 'running' | 'completed' | 'failed',
             detail?: string
         ): Promise<void> => {
-            if (node.type !== WorkflowNodeType.Entrypoint) {
+            if (node.type !== NodeType.ENTRYPOINT) {
                 return;
             }
 
@@ -227,7 +227,7 @@ export class WorkflowRuntime {
                     nodeType: node.type,
                     pluginId: identity.pluginId,
                     executionPath,
-                    timesteps: input.dumpTargets.map((target) => target.timestep)
+                    timesteps: input.dumpTarget ? [input.dumpTarget.timestep] : []
                 })
             ),
             resolveExportOutput: () => ({
@@ -248,10 +248,10 @@ export class WorkflowRuntime {
     private async executeRootPluginNode(
         input: WorkflowExecuteInput,
         session: WorkflowSession,
-        node: WorkflowNode,
+        node: IWorkflowNode,
         executionPath: string[]
     ): Promise<WorkflowNodeOutput> {
-        if (input.dumpTargets.length === 0) {
+        if (!input.dumpTarget) {
             return createNestedExecutionResult([]);
         }
 
@@ -261,7 +261,7 @@ export class WorkflowRuntime {
             workflow: workflow.definition,
             nestedPlugins: workflow.nestedPlugins,
             outputs: session.outputs,
-            dumpTarget: this.resolvePrimaryDumpTarget(input),
+            dumpTarget: input.dumpTarget,
             outputDir: input.outputDir,
             trajectoryId: identity.trajectoryId,
             trajectoryFrames,
@@ -276,11 +276,6 @@ export class WorkflowRuntime {
         });
 
         return execution.output;
-    }
-
-    private resolvePrimaryDumpTarget(input: WorkflowExecuteInput): WorkflowDumpTarget {
-        const index = Math.max(0, Math.min(input.primaryFrameIndex, input.dumpTargets.length - 1));
-        return input.dumpTargets[index]!;
     }
 
     private buildRuntimeExecutionOptions(input: WorkflowExecuteInput): WorkflowExecutionOptions {

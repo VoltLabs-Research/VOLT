@@ -1,10 +1,8 @@
 import type { AnalysisStageReportInput, AnalysisStageReporter } from '@shared/contracts/types/analysis-stage-reporter';
-import type {
-    AnalysisStageStatus,
-    AnalysisStageStatusPayload
-} from '@shared/contracts/channel/reverse-channel-analysis';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@modules/analysis/events/analysis-events';
+import type { AnalysisStageStatusReport } from '@volt/contracts/modules/cluster/daemon-events';
+import type { AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
 
 type AnalysisStageReporterTransport = Pick<DaemonJobReporter, 'reportAnalysisStageStatus' | 'reportAnalysisLogChunk'>;
 
@@ -49,7 +47,7 @@ export const createAnalysisStageReporter = (
         async report(input) {
             const timestep = input.timestep ?? basePayload.timestep;
             const timing = resolveTiming(input, timestep);
-            const payload: AnalysisStageStatusPayload = {
+            const payload: AnalysisStageStatusReport = {
                 ...basePayload,
                 timestep,
                 stageKey: input.stageKey,

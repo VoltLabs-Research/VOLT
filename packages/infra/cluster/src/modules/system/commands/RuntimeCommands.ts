@@ -8,18 +8,20 @@ import * as path from 'node:path';
 import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import type { RuntimeRoleCoordinator } from '@core/bootstrap/RuntimeRoleCoordinator';
 import type { DaemonConfig } from '@core/config/daemon';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import type { QueueService } from '@shared/queues/QueueService';
-import type {
-    TeamClusterDaemonQueueConcurrencyApplyPayload,
-    TeamClusterDaemonRoleApplyPayload
-} from '@shared/contracts/types/team-cluster-runtime';
 import type { DockerRuntime } from '@shared/runtime/DockerRuntime';
 import type { VoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
+import type {
+    TeamClusterDaemonQueueConcurrencyApplyPayload,
+    TeamClusterDaemonQueueConcurrencyApplyResult,
+    TeamClusterDaemonRoleApplyPayload,
+    TeamClusterDaemonRoleApplyResult
+} from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const DEFERRED_RUNTIME_COMMAND_DELAY_MS = 250;
 
-@CommandGroup('runtime')
 export class RuntimeCommands {
     constructor(
         private readonly runtimeRoleCoordinator: RuntimeRoleCoordinator,
@@ -29,7 +31,7 @@ export class RuntimeCommands {
         private readonly queueService: QueueService
     ) {}
 
-    @Command('queues.snapshot')
+    @Command(DaemonCommand.RuntimeQueuesSnapshot)
     async queuesSnapshot() {
         const queueNames = this.queueService.listKnownQueueNames();
         const entries = await Promise.all(queueNames.map(async (name) => ({
@@ -43,8 +45,8 @@ export class RuntimeCommands {
         };
     }
 
-    @Command('queue-concurrency.apply')
-    applyQueueConcurrency(payload: TeamClusterDaemonQueueConcurrencyApplyPayload) {
+    @Command(DaemonCommand.RuntimeQueueConcurrencyApply)
+    applyQueueConcurrency(payload: TeamClusterDaemonQueueConcurrencyApplyPayload): TeamClusterDaemonQueueConcurrencyApplyResult {
         try {
             this.runtimeRoleCoordinator.applyQueueSettings(
                 payload.queueConcurrency,
@@ -64,8 +66,8 @@ export class RuntimeCommands {
         };
     }
 
-    @Command('role.apply')
-    async applyRole(payload: TeamClusterDaemonRoleApplyPayload) {
+    @Command(DaemonCommand.RuntimeRoleApply)
+    async applyRole(payload: TeamClusterDaemonRoleApplyPayload): Promise<TeamClusterDaemonRoleApplyResult> {
         try {
             return await this.runtimeRoleCoordinator.applyRoleConfig(payload.roleConfig);
         } catch (error) {
@@ -76,7 +78,7 @@ export class RuntimeCommands {
         }
     }
 
-    @Command('uninstall')
+    @Command(DaemonCommand.RuntimeUninstall)
     uninstall() {
         setTimeout(async () => {
             try {

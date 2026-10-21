@@ -54,7 +54,8 @@ RUN apt-get update \
 
 # Build context is the workspace root. The daemon links @voltstack/daemon-cluster-client
 # from the workspace, so the SDK's manifest must be present for the install and its dist
-# built before the daemon runs or builds against it.
+# built before the daemon runs or builds against it. @volt/contracts is raw source that
+# the daemon compiles into its own dist; @volt/tooling only carries its lint configuration.
 FROM system AS source
 RUN npm install -g pnpm@10
 WORKDIR /app
@@ -62,11 +63,13 @@ WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/infra/cluster/package.json packages/infra/cluster/
 COPY packages/sdk/daemon-cluster-client/package.json packages/sdk/daemon-cluster-client/
+COPY packages/shared/contracts/package.json packages/shared/contracts/
 RUN pnpm install --frozen-lockfile --filter cluster-daemon...
 
 COPY packages/sdk/daemon-cluster-client packages/sdk/daemon-cluster-client
 RUN pnpm --filter @voltstack/daemon-cluster-client build
 
+COPY packages/shared/contracts packages/shared/contracts
 COPY packages/infra/cluster packages/infra/cluster
 WORKDIR /app/packages/infra/cluster
 

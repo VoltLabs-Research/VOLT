@@ -2,7 +2,7 @@ import { errorMessage } from '@shared/utilities/error-message';
 import { singleton } from '@shared/utilities/singleton';
 import { getVoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
 import { logger } from '@shared/logger';
-import { encodeStreamChunk } from '@shared/contracts/channel/binary-envelope';
+import { encodeStreamChunk } from '@voltstack/daemon-cluster-client';
 import type { BinaryStreamPayload } from '@shared/contracts/channel/binary-messages';
 import type { TeamClusterDaemonServerEventMessage } from '@shared/contracts/channel/server-event';
 import type { RuntimeProgressMessage } from '@shared/contracts/types/reverse-channel-runtime';

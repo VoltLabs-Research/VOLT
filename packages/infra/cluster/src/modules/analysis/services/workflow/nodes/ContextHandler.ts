@@ -1,7 +1,8 @@
 import type { WorkflowNodeHandler } from '@modules/analysis/services/workflow/NodeRegistry';
-import type { WorkflowExecutionContext, WorkflowNode, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 interface WorkflowContextOutput extends WorkflowNodeOutput {
     trajectory_dumps: ReturnType<typeof WorkflowSession.resolveContextDumps>;
@@ -13,9 +14,9 @@ interface WorkflowContextOutput extends WorkflowNodeOutput {
 }
 
 export class WorkflowContextHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.Context;
+    readonly type = NodeType.CONTEXT;
 
-    execute(_node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowContextOutput> {
+    execute(_node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowContextOutput> {
         const dumps = WorkflowSession.resolveContextDumps(context);
 
         return Promise.resolve({

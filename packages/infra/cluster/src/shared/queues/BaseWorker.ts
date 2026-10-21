@@ -4,7 +4,7 @@ import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 import type { QueueWorker } from '@shared/queues/QueueWorker';
 import type { QueuePayload, QueueService } from '@shared/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
-import type { JobIdentity } from '@shared/contracts/types/job-identity';
+import type { DaemonJobIdentity } from '@volt/contracts/modules/cluster/daemon-events';
 
 const SCOPE_DEFERRED_RETRY_MS = 1_000;
 const SCOPE_DEFERRED_RETRY_JITTER_MS = 1_500;
@@ -69,7 +69,7 @@ export abstract class BaseWorker<TPayload extends QueuePayload> {
             return this.process(payload, job);
         }
 
-        const { trajectoryId, analysisId } = payload as Partial<JobIdentity>;
+        const { trajectoryId, analysisId } = payload as Partial<DaemonJobIdentity>;
         if (!trajectoryId) {
             return this.process(payload, job);
         }

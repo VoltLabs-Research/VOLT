@@ -11,11 +11,10 @@ import {
     ArtifactUploadStartedEvent,
     SceneArtifactBatchReportedEvent
 } from '@modules/plugin/events/plugin-events';
-
-type ArtifactUploadStatus = 'running' | 'completed' | 'failed';
+import type { DaemonJobStatus } from '@volt/contracts/modules/cluster/daemon-events';
 
 export const registerPluginEventMappers: EventMapperSet = (bridge: DomainEventBridge): void => {
-    registerStatusTriple<Parameters<typeof createArtifactUploadJobStatusMessage>[1], ArtifactUploadStatus>({
+    registerStatusTriple<Parameters<typeof createArtifactUploadJobStatusMessage>[1], DaemonJobStatus>({
         bridge,
         events: {
             running: ArtifactUploadStartedEvent,

@@ -1,4 +1,3 @@
-import type { WorkflowDefinition } from '@shared/contracts/types/http-workflow';
 import type { WorkflowEntrypointExecutionRequest } from '@modules/analysis/services/workflow/nodes/entrypoint-config';
 import { WorkflowValueResolver } from '@modules/analysis/services/workflow/WorkflowValueResolver';
 import {
@@ -6,6 +5,7 @@ import {
     collectInferFromContextArgumentKeys
 } from '@modules/analysis/services/pipeline-context';
 import { decodeCliArgumentsToken } from '@shared/utilities/serialization';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 export interface ResolvedWorkflowEntrypointArgs {
     args: string[];
@@ -14,9 +14,9 @@ export interface ResolvedWorkflowEntrypointArgs {
 
 const INLINE_ARGUMENT_TOKEN_PATTERN = /"([^"]*)"|'([^']*)'|(\S+)/g;
 
-const inferFromContextKeysCache = new WeakMap<WorkflowDefinition, string[]>();
+const inferFromContextKeysCache = new WeakMap<IWorkflow, string[]>();
 
-const getInferFromContextArgumentKeys = (definition: WorkflowDefinition): string[] => {
+const getInferFromContextArgumentKeys = (definition: IWorkflow): string[] => {
     let keys = inferFromContextKeysCache.get(definition);
     if (keys === undefined) {
         keys = collectInferFromContextArgumentKeys(definition);

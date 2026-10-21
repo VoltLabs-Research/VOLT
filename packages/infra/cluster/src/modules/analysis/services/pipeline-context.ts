@@ -1,7 +1,7 @@
 import type { PipelineContext } from '@shared/contracts/types/pipeline-context';
-import type { WorkflowArgumentDefinition, WorkflowDefinition } from '@shared/contracts/types/http-workflow';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 
 export const createPipelineContext = (pipelineTempPath: string): PipelineContext => ({
     sharedExposures: {},
@@ -29,10 +29,10 @@ export const resolveSharedExposure = (
 };
 
 export const collectInferFromContextArgumentKeys = (
-    workflow: WorkflowDefinition
+    workflow: IWorkflow
 ): string[] => {
-    const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
-    const definitions: WorkflowArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
+    const argumentsNode = workflow.nodes.find((node) => node.type === NodeType.ARGUMENTS);
+    const definitions: IArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
     return definitions.flatMap((definition) => (
         definition.inferFromContext === true && definition.argument !== undefined
             ? [definition.argument]

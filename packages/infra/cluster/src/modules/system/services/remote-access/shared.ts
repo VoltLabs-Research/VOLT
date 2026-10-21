@@ -1,5 +1,5 @@
-import type { RemoteExplorerDocument } from '@shared/contracts/types/remote-explorer';
 import { Readable } from 'node:stream';
+import type { TeamClusterRemoteExplorerDocument } from '@volt/contracts/modules/cluster/domain';
 
 interface ParsedObjectStorePath {
     bucket: string;
@@ -47,7 +47,7 @@ export const parseObjectStorePath = (path: string): ParsedObjectStorePath | null
     };
 };
 
-export const toExplorerDocument = (value: RemoteExplorerDocument['value']): RemoteExplorerDocument => {
+export const toExplorerDocument = (value: TeamClusterRemoteExplorerDocument['value']): TeamClusterRemoteExplorerDocument => {
     const recordValue = structuredClone(value);
     const idValue = recordValue._id;
     const id = typeof idValue === 'string' ? idValue : JSON.stringify(idValue);

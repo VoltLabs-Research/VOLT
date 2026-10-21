@@ -5,6 +5,9 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+const sourceRoot = path.join(root, 'src');
+// tsc writes src/ to dist/infra/cluster/src because @volt/contracts is compiled alongside it.
+const outputRoot = path.join(root, 'dist', 'infra', 'cluster', 'src');
 
 const copyDirectory = async (from, to) => {
     try {
@@ -42,12 +45,12 @@ const ASSETS = [
 
 (async () => {
     for (const asset of ASSETS) {
-        await copyFile(path.join(root, 'src', asset), path.join(root, 'dist', asset));
+        await copyFile(path.join(sourceRoot, asset), path.join(outputRoot, asset));
     }
 
     await copyDirectory(
-        path.join(root, 'src', 'modules', 'plugin', 'services', 'python'),
-        path.join(root, 'dist', 'modules', 'plugin', 'services', 'python')
+        path.join(sourceRoot, 'modules', 'plugin', 'services', 'python'),
+        path.join(outputRoot, 'modules', 'plugin', 'services', 'python')
     );
 })().catch((error) => {
     console.error(error instanceof Error ? error.message : String(error));

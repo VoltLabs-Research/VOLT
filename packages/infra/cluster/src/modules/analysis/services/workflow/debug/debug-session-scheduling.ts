@@ -1,6 +1,6 @@
 import { WorkflowScheduler, type WorkflowExecutionStatus } from '@modules/analysis/services/workflow/WorkflowScheduler';
-import type { WorkflowNode } from '@shared/contracts/types/workflow.types';
 import type { DebugSession, NodeExecutionOutcome } from '@modules/analysis/services/workflow/debug/debug-session';
+import type { IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 const EXECUTION_STATUS_BY_NODE_STATUS = {
     executed: 'executed',
@@ -17,7 +17,7 @@ export const createSessionScheduler = (session: DebugSession): WorkflowScheduler
     }
 });
 
-export const getNextPendingNode = (session: DebugSession): WorkflowNode | null => {
+export const getNextPendingNode = (session: DebugSession): IWorkflowNode | null => {
     while (session.pendingNodeIds.length > 0) {
         const nodeId = session.pendingNodeIds[session.pendingNodeIds.length - 1];
         if (session.completedNodeIds.has(nodeId)) {
@@ -55,7 +55,7 @@ export const enqueueReadyNodeIds = (session: DebugSession, nodeIds: string[]): v
 
 export const resolveNextNodeIds = (
     session: DebugSession,
-    node: WorkflowNode,
+    node: IWorkflowNode,
     result: NodeExecutionOutcome
 ): string[] => {
     if (result.status === 'skipped') {

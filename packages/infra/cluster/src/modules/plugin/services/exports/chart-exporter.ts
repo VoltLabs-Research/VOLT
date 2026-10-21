@@ -1,10 +1,11 @@
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { BubbleDataPoint, ChartConfiguration, ChartTypeRegistry, Point } from 'chart.js';
 
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { getNestedValue, stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
 import type { ChartExportOptions, ExportExecutionInput } from '@modules/plugin/services/exports/export-node-processor-types';
 import type { JsonObject, JsonValue } from '@shared/contracts/types/json';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 interface ChartPoint {
     x: string | number;
@@ -144,8 +145,8 @@ export const exportChartArtifact = async (
     const buffer = await chartCanvas.renderToBuffer(chartConfiguration);
 
     await stageExportBufferUpload(input, {
-        exporter: 'ChartExporter',
-        bucket: ObjectBucketName.Plugins,
+        exporter: Exporter.CHART,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
         buffer,
         contentType: 'image/png',
         objectPath,

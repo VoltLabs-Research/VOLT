@@ -423,6 +423,9 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.2
+      '@volt/contracts':
+        specifier: workspace:*
+        version: link:../../shared/contracts
       eslint:
         specifier: ^9.39.5
         version: 9.39.5(jiti@2.7.0)

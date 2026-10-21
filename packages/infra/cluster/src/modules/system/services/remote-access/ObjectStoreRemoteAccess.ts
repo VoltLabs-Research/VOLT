@@ -1,13 +1,19 @@
 import { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
-import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@shared/contracts/types/remote-explorer';
 import type { ReverseChannelCommandResult } from '@shared/contracts/channel/reverse-channel-messaging';
-import type { RemoteExplorerEntry, RemoteExplorerNode } from '@shared/contracts/types/remote-explorer';
 import { MAX_OBJECT_PREVIEW_BYTES, buildAttachmentContentDisposition, joinExplorerPathSegments, normalizeExplorerPath, parseObjectStorePath, splitExplorerPathSegments, toWebReadableStream } from '@modules/system/services/remote-access/shared';
 import BaseRemoteAccess from '@modules/system/services/remote-access/BaseRemoteAccess';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
+import {
+    TeamClusterRemoteAccessTarget,
+    TeamClusterRemoteExplorerContentType,
+    type TeamClusterRemoteExplorerEntry,
+    TeamClusterRemoteExplorerEntryType,
+    type TeamClusterRemoteExplorerNode,
+    TeamClusterRemoteExplorerNodeType
+} from '@volt/contracts/modules/cluster/domain';
 
 export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
-    readonly target = RemoteExplorerTarget.ObjectStore;
+    readonly target = TeamClusterRemoteAccessTarget.ObjectStore;
 
     constructor(
         private readonly objectStore: FilesystemObjectStore
@@ -15,14 +21,14 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
         super();
     }
 
-    async list(path: string): Promise<RemoteExplorerEntry[]> {
+    async list(path: string): Promise<TeamClusterRemoteExplorerEntry[]> {
         const normalizedPath = normalizeExplorerPath(path);
         if (!normalizedPath) {
             return this.objectStore.listBuckets().map((bucket) => ({
                 id: bucket,
                 name: bucket,
                 path: bucket,
-                type: RemoteExplorerEntryType.Bucket,
+                type: TeamClusterRemoteExplorerEntryType.Bucket,
                 size: null,
                 updatedAt: null,
                 description: 'Bucket'
@@ -38,7 +44,7 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
         const prefix = prefixSegments.join('/');
         const effectivePrefix = prefix ? `${prefix.replace(/\/+$/g, '')}/` : '';
         const objectKeys = await this.objectStore.listObjects(parsedPath.bucket, effectivePrefix);
-        const entries = new Map<string, RemoteExplorerEntry>();
+        const entries = new Map<string, TeamClusterRemoteExplorerEntry>();
 
         for (const objectKey of objectKeys) {
             const remainder = effectivePrefix.length > 0
@@ -59,7 +65,7 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
                         id: childPath,
                         name: directoryName,
                         path: childPath,
-                        type: RemoteExplorerEntryType.Directory,
+                        type: TeamClusterRemoteExplorerEntryType.Directory,
                         size: null,
                         updatedAt: null,
                         description: 'Directory'
@@ -73,7 +79,7 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
                 id: childPath,
                 name: remainder,
                 path: childPath,
-                type: RemoteExplorerEntryType.Object,
+                type: TeamClusterRemoteExplorerEntryType.Object,
                 size: null,
                 updatedAt: null,
                 description: 'Object'
@@ -83,7 +89,7 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
         return Array.from(entries.values()).sort((left, right) => left.name.localeCompare(right.name));
     }
 
-    async node(path: string): Promise<RemoteExplorerNode> {
+    async node(path: string): Promise<TeamClusterRemoteExplorerNode> {
         const normalizedPath = normalizeExplorerPath(path);
         const parsedPath = parseObjectStorePath(normalizedPath);
 
@@ -91,8 +97,8 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
             return {
                 path,
                 title: parsedPath?.bucket ?? 'Object store',
-                type: RemoteExplorerNodeType.Object,
-                contentType: RemoteExplorerContentType.Empty,
+                type: TeamClusterRemoteExplorerNodeType.Object,
+                contentType: TeamClusterRemoteExplorerContentType.Empty,
                 textContent: null,
                 documents: []
             };
@@ -125,8 +131,8 @@ export default class ObjectStoreRemoteAccess extends BaseRemoteAccess {
         return {
             path,
             title: objectKey,
-            type: RemoteExplorerNodeType.Object,
-            contentType: RemoteExplorerContentType.Text,
+            type: TeamClusterRemoteExplorerNodeType.Object,
+            contentType: TeamClusterRemoteExplorerContentType.Text,
             textContent: Buffer.concat(chunks).toString('utf-8'),
             documents: []
         };

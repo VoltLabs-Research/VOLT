@@ -5,7 +5,6 @@ import { pipeline } from 'node:stream/promises';
 import { createZstdCompress, createZstdDecompress } from 'node:zlib';
 import * as tar from 'tar';
 import { logger } from '@shared/logger';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { runtimeDirectoryFor } from '@modules/plugin/services/binaries/runtime-cache-keys';
@@ -14,6 +13,7 @@ import {
     PYTHON_RUNTIME_WARM_ENTRIES,
     PYTHON_VENV_DIRECTORY
 } from '@modules/plugin/services/binaries/python-runtime-provisioner';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 
 const WARM_IMAGE_MARKER_FILENAME = '.warm-image-applied';
@@ -75,7 +75,7 @@ export class PluginWarmImageStore {
 
         await this.objectStore.putObject({
             ownerClusterId: this.teamClusterId,
-            bucket: ObjectBucketName.Plugins,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             objectKey: warmObjectKey,
             body: await this.packRuntimeDirectory(runtimeDirectory, presentEntries),
             metadata: {
@@ -110,7 +110,7 @@ export class PluginWarmImageStore {
         try {
             const response = await this.objectStore.getStream(
                 this.teamClusterId,
-                ObjectBucketName.Plugins,
+                TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                 warmObjectKey,
                 { skipMetadata: true }
             );

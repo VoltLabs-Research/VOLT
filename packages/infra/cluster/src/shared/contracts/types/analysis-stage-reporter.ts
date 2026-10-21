@@ -1,12 +1,9 @@
-import type {
-    AnalysisStageStatus,
-    AnalysisStageType
-} from '@shared/contracts/channel/reverse-channel-analysis';
+import type { AnalysisStageKind, AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
 
 export interface AnalysisStageReportInput {
     stageKey: string;
     label: string;
-    stageType: AnalysisStageType;
+    stageType: AnalysisStageKind;
     stageStatus: AnalysisStageStatus;
     timestep?: number;
     pluginId?: string;

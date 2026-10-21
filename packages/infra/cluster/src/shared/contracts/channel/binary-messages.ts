@@ -4,11 +4,11 @@ import type {
     TeamClusterDaemonSocketStreamPayload,
     TeamClusterDaemonTunnelDataPayload,
     TeamClusterDaemonTunnelDrainPayload,
-    TeamClusterDaemonDirectTunnelOpenPayload
+    TeamClusterDaemonDirectTunnelOpenPayload,
+    BinaryChunk
 } from '@voltstack/daemon-cluster-client';
-import type { InboundChunk } from '@shared/contracts/channel/binary-envelope';
 
-type WithInboundChunk<T extends { chunk: Uint8Array }> = Omit<T, 'chunk'> & { chunk: InboundChunk };
+type WithInboundChunk<T extends { chunk: Uint8Array }> = Omit<T, 'chunk'> & { chunk: BinaryChunk };
 
 export type BinarySessionInputPayload = WithInboundChunk<TeamClusterDaemonSessionInputPayload>;
 export type BinaryStreamPayload = TeamClusterDaemonSocketStreamPayload;

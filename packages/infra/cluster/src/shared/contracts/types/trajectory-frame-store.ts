@@ -1,10 +1,10 @@
-import type { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type {
     ColumnDType,
     TypedColumn,
     ElementTableEntry
 } from '@shared/catalog/element-table';
 import type { LammpsUnits } from '@shared/catalog/units';
+import type { TeamClusterObjectStoreBucket } from '@voltstack/daemon-cluster-client';
 
 export interface TrajectoryFrameData {
     timestep: number;
@@ -31,7 +31,7 @@ export interface TrajectoryFrameStoreIngestResult {
     objectKey: string;
     frameCount: number;
     size: number;
-    bucket: ObjectBucketName;
+    bucket: TeamClusterObjectStoreBucket;
     units: LammpsUnits;
     elementTable: ElementTableEntry[];
 }
