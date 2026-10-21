@@ -1,5 +1,5 @@
-
-import type { ProgressStageType } from './events';
+import type { RuntimeProgressEvent } from './events';
+import type { TeamClusterServiceExposure, TeamClusterServiceExposureAccessMode } from './exposure';
 
 type ValueOf<T> = T[keyof T];
 
@@ -143,12 +143,12 @@ export interface TeamClusterDaemonSessionEndPayload {
 
 export interface TeamClusterDaemonExposureSnapshotPayload {
     type: 'exposure-snapshot';
-    exposures: unknown[];
+    exposures: TeamClusterServiceExposure[];
 };
 
 export interface TeamClusterDaemonExposureUpsertPayload {
     type: 'exposure-upsert';
-    exposures: unknown[];
+    exposures: TeamClusterServiceExposure[];
 };
 
 export interface TeamClusterDaemonExposureRemovePayload {
@@ -160,7 +160,7 @@ export interface TeamClusterDaemonExposureTunnelOpenPayload {
     type: 'tunnel-open';
     sessionId: string;
     exposureId: string;
-    accessMode: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
 };
 
 export interface TeamClusterDaemonDirectTunnelOpenPayload {
@@ -168,7 +168,7 @@ export interface TeamClusterDaemonDirectTunnelOpenPayload {
     sessionId: string;
     targetHost: string;
     targetPort: number;
-    accessMode: string;
+    accessMode: TeamClusterServiceExposureAccessMode;
 };
 
 export type TeamClusterDaemonTunnelOpenPayload =
@@ -219,13 +219,7 @@ export interface TeamClusterDaemonContainerCreateProgress {
     containerId?: string;
 };
 
-export interface TeamClusterDaemonRuntimeProgressPayload {
-    type: 'runtime-progress';
-    action: string;
-    stage: ProgressStageType;
-    timestamp: string;
-    payload?: Record<string, unknown>;
-};
+export type TeamClusterDaemonRuntimeProgressPayload = RuntimeProgressEvent & { type: 'runtime-progress' };
 
 export type TeamClusterDaemonMessage =
     | TeamClusterDaemonCommandMessage

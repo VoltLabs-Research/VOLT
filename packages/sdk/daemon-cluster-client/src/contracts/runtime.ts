@@ -38,6 +38,55 @@ export interface TeamClusterDaemonHostCapabilities {
     platform?: string;
 };
 
+export interface TeamClusterDaemonRuntimeConfig {
+    queueConcurrency: TeamClusterDaemonQueueConcurrency;
+    queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
+    roleConfig: TeamClusterDaemonRuntimeRoleConfig;
+};
+
+export interface TeamClusterDaemonRoleApplyPayload {
+    roleConfig: TeamClusterDaemonRuntimeRoleConfig;
+};
+
+export type TeamClusterDaemonRoleApplyResult =
+    | { accepted: true; roleConfig: TeamClusterDaemonRuntimeRoleConfig }
+    | { accepted: false; error: string };
+
+export type TeamClusterDaemonQueueConcurrencyApplyPayload = Omit<TeamClusterDaemonRuntimeConfig, 'roleConfig'>;
+
+export type TeamClusterDaemonQueueConcurrencyApplyResult =
+    | ({ accepted: true } & TeamClusterDaemonQueueConcurrencyApplyPayload)
+    | { accepted: false; error: string };
+
+export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = Object.freeze({
+    analysis: 8,
+    rasterizer: 8,
+    glbPreprocessing: 16,
+    artifactUpload: 16,
+    pluginWarmup: 4
+});
+
+// Zero means "no per-trajectory limit".
+export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterDaemonQueueScopeLimits = Object.freeze({
+    analysisProcessing: Object.freeze({ maxRunningPerTrajectory: 0 }),
+    artifactUpload: Object.freeze({ maxRunningPerTrajectory: 0 }),
+    trajectoryRasterization: Object.freeze({ maxRunningPerTrajectory: 0 }),
+    trajectoryGlbConversion: Object.freeze({ maxRunningPerTrajectory: 0 })
+});
+
+export const createDefaultTeamClusterRuntimeRoleConfig = (
+    role: TeamClusterDaemonRole = 'cluster'
+): TeamClusterDaemonRuntimeRoleConfig => ({
+    desiredRole: role,
+    effectiveRole: role,
+    runtimeVersion: 1,
+    draining: {
+        compute: false,
+        storage: false
+    },
+    lastAppliedAt: null
+});
+
 export interface TeamClusterDaemonMemoryMetrics {
     totalBytes: number;
     freeBytes: number;
@@ -84,9 +133,8 @@ export interface TeamClusterDaemonHeartbeatCommand {
     teamClusterId: string;
     daemonPassword: string;
     installedVersion?: string;
-    runtime?: {
-        roleConfig: TeamClusterDaemonRuntimeRoleConfig;
-    };
+    // Null until the daemon has fetched its runtime config from the server.
+    runtime?: Pick<TeamClusterDaemonRuntimeConfig, 'roleConfig'> | null;
     metrics?: TeamClusterDaemonHeartbeatMetrics;
     hostCapabilities?: TeamClusterDaemonHostCapabilities;
 };
