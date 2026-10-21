@@ -41,9 +41,7 @@ const isZstdFrame = (arrayBuffer: ArrayBuffer): boolean => {
     return ZSTD_MAGIC.every((value, index) => bytes[index] === value);
 };
 
-const toExactArrayBuffer = (bytes: Uint8Array): ArrayBuffer => (
-    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
-);
+const toExactArrayBuffer = (bytes: Uint8Array): ArrayBuffer => bytes.slice().buffer;
 
 export class FractalAssetLoader implements IFractalAssetLoader {
     private static sharedDracoLoader: DRACOLoader | null = null;
