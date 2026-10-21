@@ -11,7 +11,7 @@ interface CreateSessionInput{
 
 class AuthSessionService{
     async createSessionWithToken(input: CreateSessionInput): Promise<string>{
-        const token = jwtTokenService.sign(input.userId);
+        const token = await jwtTokenService.sign(input.userId);
 
         await Session.create({
             user: input.userId,

@@ -112,7 +112,7 @@ const authenticateWithUserToken = async (
 ): Promise<boolean> => {
     const startTime = Date.now();
     const tokenService = jwtTokenService;
-    const decoded = tokenService.verify(token);
+    const decoded = await tokenService.verify(token);
     if (!decoded) {
         BaseResponse.error(res, ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 401, ErrorCodes.AUTHENTICATION_UNAUTHORIZED);
         return false;

@@ -174,7 +174,7 @@ export class SocketGateway{
             };
         }
 
-        const decoded = jwtTokenService.verify(token);
+        const decoded = await jwtTokenService.verify(token);
         if (!decoded?.id) {
             return {
                 state: 'rejected',

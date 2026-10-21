@@ -83,7 +83,7 @@ class ScriptingJupyterProxyAuthorizer {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_REQUIRED, 'Authentication is required');
         }
 
-        const verifiedToken = this.accessTokenService.verify(accessToken);
+        const verifiedToken = await this.accessTokenService.verify(accessToken);
         if (!verifiedToken) {
             throw ApplicationError.unauthorized(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 'Your session is no longer valid');
         }

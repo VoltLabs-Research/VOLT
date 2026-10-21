@@ -7,9 +7,9 @@ import {
     OBJECT_GATEWAY_EXPOSURE_NAME
 } from '@modules/cluster/services/object-gateway/object-gateway-paths';
 import ApplicationError from '@shared/errors/ApplicationError';
-import jwt from 'jsonwebtoken';
 import {
     TEAM_CLUSTER_SERVICE_EXPOSURE,
+    signTeamClusterDirectAccessToken,
     type TeamClusterDirectAccessTokenClaims
 } from '@voltstack/daemon-cluster-client';
 
@@ -67,7 +67,7 @@ class ObjectGatewayAccessTokenProvider {
         };
 
         return {
-            token: jwt.sign(claims, daemonPassword, { algorithm: 'HS256' }),
+            token: await signTeamClusterDirectAccessToken(claims, daemonPassword),
             expiresAt: new Date((issuedAt + TOKEN_TTL_SECONDS) * 1000).toISOString()
         };
     }
