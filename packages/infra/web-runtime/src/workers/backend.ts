@@ -7,7 +7,7 @@ import { acceptLoopbackConnection, attachLoopbackHost } from '../platform/loopba
 import type { LoopbackConnectMessage } from '../platform/loopback';
 import { fetch } from '../platform/fetch';
 import { WebSocketConstructor } from '../platform/ws';
-import { mountFs } from '../platform/fs';
+import { startFsService } from '../platform/fs/client';
 import { initSqlite } from '../platform/better-sqlite3';
 import type { BackendBootMessage, BackendWorkerMessage } from './protocol';
 
@@ -32,7 +32,7 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
     browserProcess.onExit = (code) => send({ kind: 'exit', code });
     Object.assign(globalThis, { fetch, WebSocket: WebSocketConstructor });
 
-    await mountFs(message.fsDirectory);
+    await startFsService(new URL('./fs.worker.js', import.meta.url), message.fsDirectory);
     await initSqlite(message.sqliteDirectory);
 
     scope.addEventListener('error', (event) => {

@@ -99,6 +99,16 @@ const selected = requested.length > 0 ? BACKENDS.filter((backend) => requested.i
 
 await mkdir(outDir, { recursive: true });
 await cp(require.resolve('@sqlite.org/sqlite-wasm/sqlite3.wasm'), path.join(outDir, 'sqlite3.wasm'));
+await esbuild.build({
+    entryPoints: { 'fs.worker': path.join(platformDir, 'fs', 'service.ts') },
+    outdir: outDir,
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    target: 'es2022',
+    sourcemap: true,
+    logLevel: 'warning'
+});
 for(const backend of selected){
     await buildBackend(backend);
     console.log(`[web-runtime] built ${backend.name}.worker.js`);
