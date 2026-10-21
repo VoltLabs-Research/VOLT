@@ -204,6 +204,17 @@ await cp(require.resolve('@sqlite.org/sqlite-wasm/sqlite3.wasm'), path.join(outD
 for(const file of ['duckdb-mvp.wasm', 'duckdb-eh.wasm']){
     await cp(require.resolve(`@duckdb/duckdb-wasm/dist/${file}`), path.join(outDir, file));
 }
+// A classic script: module service workers are not supported by every browser.
+await esbuild.build({
+    entryPoints: { 'service-worker': path.join(packageDir, 'src', 'service-worker.ts') },
+    outdir: outDir,
+    bundle: true,
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2022',
+    sourcemap: true,
+    logLevel: 'warning'
+});
 await esbuild.build({
     entryPoints: { 'fs.worker': path.join(platformDir, 'fs', 'service.ts') },
     outdir: outDir,

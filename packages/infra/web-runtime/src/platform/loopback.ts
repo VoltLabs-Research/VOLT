@@ -133,8 +133,18 @@ export const forgetChildRoutes = (child: MessageTarget): void => {
     }
 };
 
-export const connectLoopback = (port: number, connection: LoopbackConnectionKind, head: LoopbackRequestHead): MessagePort => {
+export type LoopbackConnector = (port: number, connection: LoopbackConnectionKind, head: LoopbackRequestHead) => MessagePort;
+
+export const connectLoopback: LoopbackConnector = (port, connection, head) => {
     const { port1, port2 } = new MessageChannel();
     route({ kind: 'connect', port, connection, head }, port2);
+    return port1;
+};
+
+// A connection opened through a given realm rather than this one's parent: the service worker serves
+// several pages, and reaches the stack through the page that made each request.
+export const connectLoopbackThrough = (target: MessageTarget): LoopbackConnector => (port, connection, head) => {
+    const { port1, port2 } = new MessageChannel();
+    target.postMessage({ kind: 'connect', port, connection, head } satisfies LoopbackConnectMessage, [port2]);
     return port1;
 };

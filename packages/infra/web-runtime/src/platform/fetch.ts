@@ -1,7 +1,7 @@
 // The fetch() backend workers see: requests to a loopback host are served over the loopback network,
 // everything else goes to the network.
 import { connectLoopback, isLoopbackUrl } from './loopback';
-import type { LoopbackChannelMessage } from './loopback';
+import type { LoopbackChannelMessage, LoopbackConnector } from './loopback';
 
 const nativeFetch = globalThis.fetch.bind(globalThis);
 
@@ -20,7 +20,7 @@ const sendBody = async (channel: MessagePort, body: ReadableStream<Uint8Array> |
     channel.postMessage({ type: 'end' } satisfies LoopbackChannelMessage);
 };
 
-export const loopbackFetch = (request: Request): Promise<Response> => {
+export const loopbackFetch = (request: Request, connect: LoopbackConnector = connectLoopback): Promise<Response> => {
     const url = new URL(request.url);
     const headers: Record<string, string> = { host: url.host };
     request.headers.forEach((value, name) => {
@@ -31,7 +31,7 @@ export const loopbackFetch = (request: Request): Promise<Response> => {
     if(request.body){
         headers['transfer-encoding'] = 'chunked';
     }
-    const channel = connectLoopback(Number(url.port || 80), 'http', {
+    const channel = connect(Number(url.port || 80), 'http', {
         method: request.method,
         url: `${url.pathname}${url.search}`,
         headers
