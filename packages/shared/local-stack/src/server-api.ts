@@ -1,4 +1,3 @@
-import { setTimeout as sleep } from 'node:timers/promises';
 import { buildPath } from '@volt/contracts/shared/routing';
 import type { Endpoint, HttpMethod } from '@volt/contracts/shared/routing';
 
@@ -21,6 +20,8 @@ export interface RequestOptions{
 }
 
 const REQUEST_TIMEOUT_MS = 10_000;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const readMessage = (payload: unknown): string | undefined => {
     if(typeof payload !== 'object' || payload === null) return undefined;

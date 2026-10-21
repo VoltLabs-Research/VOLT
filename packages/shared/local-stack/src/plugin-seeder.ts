@@ -1,6 +1,5 @@
-import AppConfig, { BootstrapState } from '@/services/AppConfig';
-import bus from '@/services/EventBus';
-import type ServerApi from '@/services/ServerApi';
+import type ServerApi from './server-api';
+import type { BootstrapState, PluginSeedStore, ProvisioningLog } from './state';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 
@@ -26,8 +25,9 @@ const DEFAULT_PLUGINS = [
 ] as const;
 
 interface PluginSeederProps{
-    appConfig: AppConfig;
+    store: PluginSeedStore;
     api: ServerApi;
+    log: ProvisioningLog;
 }
 
 interface PluginPage{
@@ -37,11 +37,6 @@ interface PluginPage{
 
 const INSTALL_CONCURRENCY = 3;
 const INSTALL_TIMEOUT_MS = 180_000;
-
-const log = (stream: 'stdout' | 'stderr', line: string) => bus.emit('deploy:log', {
-    stream,
-    line: `[plugins] ${line}`
-});
 
 const mapLimited = async <T>(items: readonly T[], limit: number, work: (item: T) => Promise<void>): Promise<void> => {
     let cursor = 0;
@@ -57,15 +52,19 @@ const mapLimited = async <T>(items: readonly T[], limit: number, work: (item: T)
 export default class PluginSeeder{
     constructor(private readonly props: PluginSeederProps){}
 
+    #log(stream: 'stdout' | 'stderr', line: string): void{
+        this.props.log(stream, `[plugins] ${line}`);
+    }
+
     async ensure(state: BootstrapState): Promise<void>{
         const platform = await this.#clusterPlatform(state);
-        const seed = await this.props.appConfig.getPluginSeed();
+        const seed = await this.props.store.getPluginSeed();
         if(seed?.done && seed.teamId === state.teamId && seed.platform === platform) return;
 
         const installedBefore = await this.#installedCount(state);
         if(installedBefore > 0 && !seed){
-            log('stdout', `workspace already has ${installedBefore} plugin(s); skipping the default set`);
-            await this.props.appConfig.setPluginSeed({
+            this.#log('stdout', `workspace already has ${installedBefore} plugin(s); skipping the default set`);
+            await this.props.store.setPluginSeed({
                 done: true,
                 teamId: state.teamId,
                 installed: [],
@@ -75,8 +74,8 @@ export default class PluginSeeder{
         }
 
         if(seed?.teamId === state.teamId && seed.platform && seed.platform !== platform){
-            log('stdout', `reinstalling default plugins for ${platform} (previously ${seed.platform})`);
-            await this.props.appConfig.clearPluginSeed();
+            this.#log('stdout', `reinstalling default plugins for ${platform} (previously ${seed.platform})`);
+            await this.props.store.clearPluginSeed();
         }
 
         const installed = new Set(seed?.teamId === state.teamId && seed.platform === platform ? seed.installed : []);
@@ -84,7 +83,7 @@ export default class PluginSeeder{
         const failures: string[] = [];
         let finished = 0;
 
-        log('stdout', `installing ${pending.length} default plugin(s) from the registry`);
+        this.#log('stdout', `installing ${pending.length} default plugin(s) from the registry`);
 
         await mapLimited(pending, INSTALL_CONCURRENCY, async (name) => {
             try{
@@ -97,8 +96,8 @@ export default class PluginSeeder{
                 });
                 installed.add(name);
                 finished += 1;
-                log('stdout', `${name} installed (${finished}/${pending.length})`);
-                await this.props.appConfig.setPluginSeed({
+                this.#log('stdout', `${name} installed (${finished}/${pending.length})`);
+                await this.props.store.setPluginSeed({
                     done: false,
                     teamId: state.teamId,
                     installed: [...installed],
@@ -106,11 +105,11 @@ export default class PluginSeeder{
                 });
             }catch(err){
                 failures.push(name);
-                log('stderr', `${name} failed: ${err instanceof Error ? err.message : String(err)}`);
+                this.#log('stderr', `${name} failed: ${err instanceof Error ? err.message : String(err)}`);
             }
         });
 
-        await this.props.appConfig.setPluginSeed({
+        await this.props.store.setPluginSeed({
             done: failures.length === 0,
             teamId: state.teamId,
             installed: [...installed],
@@ -118,7 +117,7 @@ export default class PluginSeeder{
         });
 
         if(failures.length > 0){
-            log('stderr', `${failures.length} plugin(s) could not be installed; they will be retried next start`);
+            this.#log('stderr', `${failures.length} plugin(s) could not be installed; they will be retried next start`);
         }
     }
 

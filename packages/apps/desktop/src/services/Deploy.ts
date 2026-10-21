@@ -1,12 +1,12 @@
 import AppConfig, { DevModeState } from '@/services/AppConfig';
 import SourceResolver from '@/services/SourceResolver';
 import { composeDown, composePull, composeUp, containerEnvValue, runningServiceId, type ComposeOptions } from '@/services/Stack';
-import Bootstrap, { ProvisionAccount } from '@/services/Bootstrap';
+import Bootstrap, { ProvisionAccount } from '@volt/local-stack/bootstrap';
 import { run } from '@/services/ProcessRunner';
 import { ensureDockerReady, PreflightError } from '@/services/DockerPreflight';
 import { augmentedPath, dockerPath } from '@/services/DockerBinary';
 import { assertDevPaths } from '@/services/devPaths';
-import bus from '@/services/EventBus';
+import bus, { deployLog } from '@/services/EventBus';
 import { AppEvents, PhaseSpec } from '@/types/events';
 import { isUp, PROBE_PATH, webProbeUrl } from '@/shared/health';
 import { existsSync } from 'node:fs';
@@ -112,7 +112,8 @@ export default class Deploy{
 
         const state = await this.#phase('bootstrap', () =>
             new Bootstrap({
-                appConfig: this.props.appConfig,
+                store: this.props.appConfig,
+                log: deployLog,
                 serverOrigin,
                 account: this.props.account
             }).ensure());
@@ -152,7 +153,8 @@ export default class Deploy{
 
         const state = await this.#phase('bootstrap', () =>
             new Bootstrap({
-                appConfig: this.props.appConfig,
+                store: this.props.appConfig,
+                log: deployLog,
                 serverOrigin,
                 account: this.props.account
             }).ensure());

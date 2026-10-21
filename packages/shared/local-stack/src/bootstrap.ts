@@ -1,7 +1,6 @@
-import AppConfig, { BootstrapState } from '@/services/AppConfig';
-import bus from '@/services/EventBus';
-import { LOCAL_DEFAULTS } from '@/services/localDefaults';
-import ServerApi, { HttpError } from '@/services/ServerApi';
+import { LOCAL_DEFAULTS } from './defaults';
+import ServerApi, { HttpError } from './server-api';
+import type { BootstrapState, BootstrapStore, ProvisioningLog } from './state';
 import { authRoutes } from '@volt/contracts/modules/auth/routes';
 import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
 import { teamRoutes } from '@volt/contracts/modules/team/routes';
@@ -16,8 +15,9 @@ export interface ProvisionAccount{
 }
 
 interface BootstrapProps{
-    appConfig: AppConfig;
+    store: BootstrapStore;
     serverOrigin: string;
+    log: ProvisioningLog;
     account?: ProvisionAccount;
 }
 
@@ -44,7 +44,7 @@ export default class Bootstrap{
     }
 
     async ensure(): Promise<BootstrapState>{
-        const existing = await this.props.appConfig.getBootstrap();
+        const existing = await this.props.store.getBootstrap();
         if(existing){
             try{
                 const session = await this.#acquireSession(existing.email, existing.password);
@@ -52,14 +52,11 @@ export default class Bootstrap{
                     ...existing,
                     authToken: session.token
                 };
-                await this.props.appConfig.setBootstrap(next);
+                await this.props.store.setBootstrap(next);
                 return next;
             }catch(err){
-                bus.emit('deploy:log', {
-                    stream: 'stdout',
-                    line: `[bootstrap] re-signIn failed (${(err as Error).message}); running full bootstrap`
-                });
-                await this.props.appConfig.clearBootstrap();
+                this.props.log('stdout', `[bootstrap] re-signIn failed (${(err as Error).message}); running full bootstrap`);
+                await this.props.store.clearBootstrap();
             }
         }
 
@@ -75,16 +72,11 @@ export default class Bootstrap{
         let auth: AuthResponse;
         let reused = false;
         try{
-            bus.emit('deploy:log', {
-                stream: 'stdout',
-                line: `[bootstrap] creating user ${email}`
-            });
+            this.props.log('stdout', `[bootstrap] creating user ${email}`);
             auth = await this.#signUp(email, password, firstName, rest.join(' '));
         }catch(err){
-            if(err instanceof HttpError && err.status === 409){                bus.emit('deploy:log', {
-                    stream: 'stdout',
-                    line: `[bootstrap] user ${email} exists; signing in`
-                });
+            if(err instanceof HttpError && err.status === 409){
+                this.props.log('stdout', `[bootstrap] user ${email} exists; signing in`);
                 auth = await this.#acquireSession(email, password);
                 reused = true;
             }else{
@@ -98,10 +90,7 @@ export default class Bootstrap{
             : await this.#createTeam(auth.token, teamName);
 
         if(acc?.autoJoinNewUsers){
-            bus.emit('deploy:log', {
-                stream: 'stdout',
-                line: '[bootstrap] enabling auto-join for new users'
-            });
+            this.props.log('stdout', '[bootstrap] enabling auto-join for new users');
             await this.#setDefaultTeamForNewUsers(auth.token, team._id);
         }
 
@@ -110,10 +99,7 @@ export default class Bootstrap{
             ? await this.#findOrCreateCluster(auth.token, team._id, clusterName)
             : await this.#createCluster(auth.token, team._id, clusterName);
 
-        bus.emit('deploy:log', {
-            stream: 'stdout',
-            line: '[bootstrap] revealing daemon credentials'
-        });
+        this.props.log('stdout', '[bootstrap] revealing daemon credentials');
         const { teamClusterId, daemonPassword } = await this.#resolveDaemonCredentials(
             auth.token,
             team._id,
@@ -133,7 +119,7 @@ export default class Bootstrap{
             daemonPassword
         };
 
-        await this.props.appConfig.setBootstrap(state);
+        await this.props.store.setBootstrap(state);
         return state;
     }
 
@@ -154,10 +140,7 @@ export default class Bootstrap{
                 throw err;
             }
 
-            bus.emit('deploy:log', {
-                stream: 'stderr',
-                line: `[bootstrap] cluster ${teamClusterId} was encrypted with a key this stack no longer has; provisioning a replacement`
-            });
+            this.props.log('stderr', `[bootstrap] cluster ${teamClusterId} was encrypted with a key this stack no longer has; provisioning a replacement`);
 
             const replacement = await this.#createCluster(token, teamId, `${clusterName} (${new Date().toISOString().slice(0, 10)})`);
             const replacementId = replacement.teamCluster._id;
@@ -190,16 +173,10 @@ export default class Bootstrap{
         const teams = await this.#api.request<TeamResponse[]>(teamRoutes.listUserTeams, { token });
         const existing = teams[0];
         if(existing){
-            bus.emit('deploy:log', {
-                stream: 'stdout',
-                line: `[bootstrap] reusing team ${existing._id}`
-            });
+            this.props.log('stdout', `[bootstrap] reusing team ${existing._id}`);
             return existing;
         }
-        bus.emit('deploy:log', {
-            stream: 'stdout',
-            line: '[bootstrap] creating team'
-        });
+        this.props.log('stdout', '[bootstrap] creating team');
         return this.#createTeam(token, name);
     }
 
@@ -210,16 +187,10 @@ export default class Bootstrap{
         });
         const existing = clusters[0];
         if(existing){
-            bus.emit('deploy:log', {
-                stream: 'stdout',
-                line: `[bootstrap] reusing cluster ${existing._id}`
-            });
+            this.props.log('stdout', `[bootstrap] reusing cluster ${existing._id}`);
             return { teamCluster: existing };
         }
-        bus.emit('deploy:log', {
-            stream: 'stdout',
-            line: '[bootstrap] creating cluster'
-        });
+        this.props.log('stdout', '[bootstrap] creating cluster');
         return this.#createCluster(token, teamId, name);
     }
 

@@ -1,12 +1,15 @@
 import { rm } from 'node:fs/promises';
-import AppConfig, { BootstrapState, DevModeState } from '@/services/AppConfig';
-import Bootstrap, { ProvisionAccount } from '@/services/Bootstrap';
-import bus from '@/services/EventBus';
+import AppConfig, { DevModeState } from '@/services/AppConfig';
+import Bootstrap, { ProvisionAccount } from '@volt/local-stack/bootstrap';
+import bus, { deployLog } from '@/services/EventBus';
 import LocalStack from '@/services/LocalStack';
-import { buildDaemonEnv, buildServerEnv, ensureStackEnvDefaults, serverOriginFor, type StackPorts } from '@/services/LocalStackEnv';
-import PluginSeeder from '@/services/PluginSeeder';
+import { buildDaemonEnv, buildServerEnv, ensureStackEnvDefaults } from '@/services/LocalStackEnv';
+import { serverOriginFor } from '@volt/local-stack/defaults';
+import type { StackPorts } from '@volt/local-stack/stack-env';
+import type { BootstrapState } from '@volt/local-stack/state';
+import PluginSeeder from '@volt/local-stack/plugin-seeder';
 import { findFreePort } from '@/services/ports';
-import ServerApi from '@/services/ServerApi';
+import ServerApi from '@volt/local-stack/server-api';
 import { resolveStackRuntime, runtimeRootForCheckout, stackRuntimeHint } from '@/services/StackRuntime';
 import { AppEvents, PhaseSpec } from '@/types/events';
 import { isUp } from '@/shared/health';
@@ -211,7 +214,8 @@ export default class LocalDeploy{
         }), origin));
 
         const state = await this.#phase('bootstrap', () => new Bootstrap({
-            appConfig: this.props.appConfig,
+            store: this.props.appConfig,
+            log: deployLog,
             serverOrigin: origin,
             account: this.props.account
         }).ensure());
@@ -228,7 +232,8 @@ export default class LocalDeploy{
         });
 
         await this.#phase('plugins', () => new PluginSeeder({
-            appConfig: this.props.appConfig,
+            store: this.props.appConfig,
+            log: deployLog,
             api
         }).ensure(state));
 
