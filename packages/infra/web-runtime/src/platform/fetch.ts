@@ -21,16 +21,38 @@ const sendBody = async (channel: MessagePort, body: ReadableStream<Uint8Array> |
     channel.postMessage({ type: 'end' } satisfies LoopbackChannelMessage);
 };
 
-export const loopbackFetch = (request: Request, connect: LoopbackConnector = connectLoopback): Promise<Response> => {
+// The length of a body Node's fetch knows the length of, which it declares; a Request keeps it from
+// its headers (content-length is a header only the browser sets).
+export const bodyLength = (body: BodyInit | null | undefined): number | undefined => {
+    if(typeof body === 'string'){
+        return new TextEncoder().encode(body).byteLength;
+    }
+    if(body instanceof ArrayBuffer || ArrayBuffer.isView(body)){
+        return body.byteLength;
+    }
+    if(body instanceof Blob){
+        return body.size;
+    }
+    if(body instanceof URLSearchParams){
+        return new TextEncoder().encode(body.toString()).byteLength;
+    }
+    return undefined;
+};
+
+export const loopbackFetch = (request: Request, connect: LoopbackConnector = connectLoopback, length?: number): Promise<Response> => {
     const url = new URL(request.url);
     const headers: Record<string, string> = { host: url.host };
     request.headers.forEach((value, name) => {
         headers[name] = value;
     });
-    // A Request's body is a stream of unknown length, and body parsers skip a request that declares
-    // neither a length nor chunked encoding, so it goes out chunked as Node's http does for streams.
+    // Body parsers skip a request that declares neither a length nor chunked encoding: a body of
+    // unknown length (a stream) goes out chunked, as Node's fetch sends it.
     if(request.body){
-        headers['transfer-encoding'] = 'chunked';
+        if(length === undefined){
+            headers['transfer-encoding'] = 'chunked';
+        }else{
+            headers['content-length'] = String(length);
+        }
     }
     const channel = connect(Number(url.port || 80), 'http', {
         method: request.method,
@@ -88,5 +110,5 @@ export const loopbackFetch = (request: Request, connect: LoopbackConnector = con
 
 export const fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = new Request(input, init);
-    return isLoopbackUrl(new URL(request.url)) ? loopbackFetch(request) : nativeFetch(request);
+    return isLoopbackUrl(new URL(request.url)) ? loopbackFetch(request, connectLoopback, bodyLength(init?.body)) : nativeFetch(request);
 };
