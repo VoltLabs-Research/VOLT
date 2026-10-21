@@ -8,8 +8,7 @@ name: Verify
 # so a broken typecheck or a new layering violation reached an image unchallenged.
 #
 # `@volt/contracts` has no toolchain of its own by design; it is compiled from
-# source by both consumers, so the server typecheck and the client build are what
-# verify it.
+# source by its consumers, so their typechecks and the client build are what verify it.
 #
 # Each job installs only its package and the workspace packages it depends on
 # (`--filter <name>...`), then builds those dependencies (`<name>^...`): the SDKs'
@@ -240,6 +239,10 @@ jobs:
             fi
             sleep $((attempt * 15))
           done
+
+      # @volt/contracts reads its daemon runtime types from the SDK's built declarations.
+      - name: Build workspace dependencies
+        run: pnpm --filter "volt-desktop^..." build
 
       - name: Typecheck
         run: pnpm --filter volt-desktop typecheck

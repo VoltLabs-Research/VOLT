@@ -3,19 +3,18 @@ import daemonAnalysisCompletionService from '@modules/cluster/services/daemon/Da
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import {
     buildPluginDispatch,
-    type PipelineDispatchPayload,
-    type PipelineStageDispatch,
-    type RoutePluginExecutionInput,
-    type TrajectoryFramePayload
+    type RoutePluginExecutionInput
 } from '@modules/plugin/services/plugin/plugin-dispatch-payload';
 import ApplicationError from '@shared/errors/ApplicationError';
-import type { QueuedJobNotification } from '@modules/cluster/contracts/daemon-job-completion';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
 import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
-import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-
-export type { PluginReferenceExecutionRequest, RoutePluginExecutionInput, TrajectoryFramePayload };
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { QueuedAnalysisJobNotification } from '@volt/contracts/modules/cluster/daemon-events';
+import type {
+    PipelineStageTransport,
+    PipelineStartTransportRequest,
+    TrajectoryFrame
+} from '@volt/contracts/modules/analysis/daemon';
 
 export interface PipelineStageExecutionInput {
     kind: PipelineStageKind;
@@ -31,7 +30,7 @@ interface RoutePipelineExecutionInput {
     teamId: string;
     trajectoryId: string;
     trajectoryName: string;
-    trajectoryFrames: TrajectoryFramePayload[];
+    trajectoryFrames: TrajectoryFrame[];
     storageClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
@@ -39,13 +38,13 @@ interface RoutePipelineExecutionInput {
 }
 
 interface DaemonPipelineStartResponse {
-    jobs: QueuedJobNotification[];
+    jobs: QueuedAnalysisJobNotification[];
 }
 
 type ComputingStage = PipelineStageExecutionInput & { execution: RoutePluginExecutionInput };
 
-const groupJobsByAnalysisId = (jobs: QueuedJobNotification[]): Map<string, QueuedJobNotification[]> => {
-    const jobsByAnalysisId = new Map<string, QueuedJobNotification[]>();
+const groupJobsByAnalysisId = (jobs: QueuedAnalysisJobNotification[]): Map<string, QueuedAnalysisJobNotification[]> => {
+    const jobsByAnalysisId = new Map<string, QueuedAnalysisJobNotification[]>();
 
     for (const job of jobs) {
         const existing = jobsByAnalysisId.get(job.analysisId);
@@ -61,7 +60,7 @@ const groupJobsByAnalysisId = (jobs: QueuedJobNotification[]): Map<string, Queue
 
 class PluginExecutionRouter {
     async routePipeline(input: RoutePipelineExecutionInput): Promise<void> {
-        const stageDispatches: PipelineStageDispatch[] = [];
+        const stageDispatches: PipelineStageTransport[] = [];
         const syncTasks: Promise<void>[] = [];
 
         for (const stage of input.stages) {
@@ -101,7 +100,7 @@ class PluginExecutionRouter {
 
         await Promise.all(syncTasks);
 
-        const pipelinePayload: PipelineDispatchPayload = {
+        const pipelinePayload: PipelineStartTransportRequest = {
             teamId: input.teamId,
             teamClusterId: input.teamClusterId,
             trajectoryId: input.trajectoryId,
@@ -113,7 +112,7 @@ class PluginExecutionRouter {
 
         const response = await teamClusterDaemonClient.command<DaemonPipelineStartResponse>(
             input.teamClusterId,
-            ChannelCommands.PipelineStart,
+            DaemonCommand.PipelineStart,
             pipelinePayload
         );
 
@@ -128,7 +127,7 @@ class PluginExecutionRouter {
     private async openCompletionSessions(
         input: RoutePipelineExecutionInput,
         computingStages: ComputingStage[],
-        jobsByAnalysisId: Map<string, QueuedJobNotification[]>
+        jobsByAnalysisId: Map<string, QueuedAnalysisJobNotification[]>
     ): Promise<void> {
         for (const stage of computingStages) {
             const stageJobs = jobsByAnalysisId.get(stage.execution.analysisId) ?? [];

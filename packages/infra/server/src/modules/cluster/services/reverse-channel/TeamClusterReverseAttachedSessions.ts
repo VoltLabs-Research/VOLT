@@ -1,23 +1,23 @@
 import {
     clearPendingTimeout,
-    unwrapEnvelopeBuffer,
-    wrapEnvelopeBuffer
+    unwrapEnvelopeBuffer
 } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
+import {
+    encodeStreamChunk,
+    REVERSE_CHANNEL,
+    type TeamClusterDaemonSessionAttachPayload,
+    type TeamClusterDaemonSessionAttachResult,
+    type TeamClusterDaemonSessionDataPayload,
+    type TeamClusterDaemonSessionEndPayload,
+    type TeamClusterDaemonSocketResponsePayload
+} from '@voltstack/daemon-cluster-client';
 import {
     SESSION_ATTACH_TIMEOUT_MS,
     type PendingWebSocketEntry
 } from '@modules/cluster/services/reverse-channel/reverse-channel-pending';
 import type ReverseChannelPendingEntries from '@modules/cluster/services/reverse-channel/reverse-channel-pending';
 import { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
-import {
-    TeamClusterDaemonSessionKind,
-    type TeamClusterDaemonMessage,
-    type TeamClusterDaemonSessionAttachPayload,
-    type TeamClusterDaemonSessionAttachResult,
-    type TeamClusterDaemonSessionDataPayload,
-    type TeamClusterDaemonSessionEndPayload,
-    type TeamClusterDaemonSocketResponsePayload
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import type { TeamClusterDaemonMessage } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import { randomUUID } from 'node:crypto';
 
 type AttachedSessionEntry = PendingWebSocketEntry;
@@ -71,7 +71,7 @@ export default class TeamClusterReverseAttachedSessions {
             emitMessage: () => {
                 this.#emitAttach(socketId, sessionId, {
                     sessionId,
-                    kind: TeamClusterDaemonSessionKind.WebSocket,
+                    kind: REVERSE_CHANNEL.SessionKind.WebSocket,
                     targetUrl,
                     ...(protocols?.length ? { protocols } : {})
                 });
@@ -172,7 +172,7 @@ export default class TeamClusterReverseAttachedSessions {
         this.#emitToDaemon(socketId, {
             type: 'session-input',
             sessionId,
-            chunk: wrapEnvelopeBuffer(chunk),
+            chunk: encodeStreamChunk(chunk),
             isBinary
         });
     }

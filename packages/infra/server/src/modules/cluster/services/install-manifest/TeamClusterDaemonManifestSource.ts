@@ -14,11 +14,17 @@ export enum DaemonDistributionMode {
 }
 
 // Build mode ships the slice of the pnpm workspace that packages/infra/cluster/Dockerfile
-// builds from: the root manifests plus the daemon and the SDK it links, at their repository
-// paths. The server runs from packages/infra/server, so the workspace root is three levels up.
+// builds from: the root manifests plus the daemon and the workspace packages it links, at
+// their repository paths. The server runs from packages/infra/server, so the workspace root
+// is three levels up.
 const WORKSPACE_ROOT = path.resolve(process.cwd(), '..', '..', '..');
 const WORKSPACE_ROOT_FILES = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'];
-const WORKSPACE_PACKAGE_DIRS = ['packages/infra/cluster', 'packages/sdk/daemon-cluster-client'];
+const WORKSPACE_PACKAGE_DIRS = [
+    'packages/infra/cluster',
+    'packages/sdk/daemon-cluster-client',
+    'packages/shared/contracts',
+    'packages/shared/tooling'
+];
 
 const DAEMON_MANIFEST_SKIPPED_ENTRIES = new Set(['node_modules', 'dist', '.git', '.runtime']);
 
@@ -104,7 +110,7 @@ export const getTeamClusterDaemonDistributionMode = async (): Promise<DaemonDist
 
 export const readTeamClusterDaemonBuildContextFiles = async (): Promise<DaemonManifestFile[]> => {
     if (!await hasDaemonBuildContext()) {
-        throw ApplicationError.internalServerError('Unable to locate the VOLT workspace sources (cluster daemon and SDK) for build distribution mode');
+        throw ApplicationError.internalServerError('Unable to locate the VOLT workspace sources the cluster daemon builds from for build distribution mode');
     }
 
     const manifestFiles: DaemonManifestFile[] = [];

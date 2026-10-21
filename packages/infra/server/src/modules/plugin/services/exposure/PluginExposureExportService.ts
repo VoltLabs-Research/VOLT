@@ -1,6 +1,5 @@
 import { sanitizeDownloadName } from '@shared/http/responses/download-response';
 
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
@@ -10,6 +9,7 @@ import { v4 } from 'uuid';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 type AnalysisFileType = 'data' | 'chart' | 'model';
 
@@ -72,21 +72,21 @@ class PluginExposureExportService {
     private getPrefixCollectionConfigs(trajectoryId: string, analysisId: string): PrefixCollectionConfig[] {
         return [
             {
-                bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                 prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`,
                 type: 'data',
                 timestepRegex: /\/timestep-(\d+)\.parquet$/,
                 extensionFilter: '.parquet'
             },
             {
-                bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                 prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/charts/`,
                 type: 'chart',
                 timestepRegex: /\/charts\/(\d+)\//,
                 extensionFilter: '.png'
             },
             {
-                bucket: TEAM_CLUSTER_BUCKETS.MODELS,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
                 prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`,
                 type: 'model',
                 timestepRegex: /\/glb\/(\d+)\//,
@@ -153,7 +153,7 @@ class PluginExposureExportService {
 
         return clusterObjectArchiveService.createArchiveDownload({
             teamClusterId,
-            outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+            outputBucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
             outputObjectKey: `exports/plugin-exposures/${params.analysisId}/${v4()}.zip`,
             filename: `analysis-${params.analysisId}-plugin-${pluginName}.zip`,
             cacheControl: 'public, max-age=31536000, immutable',

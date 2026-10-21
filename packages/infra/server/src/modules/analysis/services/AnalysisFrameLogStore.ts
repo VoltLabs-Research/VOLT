@@ -1,4 +1,3 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import type {
     AnalysisFrameLogIdentity,
     StoredAnalysisFrameLogRecord
@@ -6,6 +5,7 @@ import type {
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { Buffer } from 'node:buffer';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const frameLogObjectKey = (trajectoryId: string, analysisId: string, timestep: number): string => {
     return `trajectory-${trajectoryId}/analysis-${analysisId}/frame-${timestep}.json`;
@@ -18,7 +18,7 @@ export const readStoredFrameLog = async (
     try {
         const buffer = await objectGatewayClient.getBuffer(
             storageClusterId,
-            TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.AnalysisLogs,
             frameLogObjectKey(identity.trajectoryId, identity.analysisId, identity.timestep)
         );
         return JSON.parse(buffer.toString('utf8')) as StoredAnalysisFrameLogRecord;
@@ -37,7 +37,7 @@ export const writeStoredFrameLog = async (
 ): Promise<void> => {
     const buffer = Buffer.from(JSON.stringify(record), 'utf8');
     await objectGatewayClient.putBuffer(storageClusterId, {
-        bucket: TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.AnalysisLogs,
         objectKey: frameLogObjectKey(record.trajectoryId, record.analysisId, record.timestep),
         buffer,
         contentLength: buffer.length,

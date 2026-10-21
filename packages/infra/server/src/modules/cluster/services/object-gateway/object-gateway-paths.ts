@@ -1,11 +1,9 @@
 
+import type { TeamClusterObjectGatewayPutRequest } from '@shared/contracts/types/TeamClusterObjectGateway';
 import {
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
-} from '@shared/contracts/types/TeamClusterObjectGateway';
-import type {
-    TeamClusterObjectGatewayPutRequest
-} from '@shared/contracts/types/TeamClusterObjectGateway';
+} from '@voltstack/daemon-cluster-client';
 
 
 const OBJECT_GATEWAY_BASE_PATH = '/internal/object-gateway/v1';

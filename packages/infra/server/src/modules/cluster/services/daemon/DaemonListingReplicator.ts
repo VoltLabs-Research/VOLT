@@ -8,14 +8,17 @@ import {
 import type {
     StoragePlacementScopeType
 } from '@shared/contracts/types/team-cluster';
-import {
-    ChannelCommands,
-    type PluginListingTransferKind,
-    type PluginListingTransferExportResult,
-    type PluginListingTransferImportResult,
-    type PluginListingTransferPurgeResult
-} from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    PluginListingTransferExportResult,
+    PluginListingTransferImportResult,
+    PluginListingTransferKind,
+    PluginListingTransferPurgeResult,
+    PluginListingTransferExportRequest,
+    PluginListingTransferImportRequest,
+    PluginListingTransferPurgeRequest
+} from '@volt/contracts/modules/plugin/daemon';
 
 const LISTING_TRANSFER_BATCH_SIZE = 200;
 const LISTING_TRANSFER_KINDS: PluginListingTransferKind[] = ['listing', 'sub-listing'];
@@ -39,13 +42,13 @@ class DaemonListingReplicator{
             while (true) {
                 const batch = await teamClusterDaemonClient.command<PluginListingTransferExportResult>(
                     job.props.sourceClusterId,
-                    ChannelCommands.PluginTransferListingsExport,
+                    DaemonCommand.PluginTransferListingsExport,
                     {
                         analysisIds,
                         documentType,
                         skip,
                         limit: LISTING_TRANSFER_BATCH_SIZE
-                    },
+                    } satisfies PluginListingTransferExportRequest,
                     {
                         timeoutClass: 'long-running-control-plane',
                         retryClass: 'safe-read'
@@ -55,12 +58,12 @@ class DaemonListingReplicator{
                 if (batch.rows.length > 0) {
                     await teamClusterDaemonClient.command<PluginListingTransferImportResult>(
                         job.props.destinationClusterId,
-                        ChannelCommands.PluginTransferListingsImport,
+                        DaemonCommand.PluginTransferListingsImport,
                         {
                             analysisIds,
                             documentType,
                             rows: batch.rows
-                        },
+                        } satisfies PluginListingTransferImportRequest,
                         {
                             timeoutClass: 'long-running-control-plane',
                             retryClass: 'idempotent-command'
@@ -94,11 +97,11 @@ class DaemonListingReplicator{
         for (const documentType of LISTING_TRANSFER_KINDS) {
             const result = await teamClusterDaemonClient.command<PluginListingTransferPurgeResult>(
                 sourceClusterId,
-                ChannelCommands.PluginTransferListingsPurge,
+                DaemonCommand.PluginTransferListingsPurge,
                 {
                     analysisIds,
                     documentType
-                },
+                } satisfies PluginListingTransferPurgeRequest,
                 {
                     timeoutClass: 'long-running-control-plane',
                     retryClass: 'idempotent-command'

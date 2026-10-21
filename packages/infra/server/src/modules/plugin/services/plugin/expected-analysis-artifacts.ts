@@ -1,6 +1,6 @@
-import { matchesArgumentCondition } from '@modules/plugin/services/plugin/ArgumentVisibility';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import type { AnalysisExpectedArtifact } from '@shared/contracts/types/AnalysisProps';
+import { matchesArgumentCondition } from '@volt/contracts/modules/plugin/arguments';
 
 const EXPECTED_ARTIFACT_EXPORTERS = new Set([
     'AtomisticExporter',

@@ -1,14 +1,15 @@
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
-import type {
-    AtomPageResult,
-    FrameMetadata,
-    TrajectoryNativeObjectStreamResponse
-} from '@modules/trajectory/services/native/TrajectoryNativeTypes';
+import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import { toUint8Array } from '@shared/contracts/types/binary-envelope';
+import { toBytes } from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    NativeAtomsPage,
+    NativeFrameMetadata,
+    NativeFilterPreview
+} from '@volt/contracts/modules/trajectory/daemon';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -62,12 +63,6 @@ interface TrajectoryNativeParticleFilterRequest extends TrajectoryNativeRequest 
     mask: Uint8Array;
 }
 
-interface TrajectoryNativeFilterPreviewResponse {
-    mask: Uint8Array;
-    matchCount: number;
-    totalAtoms: number;
-}
-
 interface TrajectoryNativeClusterContext {
     trajectory: Trajectory;
     storageClusterId: string;
@@ -98,31 +93,31 @@ export const resolveTrajectoryNativeClusterContext = async (
 };
 
 class TrajectoryNativeDaemonService {
-    async getTrajectoryMetadata(input: TrajectoryNativeRequest): Promise<FrameMetadata> {
+    async getTrajectoryMetadata(input: TrajectoryNativeRequest): Promise<NativeFrameMetadata> {
         return teamClusterDaemonClient.command(
             input.teamClusterId,
-            ChannelCommands.TrajectoryNativeMetadata,
+            DaemonCommand.TrajectoryNativeMetadata,
             this.toBaseBody(input)
         );
     }
 
     async getPropertyStats(input: TrajectoryNativePropertyRequest): Promise<{ min: number; max: number; }> {
-        return teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativePropertyStats, {
+        return teamClusterDaemonClient.command(input.teamClusterId, DaemonCommand.TrajectoryNativePropertyStats, {
             ...this.toBaseBody(input),
             property: input.property
         });
     }
 
     async getUniqueValues(input: TrajectoryNativeUniqueValuesRequest): Promise<number[]> {
-        return teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeUniqueValues, {
+        return teamClusterDaemonClient.command(input.teamClusterId, DaemonCommand.TrajectoryNativeUniqueValues, {
             ...this.toBaseBody(input),
             property: input.property,
             maxValues: input.maxValues
         });
     }
 
-    async getAtomsPage(input: TrajectoryNativeAtomsPageRequest): Promise<AtomPageResult> {
-        return teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeAtoms, {
+    async getAtomsPage(input: TrajectoryNativeAtomsPageRequest): Promise<NativeAtomsPage> {
+        return teamClusterDaemonClient.command(input.teamClusterId, DaemonCommand.TrajectoryNativeAtoms, {
             ...this.toBaseBody(input),
             page: input.page,
             limit: input.limit,
@@ -130,10 +125,10 @@ class TrajectoryNativeDaemonService {
         });
     }
 
-    async previewFilter(input: TrajectoryNativeConditionFilterPreviewRequest): Promise<TrajectoryNativeFilterPreviewResponse> {
-        const response = await teamClusterDaemonClient.command<TrajectoryNativeFilterPreviewResponse>(
+    async previewFilter(input: TrajectoryNativeConditionFilterPreviewRequest): Promise<NativeFilterPreview> {
+        const response = await teamClusterDaemonClient.command<NativeFilterPreview>(
             input.teamClusterId,
-            ChannelCommands.TrajectoryNativeFilterPreview,
+            DaemonCommand.TrajectoryNativeFilterPreview,
             {
                 ...this.toBaseBody(input),
                 property: input.property,
@@ -144,14 +139,14 @@ class TrajectoryNativeDaemonService {
         );
 
         return {
-            mask: toUint8Array(response.mask),
+            mask: toBytes(response.mask),
             matchCount: response.matchCount,
             totalAtoms: response.totalAtoms
         };
     }
 
     async exportColoredModel(input: TrajectoryNativeColorModelRequest): Promise<void> {
-        await teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeColorModel, {
+        await teamClusterDaemonClient.command(input.teamClusterId, DaemonCommand.TrajectoryNativeColorModel, {
             ...this.toBaseBody(input),
             property: input.property,
             objectKey: input.objectKey,
@@ -163,7 +158,7 @@ class TrajectoryNativeDaemonService {
     }
 
     async exportParticleFilterModel(input: TrajectoryNativeParticleFilterRequest): Promise<{ atomsResult: number; }> {
-        return teamClusterDaemonClient.command(input.teamClusterId, ChannelCommands.TrajectoryNativeParticleFilterModel, {
+        return teamClusterDaemonClient.command(input.teamClusterId, DaemonCommand.TrajectoryNativeParticleFilterModel, {
             ...this.toBaseBody(input),
             objectKey: input.objectKey,
             action: input.action,

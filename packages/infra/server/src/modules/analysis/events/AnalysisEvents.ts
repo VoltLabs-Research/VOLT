@@ -11,10 +11,10 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import teamJobMaintenanceService from '@modules/jobs/services/TeamJobMaintenanceService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import { getAnalysisStorageCleanupTargets } from '@shared/utilities/storage-cleanup-prefixes';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import logger from '@shared/logger';
 import type { FindOptionsWhere } from 'typeorm';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const JOB_STATUS_KEY_PREFIX = 'jobs:status:';
 const JOB_TOMBSTONE_KEY_PREFIX = 'jobs:removed:';
@@ -81,7 +81,7 @@ export default class AnalysisEvents{
 
         for(const documentType of DAEMON_LISTING_DOCUMENT_TYPES){
             try{
-                await teamClusterDaemonClient.command(teamClusterId, ChannelCommands.PluginTransferListingsPurge, {
+                await teamClusterDaemonClient.command(teamClusterId, DaemonCommand.PluginTransferListingsPurge, {
                     analysisIds: [analysisId],
                     documentType
                 });

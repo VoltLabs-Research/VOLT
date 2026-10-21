@@ -1,6 +1,6 @@
 import type SocketIOEmitter from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
-import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types/TeamClusterExposure';
+import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
 
 interface PluginDebugSessionRegistryEntry {
     socketId: string;
@@ -51,7 +51,7 @@ class PluginDebugSessionRegistryService {
         sessionId: string,
         expectedTeamClusterId: string,
         nodeId: string,
-        segments: TeamClusterDaemonExecutionLogSegment[]
+        segments: ExecutionLogSegment[]
     ): boolean {
         const entry = this.sessions.get(sessionId);
         if (!entry || entry.teamClusterId !== expectedTeamClusterId) {

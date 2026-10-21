@@ -8,11 +8,11 @@ import { insertSimulationCells } from '@modules/simulation-cell/services/Simulat
 
 import eventBus from '@shared/events/PostgresEventBus';
 import logger from '@shared/logger';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import type { SimulationCellProps } from '@shared/contracts/types/SimulationCell';
 import type { TrajectoryFrame } from '@shared/contracts/types/Trajectory';
 import type { TrajectoryUploadSessionRequest } from '@modules/trajectory/services/TrajectoryServiceTypes';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
 const GLB_JOB_NAME = 'Preprocess trajectory frame';
@@ -42,7 +42,7 @@ export const requestTrajectoryIngest = (
     teamId: string
 ): Promise<TrajectoryIngestResult> => teamClusterDaemonClient.command<TrajectoryIngestResult>(
     session.ownerClusterId,
-    ChannelCommands.TrajectoryIngest,
+    DaemonCommand.TrajectoryIngest,
     {
         trajectoryId: session.resourceId,
         teamId,

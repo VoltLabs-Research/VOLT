@@ -1,22 +1,14 @@
-import {
-    ArgumentType,
-    type ArgumentDefinition
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import { isArgumentVisible } from '@modules/plugin/services/plugin/ArgumentVisibility';
-import { resolveArgumentExecutionValue } from '@modules/plugin/services/plugin/plugin-reference-mappings';
 import { isRecord } from '@shared/utilities/type-guards';
-
-export interface PluginReferenceExecutionRequest {
-    referencePath: string;
-    pluginId: string;
-    config: Record<string, unknown>;
-}
+import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
+import { isArgumentVisible, resolveArgumentValue } from '@volt/contracts/modules/plugin/arguments';
+import type { PluginReferenceExecutionRequest } from '@volt/contracts/modules/analysis/daemon';
 
 export interface PluginReferenceValidationTarget extends PluginReferenceExecutionRequest {
     allowedPluginIds: string[];
     allowedPluginKeys: string[];
-    definition: ArgumentDefinition;
-    definitions: ArgumentDefinition[];
+    definition: IArgumentDefinition;
+    definitions: IArgumentDefinition[];
     scopeValues: Record<string, unknown>;
 }
 
@@ -48,8 +40,8 @@ const normalizeStringList = (value: string[] | undefined): string[] => {
 };
 
 const visitArgument = (
-    definitions: ArgumentDefinition[],
-    definition: ArgumentDefinition,
+    definitions: IArgumentDefinition[],
+    definition: IArgumentDefinition,
     value: unknown,
     scopeValues: Record<string, unknown>,
     currentPath: string,
@@ -60,7 +52,7 @@ const visitArgument = (
         return;
     }
 
-    const resolvedValue = resolveArgumentExecutionValue(definition, value);
+    const resolvedValue = resolveArgumentValue(definition, value);
 
     if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
         const selections = readPluginReferenceSelections(resolvedValue);
@@ -114,7 +106,7 @@ const visitArgument = (
 };
 
 export const collectPluginReferenceValidationTargets = (
-    definitions: ArgumentDefinition[],
+    definitions: IArgumentDefinition[],
     config: Record<string, unknown>,
     errors: string[]
 ): PluginReferenceValidationTarget[] => {

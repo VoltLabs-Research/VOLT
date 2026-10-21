@@ -2,16 +2,6 @@ import eventBus from '@shared/events/PostgresEventBus';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
-import type {
-    DaemonAnalysisJobStatusInput,
-    DaemonAnalysisStageStatusInput,
-    DaemonArtifactUploadJobStatusInput,
-    DaemonGlbJobStatusInput,
-    DaemonJobCompletionInput,
-    DaemonRasterJobStatusInput,
-    QueuedDaemonJobNotification,
-    QueuedJobNotification
-} from '@modules/cluster/contracts/daemon-job-completion';
 import analysisExecutionLogService from '@modules/analysis/services/AnalysisExecutionLogService';
 import logger from '@shared/logger';
 import analysisStageProjection from '@modules/cluster/services/daemon/AnalysisStageProjection';
@@ -22,10 +12,19 @@ import daemonJobStatusPublisher, {
     swallow
 } from '@modules/cluster/services/daemon/DaemonJobStatusPublisher';
 import type { ProjectedJobStatusInput } from '@modules/cluster/services/daemon/DaemonJobStatusPublisher';
+import type {
+    AnalysisJobCompletionEvent,
+    AnalysisJobStatusEvent,
+    AnalysisStageStatusEvent,
+    ArtifactUploadJobStatusEvent,
+    GlbJobStatusEvent,
+    QueuedJobNotification,
+    RasterJobStatusEvent
+} from '@volt/contracts/modules/cluster/daemon-events';
 
 type QueuedJobProjection = Omit<ProjectedJobStatusInput, 'teamId' | 'queueType' | 'cleanupScope'>;
 
-const toQueuedJobProjection = (job: QueuedDaemonJobNotification, teamClusterId: string): QueuedJobProjection => ({
+const toQueuedJobProjection = (job: QueuedJobNotification, teamClusterId: string): QueuedJobProjection => ({
     jobId: job.jobId,
     teamClusterId,
     status: JobStatus.Queued,
@@ -84,7 +83,7 @@ class DaemonAnalysisCompletionService {
     }
 
     async handleQueuedJobs(
-        jobs: QueuedDaemonJobNotification[],
+        jobs: QueuedJobNotification[],
         cleanupScope: string,
         teamClusterId: string
     ): Promise<void> {
@@ -98,7 +97,7 @@ class DaemonAnalysisCompletionService {
         await this.publisher.publishJobStatusChangedBatch(events);
     }
 
-    async handleJobCompletion(input: DaemonJobCompletionInput): Promise<void> {
+    async handleJobCompletion(input: AnalysisJobCompletionEvent): Promise<void> {
         const { jobId, analysisId, success, error } = input;
         const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const teamId = resolved.teamId;
@@ -150,8 +149,8 @@ class DaemonAnalysisCompletionService {
         await this.finalizeAnalysis(analysisId, teamId, drainResult.failedJobs);
     }
 
-    async handleAnalysisJobStatus(input: DaemonAnalysisJobStatusInput): Promise<void> {
-        const { jobId, analysisId, status, error } = input;
+    async handleAnalysisJobStatus(input: AnalysisJobStatusEvent): Promise<void> {
+        const { jobId, analysisId, status } = input;
         const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const teamId = resolved.teamId;
         const trajectoryContext = resolved.trajectoryContext;
@@ -182,12 +181,11 @@ class DaemonAnalysisCompletionService {
             ...PROJECTED_JOB_KINDS.analysis,
             name: input.name,
             analysisId,
-            trajectoryContext,
-            error
+            trajectoryContext
         });
     }
 
-    async handleAnalysisStageStatus(input: DaemonAnalysisStageStatusInput): Promise<void> {
+    async handleAnalysisStageStatus(input: AnalysisStageStatusEvent): Promise<void> {
         const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const analysis = resolved.analysis;
         const stage = analysisStageProjection.toAnalysisStage(input, resolved.trajectoryContext.timestep);
@@ -228,7 +226,7 @@ class DaemonAnalysisCompletionService {
             }));
     }
 
-    async handleRasterJobStatus(input: DaemonRasterJobStatusInput): Promise<void> {
+    async handleRasterJobStatus(input: RasterJobStatusEvent): Promise<void> {
         const resolved = await daemonJobOwnershipResolver.resolveTrajectoryOwnership(input);
 
         await this.publisher.publishJobStatusChanged({
@@ -260,7 +258,7 @@ class DaemonAnalysisCompletionService {
         }
     }
 
-    async handleGlbJobStatus(input: DaemonGlbJobStatusInput): Promise<void> {
+    async handleGlbJobStatus(input: GlbJobStatusEvent): Promise<void> {
         const { jobId, status, error } = input;
         const resolved = await daemonJobOwnershipResolver.resolveTrajectoryOwnership(input);
         const teamId = resolved.teamId;
@@ -304,7 +302,7 @@ class DaemonAnalysisCompletionService {
         await this.finalizeGlbSession(trajectoryId, teamId, drainResult.failedJobs);
     }
 
-    async handleArtifactUploadJobStatus(input: DaemonArtifactUploadJobStatusInput): Promise<void> {
+    async handleArtifactUploadJobStatus(input: ArtifactUploadJobStatusEvent): Promise<void> {
         const resolved = await daemonJobOwnershipResolver.resolveAnalysisOwnership(input);
         const updatedAnalysis = await daemonJobOwnershipResolver.updateAnalysisById(input.analysisId, {
             artifactStatus: analysisStageProjection.resolveArtifactStatusForUpload(

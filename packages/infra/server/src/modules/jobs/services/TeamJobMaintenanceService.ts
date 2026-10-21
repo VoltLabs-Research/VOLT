@@ -4,7 +4,6 @@ import type { RemoveTeamJobsResult, RetryTeamJobsResult, TeamClusterFailureDetai
 import teamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
 import type { AnalysisDeletedEventPayload } from '@shared/events/AnalysisDeletedPayload';
 import type { TrajectoryDeletedEventPayload } from '@shared/events/TrajectoryDeletedPayload';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
 import {
     collectCleanupClusterIds,
@@ -20,6 +19,7 @@ import {
     purgeTrajectoryRuntimeState
 } from '@modules/jobs/services/job-runtime-state';
 import { retryTeamJobs } from '@modules/jobs/services/team-job-retry';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const REMOVABLE_STATUSES = new Set<string>([
     JobStatus.Queued,
@@ -79,7 +79,7 @@ class TeamJobMaintenanceService {
             purged.daemonClusterIds
         ).map((teamClusterId) => this.cleanupRemoteRuntimeState(
             teamClusterId,
-            ChannelCommands.TrajectoryCleanupRuntimeState,
+            DaemonCommand.TrajectoryCleanupRuntimeState,
             {
                 trajectoryId: input.trajectoryId,
                 analysisIds,
@@ -101,7 +101,7 @@ class TeamJobMaintenanceService {
             purged.daemonClusterIds
         ).map((teamClusterId) => this.cleanupRemoteRuntimeState(
             teamClusterId,
-            ChannelCommands.AnalysisCleanupRuntimeState,
+            DaemonCommand.AnalysisCleanupRuntimeState,
             {
                 analysisId: input.analysisId,
                 jobIds: purged.jobIds
@@ -126,7 +126,7 @@ class TeamJobMaintenanceService {
             try {
                 const response = await teamClusterDaemonClient.command<{ affectedJobIds: string[] }>(
                     teamClusterId,
-                    ChannelCommands.JobsRemoveRunning,
+                    DaemonCommand.JobsRemoveRunning,
                     { jobIds: clusterJobs.map((job) => job.jobId) }
                 );
                 const affectedSet = new Set(response.affectedJobIds);
@@ -192,7 +192,7 @@ class TeamJobMaintenanceService {
             try {
                 await teamClusterDaemonClient.command(
                     teamClusterId,
-                    ChannelCommands.JobsRemoveRunning,
+                    DaemonCommand.JobsRemoveRunning,
                     { jobIds: clusterJobs.map((job) => job.jobId) }
                 );
             } catch (error) {
@@ -208,7 +208,7 @@ class TeamJobMaintenanceService {
 
     private async cleanupRemoteRuntimeState(
         teamClusterId: string,
-        command: string,
+        command: DaemonCommand,
         payload: Record<string, unknown>
     ): Promise<void> {
         try {

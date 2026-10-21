@@ -1,5 +1,5 @@
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 interface AnalysisStorageCleanupTarget {
     bucket: string;
@@ -14,23 +14,23 @@ export const getAnalysisStorageCleanupTargets = (
 
     return [
         {
-            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             prefix: `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/`
         },
         {
-            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             prefix: analysisPrefix
         },
         {
-            bucket: TEAM_CLUSTER_BUCKETS.MODELS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             prefix: analysisPrefix
         },
         {
-            bucket: TEAM_CLUSTER_BUCKETS.RASTERIZER,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Rasterizer,
             prefix: analysisPrefix
         },
         {
-            bucket: TEAM_CLUSTER_BUCKETS.ANALYSIS_LOGS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.AnalysisLogs,
             prefix: analysisPrefix
         }
     ];

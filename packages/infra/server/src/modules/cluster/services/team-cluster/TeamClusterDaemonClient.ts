@@ -6,17 +6,18 @@ import type {
     TeamClusterTunnelOpenRequest
 } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
 import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';
-import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
-import { TeamClusterDaemonResponseType } from '@shared/contracts/types/TeamClusterDaemon';
-import type {
-    TeamClusterDaemonErrorResult,
-    TeamClusterDaemonSocketResponsePayload
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { getHttpRequestContext } from '@shared/http/request-context';
 import logger from '@shared/logger';
 import type { Readable } from 'node:stream';
+import {
+    type TeamClusterServiceExposureAccessMode,
+    REVERSE_CHANNEL,
+    type TeamClusterDaemonErrorResult,
+    type TeamClusterDaemonResponseType,
+    type TeamClusterDaemonSocketResponsePayload
+} from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 export interface TeamClusterDaemonCommandOptions {
     timeoutMs?: number;
@@ -34,6 +35,7 @@ export interface TeamClusterDaemonSemanticCommandResult<T> {
 
 interface TeamClusterDaemonSemanticPayload {
     accepted?: boolean;
+    error?: string;
     reason?: string;
     message?: string;
 }
@@ -49,7 +51,7 @@ const readDaemonErrorResult = (data: unknown): TeamClusterDaemonErrorResult | nu
     return candidate?.status === 'error' ? candidate : null;
 };
 
-const readPayloadBytes = (payload?: Record<string, unknown>): number | undefined => {
+const readPayloadBytes = (payload?: object): number | undefined => {
     if (!payload) {
         return undefined;
     }
@@ -62,7 +64,7 @@ const readPayloadBytes = (payload?: Record<string, unknown>): number | undefined
 };
 
 class TeamClusterDaemonClient {
-    private buildPayloadWithMetadata(payload?: Record<string, unknown>): Record<string, unknown> | undefined {
+    private buildPayloadWithMetadata(payload?: object): Record<string, unknown> | undefined {
         const requestContext = getHttpRequestContext();
         if (!payload && !requestContext) {
             return undefined;
@@ -71,7 +73,7 @@ class TeamClusterDaemonClient {
         return {
             ...(payload || {}),
             metadata: {
-                ...(payload?.metadata as Record<string, unknown> | undefined),
+                ...(payload as { metadata?: Record<string, unknown> } | undefined)?.metadata,
                 traceId: requestContext?.traceId,
                 requestMethod: requestContext?.method,
                 requestPath: requestContext?.path
@@ -82,9 +84,9 @@ class TeamClusterDaemonClient {
     private async dispatch<T>(
         label: string,
         teamClusterId: string,
-        command: string,
+        command: DaemonCommand,
         responseType: TeamClusterDaemonResponseType,
-        payload: Record<string, unknown> | undefined,
+        payload: object | undefined,
         timeoutMs: number | undefined,
         run: () => Promise<T>,
         describeOutcome: (value: T) => string
@@ -94,7 +96,7 @@ class TeamClusterDaemonClient {
             teamClusterId,
             command,
             responseType,
-            payloadBytes: command === ChannelCommands.AnalysisStart ? undefined : readPayloadBytes(payload),
+            payloadBytes: command === DaemonCommand.AnalysisStart ? undefined : readPayloadBytes(payload),
             timeoutMs
         }, `@team-cluster-daemon: ${label}-dispatch`);
 
@@ -110,7 +112,7 @@ class TeamClusterDaemonClient {
     }
 
     private throwDaemonError(
-        command: string,
+        command: DaemonCommand,
         status: number,
         message: string | undefined,
         errorResult: TeamClusterDaemonErrorResult | null,
@@ -126,7 +128,7 @@ class TeamClusterDaemonClient {
         throw new ApplicationError(code, errorMessage, status >= 400 && status < 500 ? status : 500);
     }
 
-    private unwrap<T>(command: string, response: TeamClusterDaemonSocketResponsePayload, logLabel: string): T {
+    private unwrap<T>(command: DaemonCommand, response: TeamClusterDaemonSocketResponsePayload, logLabel: string): T {
         if (!response.ok) {
             this.throwDaemonError(command, response.status, response.message, readDaemonErrorResult(response.data?.data), logLabel);
         }
@@ -142,8 +144,8 @@ class TeamClusterDaemonClient {
 
     async command<T>(
         teamClusterId: string,
-        command: string,
-        payload?: Record<string, unknown>,
+        command: DaemonCommand,
+        payload?: object,
         options?: TeamClusterDaemonCommandOptions
     ): Promise<T> {
         const timeoutMs = options?.timeoutMs ?? TIMEOUT_BY_CLASS[options?.timeoutClass ?? 'default'];
@@ -153,14 +155,14 @@ class TeamClusterDaemonClient {
             'command',
             teamClusterId,
             command,
-            TeamClusterDaemonResponseType.Json,
+            REVERSE_CHANNEL.ResponseType.Json,
             payloadWithMetadata,
             timeoutMs,
             async () => {
                 const response = await teamClusterReverseChannelService.command(teamClusterId, {
                     command,
                     payload: payloadWithMetadata,
-                    responseType: TeamClusterDaemonResponseType.Json
+                    responseType: REVERSE_CHANNEL.ResponseType.Json
                 }, { timeoutMs });
 
                 return this.unwrap<T>(command, response, 'Daemon command failed');
@@ -171,8 +173,8 @@ class TeamClusterDaemonClient {
 
     async commandWithSemanticResult<T>(
         teamClusterId: string,
-        command: string,
-        payload?: Record<string, unknown>,
+        command: DaemonCommand,
+        payload?: object,
         options?: TeamClusterDaemonCommandOptions
     ): Promise<TeamClusterDaemonSemanticCommandResult<T>> {
         const timeoutClass = options?.timeoutClass ?? 'default';
@@ -186,26 +188,26 @@ class TeamClusterDaemonClient {
         return {
             accepted: semanticPayload?.accepted !== false,
             data,
-            reason: semanticPayload?.reason ?? semanticPayload?.message,
+            reason: semanticPayload?.error ?? semanticPayload?.reason ?? semanticPayload?.message,
             retryClass,
             timeoutClass
         };
     }
 
-    async commandStream(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Readable> {
+    async commandStream(teamClusterId: string, command: DaemonCommand, payload?: object): Promise<Readable> {
         const payloadWithMetadata = this.buildPayloadWithMetadata(payload);
 
         return this.dispatch(
             'stream',
             teamClusterId,
             command,
-            TeamClusterDaemonResponseType.Stream,
+            REVERSE_CHANNEL.ResponseType.Stream,
             payloadWithMetadata,
             undefined,
             async () => (await teamClusterReverseChannelService.openCommandStream(teamClusterId, {
                 command,
                 payload: payloadWithMetadata,
-                responseType: TeamClusterDaemonResponseType.Stream
+                responseType: REVERSE_CHANNEL.ResponseType.Stream
             })).stream,
             () => 'ready'
         );
@@ -213,8 +215,8 @@ class TeamClusterDaemonClient {
 
     async commandResponseStream(
         teamClusterId: string,
-        command: string,
-        payload?: Record<string, unknown>
+        command: DaemonCommand,
+        payload?: object
     ): Promise<TeamClusterReverseChannelStreamAttachment> {
         const payloadWithMetadata = this.buildPayloadWithMetadata(payload);
 
@@ -222,33 +224,33 @@ class TeamClusterDaemonClient {
             'response-stream',
             teamClusterId,
             command,
-            TeamClusterDaemonResponseType.Stream,
+            REVERSE_CHANNEL.ResponseType.Stream,
             payloadWithMetadata,
             undefined,
             () => teamClusterReverseChannelService.openCommandStream(teamClusterId, {
                 command,
                 payload: payloadWithMetadata,
-                responseType: TeamClusterDaemonResponseType.Stream
+                responseType: REVERSE_CHANNEL.ResponseType.Stream
             }),
             (attachment) => `status=${attachment.status}`
         );
     }
 
-    async commandBuffer(teamClusterId: string, command: string, payload?: Record<string, unknown>): Promise<Buffer> {
+    async commandBuffer(teamClusterId: string, command: DaemonCommand, payload?: object): Promise<Buffer> {
         const payloadWithMetadata = this.buildPayloadWithMetadata(payload);
 
         return this.dispatch(
             'buffer',
             teamClusterId,
             command,
-            TeamClusterDaemonResponseType.Buffer,
+            REVERSE_CHANNEL.ResponseType.Buffer,
             payloadWithMetadata,
             undefined,
             async () => {
                 const response = await teamClusterReverseChannelService.command(teamClusterId, {
                     command,
                     payload: payloadWithMetadata,
-                    responseType: TeamClusterDaemonResponseType.Buffer
+                    responseType: REVERSE_CHANNEL.ResponseType.Buffer
                 });
                 const { body } = this.unwrap<{ body?: Uint8Array }>(command, response, 'Daemon buffer command failed');
 

@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { STATIC_ROOT } from '@core/config/paths';
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
@@ -20,10 +19,7 @@ import {
 } from '@shared/http/responses/download-response';
 import { readFilenameFromContentDisposition } from '@shared/http/responses/content-disposition';
 
-import type {
-    ClusterArchiveObjectEntry,
-    ClusterArchiveReference
-} from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import type { ClusterArchiveReference } from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type {
     DownloadSampleSimulationsOutput,
@@ -36,6 +32,8 @@ import { v4 } from 'uuid';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import type { ArchiveObjectEntry } from '@volt/contracts/modules/cluster/daemon-archive';
 
 const SAMPLES_PATH = path.join(STATIC_ROOT, 'default/simulations');
 const ANALYSIS_STATUS_COMPLETED = 'completed';
@@ -54,7 +52,7 @@ const requireTeamTrajectory = async (trajectoryId: string, teamId: string): Prom
 const buildAnalysisArchiveEntry = async (
     analysisId: string,
     teamId: string
-): Promise<ClusterArchiveObjectEntry | null> => {
+): Promise<ArchiveObjectEntry | null> => {
     let exportArtifact: DownloadStreamOutput;
 
     try {
@@ -105,7 +103,7 @@ class TrajectoryDownloadService {
         if (input.archive) {
             return clusterObjectArchiveService.createArchiveDownload({
                 teamClusterId: storageClusterId,
-                outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+                outputBucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
                 outputObjectKey: `exports/trajectory-downloads/${trajectoryId}/${v4()}.zip`,
                 filename: `${filenameBase}-dumps.zip`,
                 cacheControl: 'no-cache',
@@ -114,7 +112,7 @@ class TrajectoryDownloadService {
                     return {
                         type: 'object' as const,
                         ownerClusterId: storageClusterId,
-                        bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+                        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
                         objectKey: objectName,
                         name: objectName.split('/').pop() || objectName
                     };
@@ -123,7 +121,7 @@ class TrajectoryDownloadService {
         }
 
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timesteps[0]);
-        const response = await objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
+        const response = await objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps, objectName);
 
         return createDownloadStreamResponse({
             stream: response.stream,
@@ -159,7 +157,7 @@ class TrajectoryDownloadService {
         const limit = pLimit(ANALYSIS_EXPORT_CONCURRENCY);
         const archiveEntries = (await Promise.all(completedAnalyses.map((analysis) => (
             limit(() => buildAnalysisArchiveEntry(analysis.id, input.teamId))
-        )))).filter((entry): entry is ClusterArchiveObjectEntry => entry !== null);
+        )))).filter((entry): entry is ArchiveObjectEntry => entry !== null);
 
         if (archiveEntries.length === 0) {
             throw ApplicationError.conflict(
@@ -172,7 +170,7 @@ class TrajectoryDownloadService {
 
         return clusterObjectArchiveService.createArchiveDownload({
             teamClusterId: trajectory.storageClusterId,
-            outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+            outputBucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
             outputObjectKey: `exports/trajectory-analyses/${input.trajectoryId}/${v4()}.zip`,
             filename: `${filenameBase}-analyses.zip`,
             entries: archiveEntries

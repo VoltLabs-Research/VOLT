@@ -1,10 +1,11 @@
 import type { DaemonPaginatedResult } from '@modules/plugin/services/listing-row/DaemonListingMapper';
 import { DAEMON_PAGE_SIZE } from '@modules/plugin/services/plugin/listing-constants';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
+import type { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 export const collectAllDaemonPages = async <TRow>(
     teamClusterId: string,
-    command: string,
+    command: DaemonCommand,
     payload: Record<string, unknown>
 ): Promise<TRow[]> => {
     const rows: TRow[] = [];

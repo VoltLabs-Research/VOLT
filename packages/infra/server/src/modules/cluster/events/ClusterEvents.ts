@@ -6,8 +6,8 @@ import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import StoragePlacement from '@modules/cluster/models/StoragePlacement';
 import ClusterTransferJob from '@modules/cluster/models/ClusterTransferJob';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 @DefineEventGroup('cluster')
 export default class ClusterEvents {
@@ -21,7 +21,7 @@ export default class ClusterEvents {
                 try {
                     await teamClusterDaemonClient.command(
                         teamCluster.id,
-                        ChannelCommands.RuntimeUninstall,
+                        DaemonCommand.RuntimeUninstall,
                         {
                             reason: userId
                                 ? `Team deletion requested by user ${userId}`

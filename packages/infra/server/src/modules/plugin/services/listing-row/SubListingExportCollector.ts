@@ -10,7 +10,7 @@ import {
     type RowAggregation
 } from '@modules/plugin/services/listing-row/ExportRowAggregation';
 import type { AnalysisSubListingExportData } from '@modules/plugin/services/listing-row/ListingRowTypes';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const SUB_LISTING_COLUMNS = [
     '_id',
@@ -159,7 +159,7 @@ class SubListingExportCollector {
     ): Promise<SubListingExportRow[]> {
         const docs = await collectAllDaemonPages<DaemonSubListingRow>(
             teamClusterId,
-            ChannelCommands.PluginSubListingsList,
+            DaemonCommand.PluginSubListingsList,
             {
                 teamId,
                 analysisId,

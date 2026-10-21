@@ -1,8 +1,5 @@
+import type { SceneArtifactSourceType, SceneArtifactStatus } from '@volt/contracts/modules/trajectory/domain';
 
-import type {
-    SceneArtifactSourceType,
-    SceneArtifactStatus
-} from '@shared/contracts/types/SceneArtifact';
 
 export interface SceneArtifactBatchUpsertedArtifact {
     objectName: string;

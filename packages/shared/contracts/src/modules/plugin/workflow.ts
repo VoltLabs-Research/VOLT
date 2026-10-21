@@ -11,6 +11,7 @@ import type {
     PluginNodeExecutionMode,
     PluginNodeOutputPathMode
 } from './enums';
+import type { IExposurePanel, IExposureProperty } from './exposure';
 
 export interface IViewport{
     x: number;
@@ -128,10 +129,11 @@ export interface IForEachData{
 }
 
 export interface IEntrypointData{
-    binary: string;
+    binary?: string;
     binaryObjectPath?: string;
     binaryFileName?: string;
     binaryHash?: string;
+    ownerClusterId?: string;
     type?: EntrypointType;
     arguments: string;
     requirementsFile?: string;
@@ -155,6 +157,8 @@ export interface IExposureData{
     id?: string;
     results: string;
     hasListing?: boolean;
+    properties?: IExposureProperty[];
+    panel?: IExposurePanel;
     exportWhen?: IArgumentVisibilityCondition;
     [key: string]: unknown;
 }

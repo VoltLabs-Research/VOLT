@@ -1,11 +1,6 @@
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
-import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import {
-    EntrypointNodeType,
-    WorkflowNodeType,
-    type WorkflowNode
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import { PluginStatus, EntrypointType, NodeType } from '@volt/contracts/modules/plugin/enums';
+import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import pluginDependencyResolverService from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import {
     readArgumentDefinitions,
@@ -23,6 +18,7 @@ import {
     validateSwitchStatementTopology
 } from '@modules/plugin/services/plugin/WorkflowTopologyRules';
 import { validateRuntimeEdgeTopology } from '@modules/plugin/services/plugin/workflow-edge-rules';
+import type { IWorkflowNode, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 export enum WorkflowValidationMode {
     Draft = 'draft',
@@ -30,20 +26,20 @@ export enum WorkflowValidationMode {
 }
 
 export interface ValidateWorkflowInput {
-    workflow: WorkflowProps;
+    workflow: IWorkflow;
     pluginId?: string;
 }
 
 export interface ValidateWorkflowOutput {
     validated: boolean;
     errors?: string[];
-    modifier?: WorkflowNode;
+    modifier?: IWorkflowNode;
 }
 
 interface WorkflowValidationResult {
     isValid: boolean;
     errors?: string[];
-    modifier?: WorkflowNode;
+    modifier?: IWorkflowNode;
 }
 
 class WorkflowValidatorService {
@@ -58,7 +54,7 @@ class WorkflowValidatorService {
     }
 
     async validate(
-        workflow: WorkflowProps,
+        workflow: IWorkflow,
         currentPluginId?: string,
         mode: WorkflowValidationMode = WorkflowValidationMode.Strict
     ): Promise<WorkflowValidationResult> {
@@ -70,10 +66,10 @@ class WorkflowValidatorService {
         }
 
         const errors: string[] = [];
-        let modifier: WorkflowNode | undefined;
-        const pluginNodes = workflow.nodes.filter((node) => node.type === WorkflowNodeType.Plugin);
+        let modifier: IWorkflowNode | undefined;
+        const pluginNodes = workflow.nodes.filter((node) => node.type === NodeType.PLUGIN);
 
-        const modifierNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
+        const modifierNode = workflow.nodes.find((node) => node.type === NodeType.MODIFIER);
         if (!modifierNode) {
             errors.push('Workflow must have a modifier node');
         } else {
@@ -134,8 +130,8 @@ class WorkflowValidatorService {
         };
     }
 
-    private validateRuntimeReadiness(workflow: WorkflowProps, errors: string[]): void {
-        const entrypointNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+    private validateRuntimeReadiness(workflow: IWorkflow, errors: string[]): void {
+        const entrypointNode = workflow.nodes.find((node) => node.type === NodeType.ENTRYPOINT);
         if (!entrypointNode) {
             return;
         }
@@ -154,15 +150,15 @@ class WorkflowValidatorService {
             errors.push(`Top-level entrypoint ${entrypointNode.id} must define execution arguments`);
         }
 
-        const needsEntrypointScript = entrypoint.type === EntrypointNodeType.PythonScript
-            || entrypoint.type === EntrypointNodeType.PackagedExecutable;
+        const needsEntrypointScript = entrypoint.type === EntrypointType.PYTHON_SCRIPT
+            || entrypoint.type === EntrypointType.PACKAGED_EXECUTABLE;
         if (needsEntrypointScript && !entrypoint.entrypointScript?.trim()) {
             errors.push(`Top-level entrypoint ${entrypointNode.id} must define an entrypoint script`);
         }
     }
 
     private async validatePublishedDependencies(
-        workflow: WorkflowProps,
+        workflow: IWorkflow,
         currentPluginId?: string
     ): Promise<string[]> {
         const rootPluginId = currentPluginId ?? '__draft_plugin__';

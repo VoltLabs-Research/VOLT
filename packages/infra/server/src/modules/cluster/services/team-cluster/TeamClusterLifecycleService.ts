@@ -1,14 +1,14 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
-import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
+
 import { toTeamClusterView, type TeamClusterView } from '@modules/cluster/services/team-cluster/TeamClusterView';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
-import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import type {
-    TeamClusterHostCapabilitiesProps,
-    TeamClusterRuntimeRoleConfigProps
-} from '@shared/contracts/types/TeamCluster';
+import {
+    TeamClusterStatus,
+    type TeamClusterHostCapabilities,
+    type TeamClusterRuntimeRoleConfig
+} from '@volt/contracts/modules/cluster/domain';
 import {
     HEARTBEAT_LOCKED_STATUSES,
     isTeamClusterTransitionAllowed
@@ -24,6 +24,7 @@ import daemonCredentialGuard from '@modules/cluster/services/daemon/DaemonCreden
 import logger from '@shared/logger';
 import { In, LessThan } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
+import type { TeamClusterDaemonHeartbeatMetrics } from '@voltstack/daemon-cluster-client';
 
 interface TeamClusterLifecycleUpdatePreconditions {
     allowedCurrentStatuses?: TeamClusterStatus[];
@@ -36,17 +37,17 @@ interface TeamClusterLifecycleUpdate {
     lastHeartbeatAt?: Date | null;
     lastDisconnectAt?: Date | null;
     clearEnrollmentToken?: boolean;
-    roleConfig?: TeamClusterRuntimeRoleConfigProps;
-    hostCapabilities?: TeamClusterHostCapabilitiesProps;
+    roleConfig?: TeamClusterRuntimeRoleConfig;
+    hostCapabilities?: TeamClusterHostCapabilities;
 }
 
 export interface RecordHeartbeatInput {
     teamClusterId: string;
     daemonPassword: string;
     installedVersion?: string;
-    roleConfig?: TeamClusterRuntimeRoleConfigProps;
-    metrics?: TeamClusterHeartbeatMetricsInput;
-    hostCapabilities?: TeamClusterHostCapabilitiesProps;
+    roleConfig?: TeamClusterRuntimeRoleConfig;
+    metrics?: TeamClusterDaemonHeartbeatMetrics;
+    hostCapabilities?: TeamClusterHostCapabilities;
 }
 
 interface PersistLifecycleUpdateOutcome {

@@ -1,4 +1,3 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Analysis from '@modules/analysis/models/Analysis';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
@@ -8,12 +7,13 @@ import trajectoryDumpStorageService from '@modules/trajectory/services/trajector
 import ApplicationError from '@shared/errors/ApplicationError';
 import { generateEntityId } from '@shared/persistence/entity-id';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import type {
+    SceneArtifactParams,
     SceneArtifactSourceType,
     SceneArtifactStatus
-} from '@shared/contracts/types/SceneArtifact';
+} from '@volt/contracts/modules/trajectory/domain';
 import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/scene-artifact';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 interface RecordSceneArtifactInput {
     objectName: string;
@@ -82,7 +82,7 @@ export const recordSceneArtifact = async (input: RecordSceneArtifactInput): Prom
         displayName,
         metadata,
         status = 'ready' as SceneArtifactStatus,
-        storageBucket = TEAM_CLUSTER_BUCKETS.MODELS
+        storageBucket = TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models
     } = input;
 
     await SceneArtifact.createQueryBuilder()

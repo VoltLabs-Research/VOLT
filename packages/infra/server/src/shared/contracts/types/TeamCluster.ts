@@ -1,5 +1,11 @@
-import { type TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
-import type { TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
+import type {
+    TeamClusterEffectiveCapabilities,
+    TeamClusterHostCapabilities,
+    TeamClusterQueueConcurrency,
+    TeamClusterQueueScopeLimits,
+    TeamClusterRuntimeRoleConfig,
+    TeamClusterStatus
+} from '@volt/contracts/modules/cluster/domain';
 
 export interface TeamClusterServiceProps {
     port: number | null;
@@ -17,54 +23,9 @@ export interface TeamClusterServicesProps {
     daemon: TeamClusterDaemonServiceProps;
 }
 
-export interface TeamClusterQueueConcurrencyProps {
-    analysis: number;
-    rasterizer: number;
-    glbPreprocessing: number;
-    artifactUpload: number;
-    pluginWarmup: number;
-}
-
-export interface TeamClusterQueueScopeLimitProps {
-    maxRunningPerTrajectory: number;
-}
-
-export interface TeamClusterQueueScopeLimitsProps {
-    analysisProcessing: TeamClusterQueueScopeLimitProps;
-    artifactUpload: TeamClusterQueueScopeLimitProps;
-    trajectoryRasterization: TeamClusterQueueScopeLimitProps;
-    trajectoryGlbConversion: TeamClusterQueueScopeLimitProps;
-}
-
-
 export interface TeamClusterRoleCapabilitiesProps {
     canStore: boolean;
     canCompute: boolean;
-}
-
-export interface TeamClusterRoleDrainProps {
-    compute: boolean;
-    storage: boolean;
-}
-
-export interface TeamClusterRuntimeRoleConfigProps {
-    desiredRole: TeamClusterRole;
-    effectiveRole: TeamClusterRole;
-    runtimeVersion: number;
-    draining: TeamClusterRoleDrainProps;
-    lastAppliedAt?: Date | null;
-}
-
-export interface TeamClusterEffectiveCapabilitiesProps {
-    acceptsComputeJobs: boolean;
-    acceptsStorageWrites: boolean;
-    servesStorageReads: boolean;
-    servesArtifactDownloads: boolean;
-}
-
-export interface TeamClusterHostCapabilitiesProps {
-    containerRuntime: boolean;
-    platform?: string;
 }
 
 export interface TeamClusterProps {
@@ -78,12 +39,11 @@ export interface TeamClusterProps {
     lastHeartbeatAt: Date | null;
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesProps;
-    queueConcurrency: TeamClusterQueueConcurrencyProps;
-    queueScopeLimits: TeamClusterQueueScopeLimitsProps;
-    roleConfig: TeamClusterRuntimeRoleConfigProps;
-    effectiveCapabilities?: TeamClusterEffectiveCapabilitiesProps;
-    hostCapabilities: TeamClusterHostCapabilitiesProps | null;
+    queueConcurrency: TeamClusterQueueConcurrency;
+    queueScopeLimits: TeamClusterQueueScopeLimits;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities?: TeamClusterEffectiveCapabilities;
+    hostCapabilities: TeamClusterHostCapabilities | null;
     createdAt: Date;
     updatedAt: Date;
 }
-

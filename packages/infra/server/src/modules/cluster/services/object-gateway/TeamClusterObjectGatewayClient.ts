@@ -19,18 +19,13 @@ import {
     parseListEntry
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER } from '@shared/contracts/types/TeamClusterObjectGateway';
 import { buffer } from 'node:stream/consumers';
 import type {
     ObjectGatewayOperationName,
     ObjectGatewayRequestOptions
 } from '@modules/cluster/services/object-gateway/object-gateway-http-session-pool';
 import type { TeamClusterObjectGatewayReadOptions } from '@modules/cluster/services/object-gateway/object-gateway-paths';
-import type {
-    ObjectGatewayJsonError,
-    ObjectGatewayJsonListResponse,
-    RawHttpResponse
-} from '@modules/cluster/services/object-gateway/object-gateway-responses';
+import type { RawHttpResponse } from '@modules/cluster/services/object-gateway/object-gateway-responses';
 import type {
     TeamClusterObjectGatewayListRequest,
     TeamClusterObjectGatewayListEntry,
@@ -41,6 +36,11 @@ import type {
     TeamClusterObjectGatewayPutBufferRequest,
     TeamClusterObjectGatewayComposeRequest
 } from '@shared/contracts/types/TeamClusterObjectGateway';
+import {
+    type TeamClusterObjectGatewayJsonError,
+    type TeamClusterObjectGatewayJsonListResponse,
+    TEAM_CLUSTER_DIRECT_ACCESS_TOKEN_HEADER
+} from '@voltstack/daemon-cluster-client';
 
 const DEFAULT_LIST_LIMIT = 100;
 
@@ -69,7 +69,7 @@ class TeamClusterObjectGatewayClient {
             query.set('cursor', request.cursor);
         }
 
-        const response = await this.fetchJson<ObjectGatewayJsonListResponse>(teamClusterId, {
+        const response = await this.fetchJson<TeamClusterObjectGatewayJsonListResponse>(teamClusterId, {
             method: 'GET',
             path: `${buildCollectionPath(request.bucket)}?${query.toString()}`
         }, 'list');
@@ -321,9 +321,9 @@ class TeamClusterObjectGatewayClient {
     ): Promise<ApplicationError> {
         const payloadBuffer = await buffer(response.stream);
 
-        let payload: ObjectGatewayJsonError | undefined;
+        let payload: TeamClusterObjectGatewayJsonError | undefined;
         try {
-            payload = JSON.parse(payloadBuffer.toString('utf8')) as ObjectGatewayJsonError;
+            payload = JSON.parse(payloadBuffer.toString('utf8')) as TeamClusterObjectGatewayJsonError;
         } catch {
             payload = undefined;
         }

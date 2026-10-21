@@ -3,12 +3,7 @@ import AnalysisEntity from '@modules/analysis/models/Analysis';
 import { AnalysisArtifactStatus, AnalysisStatus } from '@modules/analysis/contracts/analysis';
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 import { requirePlugin } from '@modules/plugin/services/plugin/PluginQueries';
-import { sanitizeVisibleArgumentConfig } from '@modules/plugin/services/plugin/ArgumentVisibility';
-import type {
-    PipelineStageExecutionInput,
-    RoutePluginExecutionInput,
-    TrajectoryFramePayload
-} from '@modules/plugin/services/plugin/PluginExecutionRouter';
+import type { PipelineStageExecutionInput } from '@modules/plugin/services/plugin/PluginExecutionRouter';
 import { resolveExpectedArtifacts } from '@modules/plugin/services/plugin/expected-analysis-artifacts';
 import {
     cannotExecute,
@@ -24,6 +19,9 @@ import ApplicationError from '@shared/errors/ApplicationError';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { ExecutePipelineStageInput } from '@volt/contracts/modules/plugin/http';
+import { sanitizeVisibleArgumentConfig } from '@volt/contracts/modules/plugin/arguments';
+import type { TrajectoryFrame } from '@volt/contracts/modules/analysis/daemon';
+import type { RoutePluginExecutionInput } from '@modules/plugin/services/plugin/plugin-dispatch-payload';
 
 export interface PlannedStage {
     stageHash: string;
@@ -41,7 +39,7 @@ export interface PlanPluginStageParams {
     teamId: string;
     trajectoryId: string;
     trajectoryName: string;
-    trajectoryFrames: TrajectoryFramePayload[];
+    trajectoryFrames: TrajectoryFrame[];
     storageClusterId?: string;
     computeClusterId: string;
     upstreamStageHashes: string[];

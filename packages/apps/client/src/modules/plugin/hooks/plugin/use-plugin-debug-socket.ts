@@ -4,7 +4,6 @@ import { emitOrReport } from '@/modules/socket/services/socket-emit-helpers';
 import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
 import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
-import { sanitizeVisibleArgumentConfig } from '@/modules/plugin/utils/plugin/argument-visibility';
 import { SOCKET_PLUGIN_DEBUG_EVENTS } from '@/modules/socket/events/plugin';
 import { sileo } from 'sileo';
 import { useSearchParams } from 'react-router-dom';
@@ -12,6 +11,7 @@ import type {
     DebugExecutionLogSegment,
     DebugTraceNode
 } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
+import { sanitizeVisibleArgumentConfig } from '@volt/contracts/modules/plugin/arguments';
 
 interface DebugSessionEvent {
     sessionId: string;

@@ -1,3 +1,21 @@
+// The daemon's runtime configuration is part of the daemon protocol, which the published
+// SDK owns; these are the names the rest of VOLT uses for it.
+export type {
+    TeamClusterDaemonRole as TeamClusterRole,
+    TeamClusterDaemonQueueConcurrency as TeamClusterQueueConcurrency,
+    TeamClusterDaemonQueueScopeLimit as TeamClusterQueueScopeLimit,
+    TeamClusterDaemonQueueScopeLimits as TeamClusterQueueScopeLimits,
+    TeamClusterDaemonRoleDrainState as TeamClusterRoleDraining,
+    TeamClusterDaemonRuntimeRoleConfig as TeamClusterRuntimeRoleConfig,
+    TeamClusterDaemonHostCapabilities as TeamClusterHostCapabilities
+} from '@voltstack/daemon-cluster-client';
+import type {
+    TeamClusterDaemonHostCapabilities as TeamClusterHostCapabilities,
+    TeamClusterDaemonQueueConcurrency as TeamClusterQueueConcurrency,
+    TeamClusterDaemonQueueScopeLimits as TeamClusterQueueScopeLimits,
+    TeamClusterDaemonRuntimeRoleConfig as TeamClusterRuntimeRoleConfig
+} from '@voltstack/daemon-cluster-client';
+
 export enum TeamClusterStatus{
     WaitingForConnection = 'waiting-for-connection',
     HealthcheckReceived = 'healthcheck-received',
@@ -12,7 +30,6 @@ export enum TeamClusterStatus{
     UpdateFailed = 'update-failed'
 }
 
-export type TeamClusterRole = 'cluster' | 'storage-server' | 'compute-node';
 
 export type StoragePlacementScopeType = 'trajectory' | 'analysis' | 'plugin-binary';
 
@@ -31,37 +48,6 @@ export interface TeamClusterCredentialService extends TeamClusterService{
 }
 
 
-export interface TeamClusterQueueConcurrency{
-    analysis: number;
-    rasterizer: number;
-    glbPreprocessing: number;
-    artifactUpload: number;
-    pluginWarmup: number;
-}
-
-export interface TeamClusterQueueScopeLimit{
-    maxRunningPerTrajectory: number;
-}
-
-export interface TeamClusterQueueScopeLimits{
-    analysisProcessing: TeamClusterQueueScopeLimit;
-    artifactUpload: TeamClusterQueueScopeLimit;
-    trajectoryRasterization: TeamClusterQueueScopeLimit;
-    trajectoryGlbConversion: TeamClusterQueueScopeLimit;
-}
-
-export interface TeamClusterRoleDraining{
-    compute: boolean;
-    storage: boolean;
-}
-
-export interface TeamClusterRuntimeRoleConfig{
-    desiredRole: TeamClusterRole;
-    effectiveRole: TeamClusterRole;
-    runtimeVersion: number;
-    draining: TeamClusterRoleDraining;
-    lastAppliedAt: string | null;
-}
 
 export interface TeamClusterEffectiveCapabilities{
     acceptsComputeJobs: boolean;
@@ -70,10 +56,6 @@ export interface TeamClusterEffectiveCapabilities{
     servesArtifactDownloads: boolean;
 }
 
-export interface TeamClusterHostCapabilities{
-    containerRuntime: boolean;
-    platform?: string;
-}
 
 export type ClusterTransferJobState =
     | 'queued'
@@ -312,11 +294,35 @@ export interface CreateTeamClusterRemoteAccessSessionResponse{
     session: TeamClusterRemoteAccessSession;
 }
 
+export enum TeamClusterRemoteExplorerEntryType{
+    Directory = 'directory',
+    Collection = 'collection',
+    Bucket = 'bucket',
+    Object = 'object'
+}
+
+export enum TeamClusterRemoteExplorerNodeType{
+    Collection = 'collection',
+    Object = 'object'
+}
+
+export enum TeamClusterRemoteExplorerContentType{
+    Empty = 'empty',
+    Text = 'text',
+    DaemonRows = 'daemon-rows'
+}
+
+// Payload of the remote.explorer.* daemon commands.
+export interface TeamClusterRemoteExplorerRequest{
+    target: TeamClusterRemoteAccessTarget;
+    path: string;
+}
+
 export interface TeamClusterRemoteExplorerEntry{
     id: string;
     name: string;
     path: string;
-    type: string;
+    type: TeamClusterRemoteExplorerEntryType;
     size: number | null;
     updatedAt: string | null;
     description: string | null;
@@ -337,8 +343,8 @@ export interface TeamClusterRemoteExplorerDocument{
 export interface TeamClusterRemoteExplorerNode{
     path: string;
     title: string;
-    type: string;
-    contentType: string;
+    type: TeamClusterRemoteExplorerNodeType;
+    contentType: TeamClusterRemoteExplorerContentType;
     textContent: string | null;
     documents: TeamClusterRemoteExplorerDocument[];
 }

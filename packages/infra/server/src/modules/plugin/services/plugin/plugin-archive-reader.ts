@@ -1,11 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { isRecord } from '@shared/utilities/type-guards';
 import unzipper from 'unzipper';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 interface PluginArchiveContents {
-    workflowProps: WorkflowProps;
+    workflowProps: IWorkflow;
     binaryFile?: unzipper.File;
 }
 
@@ -27,7 +27,7 @@ const detectArchiveRootPrefix = (paths: string[]): string => {
     return isWrapperDir ? `${onlySegment}/` : '';
 };
 
-export const isWorkflowProps = (value: unknown): value is WorkflowProps => {
+export const isWorkflowProps = (value: unknown): value is IWorkflow => {
     return isRecord(value) && Array.isArray(value.nodes) && Array.isArray(value.edges);
 };
 

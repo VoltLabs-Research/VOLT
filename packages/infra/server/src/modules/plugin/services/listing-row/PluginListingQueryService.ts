@@ -29,9 +29,9 @@ import type {
     GetPluginListingDocumentsOutput
 } from '@shared/contracts/operations/GetPluginListingDocuments';
 import type { GetSubListingInput, GetSubListingOutput } from '@shared/contracts/operations/GetSubListing';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { createSerializedDownloadResponse } from '@shared/http/responses/download-response';
 import { ExportType, type PaginatedResult } from '@shared/persistence/persistence';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 type PageMeta = Omit<PaginatedResult<never>, 'data' | '_meta'>;
 
@@ -124,7 +124,7 @@ class PluginListingQueryService {
         const rows = await enrichDaemonListingRows({
             rows: await collectAllDaemonPages<DaemonListingRow>(
                 resolved.teamClusterId,
-                ChannelCommands.PluginListingsList,
+                DaemonCommand.PluginListingsList,
                 this.#pluginListingFilter(input, resolved.analysisId)
             ),
             fallbackAnalysisId: resolved.analysisId
@@ -152,7 +152,7 @@ class PluginListingQueryService {
 
         const daemonResult = await teamClusterDaemonClient.command<DaemonPaginatedResult<DaemonSubListingRow>>(
             teamClusterId,
-            ChannelCommands.PluginSubListingsList,
+            DaemonCommand.PluginSubListingsList,
             {
                 teamId: input.teamId,
                 analysisId: input.analysisId,
@@ -183,7 +183,7 @@ class PluginListingQueryService {
     #listListings(teamClusterId: string, payload: Record<string, unknown>): Promise<DaemonPaginatedResult> {
         return teamClusterDaemonClient.command<DaemonPaginatedResult>(
             teamClusterId,
-            ChannelCommands.PluginListingsList,
+            DaemonCommand.PluginListingsList,
             payload
         );
     }

@@ -1,8 +1,8 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
 import type { Readable } from 'node:stream';
 import type { TeamClusterObjectGatewayStreamResponse } from '@shared/contracts/types/TeamClusterObjectGateway';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 export type GlbContentEncoding = 'zstd' | 'identity';
 
@@ -56,7 +56,7 @@ export const getClusterGlbStream = async (
         );
     }
 
-    const response = await objectGatewayClient.getStream(teamClusterId, TEAM_CLUSTER_BUCKETS.MODELS, objectName);
+    const response = await objectGatewayClient.getStream(teamClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models, objectName);
 
     return {
         stream: response.stream,

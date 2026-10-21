@@ -1,4 +1,4 @@
-import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
+import type { TeamClusterServiceExposure } from '@voltstack/daemon-cluster-client';
 
 const buildRegistryKey = (teamClusterId: string, exposureId: string): string => {
     return `${teamClusterId}:${exposureId}`;

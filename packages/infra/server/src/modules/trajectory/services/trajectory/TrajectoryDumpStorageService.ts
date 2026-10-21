@@ -1,10 +1,10 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { type Readable } from 'node:stream';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 interface TrajectoryDumpStreamResponse {
     stream: Readable;
@@ -30,7 +30,7 @@ export class TrajectoryDumpStorageService {
     async getDumpResponse(trajectoryId: string, timestep: string): Promise<TrajectoryDumpStreamResponse> {
         const storageClusterId = await this.requireStorageClusterId(trajectoryId);
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
-        const response = await objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
+        const response = await objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps, objectName);
 
         return {
             stream: response.stream,
@@ -48,7 +48,7 @@ export class TrajectoryDumpStorageService {
         const storageClusterId = await this.requireStorageClusterId(trajectoryId);
         const objectName = buildTrajectoryDumpObjectName(trajectoryId, timestep);
 
-        return objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.DUMPS, objectName);
+        return objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps, objectName);
     }
 
     async listDumps(trajectoryId: string): Promise<string[]> {
@@ -56,7 +56,7 @@ export class TrajectoryDumpStorageService {
         const prefix = `trajectory-${trajectoryId}/`;
         const timesteps = new Set<string>();
         const source = objectGatewayClient.listAll(storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
             prefix
         });
 

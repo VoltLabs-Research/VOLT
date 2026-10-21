@@ -17,9 +17,7 @@ import analysisListingExportCatalogService from '@modules/plugin/services/listin
 import listingRowsExportService from '@modules/plugin/services/listing-row/ListingRowsExportService';
 import { getPipelineRunsByTrajectoryId } from '@modules/plugin/services/plugin/PipelineRunQueries';
 import { deletePipelineRun, updatePipelineRun } from '@modules/plugin/services/plugin/PipelineRunCommands';
-import { NODE_OUTPUT_PROPERTIES } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type { ListPluginsInput, UpdatePluginByIdInput } from '@modules/plugin/services/plugin/PluginCrudService';
-import type { DeletePipelineRunInput } from '@modules/plugin/services/plugin/PipelineRunCommands';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -29,7 +27,6 @@ import BaseResponse from '@shared/http/responses/BaseResponse';
 import multer from 'multer';
 
 import type { GetPipelineRunsByTrajectoryIdInput } from '@modules/plugin/services/plugin/PipelineRunQueries';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type {
     CommitBinaryUploadInput as WireCommitBinaryUploadInput,
     UploadBinaryInput as WireUploadBinaryInput
@@ -51,6 +48,23 @@ import type { AuthenticatedRequest } from '@shared/contracts/types/Authenticated
 import type { NextFunction, Request, Response } from 'express';
 import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
 import type { GetPluginExposureChartInput } from '@modules/plugin/services/exposure/PluginExposureArtifactService';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+
+// Output properties each node type exposes to workflow expressions, served to the editor.
+const NODE_OUTPUT_PROPERTIES: Record<NodeType, string[]> = {
+    [NodeType.MODIFIER]: ['pluginId', 'trajectory', 'analysis'],
+    [NodeType.ARGUMENTS]: ['as_str', 'as_array', 'selectedTimesteps'],
+    [NodeType.CONTEXT]: ['trajectory_dumps', 'count', 'trajectory'],
+    [NodeType.FOREACH]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],
+    [NodeType.ENTRYPOINT]: ['results', 'successCount', 'failCount', 'stdout', 'stderr', 'exitCode', 'projectPath'],
+    [NodeType.PLUGIN]: ['execution_result', 'execution_result.exposures', 'execution_result.exposures.items', 'execution_result.exposures.str_json'],
+    [NodeType.EXPOSURE]: ['results', 'sample'],
+    [NodeType.EXPORT]: ['results'],
+    [NodeType.IF_STATEMENT]: ['result', 'branch'],
+    [NodeType.SWITCH_STATEMENT]: ['expression', 'resolvedValue', 'matchedCaseId', 'matchedValue'],
+    [NodeType.SWITCH_CASE]: ['value', 'defaultCase']
+};
 
 interface PluginIdInput {
     pluginId: string;
@@ -61,7 +75,7 @@ interface ClonePluginInput extends PluginIdInput {
 }
 
 interface CreatePluginInput {
-    workflow: WorkflowProps;
+    workflow: IWorkflow;
     teamId: string;
 }
 

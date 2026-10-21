@@ -1,4 +1,3 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import clusterObjectSignedUrlService from '@modules/cluster/services/object-store/ClusterObjectSignedUrlService';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 
@@ -11,6 +10,7 @@ import type {
     TrajectoryUploadSessionFileView
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import path from 'node:path';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const DEFAULT_UPLOAD_CHUNK_SIZE = 64 * 1024 * 1024;
 const DEFAULT_UPLOAD_SESSION_TTL_SECONDS = 6 * 60 * 60;
@@ -123,7 +123,7 @@ export const signUploadFiles = (input: SignUploadFilesInput): TrajectoryUploadSe
                 teamId: input.teamId,
                 userId: input.userId,
                 ownerClusterId: input.storageClusterId,
-                bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
                 objectKey: part.objectKey,
                 resourceKind: 'trajectory',
                 resourceId: input.trajectoryId,

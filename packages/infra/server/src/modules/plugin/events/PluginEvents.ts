@@ -7,23 +7,9 @@ import PipelineRunEntity from '@modules/plugin/models/PipelineRun';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import pluginCrudService from '@modules/plugin/services/plugin/PluginCrudService';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
-import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
-
-interface PluginWarmupCommandPayload extends Record<string, unknown> {
-    pluginId: string;
-    binaryObjectPath: string;
-    requirementsFile: string;
-    entrypointScript?: string;
-    expectedHash?: string;
-    ownerClusterId: string;
-}
-
-interface PluginWarmupCommandResponse {
-    queued: boolean;
-    jobId: string;
-}
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { PluginWarmupRequest, PluginWarmupResult } from '@volt/contracts/modules/plugin/daemon';
 
 @DefineEventGroup('plugin')
 export default class PluginEvents {
@@ -32,7 +18,7 @@ export default class PluginEvents {
     async deletePluginExposures({ pluginId }: EventMap['plugin.deleted']) {
         await SceneArtifact.delete({
             plugin: pluginId,
-            sourceType: SceneArtifactSourceType.PluginExposure
+            sourceType: 'plugin-exposure'
         });
     }
 
@@ -55,7 +41,7 @@ export default class PluginEvents {
             return;
         }
 
-        const warmupPayload: PluginWarmupCommandPayload = {
+        const warmupPayload: PluginWarmupRequest = {
             pluginId,
             binaryObjectPath,
             requirementsFile,
@@ -66,9 +52,9 @@ export default class PluginEvents {
 
         await Promise.allSettled(teamClusters.map(async (cluster) => {
             try {
-                const response = await teamClusterDaemonClient.command<PluginWarmupCommandResponse>(
+                const response = await teamClusterDaemonClient.command<PluginWarmupResult>(
                     cluster.id,
-                    ChannelCommands.PluginWarmup,
+                    DaemonCommand.PluginWarmup,
                     warmupPayload,
                     {
                         timeoutClass: 'long-running-control-plane',
@@ -117,7 +103,7 @@ export default class PluginEvents {
     async deleteTrajectoryExposures({ trajectoryId }: EventMap['trajectory.deleted']) {
         await SceneArtifact.delete({
             trajectory: trajectoryId,
-            sourceType: SceneArtifactSourceType.PluginExposure
+            sourceType: 'plugin-exposure'
         });
     }
 

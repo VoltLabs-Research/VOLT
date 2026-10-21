@@ -3,11 +3,11 @@ import {
     type TeamClusterDaemonInboundStreamConsumer,
     type TeamClusterDaemonInboundStreamPayload
 } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
+import logger from '@shared/logger';
 import type {
     TeamClusterDaemonSocketStreamPayload,
     TeamClusterDaemonSocketStreamStatePayload
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import logger from '@shared/logger';
+} from '@voltstack/daemon-cluster-client';
 
 class TeamClusterReverseInboundStreams {
     #consumersByStreamId = new Map<string, Set<TeamClusterDaemonInboundStreamConsumer>>();

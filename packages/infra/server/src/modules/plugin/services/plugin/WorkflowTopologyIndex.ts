@@ -1,17 +1,13 @@
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import type {
-    WorkflowEdge,
-    WorkflowNode,
-    WorkflowNodeType
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import type { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowEdge, IWorkflowNode, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 export interface WorkflowTopologyIndex {
-    nodeMap: Map<string, WorkflowNode>;
-    parentsByTarget: Map<string, WorkflowEdge[]>;
-    childrenBySource: Map<string, WorkflowEdge[]>;
+    nodeMap: Map<string, IWorkflowNode>;
+    parentsByTarget: Map<string, IWorkflowEdge[]>;
+    childrenBySource: Map<string, IWorkflowEdge[]>;
 }
 
-const appendEdge = (bucket: Map<string, WorkflowEdge[]>, key: string, edge: WorkflowEdge): void => {
+const appendEdge = (bucket: Map<string, IWorkflowEdge[]>, key: string, edge: IWorkflowEdge): void => {
     const existing = bucket.get(key);
     if (existing) {
         existing.push(edge);
@@ -21,14 +17,14 @@ const appendEdge = (bucket: Map<string, WorkflowEdge[]>, key: string, edge: Work
     bucket.set(key, [edge]);
 };
 
-export const buildWorkflowTopologyIndex = (workflow: WorkflowProps): WorkflowTopologyIndex => {
-    const nodeMap = new Map<string, WorkflowNode>();
+export const buildWorkflowTopologyIndex = (workflow: IWorkflow): WorkflowTopologyIndex => {
+    const nodeMap = new Map<string, IWorkflowNode>();
     for (const node of workflow.nodes) {
         nodeMap.set(node.id, node);
     }
 
-    const parentsByTarget = new Map<string, WorkflowEdge[]>();
-    const childrenBySource = new Map<string, WorkflowEdge[]>();
+    const parentsByTarget = new Map<string, IWorkflowEdge[]>();
+    const childrenBySource = new Map<string, IWorkflowEdge[]>();
     for (const edge of workflow.edges) {
         appendEdge(parentsByTarget, edge.target, edge);
         appendEdge(childrenBySource, edge.source, edge);
@@ -44,7 +40,7 @@ export const buildWorkflowTopologyIndex = (workflow: WorkflowProps): WorkflowTop
 export const hasAncestorOfType = (
     nodeId: string,
     topology: WorkflowTopologyIndex,
-    ancestorTypes: ReadonlySet<WorkflowNodeType>
+    ancestorTypes: ReadonlySet<NodeType>
 ): boolean => {
     const { nodeMap, parentsByTarget } = topology;
     const visited = new Set<string>();
@@ -74,7 +70,7 @@ export const hasAncestorOfType = (
     return false;
 };
 
-export const hasWorkflowCycle = (nodes: WorkflowNode[], edges: WorkflowEdge[]): boolean => {
+export const hasWorkflowCycle = (nodes: IWorkflowNode[], edges: IWorkflowEdge[]): boolean => {
     const adjacency = new Map<string, string[]>();
     for (const node of nodes) {
         adjacency.set(node.id, []);

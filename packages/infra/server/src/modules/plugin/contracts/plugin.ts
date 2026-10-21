@@ -1,14 +1,9 @@
-import type {
-    ArgumentVisibilityCondition,
-    ExportNodeData,
-    ExposurePanel,
-    ExposureProperty
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type { PluginProjection } from '@modules/plugin/services/plugin/WorkflowProjection';
 import type { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { PluginRecord as PluginRecordContract } from '@shared/contracts/operations/PluginRecord';
+import type { IArgumentVisibilityCondition, IExportData, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import type { IExposurePanel, IExposureProperty } from '@volt/contracts/modules/plugin/exposure';
 
 export interface PluginExposureProps{
     _id: string;
@@ -17,10 +12,10 @@ export interface PluginExposureProps{
     results: string;
     icon?: string;
     hasListing: boolean;
-    properties: ExposureProperty[];
-    export: ExportNodeData | null;
-    exportWhen?: ArgumentVisibilityCondition;
-    panel?: ExposurePanel;
+    properties: IExposureProperty[];
+    export: IExportData | null;
+    exportWhen?: IArgumentVisibilityCondition;
+    panel?: IExposurePanel;
 }
 
 export interface PluginProps extends Partial<PluginProjection>{
@@ -37,4 +32,4 @@ export interface Plugin{
     props: PluginProps;
 }
 
-export type PluginRecord = PluginRecordContract<PluginProps, WorkflowProps>;
+export type PluginRecord = PluginRecordContract<PluginProps, IWorkflow>;

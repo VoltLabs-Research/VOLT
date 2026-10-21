@@ -1,11 +1,11 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import {
-    type TeamClusterRemoteAccessSessionView,
-    type TeamClusterRemoteAccessTarget
+import type {
+    TeamClusterRemoteAccessSessionView
 } from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { InMemoryAbsoluteExpiryStore } from '@shared/services/InMemoryAbsoluteExpiryStore';
 import { randomUUID } from 'node:crypto';
+import { TeamClusterRemoteAccessTarget } from '@volt/contracts/modules/cluster/domain';
 
 interface CreateRemoteAccessSessionParams {
     userId: string;

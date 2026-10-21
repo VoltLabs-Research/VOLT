@@ -13,7 +13,6 @@ import type {
     GetPluginExposureGLBInput,
     GetPluginExposureGLBOutput
 } from '@shared/contracts/operations/GetPluginExposureGLB';
-import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
@@ -61,7 +60,7 @@ class PluginExposureArtifactService {
         const artifactCandidates = await SceneArtifactEntity.findBy({
             trajectory: input.trajectoryId,
             analysis: input.analysisId,
-            sourceType: SceneArtifactSourceType.PluginExposure,
+            sourceType: 'plugin-exposure',
             timestep: Number(input.timestep)
         });
 
@@ -128,7 +127,7 @@ class PluginExposureArtifactService {
 
     async getExposureChart(input: GetPluginExposureChartInput): Promise<DownloadStreamOutput> {
         const artifact = await SceneArtifactEntity.findOneBy({ id: input.artifactId });
-        if (!artifact || artifact.sourceType !== SceneArtifactSourceType.PluginExposure) {
+        if (!artifact || artifact.sourceType !== 'plugin-exposure') {
             throw ApplicationError.notFound(ErrorCodes.FILE_NOT_FOUND, 'File not found');
         }
 
@@ -193,7 +192,7 @@ class PluginExposureArtifactService {
         const artifacts = await SceneArtifactEntity.findBy({
             trajectory: analysis.trajectory,
             analysis: analysis.id,
-            sourceType: SceneArtifactSourceType.PluginExposure,
+            sourceType: 'plugin-exposure',
             timestep: input.timestep
         });
 

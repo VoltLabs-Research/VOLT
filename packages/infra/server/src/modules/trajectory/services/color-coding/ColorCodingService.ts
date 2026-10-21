@@ -1,6 +1,4 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
@@ -24,6 +22,7 @@ import type {
     GetColorCodingStatsInput,
     TrajectoryExposureScope
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
@@ -228,7 +227,7 @@ class ColorCodingService {
             trajectory: trajectoryId,
             storageClusterId,
             analysis: resolvedAnalysisId,
-            sourceType: SceneArtifactSourceType.ColorCoding,
+            sourceType: 'color-coding',
             timestep: Number(timestep),
             objectName,
             params: {
@@ -269,7 +268,7 @@ class ColorCodingService {
 
         return trajectoryNativeDaemonService.getObjectStreamResponse(
             trajectory.storageClusterId,
-            TEAM_CLUSTER_BUCKETS.MODELS,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             objectName
         );
     }

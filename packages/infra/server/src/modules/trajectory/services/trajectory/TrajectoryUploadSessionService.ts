@@ -1,5 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryUploadSession from '@modules/trajectory/models/TrajectoryUploadSession';
@@ -41,6 +40,7 @@ import type {
     TrajectoryUploadSessionRequest
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import path from 'node:path';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 class TrajectoryUploadSessionService {
     async create(input: CreateTrajectoryUploadSessionInput): Promise<CreateTrajectoryUploadSessionOutput> {
@@ -111,7 +111,7 @@ class TrajectoryUploadSessionService {
             team: teamId,
             user: userId,
             ownerClusterId: storageClusterId,
-            bucket: TEAM_CLUSTER_BUCKETS.DUMPS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
             resourceKind: 'trajectory',
             resourceId: trajectory.id,
             files: sessionFiles,

@@ -6,7 +6,6 @@ import analysisResultSummarizer from '@modules/plugin/services/AnalysisResultSum
 import pluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgumentDescriber';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { PluginRecord } from '@modules/plugin/contracts/plugin';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import type {
     ComparePluginsInput,
     ExecutePipelineInput,
@@ -29,6 +28,7 @@ import registryGateway from '@modules/plugin/services/plugin/RegistryGateway';
 import workflowValidatorService from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import pluginListingQueryService from '@modules/plugin/services/listing-row/PluginListingQueryService';
 import analysisListingExportCatalogService from '@modules/plugin/services/listing-row/AnalysisListingExportCatalogService';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 interface PluginTopology {
     name: string;
@@ -185,7 +185,7 @@ export default class PluginAIToolController extends AIToolController {
     async validateWorkflow(input: ValidateWorkflowInput) {
         const validation = await workflowValidatorService.validateWorkflow({
             ...input,
-            workflow: input.workflow as unknown as WorkflowProps
+            workflow: input.workflow as unknown as IWorkflow
         });
 
         const summary = validation.validated

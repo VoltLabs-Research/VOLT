@@ -3,10 +3,18 @@ import {
     createTunnelOpenPayload,
     resolveTunnelChannel,
     unwrapEnvelopeBuffer,
-    wrapEnvelopeBuffer,
     type TeamClusterTunnelOpenOptions,
     type TeamClusterTunnelOpenRequest
 } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
+import {
+    encodeStreamChunk,
+    REVERSE_CHANNEL,
+    type TeamClusterDaemonSocketChannel,
+    type TeamClusterDaemonTunnelClosePayload,
+    type TeamClusterDaemonTunnelDataPayload,
+    type TeamClusterDaemonTunnelDrainPayload,
+    type TeamClusterDaemonTunnelStatePayload
+} from '@voltstack/daemon-cluster-client';
 import {
     failPendingTunnelWrites,
     SESSION_ATTACH_TIMEOUT_MS,
@@ -17,15 +25,7 @@ import {
 } from '@modules/cluster/services/reverse-channel/reverse-channel-pending';
 import type ReverseChannelPendingEntries from '@modules/cluster/services/reverse-channel/reverse-channel-pending';
 import { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';
-import {
-    TeamClusterTunnelSessionStatus,
-    type TeamClusterDaemonMessage,
-    type TeamClusterDaemonSocketChannel,
-    type TeamClusterDaemonTunnelClosePayload,
-    type TeamClusterDaemonTunnelDataPayload,
-    type TeamClusterDaemonTunnelDrainPayload,
-    type TeamClusterDaemonTunnelStatePayload
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import type { TeamClusterDaemonMessage } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import logger from '@shared/logger';
 import { randomUUID } from 'node:crypto';
 
@@ -88,7 +88,7 @@ export default class TeamClusterReverseTunnelSessions {
 
     handleState(payload: TeamClusterDaemonTunnelStatePayload): void {
         const entry = this.#entryFor(payload.sessionId);
-        if (!entry || payload.status === TeamClusterTunnelSessionStatus.Opening) {
+        if (!entry || payload.status === REVERSE_CHANNEL.TunnelSessionStatus.Opening) {
             return;
         }
 
@@ -98,7 +98,7 @@ export default class TeamClusterReverseTunnelSessions {
             clearPendingTimeout(entry.timeout);
             entry.timeout = null;
 
-            if (payload.status !== TeamClusterTunnelSessionStatus.Open || error) {
+            if (payload.status !== REVERSE_CHANNEL.TunnelSessionStatus.Open || error) {
                 const openError = error || new Error(payload.message || 'Failed to open daemon tunnel');
                 failPendingTunnelWrites(entry, openError);
                 this.#pending.delete(payload.sessionId);
@@ -114,7 +114,7 @@ export default class TeamClusterReverseTunnelSessions {
         if (error) {
             failPendingTunnelWrites(entry, error);
             entry.stream.fail(error);
-        } else if (payload.status === TeamClusterTunnelSessionStatus.Closed) {
+        } else if (payload.status === REVERSE_CHANNEL.TunnelSessionStatus.Closed) {
             failPendingTunnelWrites(entry, new Error(payload.message || 'Tunnel session closed'));
             entry.stream.closeRemote();
         }
@@ -241,7 +241,7 @@ export default class TeamClusterReverseTunnelSessions {
         this.#emitToDaemon(socketId, {
             type: 'tunnel-data',
             sessionId,
-            chunk: wrapEnvelopeBuffer(chunk),
+            chunk: encodeStreamChunk(chunk),
             isBinary,
             sequence,
             requiresAck: true

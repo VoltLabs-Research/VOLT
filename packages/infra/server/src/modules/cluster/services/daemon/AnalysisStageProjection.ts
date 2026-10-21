@@ -7,7 +7,7 @@ import type {
 import type { AnalysisArtifactStatus, AnalysisStageStatus } from '@volt/contracts/modules/analysis/domain';
 import { areArtifactsSettled } from '@modules/cluster/services/daemon/analysis-artifact-state';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
-import type { DaemonAnalysisStageStatusInput } from '@modules/cluster/contracts/daemon-job-completion';
+import type { AnalysisStageStatusEvent } from '@volt/contracts/modules/cluster/daemon-events';
 
 const toEpochMs = (value: Date | string | undefined): number | undefined => {
     if (!value) {
@@ -29,7 +29,7 @@ interface StageProgress {
 }
 
 class AnalysisStageProjection {
-    toAnalysisStage(input: DaemonAnalysisStageStatusInput, timestep?: number): AnalysisStage {
+    toAnalysisStage(input: AnalysisStageStatusEvent, timestep?: number): AnalysisStage {
         return {
             stageKey: input.stageKey,
             label: input.label,

@@ -7,13 +7,13 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like';
 import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
 import { areArtifactsSettled } from '@modules/cluster/services/daemon/analysis-artifact-state';
-import type { TeamClusterDaemonSceneArtifactUpsertItem } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/errors/ApplicationError';
 import type { SceneArtifactBatchUpsertedArtifact } from '@shared/events/SceneArtifactBatchUpsertedPayload';
 import type { AnalysisExpectedArtifact } from '@shared/contracts/types/AnalysisProps';
 import logger from '@shared/logger';
+import type { SceneArtifactUpsertItem } from '@volt/contracts/modules/cluster/daemon-events';
 
-export type ProcessDaemonSceneArtifactUpsertInput = TeamClusterDaemonSceneArtifactUpsertItem & {
+export type ProcessDaemonSceneArtifactUpsertInput = SceneArtifactUpsertItem & {
     teamClusterId: string;
     daemonPassword: string;
 };
@@ -25,11 +25,11 @@ interface PreparedSceneArtifact {
     storageClusterId: string;
     analysis?: string;
     plugin?: string;
-    sourceType: TeamClusterDaemonSceneArtifactUpsertItem['sourceType'];
+    sourceType: SceneArtifactUpsertItem['sourceType'];
     timestep: number;
-    params: TeamClusterDaemonSceneArtifactUpsertItem['params'];
+    params: SceneArtifactUpsertItem['params'];
     displayName: string;
-    status: TeamClusterDaemonSceneArtifactUpsertItem['status'];
+    status: SceneArtifactUpsertItem['status'];
     storageBucket: string;
     metadata?: Record<string, unknown>;
 }

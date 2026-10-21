@@ -8,16 +8,16 @@ import {
     readContentLength,
     sendObjectError
 } from '@modules/cluster/controllers/cluster-object-http';
+import { Router } from 'express';
+import type { Request, Response } from 'express';
+import { pipeline } from 'node:stream/promises';
 import {
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_ID_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_DAEMON_PASSWORD_HEADER,
     TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX,
     TEAM_CLUSTER_OBJECT_STORE_PROXY_BASE_PATH,
     TEAM_CLUSTER_OBJECT_STORE_SKIP_METADATA_HEADER
-} from '@shared/contracts/types/TeamClusterObjectGateway';
-import { Router } from 'express';
-import type { Request, Response } from 'express';
-import { pipeline } from 'node:stream/promises';
+} from '@voltstack/daemon-cluster-client';
 
 const PROXY_FAILURE = {
     code: 'TeamCluster::ObjectStoreProxyFailed',

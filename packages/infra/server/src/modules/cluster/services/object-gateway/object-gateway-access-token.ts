@@ -7,20 +7,11 @@ import {
     OBJECT_GATEWAY_EXPOSURE_NAME
 } from '@modules/cluster/services/object-gateway/object-gateway-paths';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import jwt from 'jsonwebtoken';
-
-interface TeamClusterDirectAccessTokenClaims {
-    requesterKind: 'daemon' | 'server';
-    requesterId: string;
-    ownerClusterId: string;
-    teamId: string;
-    exposureId: string;
-    exposureName: string;
-    accessMode: TeamClusterServiceExposureAccessMode;
-    iat: number;
-    exp: number;
-}
+import {
+    TEAM_CLUSTER_SERVICE_EXPOSURE,
+    type TeamClusterDirectAccessTokenClaims
+} from '@voltstack/daemon-cluster-client';
 
 export interface ObjectGatewayAccessToken {
     token: string;
@@ -70,7 +61,7 @@ class ObjectGatewayAccessTokenProvider {
             teamId: teamCluster.props.team,
             exposureId: OBJECT_GATEWAY_EXPOSURE_ID,
             exposureName: OBJECT_GATEWAY_EXPOSURE_NAME,
-            accessMode: TeamClusterServiceExposureAccessMode.Http,
+            accessMode: TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http,
             iat: issuedAt,
             exp: issuedAt + TOKEN_TTL_SECONDS
         };

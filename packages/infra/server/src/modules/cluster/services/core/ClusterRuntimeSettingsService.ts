@@ -2,7 +2,6 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import { requireOwnedTeamCluster } from '@modules/cluster/services/core/cluster-access';
 import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/TeamClusterLifecycleService';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY } from '@modules/cluster/services/team-cluster/TeamClusterFactory';
 import {
     toTeamClusterViewFromEntity,
     type TeamClusterView
@@ -10,17 +9,20 @@ import {
 import systemMetricsRepository from '@modules/system/services/SystemMetricsRepository';
 import type { SystemStatus } from '@modules/system/services/SystemMetrics';
 import {
-    ChannelCommands,
+    TeamClusterStatus,
+    type TeamClusterRole,
+    type TeamClusterQueueConcurrency,
+    type TeamClusterQueueScopeLimits
+} from '@volt/contracts/modules/cluster/domain';
+import logger from '@shared/logger';
+import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
     type TeamClusterDaemonQueueConcurrencyApplyPayload,
     type TeamClusterDaemonRoleApplyPayload,
-    type TeamClusterDaemonRoleApplyResult
-} from '@shared/contracts/types/team-cluster-daemon-channel';
-import { TeamClusterStatus, type TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
-import type {
-    TeamClusterQueueConcurrencyProps,
-    TeamClusterQueueScopeLimitsProps
-} from '@shared/contracts/types/TeamCluster';
-import logger from '@shared/logger';
+    type TeamClusterDaemonRoleApplyResult,
+    type TeamClusterDaemonQueueConcurrencyApplyResult
+} from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const MB_PER_GB = 1024;
 
@@ -45,7 +47,7 @@ interface ClusterResourceLimitsView {
 class ClusterRuntimeSettingsService {
     async getRuntimeSnapshot(input: { teamId: string; teamClusterId: string }): Promise<{
         capturedAt: string;
-        queueConcurrency: TeamClusterQueueConcurrencyProps;
+        queueConcurrency: TeamClusterQueueConcurrency;
         daemonQueues: DaemonQueueSnapshotEntry[];
         serverQueues: never[];
     }> {
@@ -59,7 +61,7 @@ class ClusterRuntimeSettingsService {
                 const response = await teamClusterDaemonClient.command<{
                     queues?: DaemonQueueSnapshotEntry[];
                     capturedAt?: string;
-                }>(teamCluster.id, ChannelCommands.RuntimeQueuesSnapshot, {}, { timeoutClass: 'default' });
+                }>(teamCluster.id, DaemonCommand.RuntimeQueuesSnapshot, {}, { timeoutClass: 'default' });
 
                 daemonQueues = response.queues ?? [];
                 capturedAt = response.capturedAt ?? capturedAt;
@@ -79,8 +81,8 @@ class ClusterRuntimeSettingsService {
     async updateQueueConcurrency(input: {
         teamId: string;
         teamClusterId: string;
-        queueConcurrency: TeamClusterQueueConcurrencyProps;
-        queueScopeLimits: TeamClusterQueueScopeLimitsProps;
+        queueConcurrency: TeamClusterQueueConcurrency;
+        queueScopeLimits: TeamClusterQueueScopeLimits;
     }): Promise<{ message: string; teamCluster: TeamClusterView }> {
         const teamCluster = await requireOwnedTeamCluster(input.teamClusterId, input.teamId);
         const updated = await Object.assign(teamCluster, {
@@ -101,9 +103,9 @@ class ClusterRuntimeSettingsService {
             };
 
             try {
-                const result = await teamClusterDaemonClient.commandWithSemanticResult<{ reason?: string }>(
+                const { data } = await teamClusterDaemonClient.commandWithSemanticResult<TeamClusterDaemonQueueConcurrencyApplyResult>(
                     updated.id,
-                    ChannelCommands.RuntimeQueueConcurrencyApply,
+                    DaemonCommand.RuntimeQueueConcurrencyApply,
                     payload,
                     {
                         timeoutClass: 'long-running-control-plane',
@@ -111,8 +113,8 @@ class ClusterRuntimeSettingsService {
                     }
                 );
 
-                if (!result.accepted) {
-                    logger.warn(`Persisted team cluster queue concurrency but the daemon rejected the live apply request teamClusterId=${updated.id} teamId=${input.teamId} reason=${result.reason} queueConcurrency=${payload.queueConcurrency}`);
+                if (!data.accepted) {
+                    logger.warn(`Persisted team cluster queue concurrency but the daemon rejected the live apply request teamClusterId=${updated.id} teamId=${input.teamId} reason=${data.error} queueConcurrency=${JSON.stringify(payload.queueConcurrency)}`);
                 }
             } catch {
                 logger.warn(`Persisted team cluster queue concurrency but failed to request live daemon apply teamClusterId=${updated.id} teamId=${input.teamId} queueConcurrency=${updated.queueConcurrency}`);
@@ -150,9 +152,9 @@ class ClusterRuntimeSettingsService {
             const payload: TeamClusterDaemonRoleApplyPayload = { roleConfig: updated.roleConfig };
 
             try {
-                const result = await teamClusterDaemonClient.commandWithSemanticResult<TeamClusterDaemonRoleApplyResult>(
+                const { data } = await teamClusterDaemonClient.commandWithSemanticResult<TeamClusterDaemonRoleApplyResult>(
                     updated.id,
-                    ChannelCommands.RuntimeRoleApply,
+                    DaemonCommand.RuntimeRoleApply,
                     payload,
                     {
                         timeoutClass: 'long-running-control-plane',
@@ -160,11 +162,11 @@ class ClusterRuntimeSettingsService {
                     }
                 );
 
-                if (result.accepted) {
-                    updated = await Object.assign(updated, { roleConfig: result.data.roleConfig }).save();
+                if (data.accepted) {
+                    updated = await Object.assign(updated, { roleConfig: data.roleConfig }).save();
                     teamClusterLifecycleService.publishTeamClusterUpdate(toTeamClusterLike(updated));
                 } else {
-                    logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updated.id} teamId=${input.teamId} role=${input.role} reason=${result.reason}`);
+                    logger.warn(`Persisted desired role but the daemon rejected the live apply request teamClusterId=${updated.id} teamId=${input.teamId} role=${input.role} reason=${data.error}`);
                 }
             } catch {
                 logger.warn(`Persisted desired role but failed to request live daemon role apply teamClusterId=${updated.id} teamId=${input.teamId} role=${input.role}`);
