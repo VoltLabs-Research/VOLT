@@ -1,16 +1,15 @@
 {
   "scripts": {
     "build": "tspc -p tsconfig.build.json && tsc-alias -p tsconfig.alias.json",
-    "depcruise": "npx --yes dependency-cruiser@^17.4.3 \"src/**/*.ts\" --config .dependency-cruiser.cjs",
     "dev:docker-nuke": "docker stop $(docker ps -aq) 2>/dev/null; docker rm $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -aq) 2>/dev/null; docker volume rm $(docker volume ls -q) 2>/dev/null; docker network prune -f; docker builder prune -a -f",
+    "layering": "volt-layering",
+    "layering:update": "volt-layering --update",
     "lint": "eslint .",
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register -r tsconfig-paths/register src/server.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "depcruise:ratchet": "node scripts/check-depcruise-ratchet.mjs",
-    "start:dist": "node dist/infra/server/src/server.js"
+    "start:dist": "node dist/infra/server/src/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^5.6.1",
     "@types/archiver": "^6.0.3",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
@@ -30,13 +29,13 @@
     "@types/unzipper": "^0.10.11",
     "@types/ws": "^8.18.1",
     "@volt/contracts": "workspace:*",
+    "@volt/tooling": "workspace:*",
     "eslint": "^9.39.2",
     "pino-pretty": "^13.1.2",
     "ts-node": "^10.9.2",
     "ts-patch": "^3.3.0",
     "tsc-alias": "^1.8.16",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.49.0"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.50",
