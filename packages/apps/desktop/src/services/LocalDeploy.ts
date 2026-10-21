@@ -6,15 +6,13 @@ import LocalStack from '@/services/LocalStack';
 import { buildDaemonEnv, buildServerEnv, ensureStackEnvDefaults } from '@/services/LocalStackEnv';
 import { serverOriginFor } from '@volt/local-stack/defaults';
 import type { StackPorts } from '@volt/local-stack/stack-env';
-import type { BootstrapState } from '@volt/local-stack/state';
 import PluginSeeder from '@volt/local-stack/plugin-seeder';
+import { waitForCluster } from '@volt/local-stack/wait-for-cluster';
 import { findFreePort } from '@/services/ports';
 import ServerApi from '@volt/local-stack/server-api';
 import { resolveStackRuntime, runtimeRootForCheckout, stackRuntimeHint } from '@/services/StackRuntime';
 import { AppEvents, PhaseSpec } from '@/types/events';
 import { isUp } from '@/shared/health';
-import { teamClusterRoutes } from '@volt/contracts/modules/cluster/routes';
-import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -32,20 +30,9 @@ interface LocalDeployProps{
 
 type DeployState = AppEvents['deploy:state']['state'];
 
-interface ClusterView{
-    teamCluster?: {
-        status?: string;
-        hostCapabilities?: { platform?: string | null } | null;
-    };
-    status?: string;
-}
-
-const DAEMON_CONNECT_TIMEOUT_MS = 120_000;
-const DAEMON_POLL_MS = 1_000;
 
 const errMessage = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
-const sleep = (ms: number) => new Promise<void>((resolve) => { setTimeout(resolve, ms); });
 
 const START_PHASES: PhaseSpec[] = [
     {
@@ -228,7 +215,10 @@ export default class LocalDeploy{
                 ports,
                 bootstrap: state
             }));
-            await this.#waitForCluster(api, state, stack);
+            await waitForCluster(api, state, {
+                daemonFailure: () => stack.daemonExitedEarly() ? `The compute daemon exited during startup. See ${stack.daemonLogFile}` : null,
+                logHint: `See ${stack.daemonLogFile}`
+            });
         });
 
         await this.#phase('plugins', () => new PluginSeeder({
@@ -240,33 +230,6 @@ export default class LocalDeploy{
         await this.#phase('web', async () => {
             if(!await isUp(`${origin}/`)) throw new Error('The web client is not being served by the API server');
         });
-    }
-
-    async #waitForCluster(api: ServerApi, state: BootstrapState, stack: LocalStack): Promise<void>{
-        const deadline = Date.now() + DAEMON_CONNECT_TIMEOUT_MS;
-        let lastStatus = 'unknown';
-
-        while(Date.now() < deadline){
-            if(stack.daemonExitedEarly()) throw new Error(`The compute daemon exited during startup. See ${stack.daemonLogFile}`);
-
-            try{
-                const view = await api.request<ClusterView>(teamClusterRoutes.getById, {
-                    params: {
-                        teamId: state.teamId,
-                        teamClusterId: state.teamClusterId
-                    },
-                    token: state.authToken
-                });
-                lastStatus = view.teamCluster?.status ?? view.status ?? lastStatus;
-                if(lastStatus === TeamClusterStatus.Connected && view.teamCluster?.hostCapabilities?.platform) return;
-            }catch(err){
-                lastStatus = `unreachable (${errMessage(err)})`;
-            }
-
-            await sleep(DAEMON_POLL_MS);
-        }
-
-        throw new Error(`The compute daemon did not connect within ${DAEMON_CONNECT_TIMEOUT_MS / 1000}s (last status: ${lastStatus}). See ${stack.daemonLogFile}`);
     }
 
     async #teardown(){
