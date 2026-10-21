@@ -5,11 +5,11 @@ import {
     headersFromIncoming,
     headersToObject
 } from '@modules/cluster/services/object-gateway/object-gateway-responses';
-import { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import http from 'node:http';
 import type { RawHttpResponse } from '@modules/cluster/services/object-gateway/object-gateway-responses';
 import type { Duplex, Readable as NodeReadable } from 'node:stream';
+import { TEAM_CLUSTER_SERVICE_EXPOSURE } from '@voltstack/daemon-cluster-client';
 
 export type ObjectGatewayOperationName =
     | 'list'
@@ -76,7 +76,7 @@ class ObjectGatewayHttpSessionPool {
         const tunnel = await teamClusterDaemonClient.openTunnel(
             teamClusterId,
             OBJECT_GATEWAY_EXPOSURE_ID,
-            TeamClusterServiceExposureAccessMode.Http,
+            TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http,
             {
                 timeoutMs: tunnelAttachTimeoutMs,
                 timeoutMessage: `Timed out waiting for daemon object gateway tunnel attachment after ${tunnelAttachTimeoutMs}ms`

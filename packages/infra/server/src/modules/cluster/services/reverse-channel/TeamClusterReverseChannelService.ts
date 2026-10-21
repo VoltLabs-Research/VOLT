@@ -3,16 +3,7 @@ import bytePlaneResolver from '@modules/cluster/services/object-gateway/BytePlan
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
-import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
-    TeamClusterDaemonResponseType,
-    type TeamClusterDaemonMessage,
-    type TeamClusterDaemonSocketChannel,
-    type TeamClusterDaemonSocketResponsePayload,
-    type TeamClusterDaemonSocketStreamPayload,
-    type TeamClusterDaemonSocketStreamStatePayload
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import type { TeamClusterDaemonMessage } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/errors/ApplicationError';
 import teamClusterDaemonConnectionRegistry, {
     type ReleasedDaemonConnection
@@ -38,6 +29,15 @@ import {
 import logger from '@shared/logger';
 import { randomUUID } from 'node:crypto';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
+import {
+    DaemonSocketEvent,
+    REVERSE_CHANNEL,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
+    type TeamClusterDaemonSocketChannel,
+    type TeamClusterDaemonSocketResponsePayload,
+    type TeamClusterDaemonSocketStreamPayload,
+    type TeamClusterDaemonSocketStreamStatePayload
+} from '@voltstack/daemon-cluster-client';
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const DAEMON_CONNECTION_WAIT_TIMEOUT_MS = 30_000;
@@ -54,7 +54,7 @@ class TeamClusterReverseChannelService {
             this.#emitCommand(socketId, requestId, {
                 command,
                 payload,
-                responseType: TeamClusterDaemonResponseType.Json
+                responseType: REVERSE_CHANNEL.ResponseType.Json
             });
         }
     });
@@ -165,7 +165,7 @@ class TeamClusterReverseChannelService {
                 this.#emitCommand(socketId, requestId, {
                     command: payload.command,
                     payload: payload.payload,
-                    responseType: TeamClusterDaemonResponseType.Stream
+                    responseType: REVERSE_CHANNEL.ResponseType.Stream
                 });
             }
         });
@@ -329,7 +329,7 @@ class TeamClusterReverseChannelService {
     }
 
     #emitToDaemon(socketId: string, payload: TeamClusterDaemonMessage): void {
-        socketIOEmitter.emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
+        socketIOEmitter.emitToSocket(socketId, DaemonSocketEvent.TeamClusterDaemonMessage, payload);
     }
 
     #emitCommand(socketId: string, requestId: string, payload: TeamClusterDaemonCommandPayload): void {

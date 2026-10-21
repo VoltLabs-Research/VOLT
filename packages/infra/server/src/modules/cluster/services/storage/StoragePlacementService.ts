@@ -1,5 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { getAnalysisStorageCleanupTargets } from '@shared/utilities/storage-cleanup-prefixes';
 import { getTrajectoryStorageCleanupTargets } from '@shared/utilities/trajectory-storage-cleanup-prefixes';
 import StoragePlacementEntity from '@modules/cluster/models/StoragePlacement';
@@ -24,9 +23,10 @@ import type {
     StoragePlacementState
 } from '@shared/contracts/types/team-cluster';
 import { In } from 'typeorm';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const buildPluginBinaryPlacementBuckets = (pluginId: string): StoragePlacementBucketRef[] => [{
-    bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+    bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
     prefix: `plugin-binaries/${pluginId}/`
 }];
 

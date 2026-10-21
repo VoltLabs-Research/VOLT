@@ -1,4 +1,3 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
@@ -18,11 +17,6 @@ import {
 import workflowValidatorService, { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
-import {
-    ChannelCommands,
-    type TeamClusterDaemonRegistryInstallBinary,
-    type TeamClusterDaemonRegistryInstallResult
-} from '@shared/contracts/types/team-cluster-daemon-channel';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import path from 'node:path';
 import type unzipper from 'unzipper';
@@ -38,6 +32,13 @@ import eventBus from '@shared/events/PostgresEventBus';
 import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { PluginRecord } from '@modules/plugin/contracts/plugin';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    PluginRegistryInstallBinary,
+    PluginRegistryInstallResult,
+    PluginRegistryInstallRequest
+} from '@volt/contracts/modules/plugin/daemon';
 
 export interface RegistryInstallPluginInput {
     teamId: string;
@@ -58,9 +59,9 @@ class PluginArchiveService {
         const platform = await this.resolveInstallPlatform(computeClusterId);
         const tarball = await registryGateway.resolveTarball(input.name, input.version, platform);
 
-        const installed = await teamClusterDaemonClient.command<TeamClusterDaemonRegistryInstallResult>(
+        const installed = await teamClusterDaemonClient.command<PluginRegistryInstallResult>(
             computeClusterId,
-            ChannelCommands.PluginRegistryInstall,
+            DaemonCommand.PluginRegistryInstall,
             {
                 downloadUrl: tarball.downloadUrl,
                 sha256: tarball.sha256,
@@ -68,7 +69,7 @@ class PluginArchiveService {
                 name: input.name,
                 version: tarball.version,
                 platform
-            },
+            } satisfies PluginRegistryInstallRequest,
             {
                 timeoutClass: 'long-running-control-plane',
                 retryClass: 'idempotent-command'
@@ -103,7 +104,7 @@ class PluginArchiveService {
 
         const archive = await clusterObjectArchiveService.createArchiveDownload({
             teamClusterId: ownerClusterId,
-            outputBucket: TEAM_CLUSTER_BUCKETS.TRAJECTORIES,
+            outputBucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
             outputObjectKey: `exports/plugins/${pluginId}/${v4()}.zip`,
             filename: `${pluginId}.zip`,
             entries: [
@@ -119,7 +120,7 @@ class PluginArchiveService {
                 ...(binaryObjectPath ? [{
                     type: 'object' as const,
                     ownerClusterId,
-                    bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+                    bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                     objectKey: binaryObjectPath,
                     name: `binary/${entrypoint?.binaryFileName || path.basename(binaryObjectPath)}`,
                     optional: true
@@ -162,7 +163,7 @@ class PluginArchiveService {
 
     async createFromRegistry(
         workflowProps: unknown,
-        binary: TeamClusterDaemonRegistryInstallBinary,
+        binary: PluginRegistryInstallBinary,
         ownerClusterId: string,
         teamId: string
     ): Promise<Plugin> {
@@ -216,7 +217,7 @@ class PluginArchiveService {
         const binaryHash = computeSha256(binaryBuffer);
 
         await objectGatewayClient.putBuffer(await this.resolveOwnerClusterId(plugin.id), {
-            bucket: TEAM_CLUSTER_BUCKETS.PLUGINS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             objectKey: binaryObjectPath,
             buffer: binaryBuffer,
             contentLength: binaryBuffer.length,

@@ -7,19 +7,23 @@ import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/Clus
 import daemonSceneArtifactIngestService from '@modules/cluster/services/daemon/DaemonSceneArtifactIngestService';
 import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
 import type { TeamClusterDaemonInboundStreamPayload } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
-import {
-    ChannelCommands,
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    TEAM_CLUSTER_DAEMON_STREAM_ID,
-    type ClusterRuntimeLifecycleCommand,
-    type TeamClusterDaemonAnalysisLogChunkStream,
-    type TeamClusterDaemonCommandMessage,
-    type TeamClusterDaemonDebugLogChunkStream,
-    type TeamClusterDaemonMessage,
-    type TeamClusterDaemonSceneArtifactUpsertBatchStream
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import type { TeamClusterDaemonMessage } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import type ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
+import {
+    DaemonSocketEvent,
+    type TeamClusterDaemonCommandMessage,
+    type TeamClusterDaemonLifecycleCommand
+} from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import {
+    type AnalysisLogChunk,
+    DAEMON_STREAM_ID,
+    type DebugLogChunk,
+    type AnalysisLogChunkEvent,
+    type DebugLogChunkEvent,
+    type SceneArtifactUpsertBatchEvent
+} from '@volt/contracts/modules/cluster/daemon-events';
 
 type EmitToSocket = (socketId: string, event: string, payload: unknown) => void;
 
@@ -36,19 +40,19 @@ export default class TeamClusterDaemonFrameRouter {
     registerInboundStreamConsumers(): Array<() => void> {
         return [
             teamClusterReverseChannelService.registerInboundStreamConsumer(
-                TEAM_CLUSTER_DAEMON_STREAM_ID.AnalysisLogChunk,
+                DAEMON_STREAM_ID.AnalysisLogChunk,
                 (message) => {
                     void this.#handleAnalysisLogChunk(message);
                 }
             ),
             teamClusterReverseChannelService.registerInboundStreamConsumer(
-                TEAM_CLUSTER_DAEMON_STREAM_ID.DebugLogChunk,
+                DAEMON_STREAM_ID.DebugLogChunk,
                 (message) => {
                     void this.#handleDebugLogChunk(message);
                 }
             ),
             teamClusterReverseChannelService.registerInboundStreamConsumer(
-                TEAM_CLUSTER_DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch,
+                DAEMON_STREAM_ID.TrajectorySceneArtifactUpsertBatch,
                 (message) => {
                     void this.#handleSceneArtifactUpsertBatch(message);
                 }
@@ -57,12 +61,12 @@ export default class TeamClusterDaemonFrameRouter {
     }
 
     async handleCommand(socketId: string, payload: TeamClusterDaemonCommandMessage): Promise<void> {
-        if (payload.command === ChannelCommands.RuntimeConfigGet) {
+        if (payload.command === DaemonCommand.RuntimeConfigGet) {
             await this.#emitRuntimeConfig(socketId, payload.requestId);
             return;
         }
 
-        if (payload.command !== 'runtime.lifecycle') {
+        if (payload.command !== DaemonCommand.RuntimeLifecycle) {
             this.#emitResponse(socketId, {
                 type: 'response',
                 requestId: payload.requestId,
@@ -75,7 +79,7 @@ export default class TeamClusterDaemonFrameRouter {
 
         try {
             this.#emitSuccess(socketId, payload.requestId, await clusterDaemonLifecycleService.updateLifecycle(
-                payload.payload as ClusterRuntimeLifecycleCommand
+                payload.payload as TeamClusterDaemonLifecycleCommand
             ));
         } catch (error: unknown) {
             const appError = error as ApplicationError;
@@ -171,7 +175,7 @@ export default class TeamClusterDaemonFrameRouter {
     }
 
     async #handleAnalysisLogChunk(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.#parseStreamPayload<TeamClusterDaemonAnalysisLogChunkStream>(message);
+        const payload = this.#parseStreamPayload<AnalysisLogChunkEvent>(message);
         if (!payload) {
             return;
         }
@@ -192,7 +196,7 @@ export default class TeamClusterDaemonFrameRouter {
     }
 
     async #handleDebugLogChunk(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.#parseStreamPayload<TeamClusterDaemonDebugLogChunkStream>(message);
+        const payload = this.#parseStreamPayload<DebugLogChunkEvent>(message);
         if (!payload) {
             return;
         }
@@ -206,7 +210,7 @@ export default class TeamClusterDaemonFrameRouter {
     }
 
     async #handleSceneArtifactUpsertBatch(message: TeamClusterDaemonInboundStreamPayload): Promise<void> {
-        const payload = this.#parseStreamPayload<TeamClusterDaemonSceneArtifactUpsertBatchStream>(message);
+        const payload = this.#parseStreamPayload<SceneArtifactUpsertBatchEvent>(message);
         if (!payload) {
             return;
         }
@@ -261,6 +265,6 @@ export default class TeamClusterDaemonFrameRouter {
     }
 
     #emitResponse(socketId: string, payload: TeamClusterDaemonMessage): void {
-        this.#emitToSocket(socketId, TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, payload);
+        this.#emitToSocket(socketId, DaemonSocketEvent.TeamClusterDaemonMessage, payload);
     }
 }

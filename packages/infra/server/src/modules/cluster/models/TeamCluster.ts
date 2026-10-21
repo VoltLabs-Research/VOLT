@@ -4,16 +4,16 @@ import { Hidden } from '@shared/persistence/Hidden';
 import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import User from '@modules/auth/models/User';
-import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import {
+    TeamClusterStatus,
+    type TeamClusterEffectiveCapabilities,
+    type TeamClusterHostCapabilities,
+    type TeamClusterQueueConcurrency,
+    type TeamClusterQueueScopeLimits,
+    type TeamClusterRuntimeRoleConfig
+} from '@volt/contracts/modules/cluster/domain';
 import { resolveEffectiveCapabilitiesFromRoleConfig } from '@shared/utilities/cluster-capabilities';
-import type {
-    TeamClusterEffectiveCapabilitiesProps,
-    TeamClusterHostCapabilitiesProps,
-    TeamClusterQueueConcurrencyProps,
-    TeamClusterQueueScopeLimitsProps,
-    TeamClusterRuntimeRoleConfigProps,
-    TeamClusterServicesProps
-} from '@shared/contracts/types/TeamCluster';
+import type { TeamClusterServicesProps } from '@shared/contracts/types/TeamCluster';
 
 @Entity('team_clusters')
 @Index(['team'])
@@ -83,21 +83,21 @@ export default class TeamCluster extends BaseModel{
     services!: TeamClusterServicesProps;
 
     @Column('simple-json')
-    queueConcurrency!: TeamClusterQueueConcurrencyProps;
+    queueConcurrency!: TeamClusterQueueConcurrency;
 
     @Column('simple-json')
-    queueScopeLimits!: TeamClusterQueueScopeLimitsProps;
+    queueScopeLimits!: TeamClusterQueueScopeLimits;
 
     @Column('simple-json')
-    roleConfig!: TeamClusterRuntimeRoleConfigProps;
+    roleConfig!: TeamClusterRuntimeRoleConfig;
 
     @Column({
         type: 'simple-json',
         nullable: true
     })
-    hostCapabilities!: TeamClusterHostCapabilitiesProps | null;
+    hostCapabilities!: TeamClusterHostCapabilities | null;
 
-    get effectiveCapabilities(): TeamClusterEffectiveCapabilitiesProps{
+    get effectiveCapabilities(): TeamClusterEffectiveCapabilities{
         return resolveEffectiveCapabilitiesFromRoleConfig(this.roleConfig);
     }
 }

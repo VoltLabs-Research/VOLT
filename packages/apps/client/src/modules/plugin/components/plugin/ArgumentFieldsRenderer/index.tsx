@@ -18,7 +18,7 @@ import {
     getSelectArgumentValue,
     isPluginReferenceArgumentType
 } from '@/modules/plugin/utils/plugin/argument-values';
-import { getVisibleArguments } from '@/modules/plugin/utils/plugin/argument-visibility';
+import { isArgumentVisible } from '@volt/contracts/modules/plugin/arguments';
 import PluginConfigField from '@/modules/plugin/components/plugin/PluginConfigField';
 import PrimitiveArgumentField from './PrimitiveArgumentField';
 import { normalizeDynamicOptionValue, resolveSelectOptions } from './argument-select-options';
@@ -56,10 +56,9 @@ const ArgumentFieldsRenderer = ({
     const { publishedPluginsById } = usePluginSelectors();
 
     const resolvedRootValues = rootValues ?? values;
-    const visibleArgumentDefinitions = getVisibleArguments(
-        getUserConfigurableArguments(argumentDefinitions),
-        values
-    );
+    const configurableArguments = getUserConfigurableArguments(argumentDefinitions);
+    const visibleArgumentDefinitions = configurableArguments
+        .filter((definition) => isArgumentVisible(definition, configurableArguments, values));
 
     const setSectionExpanded = (sectionKey: string, nextValue: boolean) => {
         setExpandedSections((previousState) => ({

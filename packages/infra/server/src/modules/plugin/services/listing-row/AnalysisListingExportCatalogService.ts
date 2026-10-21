@@ -16,9 +16,9 @@ import type {
     GetAnalysisListingExportOptionsOutput
 } from '@modules/plugin/services/listing-row/ListingRowTypes';
 import { enrichDaemonListingRows } from '@modules/plugin/services/listing-row/ListingRowEnrichmentService';
-import { Exporter } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 interface ExcludedExposureSet {
     ids: Set<string>;
@@ -95,7 +95,7 @@ class AnalysisListingExportCatalogService {
         const exposures = pluginEntity ? toPluginLike(pluginEntity).props.exposures ?? [] : [];
 
         return exposures.reduce<ExcludedExposureSet>((accumulator, exposure) => {
-            if (exposure.export?.exporter !== Exporter.Mesh) {
+            if (exposure.export?.exporter !== Exporter.MESH) {
                 return accumulator;
             }
 
@@ -132,7 +132,7 @@ class AnalysisListingExportCatalogService {
 
         const listingRows = await collectAllDaemonPages<DaemonListingRow>(
             teamClusterId,
-            ChannelCommands.PluginListingsList,
+            DaemonCommand.PluginListingsList,
             { analysisId }
         );
 

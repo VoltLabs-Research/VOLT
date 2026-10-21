@@ -4,7 +4,6 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type { RetryTeamJobsResult, TeamClusterFailureDetail } from '@volt/contracts/modules/jobs/domain';
 import type { TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
@@ -20,6 +19,7 @@ import {
     glbTerminalReceiptKey,
     glbTerminalReceiptSetKey
 } from '@modules/jobs/services/JobRuntimeKeys';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 
 const GLB_QUEUE_TYPE = 'trajectory_glb_conversion';
@@ -85,7 +85,7 @@ const requeueGlbPreprocessing = async (
 
     await teamClusterDaemonClient.command(
         storageClusterId,
-        ChannelCommands.TrajectoryEnqueuePreprocessing,
+        DaemonCommand.TrajectoryEnqueuePreprocessing,
         {
             trajectoryId,
             teamId,
@@ -145,7 +145,7 @@ export const retryTeamJobs = async (teamId: string, targetJobs: TeamJobSummary[]
         try {
             const response = await teamClusterDaemonClient.command<{ affectedJobIds: string[] }>(
                 teamClusterId,
-                ChannelCommands.JobsRetry,
+                DaemonCommand.JobsRetry,
                 { jobIds: clusterJobs.map((job) => job.jobId) }
             );
             const affectedSet = new Set(response.affectedJobIds);

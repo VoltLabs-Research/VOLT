@@ -1,7 +1,7 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
-import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { AtomColumn, GetAtomsColumnarOutput } from '@modules/trajectory/services/TrajectoryServiceTypes';
+import type { NativeAtomsPage } from '@volt/contracts/modules/trajectory/daemon';
 
 const ID_PROPERTY_NAME = 'id';
 const TYPE_PROPERTY_NAME = 'type';
@@ -96,7 +96,7 @@ const concatBuffers = (parts: Uint8Array[]): Uint8Array => {
 };
 
 export const toAtomsColumnarOutput = (
-    atomsPage: AtomPageResult,
+    atomsPage: NativeAtomsPage,
     page: number,
     limit: number
 ): GetAtomsColumnarOutput => {

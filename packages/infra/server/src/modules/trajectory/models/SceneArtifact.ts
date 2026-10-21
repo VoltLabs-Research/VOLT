@@ -5,8 +5,13 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import Analysis from '@modules/analysis/models/Analysis';
 import Plugin from '@modules/plugin/models/Plugin';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
-import { SceneArtifactSourceType, SceneArtifactStatus } from '@shared/contracts/types/SceneArtifact';
-import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
+import {
+    type SceneArtifactParams,
+    type SceneArtifactSourceType,
+    SCENE_ARTIFACT_SOURCE_TYPES,
+    SCENE_ARTIFACT_STATUSES,
+    type SceneArtifactStatus
+} from '@volt/contracts/modules/trajectory/domain';
 import type { SceneArtifactMetadata } from '@modules/trajectory/contracts/scene-artifact';
 
 @Entity('trajectory_scene_artifacts')
@@ -51,7 +56,7 @@ export default class SceneArtifact extends BaseModel{
 
     @Column({
         type: 'simple-enum',
-        enum: SceneArtifactSourceType
+        enum: SCENE_ARTIFACT_SOURCE_TYPES
     })
     sourceType!: SceneArtifactSourceType;
 
@@ -78,8 +83,8 @@ export default class SceneArtifact extends BaseModel{
 
     @Column({
         type: 'simple-enum',
-        enum: SceneArtifactStatus,
-        default: SceneArtifactStatus.Ready
+        enum: SCENE_ARTIFACT_STATUSES,
+        default: 'ready'
     })
     status!: SceneArtifactStatus;
 

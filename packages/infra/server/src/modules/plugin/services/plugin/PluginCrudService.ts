@@ -1,11 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import {
-    WorkflowNodeType,
-    type EntrypointNodeData
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type { Plugin, PluginRecord } from '@modules/plugin/contracts/plugin';
 import {
     mapPluginToRecord,
@@ -20,8 +15,9 @@ import eventBus from '@shared/events/PostgresEventBus';
 import logger from '@shared/logger';
 import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
 import type { PaginatedResult } from '@shared/persistence/persistence';
-import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
+import { PluginStatus, NodeType } from '@volt/contracts/modules/plugin/enums';
 import type { FindOptionsWhere } from 'typeorm';
+import type { IEntrypointData, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 export interface ListPluginsInput {
     teamId: string;
@@ -32,7 +28,7 @@ export interface ListPluginsInput {
 
 export interface UpdatePluginByIdInput {
     pluginId: string;
-    workflow?: WorkflowProps;
+    workflow?: IWorkflow;
     status?: PluginStatus;
     _allowBinaryFieldUpdate?: boolean;
 }
@@ -56,7 +52,7 @@ class PluginCrudService {
         return paginate([plugins.map((plugin) => mapPluginToRecord(toPluginLike(plugin))), total], pageRequest);
     }
 
-    async createPlugin(workflowProps: WorkflowProps, teamId: string): Promise<{ plugin: PluginRecord }> {
+    async createPlugin(workflowProps: IWorkflow, teamId: string): Promise<{ plugin: PluginRecord }> {
         const validation = await workflowValidatorService.validate(workflowProps, undefined, WorkflowValidationMode.Draft);
         if (!validation.isValid) {
             throw ApplicationError.badRequest(
@@ -72,7 +68,7 @@ class PluginCrudService {
         const original = await requirePlugin(pluginId);
 
         const nodes = original.props.workflow.props.nodes.map((node) => {
-            if (node.type !== WorkflowNodeType.Modifier || !node.data.modifier) return node;
+            if (node.type !== NodeType.MODIFIER || !node.data.modifier) return node;
             return {
                 ...node,
                 data: {
@@ -142,7 +138,7 @@ class PluginCrudService {
         return null;
     }
 
-    async #createDraft(workflowProps: WorkflowProps, teamId: string): Promise<PluginRecord> {
+    async #createDraft(workflowProps: IWorkflow, teamId: string): Promise<PluginRecord> {
         const pluginEntity = await PluginEntity.create({
             ...projectWorkflowColumns(new Workflow('', workflowProps), ''),
             team: teamId,
@@ -158,7 +154,7 @@ class PluginCrudService {
         return mapPluginToRecord(plugin);
     }
 
-    async #assertPublishable(workflow: WorkflowProps, pluginId: string, status: PluginStatus): Promise<void> {
+    async #assertPublishable(workflow: IWorkflow, pluginId: string, status: PluginStatus): Promise<void> {
         const mode = status === PluginStatus.PUBLISHED
             ? WorkflowValidationMode.Strict
             : WorkflowValidationMode.Draft;
@@ -172,8 +168,8 @@ class PluginCrudService {
         }
     }
 
-    #carryOverBinaryFields(current: EntrypointNodeData | undefined, incoming: WorkflowProps): void {
-        const incomingNode = incoming.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+    #carryOverBinaryFields(current: IEntrypointData | undefined, incoming: IWorkflow): void {
+        const incomingNode = incoming.nodes.find((node) => node.type === NodeType.ENTRYPOINT);
 
         if (!current || !incomingNode?.data.entrypoint) {
             return;

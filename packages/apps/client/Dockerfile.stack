@@ -2,7 +2,8 @@
 # also reverse-proxies /api and /socket.io to volt-server on the same origin.
 #
 # Build context is the workspace root, because the client compiles `@volt/contracts`
-# from source and links @voltstack/voltclient from the workspace.
+# from source and links @voltstack/voltclient from the workspace. Contracts reads the
+# daemon's runtime types from @voltstack/daemon-cluster-client, whose dist is built here.
 #
 # Deliberately no VITE_SERVER_ENDPOINT build arg: `backend-origin.ts` falls back
 # to `window.location.origin`, and nginx proxies the API on that same origin. That
@@ -17,10 +18,12 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/apps/client/package.json packages/apps/client/
 COPY packages/shared/contracts/package.json packages/shared/contracts/
 COPY packages/sdk/voltclient/package.json packages/sdk/voltclient/
+COPY packages/sdk/daemon-cluster-client/package.json packages/sdk/daemon-cluster-client/
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter volt-webapp...
 
 COPY packages/shared/contracts packages/shared/contracts
 COPY packages/sdk/voltclient packages/sdk/voltclient
+COPY packages/sdk/daemon-cluster-client packages/sdk/daemon-cluster-client
 COPY packages/apps/client packages/apps/client
 RUN pnpm --filter volt-webapp... build
 

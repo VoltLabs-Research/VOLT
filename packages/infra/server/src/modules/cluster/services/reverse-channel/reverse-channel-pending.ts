@@ -2,10 +2,10 @@ import { clearPendingTimeout } from '@modules/cluster/services/reverse-channel/r
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
 import type { TeamClusterReverseTunnelStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseTunnelStream';
 import type { TeamClusterReverseWebSocketStream } from '@modules/cluster/services/reverse-channel/TeamClusterReverseWebSocket';
-import type { TeamClusterDaemonSocketResponsePayload } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import logger from '@shared/logger';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { PassThrough } from 'node:stream';
+import type { TeamClusterDaemonSocketResponsePayload } from '@voltstack/daemon-cluster-client';
 
 export const TUNNEL_FLOW_CONTROL_WINDOW_BYTES = readPositiveIntegerEnv(
     'TEAM_CLUSTER_REVERSE_TUNNEL_WINDOW_BYTES',

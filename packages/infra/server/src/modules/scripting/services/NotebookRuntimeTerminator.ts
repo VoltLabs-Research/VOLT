@@ -1,8 +1,8 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import { findNotebookExposure } from '@modules/scripting/services/ScriptingJupyterProxySupport';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 class NotebookRuntimeTerminator {
     async terminate(teamClusterId: string, runtimeNotebookId: string): Promise<boolean> {
@@ -17,7 +17,7 @@ class NotebookRuntimeTerminator {
         try {
             await teamClusterDaemonClient.command(
                 teamClusterId,
-                ChannelCommands.NotebookContainerDelete,
+                DaemonCommand.NotebookContainerDelete,
                 { containerId }
             );
             return true;

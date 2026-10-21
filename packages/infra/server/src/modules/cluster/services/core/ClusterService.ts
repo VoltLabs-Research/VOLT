@@ -41,11 +41,11 @@ import type { StoragePlacement } from '@modules/cluster/contracts/storage-placem
 import ApplicationError from '@shared/errors/ApplicationError';
 import type { PaginatedResult } from '@shared/persistence/persistence';
 import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import logger from '@shared/logger';
 import { ILike, In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const OPEN_TRANSFER_JOB_STATES: ClusterTransferJobStateColumn[] = [
     ClusterTransferJobStateColumn.Queued,
@@ -342,7 +342,7 @@ class ClusterService {
         try {
             result = await teamClusterDaemonClient.commandWithSemanticResult<{ reason?: string; message?: string }>(
                 input.teamClusterId,
-                ChannelCommands.RuntimeUninstall,
+                DaemonCommand.RuntimeUninstall,
                 { reason: `Delete requested by user ${input.userId}` },
                 { timeoutClass: 'long-running-control-plane' }
             );

@@ -1,10 +1,8 @@
 
 import { requirePlugin } from '@modules/plugin/services/plugin/PluginQueries';
-import {
-    ArgumentType,
-    type ArgumentDefinition
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type { PluginRefInput } from '@volt/contracts/modules/plugin/ai-tools';
+import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 
 interface DescribedPluginArgumentOption {
     key: string;
@@ -45,7 +43,7 @@ class PluginArgumentDescriber{
         };
     }
 
-    #describeArgument(definition: ArgumentDefinition): DescribedPluginArgument {
+    #describeArgument(definition: IArgumentDefinition): DescribedPluginArgument {
         const described: DescribedPluginArgument = {
             key: definition.argument,
             type: definition.type,
@@ -86,7 +84,7 @@ class PluginArgumentDescriber{
         return described;
     }
 
-    #buildArgumentNote(definition: ArgumentDefinition): string | undefined {
+    #buildArgumentNote(definition: IArgumentDefinition): string | undefined {
         const notes: string[] = [];
 
         if (definition.inferFromContext === true) {

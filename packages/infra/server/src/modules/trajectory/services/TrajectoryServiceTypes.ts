@@ -1,5 +1,5 @@
 import type { TrajectoryProps } from '@shared/contracts/types/Trajectory';
-import type { SceneArtifactProps, SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
+import type { SceneArtifactProps } from '@shared/contracts/types/SceneArtifact';
 import type { GlbContentEncoding } from '@shared/utilities/glb-stream-resolution';
 import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
@@ -12,6 +12,7 @@ import type {
     MoveTrajectoryInput as WireMoveTrajectoryInput,
     TrajectoryUploadFileInput
 } from '@volt/contracts/modules/trajectory/http';
+import type { SceneArtifactSourceType } from '@volt/contracts/modules/trajectory/domain';
 
 export interface TrajectoryRecord extends TrajectoryProps {
     _id: string;

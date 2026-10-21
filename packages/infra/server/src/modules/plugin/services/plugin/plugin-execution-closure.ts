@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import pluginDependencyResolverService from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginReferenceArguments';
 import ApplicationError from '@shared/errors/ApplicationError';
+import type { PluginReferenceExecutionRequest } from '@volt/contracts/modules/analysis/daemon';
 
 interface PluginExecutionClosure {
     plugins: Plugin[];

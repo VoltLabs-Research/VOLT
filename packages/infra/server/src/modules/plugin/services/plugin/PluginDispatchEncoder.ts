@@ -1,25 +1,21 @@
 import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import logger from '@shared/logger';
 import { promisify } from 'node:util';
 import zlib from 'node:zlib';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import type { NestedPluginDefinition } from '@volt/contracts/modules/analysis/daemon';
 
 const gzipAsync = promisify(zlib.gzip);
 
 const CACHE_TTL_MS = 600_000;
 const CACHE_PREFIX = 'plugin-dispatch:v2:';
 
-interface NestedPluginDefinition {
-    pluginId: string;
-    workflow: WorkflowProps;
-}
-
 const injectOwnerClusterIdIntoWorkflow = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     ownerClusterId: string
-): WorkflowProps => {
+): IWorkflow => {
     if (!ownerClusterId) {
         return workflow;
     }
@@ -27,7 +23,7 @@ const injectOwnerClusterIdIntoWorkflow = (
     return {
         ...workflow,
         nodes: workflow.nodes.map((node) => {
-            if (node.type !== WorkflowNodeType.Entrypoint || !node.data.entrypoint) {
+            if (node.type !== NodeType.ENTRYPOINT || !node.data.entrypoint) {
                 return node;
             }
 

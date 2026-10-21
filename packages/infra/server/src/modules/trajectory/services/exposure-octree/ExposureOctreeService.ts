@@ -1,6 +1,4 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import { buildClusterRequiredError } from '@modules/trajectory/services/SceneArtifactService';
 import { stripTrailingZstdExtension } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import ApplicationError from '@shared/errors/ApplicationError';
@@ -12,6 +10,7 @@ import trajectoryNativeDaemonService from '@modules/trajectory/services/native/T
 import { type Readable } from 'node:stream';
 import { requireTimestep } from '@modules/trajectory/services/trajectory/require-timestep';
 import type { LineExposureScope } from '@modules/trajectory/services/TrajectoryServiceTypes';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 interface OctreeStreamResponse {
     stream: Readable;
@@ -37,7 +36,7 @@ class ExposureOctreeService {
         const artifact = await SceneArtifact.createQueryBuilder('artifact')
             .where('artifact.trajectory = :trajectory', { trajectory: trajectoryId })
             .andWhere('artifact.analysis = :analysis', { analysis: analysisId })
-            .andWhere('artifact.sourceType = :sourceType', { sourceType: SceneArtifactSourceType.PluginExposure })
+            .andWhere('artifact.sourceType = :sourceType', { sourceType: 'plugin-exposure' })
             .andWhere('artifact.timestep = :timestep', { timestep: Number(timestep) })
             .andWhere('artifact.params = :params', { params: JSON.stringify({ exposureId }) })
             .getOne();
@@ -61,7 +60,7 @@ class ExposureOctreeService {
 
         return trajectoryNativeDaemonService.getObjectStreamResponse(
             trajectory.storageClusterId,
-            TEAM_CLUSTER_BUCKETS.MODELS,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             objectName
         );
     }

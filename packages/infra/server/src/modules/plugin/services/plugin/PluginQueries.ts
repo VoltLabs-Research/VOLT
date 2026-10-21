@@ -2,14 +2,14 @@ import { In } from 'typeorm';
 import { ErrorCodes } from '@core/constants/error-codes';
 import PluginEntity from '@modules/plugin/models/Plugin';
 import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
 import WorkflowProjectionService from '@modules/plugin/services/plugin/WorkflowProjection';
 import type { PluginProjection } from '@modules/plugin/services/plugin/WorkflowProjection';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { mapPluginToRecord as mapPluginToRecordNeutral } from '@shared/utilities/mapPluginToRecord';
 import type { Plugin, PluginProps, PluginRecord } from '@modules/plugin/contracts/plugin';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
-const buildPluginLike = (id: string, workflowProps: WorkflowProps, rest: Record<string, unknown>): Plugin => {
+const buildPluginLike = (id: string, workflowProps: IWorkflow, rest: Record<string, unknown>): Plugin => {
     const workflow = new Workflow(id, workflowProps);
     const projection = WorkflowProjectionService.project(workflow, id);
 
@@ -32,7 +32,7 @@ const buildPluginLike = (id: string, workflowProps: WorkflowProps, rest: Record<
 export const toPluginLike = (plugin: PluginEntity): Plugin => {
     const { _id, workflow, ...rest } = plugin.toJSON();
 
-    return buildPluginLike(String(_id), workflow as WorkflowProps, rest);
+    return buildPluginLike(String(_id), workflow as IWorkflow, rest);
 };
 
 export const mapPluginToRecord = (plugin: Plugin): PluginRecord =>

@@ -1,11 +1,11 @@
 import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
-import { isArgumentVisible } from '@/modules/plugin/utils/plugin/argument-visibility';
 import type {
     IArgumentDefinition,
     IPluginReferenceSelection,
     IPluginReferenceValue
 } from '@volt/contracts/modules/plugin/workflow';
 import { isRecord } from '@/shared/utils/type-guards';
+import { isArgumentVisible } from '@volt/contracts/modules/plugin/arguments';
 
 const isListItemArray = (value: unknown): value is Record<string, unknown>[] => {
     return Array.isArray(value) && value.every(isRecord);

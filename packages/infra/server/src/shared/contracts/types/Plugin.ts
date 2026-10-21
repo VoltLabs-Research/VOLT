@@ -1,18 +1,4 @@
-
-
-export enum WorkflowNodeType {
-    Modifier = 'modifier',
-    Arguments = 'arguments',
-    Context = 'context',
-    ForEach = 'forEach',
-    Entrypoint = 'entrypoint',
-    Plugin = 'plugin-node',
-    Exposure = 'exposure',
-    Export = 'export',
-    IfStatement = 'if-statement',
-    SwitchStatement = 'switch-statement',
-    SwitchCase = 'switch-case'
-}
+import type { NodeType } from '@volt/contracts/modules/plugin/enums';
 
 interface WorkflowNodeDataLike {
     exposure?: {
@@ -23,7 +9,7 @@ interface WorkflowNodeDataLike {
 
 export interface WorkflowNodeLike {
     id: string;
-    type: WorkflowNodeType;
+    type: NodeType;
     position?: {
         x: number;
         y: number;

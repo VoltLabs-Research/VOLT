@@ -6,17 +6,19 @@ import {
 } from '@modules/cluster/services/core/cluster-access';
 import remoteExplorerDaemonGateway from '@modules/cluster/services/remote-explorer/RemoteExplorerDaemonGateway';
 import teamClusterRemoteAccessSessionService from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccessSessionService';
-import {
-    TeamClusterRemoteAccessTarget,
-    type TeamClusterRemoteAccessSessionView,
-    type TeamClusterRemoteExplorerEntryView,
-    type TeamClusterRemoteExplorerNodeView
+import type {
+    TeamClusterRemoteAccessSessionView
 } from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { readFilenameFromContentDisposition } from '@shared/http/responses/content-disposition';
 import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
 import logger from '@shared/logger';
 import type { Readable } from 'node:stream';
+import {
+    TeamClusterRemoteAccessTarget,
+    type TeamClusterRemoteExplorerEntry,
+    type TeamClusterRemoteExplorerNode
+} from '@volt/contracts/modules/cluster/domain';
 
 interface RemoteExplorerRequest {
     teamId: string;
@@ -63,7 +65,7 @@ class ClusterRemoteExplorerService {
         teamClusterId: string;
         target: TeamClusterRemoteAccessTarget;
         path: string;
-        entries: TeamClusterRemoteExplorerEntryView[];
+        entries: TeamClusterRemoteExplorerEntry[];
     }> {
         await this.#preflight(input);
 
@@ -82,7 +84,7 @@ class ClusterRemoteExplorerService {
     async getRemoteExplorerNode(input: RemoteExplorerRequest): Promise<{
         teamClusterId: string;
         target: TeamClusterRemoteAccessTarget;
-        node: TeamClusterRemoteExplorerNodeView;
+        node: TeamClusterRemoteExplorerNode;
     }> {
         await this.#preflight(input);
 

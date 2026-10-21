@@ -1,6 +1,4 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
-import { SceneArtifactSourceType } from '@shared/contracts/types/SceneArtifact';
 import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
     buildClusterRequiredError,
@@ -39,6 +37,7 @@ import type {
 
 export { ParticleFilterCombinator };
 import { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 interface ParticleFilterResult {
     mask: Uint8Array;
@@ -216,7 +215,7 @@ class ParticleFilterService {
             trajectory: trajectoryId,
             storageClusterId,
             analysis: resolvedAnalysisId,
-            sourceType: SceneArtifactSourceType.ParticleFilter,
+            sourceType: 'particle-filter',
             timestep: Number(timestep),
             objectName,
             params: buildParticleFilterArtifactParams(request, action),
@@ -256,7 +255,7 @@ class ParticleFilterService {
 
         return trajectoryNativeDaemonService.getObjectStreamResponse(
             trajectory.storageClusterId,
-            TEAM_CLUSTER_BUCKETS.MODELS,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             objectName
         );
     }

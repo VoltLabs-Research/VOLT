@@ -3,12 +3,10 @@ import PluginEntity from '@modules/plugin/models/Plugin';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
-import Workflow, { type WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginExecutionRouter';
+import Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import pluginDependencyResolverService from '@modules/plugin/services/plugin/PluginDependencyResolverService';
 import workflowValidatorService, { WorkflowValidationMode } from '@modules/plugin/services/plugin/WorkflowValidatorService';
 import pluginDebugSessionRegistry from '@modules/plugin/services/PluginDebugSessionRegistryService';
-import { sanitizeVisibleArgumentConfig } from '@modules/plugin/services/plugin/ArgumentVisibility';
 import type { ISocketConnection } from '@modules/socket/socket/ISocketModule';
 import { socketIOEmitter } from '@modules/socket/services/SocketIOEmitter';
 import { socketIOEventRegistry } from '@modules/socket/services/SocketIOEventRegistry';
@@ -16,95 +14,40 @@ import { socketIORoomManager } from '@modules/socket/services/SocketIORoomManage
 import BaseSocketModule from '@modules/socket/socket/BaseSocketModule';
 import { socketTeamSubscriptionCoordinator } from '@modules/socket/socket/team-subscription/SocketTeamSubscriptionCoordinator';
 import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
 
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
-import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import { getTrajectoryFrames, toFlatTrajectoryFrame } from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import { sanitizeVisibleArgumentConfig } from '@volt/contracts/modules/plugin/arguments';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { NestedPluginDefinition } from '@volt/contracts/modules/analysis/daemon';
+import type {
+    DebugNodeResult,
+    DebugStartResult,
+    DebugStepResult,
+    DebugContinueResult,
+    DebugStartRequest
+} from '@volt/contracts/modules/plugin/debug';
 
 interface DebugStartPayload {
     pluginId: string;
     trajectoryId: string;
     timestep: number;
     config: Record<string, unknown>;
-    workflow?: WorkflowProps;
+    workflow?: IWorkflow;
 }
 
 interface DebugSessionPayload {
     sessionId: string;
 }
 
-interface DaemonDebugNodeResult {
-    nodeId: string;
-    nodeType: string;
-    status: 'completed' | 'skipped' | 'error';
-    output?: Record<string, unknown>;
-    error?: string;
-    stack?: string;
-    reason?: string;
-    nestedTrace?: DebugTraceNode[];
-    durationMs: number;
-    contextSnapshot: Record<string, Record<string, unknown>>;
-}
-
-interface DebugTraceNode {
-    traceId: string;
-    nodeId: string;
-    nodeType: string;
-    status: 'completed' | 'skipped' | 'error';
-    durationMs: number;
-    output?: Record<string, unknown>;
-    reason?: string;
-    error?: string;
-    stack?: string;
-    pluginId?: string;
-    label?: string;
-    children?: DebugTraceNode[];
-}
-
-interface DaemonDebugStartResponse {
-    sessionId: string;
-    executionOrder: Array<{ nodeId: string; type: string }>;
-    forEachNodeId: string | null;
-    totalIterations: number;
-    firstNode: { nodeId: string; nodeType: string; index: number; total: number } | null;
-}
-
-interface NestedPluginDefinition {
-    pluginId: string;
-    workflow: {
-        nodes: Array<{
-            id: string;
-            type: string;
-            position: { x: number; y: number; };
-            data: Record<string, unknown>;
-        }>;
-        edges: Array<{
-            id?: string;
-            source: string;
-            target: string;
-            sourceHandle?: string;
-            targetHandle?: string;
-        }>;
-    };
-}
-
-interface DaemonDebugStepResponse {
-    result: DaemonDebugNodeResult | null;
-    nextNode: { nodeId: string; nodeType: string; index: number; total: number } | null;
-    hasMore: boolean;
-}
-
-interface DaemonDebugContinueResponse {
-    results: DaemonDebugNodeResult[];
-}
-
 const buildNestedPluginDefinition = (plugin: Plugin): NestedPluginDefinition => ({
     pluginId: plugin.id,
-    workflow: plugin.props.workflow.props as NestedPluginDefinition['workflow']
+    workflow: plugin.props.workflow.props
 });
 
-const createRuntimePlugin = (plugin: Plugin, workflow: WorkflowProps): Plugin => ({
+const createRuntimePlugin = (plugin: Plugin, workflow: IWorkflow): Plugin => ({
     _id: plugin.id,
     id: plugin.id,
     props: {
@@ -140,7 +83,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
     async onShutdown(): Promise<void> {
         for (const [sessionId, entry] of pluginDebugSessionRegistry.listSessions()) {
             try {
-                await teamClusterDaemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId });
+                await teamClusterDaemonClient.command(entry.teamClusterId, DaemonCommand.DebugStop, { sessionId });
             } catch {
             }
         }
@@ -208,7 +151,6 @@ class PluginDebugSocketModule extends BaseSocketModule {
                     });
                     return;
                 }
-                const pluginReferenceExecutions = pluginReferenceValidation.executions;
                 const dependencyResolution = await pluginDependencyResolverService.collectTransitivePublishedDependencies(runtimePlugin);
                 if (dependencyResolution.errors.length > 0) {
                     this.emitToSocket(conn.id, 'debug:session:error', {
@@ -233,11 +175,11 @@ class PluginDebugSocketModule extends BaseSocketModule {
                         .map((candidate) => [candidate.id, candidate])
                 ).values()).map(buildNestedPluginDefinition);
 
-                const trajectoryFrames = await getTrajectoryFrames(payload.trajectoryId);
+                const trajectoryFrames = (await getTrajectoryFrames(payload.trajectoryId)).map(toFlatTrajectoryFrame);
 
-                const response = await teamClusterDaemonClient.command<DaemonDebugStartResponse>(
+                const response = await teamClusterDaemonClient.command<DebugStartResult>(
                     teamClusterId,
-                    ChannelCommands.DebugStart,
+                    DaemonCommand.DebugStart,
                     {
                         workflow,
                         trajectoryId: payload.trajectoryId,
@@ -246,10 +188,9 @@ class PluginDebugSocketModule extends BaseSocketModule {
                         teamId,
                         storageClusterId,
                         nestedPlugins,
-                        pluginReferenceExecutions: pluginReferenceExecutions as PluginReferenceExecutionRequest[],
                         config: sanitizedConfig,
                         timestep: payload.timestep
-                    }
+                    } satisfies DebugStartRequest
                 );
 
                 pluginDebugSessionRegistry.registerSession(response.sessionId, {
@@ -291,9 +232,9 @@ class PluginDebugSocketModule extends BaseSocketModule {
             }
 
             try {
-                const response = await teamClusterDaemonClient.command<DaemonDebugStepResponse>(
+                const response = await teamClusterDaemonClient.command<DebugStepResult>(
                     teamClusterId,
-                    ChannelCommands.DebugStep,
+                    DaemonCommand.DebugStep,
                     { sessionId: payload.sessionId }
                 );
 
@@ -332,9 +273,9 @@ class PluginDebugSocketModule extends BaseSocketModule {
             }
 
             try {
-                const response = await teamClusterDaemonClient.command<DaemonDebugContinueResponse>(
+                const response = await teamClusterDaemonClient.command<DebugContinueResult>(
                     teamClusterId,
-                    ChannelCommands.DebugContinue,
+                    DaemonCommand.DebugContinue,
                     { sessionId: payload.sessionId }
                 );
 
@@ -368,7 +309,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
             try {
                 await teamClusterDaemonClient.command(
                     entry.teamClusterId,
-                    ChannelCommands.DebugStop,
+                    DaemonCommand.DebugStop,
                     { sessionId: payload.sessionId }
                 );
             } catch {
@@ -395,7 +336,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
     private emitNodeResult(
         socketId: string,
         sessionId: string,
-        result: DaemonDebugNodeResult
+        result: DebugNodeResult
     ): void {
         if (result.status === 'completed') {
             this.emitToSocket(socketId, 'debug:node:completed', {
@@ -439,7 +380,7 @@ class PluginDebugSocketModule extends BaseSocketModule {
 
     private cleanupSessionsForSocket(socketId: string): void {
         for (const [sessionId, entry] of pluginDebugSessionRegistry.unregisterSessionsForSocket(socketId)) {
-            teamClusterDaemonClient.command(entry.teamClusterId, ChannelCommands.DebugStop, { sessionId }).catch(() => {});
+            teamClusterDaemonClient.command(entry.teamClusterId, DaemonCommand.DebugStop, { sessionId }).catch(() => {});
         }
     }
 }

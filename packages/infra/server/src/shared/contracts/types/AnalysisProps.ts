@@ -8,8 +8,6 @@ import type {
     AnalysisStageStatus
 } from '@volt/contracts/modules/analysis/domain';
 
-export type AnalysisStageType = AnalysisStageKind;
-
 export type AnalysisConfig = Record<string, unknown>;
 
 export interface AnalysisExpectedArtifact {
@@ -28,7 +26,7 @@ export interface AnalysisExpectedArtifact {
 export interface AnalysisStage {
     stageKey: string;
     label: string;
-    type: AnalysisStageType;
+    type: AnalysisStageKind;
     status: AnalysisStageStatus;
     timestep?: number;
     pluginId?: string;

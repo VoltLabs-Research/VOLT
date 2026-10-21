@@ -1,8 +1,8 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import DaemonChannelRegistry from '@modules/cluster/services/daemon/DaemonChannelRegistry';
-import type { TeamClusterDaemonSocketChannel } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
+import type { TeamClusterDaemonSocketChannel } from '@voltstack/daemon-cluster-client';
 
 export interface ReleasedDaemonConnection {
     teamClusterId: string;

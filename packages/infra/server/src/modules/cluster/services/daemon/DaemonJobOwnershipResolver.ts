@@ -1,15 +1,12 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import type { TrajectoryLike, TrajectoryStatus } from '@shared/contracts/types/Trajectory';
-import type {
-    DaemonJobCompletionInput,
-    DaemonRasterJobStatusInput
-} from '@modules/cluster/contracts/daemon-job-completion';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import type { AnalysisArtifactStatus as AnalysisArtifactStatusColumn, AnalysisStatus } from '@modules/analysis/contracts/analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import { toTrajectoryLike } from '@modules/trajectory/contracts/trajectory-like';
 import ApplicationError from '@shared/errors/ApplicationError';
+import type { AnalysisJobCompletionEvent, RasterJobStatusEvent } from '@volt/contracts/modules/cluster/daemon-events';
 
 export interface JobTrajectoryContext {
     trajectoryId?: string;
@@ -28,11 +25,11 @@ export interface ResolvedAnalysisOwnership extends ResolvedTrajectoryOwnership {
 }
 
 type AnalysisOwnershipQuery = Pick<
-    DaemonJobCompletionInput,
+    AnalysisJobCompletionEvent,
     'teamClusterId' | 'analysisId' | 'teamId' | 'trajectoryId' | 'timestep'
 >;
 
-type TrajectoryOwnershipQuery = Pick<DaemonRasterJobStatusInput, 'trajectoryId' | 'teamId' | 'timestep'>;
+type TrajectoryOwnershipQuery = Pick<RasterJobStatusEvent, 'trajectoryId' | 'teamId' | 'timestep'>;
 
 class DaemonJobOwnershipResolver {
     async resolveAnalysisOwnership(input: AnalysisOwnershipQuery): Promise<ResolvedAnalysisOwnership> {

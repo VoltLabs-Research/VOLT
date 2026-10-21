@@ -2,59 +2,15 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { encrypt } from '@shared/utilities/crypto';
-import { TeamClusterStatus, type TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
-import type {
-    TeamClusterProps,
-    TeamClusterQueueConcurrencyProps,
-    TeamClusterQueueScopeLimitsProps,
-    TeamClusterRuntimeRoleConfigProps
-} from '@shared/contracts/types/TeamCluster';
+import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY,
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
+    createDefaultTeamClusterRuntimeRoleConfig
+} from '@voltstack/daemon-cluster-client';
+import type { TeamClusterProps } from '@shared/contracts/types/TeamCluster';
 import crypto from 'node:crypto';
 import { isUniqueViolation } from '@shared/persistence/unique-violation';
-
-const createDefaultTeamClusterQueueConcurrency = (): TeamClusterQueueConcurrencyProps => ({
-    analysis: 8,
-    rasterizer: 8,
-    glbPreprocessing: 16,
-    artifactUpload: 16,
-    pluginWarmup: 4
-});
-
-export const createDefaultTeamClusterQueueScopeLimits = (): TeamClusterQueueScopeLimitsProps => ({
-    analysisProcessing: {
-        maxRunningPerTrajectory: 0
-    },
-    artifactUpload: {
-        maxRunningPerTrajectory: 0
-    },
-    trajectoryRasterization: {
-        maxRunningPerTrajectory: 0
-    },
-    trajectoryGlbConversion: {
-        maxRunningPerTrajectory: 0
-    }
-});
-
-export const DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY: TeamClusterQueueConcurrencyProps = createDefaultTeamClusterQueueConcurrency();
-
-export const DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS: TeamClusterQueueScopeLimitsProps = createDefaultTeamClusterQueueScopeLimits();
-
-const DEFAULT_TEAM_CLUSTER_ROLE: TeamClusterRole = 'cluster';
-
-const createDefaultTeamClusterRoleConfig = (
-    role: TeamClusterRole = DEFAULT_TEAM_CLUSTER_ROLE
-): TeamClusterRuntimeRoleConfigProps => {
-    return {
-        desiredRole: role,
-        effectiveRole: role,
-        runtimeVersion: 1,
-        draining: {
-            compute: false,
-            storage: false
-        },
-        lastAppliedAt: null
-    };
-};
 
 interface GeneratedServiceCredentials {
     username: string;
@@ -128,9 +84,9 @@ export const buildTeamClusterProps = (params: {
         lastHeartbeatAt: null,
         lastDisconnectAt: null,
         services: params.services,
-        queueConcurrency: createDefaultTeamClusterQueueConcurrency(),
-        queueScopeLimits: createDefaultTeamClusterQueueScopeLimits(),
-        roleConfig: createDefaultTeamClusterRoleConfig(),
+        queueConcurrency: structuredClone(DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY),
+        queueScopeLimits: structuredClone(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS),
+        roleConfig: createDefaultTeamClusterRuntimeRoleConfig(),
         hostCapabilities: null,
         createdAt: now,
         updatedAt: now

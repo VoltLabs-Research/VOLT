@@ -9,9 +9,9 @@ import {
     resolveAnalysisClusterContext
 } from '@modules/trajectory/services/trajectory/exposure-atom-properties';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import type { ExposureAtomConfig } from '@modules/trajectory/services/trajectory/exposure-atom-properties';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 export interface FilterExpression {
     property: string;
@@ -50,7 +50,7 @@ class AtomPropertiesService {
 
         const rawIndex = await teamClusterDaemonClient.command<Record<string, Record<string, unknown>> | null>(
             context.teamClusterId,
-            ChannelCommands.TrajectoryPluginAtomIndex,
+            DaemonCommand.TrajectoryPluginAtomIndex,
             {
                 trajectoryId,
                 analysisId,
@@ -100,7 +100,7 @@ class AtomPropertiesService {
 
         const result = await teamClusterDaemonClient.command<{ min: number; max: number } | null>(
             context.teamClusterId,
-            ChannelCommands.TrajectoryPluginModifierStats,
+            DaemonCommand.TrajectoryPluginModifierStats,
             {
                 trajectoryId,
                 analysisId,
@@ -127,7 +127,7 @@ class AtomPropertiesService {
 
         const result = await teamClusterDaemonClient.command<Array<number | string> | null>(
             context.teamClusterId,
-            ChannelCommands.TrajectoryPluginModifierUniqueValues,
+            DaemonCommand.TrajectoryPluginModifierUniqueValues,
             {
                 trajectoryId,
                 analysisId,

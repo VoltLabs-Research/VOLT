@@ -1,7 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import eventBus from '@shared/events/PostgresEventBus';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { TrajectoryStatus } from '@shared/contracts/types/Trajectory';
 import ApplicationError from '@shared/errors/ApplicationError';
@@ -12,6 +11,7 @@ import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
 import { TrajectoryCloneJobState } from '@modules/trajectory/contracts/trajectory-clone-job';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const TRAJECTORY_CLONE_QUEUE_TYPE = 'trajectory_clone';
 const CLAIM_TTL_MS = 5 * 60 * 1000;
@@ -183,7 +183,7 @@ class TrajectoryCloneCoordinator{
             copiedBytes: number;
         }>(
             destinationClusterId,
-            ChannelCommands.TrajectoryClone,
+            DaemonCommand.TrajectoryClone,
             {
                 sourceTrajectoryId: initialJob.sourceTrajectoryId,
                 destinationTrajectoryId: initialJob.destinationTrajectoryId,

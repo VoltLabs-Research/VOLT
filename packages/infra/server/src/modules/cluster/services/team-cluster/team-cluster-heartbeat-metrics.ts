@@ -1,9 +1,10 @@
 import type { SystemMetrics, SystemStatus } from '@modules/system/services/SystemMetrics';
-import type { TeamClusterHeartbeatMetricsInput } from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import type { TeamClusterDaemonHeartbeatMetrics } from '@voltstack/daemon-cluster-client';
+
 
 const BYTES_PER_GB = 1024 ** 3;
 
-const resolveSystemStatus = (metrics: TeamClusterHeartbeatMetricsInput): SystemStatus => {
+const resolveSystemStatus = (metrics: TeamClusterDaemonHeartbeatMetrics): SystemStatus => {
     const cpuUsagePercent = metrics.cpuUsagePercent;
     const memoryUsagePercent = metrics.memory.usagePercent;
     const diskUsagePercent = metrics.disk.usagePercent;
@@ -21,7 +22,7 @@ const resolveSystemStatus = (metrics: TeamClusterHeartbeatMetricsInput): SystemS
 
 export const toSystemMetricsFromHeartbeat = (
     teamClusterId: string,
-    metrics: TeamClusterHeartbeatMetricsInput
+    metrics: TeamClusterDaemonHeartbeatMetrics
 ): SystemMetrics => ({
     timestamp: new Date(metrics.timestamp),
     serverId: metrics.hostname,

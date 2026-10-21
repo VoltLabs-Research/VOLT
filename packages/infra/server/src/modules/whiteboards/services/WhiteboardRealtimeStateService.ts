@@ -1,4 +1,3 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 import {
@@ -14,6 +13,7 @@ import type {
     WhiteboardSceneSnapshot
 } from '@modules/whiteboards/contracts/whiteboard';
 import { isSameOrder, orderElementIds, shouldReplaceElement } from '@modules/whiteboards/services/whiteboard-scene-merge';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 type MergeSceneResult =
     | { changed: false; revision: number }
@@ -198,12 +198,12 @@ class WhiteboardRealtimeStateService {
     }
 
     private async readScene(storageClusterId: string, payloadKey: string): Promise<WhiteboardScene> {
-        if (!await objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)) {
+        if (!await objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards, payloadKey)) {
             return EMPTY_WHITEBOARD_SCENE;
         }
 
         try {
-            const buffer = await objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey);
+            const buffer = await objectGatewayClient.getBuffer(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards, payloadKey);
             return JSON.parse(buffer.toString('utf8')) as WhiteboardScene;
         } catch {
             return EMPTY_WHITEBOARD_SCENE;
@@ -229,7 +229,7 @@ class WhiteboardRealtimeStateService {
         const { whiteboardId, ...scene } = this.toSnapshot(room);
         const payload = Buffer.from(JSON.stringify(scene));
         await objectGatewayClient.putBuffer(room.storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
             objectKey: room.payloadKey,
             buffer: payload,
             contentLength: payload.byteLength,

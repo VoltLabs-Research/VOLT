@@ -2,15 +2,13 @@ import type { Plugin } from '@modules/plugin/contracts/plugin';
 import pluginBinaryOwnerResolver from '@modules/plugin/services/plugin/PluginBinaryOwnerResolver';
 import pluginBinarySyncService from '@modules/plugin/services/plugin/PluginBinarySyncService';
 import pluginDispatchEncoder from '@modules/plugin/services/plugin/PluginDispatchEncoder';
-import type { PluginReferenceExecutionRequest } from '@modules/plugin/services/plugin/PluginDependencyResolverService';
-import type { Analysis, AnalysisProps } from '@shared/contracts/types/AnalysisProps';
-import type { PipelineStageKind } from '@volt/contracts/modules/plugin/http';
-
-export interface TrajectoryFramePayload {
-    timestep: number;
-    natoms: number;
-    simulationCell: string;
-}
+import type { Analysis } from '@shared/contracts/types/AnalysisProps';
+import type {
+    TrajectoryFrame,
+    DaemonAnalysisDocument,
+    AnalysisStartTransportRequest,
+    PluginReferenceExecutionRequest
+} from '@volt/contracts/modules/analysis/daemon';
 
 export interface RoutePluginExecutionInput {
     teamClusterId: string;
@@ -19,7 +17,7 @@ export interface RoutePluginExecutionInput {
     pluginDisplayName: string;
     trajectoryId: string;
     trajectoryName: string;
-    trajectoryFrames: TrajectoryFramePayload[];
+    trajectoryFrames: TrajectoryFrame[];
     teamId: string;
     plugin: Plugin;
     pluginDependencies: Plugin[];
@@ -29,50 +27,7 @@ export interface RoutePluginExecutionInput {
     timestep?: number;
 }
 
-type DaemonAnalysisPayload = { _id: string } & Pick<
-    AnalysisProps,
-    'plugin' | 'pluginDisplayName' | 'computeClusterId' | 'storageClusterId' | 'config'
-    | 'trajectory' | 'createdBy' | 'totalFrames' | 'startedAt' | 'finishedAt'
-    | 'team' | 'status' | 'createdAt' | 'updatedAt'
->;
-
-interface PluginDispatchPayload extends Record<string, unknown> {
-    analysis: DaemonAnalysisPayload;
-    analysisId: string;
-    pluginId: string;
-    pluginDisplayName: string;
-    teamId: string;
-    teamClusterId: string;
-    trajectoryId: string;
-    trajectoryFramesCompressed: string;
-    workflowCompressed: string;
-    nestedPluginsCompressed: string;
-    pluginReferenceExecutionsCompressed: string;
-    config: Record<string, unknown>;
-    selectedTimesteps?: number[];
-    timestep?: number;
-}
-
-export interface PipelineStageDispatch {
-    kind: PipelineStageKind;
-    plugin?: PluginDispatchPayload;
-    cacheHit?: boolean;
-    cacheSourceAnalysisId?: string;
-    sharedExposureIds?: string[];
-    config?: Record<string, unknown>;
-}
-
-export interface PipelineDispatchPayload extends Record<string, unknown> {
-    teamId: string;
-    teamClusterId: string;
-    trajectoryId: string;
-    storageClusterId?: string;
-    selectedTimesteps?: number[];
-    timestep?: number;
-    stages: PipelineStageDispatch[];
-}
-
-const serializeAnalysis = (analysis: Analysis): DaemonAnalysisPayload => {
+const serializeAnalysis = (analysis: Analysis): DaemonAnalysisDocument => {
     return {
         _id: analysis._id,
         plugin: analysis.props.plugin,
@@ -115,7 +70,7 @@ const pluginReferenceExecutionKey = (request: PluginReferenceExecutionRequest): 
 
 export const buildPluginDispatch = async (
     input: RoutePluginExecutionInput
-): Promise<{ dispatchPayload: PluginDispatchPayload; syncTasks: Promise<void>[] }> => {
+): Promise<{ dispatchPayload: AnalysisStartTransportRequest; syncTasks: Promise<void>[] }> => {
     const uniqueDependencyPlugins = dedupeBy(input.pluginDependencies, (plugin) => plugin.id);
     const pluginsToSync = dedupeBy([
         input.plugin,

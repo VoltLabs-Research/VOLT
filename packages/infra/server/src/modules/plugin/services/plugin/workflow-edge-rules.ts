@@ -1,67 +1,67 @@
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type { WorkflowTopologyIndex } from '@modules/plugin/services/plugin/WorkflowTopologyIndex';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 
-const BRANCH_CONTINUATION_TARGETS = new Set<WorkflowNodeType>([
-    WorkflowNodeType.Plugin,
-    WorkflowNodeType.Entrypoint,
-    WorkflowNodeType.Exposure,
-    WorkflowNodeType.Export,
-    WorkflowNodeType.IfStatement,
-    WorkflowNodeType.SwitchStatement
+const BRANCH_CONTINUATION_TARGETS = new Set<NodeType>([
+    NodeType.PLUGIN,
+    NodeType.ENTRYPOINT,
+    NodeType.EXPOSURE,
+    NodeType.EXPORT,
+    NodeType.IF_STATEMENT,
+    NodeType.SWITCH_STATEMENT
 ]);
 
-const ALLOWED_EDGE_TARGETS = new Map<WorkflowNodeType, ReadonlySet<WorkflowNodeType>>([
-    [WorkflowNodeType.Modifier, new Set([WorkflowNodeType.Arguments])],
-    [WorkflowNodeType.Arguments, new Set([WorkflowNodeType.Context])],
-    [WorkflowNodeType.Context, new Set([
-        WorkflowNodeType.ForEach,
-        WorkflowNodeType.Entrypoint,
-        WorkflowNodeType.Plugin,
-        WorkflowNodeType.IfStatement,
-        WorkflowNodeType.SwitchStatement
+const ALLOWED_EDGE_TARGETS = new Map<NodeType, ReadonlySet<NodeType>>([
+    [NodeType.MODIFIER, new Set([NodeType.ARGUMENTS])],
+    [NodeType.ARGUMENTS, new Set([NodeType.CONTEXT])],
+    [NodeType.CONTEXT, new Set([
+        NodeType.FOREACH,
+        NodeType.ENTRYPOINT,
+        NodeType.PLUGIN,
+        NodeType.IF_STATEMENT,
+        NodeType.SWITCH_STATEMENT
     ])],
-    [WorkflowNodeType.ForEach, new Set([
-        WorkflowNodeType.Entrypoint,
-        WorkflowNodeType.Plugin,
-        WorkflowNodeType.IfStatement,
-        WorkflowNodeType.SwitchStatement
+    [NodeType.FOREACH, new Set([
+        NodeType.ENTRYPOINT,
+        NodeType.PLUGIN,
+        NodeType.IF_STATEMENT,
+        NodeType.SWITCH_STATEMENT
     ])],
-    [WorkflowNodeType.Entrypoint, new Set([
-        WorkflowNodeType.Exposure,
-        WorkflowNodeType.IfStatement,
-        WorkflowNodeType.SwitchStatement
+    [NodeType.ENTRYPOINT, new Set([
+        NodeType.EXPOSURE,
+        NodeType.IF_STATEMENT,
+        NodeType.SWITCH_STATEMENT
     ])],
-    [WorkflowNodeType.Plugin, new Set([
-        WorkflowNodeType.Plugin,
-        WorkflowNodeType.Entrypoint,
-        WorkflowNodeType.IfStatement,
-        WorkflowNodeType.SwitchStatement
+    [NodeType.PLUGIN, new Set([
+        NodeType.PLUGIN,
+        NodeType.ENTRYPOINT,
+        NodeType.IF_STATEMENT,
+        NodeType.SWITCH_STATEMENT
     ])],
-    [WorkflowNodeType.Exposure, new Set([WorkflowNodeType.Export])],
-    [WorkflowNodeType.Export, new Set()],
-    [WorkflowNodeType.IfStatement, BRANCH_CONTINUATION_TARGETS],
-    [WorkflowNodeType.SwitchCase, BRANCH_CONTINUATION_TARGETS]
+    [NodeType.EXPOSURE, new Set([NodeType.EXPORT])],
+    [NodeType.EXPORT, new Set()],
+    [NodeType.IF_STATEMENT, BRANCH_CONTINUATION_TARGETS],
+    [NodeType.SWITCH_CASE, BRANCH_CONTINUATION_TARGETS]
 ]);
 
-const SWITCH_CASE_TARGETS = new Set<WorkflowNodeType>([
-    WorkflowNodeType.SwitchCase
+const SWITCH_CASE_TARGETS = new Set<NodeType>([
+    NodeType.SWITCH_CASE
 ]);
 
-const NODES_ALLOWING_MULTIPLE_PARENTS = new Set<WorkflowNodeType>([
-    WorkflowNodeType.Modifier,
-    WorkflowNodeType.Arguments,
-    WorkflowNodeType.Context,
-    WorkflowNodeType.ForEach
+const NODES_ALLOWING_MULTIPLE_PARENTS = new Set<NodeType>([
+    NodeType.MODIFIER,
+    NodeType.ARGUMENTS,
+    NodeType.CONTEXT,
+    NodeType.FOREACH
 ]);
 
 const isAllowedEdge = (
-    sourceType: WorkflowNodeType,
-    targetType: WorkflowNodeType,
+    sourceType: NodeType,
+    targetType: NodeType,
     sourceHandle?: string
 ): boolean => {
-    if (sourceType === WorkflowNodeType.SwitchStatement) {
+    if (sourceType === NodeType.SWITCH_STATEMENT) {
         const targets = sourceHandle === 'cases'
             ? SWITCH_CASE_TARGETS
             : BRANCH_CONTINUATION_TARGETS;
@@ -72,7 +72,7 @@ const isAllowedEdge = (
 };
 
 export const validateRuntimeEdgeTopology = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     errors: string[],
     topology: WorkflowTopologyIndex
 ): void => {

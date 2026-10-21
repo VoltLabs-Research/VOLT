@@ -1,10 +1,10 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import TeamCluster from '@modules/cluster/models/TeamCluster';
 import storagePlacementService from '@modules/cluster/services/storage/StoragePlacementService';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 class PluginBinaryOwnerResolver {
     async resolveOwnerClusterId(plugin: Plugin): Promise<string> {
@@ -60,7 +60,7 @@ class PluginBinaryOwnerResolver {
 
     private async binaryExists(ownerClusterId: string, objectKey: string): Promise<boolean> {
         try {
-            await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
+            await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins, objectKey);
             return true;
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {

@@ -1,11 +1,11 @@
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { type TeamClusterRemoteAccessTarget } from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import type {
-    TeamClusterRemoteExplorerEntryView,
-    TeamClusterRemoteExplorerNodeView
-} from '@modules/cluster/services/team-cluster/TeamClusterRemoteAccess';
 import type { TeamClusterReverseChannelStreamAttachment } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import {
+    TeamClusterRemoteAccessTarget,
+    type TeamClusterRemoteExplorerEntry,
+    type TeamClusterRemoteExplorerNode
+} from '@volt/contracts/modules/cluster/domain';
 
 interface RemoteExplorerDaemonRequest {
     teamClusterId: string;
@@ -16,20 +16,20 @@ interface RemoteExplorerDaemonRequest {
 class RemoteExplorerDaemonGateway {
     async listEntries(
         request: RemoteExplorerDaemonRequest
-    ): Promise<TeamClusterRemoteExplorerEntryView[]> {
-        return teamClusterDaemonClient.command<TeamClusterRemoteExplorerEntryView[]>(
+    ): Promise<TeamClusterRemoteExplorerEntry[]> {
+        return teamClusterDaemonClient.command<TeamClusterRemoteExplorerEntry[]>(
             request.teamClusterId,
-            ChannelCommands.RemoteExplorerList,
+            DaemonCommand.RemoteExplorerList,
             this.createPayload(request)
         );
     }
 
     async getNode(
         request: RemoteExplorerDaemonRequest
-    ): Promise<TeamClusterRemoteExplorerNodeView> {
-        return teamClusterDaemonClient.command<TeamClusterRemoteExplorerNodeView>(
+    ): Promise<TeamClusterRemoteExplorerNode> {
+        return teamClusterDaemonClient.command<TeamClusterRemoteExplorerNode>(
             request.teamClusterId,
-            ChannelCommands.RemoteExplorerNode,
+            DaemonCommand.RemoteExplorerNode,
             this.createPayload(request)
         );
     }
@@ -39,7 +39,7 @@ class RemoteExplorerDaemonGateway {
     ): Promise<TeamClusterReverseChannelStreamAttachment> {
         return teamClusterDaemonClient.commandResponseStream(
             request.teamClusterId,
-            ChannelCommands.RemoteExplorerDownload,
+            DaemonCommand.RemoteExplorerDownload,
             this.createPayload(request)
         );
     }

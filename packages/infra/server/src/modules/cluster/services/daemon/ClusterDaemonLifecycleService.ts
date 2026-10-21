@@ -7,17 +7,19 @@ import type {
     TeamClusterInstallManifestView
 } from '@modules/cluster/services/install-manifest/TeamClusterInstallManifest';
 import type { TeamClusterView } from '@modules/cluster/services/team-cluster/TeamClusterView';
-import type {
-    ProcessDaemonJobCompletionInput,
-    ProcessDaemonJobCompletionOutput
-} from '@modules/cluster/contracts/daemon-job-completion';
-import type {
-    ClusterRuntimeDeleteCompletedCommand,
-    ClusterRuntimeHeartbeatCommand,
-    ClusterRuntimeLifecycleCommand
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
+import type { ProcessDaemonJobCompletionOutput } from '@modules/cluster/contracts/daemon-job-completion';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import type {
+    TeamClusterDaemonDeleteCompletedCommand,
+    TeamClusterDaemonHeartbeatCommand,
+    TeamClusterDaemonLifecycleCommand
+} from '@voltstack/daemon-cluster-client';
+import type { DaemonJobEvent } from '@volt/contracts/modules/cluster/daemon-events';
+
+const TEAM_CLUSTER_STATUSES = new Set<string>(Object.values(TeamClusterStatus));
+
+const isTeamClusterStatus = (status: string): status is TeamClusterStatus => TEAM_CLUSTER_STATUSES.has(status);
 
 export interface ProcessHealthcheckInput {
     teamClusterId: string;
@@ -57,7 +59,7 @@ class ClusterDaemonLifecycleService {
         };
     }
 
-    async recordHeartbeat(input: ClusterRuntimeHeartbeatCommand): Promise<{ teamCluster: TeamClusterView }> {
+    async recordHeartbeat(input: TeamClusterDaemonHeartbeatCommand): Promise<{ teamCluster: TeamClusterView }> {
         return {
             teamCluster: await teamClusterLifecycleService.recordHeartbeat({
                 teamClusterId: input.teamClusterId,
@@ -70,7 +72,11 @@ class ClusterDaemonLifecycleService {
         };
     }
 
-    async updateLifecycle(input: ClusterRuntimeLifecycleCommand): Promise<{ teamCluster: TeamClusterView }> {
+    async updateLifecycle(input: TeamClusterDaemonLifecycleCommand): Promise<{ teamCluster: TeamClusterView }> {
+        if (!isTeamClusterStatus(input.status)) {
+            throw ApplicationError.badRequest(ErrorCodes.TEAM_CLUSTER_LIFECYCLE_STATUS_INVALID, `Unknown lifecycle status: ${input.status}`);
+        }
+
         if (input.status === TeamClusterStatus.Connected) {
             throw ApplicationError.badRequest(ErrorCodes.TEAM_CLUSTER_SOCKET_LIFECYCLE_ONLY, 'Connected status is managed by daemon socket registration');
         }
@@ -89,7 +95,7 @@ class ClusterDaemonLifecycleService {
         };
     }
 
-    async completeDeletion(input: ClusterRuntimeDeleteCompletedCommand): Promise<{ success: boolean }> {
+    async completeDeletion(input: TeamClusterDaemonDeleteCompletedCommand): Promise<{ success: boolean }> {
         try {
             await teamClusterLifecycleService.completeDeletion(input.teamClusterId, input.daemonPassword);
         } catch (error: unknown) {
@@ -101,7 +107,7 @@ class ClusterDaemonLifecycleService {
         return { success: true };
     }
 
-    async processDaemonJobCompletion(input: ProcessDaemonJobCompletionInput): Promise<ProcessDaemonJobCompletionOutput> {
+    async processDaemonJobCompletion(input: DaemonJobEvent): Promise<ProcessDaemonJobCompletionOutput> {
         await teamClusterLifecycleService.authenticateDaemonConnection(input.teamClusterId, input.daemonPassword);
 
         switch (input.type) {

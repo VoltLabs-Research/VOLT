@@ -711,6 +711,10 @@ importers:
         version: 5.8.3
 
   packages/shared/contracts:
+    dependencies:
+      '@voltstack/daemon-cluster-client':
+        specifier: workspace:*
+        version: link:../../sdk/daemon-cluster-client
     devDependencies:
       typia:
         specifier: 12.1.1

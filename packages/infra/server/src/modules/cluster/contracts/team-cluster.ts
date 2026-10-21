@@ -1,14 +1,12 @@
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
-import type {
-    TeamClusterEffectiveCapabilitiesProps,
-    TeamClusterProps
-} from '@shared/contracts/types/TeamCluster';
+import type { TeamClusterProps } from '@shared/contracts/types/TeamCluster';
+import type { TeamClusterEffectiveCapabilities } from '@volt/contracts/modules/cluster/domain';
 
 export interface TeamCluster {
     readonly _id: string;
     readonly id: string;
     props: TeamClusterProps;
-    readonly effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
+    readonly effectiveCapabilities: TeamClusterEffectiveCapabilities;
 }
 
 export const toTeamClusterLike = (entity: TeamClusterEntity): TeamCluster => ({

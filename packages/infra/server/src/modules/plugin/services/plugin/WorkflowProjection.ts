@@ -1,14 +1,13 @@
-import {
-    type ArgumentDefinition,
-    type ArgumentVisibilityCondition,
-    type ExportNodeData,
-    type ExposurePanel,
-    type ExposureProperty,
-    type ModifierNodeData,
-    WorkflowNodeType
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type Workflow from '@modules/plugin/models/plugin/workflow/Workflow';
 import crypto from 'node:crypto';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type {
+    IArgumentDefinition,
+    IArgumentVisibilityCondition,
+    IExportData,
+    IModifierData
+} from '@volt/contracts/modules/plugin/workflow';
+import type { IExposurePanel, IExposureProperty } from '@volt/contracts/modules/plugin/exposure';
 
 interface ComputedExposure {
     _id: string;
@@ -17,10 +16,10 @@ interface ComputedExposure {
     results: string;
     icon?: string;
     hasListing: boolean;
-    properties: ExposureProperty[];
-    export: ExportNodeData | null;
-    exportWhen?: ArgumentVisibilityCondition;
-    panel?: ExposurePanel;
+    properties: IExposureProperty[];
+    export: IExportData | null;
+    exportWhen?: IArgumentVisibilityCondition;
+    panel?: IExposurePanel;
 }
 
 interface ListingExposureEntry {
@@ -35,9 +34,9 @@ interface ListingExposuresData {
 }
 
 export interface PluginProjection {
-    modifier: ModifierNodeData | null;
+    modifier: IModifierData | null;
     exposures: ComputedExposure[];
-    arguments: ArgumentDefinition[];
+    arguments: IArgumentDefinition[];
     listingExposures: ListingExposuresData | null;
     producesExposures: string[];
     requiresExposures: string[];
@@ -47,13 +46,13 @@ export default class WorkflowProjectionService {
     static project(workflow: Workflow, pluginId: string): PluginProjection {
         const nodes = workflow.props.nodes;
 
-        const modifierNode = nodes.find((n) => n.type === WorkflowNodeType.Modifier);
+        const modifierNode = nodes.find((n) => n.type === NodeType.MODIFIER);
         const modifier = modifierNode?.data?.modifier ?? null;
 
-        const exposureNodes = nodes.filter((n) => n.type === WorkflowNodeType.Exposure);
+        const exposureNodes = nodes.filter((n) => n.type === NodeType.EXPOSURE);
 
         const exposures: ComputedExposure[] = exposureNodes.map((exposureNode) => {
-            const exportNode = workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
+            const exportNode = workflow.findDescendantByType(exposureNode.id, NodeType.EXPORT);
             const exposure = exposureNode.data.exposure;
 
             return {
@@ -70,8 +69,8 @@ export default class WorkflowProjectionService {
             };
         });
 
-        const argumentsNode = nodes.find((n) => n.type === WorkflowNodeType.Arguments);
-        const args: ArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
+        const argumentsNode = nodes.find((n) => n.type === NodeType.ARGUMENTS);
+        const args: IArgumentDefinition[] = argumentsNode?.data.arguments?.arguments ?? [];
 
         const producesExposures = exposures
             .map((exposure) => exposure.id)
@@ -108,7 +107,7 @@ export default class WorkflowProjectionService {
 }
 
 export const resolvePluginDisplayName = (workflow: Workflow): string => {
-    const modifierNode = workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
+    const modifierNode = workflow.props.nodes.find((node) => node.type === NodeType.MODIFIER);
 
     return modifierNode?.data?.modifier?.name?.trim() ?? '';
 };

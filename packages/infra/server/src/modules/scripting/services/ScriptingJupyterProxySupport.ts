@@ -1,9 +1,8 @@
 import path from 'node:path';
 import type { CookieOptions, Request, Response } from 'express';
-import type { TeamClusterServiceExposure } from '@shared/contracts/types/TeamClusterExposure';
-import { TeamClusterServiceExposureStatus } from '@shared/contracts/types/TeamClusterExposure';
 import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/ScriptingJupyterAccessGrant';
 import { resolveServerBaseUrl } from '@shared/utilities/server-url';
+import { TEAM_CLUSTER_SERVICE_EXPOSURE, type TeamClusterServiceExposure } from '@voltstack/daemon-cluster-client';
 
 interface BuildJupyterProxyUrlInput {
     teamId: string;
@@ -38,7 +37,7 @@ export const findNotebookExposure = (
 
     return {
         exposure,
-        ready: exposure.status === TeamClusterServiceExposureStatus.Active
+        ready: exposure.status === TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Active
     };
 };
 

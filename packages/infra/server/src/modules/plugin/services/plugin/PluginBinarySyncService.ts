@@ -1,19 +1,16 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 import logger from '@shared/logger';
 import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { PluginSyncResult, PluginSyncRequest } from '@volt/contracts/modules/plugin/daemon';
 
 const SYNC_CACHE_TTL_MS = 600_000;
 const SYNC_CACHE_PREFIX = 'plugin-sync:';
-
-interface DaemonPluginSyncResponse {
-    synced: boolean;
-}
 
 class PluginBinarySyncService {
     private readonly inflightSyncs = new Map<string, Promise<void>>();
@@ -50,15 +47,15 @@ class PluginBinarySyncService {
         }
 
         const pendingSync = (async () => {
-            const syncResponse = await teamClusterDaemonClient.command<DaemonPluginSyncResponse>(
+            const syncResponse = await teamClusterDaemonClient.command<PluginSyncResult>(
                 teamClusterId,
-                ChannelCommands.PluginSync,
+                DaemonCommand.PluginSync,
                 {
                     pluginId: plugin.id,
                     objectKey,
                     ownerClusterId,
                     expectedHash
-                },
+                } satisfies PluginSyncRequest,
                 { timeoutClass: 'long-running-control-plane' }
             );
 
@@ -87,7 +84,7 @@ class PluginBinarySyncService {
 
     private async readObjectSha256(ownerClusterId: string, objectKey: string): Promise<string | undefined> {
         try {
-            const objectHead = await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_BUCKETS.PLUGINS, objectKey);
+            const objectHead = await objectGatewayClient.head(ownerClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins, objectKey);
             return objectHead.metadata.sha256 || undefined;
         } catch (error: unknown) {
             if (error instanceof ApplicationError && error.statusCode === 404) {

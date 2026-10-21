@@ -1,20 +1,14 @@
+import { OBJECT_GATEWAY_EXPOSURE_ID } from '@modules/cluster/services/object-gateway/object-gateway-paths';
 import {
+    decodeStreamChunk,
+    type TeamClusterServiceExposureAccessMode,
     TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     type TeamClusterDaemonCommandMessage,
     type TeamClusterDaemonResponseType,
     type TeamClusterDaemonSocketChannel,
     type TeamClusterDaemonSocketHeaders,
     type TeamClusterDaemonTunnelOpenPayload
-} from '@modules/cluster/socket/TeamClusterSocketProtocol';
-import { OBJECT_GATEWAY_EXPOSURE_ID } from '@modules/cluster/services/object-gateway/object-gateway-paths';
-import ApplicationError from '@shared/errors/ApplicationError';
-import type { TeamClusterServiceExposureAccessMode } from '@shared/contracts/types/TeamClusterExposure';
-import {
-    EnvelopeKind,
-    decodeEnvelope,
-    encodeEnvelope,
-    toUint8Array
-} from '@shared/contracts/types/binary-envelope';
+} from '@voltstack/daemon-cluster-client';
 import type { PassThrough } from 'node:stream';
 
 export interface TeamClusterDaemonCommandPayload {
@@ -61,18 +55,9 @@ export interface TeamClusterDaemonInboundStreamPayload {
 
 export type TeamClusterDaemonInboundStreamConsumer = (payload: TeamClusterDaemonInboundStreamPayload) => void | Promise<void>;
 
-export const wrapEnvelopeBuffer = (chunk: Buffer | Uint8Array): Uint8Array => {
-    return encodeEnvelope(0, EnvelopeKind.StreamChunk, chunk);
-};
-
 export const unwrapEnvelopeBuffer = (chunk: Uint8Array): Buffer => {
-    const decoded = decodeEnvelope(toUint8Array(chunk));
-    if (decoded.kind !== EnvelopeKind.StreamChunk) {
-        throw ApplicationError.internalServerError(
-            `Unexpected reverse channel envelope kind: ${decoded.kind}`
-        );
-    }
-    return Buffer.from(decoded.payload.buffer, decoded.payload.byteOffset, decoded.payload.byteLength);
+    const payload = decodeStreamChunk(chunk);
+    return Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength);
 };
 
 export const createCommandMessage = (

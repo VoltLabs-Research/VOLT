@@ -1,5 +1,5 @@
 import type { BaseEntity } from '../../shared/base';
-import type { TeamClusterRole } from '../cluster/domain';
+import type { TeamClusterRuntimeRoleConfig } from '../cluster/domain';
 import type { IWorkflow, IModifierData } from './workflow';
 import type { PipelineRunStage } from './pipeline-run';
 import type { PluginStatus } from './enums';
@@ -23,10 +23,7 @@ export interface Plugin extends BaseEntity{
 export interface PluginTeamClusterOption{
     _id: string;
     name: string;
-    roleConfig?: {
-        desiredRole: TeamClusterRole;
-        effectiveRole: TeamClusterRole;
-    };
+    roleConfig?: Pick<TeamClusterRuntimeRoleConfig, 'desiredRole' | 'effectiveRole'>;
 }
 
 export interface CreatePluginResponse{

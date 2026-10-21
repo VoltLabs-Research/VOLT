@@ -1,4 +1,4 @@
-import type { NotebookContainerStage, ScriptingSessionJupyter } from '@volt/contracts/modules/scripting/domain';
+import type { ScriptingSessionJupyter } from '@volt/contracts/modules/scripting/domain';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
@@ -7,7 +7,11 @@ import type { ScriptingJupyterAccessGrant } from '@modules/scripting/services/Sc
 import notebookRuntimeTerminator from '@modules/scripting/services/NotebookRuntimeTerminator';
 import { buildJupyterProxyBasePath, buildJupyterProxyUrl } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { resolveServerBaseUrl } from '@shared/utilities/server-url';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    CreateNotebookSessionRequest,
+    CreateNotebookSessionResponse
+} from '@volt/contracts/modules/scripting/daemon';
 
 export interface ScriptingSessionNotebookInput {
     notebookPath: string;
@@ -30,34 +34,6 @@ interface ScriptingSessionStartResult {
     accessGrant: ScriptingJupyterAccessGrant;
 }
 
-interface DaemonNotebookJupyterResponse {
-    internalPath: string;
-    ready: boolean;
-    containerStage?: NotebookContainerStage;
-}
-
-interface DaemonNotebookSessionResponse {
-    jupyter: DaemonNotebookJupyterResponse;
-}
-
-interface DaemonNotebookSessionSnapshot {
-    [key: string]: unknown;
-    _id: string;
-    teamId: string;
-    notebookPath: string;
-    content?: Record<string, unknown>;
-}
-
-interface DaemonNotebookSessionRequest {
-    [key: string]: unknown;
-    requestedBy: string;
-    publicBasePath: string;
-    baseUrl: string;
-    secretKey?: string;
-    trajectoryId?: string;
-    notebook: DaemonNotebookSessionSnapshot;
-}
-
 const NOTEBOOK_SESSION_CREATE_TIMEOUT_MS = 600_000;
 
 class DaemonScriptingSessionOrchestrator {
@@ -65,7 +41,7 @@ class DaemonScriptingSessionOrchestrator {
 
     async startSession(input: ScriptingSessionStartInput): Promise<ScriptingSessionStartResult> {
         const runtimeNotebookId = input.notebookId;
-        const request: DaemonNotebookSessionRequest = {
+        const request: CreateNotebookSessionRequest = {
             requestedBy: input.userId,
             publicBasePath: buildJupyterProxyBasePath(input.teamId, runtimeNotebookId),
             baseUrl: `${resolveServerBaseUrl()}/api`,
@@ -79,9 +55,9 @@ class DaemonScriptingSessionOrchestrator {
             }
         };
 
-        const response = await teamClusterDaemonClient.command<DaemonNotebookSessionResponse>(
+        const response = await teamClusterDaemonClient.command<CreateNotebookSessionResponse>(
             input.teamClusterId,
-            ChannelCommands.NotebookSessionCreate,
+            DaemonCommand.NotebookSessionCreate,
             request,
             { timeoutMs: NOTEBOOK_SESSION_CREATE_TIMEOUT_MS }
         );

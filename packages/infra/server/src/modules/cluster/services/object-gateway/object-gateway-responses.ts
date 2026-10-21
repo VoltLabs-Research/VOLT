@@ -1,30 +1,15 @@
 
-import { TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX } from '@shared/contracts/types/TeamClusterObjectGateway';
 import type { IncomingHttpHeaders } from 'node:http';
 import type { Readable as NodeReadable } from 'node:stream';
 import type {
     TeamClusterObjectGatewayHeadResponse,
     TeamClusterObjectGatewayListEntry
 } from '@shared/contracts/types/TeamClusterObjectGateway';
+import {
+    type TeamClusterObjectGatewayJsonListEntry,
+    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX
+} from '@voltstack/daemon-cluster-client';
 
-
-export interface ObjectGatewayJsonListEntry {
-    key: string;
-    contentLength?: number;
-    etag?: string;
-    lastModified?: string;
-}
-
-export interface ObjectGatewayJsonListResponse {
-    keys: string[];
-    objects: ObjectGatewayJsonListEntry[];
-    nextCursor?: string;
-}
-
-export interface ObjectGatewayJsonError {
-    code?: string;
-    message?: string;
-}
 
 export interface RawHttpResponse {
     statusCode: number;
@@ -89,7 +74,7 @@ export const parseHeadResponse = (headers: Headers): TeamClusterObjectGatewayHea
     };
 };
 
-export const parseListEntry = (entry: ObjectGatewayJsonListEntry): TeamClusterObjectGatewayListEntry => ({
+export const parseListEntry = (entry: TeamClusterObjectGatewayJsonListEntry): TeamClusterObjectGatewayListEntry => ({
     key: entry.key,
     contentLength: entry.contentLength,
     etag: entry.etag,

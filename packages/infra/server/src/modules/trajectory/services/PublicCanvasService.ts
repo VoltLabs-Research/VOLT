@@ -19,7 +19,11 @@ import {
     ANALYSIS_LIST_MAX_LIMIT,
     findAnalyses
 } from '@modules/trajectory/services/trajectory/TrajectoryQueries';
-import { getTrajectoryFrames, readTrajectoryPreview } from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import {
+    getTrajectoryFrames,
+    readTrajectoryPreview,
+    toFlatTrajectoryFrame
+} from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import { createPreviewOutput } from '@modules/trajectory/services/trajectory/TrajectoryPreviewService';
 import { buildTrajectoryGlbObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 
@@ -382,13 +386,7 @@ class PublicCanvasService{
             isPublic: trajectory.isPublic,
             teamId: trajectory.team,
             analysisIds: [],
-            frames: frames.map((frame) => ({
-                timestep: frame.timestep,
-                natoms: frame.natoms,
-                simulationCell: (typeof frame.simulationCell === 'string'
-                    ? frame.simulationCell
-                    : frame.simulationCell?._id) ?? ''
-            }))
+            frames: frames.map(toFlatTrajectoryFrame)
         };
     }
 }

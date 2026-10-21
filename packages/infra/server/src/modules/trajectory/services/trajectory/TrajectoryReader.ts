@@ -1,8 +1,6 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import TrajectoryFrame from '@modules/trajectory/models/TrajectoryFrame';
 import type SimulationCell from '@modules/simulation-cell/models/SimulationCell';
 import trajectoryNativeDaemonService from '@modules/trajectory/services/native/TrajectoryNativeDaemonService';
-import type { AtomPageResult } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import type { TrajectoryPreviewResult } from '@modules/trajectory/services/TrajectoryServiceTypes';
 import { buildTrajectoryDumpObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 import { getTrajectoryRasterPreviewsPrefix } from '@shared/utilities/raster-storage-paths';
@@ -13,6 +11,9 @@ import type {
     TrajectoryFrame as TrajectoryFrameView,
     TrajectoryFrameSimulationCellEmbed
 } from '@shared/contracts/types/Trajectory';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import type { TrajectoryFrame as DaemonTrajectoryFrame } from '@volt/contracts/modules/analysis/daemon';
+import type { NativeAtomsPage } from '@volt/contracts/modules/trajectory/daemon';
 
 interface ReadTrajectoryPreviewInput{
     trajectoryId: string;
@@ -30,7 +31,7 @@ const firstSortedPreviewKey = async (
     const keys: string[] = [];
 
     for await (const key of objectGatewayClient.listAll(teamClusterId, {
-        bucket: TEAM_CLUSTER_BUCKETS.RASTERIZER,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Rasterizer,
         prefix
     })){
         if(key.endsWith('.png')){
@@ -76,7 +77,7 @@ export const readTrajectoryPreview = async (
     try{
         const buffer = await input.objectGatewayClient.getBuffer(
             input.storageClusterId,
-            TEAM_CLUSTER_BUCKETS.RASTERIZER,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Rasterizer,
             previewKey
         );
 
@@ -85,6 +86,15 @@ export const readTrajectoryPreview = async (
         return null;
     }
 };
+
+// Frame with its simulation cell referenced by id, as the daemon and public canvases read it.
+export const toFlatTrajectoryFrame = (frame: TrajectoryFrameView): DaemonTrajectoryFrame => ({
+    timestep: frame.timestep,
+    natoms: frame.natoms,
+    simulationCell: (typeof frame.simulationCell === 'string'
+        ? frame.simulationCell
+        : frame.simulationCell?._id) ?? ''
+});
 
 export const getTrajectoryFrames = async (trajectoryId: string): Promise<TrajectoryFrameView[]> => {
     const frames = await TrajectoryFrame.find({
@@ -104,7 +114,7 @@ export const readAtomsPage = async (
     limit: number,
     analysisId?: string,
     ownerClusterId?: string
-): Promise<AtomPageResult> => trajectoryNativeDaemonService.getAtomsPage({
+): Promise<NativeAtomsPage> => trajectoryNativeDaemonService.getAtomsPage({
     teamClusterId,
     trajectoryId,
     timestep,

@@ -1,9 +1,3 @@
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import {
-    PluginNodeExecutionMode,
-    WorkflowNodeType,
-    type WorkflowNode
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import {
     containsPluginReferenceArgument,
     readArgumentDefinitions
@@ -12,19 +6,21 @@ import {
     hasAncestorOfType,
     type WorkflowTopologyIndex
 } from '@modules/plugin/services/plugin/WorkflowTopologyIndex';
+import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowNode, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
-const RUNTIME_REACHABLE_ANCESTORS = new Set<WorkflowNodeType>([
-    WorkflowNodeType.Context,
-    WorkflowNodeType.ForEach
+const RUNTIME_REACHABLE_ANCESTORS = new Set<NodeType>([
+    NodeType.CONTEXT,
+    NodeType.FOREACH
 ]);
 
 export const validateIfStatementTopology = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     errors: string[],
     topology: WorkflowTopologyIndex
 ): void => {
     for (const node of workflow.nodes) {
-        if (node.type !== WorkflowNodeType.IfStatement) {
+        if (node.type !== NodeType.IF_STATEMENT) {
             continue;
         }
 
@@ -41,14 +37,14 @@ export const validateIfStatementTopology = (
 };
 
 export const validateSwitchStatementTopology = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     errors: string[],
     topology: WorkflowTopologyIndex
 ): void => {
     const { nodeMap, parentsByTarget, childrenBySource } = topology;
 
     for (const node of workflow.nodes) {
-        if (node.type !== WorkflowNodeType.SwitchStatement) {
+        if (node.type !== NodeType.SWITCH_STATEMENT) {
             continue;
         }
 
@@ -64,8 +60,8 @@ export const validateSwitchStatementTopology = (
 
         const caseNodes = caseEdges
             .map((edge) => nodeMap.get(edge.target))
-            .filter((candidate): candidate is WorkflowNode => Boolean(candidate));
-        if (caseNodes.some((candidate) => candidate.type !== WorkflowNodeType.SwitchCase)) {
+            .filter((candidate): candidate is IWorkflowNode => Boolean(candidate));
+        if (caseNodes.some((candidate) => candidate.type !== NodeType.SWITCH_CASE)) {
             errors.push(`Switch statement ${node.id} can only connect its "cases" handle to switch case nodes`);
         }
 
@@ -76,7 +72,7 @@ export const validateSwitchStatementTopology = (
     }
 
     for (const node of workflow.nodes) {
-        if (node.type !== WorkflowNodeType.SwitchCase) {
+        if (node.type !== NodeType.SWITCH_CASE) {
             continue;
         }
 
@@ -87,21 +83,21 @@ export const validateSwitchStatementTopology = (
         }
 
         const parentNode = nodeMap.get(parentEdges[0].source);
-        if (parentNode?.type !== WorkflowNodeType.SwitchStatement || parentEdges[0].sourceHandle !== 'cases') {
+        if (parentNode?.type !== NodeType.SWITCH_STATEMENT || parentEdges[0].sourceHandle !== 'cases') {
             errors.push(`Switch case ${node.id} must be connected from a switch statement "cases" handle`);
         }
     }
 };
 
 export const validatePluginNodeTopology = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     errors: string[],
     topology: WorkflowTopologyIndex
 ): void => {
     const argumentsDefinitions = readArgumentDefinitions(workflow);
 
     for (const node of workflow.nodes) {
-        if (node.type !== WorkflowNodeType.Plugin) {
+        if (node.type !== NodeType.PLUGIN) {
             continue;
         }
 
@@ -110,14 +106,14 @@ export const validatePluginNodeTopology = (
         const argumentReference = pluginNodeData?.argumentReference?.trim() ?? '';
         const executionMode = pluginNodeData?.executionMode
             ?? (!pluginId && argumentReference
-                ? PluginNodeExecutionMode.ArgumentReference
-                : PluginNodeExecutionMode.Manual);
+                ? PluginNodeExecutionMode.ARGUMENT_REFERENCE
+                : PluginNodeExecutionMode.MANUAL);
 
-        if (executionMode === PluginNodeExecutionMode.Manual && !pluginId) {
+        if (executionMode === PluginNodeExecutionMode.MANUAL && !pluginId) {
             errors.push(`Plugin node ${node.id} must reference a published plugin`);
         }
 
-        if (executionMode === PluginNodeExecutionMode.ArgumentReference) {
+        if (executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE) {
             if (!argumentReference) {
                 errors.push(`Plugin node ${node.id} must define an arguments reference`);
             } else {
@@ -140,11 +136,11 @@ export const validatePluginNodeTopology = (
 };
 
 export const validateEntrypointTopology = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     errors: string[],
     topology: WorkflowTopologyIndex
 ): void => {
-    const entrypointNodes = workflow.nodes.filter((node) => node.type === WorkflowNodeType.Entrypoint);
+    const entrypointNodes = workflow.nodes.filter((node) => node.type === NodeType.ENTRYPOINT);
     if (entrypointNodes.length !== 1) {
         errors.push('Workflow must have exactly one top-level entrypoint');
         return;

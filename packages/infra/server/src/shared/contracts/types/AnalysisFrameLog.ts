@@ -1,8 +1,8 @@
-import type { TeamClusterDaemonExecutionLogSegment } from '@shared/contracts/types/TeamClusterExposure';
+import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
 
 export type AnalysisFrameLogStatus = 'pending' | 'running' | 'completed' | 'failed';
 
-export type AnalysisExecutionLogSegment = TeamClusterDaemonExecutionLogSegment;
+export type AnalysisExecutionLogSegment = ExecutionLogSegment;
 
 export interface AnalysisFrameLogSnapshot {
     analysisId: string;

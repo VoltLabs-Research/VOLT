@@ -59,7 +59,11 @@ export interface TrajectoryFolder extends BaseEntity{
     stats?: TrajectoryStats;
 }
 
-export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
+export const SCENE_ARTIFACT_SOURCE_TYPES = ['color-coding', 'particle-filter', 'plugin-exposure'] as const;
+export type SceneArtifactSourceType = typeof SCENE_ARTIFACT_SOURCE_TYPES[number];
+
+export const SCENE_ARTIFACT_STATUSES = ['ready', 'failed'] as const;
+export type SceneArtifactStatus = typeof SCENE_ARTIFACT_STATUSES[number];
 
 export interface SceneArtifactParticleFilterPropertyCondition{
     kind?: 'property';
@@ -78,6 +82,8 @@ export interface SceneArtifactParams{
     value?: number | string;
     action?: 'delete' | 'highlight';
     exposureId?: string;
+    // Position of the artifact when an exposure exports an array of entries.
+    arrayIndex?: number;
     combinator?: 'AND' | 'OR';
     conditions?: SceneArtifactParticleFilterPropertyCondition[];
     style?: Record<string, unknown>;
@@ -109,7 +115,7 @@ export interface SceneArtifact extends BaseEntity{
     storageBucket: string;
     params: SceneArtifactParams;
     displayName: string;
-    status: 'ready' | 'failed';
+    status: SceneArtifactStatus;
     metadata?: Record<string, unknown>;
 }
 

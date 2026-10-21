@@ -1,24 +1,8 @@
-
-
-import { assertWireMatch } from '@shared/contracts/assert-wire-match';
-import type { Equal } from '@shared/contracts/assert-wire-match';
 import type {
     SceneArtifactParams,
-    SceneArtifactSourceType as WireSceneArtifactSourceType
+    SceneArtifactSourceType,
+    SceneArtifactStatus
 } from '@volt/contracts/modules/trajectory/domain';
-
-export enum SceneArtifactSourceType {
-    ColorCoding = 'color-coding',
-    ParticleFilter = 'particle-filter',
-    PluginExposure = 'plugin-exposure'
-}
-
-assertWireMatch<Equal<`${SceneArtifactSourceType}`, WireSceneArtifactSourceType>>();
-
-export enum SceneArtifactStatus {
-    Ready = 'ready',
-    Failed = 'failed'
-}
 
 export interface SceneArtifactProps {
     trajectory: string;

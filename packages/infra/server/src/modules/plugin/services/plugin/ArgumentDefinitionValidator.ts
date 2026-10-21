@@ -1,20 +1,20 @@
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import {
-    ArgumentType,
-    ArgumentVisibilityOperators,
-    WorkflowNodeType,
-    type ArgumentDefinition,
-    type ArgumentVisibilityCondition
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import { ArgumentType, NodeType, ArgumentVisibilityOperator } from '@volt/contracts/modules/plugin/enums';
+import type {
+    IArgumentDefinition,
+    IArgumentVisibilityCondition,
+    IWorkflow
+} from '@volt/contracts/modules/plugin/workflow';
 
-export const readArgumentDefinitions = (workflow: WorkflowProps): ArgumentDefinition[] => {
-    const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+const ARGUMENT_VISIBILITY_OPERATORS = new Set<string>(Object.values(ArgumentVisibilityOperator));
+
+export const readArgumentDefinitions = (workflow: IWorkflow): IArgumentDefinition[] => {
+    const argumentsNode = workflow.nodes.find((node) => node.type === NodeType.ARGUMENTS);
     return Array.isArray(argumentsNode?.data.arguments?.arguments)
         ? argumentsNode.data.arguments.arguments
         : [];
 };
 
-export const containsPluginReferenceArgument = (definition: ArgumentDefinition): boolean => {
+export const containsPluginReferenceArgument = (definition: IArgumentDefinition): boolean => {
     if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
         return true;
     }
@@ -27,8 +27,8 @@ export const containsPluginReferenceArgument = (definition: ArgumentDefinition):
 };
 
 const validateArgumentCondition = (
-    condition: ArgumentVisibilityCondition,
-    definitions: ArgumentDefinition[],
+    condition: IArgumentVisibilityCondition,
+    definitions: IArgumentDefinition[],
     scope: string,
     field: string,
     errors: string[],
@@ -43,7 +43,7 @@ const validateArgumentCondition = (
         errors.push(`${scope} references unknown ${field} argument "${controllingArgument}"`);
     }
 
-    if (!ArgumentVisibilityOperators.includes(condition.operator)) {
+    if (!ARGUMENT_VISIBILITY_OPERATORS.has(condition.operator)) {
         errors.push(`${scope} uses unsupported ${field} operator "${condition.operator}"`);
     }
 
@@ -63,13 +63,13 @@ const validateArgumentCondition = (
 };
 
 export const validateExposureExportConditions = (
-    workflow: WorkflowProps,
+    workflow: IWorkflow,
     errors: string[]
 ): void => {
     const definitions = readArgumentDefinitions(workflow);
 
     for (const node of workflow.nodes) {
-        if (node.type !== WorkflowNodeType.Exposure) {
+        if (node.type !== NodeType.EXPOSURE) {
             continue;
         }
 
@@ -83,8 +83,8 @@ export const validateExposureExportConditions = (
 };
 
 const validateVisibilityCondition = (
-    definition: ArgumentDefinition,
-    definitions: ArgumentDefinition[],
+    definition: IArgumentDefinition,
+    definitions: IArgumentDefinition[],
     argumentScope: string,
     errors: string[]
 ): void => {
@@ -104,8 +104,8 @@ const validateVisibilityCondition = (
 };
 
 const validatePluginReferenceMappings = (
-    definition: ArgumentDefinition,
-    definitions: ArgumentDefinition[],
+    definition: IArgumentDefinition,
+    definitions: IArgumentDefinition[],
     argumentScope: string,
     errors: string[]
 ): void => {
@@ -143,9 +143,9 @@ const validatePluginReferenceMappings = (
 };
 
 const validateOptionSources = (
-    definition: ArgumentDefinition,
-    definitions: ArgumentDefinition[],
-    rootDefinitions: ArgumentDefinition[],
+    definition: IArgumentDefinition,
+    definitions: IArgumentDefinition[],
+    rootDefinitions: IArgumentDefinition[],
     argumentScope: string,
     errors: string[]
 ): void => {
@@ -196,10 +196,10 @@ const validateOptionSources = (
 };
 
 export const validateArgumentDefinitions = (
-    definitions: ArgumentDefinition[],
+    definitions: IArgumentDefinition[],
     errors: string[],
     scope = 'arguments',
-    rootDefinitions: ArgumentDefinition[] = definitions
+    rootDefinitions: IArgumentDefinition[] = definitions
 ): void => {
     for (const definition of definitions) {
         const argumentKey = definition.argument?.trim() || '<unnamed>';

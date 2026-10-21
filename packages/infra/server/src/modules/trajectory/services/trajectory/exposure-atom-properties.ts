@@ -5,11 +5,11 @@ import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/Team
 import { toAnalysisLike } from '@modules/analysis/services/AnalysisQueries';
 import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
-import { WorkflowNodeType } from '@shared/contracts/types/Plugin';
 
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import type { PluginLike, WorkflowNodeLike } from '@shared/contracts/types/Plugin';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 
 const SHARED_ONLY_RESULTS_SUFFIX = 'neighbor_lattice.parquet';
 
@@ -81,7 +81,7 @@ export const requireAnalysisExposureContext = async (analysisId: string): Promis
 
 export const getExposureNodes = (plugin: PluginLike): WorkflowNodeLike[] => (
     plugin.props.workflow.props.nodes.filter((node) => (
-        node.type === WorkflowNodeType.Exposure
+        node.type === NodeType.EXPOSURE
         && !node.data?.exposure?.results?.endsWith(SHARED_ONLY_RESULTS_SUFFIX)
     ))
 );
@@ -126,7 +126,7 @@ const getPerAtomPropertySchemas = async (
     try {
         const schemas = await teamClusterDaemonClient.command<PerAtomPropertySchema[]>(
             context.teamClusterId,
-            ChannelCommands.TrajectoryPluginPropertySchema,
+            DaemonCommand.TrajectoryPluginPropertySchema,
             toPropertyDiscoveryBody(analysisId, context, exposureId, timestep)
         );
 
@@ -138,7 +138,7 @@ const getPerAtomPropertySchemas = async (
 
     const propertyNames = await teamClusterDaemonClient.command<string[]>(
         context.teamClusterId,
-        ChannelCommands.TrajectoryPluginPropertyNames,
+        DaemonCommand.TrajectoryPluginPropertyNames,
         toPropertyDiscoveryBody(analysisId, context, exposureId, timestep)
     );
 

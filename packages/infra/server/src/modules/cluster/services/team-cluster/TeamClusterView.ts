@@ -1,21 +1,21 @@
-import type { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import type {
-    TeamClusterEffectiveCapabilitiesProps,
-    TeamClusterHostCapabilitiesProps,
-    TeamClusterQueueConcurrencyProps,
-    TeamClusterQueueScopeLimitsProps,
-    TeamClusterRuntimeRoleConfigProps,
-    TeamClusterServiceProps
-} from '@shared/contracts/types/TeamCluster';
+    TeamClusterStatus,
+    TeamClusterEffectiveCapabilities,
+    TeamClusterHostCapabilities,
+    TeamClusterQueueConcurrency,
+    TeamClusterQueueScopeLimits,
+    TeamClusterRuntimeRoleConfig
+} from '@volt/contracts/modules/cluster/domain';
+import type { TeamClusterServiceProps } from '@shared/contracts/types/TeamCluster';
 import { toTeamClusterLike, type TeamCluster } from '@modules/cluster/contracts/team-cluster';
 import {
     toClusterTransferJobLike,
     type ClusterTransferJob,
     type ClusterTransferJobProps
 } from '@modules/cluster/contracts/cluster-transfer-job';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@modules/cluster/services/team-cluster/TeamClusterFactory';
 import type TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import type ClusterTransferJobEntity from '@modules/cluster/models/ClusterTransferJob';
+import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS } from '@voltstack/daemon-cluster-client';
 
 export interface ClusterTransferJobView extends ClusterTransferJobProps {
     _id: string;
@@ -43,11 +43,11 @@ export interface TeamClusterView {
     lastHeartbeatAt: Date | null;
     lastDisconnectAt: Date | null;
     services: TeamClusterServicesView;
-    queueConcurrency: TeamClusterQueueConcurrencyProps;
-    queueScopeLimits: TeamClusterQueueScopeLimitsProps;
-    roleConfig: TeamClusterRuntimeRoleConfigProps;
-    effectiveCapabilities: TeamClusterEffectiveCapabilitiesProps;
-    hostCapabilities: TeamClusterHostCapabilitiesProps | null;
+    queueConcurrency: TeamClusterQueueConcurrency;
+    queueScopeLimits: TeamClusterQueueScopeLimits;
+    roleConfig: TeamClusterRuntimeRoleConfig;
+    effectiveCapabilities: TeamClusterEffectiveCapabilities;
+    hostCapabilities: TeamClusterHostCapabilities | null;
     activeTransfers?: ClusterTransferJobView[];
     createdAt: Date;
     updatedAt: Date;

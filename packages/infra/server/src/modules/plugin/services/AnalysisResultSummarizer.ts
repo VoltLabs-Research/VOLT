@@ -16,9 +16,9 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
 import AnalysisEntity from '@modules/analysis/models/Analysis';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
-import { ChannelCommands } from '@shared/contracts/types/team-cluster-daemon-channel';
 
 import { DAEMON_PAGE_SIZE } from '@modules/plugin/services/plugin/listing-constants';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 const DEFAULT_MAX_ROWS = 50_000;
 const HARD_MAX_ROWS = 200_000;
 const TOP_VALUES_LIMIT = 5;
@@ -139,7 +139,7 @@ class AnalysisResultSummarizer{
         do {
             const daemonResult = await teamClusterDaemonClient.command<DaemonPaginatedResult>(
                 teamClusterId,
-                ChannelCommands.PluginListingsList,
+                DaemonCommand.PluginListingsList,
                 {
                     analysisId,
                     page,

@@ -1,6 +1,3 @@
-import type {
-    ClusterArchiveInlineEntry
-} from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 import { toCsvContent } from '@shared/http/responses/ExportFileResponse';
 import {
     createDownloadStreamResponse,
@@ -20,6 +17,7 @@ import type {
 import { LISTING_COLUMNS } from '@modules/plugin/services/listing-row/ListingTableAggregation';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
+import type { ArchiveInlineEntry } from '@volt/contracts/modules/cluster/daemon-archive';
 
 const titleCaseName = (name: string): string => {
     return name
@@ -46,7 +44,7 @@ class ListingRowsExportService {
     private createConfigCsvEntry(
         analysisId: string,
         config: Record<string, unknown>
-    ): ClusterArchiveInlineEntry {
+    ): ArchiveInlineEntry {
         const rows = Object.entries(config).map(([key, value]) => ({
             Key: key,
             Value: String(value)
@@ -63,7 +61,7 @@ class ListingRowsExportService {
     private createListingCsvEntry(
         analysisId: string,
         listing: AnalysisListingExportData
-    ): ClusterArchiveInlineEntry {
+    ): ArchiveInlineEntry {
         const listingName = sanitizeDownloadName(listing.listingName, 'listing');
         const csvName = `${this.rootDir(analysisId)}/${listingName}.csv`;
         const csvContent = toCsvContent(listing.rows, listing.columns);
@@ -78,7 +76,7 @@ class ListingRowsExportService {
     private createSubListingCsvEntry(
         analysisId: string,
         subListing: AnalysisSubListingExportData
-    ): ClusterArchiveInlineEntry {
+    ): ArchiveInlineEntry {
         const exposureName = sanitizeDownloadName(subListing.exposureName, subListing.exposureId || 'exposure');
         const subListingName = titleCaseName(sanitizeDownloadName(subListing.subListingName, 'sub-listing'));
         const csvName = `${this.rootDir(analysisId)}/TS-${subListing.timestep}/${exposureName}/${subListingName}.csv`;
@@ -91,8 +89,8 @@ class ListingRowsExportService {
         };
     }
 
-    private buildArchiveEntries(payload: ExportListingRowsByAnalysisIdOutput): ClusterArchiveInlineEntry[] {
-        const entries: ClusterArchiveInlineEntry[] = [];
+    private buildArchiveEntries(payload: ExportListingRowsByAnalysisIdOutput): ArchiveInlineEntry[] {
+        const entries: ArchiveInlineEntry[] = [];
 
         if (payload.config !== undefined) {
             entries.push(this.createConfigCsvEntry(payload.analysisId, payload.config));
@@ -109,7 +107,7 @@ class ListingRowsExportService {
         return entries;
     }
 
-    private presentSingleInlineEntry(payload: ExportListingRowsByAnalysisIdOutput, entry: ClusterArchiveInlineEntry): DownloadStreamOutput {
+    private presentSingleInlineEntry(payload: ExportListingRowsByAnalysisIdOutput, entry: ArchiveInlineEntry): DownloadStreamOutput {
         const filename = entry.name.split('/').pop() || `AnalysisID-${payload.analysisId}.csv`;
 
         return createDownloadStreamResponse({

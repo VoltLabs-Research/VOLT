@@ -12,21 +12,21 @@ import teamClusterLifecycleService from '@modules/cluster/services/team-cluster/
 import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
 import TeamClusterDaemonFrameRouter from '@modules/cluster/socket/TeamClusterDaemonFrameRouter';
 import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTERED_EVENT,
-    TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
-    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
     TEAM_CLUSTER_METRICS_ALL_EVENT,
     TEAM_CLUSTER_METRICS_HISTORY_EVENT,
     TEAM_CLUSTER_SUBSCRIPTION_EVENT,
     getTeamClusterRoom,
     toTeamClusterClientMetrics,
-    type TeamClusterDaemonMessage,
-    type TeamClusterDaemonRegisterPayload,
-    type TeamClusterDaemonSocketChannel
+    type TeamClusterDaemonMessage
 } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import logger from '@shared/logger';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import {
+    DaemonSocketEvent,
+    TEAM_CLUSTER_DAEMON_SOCKET_CHANNEL,
+    type TeamClusterDaemonRegisterPayload,
+    type TeamClusterDaemonSocketChannel
+} from '@voltstack/daemon-cluster-client';
 
 interface SubscribeToTeamClusterSocketPayload {
     teamClusterIds: string[];
@@ -139,7 +139,7 @@ class TeamClusterSocketModule extends BaseSocketModule {
 
         this.on<TeamClusterDaemonRegisterPayload>(
             connection.id,
-            TEAM_CLUSTER_DAEMON_REGISTER_EVENT,
+            DaemonSocketEvent.TeamClusterDaemonRegister,
             async (conn, payload) => {
                 await teamClusterLifecycleService.authenticateDaemonConnection(
                     payload.teamClusterId,
@@ -153,7 +153,7 @@ class TeamClusterSocketModule extends BaseSocketModule {
                 }
 
                 teamClusterReverseChannelService.registerDaemonConnection(conn.id, payload.teamClusterId, channel);
-                this.emitToSocket(conn.id, TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, {
+                this.emitToSocket(conn.id, DaemonSocketEvent.TeamClusterDaemonRegistered, {
                     teamClusterId: payload.teamClusterId,
                     channel
                 });
@@ -162,7 +162,7 @@ class TeamClusterSocketModule extends BaseSocketModule {
 
         this.on<TeamClusterDaemonMessage>(
             connection.id,
-            TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
+            DaemonSocketEvent.TeamClusterDaemonMessage,
             async (_conn, payload) => {
                 if (teamClusterReverseChannelService.isRegisteredDaemonSocket(connection.id)) {
                     if (payload.type === 'command') {

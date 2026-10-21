@@ -1,36 +1,20 @@
-import {
-    type EntrypointNodeData,
-    type WorkflowEdge,
-    type WorkflowNode,
-    WorkflowNodeType
-} from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
-
-interface WorkflowViewport {
-    x: number;
-    y: number;
-    zoom: number;
-}
-
-export interface WorkflowProps {
-    nodes: WorkflowNode[];
-    edges: WorkflowEdge[];
-    viewport?: WorkflowViewport;
-}
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IEntrypointData, IWorkflow, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 export default class Workflow {
     constructor(
         public id: string,
-        public props: WorkflowProps
+        public props: IWorkflow
     ) {}
 
-    get entrypoint(): EntrypointNodeData | undefined {
+    get entrypoint(): IEntrypointData | undefined {
         return this.props.nodes
-            .find((node) => node.type === WorkflowNodeType.Entrypoint)
+            .find((node) => node.type === NodeType.ENTRYPOINT)
             ?.data.entrypoint;
     }
 
-    updateEntrypoint(update: Partial<EntrypointNodeData>) {
-        const entrypointNode = this.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+    updateEntrypoint(update: Partial<IEntrypointData>) {
+        const entrypointNode = this.props.nodes.find((node) => node.type === NodeType.ENTRYPOINT);
         if (!entrypointNode?.data.entrypoint) {
             return;
         }
@@ -41,7 +25,7 @@ export default class Workflow {
         };
     }
 
-    findDescendantByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null {
+    findDescendantByType(nodeId: string, type: NodeType): IWorkflowNode | null {
         const nodeMap = new Map(this.props.nodes.map((node) => [node.id, node]));
         const childAdjacency = new Map<string, string[]>();
         for (const edge of this.props.edges) {

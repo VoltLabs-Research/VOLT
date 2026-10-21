@@ -1,19 +1,14 @@
 import { findPluginsByIds } from '@modules/plugin/services/plugin/PluginQueries';
 import type { Plugin } from '@modules/plugin/contracts/plugin';
-import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
-import { WorkflowNodeType } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
+import { PluginStatus, NodeType } from '@volt/contracts/modules/plugin/enums';
 import { readArgumentDefinitions } from '@modules/plugin/services/plugin/ArgumentDefinitionValidator';
 import {
     collectPluginReferenceValidationTargets,
-    type PluginReferenceExecutionRequest,
     type PluginReferenceValidationTarget
 } from '@modules/plugin/services/plugin/PluginReferenceArguments';
-import {
-    applyPluginReferenceMappings,
-    getPluginModifierKey
-} from '@modules/plugin/services/plugin/plugin-reference-mappings';
-
-export type { PluginReferenceExecutionRequest };
+import { getPluginModifierKey } from '@modules/plugin/services/plugin/plugin-reference-mappings';
+import { applyPluginReferenceMappings } from '@volt/contracts/modules/plugin/arguments';
+import type { PluginReferenceExecutionRequest } from '@volt/contracts/modules/analysis/daemon';
 
 interface PluginDependencyTraversalResult {
     dependencies: Plugin[];
@@ -107,11 +102,23 @@ class PluginDependencyResolverService {
         ).values());
 
         return {
-            executions: targets.map((target) => ({
-                referencePath: target.referencePath,
-                pluginId: target.pluginId,
-                config: applyPluginReferenceMappings(target, pluginsById.get(target.pluginId))
-            })),
+            executions: targets.map((target) => {
+                const referencedPlugin = pluginsById.get(target.pluginId);
+                return {
+                    referencePath: target.referencePath,
+                    pluginId: target.pluginId,
+                    config: applyPluginReferenceMappings(
+                        {
+                            pluginId: target.pluginId,
+                            pluginKey: referencedPlugin ? getPluginModifierKey(referencedPlugin) : '',
+                            config: target.config
+                        },
+                        target.definition,
+                        target.definitions,
+                        target.scopeValues
+                    )
+                };
+            }),
             plugins: validPlugins,
             errors
         };
@@ -147,7 +154,7 @@ class PluginDependencyResolverService {
 
     private getPluginNodeReferences(plugin: Plugin): PluginDependencyReference[] {
         return plugin.props.workflow.props.nodes
-            .filter((node) => node.type === WorkflowNodeType.Plugin)
+            .filter((node) => node.type === NodeType.PLUGIN)
             .map((node) => ({
                 nodeId: node.id,
                 pluginId: node.data.pluginNode?.pluginId?.trim() ?? ''

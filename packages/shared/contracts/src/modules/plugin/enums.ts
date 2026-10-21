@@ -69,7 +69,13 @@ export enum Exporter{
 export enum WorkflowExportType{
     GLB = 'glb',
     CHART_PNG = 'chart-png',
-    PANEL_JSON = 'panel-json'
+    PANEL_JSON = 'panel-json',
+    // Configuration exports name the file format they write.
+    LAMMPS_DUMP = 'lammps-dump',
+    LAMMPS_DATA = 'lammps-data',
+    EXTXYZ = 'extxyz',
+    POSCAR = 'poscar',
+    CIF = 'cif'
 }
 
 export enum ConditionType{

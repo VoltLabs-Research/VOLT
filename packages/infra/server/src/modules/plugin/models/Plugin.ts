@@ -4,9 +4,8 @@ import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import Team from '@modules/team/models/Team';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import type { IListingsWithExposures } from '@volt/contracts/modules/plugin/exposure';
-import type { WorkflowProps } from '@modules/plugin/models/plugin/workflow/Workflow';
-import type { ArgumentDefinition, ModifierNodeData } from '@modules/plugin/models/plugin/workflow/WorkflowTypes';
 import type { PluginExposureProps } from '@modules/plugin/contracts/plugin';
+import type { IArgumentDefinition, IModifierData, IWorkflow } from '@volt/contracts/modules/plugin/workflow';
 
 @Entity('plugins')
 @Index(['team'])
@@ -19,7 +18,7 @@ export default class Plugin extends BaseModel{
     team!: string;
 
     @Column('simple-json')
-    workflow!: WorkflowProps;
+    workflow!: IWorkflow;
 
     @Column({
         type: 'simple-enum',
@@ -32,7 +31,7 @@ export default class Plugin extends BaseModel{
         type: 'simple-json',
         nullable: true
     })
-    modifier!: ModifierNodeData | null;
+    modifier!: IModifierData | null;
 
     @Column({
         type: 'simple-json',
@@ -44,7 +43,7 @@ export default class Plugin extends BaseModel{
         type: 'simple-json',
         default: '[]'
     })
-    arguments!: ArgumentDefinition[];
+    arguments!: IArgumentDefinition[];
 
     @Column({
         type: 'simple-json',

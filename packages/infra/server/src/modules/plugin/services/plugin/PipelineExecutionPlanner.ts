@@ -9,16 +9,13 @@ import pluginStagePlanner from '@modules/plugin/services/plugin/PluginStagePlann
 import { cannotExecute } from '@modules/plugin/services/plugin/plugin-execution-closure';
 import { computeDumpStageHash } from '@modules/plugin/services/plugin/WorkflowProjection';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
-import { getTrajectoryFrames } from '@modules/trajectory/services/trajectory/TrajectoryReader';
+import { getTrajectoryFrames, toFlatTrajectoryFrame } from '@modules/trajectory/services/trajectory/TrajectoryReader';
 import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
 import ApplicationError from '@shared/errors/ApplicationError';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { generateEntityId } from '@shared/persistence/entity-id';
 import logger from '@shared/logger';
-import type {
-    ExecutePipelineInput as WireExecutePipelineInput,
-    ExecutePipelineStageInput
-} from '@volt/contracts/modules/plugin/http';
+import type { ExecutePipelineInput as WireExecutePipelineInput } from '@volt/contracts/modules/plugin/http';
 import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 
@@ -48,13 +45,7 @@ class PipelineExecutionPlanner {
         );
 
         const trajectoryFrames = await getTrajectoryFrames(input.trajectoryId);
-        const trajectoryFramePayloads = trajectoryFrames.map((frame) => ({
-            timestep: frame.timestep,
-            natoms: frame.natoms,
-            simulationCell: (typeof frame.simulationCell === 'string'
-                ? frame.simulationCell
-                : frame.simulationCell?._id) ?? ''
-        }));
+        const trajectoryFramePayloads = trajectoryFrames.map(toFlatTrajectoryFrame);
 
         const selectedTimesteps = input.selectedTimesteps?.length
             ? input.selectedTimesteps

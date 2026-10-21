@@ -1,4 +1,3 @@
-import { TEAM_CLUSTER_BUCKETS } from '@core/config/team-cluster-buckets';
 import { ErrorCodes } from '@core/constants/error-codes';
 import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 import {
@@ -19,6 +18,7 @@ import { IsNull } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
 import { Readable } from 'node:stream';
 import { v4 as uuidv4 } from 'uuid';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const EMPTY_STATE = Buffer.from(JSON.stringify(EMPTY_WHITEBOARD_SCENE));
 
@@ -68,7 +68,7 @@ class WhiteboardService{
         const payloadKey = `${teamId}/${whiteboard.id}/state.json`;
 
         await objectGatewayClient.putBuffer(storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
             objectKey: payloadKey,
             buffer: EMPTY_STATE,
             contentLength: EMPTY_STATE.byteLength,
@@ -139,7 +139,7 @@ class WhiteboardService{
         try{
             await objectGatewayClient.deleteByPrefix(
                 requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId),
-                TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+                TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
                 `${teamId}/${whiteboardId}/`
             );
         }catch{
@@ -167,11 +167,11 @@ class WhiteboardService{
     async getWhiteboardState(teamId: string, whiteboardId: string): Promise<Readable>{
         const { storageClusterId, payloadKey } = await this.#getStorageLocation(teamId, whiteboardId);
 
-        if(!await objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey)){
+        if(!await objectGatewayClient.exists(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards, payloadKey)){
             return Readable.from(EMPTY_STATE);
         }
 
-        const response = await objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_BUCKETS.WHITEBOARDS, payloadKey);
+        const response = await objectGatewayClient.getStream(storageClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards, payloadKey);
         return response.stream;
     }
 
@@ -179,7 +179,7 @@ class WhiteboardService{
         const { whiteboard, storageClusterId, payloadKey } = await this.#getStorageLocation(teamId, whiteboardId);
 
         await objectGatewayClient.putBuffer(storageClusterId, {
-            bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
             objectKey: payloadKey,
             buffer: stateBuffer,
             contentLength: stateBuffer.byteLength,
@@ -200,7 +200,7 @@ class WhiteboardService{
             teamId,
             userId,
             ownerClusterId: requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId),
-            bucket: TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
             objectKey: `${teamId}/${whiteboardId}/assets/${assetId}`,
             resourceKind: 'whiteboard',
             resourceId: whiteboardId,
@@ -220,7 +220,7 @@ class WhiteboardService{
         const storageClusterId = requireWhiteboardStorageClusterId(whiteboard.id, whiteboard.storageClusterId);
         const response = await objectGatewayClient.getStream(
             storageClusterId,
-            TEAM_CLUSTER_BUCKETS.WHITEBOARDS,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
             `${teamId}/${whiteboardId}/assets/${assetId}`
         );
 
