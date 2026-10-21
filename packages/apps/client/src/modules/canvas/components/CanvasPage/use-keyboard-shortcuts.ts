@@ -42,7 +42,6 @@ const useKeyboardShortcuts = ({
     onDownloadAnalyses,
     onStartGuidedTour
 }: UseKeyboardShortcutsParams) => {
-    const setLastTriggered = useKeyboardShortcutsStore((s) => s.setLastTriggered);
     const setShortcutEnabled = useKeyboardShortcutsStore((s) => s.setShortcutEnabled);
     const {
         showWidgets,
@@ -59,7 +58,6 @@ const useKeyboardShortcuts = ({
     }, [onImport, onDownloadAnalyses, onStartGuidedTour, setShortcutEnabled]);
 
     const actionsRef = useRef<Record<string, () => void>>({});
-    const lastTriggeredTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         const getVisibleTimesteps = () => {
@@ -304,34 +302,14 @@ const useKeyboardShortcuts = ({
                         action();
                     }
 
-                    if (lastTriggeredTimeoutRef.current !== null) {
-                        window.clearTimeout(lastTriggeredTimeoutRef.current);
-                    }
-
-                    setLastTriggered({
-                        id,
-                        description: shortcut.description
-                    });
-                    lastTriggeredTimeoutRef.current = window.setTimeout(() => {
-                        setLastTriggered(null);
-                        lastTriggeredTimeoutRef.current = null;
-                    }, 1500);
-
                     return;
                 }
             }
         };
 
         window.addEventListener('keydown', handleKeyDown, { capture: true });
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown, { capture: true });
-            if (lastTriggeredTimeoutRef.current !== null) {
-                window.clearTimeout(lastTriggeredTimeoutRef.current);
-                lastTriggeredTimeoutRef.current = null;
-            }
-            setLastTriggered(null);
-        };
-    }, [setLastTriggered]);
+        return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    }, []);
 };
 
 export default useKeyboardShortcuts;

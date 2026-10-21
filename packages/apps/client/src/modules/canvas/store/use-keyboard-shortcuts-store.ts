@@ -11,20 +11,13 @@ export interface Shortcut {
     enabled?: boolean;
 }
 
-interface ShortcutTriggered {
-    id: string;
-    description: string;
-}
-
 interface KeyboardShortcutsState {
     shortcuts: Map<string, Shortcut>;
     currentScope: ShortcutScope;
-    lastTriggered: ShortcutTriggered | null;
 }
 
 interface KeyboardShortcutsActions {
     setCurrentScope: (scope: ShortcutScope) => void;
-    setLastTriggered: (trigger: ShortcutTriggered | null) => void;
     setShortcutEnabled: (id: string, enabled: boolean) => void;
     reset: () => void;
 }
@@ -225,15 +218,13 @@ const DEFAULT_SHORTCUTS_MAP = new Map(DEFAULT_SHORTCUTS.map((shortcut) => [short
 
 const createInitialState = (): KeyboardShortcutsState => ({
     shortcuts: new Map(DEFAULT_SHORTCUTS_MAP),
-    currentScope: 'global',
-    lastTriggered: null
+    currentScope: 'global'
 });
 
 export const useKeyboardShortcutsStore = create<KeyboardShortcutsState & KeyboardShortcutsActions>((set) => ({
     ...createInitialState(),
 
     setCurrentScope: (scope) => set({ currentScope: scope }),
-    setLastTriggered: (trigger) => set({ lastTriggered: trigger }),
     setShortcutEnabled: (id, enabled) => set((state) => {
         const shortcut = state.shortcuts.get(id);
         if (!shortcut || (shortcut.enabled ?? true) === enabled) {

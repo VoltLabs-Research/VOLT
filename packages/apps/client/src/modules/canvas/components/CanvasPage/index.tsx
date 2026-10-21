@@ -29,7 +29,6 @@ import CanvasBanners from '../CanvasBanners';
 import CommandPalette from '../CommandPalette';
 import ExposureSettingsWidget from '../ExposureSettingsWidget';
 import PreloadingOverlay from '../PreloadingOverlay';
-import ShortcutFeedback from '../ShortcutFeedback';
 import StatusBar from '../StatusBar';
 import TopToolbar from '../TopToolbar';
 import ViewportGrid from '../ViewportGrid';
@@ -376,7 +375,6 @@ const CanvasPage = () => {
                 />
             )}
             <CommandPalette />
-            <ShortcutFeedback />
             <ExposureSettingsWidget />
             <CanvasAnalysisDiscoveryTour
                 enabled={analysisDiscoveryTour.enabled || isGuidedTourRequested}
