@@ -5,7 +5,7 @@ import { NODE_RUNTIME, VoidLogger, createDuckDB } from '@duckdb/duckdb-wasm/dist
 import type { DuckDBConnection as WasmConnection, DuckDBBindings } from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import { Table, Type, vectorFromArray, Float32, Float64, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Utf8, Bool } from 'apache-arrow';
 import type { DataType, Vector } from 'apache-arrow';
-import { installGlobalPackage } from './global-packages';
+import { globalPackageSource, install } from './installs';
 import path from 'path';
 
 export enum DuckDBTypeId {
@@ -22,7 +22,7 @@ let database: Promise<DuckDBBindings> | null = null;
 
 const openDatabase = (): Promise<DuckDBBindings> => {
     database ??= (async () => {
-        const directory = await installGlobalPackage('@duckdb/duckdb-wasm');
+        const directory = await install(globalPackageSource('@duckdb/duckdb-wasm'));
         const bindings = await createDuckDB({
             mvp: { mainModule: path.join(directory, 'dist', 'duckdb-mvp.wasm'), mainWorker: '' },
             eh: { mainModule: path.join(directory, 'dist', 'duckdb-eh.wasm'), mainWorker: '' }

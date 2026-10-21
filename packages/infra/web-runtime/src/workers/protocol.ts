@@ -1,6 +1,5 @@
 import type { FsChannelBuffers } from '../platform/fs/channel';
 import type { PipeBuffers } from '../platform/pipe';
-import type { GlobalPackage } from '../platform/global-packages';
 
 // Messages between a worker and the realm that started it (the host page for a backend, the backend
 // for a process it spawned), besides the loopback network's own.
@@ -16,8 +15,6 @@ export interface BackendBootMessage {
     fs: { directory: string } | { channel: FsChannelBuffers };
     // OPFS directory for the worker's SQLite databases, when it opens any.
     sqliteDirectory?: string;
-    // npm packages the programs it runs load from the machine (src/platform/global-packages.ts).
-    globalPackages?: GlobalPackage[];
     // Set for a spawned process: its stdout/stderr and process.send() go to the parent, and its stdin
     // reads the pipe the parent writes, when it has one.
     child?: { serialization: 'json' | 'advanced'; stdin?: PipeBuffers };

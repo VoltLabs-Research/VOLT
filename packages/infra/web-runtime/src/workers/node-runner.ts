@@ -110,7 +110,7 @@ const builtinName = (request: string): string | null => {
 };
 
 // The folders Node searches after node_modules: NODE_PATH's, the user's, and $PREFIX/lib/node, where
-// the machine's global packages are (src/platform/global-packages.ts).
+// the machine's global packages are installed (src/platform/installs.ts).
 const globalFolders = (): string[] => [
     ...(process.env.NODE_PATH ?? '').split(':').filter(Boolean),
     ...(process.env.HOME ? [path.join(process.env.HOME, '.node_modules'), path.join(process.env.HOME, '.node_libraries')] : []),
