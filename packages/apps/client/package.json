@@ -68,6 +68,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/semver": "7.5.8",
     "@types/three": "^0.185.4",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^5.2.0",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
