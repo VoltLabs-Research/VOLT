@@ -13,6 +13,7 @@ const require = createRequire(import.meta.url);
 const packageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const emnapiDir = path.dirname(require.resolve('emnapi/package.json'));
 const memoryShim = path.join(packageDir, 'src', 'native', 'node-api-memory.js');
+const buildScript = fileURLToPath(import.meta.url);
 
 const run = promisify(execFile);
 
@@ -59,7 +60,7 @@ export const buildNativeAddon = async (root, outDir) => {
     const name = target.target_name;
     const output = path.join(outDir, `${name}.cjs`);
     const sources = target.sources.map((source) => path.join(root, source));
-    if(await isNewer(output, [...sources, memoryShim, path.join(root, 'binding.gyp')])){
+    if(await isNewer(output, [...sources, memoryShim, buildScript, path.join(root, 'binding.gyp')])){
         return { name, glue: output };
     }
 
@@ -86,7 +87,10 @@ export const buildNativeAddon = async (root, outDir) => {
         '-sSINGLE_FILE=1',
         '-sALLOW_MEMORY_GROWTH=1',
         '-sMAXIMUM_MEMORY=4GB',
-        ...(threads ? ['-Wno-pthreads-mem-growth'] : []),
+        // A worker starts only once the thread creating it returns to its event loop, which an addon
+        // waiting on the threads it starts never does: they are started with the module, as many as
+        // std::thread::hardware_concurrency() reports.
+        ...(threads ? ['-Wno-pthreads-mem-growth', '-sPTHREAD_POOL_SIZE=require("os").cpus().length'] : []),
         '-o', output,
         ...sources,
         threads ? '-lemnapi-mt' : '-lemnapi'
