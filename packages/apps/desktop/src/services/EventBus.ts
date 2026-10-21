@@ -14,4 +14,14 @@ class EventBus{
     }
 };
 
-export default new EventBus();
+const bus = new EventBus();
+
+export default bus;
+
+// Provisioning output (@volt/local-stack) goes to the deploy log the launcher shows.
+export const deployLog = (stream: 'stdout' | 'stderr', line: string): void => {
+    bus.emit('deploy:log', {
+        stream,
+        line
+    });
+};

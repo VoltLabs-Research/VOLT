@@ -4,7 +4,7 @@ import AppConfig from '@/services/AppConfig';
 import bus from '@/services/EventBus';
 import LocalDeploy from '@/services/LocalDeploy';
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
-import ServerApi from '@/services/ServerApi';
+import ServerApi from '@volt/local-stack/server-api';
 
 const root = process.env.SMOKE_ROOT ?? '/tmp/volt-desktop-smoke';
 const runtimeDir = process.env.SMOKE_RUNTIME ?? path.resolve('stack-runtime');

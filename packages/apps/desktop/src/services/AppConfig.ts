@@ -1,27 +1,11 @@
 import { readFile, writeFile, chmod } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import type { BootstrapState, BootstrapStore, PluginSeedState, PluginSeedStore } from '@volt/local-stack/state';
 
 interface AppConfigProps{
     configFile: string;
 }
 
-export interface BootstrapState{
-    done: boolean;
-    email: string;
-    password: string;
-    userId: string;
-    teamId: string;
-    teamClusterId: string;
-    authToken: string;
-    daemonPassword: string;
-}
-
-export interface PluginSeedState{
-    done: boolean;
-    teamId: string;
-    installed: string[];
-    platform?: string;
-}
 
 export interface DevModeState{
     enabled: boolean;
@@ -40,7 +24,7 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 
 export type DeployMode = 'server' | 'cluster';
 
-export default class AppConfig{
+export default class AppConfig implements BootstrapStore, PluginSeedStore{
     constructor(private readonly props: AppConfigProps){}
 
     async #write(config: object){
