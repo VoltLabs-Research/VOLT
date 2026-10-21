@@ -3,7 +3,7 @@
 // read_parquet() and COPY ... TO take the same paths the daemon passes on the desktop.
 import { NODE_RUNTIME, VoidLogger, createDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import type { DuckDBConnection as WasmConnection, DuckDBBindings } from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
-import { Table, Type, vectorFromArray, Float32, Float64, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Utf8, Bool } from 'apache-arrow';
+import { Table, Type, tableToIPC, vectorFromArray, Float32, Float64, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Utf8, Bool } from 'apache-arrow';
 import type { DataType, Vector } from 'apache-arrow';
 import { globalPackageSource, install } from './installs';
 import path from 'path';
@@ -280,7 +280,9 @@ export class DuckDBAppender {
             return;
         }
         const vectors = Object.fromEntries(this.columns.map((column) => [column.name, vectorFromArray(column.values, column.type())]));
-        this.connection.insertArrowTable(new Table(vectors), { name: this.table, create: false });
+        // Serialized with this module's Arrow: duckdb-wasm's own (insertArrowTable) is apache-arrow's
+        // CommonJS build, which does not recognize a table of its ESM build and writes no rows.
+        this.connection.insertArrowFromIPCStream(tableToIPC(new Table(vectors), 'stream'), { name: this.table, create: false });
         for(const column of this.columns){
             column.values = [];
         }
