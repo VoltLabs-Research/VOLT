@@ -13,10 +13,7 @@ import {
     cleanupDebugSessionArtifacts,
     createDebugSession,
     describeDebugSession,
-    type CurrentDebugNodeInfo,
-    type DebugNodeResult,
     type DebugSession,
-    type DebugSessionInfo,
     type DebugSessionRequest,
     type NodeExecutionOutcome
 } from '@modules/analysis/services/workflow/debug/debug-session';
@@ -32,6 +29,7 @@ import {
 } from '@modules/analysis/services/workflow/debug/debug-node-execution';
 import type { BinaryExecutorService } from '@modules/plugin/services/runtime/BinaryExecutorService';
 import type { PluginBinaryCache } from '@modules/plugin/services/binaries/PluginBinaryCache';
+import type { DebugNodePosition, DebugNodeResult, DebugSessionInfo } from '@volt/contracts/modules/plugin/debug';
 
 const SESSION_IDLE_TTL_MS = 5 * 60 * 1000;
 
@@ -159,7 +157,7 @@ export class DebugSessionManager {
         return results;
     }
 
-    getCurrentNodeInfo(sessionId: string): CurrentDebugNodeInfo | null {
+    getCurrentNodeInfo(sessionId: string): DebugNodePosition | null {
         const session = this.sessions.get(sessionId);
         const node = session && getNextPendingNode(session);
         if (!session || !node) {

@@ -13,7 +13,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "types": [
       "node"
     ],
@@ -27,6 +26,9 @@
       ],
       "@shared/*": [
         "src/shared/*"
+      ],
+      "@volt/contracts/*": [
+        "../../shared/contracts/src/*"
       ]
     }
   },

@@ -54,7 +54,8 @@ const packageRoot = path.resolve(__dirname, '..');
 
 const isDevMode = process.argv.includes('--dev');
 const command = isDevMode ? path.join(packageRoot, 'node_modules', '.bin', 'tsx') : process.execPath;
-const commandArgs = isDevMode ? ['src/daemon.ts'] : [path.join(packageRoot, 'dist', 'daemon.js')];
+// The build compiles @volt/contracts alongside src, so dist mirrors the workspace layout.
+const commandArgs = isDevMode ? ['src/daemon.ts'] : [path.join(packageRoot, 'dist', 'infra', 'cluster', 'src', 'daemon.js')];
 
 const child = spawn(command, commandArgs, {
     stdio: 'inherit',

@@ -1,17 +1,8 @@
-import type { RuntimeProgressEvent as DaemonRuntimeProgressEvent } from '@voltstack/daemon-cluster-client';
+import type { RuntimeProgressEvent, TeamClusterDaemonRuntimeProgressPayload } from '@voltstack/daemon-cluster-client';
 
-type RuntimeProgressPayloadData = NonNullable<DaemonRuntimeProgressEvent['payload']>;
+export type RuntimeProgressPayload = RuntimeProgressEvent;
 
-type RuntimeProgressStage = DaemonRuntimeProgressEvent['stage'];
-
-export interface RuntimeProgressPayload {
-    action: string;
-    payload?: RuntimeProgressPayloadData;
-    stage: RuntimeProgressStage;
-    timestamp: string;
-}
-
-export type RuntimeProgressMessage = RuntimeProgressPayload & { type: 'runtime-progress' };
+export type RuntimeProgressMessage = TeamClusterDaemonRuntimeProgressPayload;
 
 export const createRuntimeProgressMessage = (
     payload: RuntimeProgressPayload

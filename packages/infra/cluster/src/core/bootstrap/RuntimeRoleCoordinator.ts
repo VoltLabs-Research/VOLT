@@ -3,14 +3,16 @@ import { getQueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegi
 import { concurrencyTrackedWorkers, workersForScope } from '@shared/queues/worker-registry';
 import { DAEMON_WORKERS } from '@core/bootstrap/workers';
 import { logger } from '@shared/logger';
-import { DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, createDefaultTeamClusterRuntimeRoleConfig } from '@shared/contracts/types/team-cluster-runtime';
-import type {
-    TeamClusterDaemonQueueConcurrency,
-    TeamClusterDaemonQueueScopeLimits,
-    TeamClusterDaemonRoleApplyResult,
-    TeamClusterDaemonRuntimeConfig,
-    TeamClusterRuntimeRoleConfig
-} from '@shared/contracts/types/team-cluster-runtime';
+import {
+    DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS,
+    type TeamClusterDaemonQueueConcurrency,
+    type TeamClusterDaemonQueueScopeLimits,
+    type TeamClusterDaemonRoleApplyResult,
+    type TeamClusterDaemonRuntimeConfig,
+    type TeamClusterDaemonRuntimeRoleConfig,
+    createDefaultTeamClusterRuntimeRoleConfig,
+    DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY
+} from '@voltstack/daemon-cluster-client';
 
 const withDefaults = <T extends object>(defaults: T, overrides?: Partial<T>): T => ({
     ...defaults,
@@ -33,19 +35,10 @@ interface QueueSettingsSnapshot {
     queueScopeLimits: TeamClusterDaemonQueueScopeLimits;
 }
 
-const DEFAULT_QUEUE_CONCURRENCY: TeamClusterDaemonQueueConcurrency = {
-    analysis: 8,
-    rasterizer: 8,
-    glbPreprocessing: 16,
-    artifactUpload: 16,
-    pluginWarmup: 4
-};
-
-
 export class RuntimeRoleCoordinator {
     private computeWorkersRunning = false;
     private snapshot: TeamClusterDaemonRuntimeConfig = {
-        queueConcurrency: structuredClone(DEFAULT_QUEUE_CONCURRENCY),
+        queueConcurrency: structuredClone(DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY),
         queueScopeLimits: structuredClone(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS),
         roleConfig: createDefaultTeamClusterRuntimeRoleConfig()
     };
@@ -58,7 +51,7 @@ export class RuntimeRoleCoordinator {
 
         return this.runRoleOperation(async () => {
             this.snapshot = {
-                queueConcurrency: withDefaults(DEFAULT_QUEUE_CONCURRENCY, runtimeConfig.queueConcurrency),
+                queueConcurrency: withDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY, runtimeConfig.queueConcurrency),
                 queueScopeLimits: withNestedDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, runtimeConfig.queueScopeLimits),
                 roleConfig: structuredClone(runtimeConfig.roleConfig)
             };
@@ -86,7 +79,7 @@ export class RuntimeRoleCoordinator {
         queueConcurrency: TeamClusterDaemonQueueConcurrency,
         queueScopeLimits: TeamClusterDaemonQueueScopeLimits
     ): QueueSettingsSnapshot {
-        this.snapshot.queueConcurrency = withDefaults(DEFAULT_QUEUE_CONCURRENCY, queueConcurrency);
+        this.snapshot.queueConcurrency = withDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_CONCURRENCY, queueConcurrency);
         this.snapshot.queueScopeLimits = withNestedDefaults(DEFAULT_TEAM_CLUSTER_QUEUE_SCOPE_LIMITS, queueScopeLimits);
         getQueueScopeLimitsRegistry().apply(this.snapshot.queueScopeLimits);
 
@@ -104,11 +97,11 @@ export class RuntimeRoleCoordinator {
         };
     }
 
-    applyRoleConfig(roleConfig: TeamClusterRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
+    applyRoleConfig(roleConfig: TeamClusterDaemonRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
         return this.runRoleOperation(() => this.applyRoleConfigInternal(roleConfig));
     }
 
-    private async applyRoleConfigInternal(roleConfig: TeamClusterRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
+    private async applyRoleConfigInternal(roleConfig: TeamClusterDaemonRuntimeRoleConfig): Promise<TeamClusterDaemonRoleApplyResult> {
         const nextRoleConfig = structuredClone(roleConfig);
         const previousEffectiveRole = this.snapshot.roleConfig.effectiveRole;
 
@@ -178,7 +171,7 @@ export class RuntimeRoleCoordinator {
         this.computeWorkersRunning = false;
     }
 
-    private roleRunsComputeWorkers(role: TeamClusterRuntimeRoleConfig['effectiveRole']): boolean {
+    private roleRunsComputeWorkers(role: TeamClusterDaemonRuntimeRoleConfig['effectiveRole']): boolean {
         return role !== 'storage-server';
     }
 }

@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import {
     buildLineRangesSidecarKey,
     buildLineSceneSourceKey,
@@ -24,6 +23,8 @@ import type {
     LineExportData,
     LineExportOptions
 } from '@modules/plugin/services/exports/export-node-processor-types';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 
 const DEFAULT_BOND_RADIUS = 0.15;
@@ -48,7 +49,7 @@ const stageSceneSourceUpload = async (
 
     await input.artifactUploadBatch.stageBufferUpload({
         ownerClusterId,
-        bucket: ObjectBucketName.Models,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         objectKey,
         buffer: await fs.readFile(input.outputFilePath),
         contentType: 'application/vnd.apache.parquet',
@@ -65,7 +66,7 @@ const stageRangesSidecarUpload = async (
     const objectKey = buildLineRangesSidecarKey(glbObjectPath);
     await input.artifactUploadBatch.stageBufferUpload({
         ownerClusterId,
-        bucket: ObjectBucketName.Models,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         objectKey,
         buffer: encodeLineRangesSidecar(entityRanges),
         contentType: 'application/json',
@@ -75,7 +76,7 @@ const stageRangesSidecarUpload = async (
 
 const exportTubeArtifact = async (
     input: ExportExecutionInput,
-    exporter: 'LineExporter' | 'BondExporter',
+    exporter: Exporter.LINE | Exporter.BOND,
     lines: LineEntity[],
     objectPath: string,
     ownerClusterId: string,
@@ -85,7 +86,7 @@ const exportTubeArtifact = async (
 
     await stageExportBufferUpload(input, {
         exporter,
-        bucket: ObjectBucketName.Models,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         buffer: geometry
             ? buildLineGlb(geometry, options.material)
             : generateEmptyLineGLB(options.material),
@@ -112,7 +113,7 @@ export const exportLineArtifact = async (
 
     return exportTubeArtifact(
         input,
-        'LineExporter',
+        Exporter.LINE,
         exportData.lines,
         objectPath,
         ownerClusterId,
@@ -128,7 +129,7 @@ export const exportBondArtifact = (
     options: BondExportOptions
 ): Promise<boolean> => exportTubeArtifact(
     input,
-    'BondExporter',
+    Exporter.BOND,
     exportData.bonds,
     objectPath,
     ownerClusterId,

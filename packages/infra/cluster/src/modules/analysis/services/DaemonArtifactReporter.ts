@@ -4,15 +4,15 @@ import Bottleneck from 'bottleneck';
 
 import type { EventDispatcher } from '@shared/events/EventDispatcher';
 import { SceneArtifactBatchReportedEvent } from '@modules/plugin/events/plugin-events';
-import type { SceneArtifactUpsertBatchItem as ReportArtifactInput } from '@shared/contracts/channel/reverse-channel-plugin';
 import { logAndSwallow, safeExecute } from '@shared/utilities/error-message';
+import type { SceneArtifactUpsertItem } from '@volt/contracts/modules/cluster/daemon-events';
 
 const SCENE_ARTIFACT_BATCH_SIZE = 64;
 const SCENE_ARTIFACT_BATCH_FLUSH_INTERVAL_MS = 250;
 
 export class DaemonArtifactReporter {
     private readonly batcher: Bottleneck.Batcher;
-    private readonly pendingArtifacts = new Map<string, ReportArtifactInput>();
+    private readonly pendingArtifacts = new Map<string, SceneArtifactUpsertItem>();
     private publishQueue: Promise<void> = Promise.resolve();
 
     constructor(private readonly eventDispatcher: EventDispatcher) {
@@ -23,7 +23,7 @@ export class DaemonArtifactReporter {
 
         this.batcher.on('batch', (keys: string[]) => {
             const uniqueKeys = [...new Set(keys)];
-            const batch: ReportArtifactInput[] = [];
+            const batch: SceneArtifactUpsertItem[] = [];
 
             for (const key of uniqueKeys) {
                 const artifact = this.pendingArtifacts.get(key);
@@ -40,7 +40,7 @@ export class DaemonArtifactReporter {
         this.batcher.on('error', logAndSwallow('error', {}, 'Artifact batcher error'));
     }
 
-    async reportArtifact(input: ReportArtifactInput): Promise<void> {
+    async reportArtifact(input: SceneArtifactUpsertItem): Promise<void> {
         this.pendingArtifacts.set(input.objectName, input);
         void this.batcher.add(input.objectName).catch(
             logAndSwallow('error', { objectName: input.objectName }, 'Failed to enqueue artifact batch item')
@@ -57,7 +57,7 @@ export class DaemonArtifactReporter {
         await this.publishQueue;
     }
 
-    private enqueuePublish(batch: ReportArtifactInput[]): Promise<void> {
+    private enqueuePublish(batch: SceneArtifactUpsertItem[]): Promise<void> {
         this.publishQueue = this.publishQueue
             .catch(() => undefined)
             .then(async () => {

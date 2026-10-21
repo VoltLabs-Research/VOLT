@@ -2,11 +2,12 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { stageExportBufferUpload } from '@modules/plugin/services/exports/export-node-processor-shared';
 import type { ConfigurationExporterOptions, ConfigurationExportFormat, ExportExecutionInput } from '@modules/plugin/services/exports/export-node-processor-types';
 import { logger } from '@shared/logger';
 import { missingPythonMessage, resolveSystemPython } from '@shared/utilities/system-python';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 const BRIDGE_SCRIPT = path.join(__dirname, '../../../trajectory/services/parsing/ase_export_bridge.py');
 const ASE_PYTHON = resolveSystemPython();
@@ -77,8 +78,8 @@ export const exportConfigurationArtifact = async (
 
         const buffer = await fs.readFile(tmpOutput);
         await stageExportBufferUpload(input, {
-            exporter: 'ConfigurationExporter',
-            bucket: ObjectBucketName.Models,
+            exporter: Exporter.CONFIGURATION,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             buffer,
             contentType: CONTENT_TYPES[options.format],
             objectPath,

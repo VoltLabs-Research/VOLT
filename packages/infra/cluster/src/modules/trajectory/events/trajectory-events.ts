@@ -1,7 +1,8 @@
 import { createDomainEvent } from '@shared/events/create-domain-event';
-import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
+import type { Failed } from '@shared/contracts/types/job-identity';
+import type { TrajectoryJobStatusReport } from '@volt/contracts/modules/cluster/daemon-events';
 
-export type TimedTrajectoryJobEventData = JobIdentity;
+export type TimedTrajectoryJobEventData = Omit<TrajectoryJobStatusReport, 'status' | 'error'>;
 
 export type RasterFailedEventData = Failed<TimedTrajectoryJobEventData>;
 export type GlbFailedEventData = Failed<TimedTrajectoryJobEventData>;

@@ -1,4 +1,3 @@
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { logger } from '@shared/logger';
 import {
     buildOctreeMetadata,
@@ -9,6 +8,7 @@ import type {
     ExportExecutionInput,
     OctreeExportOptions
 } from '@modules/plugin/services/exports/export-node-processor-types';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const DEFAULT_LEAF_CELL_MAX_ATOMS = 50_000;
 const DEFAULT_MAX_DEPTH = 10;
@@ -51,7 +51,7 @@ export const exportOctreeMetadata = async (
     const objectKey = buildOctreeMetadataSidecarKey(glbObjectPath);
     await input.artifactUploadBatch.stageBufferUpload({
         ownerClusterId,
-        bucket: ObjectBucketName.Models,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         objectKey,
         buffer: Buffer.from(JSON.stringify(metadata), 'utf8'),
         contentType: 'application/json',

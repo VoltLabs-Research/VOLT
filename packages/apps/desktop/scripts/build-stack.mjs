@@ -81,7 +81,7 @@ const assembleDaemon = async () => {
         DYLD_LIBRARY_PATH: zstdLib
     });
     for (const script of ['daemon', 'control-plane', 'heartbeat-plane', 'socket-channel-plane']) {
-        const entry = path.join(target, 'dist', `${script}.js`);
+        const entry = path.join(target, 'dist', 'infra', 'cluster', 'src', `${script}.js`);
         if (!await exists(entry)) {
             throw new Error(`daemon runtime is missing ${path.relative(target, entry)}`);
         }

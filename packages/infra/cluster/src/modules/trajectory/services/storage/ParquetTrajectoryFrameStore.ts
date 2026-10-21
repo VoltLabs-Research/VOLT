@@ -11,7 +11,6 @@ import { DuckDBConnection, DuckDBTypeId } from '@duckdb/node-api';
 import { DAEMON_PATHS } from '@core/config/paths';
 import { logger } from '@shared/logger';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { toTrajectoryFrameError } from '@modules/trajectory/services/storage/trajectory-not-found-error';
 import type {
     TrajectoryElementMetadata,
@@ -32,6 +31,7 @@ import {
     toTrajectoryParquetObjectKey,
     toTrajectoryElementTableObjectKey
 } from '@shared/storage/storage-codec';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const BASE_COLUMN_SET = new Set<string>(['timestep', 'atom_index', 'id', 'type', 'x', 'y', 'z']);
 const PARQUET_FRAME_CACHE_BYTES = 512 * 1024 * 1024;
@@ -150,7 +150,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
 
             await this.objectStore.putObjectStream({
                 ownerClusterId: input.ownerClusterId,
-                bucket: ObjectBucketName.Trajectories,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
                 objectKey,
                 stream: createReadStream(outputPath),
                 size: stat.size,
@@ -171,7 +171,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
                 objectKey,
                 frameCount: input.frames.length,
                 size: stat.size,
-                bucket: ObjectBucketName.Trajectories,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
                 units: built.units,
                 elementTable: built.elementTable
             };
@@ -323,7 +323,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
 
         const response = await this.objectStore.getStream(
             input.ownerClusterId,
-            ObjectBucketName.Trajectories,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
             toTrajectoryElementTableObjectKey(input.trajectoryId),
             { skipMetadata: true }
         );
@@ -403,7 +403,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
     ): Promise<void> {
         await this.objectStore.putObject({
             ownerClusterId,
-            bucket: ObjectBucketName.Trajectories,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
             objectKey: toTrajectoryElementTableObjectKey(trajectoryId),
             body: Buffer.from(JSON.stringify(metadata), 'utf8'),
             metadata: { 'Content-Type': 'application/json' }
@@ -432,7 +432,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
         const filePath = path.join(DAEMON_PATHS.trajectoryParquetCache, `${cacheId}.parquet`);
         const signaturePath = `${filePath}.signature`;
 
-        const head = await this.objectStore.head(ownerClusterId, ObjectBucketName.Trajectories, objectKey);
+        const head = await this.objectStore.head(ownerClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories, objectKey);
         const signature = head.etag
             ?? `${head.contentLength ?? 0}:${head.lastModified?.getTime() ?? 0}`;
 
@@ -448,7 +448,7 @@ export class ParquetTrajectoryFrameStore implements TrajectoryFrameStore {
 
         const response = await this.objectStore.getStream(
             ownerClusterId,
-            ObjectBucketName.Trajectories,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories,
             objectKey,
             { skipMetadata: true }
         );

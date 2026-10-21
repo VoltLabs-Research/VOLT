@@ -4,10 +4,7 @@ import {
     toAutoPreviewRasterClaimKey,
     toParquetDrainClaimKey
 } from '@shared/persistence/daemon-state-keys';
-import type {
-    AnalysisRuntimeCleanupRequest,
-    RuntimeStateCleanupResponse
-} from '@shared/contracts/types/http-analysis';
+import type { AnalysisRuntimeCleanupRequest, RuntimeStateCleanupResponse } from '@shared/contracts/types/http-analysis';
 import type { TrajectoryRuntimeCleanupRequest } from '@shared/contracts/types/queue-trajectory';
 import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 

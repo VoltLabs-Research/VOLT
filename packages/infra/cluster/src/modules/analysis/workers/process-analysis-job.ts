@@ -10,10 +10,7 @@ import { type AnalysisStageReportInput } from '@shared/contracts/types/analysis-
 import type { WorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import { readWorkflowTrace, type InlineWorkflowTraceNode } from '@modules/analysis/services/workflow/WorkflowWalker';
 import { buildTraceLogSegments } from '@modules/analysis/services/workflow/trace-log-segments';
-import type {
-    AnalysisJobMetadata,
-    AnalysisQueueJobPayload
-} from '@shared/contracts/types/http-analysis';
+import type { AnalysisJobMetadata, AnalysisQueueJobPayload } from '@shared/contracts/types/http-analysis';
 import type { AnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
 import type { ArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
@@ -172,10 +169,9 @@ export const processAnalysisJob = async (
                             jobId: job.jobId,
                             executionData,
                             outputs: prepared.outputs,
-                            dumpTargets: prepared.dumpTargets,
-                            primaryFrameIndex: prepared.primaryFrameIndex,
+                            dumpTarget: prepared.dumpTarget,
                             outputDir: prepared.outputDir,
-                            timestep: prepared.dumpTargets[prepared.primaryFrameIndex].timestep,
+                            timestep,
                             artifactUploadBatch,
                             stageReporter,
                             logSinkFactory: (context) => createAnalysisExecutionLogSink({

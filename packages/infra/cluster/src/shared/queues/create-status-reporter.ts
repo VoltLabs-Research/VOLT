@@ -1,7 +1,8 @@
 import { logger } from '@shared/logger';
 import { errorMessage } from '@shared/utilities/error-message';
-import type { Failed, JobIdentity } from '@shared/contracts/types/job-identity';
+import type { Failed } from '@shared/contracts/types/job-identity';
 import type { JobLifecycleStatus } from '@shared/queues/with-job-lifecycle';
+import type { DaemonJobIdentity } from '@volt/contracts/modules/cluster/daemon-events';
 
 interface StatusReporterTriple<P> {
     started: (payload: P) => Promise<void>;
@@ -9,7 +10,7 @@ interface StatusReporterTriple<P> {
     failed: (payload: Failed<P>) => Promise<void>;
 }
 
-export const createLifecycleStatusReporter = <P extends JobIdentity>(
+export const createLifecycleStatusReporter = <P extends DaemonJobIdentity>(
     triple: StatusReporterTriple<P>,
     kind: string
 ) => (payload: P) => (status: JobLifecycleStatus, error?: string): void => {

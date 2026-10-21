@@ -1,5 +1,4 @@
-import type { JobIdentity } from '@shared/contracts/types/job-identity';
-import type { QueuedJobNotification } from '@shared/contracts/types/http-analysis';
+import type { DaemonJobIdentity, QueuedJobNotification } from '@volt/contracts/modules/cluster/daemon-events';
 
 export interface RasterizeTrajectoryRequest {
     trajectoryId: string;
@@ -24,7 +23,7 @@ export interface RasterJobMetadata {
     autoPreview: boolean;
 }
 
-export interface RasterQueueJobPayload extends JobIdentity {
+export interface RasterQueueJobPayload extends DaemonJobIdentity {
     trajectoryId: string;
     timestep: number;
     modelObjectKey: string;
@@ -38,7 +37,7 @@ export interface RasterQueueJobPayload extends JobIdentity {
     updatedAt: string;
 }
 
-export interface GlbConversionQueueJobPayload extends JobIdentity {
+export interface GlbConversionQueueJobPayload extends DaemonJobIdentity {
     trajectoryId: string;
     timestep: number;
     objectKey: string;
@@ -78,7 +77,7 @@ export interface TrajectoryRuntimeCleanupRequest {
     jobIds?: string[];
 }
 
-export interface FrameProcessingQueueJobPayload extends JobIdentity {
+export interface FrameProcessingQueueJobPayload extends DaemonJobIdentity {
     trajectoryId: string;
     timestep: number;
     stagingObjectKey: string;

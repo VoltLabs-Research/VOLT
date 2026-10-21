@@ -1,7 +1,10 @@
 import { createTraceLogContext, extractDaemonTraceContext } from '@shared/observability/daemon-instrumentation';
 import { logger } from '@shared/logger';
 import ApplicationError from '@shared/errors/ApplicationError';
-import type { ReverseChannelCommandExecutor, ReverseChannelCommandPayloadView } from '@shared/contracts/channel/reverse-channel-messaging';
+import type {
+    ReverseChannelCommandExecutor,
+    ReverseChannelCommandPayloadView
+} from '@shared/contracts/channel/reverse-channel-messaging';
 import type { ReverseChannelHandler } from '@voltstack/daemon-cluster-client';
 
 export const createReverseChannelCommandHandler = (

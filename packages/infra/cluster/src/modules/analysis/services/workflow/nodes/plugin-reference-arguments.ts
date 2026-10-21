@@ -1,13 +1,17 @@
-import type {
-    WorkflowArgumentDefinition,
-    WorkflowDefinition,
-    WorkflowPluginReferenceArgumentMapping,
-    WorkflowPluginReferenceSelection
-} from '@shared/contracts/types/http-workflow';
 import type { WorkflowNodeOutput, WorkflowValue } from '@shared/contracts/types/workflow.types';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import type { WorkflowPluginReferenceValueWithSelections } from '@modules/analysis/services/workflow/plugin-node-executions';
-import { isArgumentVisible } from '@modules/analysis/services/workflow/nodes/argument-visibility';
+import {
+    applyPluginReferenceMappings as applyMappingsToConfig,
+    isArgumentVisible,
+    readWorkflowModifierKey,
+    resolveArgumentValue
+} from '@volt/contracts/modules/plugin/arguments';
+import { ArgumentType } from '@volt/contracts/modules/plugin/enums';
+import type {
+    IArgumentDefinition,
+    IPluginReferenceSelection,
+    IWorkflow
+} from '@volt/contracts/modules/plugin/workflow';
 
 type PluginReferenceSelections = WorkflowPluginReferenceValueWithSelections['selections'];
 
@@ -18,7 +22,7 @@ interface PluginReferencePlanningItem {
 }
 
 export const readPluginReferenceSelections = (value: WorkflowValue): PluginReferenceSelections => {
-    const selections = (value as { selections?: WorkflowPluginReferenceSelection[] } | undefined)?.selections;
+    const selections = (value as { selections?: IPluginReferenceSelection[] } | undefined)?.selections;
 
     return selections?.map((selection) => ({
         pluginId: selection.pluginId,
@@ -26,122 +30,37 @@ export const readPluginReferenceSelections = (value: WorkflowValue): PluginRefer
     })) ?? [];
 };
 
-const readEffectiveArgumentValue = (
-    definition: WorkflowArgumentDefinition | undefined,
-    value: WorkflowValue
-): WorkflowValue => {
-    if (value !== undefined) {
-        return value;
-    }
-
-    if (definition?.value !== undefined) {
-        return definition.value;
-    }
-
-    return definition?.default;
-};
-
-const normalizePluginReferenceMappings = (
-    mappings: WorkflowPluginReferenceArgumentMapping[] | undefined
-): WorkflowPluginReferenceArgumentMapping[] => (mappings ?? []).flatMap((mapping) => {
-    const sourceArgument = mapping.sourceArgument?.trim();
-    const targetArgument = mapping.targetArgument?.trim();
-    if (!sourceArgument || !targetArgument) {
-        return [];
-    }
-
-    return [{
-        ...mapping,
-        sourceArgument,
-        targetArgument,
-        targetPluginId: mapping.targetPluginId?.trim(),
-        targetPluginKey: mapping.targetPluginKey?.trim()
-    }];
-});
-
-const resolveMappingSourceValue = (
-    mapping: WorkflowPluginReferenceArgumentMapping,
-    definitions: WorkflowArgumentDefinition[],
-    values: WorkflowNodeOutput
-): WorkflowValue => {
-    const sourceKey = mapping.sourceArgument ?? '';
-    const definition = definitions.find((candidate) => candidate.argument === sourceKey);
-    const value = readEffectiveArgumentValue(definition, values[sourceKey]);
-    const valueMap = mapping.valueMap;
-
-    if (valueMap && (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')) {
-        const valueMapKey = String(value);
-        if (Object.hasOwn(valueMap, valueMapKey)) {
-            return valueMap[valueMapKey];
-        }
-    }
-
-    return value;
-};
-
-const readWorkflowModifierKey = (workflow: WorkflowDefinition | undefined): string => {
-    const modifierKey = workflow?.nodes
-        .find((node) => node.type === WorkflowNodeType.Modifier)
-        ?.data.modifier?.key;
-
-    return typeof modifierKey === 'string' ? modifierKey.trim() : '';
-};
-
-const applyMappingsToSelectionConfig = (
-    selection: PluginReferenceSelections[number],
-    mappings: WorkflowPluginReferenceArgumentMapping[],
-    definitions: WorkflowArgumentDefinition[],
-    values: WorkflowNodeOutput,
-    nestedWorkflows: Map<string, WorkflowDefinition>
-): WorkflowNodeOutput => {
-    const pluginKey = readWorkflowModifierKey(nestedWorkflows.get(selection.pluginId));
-    const config = { ...selection.config };
-
-    for (const mapping of mappings) {
-        if (mapping.targetPluginId && mapping.targetPluginId !== selection.pluginId) {
-            continue;
-        }
-
-        if (mapping.targetPluginKey && mapping.targetPluginKey !== pluginKey) {
-            continue;
-        }
-
-        const mappedValue = resolveMappingSourceValue(mapping, definitions, values);
-        if (mappedValue !== undefined) {
-            config[mapping.targetArgument as string] = mappedValue;
-        }
-    }
-
-    return config;
-};
-
 export const applyPluginReferenceMappings = (
-    definitions: WorkflowArgumentDefinition[],
+    definitions: IArgumentDefinition[],
     values: WorkflowNodeOutput,
-    nestedWorkflows: Map<string, WorkflowDefinition>
+    nestedWorkflows: Map<string, IWorkflow>
 ): void => {
     for (const definition of definitions) {
         const argumentKey = definition.argument;
-        if (!argumentKey || definition.type !== 'pluginReference') {
+        if (!argumentKey || definition.type !== ArgumentType.PLUGIN_REFERENCE) {
             continue;
         }
 
-        const selections = readPluginReferenceSelections(values[argumentKey]);
-        const mappings = normalizePluginReferenceMappings(definition.pluginReferenceMappings);
-
         values[argumentKey] = {
-            selections: mappings.length === 0
-                ? selections
-                : selections.map((selection) => ({
-                    pluginId: selection.pluginId,
-                    config: applyMappingsToSelectionConfig(selection, mappings, definitions, values, nestedWorkflows)
-                }))
+            selections: readPluginReferenceSelections(values[argumentKey]).map((selection) => ({
+                pluginId: selection.pluginId,
+                config: applyMappingsToConfig(
+                    {
+                        pluginId: selection.pluginId,
+                        pluginKey: readWorkflowModifierKey(nestedWorkflows.get(selection.pluginId)),
+                        config: selection.config
+                    },
+                    definition,
+                    definitions,
+                    values
+                )
+            }))
         } satisfies WorkflowPluginReferenceValueWithSelections;
     }
 };
 
 export const collectPluginReferences = (
-    definitions: WorkflowArgumentDefinition[],
+    definitions: IArgumentDefinition[],
     values: WorkflowNodeOutput,
     pathPrefix = ''
 ): PluginReferencePlanningItem[] => definitions.flatMap((definition) => {
@@ -151,16 +70,16 @@ export const collectPluginReferences = (
     }
 
     const referencePath = `${pathPrefix}${argumentKey}`;
-    const value = readEffectiveArgumentValue(definition, values[argumentKey]);
+    const value = resolveArgumentValue(definition, values[argumentKey]);
 
-    if (definition.type === 'pluginReference') {
+    if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
         return readPluginReferenceSelections(value).map((selection) => ({
             referencePath,
             ...selection
         }));
     }
 
-    if (definition.type === 'list' && Array.isArray(value)) {
+    if (definition.type === ArgumentType.LIST && Array.isArray(value)) {
         return value.flatMap((entry, index) => collectPluginReferences(
             definition.listArguments ?? [],
             entry as WorkflowNodeOutput,

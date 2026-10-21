@@ -1,13 +1,19 @@
-import { RemoteExplorerContentType, RemoteExplorerEntryType, RemoteExplorerNodeType, RemoteExplorerTarget } from '@shared/contracts/types/remote-explorer';
 import type { ReverseChannelCommandResult } from '@shared/contracts/channel/reverse-channel-messaging';
 import { MAX_EXPLORER_DOCUMENTS, buildAttachmentContentDisposition, normalizeExplorerPath, toExplorerDocument, toWebReadableStream } from '@modules/system/services/remote-access/shared';
-import type { RemoteExplorerEntry, RemoteExplorerNode } from '@shared/contracts/types/remote-explorer';
 import BaseRemoteAccess from '@modules/system/services/remote-access/BaseRemoteAccess';
 import { getDaemonDataSource } from '@shared/persistence/DataSource';
 import { PluginListingRow } from '@modules/plugin/models/plugin-listing-row-model';
 import { PluginSubListingRow } from '@modules/plugin/models/plugin-sub-listing-row-model';
 import { Readable } from 'node:stream';
 import type { EntityTarget, ObjectLiteral } from 'typeorm';
+import {
+    TeamClusterRemoteAccessTarget,
+    TeamClusterRemoteExplorerContentType,
+    type TeamClusterRemoteExplorerEntry,
+    TeamClusterRemoteExplorerEntryType,
+    type TeamClusterRemoteExplorerNode,
+    TeamClusterRemoteExplorerNodeType
+} from '@volt/contracts/modules/cluster/domain';
 
 const BROWSABLE_TABLES: Record<string, EntityTarget<ObjectLiteral>> = {
     plugin_listing_rows: PluginListingRow,
@@ -15,30 +21,30 @@ const BROWSABLE_TABLES: Record<string, EntityTarget<ObjectLiteral>> = {
 };
 
 export default class DaemonTableRemoteAccess extends BaseRemoteAccess {
-    readonly target = RemoteExplorerTarget.DaemonTables;
+    readonly target = TeamClusterRemoteAccessTarget.DaemonTables;
 
-    async list(): Promise<RemoteExplorerEntry[]> {
+    async list(): Promise<TeamClusterRemoteExplorerEntry[]> {
         const dataSource = getDaemonDataSource();
 
         return Promise.all(Object.keys(BROWSABLE_TABLES).sort().map(async (name) => ({
             id: name,
             name,
             path: name,
-            type: RemoteExplorerEntryType.Collection,
+            type: TeamClusterRemoteExplorerEntryType.Collection,
             size: await dataSource.getRepository(BROWSABLE_TABLES[name]).count(),
             updatedAt: null,
             description: 'Table'
         })));
     }
 
-    async node(path: string): Promise<RemoteExplorerNode> {
+    async node(path: string): Promise<TeamClusterRemoteExplorerNode> {
         const tableName = normalizeExplorerPath(path);
         if (!tableName) {
             return {
                 path,
                 title: 'Daemon tables',
-                type: RemoteExplorerNodeType.Collection,
-                contentType: RemoteExplorerContentType.Empty,
+                type: TeamClusterRemoteExplorerNodeType.Collection,
+                contentType: TeamClusterRemoteExplorerContentType.Empty,
                 textContent: null,
                 documents: []
             };
@@ -47,8 +53,8 @@ export default class DaemonTableRemoteAccess extends BaseRemoteAccess {
         return {
             path,
             title: tableName,
-            type: RemoteExplorerNodeType.Collection,
-            contentType: RemoteExplorerContentType.DaemonRows,
+            type: TeamClusterRemoteExplorerNodeType.Collection,
+            contentType: TeamClusterRemoteExplorerContentType.DaemonRows,
             textContent: null,
             documents: (await this.readRows(tableName, MAX_EXPLORER_DOCUMENTS)).map(toExplorerDocument)
         };

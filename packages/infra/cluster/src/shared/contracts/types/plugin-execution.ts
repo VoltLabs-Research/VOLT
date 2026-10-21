@@ -1,12 +1,10 @@
-import type { EntrypointType } from '@shared/contracts/types/http-runtime';
-import type {
-    ProcessExecutionLogSink
-} from '@shared/contracts/types/execution-log';
+import type { ProcessExecutionLogSink } from '@shared/contracts/types/execution-log';
 import type {
     PluginFrameDescriptor,
     PluginProcessResponse
 } from '@shared/contracts/types/plugin-batch';
 import type { SharedFramePublishInput } from '@shared/contracts/types/shared-frame';
+import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
 
 export interface ProcessExecutionResult {
     code: number;

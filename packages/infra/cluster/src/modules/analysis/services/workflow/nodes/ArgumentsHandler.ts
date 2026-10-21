@@ -1,25 +1,24 @@
-import type { WorkflowArgumentDefinition } from '@shared/contracts/types/http-workflow';
 import type {
     WorkflowExecutionContext,
-    WorkflowNode,
     WorkflowNodeOutput,
     WorkflowValue
 } from '@shared/contracts/types/workflow.types';
 import type { WorkflowNodeHandler, WorkflowNodeRegistry } from '@modules/analysis/services/workflow/NodeRegistry';
 import { WorkflowValueResolver } from '@modules/analysis/services/workflow/WorkflowValueResolver';
-import { isArgumentVisible } from '@modules/analysis/services/workflow/nodes/argument-visibility';
 import {
     applyPluginReferenceMappings,
     collectPluginReferences,
     readPluginReferenceSelections
 } from '@modules/analysis/services/workflow/nodes/plugin-reference-arguments';
 import { encodeCliArgumentsToken, stringifyWorkflowValue } from '@shared/utilities/serialization';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { NodeType, ArgumentType } from '@volt/contracts/modules/plugin/enums';
+import type { IArgumentDefinition, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
+import { isArgumentVisible } from '@volt/contracts/modules/plugin/arguments';
 
 const SELECTED_TIMESTEPS_ARGUMENT = 'selectedTimesteps';
 
 const definitionTreeHasArgument = (
-    definitions: WorkflowArgumentDefinition[],
+    definitions: IArgumentDefinition[],
     argumentKey: string
 ): boolean => definitions.some((definition) => (
     definition.argument === argumentKey
@@ -27,10 +26,10 @@ const definitionTreeHasArgument = (
 ));
 
 const isRequiredValueMissing = (
-    definition: WorkflowArgumentDefinition,
+    definition: IArgumentDefinition,
     value: WorkflowValue
 ): boolean => {
-    if (definition.type === 'pluginReference') {
+    if (definition.type === ArgumentType.PLUGIN_REFERENCE) {
         return readPluginReferenceSelections(value).length === 0;
     }
 
@@ -42,15 +41,15 @@ const isRequiredValueMissing = (
 };
 
 const createCliArgument = (
-    definition: WorkflowArgumentDefinition,
+    definition: IArgumentDefinition,
     argumentKey: string,
     value: WorkflowValue
 ): string[] => {
-    if (value === null || value === undefined || definition.type === 'pluginReference') {
+    if (value === null || value === undefined || definition.type === ArgumentType.PLUGIN_REFERENCE) {
         return [];
     }
 
-    if (definition.type === 'boolean') {
+    if (definition.type === ArgumentType.BOOLEAN) {
         const isEnabled = value === true || value === 'true';
 
         if (definition.cliValueStyle === 'explicit') {
@@ -60,7 +59,7 @@ const createCliArgument = (
         return isEnabled ? [`--${argumentKey}`] : [];
     }
 
-    if (definition.type === 'select' && definition.multipleSelection) {
+    if (definition.type === ArgumentType.SELECT && definition.multipleSelection) {
         const selectedValues = Array.isArray(value) ? value : [value];
         return selectedValues.length > 0 ? [`--${argumentKey}`, selectedValues.join(',')] : [];
     }
@@ -69,11 +68,11 @@ const createCliArgument = (
 };
 
 export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
-    readonly type = WorkflowNodeType.Arguments;
+    readonly type = NodeType.ARGUMENTS;
 
     constructor(private readonly registry: WorkflowNodeRegistry) {}
 
-    async execute(node: WorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
+    async execute(node: IWorkflowNode, context: WorkflowExecutionContext): Promise<WorkflowNodeOutput> {
         const definitions = this.buildArgumentDefinitions(node, context);
         const values = await this.resolveArgumentValues(definitions, node.id, context);
         applyPluginReferenceMappings(definitions, values, context.nestedWorkflows);
@@ -94,22 +93,24 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     }
 
     private buildArgumentDefinitions(
-        node: WorkflowNode,
+        node: IWorkflowNode,
         context: WorkflowExecutionContext
-    ): WorkflowArgumentDefinition[] {
+    ): IArgumentDefinition[] {
         const definitions = node.data.arguments?.arguments ?? [];
         const needsReservedTimesteps = context.runtimeArguments[SELECTED_TIMESTEPS_ARGUMENT] !== undefined
             && !definitionTreeHasArgument(definitions, SELECTED_TIMESTEPS_ARGUMENT);
 
         return needsReservedTimesteps
             ? [...definitions, {
- argument: SELECTED_TIMESTEPS_ARGUMENT, type: 'list' 
-}]
+                argument: SELECTED_TIMESTEPS_ARGUMENT,
+                label: SELECTED_TIMESTEPS_ARGUMENT,
+                type: ArgumentType.LIST
+            }]
             : definitions;
     }
 
     private async resolveArgumentValues(
-        definitions: WorkflowArgumentDefinition[],
+        definitions: IArgumentDefinition[],
         nodeId: string,
         context: WorkflowExecutionContext
     ): Promise<WorkflowNodeOutput> {
@@ -131,7 +132,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     }
 
     private readConfiguredArgumentValue(
-        definition: WorkflowArgumentDefinition,
+        definition: IArgumentDefinition,
         argumentKey: string,
         context: WorkflowExecutionContext
     ): WorkflowValue {
@@ -151,7 +152,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     }
 
     private assertRequiredVisibleArguments(
-        definitions: WorkflowArgumentDefinition[],
+        definitions: IArgumentDefinition[],
         values: WorkflowNodeOutput
     ): void {
         for (const definition of definitions) {
@@ -168,7 +169,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     }
 
     private buildCliArgs(
-        definitions: WorkflowArgumentDefinition[],
+        definitions: IArgumentDefinition[],
         values: WorkflowNodeOutput
     ): string[] {
         return definitions.flatMap((definition) => {
@@ -182,7 +183,7 @@ export class WorkflowArgumentsHandler implements WorkflowNodeHandler {
     }
 
     private getVisibleValues(
-        definitions: WorkflowArgumentDefinition[],
+        definitions: IArgumentDefinition[],
         values: WorkflowNodeOutput
     ): WorkflowNodeOutput {
         return Object.fromEntries(definitions.flatMap((definition) => (

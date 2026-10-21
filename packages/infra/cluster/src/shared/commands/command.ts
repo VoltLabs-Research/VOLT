@@ -1,17 +1,14 @@
+import type { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+
 interface CommandOptions {
     readonly raw?: boolean;
     readonly status?: number;
 }
 
 export interface CommandMethodMetadata {
-    readonly name: string;
+    readonly name: DaemonCommand;
     readonly options: CommandOptions;
     readonly propertyKey: string;
-}
-
-interface CommandGroupMetadata {
-    readonly namespace: string;
-    readonly commands: readonly CommandMethodMetadata[];
 }
 
 type CommandGroupClass = new (...args: never[]) => object;
@@ -25,14 +22,9 @@ export interface CommandGroupFactory {
     readonly group: CommandGroupClass;
 }
 
-const namespaces = new WeakMap<CommandGroupClass, string>();
 const commandsByGroup = new WeakMap<CommandGroupClass, CommandMethodMetadata[]>();
 
-export const CommandGroup = (namespace: string) => (target: CommandGroupClass): void => {
-    namespaces.set(target, namespace);
-};
-
-export const Command = (name: string, options: CommandOptions = {}): MethodDecorator => (target, propertyKey, descriptor) => {
+export const Command = (name: DaemonCommand, options: CommandOptions = {}): MethodDecorator => (target, propertyKey, descriptor) => {
     if (typeof descriptor?.value !== 'function') {
         throw new Error(`@Command can only decorate methods: ${String(propertyKey)}`);
     }
@@ -47,19 +39,9 @@ export const Command = (name: string, options: CommandOptions = {}): MethodDecor
     commandsByGroup.set(groupClass, methods);
 };
 
-export const getCommandGroupMetadata = (group: CommandGroupClass): CommandGroupMetadata | null => {
-    const namespace = namespaces.get(group);
-    const commands = commandsByGroup.get(group);
-
-    if (!namespace || !commands?.length) {
-        return null;
-    }
-
-    return {
-        namespace,
-        commands: [...commands]
-    };
-};
+export const getGroupCommands = (group: CommandGroupClass): readonly CommandMethodMetadata[] => (
+    commandsByGroup.get(group) ?? []
+);
 
 export const commandGroupFactory = <TGroup extends object>(
     group: new (...args: never[]) => TGroup,

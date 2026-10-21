@@ -3,15 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { type Socket } from 'socket.io-client';
 
 import { loadConfig } from '@core/config/daemon';
+import { connectPlaneSocket, registerSignalHandlers, sendToParent } from '@shared/planes/plane-shared';
 import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    connectPlaneSocket,
-    registerSignalHandlers,
-    sendToParent
-} from '@shared/planes/plane-shared';
-import type {
-    TeamClusterDaemonCommandMessage,
-    TeamClusterDaemonSocketResponsePayload
+    type TeamClusterDaemonCommandMessage,
+    type TeamClusterDaemonSocketResponsePayload,
+    DaemonSocketEvent
 } from '@voltstack/daemon-cluster-client';
 import type { ReverseChannelInboundMessage } from '@shared/contracts/channel/binary-messages';
 
@@ -85,7 +81,7 @@ const sendCommand = (
             timeout
         });
 
-        activeSocket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+        activeSocket.emit(DaemonSocketEvent.TeamClusterDaemonMessage, {
             type: 'command',
             requestId,
             command,
@@ -125,7 +121,7 @@ const start = (): void => {
     socket = connection.socket;
     isRegistered = connection.isRegistered;
 
-    connection.socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: InboundControlMessage) => {
+    connection.socket.on(DaemonSocketEvent.TeamClusterDaemonMessage, (message: InboundControlMessage) => {
         if (message.type === 'command') {
             const ipcRequestId = randomUUID();
             pendingInboundCommands.set(ipcRequestId, message.requestId);
@@ -162,7 +158,7 @@ const stop = (): void => {
 
 process.on('message', (message: ParentMessage) => {
     if (message.type === 'emit') {
-        socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message.message);
+        socket?.emit(DaemonSocketEvent.TeamClusterDaemonMessage, message.message);
         return;
     }
 
@@ -190,7 +186,7 @@ process.on('message', (message: ParentMessage) => {
     const requestId = pendingInboundCommands.get(message.ipcRequestId);
     if (requestId === undefined) return;
     pendingInboundCommands.delete(message.ipcRequestId);
-    socket?.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+    socket?.emit(DaemonSocketEvent.TeamClusterDaemonMessage, {
         ...message.response,
         requestId
     });

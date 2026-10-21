@@ -1,5 +1,4 @@
 import { toError } from '@shared/utilities/error-message';
-import { EntrypointType } from '@shared/contracts/types/http-runtime';
 import type {
     PersistentPluginInvocationInput,
     PluginExecutionRuntime
@@ -19,6 +18,7 @@ import {
     resolveNonZeroExitMessage
 } from '@modules/analysis/services/workflow/nodes/entrypoint-process-outcome';
 import { isRecord } from '@shared/utilities/is-record';
+import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
 
 const PERSISTENT_PLUGIN_DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -140,7 +140,7 @@ export const runPersistentEntrypoint = async (
 ): Promise<WorkflowNodeOutput | null> => {
     const { trajectoryFrameStore, ownerClusterId } = execution;
     const pluginRoot = executionRuntime.projectPath;
-    if (entrypoint.entrypointType !== EntrypointType.PythonScript
+    if (entrypoint.entrypointType !== EntrypointType.PYTHON_SCRIPT
         || !pluginRoot
         || !trajectoryFrameStore
         || !ownerClusterId) {

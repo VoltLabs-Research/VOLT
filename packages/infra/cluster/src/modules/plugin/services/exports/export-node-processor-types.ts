@@ -1,15 +1,19 @@
 import type { AnalysisExposureDefinition } from '@shared/contracts/types/http-analysis';
 import type { ArtifactUploadBatch } from '@shared/contracts/types/artifact-upload';
 import type { JsonObject } from '@shared/contracts/types/json';
-import type { JobIdentity } from '@shared/contracts/types/job-identity';
 import type { GeometryBudget } from '@shared/octree';
 import type { MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import { PARQUET_SOURCE_KEY } from '@shared/contracts/types/workflow-exposure';
 import path from 'node:path';
+import type { WorkflowExportType } from '@volt/contracts/modules/plugin/enums';
+import type { DaemonJobIdentity } from '@volt/contracts/modules/cluster/daemon-events';
 
-export type ExporterName = 'AtomisticExporter' | 'MeshExporter' | 'LineExporter' | 'BondExporter' | 'ChartExporter' | 'ConfigurationExporter' | 'PanelExporter';
-
-export type ConfigurationExportFormat = 'lammps-dump' | 'lammps-data' | 'extxyz' | 'poscar' | 'cif';
+export type ConfigurationExportFormat =
+    | WorkflowExportType.LAMMPS_DUMP
+    | WorkflowExportType.LAMMPS_DATA
+    | WorkflowExportType.EXTXYZ
+    | WorkflowExportType.POSCAR
+    | WorkflowExportType.CIF;
 
 export interface ConfigurationExporterOptions {
     format: ConfigurationExportFormat;
@@ -231,7 +235,7 @@ export interface OctreeExportOptions {
     geometryBudget?: GeometryBudget;
 }
 
-type ExportExecutionData = Required<Pick<JobIdentity, 'analysisId' | 'trajectoryId' | 'pluginId'>> & {
+type ExportExecutionData = Required<Pick<DaemonJobIdentity, 'analysisId' | 'trajectoryId' | 'pluginId'>> & {
     storageClusterId?: string;
 };
 

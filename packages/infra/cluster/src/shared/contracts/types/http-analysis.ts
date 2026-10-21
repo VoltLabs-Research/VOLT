@@ -1,50 +1,22 @@
-import type { EntrypointType } from '@shared/contracts/types/http-runtime';
-import type { NestedPluginDefinition, PluginReferenceExecutionRequest, TrajectoryFrame, WorkflowDefinition } from '@shared/contracts/types/http-workflow';
+import type { IExportData } from '@volt/contracts/modules/plugin/workflow';
 import type { WorkflowValueMap } from '@shared/contracts/types/workflow.types';
 import type { DaemonTraceContext } from '@shared/observability/daemon-instrumentation';
-import type { JobIdentity } from '@shared/contracts/types/job-identity';
+import { EntrypointType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import type { DaemonJobIdentity } from '@volt/contracts/modules/cluster/daemon-events';
+import type {
+    AnalysisStartTransportRequest,
+    AnalysisStartRequest,
+    PipelineStartTransportRequest,
+    PipelineStartRequest,
+    NestedPluginDefinition,
+    PluginReferenceExecutionRequest,
+    TrajectoryFrame
+} from '@volt/contracts/modules/analysis/daemon';
 
 type WithTrace<T> = T & { traceContext?: DaemonTraceContext };
 
-export interface AnalysisValueMap {
-    [key: string]: AnalysisValue;
-}
-
-type AnalysisValue =
-    | AnalysisValueMap
-    | AnalysisValue[]
-    | boolean
-    | null
-    | number
-    | string
-    | undefined
-
-export interface PluginSyncRequest {
-    pluginId: string;
-    objectKey: string;
-    ownerClusterId: string;
-    expectedHash?: string;
-}
-
-export interface PluginWarmupRequest {
-    pluginId: string;
-    binaryObjectPath: string;
-    ownerClusterId?: string;
-    requirementsFile: string;
-    entrypointScript?: string;
-    expectedHash?: string;
-}
-
-export interface PluginWarmupResponse {
-    queued: boolean;
-    jobId: string;
-}
-
-interface AnalysisExposureExportDefinition {
-    exporter: string;
-    type: string;
-    options?: AnalysisValueMap;
-}
+export type AnalysisValueMap = Record<string, unknown>;
 
 interface AnalysisNodeOutputSnapshots {
     [nodeId: string]: WorkflowValueMap;
@@ -55,26 +27,7 @@ export interface AnalysisExposureDefinition {
     name: string;
     results: string;
     id?: string;
-    export?: AnalysisExposureExportDefinition;
-}
-
-export interface DaemonAnalysisDocument {
-    _id: string;
-    plugin?: string;
-    pluginDisplayName: string;
-    computeClusterId?: string;
-    storageClusterId?: string;
-    config?: AnalysisValueMap;
-    trajectory?: string;
-    createdBy?: string;
-    totalFrames?: number;
-    completedFrames?: number;
-    startedAt?: string | Date;
-    finishedAt?: string | Date;
-    team?: string;
-    status?: string;
-    createdAt?: string | Date;
-    updatedAt?: string | Date;
+    export?: IExportData;
 }
 
 export interface AnalysisExecutionDataReference {
@@ -92,7 +45,7 @@ interface AnalysisEntrypointSnapshot {
     entrypointScript?: string;
 }
 
-export interface AnalysisExecutionIdentity extends Omit<JobIdentity, 'jobId'> {
+export interface AnalysisExecutionIdentity extends Omit<DaemonJobIdentity, 'jobId'> {
     pluginId: string;
     trajectoryId: string;
     analysisId: string;
@@ -101,12 +54,11 @@ export interface AnalysisExecutionIdentity extends Omit<JobIdentity, 'jobId'> {
 }
 
 interface AnalysisWorkflowSnapshot {
-    definition: WorkflowDefinition;
+    definition: IWorkflow;
     nestedPlugins: NestedPluginDefinition[];
     pluginReferenceExecutions?: PluginReferenceExecutionRequest[];
     exposures: AnalysisExposureDefinition[];
     forEachNodeId?: string;
-    trajectoryWindowNodeId?: string;
     nodeOutputSnapshots: AnalysisNodeOutputSnapshots;
 }
 
@@ -118,16 +70,10 @@ export interface AnalysisJobExecutionData {
     traceContext?: Record<string, string>;
 }
 
-export type WorkflowWindowMode = 'window' | 'all' | 'referencePair';
-
 export interface PlannedExecutionItem {
     timestep?: number;
     path?: string;
     frame?: number;
-    windowMode?: WorkflowWindowMode;
-    windowSize?: number;
-    referenceTimestep?: number;
-    windowTimesteps?: number[];
 }
 
 export interface AnalysisJobMetadata {
@@ -143,13 +89,9 @@ export interface AnalysisJobMetadata {
     itemIndex?: number;
     forEachItem?: PlannedExecutionItem;
     forEachIndex?: number;
-    windowMode?: WorkflowWindowMode;
-    windowSize?: number;
-    referenceTimestep?: number;
-    windowTimesteps?: number[];
 }
 
-export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extends JobIdentity {
+export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extends DaemonJobIdentity {
     sessionId?: string;
     status: string;
     queueType: string;
@@ -162,31 +104,6 @@ export interface AnalysisQueueJobPayload<TMetadata = AnalysisJobMetadata> extend
     executionDataReference?: AnalysisExecutionDataReference;
     createdAt: string;
     updatedAt: string;
-}
-
-export interface AnalysisStartTransportRequest {
-    analysis: DaemonAnalysisDocument;
-    analysisId: string;
-    pluginId: string;
-    pluginDisplayName: string;
-    teamId: string;
-    teamClusterId: string;
-    trajectoryId: string;
-    trajectoryFramesCompressed: string;
-    workflowCompressed: string;
-    nestedPluginsCompressed: string;
-    pluginReferenceExecutionsCompressed: string;
-    config: AnalysisValueMap;
-    selectedFrameOnly?: boolean;
-    selectedTimesteps?: number[];
-    timestep?: number;
-}
-
-export interface AnalysisStartRequest extends AnalysisStartTransportRequest {
-    trajectoryFrames: TrajectoryFrame[];
-    workflow: WorkflowDefinition;
-    nestedPlugins: NestedPluginDefinition[];
-    pluginReferenceExecutions: PluginReferenceExecutionRequest[];
 }
 
 export type AnalysisStartRequestWithTrace = WithTrace<AnalysisStartRequest>;
@@ -214,49 +131,6 @@ export interface JobsActionResponse {
     affectedJobIds: string[];
 }
 
-export interface QueuedJobNotification extends JobIdentity {
-    name?: string;
-    queueType: string;
-}
-
-export interface AnalysisStartResponse {
-    queued: boolean;
-    totalJobs: number;
-    jobs: QueuedJobNotification[];
-}
-
-export interface PipelineStageTransport {
-    kind: 'plugin' | 'slice' | 'expression';
-    plugin?: AnalysisStartTransportRequest;
-    cacheHit?: boolean;
-    cacheSourceAnalysisId?: string;
-    sharedExposureIds?: string[];
-    config?: AnalysisValueMap;
-}
-
-interface PipelineStartTransportRequest {
-    teamId: string;
-    teamClusterId: string;
-    trajectoryId: string;
-    storageClusterId?: string;
-    selectedTimesteps?: number[];
-    timestep?: number;
-    stages: PipelineStageTransport[];
-}
-
-export interface PipelineStartResolvedStage {
-    kind: 'plugin' | 'slice' | 'expression';
-    plugin?: AnalysisStartRequest;
-    cacheHit?: boolean;
-    cacheSourceAnalysisId?: string;
-    sharedExposureIds?: string[];
-    config?: AnalysisValueMap;
-}
-
-interface PipelineStartRequest extends Omit<PipelineStartTransportRequest, 'stages'> {
-    stages: PipelineStartResolvedStage[];
-}
-
 export type PipelineStartTransportPayload = WithTrace<PipelineStartTransportRequest>;
 export type PipelineStartRequestWithTrace = WithTrace<PipelineStartRequest>;
 
@@ -272,7 +146,7 @@ export interface PipelinePlannedStage {
     config?: AnalysisValueMap;
 }
 
-export interface PipelineQueueJobPayload extends JobIdentity {
+export interface PipelineQueueJobPayload extends DaemonJobIdentity {
     status: string;
     queueType: string;
     name: string;

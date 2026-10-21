@@ -55,9 +55,3 @@ export interface ListingPaginatedResult extends PaginatedResult<PluginListingRow
     subListingNames: string[];
 }
 
-export interface PluginListingTransferExportResult {
-    rows: PluginListingTransferRow[];
-    total: number;
-    hasMore: boolean;
-    nextSkip: number;
-}

@@ -1,20 +1,17 @@
 import { readHeader, scanFrames } from '@voltstack/lammps-io';
+import type { NativeFrameMetadata, NativeSimulationCell } from '@volt/contracts/modules/trajectory/daemon';
 
-interface ParsedSimulationCellGeometry {
-    cell_vectors: [[number, number, number], [number, number, number], [number, number, number]];
-    cell_origin: [number, number, number];
-    periodic_boundary_conditions: { x: boolean; y: boolean; z: boolean };
+type Vec3 = [number, number, number];
+
+// The parser always yields full 3x3 cells, so it narrows the wire geometry to tuples.
+export interface ParsedSimulationCell extends NativeSimulationCell {
+    geometry: NativeSimulationCell['geometry'] & {
+        cell_vectors: [Vec3, Vec3, Vec3];
+        cell_origin: Vec3;
+    };
 }
 
-export interface ParsedSimulationCell {
-    boundingBox: { width: number; height: number; length: number };
-    geometry: ParsedSimulationCellGeometry;
-}
-
-export interface ParsedFrameMetadata {
-    timestep: number;
-    natoms: number;
-    headers: string[];
+export interface ParsedFrameMetadata extends NativeFrameMetadata {
     simulationCell: ParsedSimulationCell;
 }
 

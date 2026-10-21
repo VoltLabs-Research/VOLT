@@ -5,8 +5,6 @@ import { getDockerRuntime } from '@shared/runtime/DockerRuntime';
 import { getVoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
 import { getVoltEventChannelConnection } from '@modules/system/socket/connection/VoltEventChannelConnection';
 import { getEventDispatcher } from '@shared/events/EventDispatcher';
-import { TeamClusterServiceExposureAccessMode, TeamClusterServiceExposureSourceKind, TeamClusterServiceExposureStatus } from '@shared/contracts/types/service-exposure';
-import type { TeamClusterServiceExposure } from '@shared/contracts/types/service-exposure';
 import type { DaemonConfig } from '@core/config/daemon';
 import type { EventDispatcher } from '@shared/events/EventDispatcher';
 import { logger } from '@shared/logger';
@@ -30,6 +28,12 @@ import type { DockerRuntime } from '@shared/runtime/DockerRuntime';
 import { ExposureSnapshotUpdatedEvent } from '@modules/system/events/exposure-events';
 import type { VoltCloudConnection } from '@modules/system/socket/connection/VoltCloudConnection';
 import type { VoltEventChannelConnection } from '@modules/system/socket/connection/VoltEventChannelConnection';
+import {
+    TEAM_CLUSTER_SERVICE_EXPOSURE,
+    type TeamClusterServiceExposure,
+    type TeamClusterServiceExposureAccessMode,
+    type TeamClusterServiceExposureStatus
+} from '@voltstack/daemon-cluster-client';
 
 type ContainerInfo = Dockerode.ContainerInfo;
 
@@ -214,7 +218,7 @@ export class DaemonExposureRegistry {
             const isRunning = inspection.State.Running;
             const status = isRunning
                 ? await this.resolveReadinessGatedStatus(container.Id, labels, targetHost)
-                : TeamClusterServiceExposureStatus.Unavailable;
+                : TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Unavailable;
 
             return {
                 container,
@@ -241,26 +245,26 @@ export class DaemonExposureRegistry {
     ): Promise<TeamClusterServiceExposureStatus> {
         const probe = readReadinessProbe(labels);
         if (!probe) {
-            return TeamClusterServiceExposureStatus.Active;
+            return TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Active;
         }
 
         if (this.readyContainerIds.has(containerId)) {
-            return TeamClusterServiceExposureStatus.Active;
+            return TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Active;
         }
 
         const probePort = probe.port
             ?? readPortSet(labels[HTTP_PORTS_LABEL_KEY]).values().next().value;
         if (!probePort) {
-            return TeamClusterServiceExposureStatus.Unavailable;
+            return TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Unavailable;
         }
 
         const ready = await this.probeHttpReadiness(targetHost, probePort, probe);
         if (ready) {
             this.readyContainerIds.add(containerId);
-            return TeamClusterServiceExposureStatus.Active;
+            return TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Active;
         }
 
-        return TeamClusterServiceExposureStatus.Unavailable;
+        return TEAM_CLUSTER_SERVICE_EXPOSURE.Status.Unavailable;
     }
 
     private async probeHttpReadiness(
@@ -283,19 +287,19 @@ export class DaemonExposureRegistry {
     }
 
     private createContainerExposure(context: ContainerExposureContext, containerPort: number): TeamClusterServiceExposure {
-        const accessModes: TeamClusterServiceExposureAccessMode[] = [TeamClusterServiceExposureAccessMode.Tcp];
+        const accessModes: TeamClusterServiceExposureAccessMode[] = [TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Tcp];
         if (context.httpPorts.has(containerPort)) {
-            accessModes.push(TeamClusterServiceExposureAccessMode.Http);
+            accessModes.push(TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http);
         }
         if (context.websocketPorts.has(containerPort)) {
-            accessModes.push(TeamClusterServiceExposureAccessMode.WebSocket);
+            accessModes.push(TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.WebSocket);
         }
 
         return {
             id: `${context.container.Id}:${containerPort}`,
             teamClusterId: context.teamClusterId,
             teamId: context.teamId,
-            sourceKind: TeamClusterServiceExposureSourceKind.Container,
+            sourceKind: TEAM_CLUSTER_SERVICE_EXPOSURE.SourceKind.Container,
             containerId: context.container.Id,
             containerName: context.containerName,
             exposureName: `${context.containerName}:${containerPort}`,

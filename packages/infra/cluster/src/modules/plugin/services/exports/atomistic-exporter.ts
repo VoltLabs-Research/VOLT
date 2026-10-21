@@ -1,5 +1,4 @@
 import { DuckDBConnection } from '@duckdb/node-api';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { quoteIdentifier, sqlString } from '@modules/plugin/services/properties/duckdb-sql-escaping';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { exportOctreeMetadata } from '@modules/plugin/services/exports/octree-exporter';
@@ -14,6 +13,8 @@ import {
     readAtomisticParquetSource
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import spatialAssembler from '@voltstack/spatial-assembler';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 const buildCategoryPalette = (
     categories: Iterable<string>,
@@ -325,8 +326,8 @@ export const exportAtomisticArtifact = async (
     );
 
     await stageExportBufferUpload(input, {
-        exporter: 'AtomisticExporter',
-        bucket: ObjectBucketName.Models,
+        exporter: Exporter.ATOMISTIC,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         buffer,
         contentType: 'model/gltf-binary',
         objectPath,

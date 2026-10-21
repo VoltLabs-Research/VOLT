@@ -5,7 +5,10 @@ const ELF_MAGIC = Buffer.from([0x7f, 0x45, 0x4c, 0x46]);
 const PE_MAGIC = Buffer.from([0x4d, 0x5a]);
 
 const readPrefix = async (filePath: string, length: number): Promise<Buffer> => {
-    const stream = createReadStream(filePath, { start: 0, end: length - 1 });
+    const stream = createReadStream(filePath, {
+        start: 0,
+        end: length - 1
+    });
     const chunks: Buffer[] = [];
     for await (const chunk of stream) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));

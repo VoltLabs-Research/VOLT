@@ -1,101 +1,50 @@
-import {
-    type AuthenticatedMessageContext,
-    type AuthenticatedReverseChannelMessage
-} from '@shared/contracts/channel/reverse-channel-messaging';
-import type { ExecutionLogSegment } from '@shared/contracts/types/execution-log';
+import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type {
-    BaseAnalysisEventData
-} from '@modules/analysis/events/analysis-events';
-import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
+    AnalysisJobCompletionEvent,
+    AnalysisJobReport,
+    AnalysisJobStatusEvent,
+    AnalysisLogChunk,
+    AnalysisLogChunkEvent,
+    AnalysisProvenance,
+    AnalysisProvenanceEvent,
+    AnalysisStageStatusEvent,
+    AnalysisStageStatusReport,
+    DaemonIdentity,
+    DebugLogChunk,
+    DebugLogChunkEvent
+} from '@volt/contracts/modules/cluster/daemon-events';
 
-type AnalysisJobCompletionPayload = BaseAnalysisEventData & { error?: string };
-
-export type AnalysisStageType = 'system' | 'plugin-ref' | 'entrypoint' | 'exposure' | 'artifact-upload';
-export type AnalysisStageStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cached';
-
-export interface AnalysisStageStatusPayload extends BaseAnalysisEventData {
-    stageKey: string;
-    label: string;
-    stageType: AnalysisStageType;
-    stageStatus: AnalysisStageStatus;
-    pluginId?: string;
-    pluginDisplayName?: string;
-    nodeId?: string;
-    exposureId?: string;
-    configHash?: string;
-    cacheHit?: boolean;
-    detail?: string;
-    startedAt?: string;
-    finishedAt?: string;
-    durationMs?: number;
-    producedArtifacts?: boolean;
-}
-
-export interface AnalysisLogChunkPayload {
-    analysisId: string;
-    jobId: string;
-    segments: ExecutionLogSegment[];
-    teamId: string;
-    timestep: number;
-    trajectoryId: string;
-}
-
-export interface DebugLogChunkPayload {
-    nodeId: string;
-    segments: ExecutionLogSegment[];
-    sessionId: string;
-}
-
-export type AnalysisJobStatusMessage = AuthenticatedReverseChannelMessage<
-    'analysis-job-status',
-    BaseAnalysisEventData & { status: 'running' }
->;
-
-export type AnalysisJobCompletionMessage = AuthenticatedReverseChannelMessage<
-    'analysis-job-completion',
-    AnalysisJobCompletionPayload & { success: boolean }
->;
-
-export type AnalysisStageStatusMessage = AuthenticatedReverseChannelMessage<
-    'analysis-stage-status',
-    AnalysisStageStatusPayload
->;
-
-export type AnalysisLogChunkMessage = AuthenticatedReverseChannelMessage<'analysis-log-chunk', AnalysisLogChunkPayload>;
-
-export type DebugLogChunkMessage = AuthenticatedReverseChannelMessage<'debug-log-chunk', DebugLogChunkPayload>;
-
-export type AnalysisProvenanceMessage = AuthenticatedReverseChannelMessage<'analysis-provenance', AnalysisProvenance>;
+type AnalysisJobCompletionPayload = AnalysisJobReport & { error?: string };
 
 export const createAnalysisProvenanceMessage = (
-    context: AuthenticatedMessageContext,
+    context: DaemonIdentity,
     payload: AnalysisProvenance
-): AnalysisProvenanceMessage => ({
+): AnalysisProvenanceEvent => ({
     type: 'analysis-provenance',
     ...context,
     ...payload
 });
 
 export const createAnalysisJobStatusMessage = (
-    context: AuthenticatedMessageContext,
-    payload: BaseAnalysisEventData
-): AnalysisJobStatusMessage => ({
+    context: DaemonIdentity,
+    payload: AnalysisJobReport
+): AnalysisJobStatusEvent => ({
     type: 'analysis-job-status',
     ...context,
     ...payload,
-    status: 'running'
+    status: JobStatus.Running
 });
 
 export const createAnalysisJobStatusDedupeKey = (
-    payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'>
+    payload: Pick<AnalysisJobReport, 'jobId' | 'timestep'>
 ): string => {
     return `analysis.job-status:${payload.jobId}:running:${payload.timestep ?? 'none'}`;
 };
 
 export const createAnalysisJobCompletionMessage = (
-    context: AuthenticatedMessageContext,
+    context: DaemonIdentity,
     payload: AnalysisJobCompletionPayload
-): AnalysisJobCompletionMessage => ({
+): AnalysisJobCompletionEvent => ({
     type: 'analysis-job-completion',
     ...context,
     ...payload,
@@ -104,39 +53,39 @@ export const createAnalysisJobCompletionMessage = (
 });
 
 export const createAnalysisStageStatusMessage = (
-    context: AuthenticatedMessageContext,
-    payload: AnalysisStageStatusPayload
-): AnalysisStageStatusMessage => ({
+    context: DaemonIdentity,
+    payload: AnalysisStageStatusReport
+): AnalysisStageStatusEvent => ({
     type: 'analysis-stage-status',
     ...context,
     ...payload
 });
 
 export const createAnalysisStageStatusDedupeKey = (
-    payload: Pick<AnalysisStageStatusPayload, 'jobId' | 'stageKey' | 'stageStatus' | 'timestep'>
+    payload: Pick<AnalysisStageStatusReport, 'jobId' | 'stageKey' | 'stageStatus' | 'timestep'>
 ): string => {
     return `analysis.stage-status:${payload.jobId}:${payload.stageKey}:${payload.stageStatus}:${payload.timestep ?? 'none'}`;
 };
 
 export const createAnalysisJobCompletionDedupeKey = (
-    payload: Pick<BaseAnalysisEventData, 'jobId' | 'timestep'> & { error?: string }
+    payload: Pick<AnalysisJobReport, 'jobId' | 'timestep'> & { error?: string }
 ): string => {
     return `analysis.job-completion:${payload.jobId}:${payload.error ? 'failed' : 'completed'}:${payload.timestep ?? 'none'}`;
 };
 
 export const createAnalysisLogChunkMessage = (
-    context: AuthenticatedMessageContext,
-    payload: AnalysisLogChunkPayload
-): AnalysisLogChunkMessage => ({
+    context: DaemonIdentity,
+    payload: AnalysisLogChunk
+): AnalysisLogChunkEvent => ({
     type: 'analysis-log-chunk',
     ...context,
     ...payload
 });
 
 export const createDebugLogChunkMessage = (
-    context: AuthenticatedMessageContext,
-    payload: DebugLogChunkPayload
-): DebugLogChunkMessage => ({
+    context: DaemonIdentity,
+    payload: DebugLogChunk
+): DebugLogChunkEvent => ({
     type: 'debug-log-chunk',
     ...context,
     ...payload

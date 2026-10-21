@@ -2,51 +2,25 @@ import { errorMessage } from '@shared/utilities/error-message';
 import { getConfig } from '@core/config/daemon';
 import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { getFilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import type { DaemonConfig } from '@core/config/daemon';
 import { logger } from '@shared/logger';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import archiver = require('archiver');
 import fs from 'node:fs/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
 import path from 'node:path';
 import { finished } from 'node:stream/promises';
-
-interface ArchiveObjectEntryPayload {
-    type: 'object';
-    name: string;
-    bucket: string;
-    objectKey: string;
-    ownerClusterId?: string;
-    optional?: boolean;
-}
-
-interface ArchiveInlineEntryPayload {
-    type: 'inline';
-    name: string;
-    content: string;
-    encoding?: BufferEncoding;
-}
-
-type ArchiveEntryPayload = ArchiveObjectEntryPayload | ArchiveInlineEntryPayload;
-
-interface ArchiveCreatePayload {
-    output: {
-        bucket?: string;
-        objectKey: string;
-    };
-    entries: ArchiveEntryPayload[];
-}
-
-interface ArchiveCreateResult {
-    bucket: string;
-    objectKey: string;
-    contentLength: number;
-}
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type {
+    ArchiveEntry,
+    ArchiveCreateRequest,
+    ArchiveCreateResult
+} from '@volt/contracts/modules/cluster/daemon-archive';
 
 const normalizeZipEntryName = (value: string): string => {
     const normalized = path.posix.normalize(value.replace(/\\/g, '/')).replace(/^\/+/, '');
@@ -81,7 +55,6 @@ const createZipArchive = (options: archiver.ArchiverOptions): archiver.Archiver 
     return new ZipArchive(options);
 };
 
-@CommandGroup('object-store')
 export class ObjectStoreArchiveCommands {
     constructor(
         private readonly config: DaemonConfig,
@@ -89,8 +62,8 @@ export class ObjectStoreArchiveCommands {
         private readonly localObjectStore: FilesystemObjectStore
     ) {}
 
-    @Command('archive.create')
-    async create(payload: ArchiveCreatePayload): Promise<ArchiveCreateResult> {
+    @Command(DaemonCommand.ObjectStoreArchiveCreate)
+    async create(payload: ArchiveCreateRequest): Promise<ArchiveCreateResult> {
         if (!payload.output.objectKey) {
             throw new Error('object-store.archive.create requires output.objectKey');
         }
@@ -98,7 +71,7 @@ export class ObjectStoreArchiveCommands {
             throw new Error('object-store.archive.create requires at least one entry');
         }
 
-        const outputBucket = payload.output.bucket || ObjectBucketName.Trajectories;
+        const outputBucket = payload.output.bucket || TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories;
 
         return withNativeProcessingTempDir('object-store-archive', async (tempDirectory) => {
             const archivePath = path.join(tempDirectory, 'archive.zip');
@@ -139,7 +112,7 @@ export class ObjectStoreArchiveCommands {
         });
     }
 
-    private async appendEntry(archive: archiver.Archiver, entry: ArchiveEntryPayload): Promise<void> {
+    private async appendEntry(archive: archiver.Archiver, entry: ArchiveEntry): Promise<void> {
         const name = normalizeZipEntryName(entry.name);
 
         if (entry.type === 'inline') {

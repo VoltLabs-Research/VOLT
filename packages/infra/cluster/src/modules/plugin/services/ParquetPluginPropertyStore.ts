@@ -7,7 +7,6 @@ import { createHash } from 'node:crypto';
 import { DuckDBConnection } from '@duckdb/node-api';
 
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import type { FlatAtomProperties, PerAtomParquetSource } from '@modules/plugin/services/properties/PluginAtomProperties';
 import type {
     ModifierScalarValues,
@@ -58,6 +57,7 @@ import {
     type ExposurePropertyRows,
     mergeExposureRows
 } from '@modules/plugin/services/properties/exposure-property-merge';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const ATOM_ID_TABLE = '__volt_requested_atom_ids';
 
@@ -188,7 +188,7 @@ export class ParquetPluginPropertyStore implements PluginPropertyStore {
         const stat = await fs.stat(outputPath);
         await this.objectStore.putObjectStream({
             ownerClusterId: input.ownerClusterId,
-            bucket: ObjectBucketName.Plugins,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             objectKey,
             stream: createReadStream(outputPath),
             size: stat.size,

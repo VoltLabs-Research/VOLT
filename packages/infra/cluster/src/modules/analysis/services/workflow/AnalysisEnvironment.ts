@@ -10,7 +10,6 @@ import {
     dumpObjectKey,
     materializeFrameArgumentDumps
 } from '@modules/analysis/services/workflow/analysis-dump-localization';
-import type { TrajectoryDumpDescriptor } from '@shared/contracts/types/http-workflow';
 import type { AnalysisJobExecutionData, AnalysisJobMetadata } from '@shared/contracts/types/http-analysis';
 import type { WorkflowDumpTarget, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
 import { safeRemovePath } from '@shared/utilities/safe-remove-path';
@@ -18,9 +17,8 @@ import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 export interface AnalysisEnvironmentState {
     outputDir: string;
     outputs: Map<string, WorkflowNodeOutput>;
-    dumpTargets: WorkflowDumpTarget[];
+    dumpTarget: WorkflowDumpTarget | null;
     dumpLocalPaths: string[];
-    primaryFrameIndex: number;
 }
 
 export type AnalysisSeedMetadata = Pick<AnalysisJobMetadata, 'forEachItem' | 'forEachIndex'>;
@@ -28,9 +26,8 @@ export type AnalysisSeedMetadata = Pick<AnalysisJobMetadata, 'forEachItem' | 'fo
 const createState = (outputDir: string): AnalysisEnvironmentState => ({
     outputDir,
     outputs: new Map(),
-    dumpTargets: [],
-    dumpLocalPaths: [],
-    primaryFrameIndex: 0
+    dumpTarget: null,
+    dumpLocalPaths: []
 });
 
 export class AnalysisEnvironment {
@@ -46,18 +43,14 @@ export class AnalysisEnvironment {
         }
 
         const runtime = await this.initialize(executionData, metadata);
-
-        const windowTimesteps = metadata.windowTimesteps?.length
-            ? metadata.windowTimesteps
-            : [timestep];
-
-        const timestepToLocalPath = await this.downloadFrameSet(runtime, executionData, windowTimesteps);
-        runtime.dumpTargets = windowTimesteps.map((windowTimestep) => this.buildDumpTarget(
+        const localPath = await downloadAnalysisDump(
+            this.objectStore,
+            runtime,
             executionData,
-            windowTimestep,
-            timestepToLocalPath.get(windowTimestep)!
-        ));
-        runtime.primaryFrameIndex = Math.max(0, windowTimesteps.indexOf(timestep));
+            timestep,
+            `Analysis ${executionData.identity.analysisId} cannot download dumps without a storage cluster`
+        );
+        runtime.dumpTarget = this.buildDumpTarget(executionData, timestep, localPath);
         return this.seedOutputs(runtime, executionData, metadata);
     }
 
@@ -71,7 +64,7 @@ export class AnalysisEnvironment {
         await fs.mkdir(stageOutputDir, { recursive: true });
         const runtime = createState(stageOutputDir);
 
-        runtime.dumpTargets = [this.buildDumpTarget(executionData, timestep, workingDumpPath)];
+        runtime.dumpTarget = this.buildDumpTarget(executionData, timestep, workingDumpPath);
         return this.seedOutputs(runtime, executionData, metadata);
     }
 
@@ -116,44 +109,13 @@ export class AnalysisEnvironment {
         };
     }
 
-    private async downloadFrameSet(
-        runtime: AnalysisEnvironmentState,
-        executionData: AnalysisJobExecutionData,
-        windowTimesteps: number[]
-    ): Promise<Map<number, string>> {
-        const timestepToLocalPath = new Map<number, string>();
-        for (const windowTimestep of windowTimesteps) {
-            if (timestepToLocalPath.has(windowTimestep)) {
-                continue;
-            }
-
-            timestepToLocalPath.set(windowTimestep, await downloadAnalysisDump(
-                this.objectStore,
-                runtime,
-                executionData,
-                windowTimestep,
-                `Analysis ${executionData.identity.analysisId} cannot download dumps without a storage cluster`
-            ));
-        }
-
-        return timestepToLocalPath;
-    }
-
     private async seedOutputs(
         runtime: AnalysisEnvironmentState,
         executionData: AnalysisJobExecutionData,
         metadata: AnalysisSeedMetadata
     ): Promise<AnalysisEnvironmentState> {
-        const { forEachNodeId, trajectoryWindowNodeId, nodeOutputSnapshots } = executionData.workflow;
+        const { forEachNodeId, nodeOutputSnapshots } = executionData.workflow;
         const outputs = new Map(Object.entries(nodeOutputSnapshots)) as Map<string, WorkflowNodeOutput>;
-        const frames: TrajectoryDumpDescriptor[] = runtime.dumpTargets.map((target) => ({
-            timestep: target.timestep,
-            natoms: target.natoms,
-            simulationCell: target.simulationCell,
-            path: target.localPath,
-            originalPath: target.originalPath
-        }));
-        const primaryIndex = runtime.primaryFrameIndex;
 
         if (forEachNodeId) {
             if (!metadata.forEachItem || metadata.forEachIndex === undefined) {
@@ -164,24 +126,9 @@ export class AnalysisEnvironment {
                 ...outputs.get(forEachNodeId),
                 currentValue: {
                     ...metadata.forEachItem,
-                    path: frames[primaryIndex]?.path
+                    path: runtime.dumpTarget?.localPath
                 },
                 currentIndex: metadata.forEachIndex,
-                outputPath: runtime.outputDir
-            });
-        }
-
-        if (trajectoryWindowNodeId) {
-            const framePaths = frames.map((frame) => frame.path);
-
-            outputs.set(trajectoryWindowNodeId, {
-                ...outputs.get(trajectoryWindowNodeId),
-                frames,
-                count: frames.length,
-                primaryIndex,
-                primaryValue: frames[primaryIndex] ?? null,
-                framePaths: framePaths.join(' '),
-                framePathsCsv: framePaths.join(','),
                 outputPath: runtime.outputDir
             });
         }

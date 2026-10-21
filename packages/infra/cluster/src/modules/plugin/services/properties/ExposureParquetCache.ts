@@ -6,13 +6,13 @@ import { pipeline } from 'node:stream/promises';
 import { DAEMON_PATHS } from '@core/config/paths';
 import { logger } from '@shared/logger';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { toPluginExposureParquetObjectKey } from '@shared/storage/storage-codec';
 import type {
     PluginModifierAnalysisRequest,
     PluginPropertyNamesRequest
 } from '@modules/plugin/services/properties/PluginPropertyStore';
 import { sweepPluginParquetCache } from '@modules/plugin/services/properties/parquet-cache-eviction';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 
 const pluginAnalysisPrefix = (trajectoryId: string, analysisId: string): string =>
@@ -86,7 +86,7 @@ export class ExposureParquetCache {
 
         do {
             const page = await this.objectStore.list(ownerClusterId, {
-                bucket: ObjectBucketName.Plugins,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
                 prefix,
                 cursor,
                 limit: 200
@@ -120,7 +120,7 @@ export class ExposureParquetCache {
         );
         const signaturePath = `${filePath}.signature`;
 
-        const head = await this.objectStore.head(ownerClusterId, ObjectBucketName.Plugins, objectKey);
+        const head = await this.objectStore.head(ownerClusterId, TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins, objectKey);
         const signature = head.etag
             ?? `${head.contentLength ?? 0}:${head.lastModified?.getTime() ?? 0}`;
 
@@ -140,7 +140,7 @@ export class ExposureParquetCache {
 
         const response = await this.objectStore.getStream(
             ownerClusterId,
-            ObjectBucketName.Plugins,
+            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
             objectKey,
             { skipMetadata: true }
         );

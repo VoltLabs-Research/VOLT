@@ -7,12 +7,11 @@ import type { QueueService } from '@shared/queues/QueueService';
 import type { RasterizeTrajectoryRequest, RasterizeTrajectoryResponse } from '@shared/contracts/types/queue-trajectory';
 import type { TrajectoryAutoPreviewClaimStore } from '@modules/trajectory/services/storage/TrajectoryAutoPreviewClaimStore';
 import { buildRasterJobPayload } from '@modules/trajectory/services/raster-job-factory';
-import type { QueuedJobNotification } from '@shared/contracts/types/http-analysis';
-import type { JobIdentity } from '@shared/contracts/types/job-identity';
+import type { DaemonJobIdentity, QueuedJobNotification } from '@volt/contracts/modules/cluster/daemon-events';
 
 const RASTER_JOB_NAME = 'Rasterize trajectory preview';
 
-interface QueueJobLike extends JobIdentity {
+interface QueueJobLike extends DaemonJobIdentity {
     queueType: string;
 }
 

@@ -1,6 +1,6 @@
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { DAEMON_PATHS } from '@core/config/paths';
 import { resolveDatabaseUrl } from '@shared/persistence/dialect';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET, type TeamClusterObjectStoreBucket } from '@voltstack/daemon-cluster-client';
 
 interface JupyterConfig {
     image: string;
@@ -25,7 +25,7 @@ export interface DaemonConfig {
     installRoot?: string;
     databaseUrl: string;
     jupyter: JupyterConfig;
-    allowedBuckets: ObjectBucketName[];
+    allowedBuckets: TeamClusterObjectStoreBucket[];
     bucketPrefix: string;
     objectStoreRoot: string;
     objectGatewayPublicBaseUrl?: string;
@@ -82,14 +82,14 @@ export const loadConfig = (): DaemonConfig => {
         uiPath: normalizePath(readStringWithDefault('JUPYTER_UI_PATH', '/lab')),
         frameAncestors: readStringWithDefault('JUPYTER_FRAME_ANCESTORS', '*')
     };
-    const allowedBuckets: ObjectBucketName[] = [
-        ObjectBucketName.Dumps,
-        ObjectBucketName.Models,
-        ObjectBucketName.Plugins,
-        ObjectBucketName.Rasterizer,
-        ObjectBucketName.AnalysisLogs,
-        ObjectBucketName.Whiteboards,
-        ObjectBucketName.Trajectories
+    const allowedBuckets: TeamClusterObjectStoreBucket[] = [
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.Dumps,
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.Plugins,
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.Rasterizer,
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.AnalysisLogs,
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.Whiteboards,
+        TEAM_CLUSTER_OBJECT_STORE_BUCKET.Trajectories
     ];
 
     const config: DaemonConfig = {

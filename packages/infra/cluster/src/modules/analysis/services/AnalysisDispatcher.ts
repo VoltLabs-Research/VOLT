@@ -10,12 +10,10 @@ import { WorkflowEngine, getWorkflowEngine } from '@modules/analysis/services/wo
 import { RuntimeEventBroker, getEventBroker } from '@shared/events/RuntimeEventBroker';
 import type { AnalysisQueueAdmissionController } from '@modules/analysis/services/AnalysisQueueAdmissionController';
 import { planAnalysisWorkflow } from '@modules/analysis/services/plan-analysis-workflow';
-import type {
-    AnalysisStartRequestWithTrace,
-    AnalysisStartResponse,
-    QueuedJobNotification
-} from '@shared/contracts/types/http-analysis';
+import type { AnalysisStartRequestWithTrace } from '@shared/contracts/types/http-analysis';
 import type { AnalysisDataStore } from '@modules/analysis/services/AnalysisDataStore';
+import type { QueuedAnalysisJobNotification } from '@volt/contracts/modules/cluster/daemon-events';
+import type { AnalysisStartResponse } from '@volt/contracts/modules/analysis/daemon';
 
 export class AnalysisDispatcher {
     constructor(
@@ -73,7 +71,7 @@ export class AnalysisDispatcher {
         return {
             queued: true,
             totalJobs: jobs.length,
-            jobs: admission.queuedJobs.map((job): QueuedJobNotification => ({
+            jobs: admission.queuedJobs.map((job): QueuedAnalysisJobNotification => ({
                 jobId: job.jobId,
                 name: job.name,
                 teamId: job.teamId,

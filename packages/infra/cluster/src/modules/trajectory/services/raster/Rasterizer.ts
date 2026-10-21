@@ -1,6 +1,5 @@
 import { singleton } from '@shared/utilities/singleton';
 import { getObjectStore } from '@shared/storage/ClusterObjectStore';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import { createReadStream, createWriteStream } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -9,6 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { createZstdDecompressionStream, isZstdObjectKey } from '@shared/storage/storage-codec';
 import headlessRasterizer from '@voltstack/headless-rasterizer';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const TRAJECTORY_PREVIEW_WIDTH = 3840;
 const TRAJECTORY_PREVIEW_HEIGHT = 2160;
@@ -45,7 +45,7 @@ export class Rasterizer {
             const pngStat = await fs.stat(tempPngPath);
             await this.objectStore.putObjectStream({
                 ownerClusterId: outputOwnerClusterId,
-                bucket: ObjectBucketName.Rasterizer,
+                bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Rasterizer,
                 objectKey: input.outputObjectKey,
                 stream: createReadStream(tempPngPath),
                 size: pngStat.size,

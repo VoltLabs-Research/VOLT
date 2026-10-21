@@ -1,5 +1,4 @@
 import { DuckDBConnection } from '@duckdb/node-api';
-import { ObjectBucketName } from '@shared/contracts/types/http-object-store';
 import { logger } from '@shared/logger';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
 import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
@@ -11,6 +10,8 @@ import type { ExportExecutionInput, ExportMaterial, InlineMeshInput, MeshExportO
 import type { MeshDomain, MeshParquetSource } from '@shared/contracts/types/workflow-exposure';
 import spatialAssembler from '@voltstack/spatial-assembler';
 import path from 'node:path';
+import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { Exporter } from '@volt/contracts/modules/plugin/enums';
 
 const computeBounds = (positions: Float32Array) => {
     const bounds = {
@@ -413,8 +414,8 @@ export const exportMeshArtifact = async (
         : processMesh(exportData as InlineMeshInput, finishOptions);
     if (!processed) {
         await stageExportBufferUpload(input, {
-            exporter: 'MeshExporter',
-            bucket: ObjectBucketName.Models,
+            exporter: Exporter.MESH,
+            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
             buffer: generateEmptyGlb(material),
             contentType: 'model/gltf-binary',
             objectPath,
@@ -437,8 +438,8 @@ export const exportMeshArtifact = async (
     );
 
     await stageExportBufferUpload(input, {
-        exporter: 'MeshExporter',
-        bucket: ObjectBucketName.Models,
+        exporter: Exporter.MESH,
+        bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         buffer,
         contentType: 'model/gltf-binary',
         objectPath,

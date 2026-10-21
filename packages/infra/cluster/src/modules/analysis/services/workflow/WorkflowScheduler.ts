@@ -1,5 +1,7 @@
-import { WorkflowGraph, WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import type { WorkflowEdge, WorkflowNode, WorkflowNodeOutput, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
+import { WorkflowGraph } from '@shared/contracts/types/workflow.types';
+import type { WorkflowNodeOutput, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflowEdge, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
 export type WorkflowExecutionStatus = 'executed' | 'pending' | 'failed' | 'skipped';
 
@@ -80,7 +82,7 @@ export class WorkflowScheduler {
         return hasActiveParent;
     }
 
-    getSkipReason(node: WorkflowNode): string | undefined {
+    getSkipReason(node: IWorkflowNode): string | undefined {
         const cache = this.createCache();
         let hasActiveParent = false;
         let inactiveReason: string | undefined;
@@ -102,13 +104,13 @@ export class WorkflowScheduler {
         return hasActiveParent ? undefined : inactiveReason;
     }
 
-    resolveChildNodeIds(node: WorkflowNode, output: WorkflowNodeOutput): {
+    resolveChildNodeIds(node: IWorkflowNode, output: WorkflowNodeOutput): {
         activeNodeIds: string[];
         inactiveNodeIds: string[];
     } {
         const { workflow } = this.params;
 
-        if (node.type === WorkflowNodeType.IfStatement) {
+        if (node.type === NodeType.IF_STATEMENT) {
             const branch = readIfBranch(output, node.id);
 
             return {
@@ -117,7 +119,7 @@ export class WorkflowScheduler {
             };
         }
 
-        if (node.type === WorkflowNodeType.SwitchStatement) {
+        if (node.type === NodeType.SWITCH_STATEMENT) {
             return workflow.getSwitchChildNodeIds(node.id, readMatchedCaseId(output));
         }
 
@@ -173,7 +175,7 @@ export class WorkflowScheduler {
     }
 
     private resolveEdge(
-        edge: WorkflowEdge,
+        edge: IWorkflowEdge,
         targetNodeId: string,
         cache: WorkflowResolutionCache
     ): WorkflowEdgeResolution {
@@ -202,7 +204,7 @@ export class WorkflowScheduler {
         };
     }
 
-    private resolveBranchEdge(edge: WorkflowEdge, targetNodeId: string): WorkflowEdgeResolution {
+    private resolveBranchEdge(edge: IWorkflowEdge, targetNodeId: string): WorkflowEdgeResolution {
         const { workflow, outputs } = this.params;
         const parentNode = workflow.getNode(edge.source);
         if (!parentNode) {
@@ -211,7 +213,7 @@ export class WorkflowScheduler {
 
         const parentOutput = outputs.get(parentNode.id) ?? {};
 
-        if (parentNode.type === WorkflowNodeType.ForEach) {
+        if (parentNode.type === NodeType.FOREACH) {
             const itemCount = typeof parentOutput.count === 'number'
                 ? parentOutput.count
                 : Array.isArray(parentOutput.items) ? parentOutput.items.length : 0;
@@ -219,7 +221,7 @@ export class WorkflowScheduler {
             return activeUnless(itemCount > 0, `ForEach node "${parentNode.id}" produced no items`);
         }
 
-        if (parentNode.type === WorkflowNodeType.IfStatement) {
+        if (parentNode.type === NodeType.IF_STATEMENT) {
             const branch = readIfBranch(parentOutput, parentNode.id);
 
             return activeUnless(
@@ -228,7 +230,7 @@ export class WorkflowScheduler {
             );
         }
 
-        if (parentNode.type === WorkflowNodeType.SwitchStatement) {
+        if (parentNode.type === NodeType.SWITCH_STATEMENT) {
             const matchedCaseId = readMatchedCaseId(parentOutput);
 
             return activeUnless(

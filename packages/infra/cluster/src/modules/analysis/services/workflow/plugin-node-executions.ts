@@ -1,14 +1,14 @@
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
-import type {
-    WorkflowArgumentDefinition,
-    WorkflowDefinition,
-    WorkflowPluginNodeData,
-    WorkflowPluginReferenceSelection
-} from '@shared/contracts/types/http-workflow';
 import type { WorkflowNodeOutput, WorkflowOutputs } from '@shared/contracts/types/workflow.types';
+import { NodeType, PluginNodeOutputPathMode, PluginNodeExecutionMode } from '@volt/contracts/modules/plugin/enums';
+import type {
+    IArgumentDefinition,
+    IPluginNodeData,
+    IPluginReferenceSelection,
+    IWorkflow
+} from '@volt/contracts/modules/plugin/workflow';
 
 interface WorkflowPluginReferenceSelectionWithConfig {
-    pluginId: WorkflowPluginReferenceSelection['pluginId'];
+    pluginId: IPluginReferenceSelection['pluginId'];
     config: WorkflowNodeOutput;
 }
 
@@ -36,13 +36,13 @@ export interface PluginExecutionOutput {
 }
 
 const resolveArgumentReferenceExecutions = (
-    workflow: WorkflowDefinition,
-    pluginNodeData: WorkflowPluginNodeData,
+    workflow: IWorkflow,
+    pluginNodeData: IPluginNodeData,
     argumentReference: string,
     outputs: WorkflowOutputs,
     base: Omit<ResolvedPluginExecution, 'pluginId' | 'config'>
 ): ResolvedPluginExecution[] => {
-    const argumentsNode = workflow.nodes.find((node) => node.type === WorkflowNodeType.Arguments);
+    const argumentsNode = workflow.nodes.find((node) => node.type === NodeType.ARGUMENTS);
     const argumentValue = argumentsNode && outputs.get(argumentsNode.id)?.[argumentReference];
     const selections = (argumentValue as WorkflowPluginReferenceValueWithSelections | undefined)?.selections ?? [];
     if (!argumentsNode || selections.length === 0) {
@@ -50,7 +50,7 @@ const resolveArgumentReferenceExecutions = (
     }
 
     const shouldUseSelectionConfig = argumentsNode.data.arguments?.arguments
-        ?.find((definition: WorkflowArgumentDefinition) => definition.argument === argumentReference)
+        ?.find((definition: IArgumentDefinition) => definition.argument === argumentReference)
         ?.showPluginConfiguration === true;
 
     return selections.map((selection) => ({
@@ -63,8 +63,8 @@ const resolveArgumentReferenceExecutions = (
 };
 
 export const resolvePluginExecutionsForNode = (
-    workflow: WorkflowDefinition | undefined,
-    pluginNodeData: WorkflowPluginNodeData | undefined,
+    workflow: IWorkflow | undefined,
+    pluginNodeData: IPluginNodeData | undefined,
     outputs: WorkflowOutputs
 ): ResolvedPluginExecution[] => {
     if (!pluginNodeData) {
@@ -73,13 +73,13 @@ export const resolvePluginExecutionsForNode = (
 
     const base = {
         selectedTimesteps: pluginNodeData.selectedTimesteps ?? [],
-        outputPathMode: pluginNodeData.outputPathMode === 'parent' ? 'parent' as const : 'isolated' as const
+        outputPathMode: pluginNodeData.outputPathMode === PluginNodeOutputPathMode.PARENT ? PluginNodeOutputPathMode.PARENT : PluginNodeOutputPathMode.ISOLATED
     };
     const { argumentReference, pluginId } = pluginNodeData;
     const executionMode = pluginNodeData.executionMode
         ?? (!pluginId && argumentReference ? 'argumentReference' : pluginId ? 'manual' : undefined);
 
-    if (executionMode === 'argumentReference') {
+    if (executionMode === PluginNodeExecutionMode.ARGUMENT_REFERENCE) {
         return workflow && argumentReference
             ? resolveArgumentReferenceExecutions(workflow, pluginNodeData, argumentReference, outputs, base)
             : [];

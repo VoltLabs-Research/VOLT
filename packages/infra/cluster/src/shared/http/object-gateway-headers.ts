@@ -1,9 +1,7 @@
-import {
-    TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX
-} from '@shared/contracts/types/http-object-store';
 import type { LocalClusterObjectStat } from '@shared/contracts/types/cluster-object-store';
 import type { ObjectByteRange } from '@shared/http/object-gateway-range';
 import type { Request, Response } from 'express';
+import { TEAM_CLUSTER_OBJECT_STORE_METADATA_HEADER_PREFIX } from '@voltstack/daemon-cluster-client';
 
 const S3_METADATA_HEADER_PREFIX = 'x-amz-meta-';
 

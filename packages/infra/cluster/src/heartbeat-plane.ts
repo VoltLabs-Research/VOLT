@@ -8,25 +8,16 @@ import { logger } from '@shared/logger';
 import { MetricsService } from '@modules/system/services/MetricsService';
 import { probeContainerRuntime } from '@shared/runtime/docker-client';
 import { currentPlatformTag } from '@shared/utilities/platform-tag';
-import type { MetricsSnapshot } from '@shared/contracts/types/metrics';
-import type { TeamClusterDaemonRuntimeConfig, TeamClusterHostCapabilities } from '@shared/contracts/types/team-cluster-runtime';
+import { connectPlaneSocket, registerSignalHandlers } from '@shared/planes/plane-shared';
 import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    connectPlaneSocket,
-    registerSignalHandlers
-} from '@shared/planes/plane-shared';
+    type TeamClusterDaemonRuntimeConfig,
+    DaemonSocketEvent,
+    type TeamClusterDaemonHeartbeatCommand
+} from '@voltstack/daemon-cluster-client';
 
 interface RuntimeConfigMessage {
     type: 'runtime-config';
     runtimeConfig: TeamClusterDaemonRuntimeConfig | null;
-}
-
-interface HeartbeatPayload {
-    teamClusterId: string;
-    daemonPassword: string;
-    runtime: TeamClusterDaemonRuntimeConfig | null;
-    metrics: MetricsSnapshot;
-    hostCapabilities: TeamClusterHostCapabilities;
 }
 
 const HEARTBEAT_CHANNEL = 'heartbeat';
@@ -65,13 +56,13 @@ const scheduleHeartbeat = (immediate = false): void => {
     heartbeatTimer.unref();
 };
 
-const emitHeartbeatEvent = (payload: HeartbeatPayload): void => {
+const emitHeartbeatEvent = (payload: TeamClusterDaemonHeartbeatCommand): void => {
     const activeSocket = socket;
     if (!activeSocket || !isRegistered()) {
         throw new Error('Heartbeat socket is not connected or not registered');
     }
 
-    activeSocket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, {
+    activeSocket.emit(DaemonSocketEvent.TeamClusterDaemonMessage, {
         type: 'runtime-heartbeat',
         ...payload
     });

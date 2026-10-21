@@ -3,25 +3,25 @@ import { logger } from '@shared/logger';
 import { getJupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
 import { getDockerRuntime } from '@shared/runtime/DockerRuntime';
 import { getDaemonExposureRegistry } from '@modules/system/services/access/DaemonExposureRegistry';
-import type { CreateNotebookSessionRequest } from '@shared/contracts/types/http-notebook';
-import { Command, CommandGroup, commandGroupFactory } from '@shared/commands/command';
+import { Command, commandGroupFactory } from '@shared/commands/command';
 import type { JupyterRuntime } from '@modules/notebook/services/JupyterRuntime';
 import type { DaemonExposureRegistry } from '@modules/system/services/access/DaemonExposureRegistry';
+import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { CreateNotebookSessionRequest } from '@volt/contracts/modules/scripting/daemon';
 
-@CommandGroup('notebook')
 export class NotebookCommands {
     constructor(
         private readonly jupyterRuntime: JupyterRuntime,
         private readonly daemonExposureRegistry: DaemonExposureRegistry
     ) {}
 
-    @Command('container.delete')
+    @Command(DaemonCommand.NotebookContainerDelete)
     async deleteContainer(payload: { containerId: string }) {
         await getDockerRuntime().deleteContainer(payload.containerId);
         return { deleted: true };
     }
 
-    @Command('session.create', { status: 201 })
+    @Command(DaemonCommand.NotebookSessionCreate, { status: 201 })
     async createSession(payload: CreateNotebookSessionRequest) {
         const response = await this.jupyterRuntime.ensureSession(payload);
         await this.daemonExposureRegistry.sync().catch((error) => {

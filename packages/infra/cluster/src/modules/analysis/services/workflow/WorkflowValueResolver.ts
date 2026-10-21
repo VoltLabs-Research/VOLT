@@ -6,12 +6,11 @@ import type {
     WorkflowExecutionContext,
     WorkflowGraph,
     WorkflowNodeOutput,
-    WorkflowNodeType,
     WorkflowValue
 } from '@shared/contracts/types/workflow.types';
-import { WorkflowNodeType as WorkflowNodeTypeEnum } from '@shared/contracts/types/workflow.types';
 import { stringifyWorkflowValue } from '@shared/utilities/serialization';
 import { isRecord } from '@shared/utilities/is-record';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
 
 interface WorkflowValueResolverOptions {
     outputs: Map<string, WorkflowNodeOutput>;
@@ -20,19 +19,18 @@ interface WorkflowValueResolverOptions {
     currentNodeId?: string;
 }
 
-const WORKFLOW_REFERENCE_ALIASES: Record<string, WorkflowNodeType[]> = {
-    modifier: [WorkflowNodeTypeEnum.Modifier],
-    arguments: [WorkflowNodeTypeEnum.Arguments],
-    context: [WorkflowNodeTypeEnum.Context],
-    foreach: [WorkflowNodeTypeEnum.ForEach],
-    'trajectory-window': [WorkflowNodeTypeEnum.TrajectoryWindow],
-    entrypoint: [WorkflowNodeTypeEnum.Entrypoint],
-    plugin: [WorkflowNodeTypeEnum.Plugin],
-    exposure: [WorkflowNodeTypeEnum.Exposure],
-    export: [WorkflowNodeTypeEnum.Export],
-    if: [WorkflowNodeTypeEnum.IfStatement],
-    switch: [WorkflowNodeTypeEnum.SwitchStatement],
-    case: [WorkflowNodeTypeEnum.SwitchCase]
+const WORKFLOW_REFERENCE_ALIASES: Record<string, NodeType[]> = {
+    modifier: [NodeType.MODIFIER],
+    arguments: [NodeType.ARGUMENTS],
+    context: [NodeType.CONTEXT],
+    foreach: [NodeType.FOREACH],
+    entrypoint: [NodeType.ENTRYPOINT],
+    plugin: [NodeType.PLUGIN],
+    exposure: [NodeType.EXPOSURE],
+    export: [NodeType.EXPORT],
+    if: [NodeType.IF_STATEMENT],
+    switch: [NodeType.SWITCH_STATEMENT],
+    case: [NodeType.SWITCH_CASE]
 };
 
 const COMPILED_EXPRESSION_CACHE_MAX = 512;
@@ -43,7 +41,7 @@ const compiledExpressionCache = new TTLCache<string, ReturnType<typeof jsonata>>
 });
 
 interface AliasResolutionCache {
-    nodeIdsByType: Map<WorkflowNodeType, string[]>;
+    nodeIdsByType: Map<NodeType, string[]>;
     topologicalIndexByNodeId: Map<string, number>;
     ancestorIdByNodeType: Map<string, string | null>;
 }
@@ -188,7 +186,7 @@ export class WorkflowValueResolver {
             return cache;
         }
 
-        const nodeIdsByType = new Map<WorkflowNodeType, string[]>();
+        const nodeIdsByType = new Map<NodeType, string[]>();
         const topologicalIndexByNodeId = new Map<string, number>();
 
         workflow.topologicalSort().forEach((node, index) => {

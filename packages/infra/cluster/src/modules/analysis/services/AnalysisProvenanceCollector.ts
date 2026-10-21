@@ -4,8 +4,12 @@ import { logger } from '@shared/logger';
 import { logAndSwallow } from '@shared/utilities/error-message';
 import type { EventDispatcher } from '@shared/events/EventDispatcher';
 import { AnalysisProvenanceRecordedEvent } from '@modules/analysis/events/analysis-events';
-import type { AnalysisProvenance } from '@shared/contracts/types/provenance-types';
-import type { AnalysisJobExecutionData, AnalysisJobMetadata, AnalysisValueMap } from '@shared/contracts/types/http-analysis';
+import type {
+    AnalysisJobExecutionData,
+    AnalysisJobMetadata,
+    AnalysisValueMap
+} from '@shared/contracts/types/http-analysis';
+import type { AnalysisProvenance } from '@volt/contracts/modules/cluster/daemon-events';
 
 const CORETOOLKIT_VERSION = '2.0.0';
 

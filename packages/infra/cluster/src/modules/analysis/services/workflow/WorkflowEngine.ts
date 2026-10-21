@@ -4,19 +4,24 @@ import { WorkflowNodeExecutor } from '@modules/analysis/services/workflow/Workfl
 import { WorkflowPlanner } from '@modules/analysis/services/workflow/WorkflowPlanner';
 import { WorkflowNodeRegistry, getWorkflowNodeRegistry, isPlanningNodeType } from '@modules/analysis/services/workflow/NodeRegistry';
 import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
-import { WorkflowTrajectoryWindowHandler } from '@modules/analysis/services/workflow/nodes/TrajectoryWindowHandler';
-import { WorkflowNodeType } from '@shared/contracts/types/workflow.types';
 import { resolvePluginNativeThreadBudget } from '@shared/utilities/runtime-capacity';
-import type { NestedPluginDefinition, TrajectoryDumpDescriptor, TrajectoryFrame, WorkflowDefinition, WorkflowTrajectoryWindowData } from '@shared/contracts/types/http-workflow';
-import type { PlannedExecutionItem, WorkflowWindowMode, DaemonAnalysisDocument } from '@shared/contracts/types/http-analysis';
+import type { TrajectoryDumpDescriptor } from '@shared/contracts/types/http-workflow';
+import type { PlannedExecutionItem } from '@shared/contracts/types/http-analysis';
 import type { WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import type {
+    DaemonAnalysisDocument,
+    NestedPluginDefinition,
+    TrajectoryFrame
+} from '@volt/contracts/modules/analysis/daemon';
 
 interface WorkflowRuntimeArgumentSelection extends WorkflowNodeOutput {
     value: number;
 }
 
 export interface WorkflowExecutionRequest {
-    workflow: WorkflowDefinition;
+    workflow: IWorkflow;
     nestedPlugins?: NestedPluginDefinition[];
     trajectoryId: string;
     trajectoryFrames: TrajectoryFrame[];
@@ -37,7 +42,6 @@ interface WorkflowContextPlanOutput extends WorkflowNodeOutput {
 interface WorkflowPlanResult {
     items: Array<WorkflowNodeOutput | TrajectoryDumpDescriptor | PlannedExecutionItem>;
     forEachNodeId?: string;
-    trajectoryWindowNodeId?: string;
     nodeOutputSnapshots: Record<string, WorkflowNodeOutput>;
 };
 
@@ -80,47 +84,10 @@ const createContextItemsPlan = (
     };
 };
 
-const createTrajectoryWindowPlan = (
-    session: WorkflowSession,
-    windowNodeId: string,
-    windowData: WorkflowTrajectoryWindowData,
-    contextNodeId: string | undefined
-): WorkflowPlanResult | null => {
-    const dumps = contextNodeId
-        ? (session.getOutput(contextNodeId) as WorkflowContextPlanOutput | undefined)?.trajectory_dumps
-        : undefined;
-    if (!dumps?.length) {
-        return null;
-    }
-
-    const dumpByTimestep = new Map(dumps.map((dump) => [dump.timestep, dump]));
-    const timesteps = dumps.map((dump) => dump.timestep);
-    const planItems = WorkflowTrajectoryWindowHandler.planItems(windowData, timesteps);
-    const windowMode: WorkflowWindowMode = windowData.mode;
-
-    const items: PlannedExecutionItem[] = planItems.map((item) => {
-        const primaryDump = dumpByTimestep.get(item.primaryTimestep);
-        return {
-            timestep: item.primaryTimestep,
-            path: primaryDump?.path,
-            windowMode,
-            windowSize: windowData.windowSize,
-            referenceTimestep: windowData.referenceTimestep,
-            windowTimesteps: item.windowTimesteps
-        };
-    });
-
-    return {
-        items,
-        trajectoryWindowNodeId: windowNodeId,
-        nodeOutputSnapshots: WorkflowSession.snapshotOutputs(session.outputs)
-    };
-};
-
-const PLANNING_EVALUATED_RUNTIME_NODE_TYPES: ReadonlySet<WorkflowNodeType> = new Set([
-    WorkflowNodeType.IfStatement,
-    WorkflowNodeType.SwitchStatement,
-    WorkflowNodeType.SwitchCase
+const PLANNING_EVALUATED_RUNTIME_NODE_TYPES: ReadonlySet<NodeType> = new Set([
+    NodeType.IF_STATEMENT,
+    NodeType.SWITCH_STATEMENT,
+    NodeType.SWITCH_CASE
 ]);
 
 export class WorkflowEngine {
@@ -133,8 +100,7 @@ export class WorkflowEngine {
     async planExecutionStrategy(request: WorkflowExecutionRequest): Promise<WorkflowPlanResult | null> {
         const session = createPlanningSession(request);
         const executionOrder = session.context.workflow.topologicalSort();
-        const hasForEachNode = executionOrder.some((node) => node.type === WorkflowNodeType.ForEach);
-        const windowNode = executionOrder.find((node) => node.type === WorkflowNodeType.TrajectoryWindow);
+        const hasForEachNode = executionOrder.some((node) => node.type === NodeType.FOREACH);
 
         logger.info(`@daemon-workflow-engine: planning execution for plugin "${request.pluginId}" (itemized=true)`);
 
@@ -151,15 +117,6 @@ export class WorkflowEngine {
                 forEachNodeId: outcome.forEach.node.id,
                 nodeOutputSnapshots: WorkflowSession.snapshotOutputs(session.outputs)
             };
-        }
-
-        if (windowNode?.data.trajectoryWindow?.mode) {
-            return createTrajectoryWindowPlan(
-                session,
-                windowNode.id,
-                windowNode.data.trajectoryWindow,
-                outcome.contextNodeId
-            );
         }
 
         if (!hasForEachNode && outcome.contextNodeId) {

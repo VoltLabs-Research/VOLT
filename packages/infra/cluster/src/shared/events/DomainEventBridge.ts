@@ -1,13 +1,13 @@
 import type { IDomainEvent } from '@shared/events/IDomainEvent';
 import type { EventDispatcher } from '@shared/events/EventDispatcher';
 import type { DomainEventClass } from '@shared/events/create-domain-event';
-import type { AuthenticatedMessageContext } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { TeamClusterDaemonServerEventMessage } from '@shared/contracts/channel/server-event';
 import type {
     BufferedDaemonEventOptions,
     ClusterDaemonEventPublisher,
     ImmediateTransportMessage
 } from '@shared/events/cluster-daemon-event-publisher';
+import type { DaemonIdentity } from '@volt/contracts/modules/cluster/daemon-events';
 
 interface BufferedMessageEnvelope {
     readonly kind: 'buffered';
@@ -23,7 +23,7 @@ interface ImmediateMessageEnvelope {
 type TransportMessageEnvelope = BufferedMessageEnvelope | ImmediateMessageEnvelope;
 
 interface DomainEventTransportContext {
-    readonly messageContext: AuthenticatedMessageContext;
+    readonly messageContext: DaemonIdentity;
 }
 
 type DomainEventTransportMapper<TPayload extends object> = (
@@ -37,7 +37,7 @@ export type EventMapperSet = (bridge: DomainEventBridge) => void;
 
 export class DomainEventBridge {
     private readonly mappers = new Map<string, BoundDomainEventMapper>();
-    private messageContext: AuthenticatedMessageContext | null = null;
+    private messageContext: DaemonIdentity | null = null;
 
     constructor(private readonly publisher: ClusterDaemonEventPublisher) {}
 
@@ -84,7 +84,7 @@ export class DomainEventBridge {
         this.publisher.emitMessage(envelope.message);
     }
 
-    private getMessageContext(): AuthenticatedMessageContext {
+    private getMessageContext(): DaemonIdentity {
         if (!this.messageContext) {
             const client = this.publisher.client;
             this.messageContext = {

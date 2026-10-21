@@ -1,12 +1,8 @@
 import { type Socket } from 'socket.io-client';
 
 import { loadConfig } from '@core/config/daemon';
-import {
-    TEAM_CLUSTER_DAEMON_MESSAGE_EVENT,
-    connectPlaneSocket,
-    sendToParent,
-    registerSignalHandlers
-} from '@shared/planes/plane-shared';
+import { connectPlaneSocket, sendToParent, registerSignalHandlers } from '@shared/planes/plane-shared';
+import { DaemonSocketEvent } from '@voltstack/daemon-cluster-client';
 
 interface EmitMessage {
     type: 'emit-message';
@@ -27,7 +23,7 @@ const drainBufferedMessages = (): void => {
     if (!socket || !isRegistered()) return;
 
     while (bufferedMessages.length > 0) {
-        socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, bufferedMessages.shift());
+        socket.emit(DaemonSocketEvent.TeamClusterDaemonMessage, bufferedMessages.shift());
     }
 };
 
@@ -40,7 +36,7 @@ const emitMessage = (message: unknown): void => {
         return;
     }
 
-    socket.emit(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, message);
+    socket.emit(DaemonSocketEvent.TeamClusterDaemonMessage, message);
 };
 
 const start = (activeChannel: string): void => {
@@ -58,7 +54,7 @@ const start = (activeChannel: string): void => {
     socket = connection.socket;
     isRegistered = connection.isRegistered;
 
-    socket.on(TEAM_CLUSTER_DAEMON_MESSAGE_EVENT, (message: unknown) => {
+    socket.on(DaemonSocketEvent.TeamClusterDaemonMessage, (message: unknown) => {
         sendToParent({
             type: 'message',
             message

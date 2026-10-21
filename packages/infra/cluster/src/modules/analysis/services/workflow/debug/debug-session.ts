@@ -1,61 +1,28 @@
-import { WorkflowSession, type WorkflowOutputsSnapshot } from '@modules/analysis/services/workflow/WorkflowSession';
-import { WorkflowGraph, WorkflowNodeType } from '@shared/contracts/types/workflow.types';
+import { WorkflowSession } from '@modules/analysis/services/workflow/WorkflowSession';
+import { WorkflowGraph } from '@shared/contracts/types/workflow.types';
 import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import fg from 'fast-glob';
 import path from 'node:path';
-import type { ReverseChannelCommandPayloadView } from '@shared/contracts/channel/reverse-channel-messaging';
 import type { WorkflowExposureInspectionResult } from '@shared/contracts/types/workflow-exposure';
 import type { DebugEnvironmentState } from '@modules/analysis/services/workflow/debug/DebugEnvironment';
 import type { InlineWorkflowTraceNode } from '@modules/analysis/services/workflow/WorkflowWalker';
 import type { AnalysisExposureDefinition } from '@shared/contracts/types/http-analysis';
-import type {
-    NestedPluginDefinition,
-    TrajectoryFrame,
-    WorkflowDefinition
-} from '@shared/contracts/types/http-workflow';
-import type {
-    WorkflowExecutionContext,
-    WorkflowNode,
-    WorkflowNodeOutput
-} from '@shared/contracts/types/workflow.types';
+import type { WorkflowExecutionContext, WorkflowNodeOutput } from '@shared/contracts/types/workflow.types';
+import { NodeType } from '@volt/contracts/modules/plugin/enums';
+import type { IWorkflow, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
+import type { NestedPluginDefinition, TrajectoryFrame } from '@volt/contracts/modules/analysis/daemon';
+import type { DebugSessionInfo } from '@volt/contracts/modules/plugin/debug';
 
 export interface DebugSessionRequest {
-    workflow: WorkflowDefinition;
+    workflow: IWorkflow;
     nestedPlugins: NestedPluginDefinition[];
     trajectoryId: string;
     trajectoryFrames: TrajectoryFrame[];
     pluginId: string;
     teamId: string;
-    userConfig: ReverseChannelCommandPayloadView;
+    userConfig: Record<string, unknown>;
     storageClusterId: string;
     timestep?: number;
-}
-
-export interface DebugSessionInfo {
-    sessionId: string;
-    executionOrder: Array<{ nodeId: string; type: string }>;
-    forEachNodeId: string | null;
-    totalIterations: number;
-}
-
-export interface DebugNodeResult {
-    nodeId: string;
-    nodeType: string;
-    status: 'completed' | 'skipped' | 'error';
-    output?: WorkflowNodeOutput;
-    error?: string;
-    stack?: string;
-    reason?: string;
-    nestedTrace?: InlineWorkflowTraceNode[];
-    durationMs: number;
-    contextSnapshot: WorkflowOutputsSnapshot;
-}
-
-export interface CurrentDebugNodeInfo {
-    nodeId: string;
-    nodeType: string;
-    index: number;
-    total: number;
 }
 
 export type NodeExecutionOutcome =
@@ -65,8 +32,8 @@ export type NodeExecutionOutcome =
 export interface DebugSession {
     sessionId: string;
     context: WorkflowExecutionContext;
-    executableNodes: WorkflowNode[];
-    nodeById: Map<string, WorkflowNode>;
+    executableNodes: IWorkflowNode[];
+    nodeById: Map<string, IWorkflowNode>;
     pendingNodeIds: string[];
     scheduledNodeIds: Set<string>;
     completedNodeIds: Set<string>;
@@ -121,7 +88,7 @@ export const createDebugSession = (request: DebugSessionRequest): DebugSession =
         scheduledNodeIds: new Set(rootNodeIds),
         completedNodeIds: new Set(),
         nodeStatuses: new Map(),
-        forEachNodeId: executableNodes.find((node) => node.type === WorkflowNodeType.ForEach)?.id ?? null,
+        forEachNodeId: executableNodes.find((node) => node.type === NodeType.FOREACH)?.id ?? null,
         storageClusterId,
         nestedPlugins: sessionParams.nestedPlugins,
         preparedExecution: null,

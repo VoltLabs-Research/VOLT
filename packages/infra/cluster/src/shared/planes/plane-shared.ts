@@ -2,9 +2,6 @@ import { io, type Socket } from 'socket.io-client';
 import { DaemonSocketEvent } from '@voltstack/daemon-cluster-client';
 import { logger } from '@shared/logger';
 
-const TEAM_CLUSTER_DAEMON_REGISTER_EVENT = DaemonSocketEvent.TeamClusterDaemonRegister;
-const TEAM_CLUSTER_DAEMON_REGISTERED_EVENT = DaemonSocketEvent.TeamClusterDaemonRegistered;
-export const TEAM_CLUSTER_DAEMON_MESSAGE_EVENT = DaemonSocketEvent.TeamClusterDaemonMessage;
 
 const SKIP_PER_MESSAGE_DEFLATE = false as unknown as { threshold: number };
 
@@ -69,14 +66,14 @@ export const connectPlaneSocket = (
     let registered = false;
 
     socket.on('connect', () => {
-        socket.emit(TEAM_CLUSTER_DAEMON_REGISTER_EVENT, {
+        socket.emit(DaemonSocketEvent.TeamClusterDaemonRegister, {
             teamClusterId: config.teamClusterId,
             daemonPassword: config.daemonPassword,
             channel: plane.channel
         });
     });
 
-    socket.on(TEAM_CLUSTER_DAEMON_REGISTERED_EVENT, () => {
+    socket.on(DaemonSocketEvent.TeamClusterDaemonRegistered, () => {
         registered = true;
         logger.info(`${plane.label} connected to VoltCloud`);
         if (plane.notifyParent) sendToParent({ type: 'connected' });
