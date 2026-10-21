@@ -1,5 +1,5 @@
 import logger from '@shared/logger';
-import { Client } from 'pg';
+import type { Client } from 'pg';
 import { v4 } from 'uuid';
 import DomainEventSpoolEntry from '@shared/persistence/models/DomainEventSpoolEntry';
 import type { EventName } from '@shared/events/EventGroup';
@@ -113,6 +113,8 @@ class PostgresEventBus {
     }
 
     private async openListener(): Promise<void> {
+        // Loaded on first use: only Postgres deployments open a listener, and SQLite ones never load the driver.
+        const { Client } = await import('pg');
         const client = new Client({
             connectionString: process.env.DATABASE_URL,
             application_name: 'volt-event-bus'
