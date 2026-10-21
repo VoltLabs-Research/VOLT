@@ -5,7 +5,6 @@ import { tokenStorage } from '@/shared/auth/token-storage';
 import { create } from 'zustand';
 import authService from '@/modules/auth/api/service';
 import systemService from '@/modules/system/api/service';
-import { isWasmCanvasLocation } from '@/modules/canvas-wasm/constants';
 
 const tryLocalAutoLogin = async (): Promise<string | null> => {
     try{
@@ -53,12 +52,6 @@ export const useAuthStore = create<AuthStore>((set) => {
         hasToken: false,
 
         initializeAuth: async () => {
-            // The WASM canvas is fully offline; skip every auth request to the backend.
-            if(isWasmCanvasLocation()){
-                set({ isInitialized: true, isLoading: false, hasToken: false });
-                return;
-            }
-
             let token = tokenStorage.getToken();
 
             if(!token){

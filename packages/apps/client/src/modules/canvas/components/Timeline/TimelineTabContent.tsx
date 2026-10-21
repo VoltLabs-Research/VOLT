@@ -3,8 +3,6 @@ import SimulationCellView from '../SimulationCellView';
 import { TimelineTab } from '../TimelineHeader';
 import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTable';
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
-import WasmListingTable from '@/modules/canvas-wasm/WasmListingTable';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
 import type { ComponentProps, ReactNode } from 'react';
@@ -71,18 +69,6 @@ const TimelineTabContent = ({
                     active
                     live={analysisFrameStatus === 'running'}
                     activityStatus={analysisFrameStatus}
-                />
-            </TabBody>
-        );
-    }
-
-    if (activeExposureId && isWasmLocalTrajectoryId(trajectoryId)) {
-        return (
-            <TabBody>
-                <WasmListingTable
-                    analysisId={analysisId}
-                    exposureId={activeExposureId}
-                    currentTimestep={currentTimestep}
                 />
             </TabBody>
         );

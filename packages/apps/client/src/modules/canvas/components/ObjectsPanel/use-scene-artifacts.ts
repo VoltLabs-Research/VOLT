@@ -5,7 +5,6 @@ import {
 import { toSceneObjectFromArtifact } from '@/modules/canvas/utils/scene-identity';
 import { useEffect, useMemo } from 'react';
 
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
 import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type { RenderableExposurePayload } from '@/modules/trajectory/api/services/scene-artifacts-service';
 
@@ -22,7 +21,6 @@ const isSupportedParticleFilterArtifact = (artifact: SceneArtifact): boolean => 
 };
 
 const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
-    const remoteEnabled = !!trajectoryId && !isWasmLocalTrajectoryId(trajectoryId);
     const colorCodingQuery = sceneArtifactsQuery(
         {
             trajectoryId: trajectoryId ?? '',
@@ -30,7 +28,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
             page: 1,
             limit: 200
         },
-        { enabled: remoteEnabled }
+        { enabled: !!trajectoryId }
     );
 
     const particleFilterQuery = sceneArtifactsQuery(
@@ -40,7 +38,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
             page: 1,
             limit: 200
         },
-        { enabled: remoteEnabled }
+        { enabled: !!trajectoryId }
     );
 
     const colorCodingArtifacts = useMemo(() => {

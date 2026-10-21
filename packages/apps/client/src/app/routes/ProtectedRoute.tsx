@@ -7,7 +7,6 @@ import {
     resolvePostAuthDestination,
     setPostAuthDestination
 } from '@/modules/auth/services/post-auth-destination-storage';
-import { WASM_CANVAS_PATH } from '@/modules/canvas-wasm/constants';
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { refreshSocketSession } from '@/modules/socket/services/socket-auth-session';
 import socketService from '@/modules/socket/services/socket-service';
@@ -63,8 +62,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     const selectedTeamId = useSelectedTeamId();
 
-    const isWasmCanvas = location.pathname === WASM_CANVAS_PATH;
-    const shouldLoadTeamData = !isWasmCanvas && (mode === RouteMode.Protected || mode === RouteMode.OptionalAuth) && hasToken;
+    const shouldLoadTeamData = (mode === RouteMode.Protected || mode === RouteMode.OptionalAuth) && hasToken;
     const { teams, isTeamsLoading } = useTeamData({ enabled: shouldLoadTeamData });
     const previousSelectedTeamIdRef = useRef<string | null>(selectedTeamId);
     const refreshedOnboardingTeamIdRef = useRef<string | null>(null);
@@ -80,7 +78,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
         && isAuthenticated
         && !canAccessWithoutSelectedTeam
         && Boolean(selectedTeamId);
-    const shouldMountRealtimeEffects = !isWasmCanvas && (mode === RouteMode.Protected || mode === RouteMode.OptionalAuth)
+    const shouldMountRealtimeEffects = (mode === RouteMode.Protected || mode === RouteMode.OptionalAuth)
         && hasToken
         && isAuthenticated;
 

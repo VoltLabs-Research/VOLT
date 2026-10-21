@@ -21,8 +21,6 @@ import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import { buildPluginScene, resolveExposureSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
-import { useWasmCanvasStore } from '@/modules/canvas-wasm/store';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { sileo } from 'sileo';
@@ -114,18 +112,12 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             page: 1,
             limit: 100
         },
-        { enabled: !!trajectoryId && !isWasmLocalTrajectoryId(trajectoryId) }
+        { enabled: !!trajectoryId }
     );
 
-    const wasmAnalyses = useWasmCanvasStore((state) => state.analyses);
-    const bootstrapLoading = isWasmLocalTrajectoryId(trajectoryId) ? false : analysesQuery.isLoading;
+    const bootstrapLoading = analysesQuery.isLoading;
     const analysesData = analysesQuery.data?.data;
-    const analyses = useMemo(() => {
-        if (isWasmLocalTrajectoryId(trajectoryId)) {
-            return wasmAnalyses;
-        }
-        return analysesData ?? [];
-    }, [analysesData, trajectoryId, wasmAnalyses]);
+    const analyses = useMemo(() => analysesData ?? [], [analysesData]);
 
     const selectedAnalysis = useMemo(() => {
         if (!analysisConfigId) {
@@ -153,12 +145,11 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
     }, [analysesQuery.error, checkAccessDeniedError]);
 
-    const wasmSessionId = useWasmCanvasStore((state) => state.sessionId);
     useEffect(() => {
         resetSectionState();
         setSearchQuery('');
         resetEntries();
-    }, [trajectoryId, wasmSessionId, resetSectionState, resetEntries]);
+    }, [trajectoryId, resetSectionState, resetEntries]);
 
     useEffect(() => {
         if (!trajectoryId) {

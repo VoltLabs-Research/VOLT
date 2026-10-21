@@ -12,19 +12,10 @@ import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import { useEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-
-interface UseCanvasCoordinatorParams {
-    trajectoryId?: string;
-    // A trajectory that lives in the browser (/canvas/wasm); nothing is fetched for it.
-    localTrajectory?: Trajectory | null;
-}
-
-const useCanvasCoordinator = ({ trajectoryId, localTrajectory }: UseCanvasCoordinatorParams) => {
+const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const { analysisId, requestedTimestep } = useCanvasUrlState();
     const { accessDenied, accessDeniedMessage, checkAccessDeniedError } = useAccessDenied();
-    const isLocal = localTrajectory !== undefined;
-    const shouldFetch = Boolean(trajectoryId) && !isLocal;
+    const shouldFetch = Boolean(trajectoryId);
 
     const bootstrapQuery = useCanvasBootstrapQuery(
         { trajectoryId: trajectoryId ?? '' },
@@ -64,12 +55,12 @@ const useCanvasCoordinator = ({ trajectoryId, localTrajectory }: UseCanvasCoordi
         resetPlayback: state.resetPlayback
     })));
 
-    const trajectory = isLocal ? localTrajectory : (trajectoryQuery.data ?? null);
+    const trajectory = trajectoryQuery.data ?? null;
     const isLoading = trajectoryQuery.isLoading || bootstrapQuery.isLoading;
 
     const analyses = useMemo(() => {
-        return isLocal ? (localTrajectory?.analysis ?? []) : (analysesQuery.data?.data ?? []);
-    }, [analysesQuery.data, isLocal, localTrajectory]);
+        return analysesQuery.data?.data ?? [];
+    }, [analysesQuery.data]);
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
     const selectedAnalysis = useMemo(() => {

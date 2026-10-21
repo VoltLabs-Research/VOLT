@@ -1,8 +1,6 @@
 import { cn } from '@heroui/react';
 import { useKeyboardShortcutsStore } from '../../store/use-keyboard-shortcuts-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
-import { useCanvasPipelineStore } from '@/modules/canvas/store/canvas-pipeline';
-import { useCellDisplayStore } from '@/modules/fractal/store/use-cell-display-store';
 import useCanvasCleanup from './use-canvas-cleanup';
 import useCanvasCoordinator from './use-canvas-coordinator';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
@@ -12,7 +10,6 @@ import useResizable, { ResizeDirection } from '../../hooks/use-resizable';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 
 import useAnalysisDiscoveryTourGate from './use-analysis-discovery-tour-gate';
-import socketService from '@/modules/socket/services/socket-service';
 import useCanvasAccessPublication from './use-canvas-access-publication';
 import useCanvasBridgeRegistration from './use-canvas-bridge-registration';
 import useCanvasCollaboration from './use-canvas-collaboration';
@@ -42,19 +39,11 @@ import ErrorBoundary from '@/shared/ui/components/ErrorBoundary';
 import NotFoundState from '@/shared/ui/components/NotFoundState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
-import FileUploaderContainer from '@/shared/ui/components/FileUploaderContainer';
-import { useIsWasmCanvas } from '@/modules/canvas-wasm/use-is-wasm-canvas';
-import { WASM_TRAJECTORY_ID } from '@/modules/canvas-wasm/constants';
-import { useWasmCanvasStore } from '@/modules/canvas-wasm/store';
-import { useWasmFrameSync, useWasmTrajectory } from '@/modules/canvas-wasm/use-wasm-canvas';
-import useWasmDumpLoader from '@/modules/canvas-wasm/use-wasm-dump-loader';
-import WasmDumpEmptyState from '@/modules/canvas-wasm/WasmDumpEmptyState';
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { RefObject } from 'react';
-import type { FileDropUpload } from '@/shared/ui/components/FileUploaderContainer';
 import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 
 
@@ -63,38 +52,23 @@ const CanvasPage = () => {
     usePageTitle('Canvas');
     const navigate = useNavigate();
     const { trajectoryId: routeTrajectoryId, ownerId: ownerIdParam } = useParams<{ trajectoryId?: string; ownerId?: string }>();
-    const isWasmCanvas = useIsWasmCanvas();
-    const trajectoryId = isWasmCanvas ? WASM_TRAJECTORY_ID : (routeTrajectoryId ?? '');
-    const isLocalGlbViewer = !isWasmCanvas && !routeTrajectoryId;
+    const trajectoryId = routeTrajectoryId ?? '';
+    const isLocalGlbViewer = !routeTrajectoryId;
 
     useCanvasCleanup();
-
-    useEffect(() => {
-        if (isWasmCanvas) socketService.disconnect();
-    }, [isWasmCanvas]);
-
-    const wasmTrajectory = useWasmTrajectory(isWasmCanvas);
-    const { wasmHasDump, wasmIsParsing, wasmSessionId } = useWasmCanvasStore(useShallow((state) => ({
-        wasmHasDump: state.frames.length > 0,
-        wasmIsParsing: state.isParsing,
-        wasmSessionId: state.sessionId
-    })));
-    const { openFiles: openWasmFiles, openSample: openWasmSample } = useWasmDumpLoader();
     const {
         trajectory,
         availableTimesteps,
         selectedAnalysisTimesteps,
         currentTimestep,
-        isLoading: remoteTrajectoryLoading,
+        isLoading: trajectoryLoading,
         analyses,
         isAnalysesLoading,
-        error: remoteTrajectoryError,
+        error: trajectoryError,
         access: canvasAccess,
         accessDenied,
         accessDeniedMessage
-    } = useCanvasCoordinator({ trajectoryId, localTrajectory: isWasmCanvas ? wasmTrajectory : undefined });
-    const trajectoryLoading = remoteTrajectoryLoading;
-    const trajectoryError = remoteTrajectoryError;
+    } = useCanvasCoordinator({ trajectoryId });
 
     const {
         canCollaborate,
@@ -103,7 +77,7 @@ const CanvasPage = () => {
     } = useCanvasAccessPublication({
         trajectoryId,
         access: canvasAccess,
-        isLocalGlbViewer: isLocalGlbViewer || isWasmCanvas
+        isLocalGlbViewer
     });
 
     const viewportContainerRef = useRef<HTMLDivElement | null>(null);
@@ -119,7 +93,7 @@ const CanvasPage = () => {
     } = useCanvasCollaboration({
         trajectoryId,
         ownerId: ownerIdParam,
-        enabled: canCollaborate && !isWasmCanvas,
+        enabled: canCollaborate,
         containerRef: viewportContainerRef
     });
 
@@ -155,10 +129,8 @@ const CanvasPage = () => {
         showGrid,
         showGizmo,
         searchParams,
-        updateSearchParams
     } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
-    useWasmFrameSync(isWasmCanvas, currentTimestep);
 
     const localGlbViewer = useLocalGlbViewer(isLocalGlbViewer);
     const {
@@ -171,29 +143,7 @@ const CanvasPage = () => {
     });
 
     const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
-    const remotePicker = useTrajectoryFilePicker(navigateToDashboard);
-    // One picker for files and folders: a browser dialog offers one or the other, so the input is
-    // switched to directory mode just before it opens.
-    const wasmFileInputRef = useRef<HTMLInputElement>(null);
-    const openWasmPicker = useCallback((directory: boolean) => {
-        const input = wasmFileInputRef.current;
-        if (!input) return;
-        input.webkitdirectory = directory;
-        input.click();
-    }, []);
-    const openWasmFilePicker = useCallback(() => openWasmPicker(false), [openWasmPicker]);
-    const openWasmFolderPicker = useCallback(() => openWasmPicker(true), [openWasmPicker]);
-    const handleWasmFileChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(event.target.files ?? [], (file) => ({ file, path: file.webkitRelativePath || file.name }));
-        event.target.value = '';
-        await openWasmFiles(files);
-    }, [openWasmFiles]);
-    const handleWasmDrop = useCallback((uploads: FileDropUpload[]) => {
-        void openWasmFiles(uploads.flatMap((upload) => upload.files));
-    }, [openWasmFiles]);
-    const fileInputRef = isWasmCanvas ? wasmFileInputRef : remotePicker.fileInputRef;
-    const handlePickerChange = isWasmCanvas ? handleWasmFileChange : remotePicker.handlePickerChange;
-    const openFilePicker = isWasmCanvas ? openWasmFilePicker : remotePicker.openFilePicker;
+    const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
     const [isGuidedTourRequested, setIsGuidedTourRequested] = useState(false);
     const startGuidedTour = useCallback(() => setIsGuidedTourRequested(true), []);
 
@@ -218,41 +168,23 @@ const CanvasPage = () => {
     }, [isNarrowViewport]);
 
 
-    // /canvas/wasm keeps one trajectory id for every file it opens, so opening another one is
-    // signalled by the WASM session instead.
     useEffect(() => {
         const editorState = useEditorStore.getState();
         editorState.resetPlayback();
         editorState.resetModel();
-    }, [trajectoryId, wasmSessionId]);
-
-    // What a remote trajectory gets from its own id: no analysis selected, its own cell, and
-    // pipeline stages that have not produced anything for it yet. Once per opened trajectory:
-    // updateSearchParams changes with every URL change.
-    const clearedWasmSessionRef = useRef(0);
-    useEffect(() => {
-        if (!isWasmCanvas || wasmSessionId === clearedWasmSessionRef.current) return;
-        clearedWasmSessionRef.current = wasmSessionId;
-        updateSearchParams({ analysisId: null, timelineExposure: null, timestep: null }, { replace: true });
-        useCellDisplayStore.getState().clearCellOverride(WASM_TRAJECTORY_ID);
-        useCanvasPipelineStore.getState().clearExecutedStages(WASM_TRAJECTORY_ID);
-    }, [isWasmCanvas, wasmSessionId, updateSearchParams]);
+    }, [trajectoryId]);
 
     const hasFrames = Boolean(trajectory?.frames.length);
-    const trajectoryMissing = Boolean(!isWasmCanvas && !trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
+    const trajectoryMissing = Boolean(!trajectoryLoading && trajectoryError && !trajectory && trajectoryId);
     const showNoFramesState = Boolean(
         !isLocalGlbViewer
-        && !isWasmCanvas
         && trajectory
         && !hasFrames
     );
     const showsTrajectoryScene = !isLocalGlbViewer && !showNoFramesState;
-    // Before the first dump the empty-state card reports parsing; afterwards the overlay covers a replacement.
-    const isTrajectoryLoading = isWasmCanvas
-        ? wasmIsParsing && wasmHasDump
-        : trajectoryLoading
-            || !trajectory
-            || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined));
+    const isTrajectoryLoading = trajectoryLoading
+        || !trajectory
+        || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined));
     const overlayActive = Boolean(
         !isLocalGlbViewer
         && !showNoFramesState
@@ -290,18 +222,14 @@ const CanvasPage = () => {
         isSceneInteractive: showsTrajectoryScene && !overlayActive && Boolean(trajectory?._id)
     });
 
-    const showWasmEmptyState = isWasmCanvas && !wasmHasDump;
-
     const toolbarContextualActions = useMemo(() => (
-        showWasmEmptyState ? undefined : (
-            <CanvasToolbarActions
-                analysisId={analysisId}
-                canDownloadAnalysis={canDownloadAnalysisListing}
-            />
-        )
-    ), [showWasmEmptyState, analysisId, canDownloadAnalysisListing]);
+        <CanvasToolbarActions
+            analysisId={analysisId}
+            canDownloadAnalysis={canDownloadAnalysisListing}
+        />
+    ), [analysisId, canDownloadAnalysisListing]);
 
-    const localViewportBodyContent = useViewportBodyContent({
+    const viewportBodyContent = useViewportBodyContent({
         trajectory,
         isLocalGlbViewer,
         isLocalManifestLoading: localGlbViewer.isManifestLoading,
@@ -309,14 +237,6 @@ const CanvasPage = () => {
         forcedGlbUrl: localGlbViewer.forcedGlbUrl,
         showNoFramesState,
     });
-    const viewportBodyContent = showWasmEmptyState
-        ? (
-            <WasmDumpEmptyState
-                onChooseFolder={openWasmFolderPicker}
-                onTrySample={() => void openWasmSample()}
-            />
-        )
-        : localViewportBodyContent;
 
     const analysisOverlay = useMemo(() => (
         showsTrajectoryScene
@@ -339,7 +259,7 @@ const CanvasPage = () => {
         );
     }
 
-    const page = (
+    return (
         <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
         >
             <PreloadingOverlay
@@ -369,19 +289,14 @@ const CanvasPage = () => {
                 <TopToolbar
                     trajectory={trajectory}
                     canMutateCanvas={canMutateCanvas}
-                    showBack={!isWasmCanvas}
-                    workspacePeers={isWasmCanvas ? [] : peersInLobby}
+                    workspacePeers={peersInLobby}
                     workspaceActiveOwnerId={workspaceOwnerId}
-                    onSelectWorkspacePeer={isWasmCanvas ? undefined : navigateToWorkspace}
-                    share={isWasmCanvas ? undefined : shareInfo}
+                    onSelectWorkspacePeer={navigateToWorkspace}
+                    share={shareInfo}
                     contextualActions={toolbarContextualActions}
-                    isPluginSearchDisabled={showWasmEmptyState}
-                    fileMenu={isWasmCanvas
-                        ? { onOpen: openFilePicker, onOpenFolder: openWasmFolderPicker, onOpenSample: () => void openWasmSample() }
-                        : undefined}
                 />
 
-                {!isLocalGlbViewer && !isWasmCanvas && (
+                {!isLocalGlbViewer && (
                     <CanvasBanners
                         collaborationOwner={collaborationOwner}
                         isWorkspaceOwner={isWorkspaceOwner}
@@ -418,7 +333,7 @@ const CanvasPage = () => {
                         />
                     </div>
 
-                    {!isLocalGlbViewer && !showWasmEmptyState && (
+                    {!isLocalGlbViewer && (
                         <CanvasTimelineDock
                             panel={timelinePanel}
                             isNarrowViewport={isNarrowViewport}
@@ -446,7 +361,7 @@ const CanvasPage = () => {
 
             </div>
 
-            {!isLocalGlbViewer && !showWasmEmptyState && (
+            {!isLocalGlbViewer && (
                 <CanvasRightPanelRegion
                     panel={rightPanel}
                     isNarrowViewport={isNarrowViewport}
@@ -462,7 +377,7 @@ const CanvasPage = () => {
             <CommandPalette />
             <ExposureSettingsWidget />
             <CanvasAnalysisDiscoveryTour
-                enabled={!isWasmCanvas && (analysisDiscoveryTour.enabled || isGuidedTourRequested)}
+                enabled={analysisDiscoveryTour.enabled || isGuidedTourRequested}
                 storageScopeId={analysisDiscoveryTour.storageScopeId}
                 isMobile={isNarrowViewport}
                 rightDrawerOpen={rightDrawerOpen}
@@ -475,11 +390,6 @@ const CanvasPage = () => {
             />
         </div>
     );
-
-    // Dropping a dump anywhere on /canvas/wasm opens it, the same overlay the dashboard uses for uploads.
-    return isWasmCanvas
-        ? <FileUploaderContainer onFilesDropped={handleWasmDrop}>{page}</FileUploaderContainer>
-        : page;
 };
 
 export default CanvasPage;

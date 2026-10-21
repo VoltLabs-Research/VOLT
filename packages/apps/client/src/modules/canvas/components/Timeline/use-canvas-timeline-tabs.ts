@@ -1,7 +1,6 @@
 import usePluginCatalog, { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useAnalysesByTrajectoryQuery } from '@/modules/analysis/hooks/queries';
-import { isWasmLocalTrajectoryId } from '@/modules/canvas-wasm/constants';
 import { findCachedAnalysisById } from '@/modules/analysis/services/cache';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
@@ -39,7 +38,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
             page: 1,
             limit: 100
         },
-        { enabled: !!trajectoryId && !!analysisId && !isWasmLocalTrajectoryId(trajectoryId) }
+        { enabled: !!trajectoryId && !!analysisId }
     );
     const analysesData = analysesQuery.data?.data;
     const trajectoryAnalyses = trajectory?.analysis;

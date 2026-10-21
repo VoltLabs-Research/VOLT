@@ -9,15 +9,7 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { memo, useCallback } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import {
-    Button,
-    cn,
-    DropdownItem,
-    DropdownMenu,
-    DropdownPopover,
-    DropdownRoot,
-    DropdownTrigger
-} from '@heroui/react';
+import { Button, cn } from '@heroui/react';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
@@ -34,32 +26,21 @@ interface TopToolbarShareInfo {
 interface TopToolbarProps {
     trajectory?: Trajectory | null;
     canMutateCanvas: boolean;
-    showBack?: boolean;
     workspacePeers?: WorkspacePresenceUser[];
     workspaceActiveOwnerId?: string;
     onSelectWorkspacePeer?: (peerId: string) => void;
     share?: TopToolbarShareInfo;
     contextualActions?: ReactNode;
-    isPluginSearchDisabled?: boolean;
-    // Local file actions of /canvas/wasm: nothing is uploaded, the file is read in the tab.
-    fileMenu?: {
-        onOpen: () => void;
-        onOpenFolder?: () => void;
-        onOpenSample?: () => void;
-    };
 }
 
 const TopToolbar = ({
     trajectory,
     canMutateCanvas,
-    showBack = true,
     workspacePeers,
     workspaceActiveOwnerId,
     onSelectWorkspacePeer,
     share,
-    contextualActions,
-    isPluginSearchDisabled = false,
-    fileMenu
+    contextualActions
 }: TopToolbarProps) => {
     const navigate = useNavigate();
     const user = useCurrentUser();
@@ -74,52 +55,15 @@ const TopToolbar = ({
         <header className='relative z-[4] flex h-[var(--canvas-header-height,55px)] shrink-0 select-none items-stretch bg-chrome px-4 max-md:px-3 canvas-top-toolbar'>
             <div className='grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,420px)_minmax(0,1fr)] items-center gap-2 max-md:h-[var(--canvas-header-height,40px)] max-md:grid-cols-[auto_minmax(0,1fr)]'>
                 <div className='flex min-w-0 flex-row flex-nowrap items-center overflow-hidden'>
-                    {showBack && (
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            isIconOnly
-                            aria-label='Back to dashboard'
-                            onPress={handleBack}
-                        >
-                            <ChevronLeft size={16} aria-hidden='true' />
-                        </Button>
-                    )}
-                    {fileMenu && (
-                        <DropdownRoot>
-                            <DropdownTrigger aria-label='File' className='button button--sm button--ghost px-2 text-xs'>
-                                File
-                            </DropdownTrigger>
-                            <DropdownPopover placement='bottom start'>
-                                <DropdownMenu
-                                    aria-label='File'
-                                    onAction={(key) => {
-                                        if (String(key) === 'open') {
-                                            fileMenu.onOpen();
-                                        } else if (String(key) === 'open-folder') {
-                                            fileMenu.onOpenFolder?.();
-                                        } else if (String(key) === 'open-sample') {
-                                            fileMenu.onOpenSample?.();
-                                        }
-                                    }}
-                                >
-                                    <DropdownItem key='open' id='open' textValue='Open files'>
-                                        Open files…
-                                    </DropdownItem>
-                                    {fileMenu.onOpenFolder ? (
-                                        <DropdownItem key='open-folder' id='open-folder' textValue='Open folder'>
-                                            Open folder…
-                                        </DropdownItem>
-                                    ) : null}
-                                    {fileMenu.onOpenSample ? (
-                                        <DropdownItem key='open-sample' id='open-sample' textValue='Open sample'>
-                                            Open sample
-                                        </DropdownItem>
-                                    ) : null}
-                                </DropdownMenu>
-                            </DropdownPopover>
-                        </DropdownRoot>
-                    )}
+                    <Button
+                        variant='ghost'
+                        size='sm'
+                        isIconOnly
+                        aria-label='Back to dashboard'
+                        onPress={handleBack}
+                    >
+                        <ChevronLeft size={16} aria-hidden='true' />
+                    </Button>
                     {trajectory && (
                         <div
                             className='flex min-w-0 max-w-[220px] flex-row items-center justify-start px-2'
@@ -135,7 +79,7 @@ const TopToolbar = ({
                 </div>
 
                 <div className='flex min-w-0 flex-row items-center justify-center'>
-                    {canMutateCanvas && <CanvasPluginSearch isDisabled={isPluginSearchDisabled} />}
+                    {canMutateCanvas && <CanvasPluginSearch />}
                 </div>
 
                 <div className={cn('flex min-w-0 flex-row items-center justify-end gap-1', 'max-md:hidden')}>

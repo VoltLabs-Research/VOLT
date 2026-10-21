@@ -2,9 +2,7 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useSocketRoom from '@/modules/socket/hooks/use-socket-room';
 import { SOCKET_ANALYSIS_EVENTS } from '@/modules/socket/events/analysis';
 import { useCanvasAccessStore, useCanvasCanCollaborate, useCanvasDataAccess } from '@/modules/canvas/api/access/use-canvas-access-store';
-import { useIsWasmCanvas } from '@/modules/canvas-wasm/use-is-wasm-canvas';
-import { useWasmFrameLog } from '@/modules/canvas-wasm/use-wasm-canvas';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type {
     AnalysisFrameLogStatus,
@@ -46,17 +44,9 @@ const initialState: UseAnalysisFrameLogResult = {
 const useAnalysisFrameLog = ({
     analysisId,
     timestep,
-    active: requestedActive,
+    active,
     live = false
 }: UseAnalysisFrameLogOptions): UseAnalysisFrameLogResult => {
-    // /canvas/wasm runs plugins in this tab, so its log comes from the local session instead of the API.
-    const isWasmCanvas = useIsWasmCanvas();
-    const wasmLines = useWasmFrameLog(isWasmCanvas ? analysisId : undefined, timestep);
-    const wasmState = useMemo<UseAnalysisFrameLogResult>(() => ({
-        ...initialState,
-        segments: wasmLines.map((line) => ({ stream: 'stdout' as const, text: `${line}\n`, occurredAt: '' }))
-    }), [wasmLines]);
-    const active = requestedActive && !isWasmCanvas;
     const dataAccess = useCanvasDataAccess();
     const canCollaborate = useCanvasCanCollaborate();
     const effectiveLive = live && canCollaborate;
@@ -166,7 +156,7 @@ const useAnalysisFrameLog = ({
         enabled: liveSubscribeEnabled
     });
 
-    return isWasmCanvas ? wasmState : state;
+    return state;
 };
 
 export default useAnalysisFrameLog;
