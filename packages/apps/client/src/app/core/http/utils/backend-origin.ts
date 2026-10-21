@@ -1,4 +1,5 @@
 import { endpointStorage } from './endpoint-storage';
+import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 
 const normalizeEndpoint = (endpoint: string | null | undefined): string | null => {
     const trimmed = endpoint?.trim();
@@ -22,6 +23,11 @@ const hasDevProxyTarget = (): boolean => {
 };
 
 const resolveBackendEndpoint = (): string | null => {
+    // The page's service worker relays its backend requests to the VOLT it runs.
+    if (localStackMode.isEnabled()) {
+        return window.location.origin;
+    }
+
     const stored = normalizeEndpoint(endpointStorage.getEndpoint());
     if (stored) {
         return stored;

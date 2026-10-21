@@ -24,6 +24,8 @@
     "@react-three/postprocessing": "^3.0.5",
     "@tanstack/react-query": "^5.90.21",
     "@volt/contracts": "workspace:*",
+    "@volt/local-stack": "workspace:*",
+    "@volt/web-runtime": "workspace:*",
     "@voltstack/expressions": "^1.0.0",
     "@voltstack/voltclient": "workspace:*",
     "@xyflow/react": "^12.10.0",

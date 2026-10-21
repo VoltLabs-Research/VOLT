@@ -3,6 +3,7 @@ import '@/shared/ui/assets/stylesheets/fonts.css';
 
 import '@/shared/ui/assets/stylesheets/index.css';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
+import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import App from './App';
 
 import { StrictMode } from 'react';
@@ -49,8 +50,21 @@ if (navigator.userAgent.includes('Electron') || readVoltBridge()) {
     }
 }
 
-createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-        <App />
-    </StrictMode>
-);
+const root = createRoot(document.getElementById('root')!);
+
+const renderApp = (): void => {
+    root.render(
+        <StrictMode>
+            <App />
+        </StrictMode>
+    );
+};
+
+// A browser running its own VOLT starts it before the app talks to it.
+if (localStackMode.isEnabled()) {
+    void import('@/modules/local-stack/components/LocalStackBoot').then(({ default: LocalStackBoot }) => {
+        root.render(<LocalStackBoot onReady={renderApp} />);
+    });
+} else {
+    renderApp();
+}

@@ -1,5 +1,6 @@
 import {
-    commitBackendEndpoint
+    commitBackendEndpoint,
+    runLocalStack
 } from '@/modules/auth/services/endpoint-session';
 import {
     describeEndpointFailure,
@@ -8,7 +9,7 @@ import {
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
-import { Server } from 'lucide-react';
+import { Monitor, Server } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
@@ -90,6 +91,18 @@ const ConnectEndpointTemplate = () => {
                             {isVerifying ? 'Verifying…' : 'Continue'}
                         </Button>
                     </form>
+
+                    <div className='flex flex-col gap-3 border-t border-border/70 pt-6'>
+                        <p className='text-sm text-muted'>Or run VOLT entirely in this browser: the server and a compute cluster start in this tab, and your work stays on this device.</p>
+                        <Button
+                            variant='secondary'
+                            fullWidth
+                            onPress={runLocalStack}
+                        >
+                            <Monitor size={18} />
+                            Run in this browser
+                        </Button>
+                    </div>
 
                     <p className='border-t border-border/70 pt-2 text-center text-sm leading-[1.6] text-muted'>
                         Need help? Read the <a href='https://docs.voltcloud.dev' target='_blank' rel='noreferrer'>docs</a>.

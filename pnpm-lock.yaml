@@ -57,6 +57,12 @@ importers:
       '@volt/contracts':
         specifier: workspace:*
         version: link:../../shared/contracts
+      '@volt/local-stack':
+        specifier: workspace:*
+        version: link:../../shared/local-stack
+      '@volt/web-runtime':
+        specifier: workspace:*
+        version: link:../../infra/web-runtime
       '@voltstack/expressions':
         specifier: ^1.0.0
         version: 1.0.0
@@ -777,7 +783,7 @@ importers:
     devDependencies:
       typia:
         specifier: 12.1.1
-        version: 12.1.1(@types/node@25.9.9)(typescript@5.9.3)
+        version: 12.1.1(typescript@5.9.3)
 
   packages/shared/local-stack:
     dependencies:
@@ -9225,6 +9231,11 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
+  '@inquirer/external-editor@1.0.3':
+    dependencies:
+      chardet: 2.2.0
+      iconv-lite: 0.7.3
+
   '@inquirer/external-editor@1.0.3(@types/node@22.20.5)':
     dependencies:
       chardet: 2.2.0
@@ -13196,6 +13207,26 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
+  inquirer@8.2.7:
+    dependencies:
+      '@inquirer/external-editor': 1.0.3
+      ansi-escapes: 4.3.2
+      chalk: 4.1.2
+      cli-cursor: 3.1.0
+      cli-width: 3.0.0
+      figures: 3.2.0
+      lodash: 4.18.1
+      mute-stream: 0.0.8
+      ora: 5.4.1
+      run-async: 2.4.1
+      rxjs: 7.8.2
+      string-width: 4.2.3
+      strip-ansi: 6.0.1
+      through: 2.3.8
+      wrap-ansi: 6.2.0
+    transitivePeerDependencies:
+      - '@types/node'
+
   inquirer@8.2.7(@types/node@22.20.5):
     dependencies:
       '@inquirer/external-editor': 1.0.3(@types/node@22.20.5)
@@ -16047,6 +16078,22 @@ snapshots:
       commander: 10.0.1
       comment-json: 4.6.2
       inquirer: 8.2.7(@types/node@25.9.9)
+      package-manager-detector: 0.2.11
+      randexp: 0.5.3
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - '@types/node'
+
+  typia@12.1.1(typescript@5.9.3):
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@typia/core': 12.1.1(typescript@5.9.3)
+      '@typia/interface': 12.2.1
+      '@typia/transform': 12.1.1(typescript@5.9.3)
+      '@typia/utils': 12.2.1
+      commander: 10.0.1
+      comment-json: 4.6.2
+      inquirer: 8.2.7
       package-manager-detector: 0.2.11
       randexp: 0.5.3
       typescript: 5.9.3
