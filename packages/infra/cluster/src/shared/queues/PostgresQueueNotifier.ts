@@ -1,4 +1,4 @@
-import { Client } from 'pg';
+import type { Client } from 'pg';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/logger';
 import { getDaemonDataSource } from '@shared/persistence/DataSource';
@@ -56,6 +56,8 @@ export class PostgresQueueNotifier implements QueueNotifier {
     }
 
     private async connect(): Promise<void> {
+        // Loaded on first use: only Postgres deployments open a listener, and SQLite ones never load the driver.
+        const { Client } = await import('pg');
         const client = new Client({
             connectionString: getConfig().databaseUrl,
             application_name: 'volt-cluster-daemon-queue'
