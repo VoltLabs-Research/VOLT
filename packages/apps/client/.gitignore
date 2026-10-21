@@ -10,3 +10,6 @@
 .claude
 # Playwright output
 test-results/
+
+# Local dev HTTPS certificates (scripts/dev-certs.sh)
+.certs/
