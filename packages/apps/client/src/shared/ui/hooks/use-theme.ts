@@ -55,6 +55,12 @@ const resolvePreference = (): Theme => {
     return getSavedTheme() ?? Theme.System;
 };
 
+// The preference the app starts from: what the theme toggle stores, and what a document that
+// renders the app at a theme of its own sets before it does.
+export const storeThemePreference = (theme: Theme): void => {
+    writeStoredString(THEME_STORAGE_KEY, theme);
+};
+
 const syncThemeColorMeta = (): void => {
     const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
 
@@ -99,7 +105,7 @@ export const useTheme = (): UseThemeReturn => {
 
     const setTheme = (newTheme: Theme): void => {
         setPreferenceState(newTheme);
-        writeStoredString(THEME_STORAGE_KEY, newTheme);
+        storeThemePreference(newTheme);
     };
 
     return {
