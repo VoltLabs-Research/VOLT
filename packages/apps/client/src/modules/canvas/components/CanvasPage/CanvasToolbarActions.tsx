@@ -23,7 +23,7 @@ const CanvasToolbarActions = ({ analysisId, canDownloadAnalysis }: CanvasToolbar
     const isSignedIn = Boolean(useCurrentUser());
 
     return (
-        <div className='flex flex-row items-center gap-1'>
+        <div className='flex flex-row items-center gap-0.5'>
             <Tooltip>
                 <Button
                     variant='ghost'

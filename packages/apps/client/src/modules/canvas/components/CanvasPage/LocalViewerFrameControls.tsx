@@ -22,7 +22,7 @@ const LocalViewerFrameControls = ({
     const lastFrameIndex = manifest.frames.length - 1;
 
     return (
-        <div className='absolute bottom-0 left-0 right-auto z-20 flex h-auto max-h-[calc(100%-2rem)] min-h-0 flex-col overflow-visible w-auto max-w-[min(44rem,calc(100%-1.5rem))] rounded-tr-xl bg-surface-secondary px-4 py-3.5 max-md:pointer-events-none max-md:inset-x-0 max-md:bottom-4 max-md:z-[120] max-md:w-full max-md:max-w-none max-md:rounded-b-xl max-md:rounded-t-none max-md:bg-transparent max-md:px-3.5 max-md:pt-3 max-md:pb-[calc(0.875rem_+_env(safe-area-inset-bottom,0px))]' id='canvas-center-timeline'>
+        <div className='absolute bottom-2 left-2 z-20 flex h-auto max-h-[calc(100%-2rem)] min-h-0 w-auto max-w-[min(44rem,calc(100%-1rem))] flex-col overflow-visible rounded-2xl bg-dashboard-surface px-4 py-3 shadow-overlay max-md:inset-x-2 max-md:max-w-none max-md:px-3' id='canvas-center-timeline'>
             <div className='grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3.5 max-md:grid-cols-1 max-md:gap-2.5'>
                 <div className='min-w-0'>
                     <div className='truncate text-sm font-semibold text-foreground'>

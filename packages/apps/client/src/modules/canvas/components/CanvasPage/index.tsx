@@ -48,6 +48,17 @@ import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 
 
 
+// Layout variables shared by the canvas regions: the toolbar height, and on phones where the
+// floating panel and its round trigger sit inside the viewport, under the toolbar.
+const CANVAS_ROOT_VARS = [
+    '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px]',
+    'max-md:[--canvas-mobile-control-top:calc(var(--canvas-header-height)_+_0.5rem)]',
+    'max-md:[--canvas-mobile-control-size:2.625rem]',
+    'max-md:[--canvas-mobile-control-right:calc(1rem_+_env(safe-area-inset-right,0px))]',
+    'max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height)_+_3.75rem)]',
+    'max-md:[--canvas-mobile-panel-left:calc(1rem_+_env(safe-area-inset-left,0px))]'
+].join(' ');
+
 const CanvasPage = () => {
     usePageTitle('Canvas');
     const navigate = useNavigate();
@@ -72,8 +83,7 @@ const CanvasPage = () => {
 
     const {
         canCollaborate,
-        canMutateCanvas,
-        isReadOnlyCanvas
+        canMutateCanvas
     } = useCanvasAccessPublication({
         trajectoryId,
         access: canvasAccess,
@@ -246,7 +256,7 @@ const CanvasPage = () => {
 
     if (accessDenied || trajectoryMissing) {
         return (
-            <div className={cn('flex w-screen h-dvh bg-background text-foreground', 'canvas-editor-root', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]')}>
+            <div className={cn('flex h-dvh w-screen bg-canvas text-foreground', CANVAS_ROOT_VARS)}>
                 {accessDenied
                     ? (
                         <AccessDenied
@@ -260,8 +270,7 @@ const CanvasPage = () => {
     }
 
     return (
-        <div className={cn('flex relative overflow-hidden w-screen h-dvh bg-background text-foreground', '[--canvas-header-height:55px] max-md:[--canvas-header-height:40px] max-md:[--canvas-mobile-panel-edge:0.75rem] max-md:[--canvas-mobile-panel-top:calc(var(--canvas-header-height,40px)_+_8.75rem)] max-md:[--canvas-mobile-controls-gutter:5rem] max-md:[--canvas-mobile-control-column-size:2.625rem] max-md:[--canvas-mobile-control-column-right:calc(0.5rem_+_env(safe-area-inset-right,0px))] max-md:[--canvas-mobile-drawer-trigger-top:calc(1rem_+_env(safe-area-inset-top,0px))] max-md:[--canvas-mobile-viewport-controls-top:calc(var(--canvas-mobile-drawer-trigger-top)_+_var(--canvas-mobile-control-column-size)_+_0.5rem)]', `canvas-editor-root${isNarrowViewport ? ' canvas-editor-root--narrow' : ''}${isReadOnlyCanvas ? ' canvas-editor-root--read-only' : ''}`)}
-        >
+        <div className={cn('relative flex h-dvh w-screen overflow-hidden bg-canvas text-foreground', CANVAS_ROOT_VARS)}>
             <PreloadingOverlay
                 active={overlayActive}
                 title={isPreloading ? 'Setting up your scene…' : 'Loading trajectory…'}
@@ -271,7 +280,7 @@ const CanvasPage = () => {
             {isNarrowViewport && rightDrawerOpen && (
                 <button
                     type='button'
-                    className='absolute inset-0 z-[4] cursor-pointer border-none p-0 bg-[color-mix(in_srgb,var(--overlay-solid)_55%,transparent)] backdrop-blur-[6px] backdrop-saturate-[1.3] animate-[canvas-drawer-backdrop-in_180ms_ease-out] max-md:z-[130] max-md:bg-transparent max-md:backdrop-filter-none'
+                    className='absolute inset-0 z-[4] cursor-pointer border-none bg-canvas/55 p-0 animate-[canvas-drawer-backdrop-in_180ms_ease-out] max-md:z-[130] max-md:bg-transparent'
                     aria-label='Close panel'
                     onClick={closeRightDrawer}
                 />
@@ -285,7 +294,7 @@ const CanvasPage = () => {
                 onChange={handlePickerChange}
             />
 
-            <div className='flex flex-col relative overflow-hidden flex-1 min-h-0 canvas-editor-main'>
+            <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden'>
                 <TopToolbar
                     trajectory={trajectory}
                     canMutateCanvas={canMutateCanvas}
@@ -304,8 +313,12 @@ const CanvasPage = () => {
                     />
                 )}
 
-                <div className='flex min-h-0 flex-1 flex-col overflow-hidden canvas-editor-stage'>
-                    <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden canvas-center-viewport' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
+                {/* The viewport is one rounded surface, painted in the scene's own clear colour so it
+                    reads the same before WebGL draws. It isolates its stack: the timeline docked over
+                    its bottom stays below the drawer, and nothing here may filter, fade or mask, or
+                    the glass over the scene would stop seeing it. */}
+                <div className='relative isolate mb-[max(0.5rem,env(safe-area-inset-bottom,0px))] ml-[max(0.5rem,env(safe-area-inset-left,0px))] flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white dark:bg-canvas max-md:mr-[max(0.5rem,env(safe-area-inset-right,0px))]'>
+                    <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden' ref={viewportContainerRef as RefObject<HTMLDivElement>}>
                         <ErrorBoundary
                             fallbackTitle='Viewport crashed'
                             fallbackDescription='The 3D viewport hit an unexpected error. Reset to recover without losing your trajectory data.'

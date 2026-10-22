@@ -11,7 +11,7 @@ import { Button, Switch } from '@heroui/react';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import Scrollable from '@/shared/ui/components/Scrollable';
-import { Camera, Image } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -141,7 +141,7 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
             </div>
 
             {trajectoryId && pipelineCandidates.length > 0 && (
-                <div className='flex flex-col gap-2 border-t border-border pt-3'>
+                <div className='flex flex-col gap-2 border-t border-foreground/[0.06] pt-3'>
                     <div className='flex items-center justify-between gap-2'>
                         <p className='text-xs font-medium text-foreground'>
                             Batch figures
@@ -161,7 +161,7 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
                             return (
                                 <div
                                     key={candidate.pipelineId}
-                                    className='flex items-center justify-between gap-3 rounded-md px-1.5 py-1 text-xs text-foreground'
+                                    className='flex items-center justify-between gap-3 py-1 text-xs text-foreground'
                                 >
                                     <span
                                         id={labelId}
@@ -210,7 +210,6 @@ const ScreenshotMenuPanel = ({ close, trajectoryId, figureBatch }: ScreenshotMen
                     isDisabled={isBusy}
                     onPress={handleCapture}
                 >
-                    {isCapturing && !isBatching ? undefined : <Image size={14} />}
                     {isCapturing && !isBatching ? 'Capturing...' : 'Capture screenshot'}
                 </Button>
                 {trajectoryId && pipelineCandidates.length > 0 && (

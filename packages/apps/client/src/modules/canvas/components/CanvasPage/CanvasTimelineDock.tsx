@@ -12,7 +12,8 @@ interface CanvasTimelineDockProps extends ComponentProps<typeof Timeline> {
 }
 
 const CanvasTimelineDock = ({ panel, isNarrowViewport, statusBar, ...timelineProps }: CanvasTimelineDockProps) => (
-    <div className='absolute bottom-0 left-0 right-auto z-20 flex h-auto max-h-[calc(100%-2rem)] min-h-0 flex-col overflow-visible w-full bg-chrome max-md:pointer-events-none max-md:bottom-4 max-md:left-4 max-md:z-[120] max-md:w-auto max-md:right-4 max-md:rounded-xl max-md:bg-surface-secondary'
+    // Glass docked over the bottom of the viewport; on phones a floating card inside it.
+    <div className='absolute inset-x-0 bottom-0 z-20 flex h-auto max-h-[calc(100%-2rem)] min-h-0 flex-col overflow-visible bg-dashboard-surface shadow-[inset_0_1px_0_color-mix(in_oklab,var(--foreground)_6%,transparent)] max-md:pointer-events-none max-md:inset-x-2 max-md:bottom-2 max-md:max-h-[calc(100%-4rem)] max-md:gap-1.5 max-md:rounded-2xl max-md:p-1.5 max-md:shadow-overlay'
         id='canvas-center-timeline'
         data-tour-id='canvas-timeline'
         style={!isNarrowViewport ? { '--canvas-timeline-size': `${panel.size}px` } as CSSProperties : undefined}

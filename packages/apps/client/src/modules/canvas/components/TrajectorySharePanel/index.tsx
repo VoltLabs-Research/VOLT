@@ -1,6 +1,6 @@
 import CopyableField from '@/shared/ui/components/CopyableField';
 import TrajectoryVisibilityToggle from '@/modules/trajectory/components/TrajectoryVisibilityToggle';
-import { CloseButton, Separator } from '@heroui/react';
+import { CloseButton } from '@heroui/react';
 
 interface TrajectorySharePanelProps {
     trajectoryId: string;
@@ -23,13 +23,13 @@ const TrajectorySharePanel = ({
 
     return (
         <div className='flex h-auto flex-col'>
-            <div className='flex shrink-0 flex-row items-center justify-between border-b border-border px-3 py-2.5'>
-                <h4 className='text-xs font-medium text-foreground'>
+            <div className='flex shrink-0 flex-row items-center justify-between gap-2 border-b border-foreground/[0.06] py-1 pl-2.5 pr-1'>
+                <h4 className='text-sm font-medium text-foreground'>
                     Share trajectory
                 </h4>
                 {onClose && <CloseButton onPress={onClose} aria-label='Close share panel' />}
             </div>
-            <div className='flex flex-col gap-3 p-3'>
+            <div className='flex flex-col gap-3 px-1 pb-1 pt-3'>
                 {canManageVisibility ? (
                     <TrajectoryVisibilityToggle
                         trajectoryId={trajectoryId}
@@ -48,14 +48,11 @@ const TrajectorySharePanel = ({
                     </div>
                 )}
 
-                <Separator />
-                <div className='flex flex-col gap-2'>
-                    <CopyableField
-                        value={shareUrl}
-                        successMessage='Canvas link copied'
-                        className='px-2.5 py-2 [&_.copyable-field-value]:text-xs'
-                    />
-                </div>
+                <CopyableField
+                    value={shareUrl}
+                    successMessage='Canvas link copied'
+                    className='gap-2 rounded-full border-0 bg-foreground/5 py-1 pl-3.5 pr-1 [&_.copyable-field-value]:truncate [&_.copyable-field-value]:text-xs'
+                />
             </div>
         </div>
     );

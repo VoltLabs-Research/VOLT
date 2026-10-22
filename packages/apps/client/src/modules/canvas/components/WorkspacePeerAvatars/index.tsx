@@ -40,7 +40,7 @@ const renderAvatarButton = (
             key={user.id}
             type='button'
             className={cn(
-                'cursor-pointer rounded-full border-2 border-transparent bg-transparent p-0 leading-none transition-colors duration-[120ms] ease-out',
+                'cursor-pointer rounded-full border-2 border-transparent bg-transparent p-0 leading-none transition-colors duration-[140ms] ease-out',
                 options.isActive && 'border-foreground'
             )}
             onClick={options.onClick}
@@ -68,13 +68,13 @@ const WorkspacePeerAvatars = ({
     const overflow = peers.length - visible.length;
 
     return (
-        <div className='ml-2 flex h-full flex-row items-center gap-1 pl-2'>
+        <div className='ml-1 flex h-full flex-row items-center gap-1 pl-1'>
             {visible.map((peer) => renderAvatarButton(peer, {
                 isActive: peer.id === activeOwnerId,
                 onClick: () => onSelectPeer(peer.id)
             }))}
             {overflow > 0 && (
-                <div className='ml-0.5 flex size-6 items-center justify-center overflow-hidden rounded-full bg-white/8 text-white/70'>
+                <div className='ml-0.5 flex size-6 items-center justify-center overflow-hidden rounded-full bg-foreground/[0.08] text-muted'>
                     <span className='text-2xs font-semibold'>+{overflow}</span>
                 </div>
             )}

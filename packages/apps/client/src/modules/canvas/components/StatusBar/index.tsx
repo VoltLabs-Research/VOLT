@@ -18,8 +18,8 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
     <div className='flex flex-row items-center gap-2'>
         {items.map(({ key, label, value }, i) => (
             <div className='flex flex-row items-center gap-2' key={key}>
-                {i > 0 && <Separator orientation='vertical' className='h-3 w-px bg-border' />}
-                <span className='text-xs text-muted'>
+                {i > 0 && <Separator orientation='vertical' className='h-3 w-px bg-foreground/10' />}
+                <span className='whitespace-nowrap text-xs tabular-nums text-muted'>
                     {label}{label && ': '}{value}
                 </span>
             </div>
@@ -51,7 +51,7 @@ const StatusBar = ({ trajectory }: StatusBarProps) => {
     ];
 
     return (
-        <Scrollable className='flex h-7 w-full flex-row items-center gap-3 px-3'>
+        <Scrollable orientation='horizontal' className='flex h-7 w-full flex-row items-center gap-3 px-3 max-md:pointer-events-auto max-md:order-4 max-md:h-5 max-md:px-1.5'>
             <StatusGroup items={items} />
         </Scrollable>
     );

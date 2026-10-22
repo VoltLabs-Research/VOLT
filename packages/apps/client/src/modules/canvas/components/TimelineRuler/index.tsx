@@ -19,7 +19,7 @@ const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
 
     const markToneClass = {
         queued: 'bg-warning',
-        running: 'bg-accent',
+        running: 'bg-info',
         completed: 'bg-success'
     } as const;
 
@@ -75,12 +75,12 @@ const TimelineRuler = ({
     onKeyDown
 }: TimelineRulerProps) => (
     <div className='relative h-full min-h-0 flex-auto'>
-        <div className='flex h-full min-h-[22px] touch-pan-y items-end select-none overflow-x-auto overflow-y-hidden border-b border-border outline-none max-md:touch-none' ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role='slider' tabIndex={0} aria-label='Timeline playhead' aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
+        <div className='flex h-full min-h-[22px] touch-pan-y items-end select-none overflow-x-auto overflow-y-hidden border-b border-foreground/[0.08] outline-none focus-visible:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_15%,transparent)] max-md:touch-none max-md:border-b-0' ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role='slider' tabIndex={0} aria-label='Timeline playhead' aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
             <TimelineRulerTicks ticks={ticks} />
         </div>
 
-        <div className='pointer-events-none absolute inset-y-0 z-[2] w-0.5 bg-accent' style={{ left: `${playheadLeft}px` }}>
-            <div className='absolute -left-1 -top-1 size-2.5 rounded-full bg-accent' />
+        <div className='pointer-events-none absolute bottom-0 top-4 z-[2] w-0.5 bg-foreground max-md:top-3' style={{ left: `${playheadLeft}px` }}>
+            <div className='absolute -top-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-foreground' />
         </div>
     </div>
 );

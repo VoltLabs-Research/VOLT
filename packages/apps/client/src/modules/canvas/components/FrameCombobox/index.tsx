@@ -1,7 +1,6 @@
 import { ComboBox, Input, ListBox, cn } from '@heroui/react';
 import { useMemo, useCallback } from 'react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
-import { COMPACT_FIELD_GROUP, COMPACT_FIELD_GROUP_INPUT } from '@/shared/ui/utils/field-density';
 
 import type { SelectOption } from '@/shared/contracts/form-field';
 
@@ -45,8 +44,8 @@ const FrameCombobox = ({ value, options, onChange, title, groupClassName }: Fram
             isDisabled={options.length === 0}
             aria-label={title ?? 'Select frame'}
         >
-            <ComboBox.InputGroup className={cn(COMPACT_FIELD_GROUP, 'w-24', groupClassName)}>
-                <Input className={COMPACT_FIELD_GROUP_INPUT} placeholder={placeholder} />
+            <ComboBox.InputGroup className={cn('h-7 min-h-7 w-24 overflow-hidden rounded-full border-0 bg-foreground/5 text-xs shadow-none transition-colors duration-[140ms] hover:bg-foreground/[0.08] focus-within:bg-foreground/[0.08]', groupClassName)}>
+                <Input className='h-7 min-h-7 border-0 bg-transparent pl-3 text-xs tabular-nums text-foreground shadow-none placeholder:text-muted' placeholder={placeholder} />
                 <ComboBox.Trigger />
             </ComboBox.InputGroup>
             <ComboBox.Popover>

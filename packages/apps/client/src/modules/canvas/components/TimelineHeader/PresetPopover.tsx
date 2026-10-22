@@ -22,20 +22,20 @@ const PresetPopover = ({ id, icon, presets, value, suffix, onSelect, hideOnMobil
             <Button
                 variant='ghost'
                 size='sm'
-                className={cn('h-7 min-h-7 text-xs', 'max-md:h-7 max-md:min-h-7 max-md:rounded-md max-md:bg-surface-secondary max-md:px-2', hideOnMobile && 'max-md:hidden')}
+                className={cn('h-7 min-h-7 gap-1.5 px-2.5 text-xs tabular-nums [&_svg]:text-muted', hideOnMobile && 'max-md:hidden')}
             >
                 {icon}
                 {`${value}${suffix}`}
             </Button>
             <Popover.Content placement='bottom start'>
-                <Popover.Dialog id={id} aria-label={`${id} presets`} className='flex min-w-40 max-w-80 flex-col p-1'>
+                <Popover.Dialog id={id} aria-label={`${id} presets`} className='flex min-w-40 max-w-80 flex-col gap-0.5 p-1.5'>
                     {presets.map((preset) => (
                         <Button
                             key={preset}
                             variant={preset === value ? 'secondary' : 'ghost'}
                             size='sm'
                             fullWidth
-                            className='justify-start text-xs'
+                            className='justify-start text-xs tabular-nums'
                             onPress={() => {
                                 onSelect(preset);
                                 setIsOpen(false);

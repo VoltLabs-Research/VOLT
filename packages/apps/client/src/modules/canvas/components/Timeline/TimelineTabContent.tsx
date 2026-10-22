@@ -22,7 +22,7 @@ interface TimelineTabContentProps {
 }
 
 const TabBody = ({ children }: { children: ReactNode }) => (
-    <div className='relative h-full min-h-0 flex-auto overflow-hidden max-md:pointer-events-auto max-md:order-2 max-md:h-auto max-md:min-h-0 max-md:min-w-0 max-md:flex-1 max-md:self-stretch max-md:overflow-auto max-md:rounded-xl max-md:border-0 max-md:bg-surface-secondary'>
+    <div className='relative h-full min-h-0 flex-auto overflow-hidden max-md:pointer-events-auto max-md:order-2 max-md:h-auto max-md:min-h-0 max-md:min-w-0 max-md:self-stretch max-md:max-h-44 max-md:flex-none max-md:overflow-auto max-md:rounded-xl max-md:border-0 max-md:bg-foreground/[0.04]'>
         {children}
     </div>
 );
