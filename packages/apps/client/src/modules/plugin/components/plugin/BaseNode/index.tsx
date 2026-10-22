@@ -9,7 +9,6 @@ import {
     resolveNodeHandlePlacement,
     toReactFlowHandlePosition
 } from '@/modules/plugin/utils/plugin/node-handles';
-import { Database, Terminal } from 'lucide-react';
 import { Handle, useUpdateNodeInternals } from '@xyflow/react';
 import { useEffect } from 'react';
 import type { ChipProps } from '@heroui/react';
@@ -33,22 +32,21 @@ const BADGE_COLOR: Record<NodeOverheadBadgeTone, ChipProps['color']> = {
 };
 
 interface DebugActionButtonProps {
-    icon: ReactNode;
     isActive: boolean;
     onClick: () => void;
     children: ReactNode;
 }
 
-const DebugActionButton = ({ icon, isActive, onClick, children }: DebugActionButtonProps) => (
+const DebugActionButton = ({ isActive, onClick, children }: DebugActionButtonProps) => (
     <button
         type='button'
-        className={cn('inline-flex cursor-pointer flex-row items-center gap-1 whitespace-nowrap rounded-full border border-border bg-surface-secondary/80 px-2 py-0.5 font-[inherit] text-2xs text-muted transition-[color,border-color,background-color] duration-150 hover:border-border-secondary hover:text-inherit', isActive ? 'border-accent bg-accent/8 text-accent' : null)}
+        aria-pressed={isActive}
+        className={cn('h-5.5 cursor-pointer whitespace-nowrap rounded-full bg-overlay px-2 text-2xs text-muted ring-1 ring-border transition-[color,box-shadow] duration-150 hover:text-foreground', isActive ? 'text-foreground ring-foreground' : null)}
         onClick={(event: MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             onClick();
         }}
     >
-        {icon}
         {children}
     </button>
 );
@@ -88,19 +86,27 @@ const BaseNode = ({
     }, [connectorLayoutSignature, id, updateNodeInternals]);
 
     return (
-        <div className={cn('relative inline-flex flex-col items-center', overheadBadge ? 'pt-5' : null)}>
+        <div className='relative inline-flex flex-col items-center'>
             {overheadBadge && (
                 <Chip
                     size='sm'
                     variant='soft'
                     color={BADGE_COLOR[overheadBadge.tone]}
-                    className='absolute top-0 left-1/2 -translate-x-1/2 z-[1] pointer-events-none whitespace-nowrap rounded-full px-1.5 py-px text-2xs font-semibold'
+                    className='pointer-events-none absolute bottom-full left-1/2 z-[1] mb-1.5 -translate-x-1/2 whitespace-nowrap px-2 text-2xs font-semibold tabular-nums'
                 >
                     {overheadBadge.label}
                 </Chip>
             )}
 
-            <div className={cn('relative max-w-[300px] rounded-lg border border-border bg-surface px-6 py-4 transition-[border-color,opacity,box-shadow] duration-200 ease-out', selected ? 'border-accent' : null, debugClass)}>
+            {/* Painted over the canvas so the grid stays out of the card. */}
+            <div
+                className={cn(
+                    'relative max-w-[300px] rounded-2xl bg-canvas bg-linear-to-b from-surface to-surface px-5 py-4 shadow-xs ring-1 ring-border transition-[box-shadow,opacity] duration-150 ease-out',
+                    selected ? 'shadow-[var(--overlay-shadow)] ring-[1.5px] ring-foreground' : null,
+                    !selected && !debugClass ? 'hover:ring-foreground/30' : null,
+                    debugClass
+                )}
+            >
                 {getNodeHandleDefinitions(nodeType).map((handleDefinition) => {
                     const placement = resolveNodeHandlePlacement(nodeData, handleDefinition);
 
@@ -110,21 +116,18 @@ const BaseNode = ({
                             type={handleDefinition.type}
                             position={toReactFlowHandlePosition(placement.side)}
                             id={handleDefinition.id}
-                            className={handleDefinition.className}
                             style={createReactFlowHandleStyle(placement)}
                         />
                     );
                 })}
 
-                <div className='flex flex-row items-center gap-4'>
-                    <div className='flex flex-1 flex-col gap-1'>
-                        <h3 className='text-base font-medium text-foreground'>{nodeTitle ?? config.label}</h3>
-                        {description && (
-                            <p className='line-clamp-2 overflow-hidden text-sm text-muted'>
-                                {description}
-                            </p>
-                        )}
-                    </div>
+                <div className='flex min-w-0 flex-col gap-1'>
+                    <h3 className='truncate text-base font-medium text-foreground'>{nodeTitle ?? config.label}</h3>
+                    {description && (
+                        <p className='line-clamp-2 text-sm text-muted'>
+                            {description}
+                        </p>
+                    )}
                 </div>
 
                 {children}
@@ -134,7 +137,6 @@ const BaseNode = ({
                 <div className='absolute top-full left-1/2 z-[2] mt-1.5 -translate-x-1/2 inline-flex flex-row items-center gap-1'>
                     {hasInspectableOutput && (
                         <DebugActionButton
-                            icon={<Database size={11} aria-hidden='true' />}
                             isActive={isInspectingOutput}
                             onClick={toggleInspectedOutput}
                         >
@@ -144,7 +146,6 @@ const BaseNode = ({
 
                     {hasLog && (
                         <DebugActionButton
-                            icon={<Terminal size={11} aria-hidden='true' />}
                             isActive={isShowingLog}
                             onClick={toggleExecutionLog}
                         >

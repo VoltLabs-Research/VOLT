@@ -23,7 +23,7 @@ const SaveStatusIndicator = ({ status, className }: { status: SaveStatus; classN
             aria-atomic='true'
             className={cn(
                 'flex flex-row items-center gap-1 text-xs',
-                status === 'error' ? 'text-danger' : null,
+                status === 'error' ? 'text-danger-soft-foreground' : 'text-muted',
                 className
             )}
         >
@@ -31,7 +31,7 @@ const SaveStatusIndicator = ({ status, className }: { status: SaveStatus; classN
             {status === 'saved' && <Check size={12} aria-hidden='true' />}
             {status === 'error' && <AlertCircle size={12} aria-hidden='true' />}
 
-            <span className={cn('text-xs', status === 'error' ? null : 'text-muted')}>
+            <span>
                 {status === 'saving' && 'Saving…'}
                 {status === 'saved' && 'Saved'}
                 {status === 'error' && 'Save failed'}
@@ -56,13 +56,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     role='alert'
                     aria-live='polite'
                     aria-label={validationTitle}
-                    className={cn('absolute bottom-18 left-1/2 z-10 w-max max-w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 flex-row items-center justify-between rounded-xl border border-danger/24 bg-danger-soft p-4 shadow-none', 'items-start')}
+                    className='glass-surface absolute bottom-18 left-1/2 z-10 w-max max-w-[min(420px,calc(100vw-2rem))] -translate-x-1/2 flex-row items-start justify-between rounded-3xl border-0 bg-[color-mix(in_oklab,var(--danger)_14%,var(--overlay))] px-5 py-3.5 text-danger-soft-foreground shadow-[var(--overlay-shadow)]'
                 >
                     <Alert.Content className='gap-1'>
-                        <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-sm font-semibold'>
+                        <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-base font-semibold text-danger-soft-foreground'>
                             {validationTitle}
                         </Alert.Title>
-                        <ul className='m-0 flex flex-col gap-1 list-disc pl-4'>
+                        <ul className='m-0 flex list-disc flex-col gap-1 pl-4'>
                             {errors.map((error, index) => (
                                 <li className='text-xs' key={index}>
                                     {error}
@@ -73,13 +73,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                 </Alert>
             )}
 
-            <div role='toolbar' aria-label='Canvas' className='absolute bottom-5 left-1/2 z-10 inline-flex -translate-x-1/2 flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-2 py-1.5 max-[768px]:bottom-3 max-[768px]:left-2 max-[768px]:right-2 max-[768px]:max-w-[calc(100vw-1rem)] max-[768px]:translate-x-0 max-[768px]:flex-wrap max-[768px]:justify-center'>
+            <div role='toolbar' aria-label='Canvas' className='glass-surface absolute bottom-4 left-1/2 z-10 inline-flex -translate-x-1/2 flex-row items-center gap-1 whitespace-nowrap rounded-full bg-dashboard-surface px-1.5 py-1 shadow-[var(--overlay-shadow)] max-[768px]:bottom-3 max-[768px]:left-2 max-[768px]:right-2 max-[768px]:max-w-[calc(100vw-1rem)] max-[768px]:translate-x-0 max-[768px]:flex-wrap max-[768px]:justify-center'>
                 <SaveStatusIndicator status={saveStatus} className='whitespace-nowrap px-2' />
 
                 {errors.length > 0 && (
                     <Tooltip>
                         <Tooltip.Trigger
-                            className='flex cursor-pointer flex-row items-center gap-2 whitespace-nowrap px-2 text-danger'
+                            className='flex h-8 cursor-pointer flex-row items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-danger-soft-foreground transition-colors duration-150 hover:bg-danger-soft'
                         >
                             <AlertTriangle size={14} aria-hidden='true' />
                             <p className='text-xs'>
@@ -97,7 +97,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                         </Button>
                         <Tooltip.Content placement='top'>Zoom out</Tooltip.Content>
                     </Tooltip>
-                    <p className='min-w-[42px] select-none text-center text-xs tabular-nums text-muted'>
+                    <p className='min-w-11 select-none text-center text-xs tabular-nums text-muted'>
                         {Math.round(zoom * 100)}%
                     </p>
                     <Tooltip>
@@ -106,7 +106,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                         </Button>
                         <Tooltip.Content placement='top'>Zoom in</Tooltip.Content>
                     </Tooltip>
-                    <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary max-[768px]:hidden' />
+                    <Separator orientation='vertical' className='mx-1 h-5 bg-foreground/10 max-[768px]:hidden' />
                     <Tooltip>
                         <Button variant='ghost' isIconOnly size='sm' aria-label='Fit to view' onPress={() => fitView({ padding: 0.2 })}>
                             <Maximize size={16} aria-hidden='true' />

@@ -1,6 +1,5 @@
-import { Chip } from '@heroui/react';
+import { cn } from '@heroui/react';
 import Scrollable from '@/shared/ui/components/Scrollable';
-import { Terminal } from 'lucide-react';
 import type { DebugExecutionLogSegment } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import type { ReactNode } from 'react';
 
@@ -34,22 +33,16 @@ const NodeExecutionLog = ({ logSegments, output }: NodeExecutionLogProps) => {
     const stderr = renderOutputStream(output?.stderr);
 
     return (
-        <div className='absolute left-1/2 top-[calc(100%+2rem)] z-[5] w-[300px] -translate-x-1/2 overflow-hidden rounded-md border border-border bg-surface-secondary nowheel' onClick={(event) => event.stopPropagation()}>
-            <div className='flex flex-row items-center gap-1 border-b border-border px-2 py-1.5 text-muted'>
-                <Terminal size={10} aria-hidden='true' />
-                <p className='text-xs font-semibold'>Execution Log</p>
+        <div data-node-inspect className='glass-surface nowheel absolute left-1/2 top-[calc(100%+2.25rem)] z-[5] w-[300px] -translate-x-1/2 cursor-auto select-text overflow-hidden rounded-2xl bg-overlay shadow-[var(--overlay-shadow)]' onClick={(event) => event.stopPropagation()}>
+            <div className='flex flex-row items-center justify-between gap-3 px-3.5 pt-2.5 pb-1 text-xs font-semibold text-muted'>
+                <p>Execution Log</p>
                 {exitCode !== undefined && (
-                    <Chip
-                        size='sm'
-                        variant='soft'
-                        color={exitCode === 0 ? 'success' : 'danger'}
-                        className='ml-auto rounded-full font-mono text-2xs'
-                    >
+                    <span className={cn('font-mono font-medium', exitCode === 0 ? 'text-success-soft-foreground' : 'text-danger-soft-foreground')}>
                         exit {exitCode}
-                    </Chip>
+                    </span>
                 )}
             </div>
-            <Scrollable className='max-h-[220px] p-2'>
+            <Scrollable className='max-h-[220px] px-3.5 pt-1 pb-3'>
                 <pre className='m-0 whitespace-pre-wrap break-words font-mono text-2xs leading-[1.6]'>
                     {logSegments.length > 0 ? (
                         logSegments.map((segment, index) => (

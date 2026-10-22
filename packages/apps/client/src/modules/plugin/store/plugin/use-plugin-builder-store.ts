@@ -4,7 +4,7 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import { collectWorkflowErrors, isConnectionAllowed } from '@/modules/plugin/store/plugin/builder-graph-rules';
 import { createNode } from '@/modules/plugin/utils/plugin/node-registry';
 import {
-    DEFAULT_EDGE_STYLE,
+    DEFAULT_EDGE_OPTIONS,
     toBuilderEdges,
     toBuilderNodes,
     toWorkflowEdges,
@@ -139,7 +139,7 @@ export const usePluginBuilderStore = create<PluginBuilderStore>()(
                     target: connection.target,
                     sourceHandle: connection.sourceHandle ?? undefined,
                     targetHandle: connection.targetHandle ?? undefined,
-                    ...DEFAULT_EDGE_STYLE
+                    ...DEFAULT_EDGE_OPTIONS
                 };
 
                 _setGraphState((state) => ({ edges: addEdge(edge, state.edges) }));

@@ -42,7 +42,7 @@ const PluginBuilderPage = () => {
 
     const singleTenant = useSingleTenant();
     const bottomSidebarContent = singleTenant ? undefined : (
-        <div className='p-6'>
+        <div className='px-2.5 pt-1.5 pb-2.5'>
             <UserMenuPopover
                 onSettingsClick={handleSettingsClick}
                 onSignOut={handleSignOut}

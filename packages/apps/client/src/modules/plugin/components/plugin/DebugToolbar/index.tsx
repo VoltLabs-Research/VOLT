@@ -10,8 +10,12 @@ import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { isUserConfigurableArgument } from '@/modules/plugin/utils/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
-import { Bug, FastForward, Play, Square, StepForward } from 'lucide-react';
+import { FastForward, Play, Square, StepForward } from 'lucide-react';
 import type { ReactNode } from 'react';
+
+// Pills inside the pill toolbar, as tall as its icon buttons. On a phone they share a second row.
+const SELECT_CLASS_NAME = 'max-[768px]:order-2 max-[768px]:min-w-0 max-[768px]:flex-[1_1_40%]';
+const SELECT_TRIGGER_CLASS_NAME = 'h-8 min-h-8 items-center rounded-full py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 max-[768px]:w-full';
 
 interface DebugControlButtonProps {
     tooltip: string;
@@ -96,13 +100,10 @@ const DebugToolbar = () => {
     }
 
     return (
-        <div className='absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5'>
-            <div className='flex flex-row items-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface px-4'>
-                <div className='flex flex-row items-center gap-2'>
-                    <Bug size={14} className='text-muted' aria-hidden='true' />
-                    <p className='text-xs font-semibold text-muted'>Debug</p>
-                </div>
-                <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
+        <div className='absolute top-4 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 max-[768px]:top-2 max-[768px]:right-2 max-[768px]:left-18 max-[768px]:translate-x-0 max-[768px]:items-stretch'>
+            <div role='toolbar' aria-label='Debug' className='glass-surface flex flex-row items-center gap-1 whitespace-nowrap rounded-full bg-dashboard-surface p-1 shadow-[var(--overlay-shadow)] max-[768px]:flex-wrap max-[768px]:justify-between max-[768px]:rounded-3xl'>
+                <p className='pr-2 pl-3 text-xs font-semibold text-muted'>Debug</p>
+                <Separator orientation='vertical' className='mx-1 h-5 bg-foreground/10 max-[768px]:hidden' />
                 <PluginSelect
                     options={trajectories.map((trajectory) => ({
                         value: trajectory._id,
@@ -114,7 +115,8 @@ const DebugToolbar = () => {
                     ariaLabel='Trajectory'
                     isDisabled={isDebugging || isStarting}
                     isPending={trajLoading}
-                    triggerClassName='disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent data-[open]:border-accent'
+                    className={SELECT_CLASS_NAME}
+                    triggerClassName={SELECT_TRIGGER_CLASS_NAME}
                 />
                 <PluginSelect
                     options={frames.map((frame) => ({
@@ -126,9 +128,10 @@ const DebugToolbar = () => {
                     placeholder='Frame'
                     ariaLabel='Frame'
                     isDisabled={!selectedTrajectoryId || isDebugging || isStarting}
-                    triggerClassName='disabled:cursor-not-allowed disabled:opacity-50 focus:border-accent data-[open]:border-accent'
+                    className={SELECT_CLASS_NAME}
+                    triggerClassName={SELECT_TRIGGER_CLASS_NAME}
                 />
-                <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
+                <Separator orientation='vertical' className='mx-1 h-5 bg-foreground/10 max-[768px]:hidden' />
                 <div className='flex flex-row items-center gap-1'>
                     <DebugControlButton tooltip={startTooltip} onPress={handlePlayClick} isDisabled={!canStart}>
                         {isStarting ? <Loader size='sm' color='current' /> : <Play size={14} aria-hidden='true' />}
@@ -146,40 +149,37 @@ const DebugToolbar = () => {
             </div>
 
             {isDebugging && (
-                <>
-                    <Separator orientation='vertical' className='mx-1 h-5 bg-border-secondary' />
-                    <div className='flex flex-row items-center gap-2 whitespace-nowrap'>
-                        {isPaused && currentNodeLabel && (
-                            <>
-                                <span role='status' aria-label='warning status' className='inline-block size-2 shrink-0 animate-pulse rounded-full shadow-[0_0_0_2px_var(--surface-secondary)] bg-warning' />
-                                <p className='text-xs'>
-                                    Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
-                                </p>
-                            </>
-                        )}
-                        {!isPaused && (
-                            <>
-                                <span role='status' aria-label='info status' className='inline-block size-2 shrink-0 animate-pulse rounded-full shadow-[0_0_0_2px_var(--surface-secondary)] bg-info' />
-                                <p className='text-xs text-muted'>
-                                    Running... {completedCount}/{totalNodes}
-                                </p>
-                            </>
-                        )}
-                    </div>
-                </>
+                <div className='flex flex-row items-center gap-2 whitespace-nowrap'>
+                    {isPaused && currentNodeLabel && (
+                        <>
+                            <span role='status' aria-label='warning status' className='inline-block size-2 shrink-0 animate-pulse rounded-full bg-warning shadow-[0_0_0_2px_var(--surface-secondary)]' />
+                            <p className='text-xs'>
+                                Paused at: {currentNodeLabel} ({currentNodeIndex + 1}/{totalNodes})
+                            </p>
+                        </>
+                    )}
+                    {!isPaused && (
+                        <>
+                            <span role='status' aria-label='info status' className='inline-block size-2 shrink-0 animate-pulse rounded-full bg-foreground shadow-[0_0_0_2px_var(--surface-secondary)]' />
+                            <p className='text-xs text-muted'>
+                                Running... {completedCount}/{totalNodes}
+                            </p>
+                        </>
+                    )}
+                </div>
             )}
 
             <DebugArgumentsPanel onStart={startDebug} canStart={canStart} />
 
             {!isDebugging && (totalDuration !== null || sessionError) && (
-                <div className='mt-4 flex flex-col whitespace-nowrap text-center'>
+                <div className='flex flex-col whitespace-nowrap text-center'>
                     {totalDuration !== null && totalDuration >= 0 && (
-                        <p className='text-xs text-success'>
+                        <p className='text-xs text-success-soft-foreground'>
                             Completed in {formatTraceDuration(totalDuration)}
                         </p>
                     )}
                     {sessionError && (
-                        <p className='text-xs text-danger'>
+                        <p className='text-xs text-danger-soft-foreground'>
                             {sessionError}
                         </p>
                     )}

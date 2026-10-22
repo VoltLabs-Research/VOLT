@@ -8,7 +8,7 @@ import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-m
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import Editor from '@monaco-editor/react';
 import { useEffect, useState } from 'react';
-import { Upload, File, Trash2, Check } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import { ENTRYPOINT_EDITOR_DEFAULT_VALUES } from './schema';
 import type { EntrypointEditorFormValues } from './schema';
 import useEntrypointBinaryActions from './use-entrypoint-binary-actions';
@@ -101,18 +101,15 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     />
 
                     {watchedBinaryObjectPath ? (
-                        <div className='flex flex-row items-center justify-between rounded-lg border border-success/24 bg-success-soft px-3 py-2.5'>
-                            <div className='flex flex-row items-center gap-2 text-success'>
-                                <File size={20} aria-hidden='true' />
-                                <span className='max-w-[180px] overflow-hidden whitespace-nowrap text-ellipsis text-sm font-medium'>
-                                    {watchedBinaryFileName || watchedBinary}
-                                </span>
-                                <Check size={16} className='text-success' aria-hidden='true' />
-                            </div>
+                        <div className='flex flex-row items-center justify-between gap-2 rounded-full bg-success-soft py-1.5 pr-1.5 pl-4 text-success-soft-foreground'>
+                            <span className='min-w-0 flex-1 truncate text-base font-medium'>
+                                {watchedBinaryFileName || watchedBinary}
+                            </span>
                             <Button
                                 variant='ghost'
                                 size='sm'
-                                className='text-danger'
+                                isIconOnly
+                                className='shrink-0 text-success-soft-foreground'
                                 aria-label={`Remove ${binarySectionTitle.toLowerCase()}`}
                                 onPress={handleRemoveBinary}
                             >

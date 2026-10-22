@@ -118,7 +118,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
             id: 'Palette',
             name: 'Palette',
             Component: () => (
-                <Scrollable className='flex flex-col gap-6 p-8'>
+                <Scrollable className='flex flex-col gap-0.5 px-2.5 pt-2 pb-4'>
                     {nodeTypesList.map((config) => (
                         <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
@@ -134,7 +134,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                 activeTag='Palette'
             >
                 <Sidebar.Header>
-                    <div className='flex flex-row items-center gap-3'>
+                    <div className='flex min-w-0 flex-row items-center gap-1.5'>
                         <Tooltip>
                             <Button
                                 variant='ghost'
@@ -151,6 +151,7 @@ const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => 
                             <Tooltip.Trigger>
                                 <EditableTag
                                     as='h3'
+                                    className='truncate px-1.5 py-0.5 font-semibold'
                                     onSave={handlePluginNameChange}
                                 >
                                     {pluginName}

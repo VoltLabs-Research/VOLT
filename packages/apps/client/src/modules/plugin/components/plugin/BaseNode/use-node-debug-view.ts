@@ -43,12 +43,13 @@ const resolveOverheadBadge = (
 };
 
 const useNodeDebugView = (nodeId: string, nodeType: NodeType) => {
+    // Rings and halos instead of borders, so a state never changes the card's size.
     const statusClass: Record<DebugNodeStatus, string> = {
         [DebugNodeStatus.Pending]: 'opacity-50',
-        [DebugNodeStatus.Running]: 'border-accent shadow-[0_0_0_2px_color-mix(in_srgb,var(--accent)_30%,transparent),0_0_16px_color-mix(in_srgb,var(--accent)_15%,transparent)] animate-[debug-node-pulse_1.5s_ease-in-out_infinite]',
-        [DebugNodeStatus.Completed]: 'border-success',
-        [DebugNodeStatus.Failed]: 'border-danger shadow-[0_0_0_2px_color-mix(in_srgb,var(--danger)_30%,transparent)]',
-        [DebugNodeStatus.Skipped]: 'opacity-40 border-dashed'
+        [DebugNodeStatus.Running]: 'ring-[1.5px] ring-foreground shadow-[0_0_0_6px_color-mix(in_oklab,var(--foreground)_12%,transparent)] animate-[plugin-node-pulse_1.5s_ease-in-out_infinite]',
+        [DebugNodeStatus.Completed]: 'ring-[1.5px] ring-success',
+        [DebugNodeStatus.Failed]: 'ring-[1.5px] ring-danger shadow-[0_0_0_5px_color-mix(in_oklab,var(--danger)_22%,transparent)]',
+        [DebugNodeStatus.Skipped]: 'opacity-40 ring-0 outline-1 outline-dashed outline-border-secondary'
     };
 
     const storedState = usePluginDebugStore((s) => s.nodeStates[nodeId]);
