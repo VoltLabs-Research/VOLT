@@ -165,23 +165,38 @@ export const renderPublicRoutes = () => {
     return publicRoutes.map(renderRouteWithChildren);
 };
 
+const renderSignedInRoutes = () => (
+    <>
+        {nonDashboardProtectedRoutes.map(renderRouteWithChildren)}
+        <Route
+            path={DASHBOARD_ROUTE_PREFIX}
+            element={(
+                <Suspense fallback={renderRouteLoader('Loading workspace…', true)}>
+                    <LazyDashboardLayout />
+                </Suspense>
+            )}
+        >
+            {dashboardProtectedRoutes.map(renderRouteWithChildren)}
+        </Route>
+    </>
+);
+
 export const renderProtectedRoutes = () => {
     return (
         <Route element={<ProtectedRoute mode={RouteMode.Protected} />}>
-            {nonDashboardProtectedRoutes.map(renderRouteWithChildren)}
-            <Route
-                path={DASHBOARD_ROUTE_PREFIX}
-                element={(
-                    <Suspense fallback={renderRouteLoader('Loading workspace…', true)}>
-                        <LazyDashboardLayout />
-                    </Suspense>
-                )}
-            >
-                {dashboardProtectedRoutes.map(renderRouteWithChildren)}
-            </Route>
+            {renderSignedInRoutes()}
         </Route>
     );
 };
+
+// The workspace's pages without the session around them, for a document that renders them
+// from data of its own: the landing's screens.
+export const renderWorkspaceRoutes = () => (
+    <>
+        {optionalAuthRoutes.map(renderRouteWithChildren)}
+        {renderSignedInRoutes()}
+    </>
+);
 
 export const renderGuestRoutes = () => {
     return (
