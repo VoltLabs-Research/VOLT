@@ -1,6 +1,6 @@
 // The part of @duckdb/node-api the daemon uses, on duckdb-wasm's blocking build. That build does its
 // file I/O through Node's synchronous fs calls, which here are this worker's OPFS file system, so
-// read_parquet() and COPY ... TO take the same paths the daemon passes on the desktop.
+// read_parquet() and COPY ... TO take the same paths the daemon passes on a Node machine.
 import { NODE_RUNTIME, VoidLogger, createDuckDB } from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import type { DuckDBConnection as WasmConnection, DuckDBBindings } from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
 import { Table, Type, tableToIPC, vectorFromArray, Float32, Float64, Int8, Int16, Int32, Int64, Uint8, Uint16, Uint32, Uint64, Utf8, Bool } from 'apache-arrow';

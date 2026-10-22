@@ -1,5 +1,5 @@
 // chartjs-node-canvas's ChartJSNodeCanvas, drawing with Chart.js on an OffscreenCanvas instead of
-// node-canvas. The configuration is the one the daemon renders on the desktop.
+// node-canvas. The configuration is the one the daemon renders with node-canvas on a Node machine.
 import { Chart, registerables } from 'chart.js';
 import type { ChartConfiguration } from 'chart.js';
 

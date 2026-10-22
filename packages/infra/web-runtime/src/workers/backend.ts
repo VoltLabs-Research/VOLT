@@ -1,6 +1,6 @@
 // Entry of a backend worker, and of the processes a backend spawns. The realm that starts it boots it
 // with the environment Node would give the process; the worker attaches its storage, then loads the
-// program's own entry point, which starts exactly as `node dist/.../daemon.js` does on the desktop.
+// program's own entry point, which starts exactly as `node dist/.../daemon.js` does on a Node machine.
 import '../platform/timers-global';
 import browserProcess from '../platform/process';
 import { acceptLoopbackConnection, attachLoopbackParent } from '../platform/loopback';

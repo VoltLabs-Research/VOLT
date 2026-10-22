@@ -1,5 +1,5 @@
-// The loopback network the backends talk over: what is 127.0.0.1 between Node processes on the
-// desktop is, here, MessagePorts between workers. Every realm (the page, a backend worker, a worker a
+// The loopback network the backends talk over: what is 127.0.0.1 between Node processes on a
+// machine is, here, MessagePorts between workers. Every realm (the page, a backend worker, a worker a
 // backend starts) routes a connection to the port's listener: its own, one of its child workers', or
 // its parent's. Children announce the ports they listen on to their parent, which announces them
 // upwards, so any realm can reach any port.
