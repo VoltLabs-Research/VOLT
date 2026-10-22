@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import clusterService from '@modules/cluster/services/core/ClusterService';
 import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/ClusterDaemonLifecycleService';
@@ -21,7 +21,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'list_clusters',
         description: 'List the team compute clusters.',
         parameters: typia.llm.parameters<ListClustersInput>(),
-        validate: typia.createValidate<ListClustersInput>()
+        validate: typia.createValidate<ListClustersInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async listClusters(input: ListClustersInput & AIToolScope) {
         const { total, data } = await clusterService.listByTeamId({
@@ -39,7 +41,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'get_cluster',
         description: 'Get detailed information about a specific cluster.',
         parameters: typia.llm.parameters<ClusterRefInput>(),
-        validate: typia.createValidate<ClusterRefInput>()
+        validate: typia.createValidate<ClusterRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async getCluster(input: ClusterRefInput & AIToolScope) {
         const { teamCluster } = await clusterService.getById(input);
@@ -53,7 +57,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'get_cluster_health_summary',
         description: 'Summarize a cluster\'s health: connectivity status, installed version, heartbeat, capabilities, and live queue runtime.',
         parameters: typia.llm.parameters<ClusterRefInput>(),
-        validate: typia.createValidate<ClusterRefInput>()
+        validate: typia.createValidate<ClusterRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async getClusterHealthSummary(input: ClusterRefInput & AIToolScope) {
         const [{ teamCluster }, snapshot] = await Promise.all([
@@ -84,7 +90,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'get_cluster_resource_limits',
         description: 'Get the CPU and memory resource limits for a cluster.',
         parameters: typia.llm.parameters<ClusterRefInput>(),
-        validate: typia.createValidate<ClusterRefInput>()
+        validate: typia.createValidate<ClusterRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async getClusterResourceLimits(input: ClusterRefInput & AIToolScope) {
         const { resourceLimits } = await clusterRuntimeSettingsService.getResourceLimits(input);
@@ -98,7 +106,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'get_cluster_runtime_snapshot',
         description: 'Get the live queue runtime snapshot for a cluster.',
         parameters: typia.llm.parameters<ClusterRefInput>(),
-        validate: typia.createValidate<ClusterRefInput>()
+        validate: typia.createValidate<ClusterRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async getClusterRuntimeSnapshot(input: ClusterRefInput & AIToolScope) {
         const snapshot = await clusterRuntimeSettingsService.getRuntimeSnapshot(input);
@@ -112,7 +122,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'list_cluster_transfer_jobs',
         description: 'List data transfer jobs for a cluster.',
         parameters: typia.llm.parameters<ListClusterTransferJobsInput>(),
-        validate: typia.createValidate<ListClusterTransferJobsInput>()
+        validate: typia.createValidate<ListClusterTransferJobsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async listClusterTransferJobs(input: ListClusterTransferJobsInput & AIToolScope) {
         const { total, data } = await clusterService.listTransferJobs({
@@ -130,7 +142,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'list_remote_cluster_files',
         description: 'List the entries at a path inside a cluster\'s remote storage target (the object store or daemon tables). Requires an active password-confirmed remote-access session id.',
         parameters: typia.llm.parameters<ListRemoteClusterFilesInput>(),
-        validate: typia.createValidate<ListRemoteClusterFilesInput>()
+        validate: typia.createValidate<ListRemoteClusterFilesInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:read'
     })
     async listRemoteClusterFiles(input: ListRemoteClusterFilesInput & AIToolScope) {
         const result = await clusterRemoteExplorerService.listRemoteExplorerEntries(input);
@@ -144,7 +158,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'update_cluster_role',
         description: 'Update the desired role of a cluster.',
         parameters: typia.llm.parameters<UpdateClusterRoleInput>(),
-        validate: typia.createValidate<UpdateClusterRoleInput>()
+        validate: typia.createValidate<UpdateClusterRoleInput>(),
+        access: AIToolAccess.Write,
+        permission: 'team:update'
     })
     async updateClusterRole(input: UpdateClusterRoleInput & AIToolScope) {
         return clusterRuntimeSettingsService.updateRole(input);
@@ -154,7 +170,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'update_cluster_queue_concurrency',
         description: 'Update the queue concurrency and scope limits of a cluster.',
         parameters: typia.llm.parameters<UpdateClusterQueueConcurrencyInput>(),
-        validate: typia.createValidate<UpdateClusterQueueConcurrencyInput>()
+        validate: typia.createValidate<UpdateClusterQueueConcurrencyInput>(),
+        access: AIToolAccess.Write,
+        permission: 'team:update'
     })
     async updateClusterQueueConcurrency(input: UpdateClusterQueueConcurrencyInput & AIToolScope) {
         return clusterRuntimeSettingsService.updateQueueConcurrency(input);
@@ -164,7 +182,9 @@ export default class ClusterAIToolController extends AIToolController {
         name: 'generate_cluster_install_manifest',
         description: 'Generate the Docker Compose enrollment install manifest (files + pinned images) a user runs on their machine to bring a cluster online.',
         parameters: typia.llm.parameters<GenerateClusterInstallManifestInput>(),
-        validate: typia.createValidate<GenerateClusterInstallManifestInput>()
+        validate: typia.createValidate<GenerateClusterInstallManifestInput>(),
+        access: AIToolAccess.Read,
+        permission: 'team:create'
     })
     async generateClusterInstallManifest(input: GenerateClusterInstallManifestInput) {
         const { manifest } = await clusterDaemonLifecycleService.generateInstallManifest(input);
@@ -179,7 +199,8 @@ export default class ClusterAIToolController extends AIToolController {
         description: 'Rotate a cluster\'s enrollment token. Only valid while the cluster is waiting for connection or disconnected.',
         parameters: typia.llm.parameters<ClusterRefInput>(),
         validate: typia.createValidate<ClusterRefInput>(),
-        needsApproval: true
+        access: AIToolAccess.Write,
+        permission: 'team:update'
     })
     async regenerateClusterToken(input: ClusterRefInput & AIToolScope) {
         const { enrollmentToken } = await clusterService.regenerateEnrollmentToken(input);

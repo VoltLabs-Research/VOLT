@@ -1,5 +1,4 @@
 import { buildSheetBlob, buildSheetTsv } from '@/modules/ai/components/AIArtifactSpreadsheetPanel/spreadsheet-export';
-import { resolveTabularPayload } from '@/modules/ai/utils/message-artifacts';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import useSpreadsheetEditor from '@/modules/ai/components/AIArtifactSpreadsheetPanel/use-spreadsheet-editor';
 import { Button, Separator, Tooltip, cn } from '@heroui/react';
@@ -7,12 +6,12 @@ import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Check, Clipboard, FileSpreadsheet, FileText } from 'lucide-react';
-import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
+import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
 import type { SheetExportFormat } from '@/modules/ai/components/AIArtifactSpreadsheetPanel/spreadsheet-export';
 import type { CSSProperties } from 'react';
 
 interface AIArtifactSpreadsheetPanelProps {
-    artifact: AIMessageArtifact;
+    artifact: AITableArtifact;
     onClose: () => void;
     width?: number;
 }
@@ -27,9 +26,7 @@ const SHEET_FORMAT_LABEL: Record<SheetExportFormat, string> = {
 };
 
 const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpreadsheetPanelProps) => {
-    const table = resolveTabularPayload(artifact);
-    const columns = table?.columns ?? [];
-    const rows = table?.rows ?? [];
+    const { columns, rows } = artifact;
 
     const {
         activeCell,
@@ -106,7 +103,7 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
         }, COPY_FEEDBACK_MS);
     };
 
-    if (!table) return null;
+    if (columns.length === 0) return null;
 
     let panelStyle: CSSProperties | undefined;
     if (width) {

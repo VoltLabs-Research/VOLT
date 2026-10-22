@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import analysisResultSummarizer from '@modules/plugin/services/AnalysisResultSummarizer';
 import pluginArgumentDescriber from '@modules/plugin/services/plugin/PluginArgumentDescriber';
@@ -68,7 +68,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'install_plugin',
         description: 'Install a plugin from the registry into the team.',
         parameters: typia.llm.parameters<InstallPluginInput>(),
-        validate: typia.createValidate<InstallPluginInput>()
+        validate: typia.createValidate<InstallPluginInput>(),
+        access: AIToolAccess.Write,
+        permission: 'plugin:create'
     })
     async installPlugin(input: InstallPluginInput & AIToolScope) {
         return pluginArchiveService.installFromRegistry(input);
@@ -78,7 +80,10 @@ export default class PluginAIToolController extends AIToolController {
         name: 'clone_plugin',
         description: 'Clone an existing plugin into a new draft.',
         parameters: typia.llm.parameters<PluginRefInput>(),
-        validate: typia.createValidate<PluginRefInput>()
+        validate: typia.createValidate<PluginRefInput>(),
+        access: AIToolAccess.Write,
+        permission: 'plugin:create',
+        approval: false
     })
     async clonePlugin(input: PluginRefInput & AIToolScope) {
         return pluginCrudService.clonePlugin(input.pluginId, input.teamId);
@@ -88,7 +93,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'search_registry_plugins',
         description: 'Search the public registry for installable plugins.',
         parameters: typia.llm.parameters<SearchRegistryPluginsInput>(),
-        validate: typia.createValidate<SearchRegistryPluginsInput>()
+        validate: typia.createValidate<SearchRegistryPluginsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async searchRegistryPlugins(input: SearchRegistryPluginsInput & AIToolScope) {
         const { total, items } = await registryGateway.search(input.q, input.page, input.limit);
@@ -102,7 +109,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'list_plugins',
         description: 'List analysis plugins installed in the team.',
         parameters: typia.llm.parameters<ListPluginsInput>(),
-        validate: typia.createValidate<ListPluginsInput>()
+        validate: typia.createValidate<ListPluginsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async listPlugins(input: ListPluginsInput & AIToolScope) {
         const { total, data } = await pluginCrudService.listPlugins({
@@ -120,7 +129,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'get_plugin',
         description: 'Get detailed metadata about a specific plugin.',
         parameters: typia.llm.parameters<PluginRefInput>(),
-        validate: typia.createValidate<PluginRefInput>()
+        validate: typia.createValidate<PluginRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async getPluginById(input: PluginRefInput) {
         const plugin = await pluginCrudService.getPluginById(input.pluginId);
@@ -134,7 +145,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'describe_plugin_arguments',
         description: 'Describe the configurable arguments a plugin accepts (key, type, default, range, options) so you can build a valid config before running it.',
         parameters: typia.llm.parameters<PluginRefInput>(),
-        validate: typia.createValidate<PluginRefInput>()
+        validate: typia.createValidate<PluginRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async describePluginArguments(input: PluginRefInput) {
         const described = await pluginArgumentDescriber.describePluginArguments(input);
@@ -148,7 +161,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'compare_plugins',
         description: 'Compare two plugins side by side: their arguments, exposures, and workflow topology (node/edge counts and node-type composition). Useful for explaining how two analysis plugins differ.',
         parameters: typia.llm.parameters<ComparePluginsInput>(),
-        validate: typia.createValidate<ComparePluginsInput>()
+        validate: typia.createValidate<ComparePluginsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async comparePlugins(input: ComparePluginsInput) {
         const [pluginA, pluginB] = await Promise.all([
@@ -180,7 +195,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'validate_workflow',
         description: 'Validate a plugin workflow graph (nodes + edges) in strict mode and report whether it is publishable, listing any structural errors. Pass pluginId to validate an existing plugin\'s draft graph.',
         parameters: typia.llm.parameters<ValidateWorkflowInput>(),
-        validate: typia.createValidate<ValidateWorkflowInput>()
+        validate: typia.createValidate<ValidateWorkflowInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async validateWorkflow(input: ValidateWorkflowInput) {
         const validation = await workflowValidatorService.validateWorkflow({
@@ -202,7 +219,8 @@ export default class PluginAIToolController extends AIToolController {
         description: 'Publish a plugin by transitioning it from Draft to Published. The existing workflow is strictly validated first; publishing fails if it is not valid.',
         parameters: typia.llm.parameters<PluginRefInput>(),
         validate: typia.createValidate<PluginRefInput>(),
-        needsApproval: true
+        access: AIToolAccess.Write,
+        permission: 'plugin:update'
     })
     async publishPlugin(input: PluginRefInput) {
         const plugin = await pluginCrudService.updatePluginById({
@@ -220,7 +238,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'uninstall_plugin',
         description: 'Remove a plugin from the team.',
         parameters: typia.llm.parameters<UninstallPluginInput>(),
-        validate: typia.createValidate<UninstallPluginInput>()
+        validate: typia.createValidate<UninstallPluginInput>(),
+        access: AIToolAccess.Write,
+        permission: 'plugin:delete'
     })
     async uninstallPlugin(input: UninstallPluginInput) {
         return pluginCrudService.deletePluginById(input.pluginId);
@@ -231,7 +251,8 @@ export default class PluginAIToolController extends AIToolController {
         description: 'Run an analysis pipeline on a trajectory: an ORDERED list of plugin stages executed sequentially on the team cluster. This is the ONLY way to run analysis — there is no single-plugin path. To run just one plugin, pass a one-stage pipeline. Stages run in array order against one evolving frame, so a stage that requiresExposures (see list_plugins) must come AFTER a stage whose producesExposures includes those ids (e.g. a reconstruction stage that emits a cluster table before a dislocation stage that consumes it). Call describe_plugin_arguments per plugin first to build each stage config. Returns a runId plus one entry per stage, in order: `analysisId` when the stage computed, `cachedFromAnalysisId` when an identical stage had already run. Track computed stages with get_analysis.',
         parameters: typia.llm.parameters<ExecutePipelineInput>(),
         validate: typia.createValidate<ExecutePipelineInput>(),
-        needsApproval: true
+        access: AIToolAccess.Write,
+        permission: 'plugin:create'
     })
     async executePipeline(input: ExecutePipelineInput & AIToolScope) {
         const { runId, stages } = await pipelineExecutionPlanner.executePipeline({
@@ -264,7 +285,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'list_plugin_listing_documents',
         description: 'List a plugin exposure\'s result rows as tabular metadata.',
         parameters: typia.llm.parameters<ListPluginListingDocumentsInput>(),
-        validate: typia.createValidate<ListPluginListingDocumentsInput>()
+        validate: typia.createValidate<ListPluginListingDocumentsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async listPluginListingDocuments(input: ListPluginListingDocumentsInput & AIToolScope) {
         const { total, data } = await pluginListingQueryService.getPluginListingDocuments(input);
@@ -278,7 +301,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'list_analysis_result_options',
         description: 'List the result exposures and sub-listings produced by an analysis, so you know what can be summarized or read before requesting it.',
         parameters: typia.llm.parameters<ListAnalysisResultOptionsInput>(),
-        validate: typia.createValidate<ListAnalysisResultOptionsInput>()
+        validate: typia.createValidate<ListAnalysisResultOptionsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async listAnalysisResultOptions(input: ListAnalysisResultOptionsInput & AIToolScope) {
         const options = await analysisListingExportCatalogService.getExportOptions(input.analysisId);
@@ -293,7 +318,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'read_analysis_result_rows',
         description: 'Read individual rows of an analysis result table (paginated) when you need concrete values rather than aggregate statistics.',
         parameters: typia.llm.parameters<ReadAnalysisResultRowsInput>(),
-        validate: typia.createValidate<ReadAnalysisResultRowsInput>()
+        validate: typia.createValidate<ReadAnalysisResultRowsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async readAnalysisResultRows(input: ReadAnalysisResultRowsInput & AIToolScope) {
         const rows = await pluginListingQueryService.getListingRowsByAnalysisId(input);
@@ -308,7 +335,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'get_sub_listing',
         description: 'Fetch the rows of a nested sub-listing within a plugin exposure for a specific trajectory timestep (paginated). Use when a result row drills down into a secondary table.',
         parameters: typia.llm.parameters<GetSubListingInput>(),
-        validate: typia.createValidate<GetSubListingInput>()
+        validate: typia.createValidate<GetSubListingInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async getSubListing(input: GetSubListingInput & AIToolScope) {
         const subListing = await pluginListingQueryService.getSubListing(input);
@@ -323,7 +352,9 @@ export default class PluginAIToolController extends AIToolController {
         name: 'summarize_analysis_result',
         description: 'Summarize an analysis result into per-column statistics (numeric: count/min/max/mean/stddev; categorical: distinct count and top values) so you can reason about the scientific output.',
         parameters: typia.llm.parameters<SummarizeAnalysisResultInput>(),
-        validate: typia.createValidate<SummarizeAnalysisResultInput>()
+        validate: typia.createValidate<SummarizeAnalysisResultInput>(),
+        access: AIToolAccess.Read,
+        permission: 'plugin:read'
     })
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInput & AIToolScope) {
         const summarized = await analysisResultSummarizer.summarizeAnalysisResult(input);

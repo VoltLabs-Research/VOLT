@@ -1,7 +1,6 @@
 import { useTeamAIIntegrationModelsQuery, useTeamAIIntegrationsQuery } from '@/modules/team/hooks/ai-integration/queries';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AIModelSelection } from '@/modules/ai/api/service';
-import type { AIProvider } from '@volt/contracts/modules/ai/domain';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { AIModelChoice, AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { TeamAIModelListItem } from '@volt/contracts/modules/team/domain';
 
 const createModelSelectionKey = (provider: AIProvider, modelId: string): string => (
@@ -10,7 +9,6 @@ const createModelSelectionKey = (provider: AIProvider, modelId: string): string 
 
 const useAIModelSelection = (teamId: string | null) => {
     const [selectedModel, setSelectedModel] = useState<string | null>(null);
-    const selectedModelRef = useRef<AIModelSelection>({});
 
     const teamAIIntegrationsQuery = useTeamAIIntegrationsQuery(teamId ?? '', {
         enabled: Boolean(teamId)
@@ -82,10 +80,20 @@ const useAIModelSelection = (teamId: string | null) => {
         && !noProviderConfigured
     );
 
-    selectedModelRef.current = {
-        provider: selectedModelDefinition?.provider,
-        model: selectedModelDefinition?.id
-    };
+    const choice = useMemo<AIModelChoice | null>(() => (selectedModelDefinition
+        ? {
+            provider: selectedModelDefinition.provider,
+            model: selectedModelDefinition.id
+        }
+        : null), [selectedModelDefinition]);
+
+    // Selects the model a conversation last answered with, when the team still offers it.
+    const prefer = useCallback((preferred: AIModelChoice) => {
+        const key = createModelSelectionKey(preferred.provider, preferred.model);
+        if (availableModelsForProvider.some((model) => createModelSelectionKey(model.provider, model.id) === key)) {
+            setSelectedModel(key);
+        }
+    }, [availableModelsForProvider]);
 
     useEffect(() => {
         if (!availableModelsForProvider.length) {
@@ -120,7 +128,8 @@ const useAIModelSelection = (teamId: string | null) => {
                 teamAIIntegrationModelsQuery.refetch()
             ]);
         },
-        selectedModelRef,
+        choice,
+        prefer,
         setSelectedModel
     };
 };

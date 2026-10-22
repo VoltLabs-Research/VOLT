@@ -1,15 +1,15 @@
-import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import { createTableArtifactComponents } from '@/modules/ai/components/AIConversationThread/markdown-table-artifact';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
-import ToolInvocationCard from '@/modules/ai/components/AIConversationThread/ToolInvocationCard';
+import ToolApprovalCard from '@/modules/ai/components/AIConversationThread/ToolApprovalCard';
+import WorkTrace from '@/modules/ai/components/AIConversationThread/WorkTrace';
+import { blocksOf } from '@/modules/ai/utils/message-blocks';
+import { textOf } from '@/modules/ai/utils/transcript';
 import Prose from '@/shared/ui/components/Prose';
 import { Button, Tooltip, cn } from '@heroui/react';
-import { Check, ChevronRight, Copy } from 'lucide-react';
-import { memo, useState } from 'react';
-import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
-import type { NormalizedConversationMessage, ToolInvocation } from '@/modules/ai/utils/message-segments';
-import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
-import type { ReactNode } from 'react';
+import { Check, Copy } from 'lucide-react';
+import { memo, useMemo, useState } from 'react';
+import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
+import type { ChatUIMessage } from '@volt/contracts/modules/ai/chat';
 
 const COPY_FEEDBACK_MS = 1600;
 
@@ -46,106 +46,34 @@ const CopyMessageButton = ({ text }: CopyMessageButtonProps) => {
     );
 };
 
-const ReasoningSegment = ({ content }: { content: string }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className='flex w-full flex-col gap-1'>
-            <button
-                type='button'
-                onClick={() => setIsOpen((value) => !value)}
-                aria-expanded={isOpen}
-                className='flex w-fit cursor-pointer flex-row items-center gap-1 rounded-md border-none bg-transparent p-0 text-2xs text-muted hover:text-foreground'
-            >
-                <ChevronRight size={11} aria-hidden='true' className={cn('transition-transform duration-200', isOpen && 'rotate-90')} />
-                {isOpen ? 'Hide reasoning' : 'Show reasoning'}
-            </button>
-
-            {isOpen && (
-                <div className='border-l-2 border-border pl-3'>
-                    <Prose size='sm'>{content}</Prose>
-                </div>
-            )}
-        </div>
-    );
-};
-
 interface AIMessageItemProps {
-    message: NormalizedConversationMessage;
+    message: ChatUIMessage;
     messageIndex: number;
     totalMessages: number;
-    onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
-    addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
+    // The reply still streaming: until it shows anything, it shows that it is thinking.
+    isStreaming: boolean;
+    canDecide: boolean;
+    onDecide: (approvalIds: string[], approved: boolean) => void;
+    onOpenTableArtifact?: (artifact: AITableArtifact) => void;
 }
 
 const AIMessageItem = memo(({
     message,
     messageIndex,
     totalMessages,
-    onOpenTableArtifact,
-    addToolApprovalResponse
+    isStreaming,
+    canDecide,
+    onDecide,
+    onOpenTableArtifact
 }: AIMessageItemProps) => {
-    const isUser = message.role === AIMessageRole.User;
+    const isUser = message.role === 'user';
     const messageLabel = isUser ? 'You' : 'Assistant';
+    const blocks = useMemo(() => blocksOf(message), [message]);
+    const text = useMemo(() => textOf(message), [message]);
 
     const markdownComponents = !isUser && onOpenTableArtifact
         ? createTableArtifactComponents(message.id, onOpenTableArtifact)
         : undefined;
-
-    const segmentElements: ReactNode[] = [];
-    let segmentIndex = 0;
-
-    while (segmentIndex < message.segments.length) {
-        const segment = message.segments[segmentIndex];
-
-        if (segment.type === 'reasoning') {
-            segmentElements.push(
-                <ReasoningSegment key={`seg-${segmentIndex}`} content={segment.content} />
-            );
-            segmentIndex += 1;
-            continue;
-        }
-
-        if (segment.type === 'text') {
-            segmentElements.push(
-                <div
-                    key={`seg-${segmentIndex}`}
-                    className={cn(
-                        'min-w-0',
-                        isUser
-                            ? 'max-w-[80%] rounded-xl bg-surface-secondary px-4 py-2.5 max-md:max-w-[88%]'
-                            : 'w-full'
-                    )}
-                >
-                    <Prose components={markdownComponents}>{segment.content}</Prose>
-                </div>
-            );
-            segmentIndex += 1;
-            continue;
-        }
-
-        const groupStart = segmentIndex;
-        const invocations: ToolInvocation[] = [];
-        let next = message.segments[segmentIndex];
-
-        while (next?.type === 'tool') {
-            invocations.push(next.invocation);
-            segmentIndex += 1;
-            next = message.segments[segmentIndex];
-        }
-
-        segmentElements.push(
-            <div className='flex w-full flex-col gap-2' key={`seg-${groupStart}`}>
-                {invocations.map((invocation, index) => (
-                    <ToolInvocationCard
-                        key={`${invocation.toolCallId}-${index}`}
-                        invocation={invocation}
-                        addToolApprovalResponse={addToolApprovalResponse}
-                    />
-                ))}
-            </div>
-        );
-    }
 
     return (
         <article
@@ -157,13 +85,42 @@ const AIMessageItem = memo(({
         >
             <span className='sr-only'>{messageLabel}</span>
 
-            {segmentElements}
+            {blocks.map((block, index) => {
+                if (block.kind === 'text') {
+                    return (
+                        <div
+                            key={`text-${index}`}
+                            className={cn(
+                                'min-w-0',
+                                isUser
+                                    ? 'max-w-[80%] rounded-xl bg-surface-secondary px-4 py-2.5 max-md:max-w-[88%]'
+                                    : 'w-full'
+                            )}
+                        >
+                            <Prose components={markdownComponents}>{block.text}</Prose>
+                        </div>
+                    );
+                }
 
-            {!isUser && message.segments.length === 0 && <ThinkingBubble />}
+                if (block.kind === 'work') {
+                    return <WorkTrace key={`work-${index}`} steps={block.steps} />;
+                }
 
-            {!isUser && message.preview.trim().length > 0 && (
+                return (
+                    <ToolApprovalCard
+                        key={block.activities[0].toolCallId}
+                        activities={block.activities}
+                        canDecide={canDecide}
+                        onDecide={onDecide}
+                    />
+                );
+            })}
+
+            {!isUser && isStreaming && blocks.length === 0 && <ThinkingBubble />}
+
+            {!isUser && !isStreaming && text.length > 0 && (
                 <div className='flex flex-row items-center gap-1 opacity-0 transition-opacity duration-[120ms] group-hover/message:opacity-100 group-focus-within/message:opacity-100 [@media(hover:none)]:opacity-100'>
-                    <CopyMessageButton text={message.preview} />
+                    <CopyMessageButton text={text} />
                 </div>
             )}
         </article>

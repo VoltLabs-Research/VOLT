@@ -11,6 +11,7 @@
     "@voltstack/daemon-cluster-client": "workspace:*"
   },
   "devDependencies": {
+    "ai": "7.0.129",
     "typia": "12.1.1"
   }
 }

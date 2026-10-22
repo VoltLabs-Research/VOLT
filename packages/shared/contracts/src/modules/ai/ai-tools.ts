@@ -16,6 +16,10 @@ export interface DeleteConversationInput{
     conversationId: string;
 }
 
+export interface CompactContextInput{
+    remember?: string & tags.MaxLength<4000>;
+}
+
 export interface NavigateToInput{
     destination: string;
     params?: Record<string, string>;

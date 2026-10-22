@@ -2,13 +2,15 @@ import ConversationNavRow from '@/modules/ai/components/AINav/ConversationNavRow
 import NavItem from '@/shared/ui/components/NavItem';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import SidebarPanel from '@/shared/ui/components/SidebarPanel';
-import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useConversations from '@/modules/ai/hooks/use-conversations';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
+import { resolveErrorTitle } from '@/shared/errors/core/report-error';
 import { SearchField, Skeleton, Tooltip } from '@heroui/react';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
+import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { Params } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -35,22 +37,37 @@ const SEARCH_THRESHOLD = 8;
 
 const AINav = ({ active, collapsed }: AINavProps) => {
     const { conversationId } = useParams<AINavRouteParams>();
-    const { canAccess } = useTeamPermissions();
+    const navigate = useNavigate();
     const [query, setQuery] = useState('');
+    const setActive = useChatSurfaceStore((state) => state.setActive);
 
     const {
         conversations,
-        isConversationsLoading,
-        conversationsError,
-        handleSelectConversation,
-        handleCreateConversation,
-        handleDeleteConversation,
-        handleRenameConversation
-    } = useAIChatContext();
+        isLoading: isConversationsLoading,
+        error,
+        canCreate,
+        canUpdate,
+        canDelete,
+        renameConversation,
+        deleteConversation
+    } = useConversations();
+    const conversationsError = error ? resolveErrorTitle(error, 'Failed to load conversations.') : null;
 
-    const canCreate = canAccess(['ai-conversation:create']);
-    const canUpdate = canAccess(['ai-conversation:update']);
-    const canDelete = canAccess(['ai-conversation:delete']);
+    // The AI page follows its route and hands the conversation to the floating panel itself.
+    const handleSelectConversation = (conversation: AIConversation) => {
+        if (conversation._id !== conversationId) navigate(`/dashboard/ai/${conversation._id}`);
+    };
+
+    const handleCreateConversation = () => {
+        if (conversationId) navigate('/dashboard/ai');
+    };
+
+    const handleDeleteConversation = async (conversation: AIConversation) => {
+        await deleteConversation(conversation);
+
+        if (conversation._id === conversationId) navigate('/dashboard/ai');
+        else if (useChatSurfaceStore.getState().active?.conversationId === conversation._id) setActive(null);
+    };
 
     const filteredConversations = useMemo(
         () => conversations.filter((conversation) => matchesQuery(conversation.title, query)),
@@ -67,7 +84,7 @@ const AINav = ({ active, collapsed }: AINavProps) => {
             canUpdate={canUpdate}
             canDelete={canDelete}
             onSelect={handleSelectConversation}
-            onRename={handleRenameConversation}
+            onRename={renameConversation}
             onDelete={handleDeleteConversation}
         />
     ));
@@ -108,7 +125,7 @@ const AINav = ({ active, collapsed }: AINavProps) => {
                         icon={Plus}
                         collapsed={collapsed}
                         isDisabled={!canCreate}
-                        onClick={() => { handleCreateConversation().catch(console.warn); }}
+                        onClick={handleCreateConversation}
                     />
                 </Tooltip.Trigger>
                 <Tooltip.Content placement='right'>

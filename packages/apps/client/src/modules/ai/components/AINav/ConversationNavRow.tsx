@@ -11,9 +11,9 @@ interface ConversationNavRowProps {
     isActive: boolean;
     canUpdate: boolean;
     canDelete: boolean;
-    onSelect: (conversationId: string) => void;
-    onRename: (conversationId: string, title: string) => Promise<void>;
-    onDelete: (conversationId: string) => Promise<void>;
+    onSelect: (conversation: AIConversation) => void;
+    onRename: (conversation: AIConversation, title: string) => Promise<void>;
+    onDelete: (conversation: AIConversation) => Promise<void>;
 }
 
 const ROW_ACTION_CLASS = 'inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
@@ -37,7 +37,7 @@ const ConversationNavRow = ({
         setIsEditing(false);
 
         if (nextTitle && nextTitle !== conversation.title) {
-            await onRename(conversation._id, nextTitle);
+            await onRename(conversation, nextTitle);
         }
     };
 
@@ -59,7 +59,7 @@ const ConversationNavRow = ({
         });
 
         if (isConfirmed) {
-            await onDelete(conversation._id);
+            await onDelete(conversation);
         }
     };
 
@@ -85,11 +85,11 @@ const ConversationNavRow = ({
             )}
             role='button'
             tabIndex={0}
-            onClick={() => onSelect(conversation._id)}
+            onClick={() => onSelect(conversation)}
             onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
-                    onSelect(conversation._id);
+                    onSelect(conversation);
                 }
             }}
         >

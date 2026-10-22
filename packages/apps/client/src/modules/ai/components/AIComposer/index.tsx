@@ -102,7 +102,7 @@ const AIComposer = ({
                         placeholder={modelPlaceholder}
                         aria-label='Select AI model'
                     >
-                        <Select.Trigger className='h-6 min-h-0 w-full rounded-md border-0 bg-transparent px-1 pe-5 text-2xs text-muted shadow-none hover:text-foreground'>
+                        <Select.Trigger className='h-6 min-h-0 w-full rounded-md border-0 bg-transparent px-1 py-0 pe-5 text-2xs text-muted shadow-none hover:text-foreground'>
                             <Select.Value className='overflow-hidden text-ellipsis whitespace-nowrap text-2xs'>
                                 {({ isPlaceholder, selectedText, defaultChildren }) => (
                                     isPlaceholder ? defaultChildren : selectedText

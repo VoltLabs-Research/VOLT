@@ -37,46 +37,22 @@ export enum AIMessageRole{
     Assistant = 'assistant'
 }
 
-export enum AIMessageArtifactKind{
-    Table = 'table',
-    Chart = 'chart',
-    Image = 'image',
-    Text = 'text',
-    Unknown = 'unknown'
-}
-
-export interface AIMessageArtifact{
-    id: string;
-    messageId: string;
-    kind: AIMessageArtifactKind;
-    title: string;
-    summary?: string;
-    payload: unknown;
-    toolName?: string | null;
-}
-
-export interface AIConversationMessageArtifacts{
-    items?: AIMessageArtifact[];
-    [key: string]: unknown;
+export interface AIModelChoice{
+    provider: AIProvider;
+    model: string;
 }
 
 export interface AIConversation extends BaseEntity{
     userId: string;
     teamId: string;
     title: string;
-    lastMessageAt?: string | null;
+    lastMessageAt: string | null;
     isArchived: boolean;
+    provider: AIProvider | null;
+    model: string | null;
 }
 
-export interface AIMessage extends BaseEntity{
-    conversationId: string;
-    role: AIMessageRole;
-    parts: unknown[];
-    content: string;
-    artifacts?: AIConversationMessageArtifacts | null;
-}
-
-export interface CreateAIConversationResponse{
-    conversation: AIConversation;
-    userMessage?: AIMessage;
+export interface AIConversationCompacted{
+    folded: number;
+    kept: number;
 }

@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import notificationService from '@modules/notification/services/NotificationService';
 import type { GetNotificationsInput } from '@volt/contracts/modules/notification/ai-tools';
@@ -10,7 +10,9 @@ export default class NotificationAIToolController extends AIToolController {
         name: 'get_notifications',
         description: 'List the current user\'s notifications (newest first), optionally filtered to only unread ones.',
         parameters: typia.llm.parameters<GetNotificationsInput>(),
-        validate: typia.createValidate<GetNotificationsInput>()
+        validate: typia.createValidate<GetNotificationsInput>(),
+        access: AIToolAccess.Read,
+        permission: null
     })
     async getNotifications(input: GetNotificationsInput & AIToolScope) {
         const { data, total, page, limit, totalPages } = await notificationService.getMyNotifications({

@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool, ClientAITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess, BrowserAITool } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import whiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import whiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
@@ -24,7 +24,10 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'create_whiteboard',
         description: 'Create a new whiteboard.',
         parameters: typia.llm.parameters<CreateWhiteboardInput>(),
-        validate: typia.createValidate<CreateWhiteboardInput>()
+        validate: typia.createValidate<CreateWhiteboardInput>(),
+        access: AIToolAccess.Write,
+        permission: 'whiteboard:create',
+        approval: false
     })
     createWhiteboard(input: CreateWhiteboardInput & AIToolScope) {
         return whiteboardService.createWhiteboard(input.teamId, input.userId, input);
@@ -34,7 +37,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'list_whiteboards',
         description: 'List all whiteboards in the team.',
         parameters: typia.llm.parameters<ListWhiteboardsInput>(),
-        validate: typia.createValidate<ListWhiteboardsInput>()
+        validate: typia.createValidate<ListWhiteboardsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'whiteboard:read'
     })
     async listWhiteboards(input: ListWhiteboardsInput & AIToolScope) {
         const { total, data } = await whiteboardService.listWhiteboards(input.teamId, {
@@ -52,7 +57,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'get_whiteboard',
         description: 'Get detailed information about a specific whiteboard.',
         parameters: typia.llm.parameters<WhiteboardRefInput>(),
-        validate: typia.createValidate<WhiteboardRefInput>()
+        validate: typia.createValidate<WhiteboardRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'whiteboard:read'
     })
     async getWhiteboard(input: WhiteboardRefInput & AIToolScope) {
         const whiteboard = await whiteboardService.getWhiteboard(input.teamId, input.whiteboardId);
@@ -66,7 +73,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'get_whiteboard_state',
         description: 'Read the full Excalidraw scene of a whiteboard (elements, appState and files).',
         parameters: typia.llm.parameters<WhiteboardRefInput>(),
-        validate: typia.createValidate<WhiteboardRefInput>()
+        validate: typia.createValidate<WhiteboardRefInput>(),
+        access: AIToolAccess.Read,
+        permission: 'whiteboard:read'
     })
     async getWhiteboardState(input: WhiteboardRefInput & AIToolScope) {
         const raw = await text(await whiteboardService.getWhiteboardState(input.teamId, input.whiteboardId));
@@ -93,7 +102,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'update_whiteboard',
         description: 'Update a whiteboard.',
         parameters: typia.llm.parameters<UpdateWhiteboardInput>(),
-        validate: typia.createValidate<UpdateWhiteboardInput>()
+        validate: typia.createValidate<UpdateWhiteboardInput>(),
+        access: AIToolAccess.Write,
+        permission: 'whiteboard:update'
     })
     updateWhiteboard(input: UpdateWhiteboardInput & AIToolScope) {
         return whiteboardService.updateWhiteboard(input.teamId, input.whiteboardId, input.userId, input);
@@ -103,7 +114,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'move_whiteboard',
         description: 'Move a whiteboard to a different folder.',
         parameters: typia.llm.parameters<MoveWhiteboardInput>(),
-        validate: typia.createValidate<MoveWhiteboardInput>()
+        validate: typia.createValidate<MoveWhiteboardInput>(),
+        access: AIToolAccess.Write,
+        permission: 'whiteboard:update'
     })
     async moveWhiteboard(input: MoveWhiteboardInput & AIToolScope) {
         await whiteboardService.moveWhiteboard(input.teamId, input.whiteboardId, input.folderId);
@@ -117,7 +130,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'delete_whiteboard',
         description: 'Delete a whiteboard.',
         parameters: typia.llm.parameters<WhiteboardRefInput>(),
-        validate: typia.createValidate<WhiteboardRefInput>()
+        validate: typia.createValidate<WhiteboardRefInput>(),
+        access: AIToolAccess.Write,
+        permission: 'whiteboard:delete'
     })
     async deleteWhiteboard(input: WhiteboardRefInput & AIToolScope) {
         await whiteboardService.deleteWhiteboard(input.teamId, input.whiteboardId, input.userId);
@@ -131,7 +146,9 @@ export default class WhiteboardAIToolController extends AIToolController {
         name: 'delete_whiteboard_folder',
         description: 'Delete a whiteboard folder.',
         parameters: typia.llm.parameters<DeleteWhiteboardFolderInput>(),
-        validate: typia.createValidate<DeleteWhiteboardFolderInput>()
+        validate: typia.createValidate<DeleteWhiteboardFolderInput>(),
+        access: AIToolAccess.Write,
+        permission: 'whiteboard:delete'
     })
     async deleteWhiteboardFolder(input: DeleteWhiteboardFolderInput & AIToolScope) {
         await whiteboardFolderService.deleteFolder(input.teamId, input.folderId, input.userId);
@@ -141,7 +158,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         };
     }
 
-    @ClientAITool({
+    @BrowserAITool({
         name: 'draw_on_whiteboard',
         description: 'Draw actual content (boxes, text, arrows, lines, ellipses, diamonds) onto a '
             + 'whiteboard so the user sees the diagram appear live. Provide a list of high-level elements; '
@@ -149,7 +166,10 @@ export default class WhiteboardAIToolController extends AIToolController {
             + 'flowcharts, pipelines, mind maps and sketches — do not just create an empty board. '
             + 'Resolve the whiteboardId with create_whiteboard / list_whiteboards first.',
         parameters: typia.llm.parameters<DrawOnWhiteboardInput>(),
-        validate: typia.createValidate<DrawOnWhiteboardInput>()
+        validate: typia.createValidate<DrawOnWhiteboardInput>(),
+        access: AIToolAccess.Write,
+        permission: 'whiteboard:update',
+        approval: false
     })
     drawOnWhiteboard(): void {}
 }

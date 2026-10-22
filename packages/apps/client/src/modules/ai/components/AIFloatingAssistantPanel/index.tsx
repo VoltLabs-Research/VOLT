@@ -1,12 +1,14 @@
-import useConversationPanelView from '@/modules/ai/components/AIConversationPanelContent/use-conversation-panel-view';
-import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
-import AIConversationAlerts from '@/modules/ai/components/AIConversationPanelContent/AIConversationAlerts';
+import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
+import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Button, Tooltip, cn } from '@heroui/react';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { FOCUSABLE_BASE_SELECTOR } from '@/shared/ui/utils/focusable';
 import { useCallback, useEffect, useId, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Expand, Plus, Sparkles } from 'lucide-react';
+import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
+import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
 
 interface AIFloatingAssistantPanelContentProps {
@@ -27,26 +29,30 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
     const panelRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const descriptionId = useId();
-    const chatContext = useAIChatContext();
+    const navigate = useNavigate();
+    const teamId = useSelectedTeamId();
+    const active = useChatSurfaceStore((state) => state.active);
+    const setActive = useChatSurfaceStore((state) => state.setActive);
+    const showArtifact = useChatSurfaceStore((state) => state.showArtifact);
+    const conversationId = active?.conversationId ?? null;
 
-    const {
-        conversationsError,
-        providerCatalogError,
-        noProviderConfigured,
-        loadConversations,
-        loadProviderCatalog,
-        handleCreateConversation,
-        isProviderCatalogLoading,
-        openAIPage,
-        conversationPanelContent
-    } = useConversationPanelView({
-        pageState: chatContext,
-        conversationId: chatContext.activeConversationId,
-        messageDraft: chatContext.messageDraft,
-        setMessageDraft: chatContext.setMessageDraft,
-        handleSend: chatContext.handleSend,
-        onNavigateAway: onClose
-    });
+    const openAIPage = useCallback(() => {
+        navigate(conversationId ? `/dashboard/ai/${conversationId}` : '/dashboard/ai');
+        onClose();
+    }, [conversationId, navigate, onClose]);
+
+    // A spreadsheet needs the room of the AI page: the table opens there, beside the conversation.
+    const handleOpenTableArtifact = useCallback((artifact: AITableArtifact) => {
+        showArtifact(artifact);
+        openAIPage();
+    }, [openAIPage, showArtifact]);
+
+    const handleStarted = useCallback((conversation: AIConversation) => {
+        setActive({
+            conversationId: conversation._id,
+            teamId: conversation.teamId
+        });
+    }, [setActive]);
 
     useEffect(() => {
         const triggerElement = triggerRef.current;
@@ -100,8 +106,8 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                     isIconOnly
                     variant='ghost'
                     aria-label='Start new conversation'
-                    onPress={() => handleCreateConversation().catch(console.warn)}
-                    isDisabled={noProviderConfigured || isProviderCatalogLoading}
+                    onPress={() => setActive(null)}
+                    isDisabled={conversationId === null}
                 >
                     <Plus size={16} />
                 </Button>
@@ -126,20 +132,22 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
                 actions={headerActions}
                 onClose={onClose}
             />
-            <AIConversationAlerts
-                className='border-b border-border bg-danger-soft px-3 py-2'
-                providerCatalogError={providerCatalogError}
-                conversationsError={conversationsError}
-                loadProviderCatalog={loadProviderCatalog}
-                loadConversations={loadConversations}
+            <AIConversationPanelContent
+                conversation={active}
+                teamId={teamId}
+                onStarted={handleStarted}
+                onOpenTableArtifact={handleOpenTableArtifact}
             />
-
-            {conversationPanelContent}
         </div>
     );
 };
 
-const AIFloatingAssistantPanel = () => {
+interface AIFloatingAssistantPanelProps {
+    // A trigger sized for a toolbar of small icon buttons, as the canvas has.
+    compact?: boolean;
+}
+
+const AIFloatingAssistantPanel = ({ compact = false }: AIFloatingAssistantPanelProps) => {
     const isOpen = useChatSurfaceStore((state) => state.isWidgetOpen);
     const closeWidget = useChatSurfaceStore((state) => state.closeWidget);
     const toggleWidget = useChatSurfaceStore((state) => state.toggleWidget);
@@ -162,11 +170,12 @@ const AIFloatingAssistantPanel = () => {
                     ref={triggerRef}
                     isIconOnly
                     variant='ghost'
+                    size={compact ? 'sm' : undefined}
                     aria-label={isOpen ? 'Close Volt AI assistant' : 'Open Volt AI assistant'}
                     className={cn('dashboard-ai-trigger', isOpen && 'is-active bg-info-soft text-foreground')}
                     onPress={toggleWidget}
                 >
-                    <Sparkles size={18} />
+                    <Sparkles size={compact ? 14 : 18} aria-hidden='true' />
                 </Button>
                 <Tooltip.Content placement='bottom'>Volt AI</Tooltip.Content>
             </Tooltip>

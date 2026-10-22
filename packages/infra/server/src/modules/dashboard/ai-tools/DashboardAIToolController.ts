@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import dashboardService from '@modules/dashboard/services/DashboardService';
 import teamMetricsQueryService from '@modules/trajectory/services/trajectory/TeamMetricsQueryService';
@@ -16,7 +16,9 @@ export default class DashboardAIToolController extends AIToolController {
             + 'and a zero-filled time-series per resource (trajectories, analyses, etc.) over the returned range. '
             + 'series.labels holds the local ISO start date of every bucket, so empty buckets are present as 0.',
         parameters: typia.llm.parameters<GetDashboardMetricsInput>(),
-        validate: typia.createValidate<GetDashboardMetricsInput>()
+        validate: typia.createValidate<GetDashboardMetricsInput>(),
+        access: AIToolAccess.Read,
+        permission: null
     })
     async getDashboardMetrics(input: GetDashboardMetricsInput & AIToolScope) {
         const metrics = await teamMetricsQueryService.getTeamMetrics({ teamId: input.teamId });
@@ -34,7 +36,9 @@ export default class DashboardAIToolController extends AIToolController {
         description: 'Search across the current team for trajectories, analyses, plugins and teams by name/content. '
             + 'Returns matches grouped by type, each with a deepLink the UI can navigate to.',
         parameters: typia.llm.parameters<GlobalSearchInput>(),
-        validate: typia.createValidate<GlobalSearchInput>()
+        validate: typia.createValidate<GlobalSearchInput>(),
+        access: AIToolAccess.Read,
+        permission: null
     })
     async globalSearch(input: GlobalSearchInput & AIToolScope) {
         const { analyses, trajectories, teams, plugins } = await dashboardService.getGlobalSearch(input);

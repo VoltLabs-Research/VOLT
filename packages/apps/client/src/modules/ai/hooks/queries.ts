@@ -1,58 +1,32 @@
 import service from '../api/service';
-import { buildKeys } from '@/shared/query/query-keys';
-import { createPaginatedQuery } from '@/shared/query/create-paginated-query';
 import { createQuery } from '@/shared/query/create-query';
-import type { AIConversation } from '@volt/contracts/modules/ai/domain';
-import type {
-    CreateAIConversationParams,
-    ListAIConversationMessagesParams,
-    ListAIConversationsParams,
-    UpdateAIConversationParams
-} from '@/modules/ai/api/service';
+import queryClient from '@/shared/query/query-client';
+import type { ConversationParams, ListAIConversationMessagesParams } from '@/modules/ai/api/service';
 
-export interface ConversationMessagesQueryParams {
-    teamId: string;
-    conversationId: string;
-    params?: ListAIConversationMessagesParams;
-}
+const CONVERSATIONS_KEY = 'ai-conversations';
+const MESSAGES_KEY = 'ai-conversation-messages';
 
-interface AIMessagesKeyMap {
-    messages: ConversationMessagesQueryParams;
-}
-
-const MESSAGE_KEYS = buildKeys<AIMessagesKeyMap>('ai');
-
-const CONVERSATIONS_BASE_KEY = 'ai-conversations';
-
-export const conversationQuery = createPaginatedQuery<
-    AIConversation,
-    ListAIConversationsParams,
-    CreateAIConversationParams,
-    UpdateAIConversationParams
->({
-    baseKey: CONVERSATIONS_BASE_KEY,
-    detailKey: (id) => [CONVERSATIONS_BASE_KEY, 'detail', id],
-    service: {
-        list: service.listConversations,
-        create: (params) => service.createConversation(params).then((result) => result.conversation),
-        update: (id, params) => service.updateConversation({
-            conversationId: id,
-            ...params
-        }),
-        delete: async (id) => {
-            await service.deleteConversation({ conversationId: id });
-        }
-    }
-});
-
-export const invalidateConversationsQueries = (): Promise<void> => conversationQuery.cache.invalidate();
-
-export const messagesQuery = createQuery(
-    MESSAGE_KEYS.messages,
-    ({ conversationId, params }: ConversationMessagesQueryParams) => service.listMessages({
-        conversationId,
-        ...params
+export const conversationsQuery = createQuery(
+    (teamId: string) => [CONVERSATIONS_KEY, teamId],
+    (teamId: string) => service.listConversations({
+        teamId,
+        page: 1,
+        limit: 100
     })
 );
 
-export const invalidateConversationMessagesQuery = messagesQuery.invalidate;
+export const conversationQuery = createQuery(
+    ({ conversationId }: ConversationParams) => [CONVERSATIONS_KEY, 'detail', conversationId],
+    (params: ConversationParams) => service.getConversation(params)
+);
+
+export const messagesWindowQuery = createQuery(
+    ({ conversationId, page, limit }: ListAIConversationMessagesParams) => [MESSAGES_KEY, conversationId, page, limit],
+    (params: ListAIConversationMessagesParams) => service.listMessages(params)
+);
+
+export const invalidateConversations = (): Promise<void> => queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+
+export const forgetMessages = (conversationId: string): void => {
+    queryClient.removeQueries({ queryKey: [MESSAGES_KEY, conversationId] });
+};
