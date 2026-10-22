@@ -14,21 +14,25 @@ import StatusPill from '@/shared/ui/components/StatusPill';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
-import { Button, Tooltip } from '@heroui/react';
+import { Button, Tooltip, cn } from '@heroui/react';
 import { ArrowLeft, Code, FileText, Play, RotateCcw, Square } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const KERNEL_LABELS: Record<KernelStatus, { label: string; status: string }> = {
-    unavailable: { label: 'No kernel', status: 'disabled' },
-    connecting: { label: 'Connecting', status: 'pending' },
-    starting: { label: 'Starting', status: 'pending' },
-    preparing: { label: 'Preparing environment', status: 'preparing' },
-    idle: { label: 'Idle', status: 'ready' },
-    busy: { label: 'Running', status: 'running' },
-    dead: { label: 'Stopped', status: 'failed' }
+// The kernel's state as one pill, which takes its label and its tone from the status.
+const KERNEL_STATUS: Record<KernelStatus, string> = {
+    unavailable: 'no kernel',
+    connecting: 'connecting',
+    starting: 'starting',
+    preparing: 'preparing',
+    idle: 'ready',
+    busy: 'running',
+    dead: 'failed'
 };
+
+// A notice about the kernel, set in under the toolbar rather than ruled off across the page.
+const BANNER_CLASS = 'mx-3 mb-2 rounded-xl px-4 py-2.5';
 
 const SAVE_LABELS: Record<SaveStatus, string> = {
     saved: 'Saved',
@@ -153,22 +157,22 @@ const NotebookEditorPage = () => {
         );
     }
 
-    const kernel = KERNEL_LABELS[editor.kernelStatus];
     const canRun = editor.kernelStatus !== 'unavailable' && editor.kernelStatus !== 'dead' && editor.kernelStatus !== 'connecting';
     const isBusy = editor.kernelStatus === 'busy' || Object.keys(editor.running).length > 0;
 
     return (
-        <div className='flex h-full w-full min-w-0 flex-col bg-surface'>
-            <header className='flex items-center gap-2 border-b border-border px-3 py-2'>
+        <div className='flex h-full w-full min-w-0 flex-col'>
+            <header className='flex items-center gap-2 px-3 py-2.5'>
                 <HeaderButton label='Back to notebooks' onPress={() => navigate('/dashboard/notebooks')}>
                     <ArrowLeft size={16} />
                 </HeaderButton>
                 <div className='flex min-w-0 flex-1 flex-col'>
-                    <h1 className='m-0 truncate text-sm font-semibold text-foreground'>{notebook.title || 'Untitled Notebook'}</h1>
-                    <span className='text-2xs text-muted' aria-live='polite'>{SAVE_LABELS[editor.saveStatus]}</span>
+                    <h1 className='m-0 truncate text-base font-medium text-foreground'>{notebook.title || 'Untitled Notebook'}</h1>
+                    <span className='text-xs text-muted' aria-live='polite'>{SAVE_LABELS[editor.saveStatus]}</span>
                 </div>
-                <StatusPill status={kernel.status} />
-                <span className='text-xs text-muted' role='status' aria-label='Kernel status'>{kernel.label}</span>
+                <span role='status' aria-label='Kernel status'>
+                    <StatusPill status={KERNEL_STATUS[editor.kernelStatus]} />
+                </span>
                 <HeaderButton label='Run all cells' onPress={editor.runAll} isDisabled={!canRun}>
                     <Play size={16} />
                 </HeaderButton>
@@ -181,26 +185,26 @@ const NotebookEditorPage = () => {
             </header>
 
             {editor.kernelStatus === 'preparing' && (
-                <div className='flex flex-col gap-1 border-b border-border bg-warning/5 px-4 py-2' role='status'>
-                    <p className='m-0 text-xs text-foreground'>
+                <div className={cn(BANNER_CLASS, 'flex flex-col gap-1 bg-warning/6')} role='status'>
+                    <p className='m-0 text-sm text-foreground'>
                         Preparing this workspace&apos;s Python environment. The first time, its packages are downloaded; then notebooks start in seconds.
                     </p>
                     {editor.preparation && (
-                        <pre className='m-0 truncate font-mono text-2xs text-muted'>{editor.preparation.trim().split('\n').at(-1)}</pre>
+                        <pre className='m-0 truncate font-mono text-xs text-muted'>{editor.preparation.trim().split('\n').at(-1)}</pre>
                     )}
                 </div>
             )}
             {editor.kernelStatus === 'dead' && (
-                <div className='flex items-center gap-3 border-b border-border bg-danger/5 px-4 py-2' role='alert'>
-                    <p className='m-0 min-w-0 flex-1 truncate text-xs text-foreground'>
+                <div className={cn(BANNER_CLASS, 'flex items-center gap-3 bg-danger/6')} role='alert'>
+                    <p className='m-0 min-w-0 flex-1 truncate text-sm text-foreground'>
                         {editor.kernelFailure ? `The kernel stopped: ${editor.kernelFailure}` : 'The kernel stopped.'}
                     </p>
                     <Button size='sm' variant='secondary' onPress={editor.restart}>Restart</Button>
                 </div>
             )}
             {editor.kernelStatus === 'unavailable' && (
-                <div className='border-b border-border px-4 py-2' role='status'>
-                    <p className='m-0 text-xs text-muted'>
+                <div className={cn(BANNER_CLASS, 'bg-foreground/4')} role='status'>
+                    <p className='m-0 text-sm text-muted'>
                         Cells run here when VOLT runs on this computer. On this server, open the notebook in Jupyter from the notebooks list.
                     </p>
                 </div>

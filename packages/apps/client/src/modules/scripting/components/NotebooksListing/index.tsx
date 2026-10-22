@@ -44,7 +44,7 @@ const renderTrajectoryDetails: NonNullable<ColumnConfig<ScriptingNotebook>['rend
 
     return (
         <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
-            <span className='text-sm text-muted font-mono'>{trajectory?.name?.trim() || ''}</span>
+            <span className='truncate'>{trajectory?.name?.trim() || ''}</span>
         </PopulatedCellPopover>
     );
 };
@@ -53,7 +53,7 @@ const TITLE_COLUMN: ColumnConfig<ScriptingNotebook> = {
     key: 'title',
     title: 'Title',
     sortable: true,
-    render: (_value, row) => <span className='font-semibold text-muted truncate'>{row.title || 'Untitled Notebook'}</span>,
+    render: (_value, row) => <span className='truncate font-medium text-foreground'>{row.title || 'Untitled Notebook'}</span>,
     skeleton: {
         variant: 'text',
         width: 180
@@ -158,6 +158,7 @@ const NotebooksListing = () => {
         <>
             <DocumentListing<ScriptingNotebook, NotebooksListingContext>
                 title='Notebooks'
+                description='Python notebooks that run on your clusters, next to the trajectory data.'
                 queryKey={queryKey}
                 columns={view.columns}
                 context={view.context}
@@ -185,12 +186,6 @@ const NotebooksListing = () => {
                 validateTitle={validateNotebookRenameTitle}
                 isSubmitDisabled={isNotebookRenameUnchanged}
                 inputProps={NOTEBOOK_RENAME_INPUT_PROPS}
-                leadingContent={renamingNotebook && (
-                    <p className='text-xs text-muted truncate'>
-                        Current name: {renamingNotebook.title || 'Untitled notebook'}
-                    </p>
-                )}
-                helperText={<p className='text-xs text-muted'>Use up to 120 characters.</p>}
                 onSubmit={handleRenameSubmit}
                 onClose={handleRenameClose}
             />

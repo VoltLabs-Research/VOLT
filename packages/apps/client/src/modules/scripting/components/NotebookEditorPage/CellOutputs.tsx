@@ -42,13 +42,13 @@ const OutputView = ({ output }: { output: NotebookOutput }) => {
     switch(output.output_type){
         case 'stream':
             return (
-                <pre className={cn(TEXT_CLASS, output.name === 'stderr' ? 'rounded-md bg-danger/5 px-2 py-1 text-foreground' : 'text-foreground')}>
+                <pre className={cn(TEXT_CLASS, output.name === 'stderr' ? 'rounded-xl bg-danger/6 px-3 py-2 text-foreground' : 'text-foreground')}>
                     {terminalText(textOf(output.text))}
                 </pre>
             );
         case 'error':
             return (
-                <pre className={cn(TEXT_CLASS, 'rounded-md bg-danger/5 px-2 py-1.5 text-danger')}>
+                <pre className={cn(TEXT_CLASS, 'rounded-xl bg-danger/6 px-3 py-2 text-danger-soft-foreground')}>
                     {terminalText(output.traceback.length > 0 ? output.traceback.join('\n') : `${output.ename}: ${output.evalue}`)}
                 </pre>
             );
