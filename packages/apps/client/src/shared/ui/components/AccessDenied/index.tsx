@@ -38,26 +38,24 @@ const AccessDenied = ({
             aria-labelledby={headingId}
             className={cn('flex flex-row items-center justify-center w-full h-full max-md:min-h-[300px]', className)}
         >
-            <div className='flex flex-col items-center gap-6 text-center max-w-[360px] max-md:max-w-[90%]'>
-                <div className='flex flex-row items-center justify-center shrink-0 text-danger'>
-                    <ShieldOff size={24} />
-                </div>
+            <div className='flex flex-col items-center gap-5 text-center max-w-md max-md:max-w-[90%]'>
+                <ShieldOff size={28} className='shrink-0 text-muted' aria-hidden='true' />
 
                 <div className='flex flex-col gap-2 text-center'>
-                    <HeadingTag className='text-base font-medium text-foreground' id={headingId}>
+                    <HeadingTag className='text-2xl font-semibold tracking-tight text-foreground text-balance' id={headingId}>
                         {title}
                     </HeadingTag>
-                    <span className='text-sm text-muted leading-normal'>{description}</span>
+                    <p className='text-sm text-muted text-pretty'>{description}</p>
                     {hasPermissionHint && (
-                        <span className='text-xs text-muted leading-normal'>
+                        <p className='text-xs text-muted text-pretty'>
                             {`Permission${requiredPermissions!.length > 1 ? 's' : ''} needed: ${requiredPermissions!.join(', ')}.`}
                             {` Ask ${contactHint ?? 'a team administrator'} to grant access.`}
-                        </span>
+                        </p>
                     )}
                 </div>
 
                 {(showBack || actions) && (
-                    <div className='flex flex-row items-center justify-center gap-3 mt-2'>
+                    <div className='flex flex-row items-center justify-center gap-2'>
                         {showBack && (
                             <Button
                                 variant='primary'
