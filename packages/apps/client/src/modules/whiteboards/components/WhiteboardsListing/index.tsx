@@ -22,8 +22,6 @@ const COLUMNS = createFolderedListingColumns<WhiteboardListingRow>({
     isFolder: isWhiteboardFolderRow,
     resolveTitle: (row) => row.title,
     skeletonWidth: 180,
-    wrapperClassName: 'min-w-0',
-    titleClassName: 'block truncate font-medium text-foreground',
     getAriaLabel: (row) => row.hierarchyTitle,
     showTitleAttribute: true
 });
@@ -51,8 +49,6 @@ const WhiteboardsListing = () => {
 
     useFolderedListingDashboardBreadcrumb(breadcrumbs, navigateToFolder);
 
-    const title = <h3 className='text-3xl font-medium text-foreground sm:font-size-4'>Whiteboards</h3>;
-
     const headerActions = <NewFolderHeaderAction modalId={whiteboardsListingResource.modalIds.newFolder} />;
 
     const headerMenuOptions = useMemo<MenuOption[]>(() => {
@@ -66,7 +62,8 @@ const WhiteboardsListing = () => {
     return (
         <>
             <FolderedDocumentListing<WhiteboardListingRow, { folderId: string | null }>
-                title={title}
+                title='Whiteboards'
+                description={currentFolder ? undefined : 'Sketches the team draws together, live, next to the trajectories they explain.'}
                 columns={COLUMNS}
                 listing={listing}
                 createButtonTitle='New Whiteboard'

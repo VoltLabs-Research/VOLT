@@ -82,16 +82,7 @@ const WhiteboardEditorPage = () => {
     let aiAssistantControl: ReactNode = null;
     if (shouldRenderAIAssistant) {
         aiAssistantControl = (
-            <Suspense fallback={(
-                <button
-                    type='button'
-                    disabled
-                    className='rounded-full border border-border bg-surface-secondary px-3.5 py-2 text-foreground [font:inherit] cursor-pointer'
-                    aria-label='Loading the Volt AI assistant'
-                >
-                    Loading AI...
-                </button>
-            )}>
+            <Suspense fallback={null}>
                 <LazyAIFloatingAssistantPanel />
             </Suspense>
         );
@@ -138,7 +129,9 @@ const WhiteboardEditorPage = () => {
     }
 
     return (
-        <div className='box-border w-full h-full p-2'>
+        // From lg the dashboard already sets the page in by 8px on a 16px corner, the board's frame
+        // in the mockup; below it the page runs edge to edge, so the board sets itself in.
+        <div className='h-full w-full max-lg:p-2'>
             <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {announcement?.message ?? ''}
             </span>
