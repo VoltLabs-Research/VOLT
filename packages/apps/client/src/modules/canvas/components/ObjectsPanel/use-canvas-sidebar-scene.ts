@@ -208,6 +208,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         });
     }, [expandedSections, resolvedAnalyses, getEntry, loadExposuresForAnalysis]);
 
+    // The selected analysis's exposures can arrive after it is selected (by URL, by the assistant),
+    // so the scene is chosen again when they do.
+    const selectedEntryState = analysisConfigId ? exposureEntries.get(analysisConfigId)?.state : undefined;
+
     useEffect(() => {
         if (!analysisConfigId) return;
         if (useScreenshotStore.getState().isFigureBatchActive) return;
@@ -260,7 +264,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         setActiveScene(DEFAULT_SCENE);
-    }, [analysisConfigId, getEntry, pluginsById, selectedAnalysis, setActiveScene]);
+    }, [analysisConfigId, selectedEntryState, getEntry, pluginsById, selectedAnalysis, setActiveScene]);
 
     const trajectoryTimesteps = useMemo(() => extractTrajectoryTimesteps(trajectory), [trajectory]);
 
