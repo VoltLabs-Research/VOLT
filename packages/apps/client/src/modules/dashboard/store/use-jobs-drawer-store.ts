@@ -1,9 +1,5 @@
 import { create } from 'zustand';
 
-export const DASHBOARD_DRAWER_IDS = {
-    activity: 'dashboard-activity-drawer'
-} as const;
-
 interface JobsDrawerState {
     trajectoryId: string | null;
     trajectoryName: string | null;
