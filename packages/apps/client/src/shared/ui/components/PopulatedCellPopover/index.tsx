@@ -45,8 +45,6 @@ const EXCLUDED_FIELDS = new Set([
     '__t'
 ]);
 
-
-
 const resolveFieldValue = (value: unknown): string | null => {
     if (value === null || value === undefined) return null;
 
@@ -124,35 +122,34 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
         setIsOpen(false);
     };
 
-    const renderField = (field: FieldEntry) => {
-        return (
-            <div className='flex flex-row items-start gap-2 p-1 border-b border-border last:border-b-0' key={field.key}>
-                <dt className='min-w-20 whitespace-nowrap text-xs text-muted'>{field.label}</dt>
-                <dd className='m-0 flex-1 whitespace-normal wrap-anywhere text-xs text-foreground' title={field.value}>{field.value}</dd>
-            </div>
-        );
-    };
+    // The mockup's facts list: label and value in two columns, no rules between them.
+    const renderField = (field: FieldEntry) => (
+        <div className='contents' key={field.key}>
+            <dt className='whitespace-nowrap text-muted'>{field.label}</dt>
+            <dd className='m-0 min-w-0 wrap-anywhere tabular-nums text-foreground' title={field.value}>{field.value}</dd>
+        </div>
+    );
 
     return (
         <div className='inline-flex' onClick={handleStopPropagation}>
             <PopoverRoot isOpen={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger<'button'>
                     type='button'
-                    className='inline-flex cursor-pointer rounded-sm border-0 bg-transparent text-inherit no-underline [font:inherit] transition-colors duration-150 hover:underline hover:decoration-muted hover:underline-offset-2'
+                    className='inline-flex cursor-pointer rounded-sm border-0 bg-transparent p-0 text-inherit no-underline [font:inherit] transition-colors duration-150 hover:underline hover:decoration-muted hover:underline-offset-2'
                     render={(triggerProps) => <button {...triggerProps} />}
                 >
                     {children}
                 </PopoverTrigger>
-                <PopoverContent placement='bottom start' className='min-w-[180px] max-w-[320px]'>
-                    <PopoverDialog aria-label={`${modelName} details`} className='p-0'>
+                <PopoverContent placement='bottom start' className='min-w-56 max-w-80'>
+                    <PopoverDialog aria-label={`${modelName} details`} className='p-1.5'>
                         <div className='flex flex-col'>
-                            <div className='flex flex-row items-center justify-between gap-4 p-2 border-b border-border'>
-                                <span className='text-xs text-muted'>{modelName}</span>
+                            <div className='flex flex-row items-center justify-between gap-3 px-2.5 pt-2 pb-1.5'>
+                                <span className='text-base font-medium text-foreground'>{modelName}</span>
                                 {listingRoute && (
                                     <nav aria-label={`${modelName} links`}>
                                         <Link
                                             to={listingRoute}
-                                            className='flex items-center gap-1 whitespace-nowrap text-xs text-foreground no-underline transition-opacity duration-150 hover:opacity-80 [&_svg]:size-3.5'
+                                            className='flex items-center gap-1 whitespace-nowrap text-sm text-muted no-underline transition-colors duration-150 hover:text-foreground [&_svg]:size-3.5'
                                             onClick={handleNavigate}
                                         >
                                             View in listing
@@ -161,10 +158,10 @@ const PopulatedCellPopover: FC<PopulatedCellPopoverProps> = ({
                                     </nav>
                                 )}
                             </div>
-                            <Scrollable className='flex flex-col max-h-[240px] overscroll-contain'>
+                            <Scrollable className='flex max-h-60 flex-col overscroll-contain px-2.5 pt-1 pb-2'>
                                 {fields.length > 0
-                                    ? <dl className='m-0'>{fields.map(renderField)}</dl>
-                                    : <span className='text-xs text-muted p-2'>No fields to display</span>
+                                    ? <dl className='m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2.5 text-sm'>{fields.map(renderField)}</dl>
+                                    : <span className='text-sm text-muted'>No fields to display</span>
                                 }
                             </Scrollable>
                         </div>

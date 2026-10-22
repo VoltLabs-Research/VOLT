@@ -1,6 +1,6 @@
 import { Button } from '@heroui/react';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
-import { Folder, FolderPlus, Pencil, Trash2 } from 'lucide-react';
+import { FolderPlus, Pencil, Trash2 } from 'lucide-react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
 interface NewFolderHeaderActionProps {
@@ -16,11 +16,10 @@ interface FolderHeaderMenuOptionsParams<TFolder> {
 
 export const NewFolderHeaderAction = ({ modalId }: NewFolderHeaderActionProps) => (
     <Button
-        variant='ghost'
-        size='sm'
+        variant='secondary'
         onPress={() => openModal(modalId)}
     >
-        <Folder size={14} />
+        <FolderPlus size={18} aria-hidden='true' />
         New Folder
     </Button>
 );

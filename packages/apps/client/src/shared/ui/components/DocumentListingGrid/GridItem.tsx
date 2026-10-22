@@ -60,7 +60,7 @@ const DraggableGridItemBody = <T extends Identifiable,>({
         <div
             ref={setItemNodeRef}
             className={cn(
-                'group relative flex h-full min-w-0 rounded-xl transition-[opacity,filter,transform] duration-150 [&>*]:h-full [&>*]:w-full',
+                'group relative flex h-full min-w-0 transition-[opacity,filter,transform] duration-150 [&>*]:h-full [&>*]:w-full',
                 draggableId && 'touch-none',
                 isDragging && 'opacity-24 saturate-70',
                 isOver && '[&_.simulation-folder-card]:border-accent/76'
@@ -81,7 +81,7 @@ const DraggableGridItemBody = <T extends Identifiable,>({
         >
             {draggableId && showDragAffordance ? (
                 <div
-                    className={cn('pointer-events-none absolute left-3 top-3 z-[12] inline-flex size-[1.8rem] items-center justify-center rounded-full border border-border/78 bg-surface-secondary/84 text-muted shadow-surface transition-[opacity,transform,color,background-color] duration-150', isDragging ? 'opacity-0' : 'opacity-0 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100')}
+                    className={cn('glass-surface pointer-events-none absolute left-3 top-3 z-[12] inline-flex size-7 items-center justify-center rounded-full bg-overlay text-muted shadow-overlay transition-[opacity,transform] duration-150', isDragging ? 'opacity-0' : 'opacity-0 -translate-y-1 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100')}
                     aria-hidden='true'
                 >
                     <GripVertical size={14} strokeWidth={1.8} />
@@ -116,7 +116,7 @@ const GridItem = <T extends Identifiable,>({
             {body}
         </DraggableGridItemBody>
     ) : (
-        <div className='group relative flex h-full min-w-0 rounded-xl transition-[opacity,filter,transform] duration-150 [&>*]:h-full [&>*]:w-full'>
+        <div className='group relative flex h-full min-w-0 [&>*]:h-full [&>*]:w-full'>
             {body}
         </div>
     );

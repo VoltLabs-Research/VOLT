@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
 import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
-import { resolveStatusVariant } from '@/shared/ui/status-vocabulary';
-import { cn } from '@heroui/react';
+import StatusPill from '@/shared/ui/components/StatusPill';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { User } from '@volt/contracts/modules/auth/domain';
 import type { ReactNode } from 'react';
@@ -56,16 +55,16 @@ export function dateColumn<TRow = unknown>(
         width: options?.width,
         render: (value: unknown) => {
             if (!value) {
-                return options?.fallback ?? '-';
+                return <span className='text-muted'>{options?.fallback ?? '-'}</span>;
             }
 
             const date = new Date(String(value));
-            const formatted = formatDistanceToNow(date, { addSuffix: true });
-            if (!options?.withTitle) {
-                return formatted;
-            }
 
-            return <span title={date.toLocaleString()}>{formatted}</span>;
+            return (
+                <span className='text-muted' title={options?.withTitle ? date.toLocaleString() : undefined}>
+                    {formatDistanceToNow(date, { addSuffix: true })}
+                </span>
+            );
         },
         skeleton: {
             variant: 'text',
@@ -85,18 +84,7 @@ export function statusColumn<TRow = unknown>(
         sortable: options?.sortable ?? false,
         render: (value: unknown, row: TRow) => {
             const status = options?.resolveStatus ? options.resolveStatus(value, row) : String(value);
-            return (
-                <span className={cn('inline-flex items-center gap-1 rounded-full text-xs font-medium uppercase whitespace-nowrap', {
-                    active: 'text-foreground',
-                    brand: 'text-foreground',
-                    primary: 'text-foreground',
-                    success: 'text-success',
-                    warning: 'text-warning',
-                    danger: 'text-danger',
-                    inactive: 'text-muted',
-                    neutral: 'text-muted'
-                }[resolveStatusVariant(status)])}>{status}</span>
-            );
+            return <StatusPill status={status} />;
         },
         skeleton: {
             variant: 'rounded',
@@ -125,13 +113,13 @@ export function userColumn<TRow = unknown>(
         sortable: false,
         render: (_value: unknown, row: TRow) => {
             if (options?.isFolder?.(row)) {
-                return <span className='text-sm text-muted'>-</span>;
+                return <span className='text-muted'>-</span>;
             }
 
             const user = resolvePopulatedUser((row as Record<string, unknown>)[key]);
             return (
                 <PopulatedCellPopover document={user} modelName='User'>
-                    <span className='text-sm text-muted'>{user?.email ?? '-'}</span>
+                    <span className={user ? undefined : 'text-muted'}>{user?.email ?? '-'}</span>
                 </PopulatedCellPopover>
             );
         },
@@ -177,7 +165,7 @@ export function clusterColumn<TRow = unknown>(
         sortable: false,
         render: (_value: unknown, row: TRow) => {
             if (options?.isFolder?.(row)) {
-                return <span className='text-sm text-muted'>-</span>;
+                return <span className='text-muted'>-</span>;
             }
 
             const rawValue = (row as Record<string, unknown>)[key];
@@ -185,8 +173,8 @@ export function clusterColumn<TRow = unknown>(
             const name = resolvePopulatedName(rawValue);
 
             const content = name
-                ? <span className='text-sm text-muted'>{name}</span>
-                : <span className='text-sm text-muted'>-</span>;
+                ? <span>{name}</span>
+                : <span className='text-muted'>-</span>;
 
             return (
                 <PopulatedCellPopover document={cluster} modelName='TeamCluster'>
@@ -214,7 +202,7 @@ export function populatedNameColumn<TRow = unknown>(
         sortable: options?.sortable ?? false,
         render: (_value: unknown, row: TRow) => {
             if (options?.isFolder?.(row)) {
-                return <span className='text-sm text-muted'>-</span>;
+                return <span className='text-muted'>-</span>;
             }
 
             const rawValue = (row as Record<string, unknown>)[key];
@@ -222,8 +210,8 @@ export function populatedNameColumn<TRow = unknown>(
             const name = resolvePopulatedName(rawValue);
 
             const content = name
-                ? <span className='text-sm text-muted'>{name}</span>
-                : <span className='text-sm text-muted'>-</span>;
+                ? <span>{name}</span>
+                : <span className='text-muted'>-</span>;
 
             return (
                 <PopulatedCellPopover document={populated} modelName={modelName}>
@@ -250,18 +238,7 @@ export function enumColumn<TRow = unknown>(
         render: (value: unknown, row: TRow) => {
             const raw = options?.resolveValue ? options.resolveValue(value, row) : String(value ?? '');
             const displayLabel = options?.resolveLabel ? options.resolveLabel(raw) : undefined;
-            return (
-                <span className={cn('inline-flex items-center gap-1 rounded-full text-xs font-medium uppercase whitespace-nowrap', {
-                    active: 'text-foreground',
-                    brand: 'text-foreground',
-                    primary: 'text-foreground',
-                    success: 'text-success',
-                    warning: 'text-warning',
-                    danger: 'text-danger',
-                    inactive: 'text-muted',
-                    neutral: 'text-muted'
-                }[resolveStatusVariant(raw)])}>{displayLabel ?? raw}</span>
-            );
+            return <span className='text-muted'>{displayLabel ?? raw}</span>;
         },
         skeleton: {
             variant: 'rounded',

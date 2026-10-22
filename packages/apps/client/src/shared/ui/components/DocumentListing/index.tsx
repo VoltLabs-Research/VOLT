@@ -10,6 +10,7 @@ import { isAccessDeniedCode } from '@/shared/errors/core/report-error';
 import { sortData } from '@/shared/utils/sort';
 import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 
+import { cn } from '@heroui/react';
 import { motion } from 'framer-motion';
 import { useCallback, useMemo, useRef } from 'react';
 import { Copy } from 'lucide-react';
@@ -216,39 +217,42 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
         }
 
         return (
-            <div className='flex min-h-0 flex-1 flex-col bg-surface px-8 pb-8 [overflow-anchor:none] max-md:px-4 max-md:pb-4'>
-                <motion.div
-                    initial={prefersReducedMotion ? false : {
-                        opacity: 0,
-                        y: 15
-                    }}
-                    animate={prefersReducedMotion ? undefined : {
-                        opacity: 1,
-                        y: 0
-                    }}
-                    transition={prefersReducedMotion ? { duration: 0 } : {
-                        duration: 0.4,
-                        ease: [0.32, 0.72, 0, 1]
-                    }}
-                    style={{ height: '100%' }}
-                >
-                    <DocumentListingTable
-                        {...bodyProps}
-                        listingLabel={typeof title === 'string' ? title : undefined}
-                        columns={preferences.visibleColumns}
-                        onCellClick={handleSort}
-                        getCellTitle={(col) => <>{col.title} {getColumnSortIndicator(col, sortConfig)}</>}
-                        getAriaSort={(col) => getColumnAriaSort(col, sortConfig)}
-                        onItemClick={onItemClick}
-                        scrollContainerRef={scrollContainerRef}
-                    />
-                </motion.div>
-            </div>
+            <motion.div
+                className='flex min-h-0 flex-1 flex-col [overflow-anchor:none]'
+                initial={prefersReducedMotion ? false : {
+                    opacity: 0,
+                    y: 15
+                }}
+                animate={prefersReducedMotion ? undefined : {
+                    opacity: 1,
+                    y: 0
+                }}
+                transition={prefersReducedMotion ? { duration: 0 } : {
+                    duration: 0.4,
+                    ease: [0.32, 0.72, 0, 1]
+                }}
+            >
+                <DocumentListingTable
+                    {...bodyProps}
+                    emptyIcon={emptyIcon}
+                    emptyTitle={emptyTitle}
+                    emptyButtonIsLoading={emptyButtonIsLoading}
+                    listingLabel={typeof title === 'string' ? title : undefined}
+                    columns={preferences.visibleColumns}
+                    onCellClick={handleSort}
+                    getCellTitle={(col) => <>{col.title}{getColumnSortIndicator(col, sortConfig)}</>}
+                    getAriaSort={(col) => getColumnAriaSort(col, sortConfig)}
+                    onItemClick={onItemClick}
+                    scrollContainerRef={scrollContainerRef}
+                />
+            </motion.div>
         );
     };
 
+    // A table listing is the page: the mockup's wide page body, 80rem at most. The grid view sits
+    // inside a page of its own and takes no padding here.
     return (
-        <div className='flex flex-col gap-4 h-full isolate'>
+        <div className={cn('flex h-full flex-col isolate', view === 'table' && 'mx-auto w-full max-w-7xl px-6 pt-3 pb-8')}>
             <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {describeSortState(columns, sortConfig)}
             </span>
@@ -256,7 +260,6 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
                 <DocumentListingHeader
                     title={title}
                     description={description}
-                    showTitleSkeleton={isLoading && !data.length}
                     columns={columns}
                     showColumnPicker={view === 'table' && columns.length > 1}
                     headerActions={headerActions}

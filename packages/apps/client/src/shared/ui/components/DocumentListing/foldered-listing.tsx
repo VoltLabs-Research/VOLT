@@ -5,7 +5,6 @@ import FolderNameModal from '@/shared/ui/components/FolderNameModal';
 import MoveToFolderModal from '@/shared/ui/components/MoveToFolderModal';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import { dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
-import { Folder } from 'lucide-react';
 import { useMemo } from 'react';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
@@ -52,6 +51,7 @@ interface FolderedListingState<TRow extends { _id: string }, TContext> {
 
 interface FolderedDocumentListingProps<TRow extends { _id: string }, TContext> {
     title: ReactNode;
+    description?: ReactNode;
     columns: ColumnConfig<TRow>[];
     listing: FolderedListingState<TRow, TContext>;
     createButtonTitle?: string;
@@ -99,18 +99,15 @@ export const createFolderedTitleColumn = <TRow,>({
             ? value
             : resolveTitle(row);
 
+        // A folder row says so in its secondary line, as the mockup's subtitles do, never with an icon.
         return (
-            <div className={cn('flex flex-row items-center gap-3', wrapperClassName)} aria-label={getAriaLabel?.(row)}>
+            <div className={cn('flex min-w-0 flex-col gap-0.5', wrapperClassName)} aria-label={getAriaLabel?.(row)}>
+                <span className={cn('truncate', titleClassName)} title={showTitleAttribute ? resolvedTitle : undefined}>
+                    {resolvedTitle}
+                </span>
                 {isFolder(row) && (
-                    <div className='flex items-center justify-center text-muted'>
-                        <Folder size={16} />
-                    </div>
+                    <span className='text-xs text-muted'>Folder</span>
                 )}
-                <div className='overflow-hidden min-w-0'>
-                    <span className={titleClassName} title={showTitleAttribute ? resolvedTitle : undefined}>
-                        {resolvedTitle}
-                    </span>
-                </div>
             </div>
         );
     };
@@ -154,6 +151,7 @@ export const useFolderedListingDashboardBreadcrumb = (
 
 export const FolderedDocumentListing = <TRow extends { _id: string }, TContext>({
     title,
+    description,
     columns,
     listing,
     createButtonTitle,
@@ -169,6 +167,7 @@ export const FolderedDocumentListing = <TRow extends { _id: string }, TContext>(
 }: FolderedDocumentListingProps<TRow, TContext>) => (
     <DocumentListing<TRow, TContext>
         title={title}
+        description={description}
         queryKey={listing.queryKey}
         columns={columns}
         context={listing.context}
