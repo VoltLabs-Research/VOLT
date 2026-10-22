@@ -125,7 +125,7 @@ const NotebookCellView = ({
                 role='button'
                 tabIndex={0}
                 aria-label='Edit markdown cell'
-                className='cursor-text px-3 py-2'
+                className='cursor-text rounded-xl px-3 py-2'
                 onDoubleClick={() => onEditText(true)}
                 onKeyDown={(event) => {
                     if(event.key === 'Enter'){
@@ -141,7 +141,7 @@ const NotebookCellView = ({
         );
     }else{
         body = (
-            <div className={cn('overflow-hidden rounded-lg border bg-background transition-colors', isFocused ? 'border-focus' : 'border-border')}>
+            <div className={cn('overflow-hidden rounded-xl border transition-colors', isFocused ? 'border-focus' : 'border-foreground/8')}>
                 <CellEditor
                     cellId={cell.id}
                     value={cell.source}
