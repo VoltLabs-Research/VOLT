@@ -25,6 +25,7 @@ const LocalStackBoot = ({ onReady }: LocalStackBootProps) => {
     const [log, setLog] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const started = useRef(false);
+    const inDesktopApp = localStackMode.isDesktopApp();
 
     useEffect(() => {
         if (started.current) return;
@@ -50,8 +51,10 @@ const LocalStackBoot = ({ onReady }: LocalStackBootProps) => {
             <section className='flex min-h-dvh flex-col justify-center p-6 max-sm:p-4' aria-labelledby='local-stack-title'>
                 <div className='mx-auto flex w-full max-w-[26rem] flex-col gap-8'>
                     <header className='flex flex-col gap-2'>
-                        <h1 className='text-3xl font-semibold tracking-[-0.03em] text-foreground max-lg:text-2xl' id='local-stack-title'>Starting VOLT in this browser</h1>
-                        <p>The server and a compute cluster run in this tab. Your work is kept in this browser's storage.</p>
+                        <h1 className='text-3xl font-semibold tracking-[-0.03em] text-foreground max-lg:text-2xl' id='local-stack-title'>{inDesktopApp ? 'Starting VOLT' : 'Starting VOLT in this browser'}</h1>
+                        <p>{inDesktopApp
+                            ? 'The server and a compute cluster run in this app. Your work is kept on this computer.'
+                            : 'The server and a compute cluster run in this tab. Your work is kept in this browser\'s storage.'}</p>
                     </header>
 
                     <ol className='flex flex-col gap-3' aria-live='polite'>
@@ -68,7 +71,7 @@ const LocalStackBoot = ({ onReady }: LocalStackBootProps) => {
                             <p className='text-sm text-danger' role='alert'>{error}</p>
                             <div className='flex gap-2'>
                                 <Button variant='primary' onPress={() => window.location.reload()}>Try again</Button>
-                                <Button variant='secondary' onPress={() => void leaveLocalMode()}>Connect to a server instead</Button>
+                                {!inDesktopApp && <Button variant='secondary' onPress={() => void leaveLocalMode()}>Connect to a server instead</Button>}
                             </div>
                         </div>
                     )}

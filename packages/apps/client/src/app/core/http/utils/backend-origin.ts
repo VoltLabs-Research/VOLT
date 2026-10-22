@@ -51,7 +51,7 @@ const resolveBackendEndpoint = (): string | null => {
 };
 
 export const isEndpointPinnedByEnv = (): boolean => {
-    return getEnvEndpoint() !== null || getRuntimeEndpoint() !== null;
+    return localStackMode.isDesktopApp() || getEnvEndpoint() !== null || getRuntimeEndpoint() !== null;
 };
 
 export const hasResolvedBackendEndpoint = (): boolean => {
