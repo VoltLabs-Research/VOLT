@@ -21,8 +21,55 @@ permissions:
   contents: write
 
 jobs:
+  # The installer's window runs the web client's own build, which carries the whole stack
+  # compiled to WebAssembly: the same files for every OS, built once here.
+  client:
+    name: Build the web client
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # The client ships @volt/web-runtime, which bundles the server and the cluster daemon:
+      # installing them builds the daemon's native modules, and the runtime compiles its native
+      # addons to WebAssembly with Emscripten.
+      - name: Install build toolchain for native modules
+        uses: ./.github/actions/native-toolchain
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.74
+          actions-cache-folder: emsdk-cache
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter volt-webapp...
+
+      - name: Build the client and the stack it runs
+        run: pnpm --filter "volt-webapp..." build
+
+      - name: Upload the client build
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-dist
+          path: packages/apps/client/dist
+          if-no-files-found: error
+          retention-days: 1
+
   build:
     name: Package (${{ matrix.label }})
+    needs: client
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -61,27 +108,10 @@ jobs:
           version: 10
           cache: true
 
-      # Node 22 (.nvmrc) is what the bundled server and daemon run on: the build copies
-      # this runner's node binary into the installer as the stack's runtime.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-
-      - name: Set up Python (node-gyp fallback for native modules without a prebuild)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install zstd (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y zstd
-        working-directory: ${{ github.workspace }}
-
-      - name: Install zstd (macOS)
-        if: runner.os == 'macOS'
-        run: brew install zstd
-        working-directory: ${{ github.workspace }}
 
       - name: Cache Electron binaries
         uses: actions/cache@v4
@@ -93,7 +123,7 @@ jobs:
         shell: bash
         run: |
           for attempt in 1 2 3; do
-            if pnpm install --frozen-lockfile; then
+            if pnpm install --frozen-lockfile --filter volt-desktop...; then
               exit 0
             fi
             echo "pnpm install failed (attempt ${attempt}/3)"
@@ -108,11 +138,12 @@ jobs:
         shell: bash
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
 
-      # Assembles stack-runtime (client bundle, compiled server and daemon with
-      # production node_modules, the SDK, and this runner's node binary), then packages
-      # it under resources/stack. No Docker is involved at build or run time.
-      - name: Build the local stack runtime
-        run: pnpm run stack:build
+      # Packaged under resources/client (package.json's extraResources).
+      - name: Download the client build
+        uses: actions/download-artifact@v4
+        with:
+          name: client-dist
+          path: packages/apps/client/dist
 
       - name: Package installers
         run: pnpm run package:only

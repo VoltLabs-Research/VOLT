@@ -216,7 +216,7 @@ jobs:
       - name: Lint
         run: pnpm --filter volt-desktop lint
 
-      # Catches a break in the main/preload/renderer bundles without packaging
+      # Catches a break in the main and preload bundles without packaging
       # installers, which the release workflow already does per OS.
       - name: Build
         run: pnpm --filter volt-desktop build
