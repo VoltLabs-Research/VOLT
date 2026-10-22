@@ -1,4 +1,3 @@
-import { cn } from '@heroui/react';
 import useDashboardHeaderContent from '@/modules/dashboard/hooks/use-dashboard-header-content';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import FolderNameModal from '@/shared/ui/components/FolderNameModal';
@@ -32,8 +31,6 @@ interface FolderedListingTitleOptions<TRow> {
     isFolder: (row: TRow) => boolean;
     resolveTitle: (row: TRow) => string;
     skeletonWidth: number;
-    wrapperClassName?: string;
-    titleClassName?: string;
     getAriaLabel?: (row: TRow) => string | undefined;
     showTitleAttribute?: boolean;
 };
@@ -89,8 +86,6 @@ export const createFolderedTitleColumn = <TRow,>({
     isFolder,
     resolveTitle,
     skeletonWidth,
-    wrapperClassName,
-    titleClassName = 'font-medium text-foreground',
     getAriaLabel,
     showTitleAttribute = false
 }: FolderedListingTitleOptions<TRow>): ColumnConfig<TRow> => {
@@ -101,8 +96,8 @@ export const createFolderedTitleColumn = <TRow,>({
 
         // A folder row says so in its secondary line, as the mockup's subtitles do, never with an icon.
         return (
-            <div className={cn('flex min-w-0 flex-col gap-0.5', wrapperClassName)} aria-label={getAriaLabel?.(row)}>
-                <span className={cn('truncate', titleClassName)} title={showTitleAttribute ? resolvedTitle : undefined}>
+            <div className='flex min-w-0 flex-col gap-0.5' aria-label={getAriaLabel?.(row)}>
+                <span className='truncate font-medium text-foreground' title={showTitleAttribute ? resolvedTitle : undefined}>
                     {resolvedTitle}
                 </span>
                 {isFolder(row) && (
