@@ -57,6 +57,8 @@ const renderAtomTypeBadge = (value: unknown) => {
     return <AtomTypeBadge type={value} />;
 };
 
+const renderMono = (value: unknown) => <span className='font-mono'>{String(value)}</span>;
+
 const parseTimestepParam = (value: string | null): number | undefined => {
     if (value === null) {
         return undefined;
@@ -158,7 +160,9 @@ export default function PerAtomViewer() {
             {
                 key: 'id',
                 title: 'ID',
-                skeleton: ID_SKELETON
+                numeric: true,
+                skeleton: ID_SKELETON,
+                render: renderMono
             },
             {
                 key: 'type',
@@ -169,8 +173,9 @@ export default function PerAtomViewer() {
             ...COORDINATE_KEYS.map((key): ColumnConfig<AtomListingRow> => ({
                 key,
                 title: key.toUpperCase(),
+                numeric: true,
                 skeleton: COORDINATE_SKELETON,
-                render: (value: unknown) => formatAtomValue(value, 3)
+                render: (value: unknown) => renderMono(formatAtomValue(value, 3))
             }))
         ];
 
@@ -179,8 +184,9 @@ export default function PerAtomViewer() {
             baseCols.push({
                 key: prop,
                 title: prop,
+                numeric: true,
                 skeleton: COORDINATE_SKELETON,
-                render: (value: unknown) => formatAtomValue(value, 6)
+                render: (value: unknown) => renderMono(formatAtomValue(value, 6))
             });
         }
 
@@ -200,7 +206,7 @@ export default function PerAtomViewer() {
 
         return (
             <div className='flex flex-row items-center gap-3'>
-                <p className='text-xs text-muted'>Timestep</p>
+                <p className='text-sm text-muted'>Timestep</p>
                 <ComboBox
                     className='min-w-0 shrink-0'
                     selectedKey={String(timestep)}
@@ -211,7 +217,7 @@ export default function PerAtomViewer() {
                     }}
                     aria-label='Select timestep'
                 >
-                    <ComboBox.InputGroup className={cn(COMPACT_FIELD_GROUP, 'w-[clamp(3.25rem,17vw,4.5rem)]')}>
+                    <ComboBox.InputGroup className={cn(COMPACT_FIELD_GROUP, 'w-28')}>
                         <Input className={COMPACT_FIELD_GROUP_INPUT} placeholder={String(timestep)} />
                         <ComboBox.Trigger />
                     </ComboBox.InputGroup>
@@ -229,7 +235,7 @@ export default function PerAtomViewer() {
 
     return (
         <DocumentListing<AtomListingRow, PerAtomViewerContext>
-            title={`Per-Atom Properties - Frame ${timestep ?? '-'}`}
+            title={`Per-Atom Properties - Frame ${timestep?.toLocaleString() ?? '-'}`}
             queryKey={TRAJECTORY_QUERY_KEYS.perAtom()}
             columns={columns}
             fetchData={fetchData}

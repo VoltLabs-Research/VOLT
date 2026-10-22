@@ -1,4 +1,3 @@
-import { ACTIVITY_ICON, ACTIVITY_ACCENT } from '@/modules/daily-activity/utils/activity-mappings';
 import type { DailyActivityHeatmapDetailEntry } from '@/modules/daily-activity/contracts/heatmap';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -17,7 +16,7 @@ const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
 const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: ActivityTooltipContentProps) => {
     if (!activity.length) {
         return (
-            <div className='flex flex-col gap-2'>
+            <div className='flex flex-col gap-1'>
                 <span className='text-sm font-medium text-foreground'>{dateLabel}</span>
                 <span className='text-sm text-muted'>No recorded activity for this day.</span>
             </div>
@@ -25,7 +24,7 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
     }
 
     return (
-        <Scrollable className='flex flex-col gap-4 max-h-[400px]'>
+        <Scrollable className='flex max-h-[400px] flex-col gap-3'>
             <div className='flex flex-col gap-1'>
                 <span className='text-sm font-medium text-foreground'>{dateLabel}</span>
                 <span className='text-xs text-muted'>
@@ -33,19 +32,11 @@ const ActivityTooltipContent = ({ activity, dateLabel, minutesOnline, score }: A
                 </span>
             </div>
             {activity.map((item, index) => (
-                <div className='flex items-start gap-2' key={`${item.createdAt}-${index}`}>
-                    <span
-                        className='flex size-[22px] shrink-0 items-center justify-center rounded-xl border border-border bg-surface-tertiary'
-                        style={{ color: ACTIVITY_ACCENT[item.type] }}
-                    >
-                        {ACTIVITY_ICON[item.type]}
+                <div className='flex min-w-0 flex-col gap-0.5' key={`${item.createdAt}-${index}`}>
+                    <span className='text-xs text-muted'>
+                        {item.userDisplayName} · {TIME_FORMATTER.format(new Date(item.createdAt))}
                     </span>
-                    <div className='flex flex-col min-w-0 gap-0.5'>
-                        <span className='text-xs text-muted'>
-                            {item.userDisplayName} · {TIME_FORMATTER.format(new Date(item.createdAt))}
-                        </span>
-                        <span className='text-sm text-foreground'>{item.description}</span>
-                    </div>
+                    <span className='text-sm text-foreground'>{item.description}</span>
                 </div>
             ))}
         </Scrollable>

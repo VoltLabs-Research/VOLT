@@ -10,6 +10,7 @@ import {
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import { clusterColumn, dateColumn } from '@/shared/ui/utils/column-presets';
 import StatusPill from '@/shared/ui/components/StatusPill';
+import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { useMemo } from 'react';
@@ -35,6 +36,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'atoms',
         title: 'Atoms',
+        numeric: true,
         render: (_value, row) => renderCount(isTrajectoryFolderRow(row) ? undefined : row.atoms),
         skeleton: {
             variant: 'text',
@@ -44,6 +46,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'framesCount',
         title: 'Frames',
+        numeric: true,
         render: (_value, row) => renderCount(isTrajectoryFolderRow(row) ? undefined : row.framesCount),
         skeleton: {
             variant: 'text',
@@ -53,6 +56,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
     {
         key: 'stats.totalSize',
         title: 'Size',
+        numeric: true,
         render: (_value, row) => renderSize(row.stats.totalSize),
         skeleton: {
             variant: 'text',
@@ -85,6 +89,7 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
 export default function TrajectoriesListing() {
     useTip('trajectories-organization');
 
+    const team = useSelectedTeam();
     const listing = useTrajectoriesListing();
     const {
         breadcrumbs,
@@ -110,9 +115,8 @@ export default function TrajectoriesListing() {
     return (
         <>
             <FolderedDocumentListing<TrajectoryListingRow, { folderId: string | null }>
-                title={(
-                    <h3 className='text-3xl font-medium text-foreground sm:font-size-4'>Trajectories</h3>
-                )}
+                title='Trajectories'
+                description={team ? `Every trajectory ${team.name} uploaded, and the cluster that holds its frames.` : undefined}
                 columns={COLUMNS}
                 listing={listing}
                 defaultLimit={20}

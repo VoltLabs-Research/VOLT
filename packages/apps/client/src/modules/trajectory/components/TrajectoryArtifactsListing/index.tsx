@@ -9,14 +9,12 @@ import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { useCallback } from 'react';
 
-const renderSecondaryText = (value: unknown) => <span className='text-sm text-muted'>{String(value)}</span>;
-
 const COLUMNS: ColumnConfig<SceneArtifact>[] = [
     {
         key: 'displayName',
         title: 'Display Name',
         sortable: true,
-        render: renderSecondaryText,
+        render: (value) => <span className='font-medium text-foreground'>{String(value)}</span>,
         skeleton: {
             variant: 'text',
             width: 180
@@ -31,7 +29,8 @@ const COLUMNS: ColumnConfig<SceneArtifact>[] = [
         key: 'timestep',
         title: 'Timestep',
         sortable: true,
-        render: renderSecondaryText,
+        numeric: true,
+        render: (value) => (typeof value === 'number' ? value.toLocaleString() : '-'),
         skeleton: {
             variant: 'text',
             width: 80
@@ -64,6 +63,7 @@ const TrajectoryArtifactsListing = () => {
     return (
         <DocumentListing<SceneArtifact>
             title='Trajectory Artifacts'
+            description='Scenes that color coding, particle filters and plugin exposures saved, one per timestep.'
             queryKey={['trajectory', 'team-scene-artifacts', teamId]}
             columns={COLUMNS}
             fetchData={fetchArtifacts}
