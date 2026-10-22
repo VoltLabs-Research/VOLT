@@ -19,7 +19,8 @@ import NotFoundState from '@/shared/ui/components/NotFoundState';
 import EndpointGuard from '@/app/routes/EndpointGuard';
 import { useThemeInitialization } from '@/shared/ui/hooks/use-theme';
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { withViewTransitions } from '@/app/routes/view-transitions';
+import { Outlet, Route, RouterProvider, createBrowserRouter, createRoutesFromElements, useLocation, useNavigate } from 'react-router-dom';
 import 'sileo/styles.css';
 import type { ErrorInfo } from 'react';
 
@@ -94,17 +95,29 @@ const AppRoutes = () => {
             <GlobalErrorListener />
             <ErrorBoundary onError={handleRenderError}>
                 <EndpointGuard>
-                    <Routes>
-                        {renderPublicRoutes()}
-                        {renderOptionalAuthRoutes()}
-                        {renderGuestRoutes()}
-                        {renderProtectedRoutes()}
-                        <Route path='*' element={<NotFoundState />} />
-                    </Routes>
+                    <Outlet />
                 </EndpointGuard>
             </ErrorBoundary>
         </>
     );
+};
+
+let router: ReturnType<typeof createBrowserRouter> | null = null;
+
+// A data router: React Router runs View Transitions only there. Created when the app first
+// renders, so the local stack's boot screen does not start a router it is not showing.
+const getRouter = () => {
+    router ??= withViewTransitions(createBrowserRouter(createRoutesFromElements(
+        <Route element={<AppChrome />}>
+            {renderPublicRoutes()}
+            {renderOptionalAuthRoutes()}
+            {renderGuestRoutes()}
+            {renderProtectedRoutes()}
+            <Route path='*' element={<NotFoundState />} />
+        </Route>
+    )));
+
+    return router;
 };
 
 export default function App() {
@@ -112,9 +125,7 @@ export default function App() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <BrowserRouter useTransitions={false}>
-                <AppChrome />
-            </BrowserRouter>
+            <RouterProvider router={getRouter()} useTransitions={false} />
         </QueryClientProvider>
     );
 }
