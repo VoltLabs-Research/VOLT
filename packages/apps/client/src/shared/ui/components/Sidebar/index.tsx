@@ -3,7 +3,6 @@ import SidebarBottom from '@/shared/ui/components/SidebarBottom';
 import SidebarHeader from '@/shared/ui/components/SidebarHeader';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { cn } from '@heroui/react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState, useMemo, useId } from 'react';
 import React from 'react';
 import type { ReactNode, ComponentType } from 'react';
@@ -41,7 +40,6 @@ const Sidebar = ({
     keepMounted = false
 }: SidebarProps) => {
     const [collapsed, setCollapsed] = useState(false);
-    const prefersReducedMotion = useReducedMotion();
     const sidebarId = useId();
     const isMobile = useMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
 
@@ -97,21 +95,15 @@ const Sidebar = ({
     const collapsedWidth = isMobile ? 56 : 64;
 
     return (
-        <motion.aside
-            className={cn('absolute z-[200] flex top-1/2 h-[98%] -translate-y-1/2 max-[768px]:top-2 max-[768px]:bottom-2 max-[768px]:h-auto max-[768px]:max-h-[calc(100%-1rem)] max-[768px]:translate-y-0', { left: 'left-2', right: 'left-auto right-2' }[position], className)}
+        <aside
+            className={cn('absolute inset-y-2 z-[200] flex transition-[width] duration-[420ms] ease-[var(--ease-emphasized)]', { left: 'left-2', right: 'left-auto right-2' }[position], className)}
+            style={{ width: collapsed ? collapsedWidth : expandedWidth }}
             data-collapsed={collapsed}
             data-collapsible={collapsible}
             data-mobile={isMobile}
             data-position={position}
-            initial={false}
-            animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
-            transition={prefersReducedMotion ? { duration: 0 } : {
-                type: 'spring',
-                stiffness: 300,
-                damping: 30
-            }}
         >
-            <div className='flex h-full w-full max-w-full flex-col justify-between gap-0 overflow-hidden rounded-xl border-0 bg-surface p-0 max-[768px]:z-[100] max-[768px]:rounded-md'>
+            <div className='glass-surface flex h-full w-full max-w-full flex-col justify-between gap-0 overflow-hidden rounded-2xl border-0 bg-dashboard-surface p-0 shadow-[var(--overlay-shadow)] max-[768px]:z-[100]'>
                 <div id={`${sidebarId}-content`} className='flex min-h-0 flex-1 flex-col overflow-hidden'>
                     {headerElement}
 
@@ -180,7 +172,7 @@ const Sidebar = ({
 
                 {bottomElement}
             </div>
-        </motion.aside>
+        </aside>
     );
 };
 

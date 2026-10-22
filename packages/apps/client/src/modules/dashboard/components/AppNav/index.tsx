@@ -6,6 +6,8 @@ import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
+import useDefaultSettingsPath from '@/modules/dashboard/hooks/use-default-settings-path';
+import { TRAJECTORIES_LIST_PATH } from '@/modules/dashboard/utils/sidebar-panels';
 import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import NavItem from '@/shared/ui/components/NavItem';
 import SidebarPanel from '@/shared/ui/components/SidebarPanel';
@@ -27,7 +29,6 @@ interface AppNavProps {
 
 const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
 const SECONDARY_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Secondary);
-const SETTINGS_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Settings);
 
 const PLUGIN_NAVIGATION_LABEL_COLLATOR = new Intl.Collator(undefined, {
     numeric: true,
@@ -36,7 +37,6 @@ const PLUGIN_NAVIGATION_LABEL_COLLATOR = new Intl.Collator(undefined, {
 
 const DEFAULT_PERMISSION_DENIED_REASON = 'You do not have permission to access this section.';
 const DOCS_URL = 'https://docs.voltcloud.dev';
-const TRAJECTORIES_PATH = '/dashboard/trajectories/list';
 
 const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavProps) => {
     const [searchParams] = useSearchParams();
@@ -45,6 +45,7 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
     const { plugins } = usePluginSelectors();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
     const visibleNavigationItems = useVisibleNavigationItems();
+    const defaultSettingsPath = useDefaultSettingsPath();
     const isAnalysisPluginListingRoute = pathname.includes('/dashboard/plugins/') && pathname.includes('/listing');
 
     const isSelected = (to: string) => {
@@ -128,15 +129,11 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
     const canAccessAnalysis = canAccessPermissions(['analysis:read']);
     const canAccessPlugins = canAccessPermissions(['plugin:read']);
 
-    const trajectoriesActive = pathname.includes('/trajectories') || pathname.includes('/simulation-cells');
     const analysisActive = pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute;
     const clustersActive = pathname.includes('/dashboard/clusters');
     const pluginsActive = (pathname.startsWith('/dashboard/plugins') && !isAnalysisPluginListingRoute)
         || pathname.startsWith('/plugins/builder');
 
-    const settingsItems = visibleNavigationItems(SETTINGS_NAVIGATION_ITEMS);
-    const defaultSettingsPath = settingsItems[0]?.path ?? '/dashboard/settings/general';
-    const settingsActive = pathname.startsWith('/dashboard/settings');
 
     const handleOpenDocs = () => window.open(DOCS_URL, '_blank', 'noopener,noreferrer');
 
@@ -177,6 +174,7 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
         <SidebarPanel name='app' label='Main navigation' active={active}>
             {visibleNavigationItems(MAIN_NAVIGATION_ITEMS).map(renderNavItem)}
 
+            {/* Trajectories is a section: its pages take over the sidebar (TrajectoriesNav). */}
             {renderRow(
                 'trajectories',
                 canAccessTrajectories ? 'Trajectories' : 'You do not have permission to view trajectories.',
@@ -186,8 +184,7 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                         label='Trajectories'
                         icon={CubeIcon}
                         collapsed={collapsed}
-                        to={canAccessTrajectories ? TRAJECTORIES_PATH : undefined}
-                        isActive={trajectoriesActive}
+                        to={canAccessTrajectories ? TRAJECTORIES_LIST_PATH : undefined}
                         isDisabled={!canAccessTrajectories}
                     />
                 )
@@ -241,7 +238,6 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                     icon={Settings}
                     collapsed={collapsed}
                     to={defaultSettingsPath}
-                    isActive={settingsActive}
                 />
             ))}
 

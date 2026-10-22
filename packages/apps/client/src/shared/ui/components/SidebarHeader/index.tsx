@@ -17,9 +17,9 @@ const SidebarHeader = ({ collapsed, isMobile = false, onToggle, controlsId, chil
         <header
             className={cn(
                 'flex',
-                !collapsed && 'justify-between p-6',
-                collapsed && !isMobile && 'justify-start border-b border-border p-4 text-center',
-                collapsed && isMobile && 'justify-start border-b border-border p-3 text-center'
+                !collapsed && 'items-center justify-between gap-1.5 pt-3.5 pr-3.5 pb-2 pl-2.5',
+                collapsed && !isMobile && 'justify-start p-4 text-center',
+                collapsed && isMobile && 'justify-start p-3 text-center'
             )}
         >
             <div className={collapsed && isMobile ? 'hidden' : 'flex flex-col gap-2'}>
@@ -33,10 +33,10 @@ const SidebarHeader = ({ collapsed, isMobile = false, onToggle, controlsId, chil
                 aria-controls={controlsId}
                 aria-expanded={collapsed === undefined ? undefined : !collapsed}
                 onPress={onToggle}
-                className='z-[5] min-h-11 min-w-11 shrink-0 rounded-full bg-surface-tertiary text-muted hover:border-border-secondary hover:bg-surface-hover hover:text-foreground focus-visible:bg-surface-hover focus-visible:text-foreground'
+                className='z-[5] shrink-0 rounded-full bg-transparent text-muted hover:bg-foreground/6 hover:text-foreground focus-visible:text-foreground'
             >
                 <PanelRight
-                    className={cn('size-5 transition-transform duration-200 ease-smooth', collapsed && 'rotate-180')}
+                    className={cn('size-4.5 transition-transform duration-200 ease-[var(--ease-emphasized)]', collapsed && 'rotate-180')}
                     aria-hidden='true'
                 />
             </Button>

@@ -52,7 +52,7 @@ const JobGroup = ({ group }: JobGroupProps) => {
                     />
                 )}
             />
-            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='pt-1 pl-3' duration={0.25} ease='easeInOut'>
+            <CollapsibleJobContent id={contentId} isExpanded={isExpanded} className='pt-1 pl-3'>
                 {content}
             </CollapsibleJobContent>
         </div>

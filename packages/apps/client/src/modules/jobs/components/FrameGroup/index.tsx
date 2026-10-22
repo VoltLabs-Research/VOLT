@@ -1,9 +1,7 @@
 import CollapsibleJobContent from '@/modules/jobs/components/CollapsibleJobContent';
 import JobQueue from '@/modules/jobs/components/JobQueue';
 import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
-import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { cn } from '@heroui/react';
-import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { FrameJobGroup, Job } from '@volt/contracts/modules/jobs/domain';
@@ -25,7 +23,6 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
         return frame.jobs.some((job) => job.queueType === 'cluster_transfer');
     }, [frame.jobs]);
     const [isExpanded, setIsExpanded] = useState(containsTransferJobs);
-    const prefersReducedMotion = usePrefersReducedMotion();
     const contentId = useId();
     const label = containsTransferJobs
         ? (frame.jobs.length === 1 ? 'Storage Transfer' : 'Storage Transfers')
@@ -46,7 +43,7 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
         <div className='ml-2 border-l border-border'>
             <button
                 type='button'
-                className='w-full min-h-9 px-2 py-1.5 border-0 bg-transparent text-left select-none rounded-lg hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
+                className='w-full min-h-9 px-2 py-1.5 border-0 bg-transparent text-left select-none rounded-lg transition-colors duration-150 hover:bg-foreground/6 focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
                 onClick={() => setIsExpanded((value) => !value)}
                 aria-expanded={isExpanded}
                 aria-controls={contentId}
@@ -54,14 +51,10 @@ const FrameGroup = ({ frame }: FrameGroupProps) => {
                 <div className='flex flex-row items-center justify-between w-full'>
                     <p className={cn('text-xs', FRAME_STATUS_TONE_CLASS_NAMES[frame.overallStatus])}>{label}</p>
                     <div className='flex flex-row items-center gap-2'>
-                        <motion.i
-                            className='text-xs text-muted'
-                            animate={{ rotate: isExpanded ? 90 : 0 }}
-                            transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+                        <ChevronRight
+                            className={cn('size-3.5 text-muted transition-transform duration-150 ease-out-fluid', isExpanded && 'rotate-90')}
                             aria-hidden='true'
-                        >
-                            <ChevronRight size={14} />
-                        </motion.i>
+                        />
                     </div>
                 </div>
             </button>

@@ -1,57 +1,22 @@
-import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
-import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 interface CollapsibleJobContentProps {
     id: string;
     isExpanded: boolean;
     className?: string;
-    duration?: number;
-    ease?: 'easeInOut';
     children: ReactNode;
 }
 
-const CollapsibleJobContent = ({
-    id,
-    isExpanded,
-    className,
-    duration = 0.2,
-    ease,
-    children
-}: CollapsibleJobContentProps) => {
-    const prefersReducedMotion = usePrefersReducedMotion();
-
-    if (prefersReducedMotion) {
-        return isExpanded ? <div id={id} className={className}>{children}</div> : null;
+const CollapsibleJobContent = ({ id, isExpanded, className, children }: CollapsibleJobContentProps) => {
+    if (!isExpanded) {
+        return null;
     }
 
     return (
-        <AnimatePresence>
-            {isExpanded && (
-                <motion.div
-                    id={id}
-                    className={className}
-                    initial={{
-                        height: 0,
-                        opacity: 0
-                    }}
-                    animate={{
-                        height: 'auto',
-                        opacity: 1
-                    }}
-                    exit={{
-                        height: 0,
-                        opacity: 0
-                    }}
-                    transition={{
-                        duration,
-                        ...(ease ? { ease } : {})
-                    }}
-                >
-                    {children}
-                </motion.div>
-            )}
-        </AnimatePresence>
+        <div id={id} className={cn('animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out-fluid', className)}>
+            {children}
+        </div>
     );
 };
 

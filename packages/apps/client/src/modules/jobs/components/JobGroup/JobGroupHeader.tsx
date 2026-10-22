@@ -1,8 +1,6 @@
 import { cn } from '@heroui/react';
 import { FrameJobGroupStatus } from '@volt/contracts/modules/jobs/domain';
-import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
@@ -32,7 +30,6 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
     onToggle,
     ...buttonProps
 }, ref) => {
-    const prefersReducedMotion = usePrefersReducedMotion();
     const statusLabel = FRAME_GROUP_STATUS_LABELS[group.overallStatus];
     const summaryLabel = `${group.completedCount}/${group.totalCount} jobs • ${formatDistanceToNow(group.latestTimestamp, { addSuffix: true })}`;
     const previousStatusRef = useRef(group.overallStatus);
@@ -100,14 +97,14 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
         <button
             ref={ref}
             type='button'
-            className='w-full min-h-10 border-0 bg-transparent text-left select-none rounded-lg transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
+            className='w-full min-h-10 border-0 bg-transparent text-left select-none rounded-3xl transition-colors duration-150 hover:bg-foreground/6 focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--border),0_0_0_4px_color-mix(in_srgb,var(--focus)_30%,transparent)]'
             onClick={onToggle}
             aria-expanded={isExpanded}
             aria-controls={contentId}
             aria-label={`${group.trajectoryName}. ${statusLabel}. ${summaryLabel}`}
             {...buttonProps}
         >
-            <div className='flex flex-row items-center justify-between gap-2 px-2 py-1.5 w-full'>
+            <div className='flex flex-row items-center justify-between gap-2 px-2.5 py-1.5 w-full'>
                 <div className='flex min-w-0 flex-col gap-0.5'>
                     <h3 className={cn('text-xs font-semibold text-foreground truncate [transition:color_140ms_ease,text-shadow_180ms_ease]', nameToneClassName)}>
                         {group.trajectoryName}
@@ -117,14 +114,10 @@ const JobGroupHeader = forwardRef<HTMLButtonElement, JobGroupHeaderProps>(({
                     </p>
                 </div>
                 <div className='flex shrink-0 flex-row items-center gap-2'>
-                    <motion.i
-                        className='text-xs text-muted'
-                        animate={{ rotate: isExpanded ? 90 : 0 }}
-                        transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+                    <ChevronRight
+                        className={cn('size-3.5 text-muted transition-transform duration-200 ease-out-fluid', isExpanded && 'rotate-90')}
                         aria-hidden='true'
-                    >
-                        <ChevronRight size={14} />
-                    </motion.i>
+                    />
                 </div>
             </div>
         </button>
