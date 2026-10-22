@@ -1,4 +1,3 @@
-import { useAIChatContext } from '@/modules/ai/providers/AIChatProvider';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -11,7 +10,7 @@ const isAIPagePath = (pathname: string): boolean => {
 
 const AIPageExitWidgetBridge = () => {
     const { pathname } = useLocation();
-    const { activeConversationId } = useAIChatContext();
+    const activeConversationId = useChatSurfaceStore((state) => state.active?.conversationId ?? null);
     const openWidget = useChatSurfaceStore((state) => state.openWidget);
     const wasOnAIPage = useRef(isAIPagePath(pathname));
 

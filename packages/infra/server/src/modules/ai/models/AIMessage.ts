@@ -3,15 +3,10 @@ import BaseModel from '@shared/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import AIConversation from '@modules/ai/models/AIConversation';
 import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
-import type {
-    AIMessageModelInfo,
-    AIMessageParts,
-    AIMessageTokenUsage
-} from '@modules/ai/contracts/ai-message';
+import type { ChatMessagePart } from '@volt/contracts/modules/ai/chat';
 
-@Entity('ai_messages')
-@Index(['conversationId'])
-@Index(['conversationId', 'createdAt'])
+@Entity('ai_chat_messages')
+@Index(['conversationId', 'position'], { unique: true })
 export default class AIMessage extends BaseModel{
     @ManyToOne(() => AIConversation, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'conversationId' })
@@ -19,6 +14,10 @@ export default class AIMessage extends BaseModel{
 
     @ReferenceColumn()
     conversationId!: string;
+
+    // Order within the conversation. createdAt cannot order it: SQLite keeps whole seconds.
+    @Column('integer')
+    position!: number;
 
     @Column({
         type: 'simple-enum',
@@ -30,23 +29,5 @@ export default class AIMessage extends BaseModel{
         type: 'simple-json',
         default: '[]'
     })
-    parts!: AIMessageParts;
-
-    @Column({
-        type: 'varchar',
-        default: ''
-    })
-    content!: string;
-
-    @Column({
-        type: 'simple-json',
-        nullable: true
-    })
-    modelInfo!: AIMessageModelInfo | null;
-
-    @Column({
-        type: 'simple-json',
-        nullable: true
-    })
-    tokenUsage!: AIMessageTokenUsage | null;
+    parts!: ChatMessagePart[];
 }

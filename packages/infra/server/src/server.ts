@@ -2,7 +2,8 @@ import './core/config/env';
 
 import http from 'http';
 import { AI_TOOL_CONTROLLERS } from './core/bootstrap/ai-tools';
-import { registerAIToolControllers } from './modules/ai/services/AIToolService';
+import toolRegistry from './modules/ai/services/tools/ToolRegistry';
+import aiChatSocketModule from './modules/ai/socket/AIChatSocketModule';
 import { createHttpTerminator, type HttpTerminator } from 'http-terminator';
 import { connectDatabase, disconnectDatabase } from './core/bootstrap/connect-database';
 import { startRuntimeStateMaintenance, stopRuntimeStateMaintenance } from '@core/bootstrap/runtime-state-maintenance';
@@ -115,7 +116,7 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
-    registerAIToolControllers(AI_TOOL_CONTROLLERS);
+    toolRegistry.register(AI_TOOL_CONTROLLERS);
 
     configureOAuthStrategies();
 
@@ -191,6 +192,7 @@ const startServer = async () => {
                 teamJobsSocketModule,
                 teamPresenceSocketModule,
                 whiteboardSocketModule,
+                aiChatSocketModule,
                 pluginDebugSocketModule,
                 analysisLogSocketModule
             ]) {

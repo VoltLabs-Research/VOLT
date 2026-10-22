@@ -1,28 +1,27 @@
-import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import AIMessageItem from '@/modules/ai/components/AIConversationThread/AIMessageItem';
 import ThinkingBubble from '@/modules/ai/components/AIConversationThread/ThinkingBubble';
-import useNormalizedMessages from '@/modules/ai/components/AIConversationThread/use-normalized-messages';
 import AutoScrollList from '@/shared/ui/components/AutoScrollList';
-import RecoveryState from '@/shared/ui/components/RecoveryState';
-import { Skeleton } from '@heroui/react';
-import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
-import type { NormalizedConversationMessage } from '@/modules/ai/utils/message-segments';
-import type { UIMessage } from 'ai';
-import type { ToolApprovalResponseParams } from '@/modules/ai/contracts/tools';
+import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import { Button, Skeleton } from '@heroui/react';
+import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
+import type { ChatUIMessage } from '@volt/contracts/modules/ai/chat';
 import type { ReactNode } from 'react';
 
 interface AIConversationThreadProps {
-    conversationId?: string;
-    isLoading?: boolean;
-    isResponding?: boolean;
-    error?: string | null;
-    messages: UIMessage[];
-    onOpenTableArtifact?: (artifact: AIMessageArtifact) => void;
-    addToolApprovalResponse?: (params: ToolApprovalResponseParams) => void;
+    messages: ChatUIMessage[];
+    isLoading: boolean;
+    isStreaming: boolean;
+    canDecide: boolean;
+    loadError?: string | null;
+    hasEarlier: boolean;
+    isLoadingEarlier: boolean;
+    onLoadEarlier: () => void;
     onRetry?: () => void;
+    onDecide: (approvalIds: string[], approved: boolean) => void;
+    onOpenTableArtifact?: (artifact: AITableArtifact) => void;
 }
 
-const renderPromptStarter = () => (
+export const PromptStarter = () => (
     <div className='flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-6'>
         <p className='text-center text-lg font-medium text-foreground'>
             Ready when you are.
@@ -33,40 +32,34 @@ const renderPromptStarter = () => (
     </div>
 );
 
+const sizeOf = (message: ChatUIMessage | undefined): number => message === undefined ? 0 : message.parts.reduce((total, part) => {
+    if (part.type === 'text' || part.type === 'reasoning') return total + part.text.length;
+    return total + 1;
+}, 0);
+
 const AIConversationThread = ({
-    conversationId,
-    isLoading = false,
-    isResponding = false,
-    error,
     messages,
-    onOpenTableArtifact,
-    addToolApprovalResponse,
-    onRetry
+    isLoading,
+    isStreaming,
+    canDecide,
+    loadError,
+    hasEarlier,
+    isLoadingEarlier,
+    onLoadEarlier,
+    onRetry,
+    onDecide,
+    onOpenTableArtifact
 }: AIConversationThreadProps) => {
-    const normalizedMessages = useNormalizedMessages(messages);
-    const lastMessage = normalizedMessages[normalizedMessages.length - 1];
-    const showStandaloneTyping = isResponding && (!lastMessage || lastMessage.role === AIMessageRole.User);
+    const lastMessage = messages[messages.length - 1];
+    const isAwaitingReply = isStreaming && (lastMessage === undefined || lastMessage.role === 'user');
 
-    const renderMessageItem = (message: NormalizedConversationMessage, index: number) => (
-        <AIMessageItem
-            message={message}
-            messageIndex={index}
-            totalMessages={normalizedMessages.length}
-            onOpenTableArtifact={onOpenTableArtifact}
-            addToolApprovalResponse={addToolApprovalResponse}
-        />
-    );
-
-    if (!conversationId) {
-        return renderPromptStarter();
-    }
-
-    if (error) {
+    if (loadError && messages.length === 0) {
         return (
-            <div className='flex flex-1 items-center justify-center ai-thread-empty'>
+            <div className='flex flex-1 items-center justify-center'>
                 <RecoveryState
                     title='Failed to load conversation'
-                    description={error}
+                    description={loadError}
+                    tone={RecoveryStateTone.Error}
                     retryLabel={onRetry ? 'Retry' : undefined}
                     onRetry={onRetry}
                 />
@@ -74,42 +67,62 @@ const AIConversationThread = ({
         );
     }
 
+    if (!isLoading && messages.length === 0 && !isAwaitingReply) {
+        return <PromptStarter />;
+    }
+
     let renderAfter: ReactNode = null;
-    let autoScrollDependency = '';
-    if (showStandaloneTyping) {
+    if (isAwaitingReply) {
         renderAfter = (
             <div className='flex min-w-0 flex-col items-start'>
                 <ThinkingBubble />
             </div>
         );
-        autoScrollDependency = 'typing';
-    } else if (lastMessage) {
-        autoScrollDependency = `${lastMessage.id}:${lastMessage.preview.length}:${lastMessage.reasoning.length}`;
     }
 
-    let threadContent: ReactNode = (
-        <AutoScrollList
-            items={normalizedMessages}
-            isLoading={isLoading}
-            className='mx-auto w-full max-w-[46rem] gap-6 px-4 pt-6 pb-3 max-md:px-3 [.ai-floating-assistant_&]:gap-4 [.ai-floating-assistant_&]:p-3'
-            getItemKey={(message) => message.id}
-            autoScrollDependency={autoScrollDependency}
-            autoScrollDependencyEnabled={isResponding || showStandaloneTyping}
-            renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton key={index} className='h-14 w-full rounded-md' />
-            ))}
-            renderAfter={renderAfter}
-            renderItem={renderMessageItem}
-        />
+    const loadEarlierIndicator = (
+        <div className='flex justify-center'>
+            <Button
+                size='sm'
+                variant='ghost'
+                className='text-muted'
+                isDisabled={isLoadingEarlier}
+                onPress={onLoadEarlier}
+            >
+                {isLoadingEarlier ? 'Loading earlier messages…' : 'Load earlier messages'}
+            </Button>
+        </div>
     );
-
-    if (!isLoading && normalizedMessages.length === 0 && !showStandaloneTyping) {
-        threadContent = renderPromptStarter();
-    }
 
     return (
         <section className='flex min-h-0 flex-1 flex-col' aria-label='Conversation messages'>
-            {threadContent}
+            <AutoScrollList
+                items={messages}
+                isLoading={isLoading}
+                className='mx-auto w-full max-w-[46rem] gap-6 px-4 pt-6 pb-3 max-md:px-3 [.ai-floating-assistant_&]:gap-4 [.ai-floating-assistant_&]:p-3'
+                getItemKey={(message) => message.id}
+                hasMore={hasEarlier}
+                onLoadMore={onLoadEarlier}
+                loadMoreIndicator={loadEarlierIndicator}
+                preserveScrollOnPrepend
+                autoScrollDependency={isAwaitingReply ? 'awaiting' : `${lastMessage?.id ?? ''}:${sizeOf(lastMessage)}`}
+                autoScrollDependencyEnabled={isStreaming}
+                renderLoading={Array.from({ length: 4 }).map((_, index) => (
+                    <Skeleton key={index} className='h-14 w-full rounded-md' />
+                ))}
+                renderAfter={renderAfter}
+                renderItem={(message, index) => (
+                    <AIMessageItem
+                        message={message}
+                        messageIndex={index}
+                        totalMessages={messages.length}
+                        isStreaming={isStreaming && index === messages.length - 1}
+                        canDecide={canDecide}
+                        onDecide={onDecide}
+                        onOpenTableArtifact={onOpenTableArtifact}
+                    />
+                )}
+            />
 
             <span className='sr-only'
                 role='log'
@@ -117,7 +130,7 @@ const AIConversationThread = ({
                 aria-relevant='additions text'
                 aria-atomic='false'
             >
-                {isResponding ? 'Assistant is responding.' : `Loaded ${normalizedMessages.length} messages.`}
+                {isStreaming ? 'Assistant is responding.' : `Loaded ${messages.length} messages.`}
             </span>
         </section>
     );

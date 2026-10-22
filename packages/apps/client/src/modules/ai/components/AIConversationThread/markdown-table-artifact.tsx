@@ -1,8 +1,7 @@
-import { AIMessageArtifactKind } from '@volt/contracts/modules/ai/domain';
 import { parseTableFromChildren } from '@/modules/ai/utils/message-content';
 import { Button, cn } from '@heroui/react';
 import { Expand } from 'lucide-react';
-import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
+import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
 import type { ComponentPropsWithoutRef } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -10,7 +9,7 @@ type MarkdownTableProps = ComponentPropsWithoutRef<'table'>;
 
 export const createTableArtifactComponents = (
     messageId: string,
-    onOpenTableArtifact: (artifact: AIMessageArtifact) => void
+    onOpenTableArtifact: (artifact: AITableArtifact) => void
 ) => {
     let tableIndex = 0;
 
@@ -26,12 +25,9 @@ export const createTableArtifactComponents = (
                 onOpenTableArtifact({
                     id: artifactId,
                     messageId,
-                    kind: AIMessageArtifactKind.Table,
                     title: 'Table',
-                    payload: {
-                        columns: parsed.columns,
-                        rows: parsed.rows
-                    }
+                    columns: parsed.columns,
+                    rows: parsed.rows
                 });
             };
 

@@ -2,6 +2,7 @@ import { BaseEntity } from 'typeorm';
 import type { DataSource } from 'typeorm';
 import { createDataSource } from '@core/config/database';
 import { getEntities } from '@core/bootstrap/entities';
+import { dropRetiredTables } from '@core/bootstrap/drop-retired-tables';
 import logger from '@shared/logger';
 
 let dataSource: DataSource | null = null;
@@ -13,6 +14,7 @@ export const connectDatabase = async (): Promise<void> => {
     dataSource = createDataSource(getEntities());
     await dataSource.initialize();
     BaseEntity.useDataSource(dataSource);
+    await dropRetiredTables(dataSource);
 
     logger.info(`Connected to the database (${dataSource.options.type})!`);
 };

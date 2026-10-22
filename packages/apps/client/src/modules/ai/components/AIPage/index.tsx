@@ -1,31 +1,33 @@
 import AIArtifactSpreadsheetPanel from '@/modules/ai/components/AIArtifactSpreadsheetPanel';
-import AIComposer from '@/modules/ai/components/AIComposer';
-import AIConversationThread from '@/modules/ai/components/AIConversationThread';
+import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
 import ResizeHandle from '@/modules/canvas/components/ResizeHandle';
 import useResizable from '@/modules/canvas/hooks/use-resizable';
-import { AIChatProvider, useAIChatContext, useAIChatContextOptional } from '@/modules/ai/providers/AIChatProvider';
-import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import useConversations from '@/modules/ai/hooks/use-conversations';
+import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import useTip from '@/shared/tips/use-tip';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DASHBOARD_LAYOUT_EVENTS } from '@/modules/dashboard/utils/layout-events';
-import type { AIMessageArtifact } from '@volt/contracts/modules/ai/domain';
-import type { ReactNode } from 'react';
+import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
+import type { ActiveConversation } from '@/modules/ai/store/use-chat-surface-store';
+import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { Params } from 'react-router-dom';
 
 interface AIPageRouteParams extends Params {
     conversationId?: string;
 }
 
-const AIPageContent = () => {
+const AIPage = () => {
     useTip('ai-spreadsheet-panel');
 
     const navigate = useNavigate();
     const { conversationId } = useParams<AIPageRouteParams>();
-    const { canAccess } = useTeamPermissions();
-    const [openArtifact, setOpenArtifact] = useState<AIMessageArtifact | null>(null);
+    const { teamId, conversations } = useConversations();
+    const active = useChatSurfaceStore((state) => state.active);
+    const setActive = useChatSurfaceStore((state) => state.setActive);
+    const artifact = useChatSurfaceStore((state) => state.artifact);
+    const showArtifact = useChatSurfaceStore((state) => state.showArtifact);
+    const closeArtifact = useChatSurfaceStore((state) => state.closeArtifact);
     const didCollapseSidebar = useRef(false);
 
     const spreadsheetPanel = useResizable({
@@ -36,201 +38,110 @@ const AIPageContent = () => {
         growPositive: false
     });
 
-    const {
-        selectedTeam,
-        availableModelsForProvider,
-        selectedModel,
-        messages,
-        isMessagesLoading,
-        isProviderCatalogLoading,
-        isSendingMessage,
-        noProviderConfigured,
-        messagesError,
-        providerCatalogError,
-        sendMessageError,
-        canSendMessage,
-        accessDenied,
-        accessDeniedMessage,
-        loadProviderCatalog,
-        setSelectedModel,
-        addToolApprovalResponse,
-        loadConversationMessages,
-        activeConversationId,
-        setActiveConversationId,
-        messageDraft,
-        setMessageDraft,
-        handleSend,
-        stopStreaming
-    } = useAIChatContext();
+    // The route names the conversation; the team that owns it comes from the listing, from whoever
+    // opened it, or else the selected team, under which a new conversation was just created.
+    const conversation = useMemo<ActiveConversation | null>(() => {
+        if (!conversationId) return null;
 
-    const prevActiveConversationIdRef = useRef<string | undefined>(activeConversationId);
+        const owner = conversations.find((listed) => listed._id === conversationId)?.teamId
+            ?? (active?.conversationId === conversationId ? active.teamId : teamId);
 
+        return owner
+            ? {
+                conversationId,
+                teamId: owner
+            }
+            : null;
+    }, [active, conversationId, conversations, teamId]);
+
+    // The page follows its route and hands the conversation to the floating panel; a conversation
+    // the panel switches to while the page is open becomes the route.
+    const lastActiveId = useRef(active?.conversationId ?? null);
     useEffect(() => {
-        const providerChanged = prevActiveConversationIdRef.current !== activeConversationId;
-        prevActiveConversationIdRef.current = activeConversationId;
+        const activeId = active?.conversationId ?? null;
+        const panelSwitched = lastActiveId.current !== activeId;
+        lastActiveId.current = activeId;
 
-        if (conversationId === activeConversationId) {
+        if ((conversationId ?? null) === activeId) {
+            if (conversation !== null) setActive(conversation);
             return;
         }
 
-        if (providerChanged) {
-            navigate(activeConversationId ? `/dashboard/ai/${activeConversationId}` : '/dashboard/ai');
+        if (panelSwitched) {
+            navigate(activeId ? `/dashboard/ai/${activeId}` : '/dashboard/ai');
             return;
         }
 
-        setActiveConversationId(conversationId);
-    }, [conversationId, activeConversationId, navigate, setActiveConversationId]);
+        setActive(conversation);
+    }, [active, conversation, conversationId, navigate, setActive]);
 
-    const canCreate = canAccess(['ai-conversation:create']);
+    const handleStarted = useCallback((started: AIConversation) => {
+        navigate(`/dashboard/ai/${started._id}`);
+    }, [navigate]);
 
-    const modelOptions = useMemo(() => toAIModelSelectOptions(availableModelsForProvider), [availableModelsForProvider]);
-
-    const handleOpenTableArtifact = useCallback((artifact: AIMessageArtifact) => {
-        setOpenArtifact(artifact);
+    const handleOpenTableArtifact = useCallback((opened: AITableArtifact) => {
+        showArtifact(opened);
         didCollapseSidebar.current = true;
         window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarCollapse));
-    }, []);
+    }, [showArtifact]);
 
     const handleCloseArtifactPanel = useCallback(() => {
-        setOpenArtifact(null);
+        closeArtifact();
         if (didCollapseSidebar.current) {
             window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
             didCollapseSidebar.current = false;
         }
+    }, [closeArtifact]);
+
+    useEffect(() => () => {
+        if (didCollapseSidebar.current) {
+            window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
+        }
     }, []);
 
+    // A table opened from the floating panel arrives with the page; one left from another
+    // conversation does not stay open over this one.
+    const shownConversationId = useRef(conversationId);
     useEffect(() => {
-        return () => {
-            if (didCollapseSidebar.current) {
-                window.dispatchEvent(new CustomEvent(DASHBOARD_LAYOUT_EVENTS.requestSidebarExpand));
-            }
-        };
-    }, []);
+        if (shownConversationId.current === conversationId) return;
 
-    useEffect(() => {
+        shownConversationId.current = conversationId;
         handleCloseArtifactPanel();
     }, [conversationId, handleCloseArtifactPanel]);
 
-
-
-    const handleRetry = () => {
-        if (conversationId) {
-            loadConversationMessages(conversationId).catch(console.warn);
-        }
-    };
-
-    if (accessDenied) {
-        return (
-            <RecoveryState
-                title='Access denied'
-                description={accessDeniedMessage ?? 'You do not have permission to use AI conversations.'}
-                tone={RecoveryStateTone.AccessDenied}
-            />
-        );
-    }
-
-    let workspaceContent: ReactNode = (
-        <div className='flex min-h-0 flex-1 flex-row items-stretch max-md:flex-col'>
-            <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
-                <AIConversationThread
-                    conversationId={conversationId}
-                    messages={messages}
-                    isLoading={isMessagesLoading}
-                    isResponding={isSendingMessage}
-                    error={messagesError}
-                    onOpenTableArtifact={handleOpenTableArtifact}
-                    addToolApprovalResponse={addToolApprovalResponse}
-                    onRetry={handleRetry}
-                />
-                <AIComposer
-                    value={messageDraft}
-                    modelOptions={modelOptions}
-                    selectedModel={selectedModel}
-                    onChange={setMessageDraft}
-                    onModelChange={setSelectedModel}
-                    onSend={handleSend}
-                    onStop={stopStreaming}
-                    disabled={!canSendMessage || !canCreate || isProviderCatalogLoading || noProviderConfigured}
-                    isSending={isSendingMessage}
-                    error={sendMessageError}
-                />
-            </div>
-
-            {openArtifact && (
-                <>
-                    <ResizeHandle
-                        direction='horizontal'
-                        isDragging={spreadsheetPanel.isDragging}
-                        label='Resize spreadsheet panel'
-                        controls='ai-artifact-spreadsheet-panel'
-                        {...spreadsheetPanel.handleProps}
-                    />
-                    <div className='flex' id='ai-artifact-spreadsheet-panel'>
-                        <AIArtifactSpreadsheetPanel
-                            artifact={openArtifact}
-                            onClose={handleCloseArtifactPanel}
-                            width={spreadsheetPanel.size}
-                        />
-                    </div>
-                </>
-            )}
-        </div>
-    );
-
-    if (!selectedTeam?._id) {
-        workspaceContent = (
-            <div className='flex flex-1 items-center justify-center'>
-                <RecoveryState
-                    title='No team selected'
-                    description='Select a team to start an AI conversation.'
-                />
-            </div>
-        );
-    } else if (noProviderConfigured) {
-        workspaceContent = (
-            <div className='flex flex-1 items-center justify-center'>
-                <RecoveryState
-                    title='No AI provider configured'
-                    description='Enable at least one provider with a valid API key in team integrations to start chatting.'
-                    tone={RecoveryStateTone.Info}
-                    retryLabel='Open integrations'
-                    onRetry={() => navigate('/dashboard/settings/integrations')}
-                />
-            </div>
-        );
-    }
-
     return (
         <div className='flex h-full min-w-0 flex-col overflow-hidden'>
-            {providerCatalogError && (
-                <div className='border-b border-danger/24 bg-danger-soft px-4 py-2'>
-                    <RecoveryState
-                        title='Unable to load AI providers'
-                        description={providerCatalogError}
-                        tone={RecoveryStateTone.Error}
-                        onRetry={() => {
-                            loadProviderCatalog().catch(() => undefined);
-                        }}
+            <div className='flex min-h-0 flex-1 flex-row items-stretch max-md:flex-col'>
+                <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+                    <AIConversationPanelContent
+                        conversation={conversation}
+                        teamId={teamId}
+                        onStarted={handleStarted}
+                        onOpenTableArtifact={handleOpenTableArtifact}
                     />
                 </div>
-            )}
 
-            {workspaceContent}
+                {artifact && (
+                    <>
+                        <ResizeHandle
+                            direction='horizontal'
+                            isDragging={spreadsheetPanel.isDragging}
+                            label='Resize spreadsheet panel'
+                            controls='ai-artifact-spreadsheet-panel'
+                            {...spreadsheetPanel.handleProps}
+                        />
+                        <div className='flex' id='ai-artifact-spreadsheet-panel'>
+                            <AIArtifactSpreadsheetPanel
+                                key={artifact.id}
+                                artifact={artifact}
+                                onClose={handleCloseArtifactPanel}
+                                width={spreadsheetPanel.size}
+                            />
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
-    );
-};
-
-const AIPage = () => {
-    const hasChatContext = useAIChatContextOptional() !== null;
-
-    if (hasChatContext) {
-        return <AIPageContent />;
-    }
-
-    return (
-        <AIChatProvider>
-            <AIPageContent />
-        </AIChatProvider>
     );
 };
 

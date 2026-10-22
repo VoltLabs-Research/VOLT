@@ -1,22 +1,12 @@
 import { isRecord } from '@/shared/utils/type-guards';
-import type { ToolUIPart } from 'ai';
-
-export type ToolActionPhase = 'requested' | 'running' | 'done' | 'failed';
+import type { ToolActivity } from '@/modules/ai/utils/message-blocks';
 
 interface ToolPresentationConfig {
     runningLabel: string;
     doneLabel: string;
+    // What the card says while the tool waits for the user's approval.
+    requestLabel?: string;
 }
-
-const TOOL_ACTION_PHASE: Record<ToolUIPart['state'], ToolActionPhase> = {
-    'input-streaming': 'running',
-    'input-available': 'running',
-    'approval-requested': 'requested',
-    'approval-responded': 'done',
-    'output-available': 'done',
-    'output-error': 'failed',
-    'output-denied': 'failed'
-};
 
 const TOOL_PRESENTATION: Record<string, ToolPresentationConfig> = {
     navigate_to: {
@@ -93,11 +83,6 @@ const TOOL_PRESENTATION: Record<string, ToolPresentationConfig> = {
         doneLabel: 'Reset view settings'
     },
 
-    render_scene_screenshot: {
-        runningLabel: 'Rendering the scene',
-        doneLabel: 'Rendered the scene'
-    },
-
     global_search: {
         runningLabel: 'Searching',
         doneLabel: 'Searched'
@@ -110,47 +95,99 @@ const TOOL_PRESENTATION: Record<string, ToolPresentationConfig> = {
         runningLabel: 'Summarizing the run',
         doneLabel: 'Summarized the run'
     },
+    context_compact: {
+        runningLabel: 'Folding earlier messages into a summary',
+        doneLabel: 'Folded earlier messages into a summary'
+    },
 
     execute_pipeline: {
         runningLabel: 'Running the pipeline',
-        doneLabel: 'Ran the pipeline'
+        doneLabel: 'Ran the pipeline',
+        requestLabel: 'Wants to run the pipeline'
     }
 };
 
-const humanizeToolName = (toolName: string): string => {
+export const humanizeToolName = (toolName: string): string => {
     const cleaned = toolName.replace(/_/gu, ' ').trim();
-    return cleaned.length > 0 ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : 'tool';
+    return cleaned.length > 0 ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : 'Tool';
 };
 
-const extractResultSummary = (result: unknown): string | null => {
-    if (!isRecord(result)) {
-        return null;
-    }
-    const summary = result.summary;
+const summaryOf = (output: unknown): string | null => {
+    if (!isRecord(output)) return null;
+
+    const summary = output.summary;
     return typeof summary === 'string' && summary.trim().length > 0 ? summary.trim() : null;
 };
 
-export const resolveToolActionPhase = (state: ToolUIPart['state']): ToolActionPhase => TOOL_ACTION_PHASE[state];
+// A tool that answered ok:false still produced output: it reads as a failure, not as done.
+export const isFailedOutput = (output: unknown): boolean => isRecord(output) && output.ok === false;
 
-export const presentToolCall = (
-    toolName: string,
-    phase: ToolActionPhase,
-    result: unknown
-): string => {
+export const presentRequest = (toolName: string): string => (
+    TOOL_PRESENTATION[toolName]?.requestLabel ?? `Wants to ${humanizeToolName(toolName).toLowerCase()}`
+);
+
+export const presentActivity = ({ toolName, outcome }: ToolActivity): string => {
     const config = TOOL_PRESENTATION[toolName];
 
-    if (phase === 'done') {
-        return extractResultSummary(result)
-            ?? (config ? config.doneLabel : `Used ${humanizeToolName(toolName)}`);
+    switch (outcome.kind) {
+        case 'awaiting':
+            return presentRequest(toolName);
+        case 'done':
+            return summaryOf(outcome.output)
+                ?? (isFailedOutput(outcome.output)
+                    ? `${humanizeToolName(toolName)} failed`
+                    : config?.doneLabel ?? `Used ${humanizeToolName(toolName)}`);
+        case 'failed':
+            return `${humanizeToolName(toolName)} failed`;
+        case 'declined':
+            return `Rejected ${humanizeToolName(toolName).toLowerCase()}. Nothing ran.`;
+        default:
+            return config ? `${config.runningLabel}…` : `Using ${humanizeToolName(toolName)}…`;
+    }
+};
+
+export interface InputField {
+    label: string;
+    value: string;
+}
+
+const MAX_INPUT_FIELDS = 6;
+const MAX_VALUE_CHARS = 120;
+
+const clip = (text: string): string => (
+    text.length > MAX_VALUE_CHARS ? `${text.slice(0, MAX_VALUE_CHARS - 1)}…` : text
+);
+
+const shownValueOf = (value: unknown): string | null => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'string') return value.trim() === '' ? null : clip(value.trim());
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+
+    if (Array.isArray(value)) {
+        if (value.length === 0) return null;
+
+        const isFlat = value.every((item) => typeof item === 'string' || typeof item === 'number');
+        return isFlat ? clip(value.join(', ')) : `${value.length} ${value.length === 1 ? 'item' : 'items'}`;
     }
 
-    if (phase === 'failed') {
-        return extractResultSummary(result) ?? `${humanizeToolName(toolName)} failed`;
+    try {
+        return clip(JSON.stringify(value));
+    } catch {
+        return null;
     }
+};
 
-    if (phase === 'requested') {
-        return `Wants to ${config ? config.runningLabel.toLowerCase() : humanizeToolName(toolName).toLowerCase()}`;
-    }
+const fieldLabelOf = (key: string): string => humanizeToolName(key.replace(/([a-z0-9])([A-Z])/gu, '$1_$2').toLowerCase());
 
-    return config ? `${config.runningLabel}…` : `Using ${humanizeToolName(toolName)}…`;
+// What an approval card shows of the call it asks about, so the user sees what they approve.
+export const describeInput = (input: unknown): InputField[] => {
+    if (!isRecord(input)) return [];
+
+    return Object.entries(input).flatMap(([key, value]) => {
+        const shown = shownValueOf(value);
+        return shown === null ? [] : [{
+            label: fieldLabelOf(key),
+            value: shown
+        }];
+    }).slice(0, MAX_INPUT_FIELDS);
 };

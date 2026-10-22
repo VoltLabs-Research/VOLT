@@ -9,9 +9,10 @@ const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
         const { surface } = input;
         const store = useChatSurfaceStore.getState();
 
+        // The conversation moves with the assistant: the turn that asked keeps running in it.
         if (surface === 'page') {
             store.closeWidget();
-            ctx.navigate('/dashboard/ai');
+            ctx.navigate(`/dashboard/ai/${ctx.conversation.conversationId}`);
             return {
                 ok: true,
                 summary: 'Opened the full AI page.',
@@ -28,6 +29,7 @@ const setChatSurface: ClientToolHandler<SetChatSurfaceInput> = {
             };
         }
 
+        store.setActive(ctx.conversation);
         store.openWidget();
         return {
             ok: true,

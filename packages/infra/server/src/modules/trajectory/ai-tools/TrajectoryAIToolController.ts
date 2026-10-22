@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import type {
     CloneTrajectoryInput,
@@ -25,7 +25,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'list_trajectories',
         description: 'List trajectories in the team, optionally filtered by folder or search.',
         parameters: typia.llm.parameters<ListTrajectoriesInput>(),
-        validate: typia.createValidate<ListTrajectoriesInput>()
+        validate: typia.createValidate<ListTrajectoriesInput>(),
+        access: AIToolAccess.Read,
+        permission: 'trajectory:read'
     })
     async listTrajectories(input: ListTrajectoriesInput & AIToolScope) {
         const { total, data } = await trajectoryCatalogService.getByTeamId(input);
@@ -39,7 +41,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'list_public_trajectories',
         description: 'List the publicly shared trajectories for the team.',
         parameters: typia.llm.parameters<ListPublicTrajectoriesInput>(),
-        validate: typia.createValidate<ListPublicTrajectoriesInput>()
+        validate: typia.createValidate<ListPublicTrajectoriesInput>(),
+        access: AIToolAccess.Read,
+        permission: 'trajectory:read'
     })
     async listPublicTrajectories(input: ListPublicTrajectoriesInput & AIToolScope) {
         const { total, data } = await trajectoryCatalogService.listPublicByTeamId(input);
@@ -53,7 +57,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'list_sample_simulations',
         description: 'List the bundled sample simulations available to import.',
         parameters: typia.llm.parameters<ListSampleSimulationsInput>(),
-        validate: typia.createValidate<ListSampleSimulationsInput>()
+        validate: typia.createValidate<ListSampleSimulationsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'trajectory:read'
     })
     async listSampleSimulations() {
         const samples = await trajectoryDownloadService.listSamples();
@@ -67,7 +73,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'get_trajectory',
         description: 'Get detailed information about a specific trajectory.',
         parameters: typia.llm.parameters<GetTrajectoryInput>(),
-        validate: typia.createValidate<GetTrajectoryInput>()
+        validate: typia.createValidate<GetTrajectoryInput>(),
+        access: AIToolAccess.Read,
+        permission: 'trajectory:read'
     })
     async getTrajectory(input: GetTrajectoryInput) {
         const trajectory = await trajectoryCatalogService.getById(input.trajectoryId);
@@ -81,7 +89,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'get_trajectory_team_metrics',
         description: 'Get aggregate trajectory and storage metrics for the team.',
         parameters: typia.llm.parameters<GetTrajectoryTeamMetricsInput>(),
-        validate: typia.createValidate<GetTrajectoryTeamMetricsInput>()
+        validate: typia.createValidate<GetTrajectoryTeamMetricsInput>(),
+        access: AIToolAccess.Read,
+        permission: 'trajectory:read'
     })
     async getTeamMetrics(input: GetTrajectoryTeamMetricsInput & AIToolScope) {
         const metrics = await teamMetricsQueryService.getTeamMetrics(input);
@@ -95,7 +105,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'update_trajectory',
         description: 'Rename a trajectory or change its public visibility.',
         parameters: typia.llm.parameters<UpdateTrajectoryInput>(),
-        validate: typia.createValidate<UpdateTrajectoryInput>()
+        validate: typia.createValidate<UpdateTrajectoryInput>(),
+        access: AIToolAccess.Write,
+        permission: 'trajectory:update'
     })
     updateTrajectory(input: UpdateTrajectoryInput & AIToolScope) {
         return trajectoryCatalogService.updateById(input);
@@ -105,7 +117,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'clone_trajectory',
         description: 'Clone an existing trajectory, optionally onto a target cluster.',
         parameters: typia.llm.parameters<CloneTrajectoryInput>(),
-        validate: typia.createValidate<CloneTrajectoryInput>()
+        validate: typia.createValidate<CloneTrajectoryInput>(),
+        access: AIToolAccess.Write,
+        permission: 'trajectory:create'
     })
     cloneTrajectory(input: CloneTrajectoryInput & AIToolScope) {
         return cloneTrajectory(input);
@@ -115,7 +129,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'move_trajectory',
         description: 'Move a trajectory into a folder, or to the root when folderId is null.',
         parameters: typia.llm.parameters<MoveTrajectoryInput>(),
-        validate: typia.createValidate<MoveTrajectoryInput>()
+        validate: typia.createValidate<MoveTrajectoryInput>(),
+        access: AIToolAccess.Write,
+        permission: 'trajectory:update'
     })
     moveTrajectory(input: MoveTrajectoryInput & AIToolScope) {
         return trajectoryCatalogService.move(input);
@@ -125,7 +141,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'delete_trajectory',
         description: 'Delete a trajectory and its analyses.',
         parameters: typia.llm.parameters<DeleteTrajectoryInput>(),
-        validate: typia.createValidate<DeleteTrajectoryInput>()
+        validate: typia.createValidate<DeleteTrajectoryInput>(),
+        access: AIToolAccess.Write,
+        permission: 'trajectory:delete'
     })
     deleteTrajectory(input: DeleteTrajectoryInput & AIToolScope) {
         return trajectoryCatalogService.deleteById(input);
@@ -135,7 +153,9 @@ export default class TrajectoryAIToolController extends AIToolController {
         name: 'delete_trajectory_folder',
         description: 'Delete a trajectory folder and all trajectories within it.',
         parameters: typia.llm.parameters<DeleteTrajectoryFolderInput>(),
-        validate: typia.createValidate<DeleteTrajectoryFolderInput>()
+        validate: typia.createValidate<DeleteTrajectoryFolderInput>(),
+        access: AIToolAccess.Write,
+        permission: 'trajectory:delete'
     })
     deleteTrajectoryFolder(input: DeleteTrajectoryFolderInput & AIToolScope) {
         return trajectoryCatalogService.deleteFolder(input.teamId, input.folderId);

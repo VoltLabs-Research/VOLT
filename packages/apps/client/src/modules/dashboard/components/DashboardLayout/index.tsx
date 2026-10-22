@@ -14,7 +14,6 @@ import { SIDEBAR_RESTING_WIDTH_CLASS } from '@/modules/dashboard/utils/sidebar-w
 import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
-import { AIChatProvider } from '@/modules/ai/providers/AIChatProvider';
 import AINav from '@/modules/ai/components/AINav';
 import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
 import useGlobalSocketCacheSync from './use-global-socket-cache-sync';
@@ -143,7 +142,7 @@ const DashboardLayout = () => {
     }), []);
 
     return (
-        <AIChatProvider>
+        <>
             <AIPageExitWidgetBridge />
             <main className='flex h-dvh flex-row bg-background'>
                 <TeamCreatorModal isRequired={teams.length === 0} />
@@ -241,7 +240,7 @@ const DashboardLayout = () => {
 
                 <ActivityDrawer />
             </main>
-        </AIChatProvider>
+        </>
     );
 };
 

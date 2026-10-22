@@ -1,23 +1,18 @@
 import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, schemaBody, Param, Query, CurrentUser, Res } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
-import aiService from '@modules/ai/services/AiService';
+import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/errors/ApplicationError';
+import conversationService from '@modules/ai/services/ConversationService';
+import modelResolver from '@modules/ai/services/ModelResolver';
+import chatCompactionService from '@modules/ai/services/chat/ChatCompactionService';
+import chatStreamService from '@modules/ai/services/chat/ChatStreamService';
 import { aiRoutes } from '@volt/contracts/modules/ai/routes';
-import type {
-    CreateAIConversationInput,
-    UpdateAIConversationInput,
-    SendAIConversationMessageInput
-} from '@volt/contracts/modules/ai/http';
-import type { AIConversationMessage } from '@modules/ai/contracts/ai-message';
-import type { AIProvider } from '@volt/contracts/modules/ai/domain';
-import express from 'express';
-import type { Response } from 'express';
-
-const streamBodyParser = express.json({ limit: '5mb' });
+import type { CreateAIConversationInput, UpdateAIConversationInput } from '@volt/contracts/modules/ai/http';
 
 @Middleware(protect, teamScoped(Resource.AI_CONVERSATION))
 export default class AiController extends Controller {
@@ -27,7 +22,7 @@ export default class AiController extends Controller {
         @CurrentUser() userId: string,
         @Query() query: Record<string, string>
     ) {
-        return aiService.listConversations({
+        return conversationService.list({
             teamId,
             userId,
             page: Number(query.page),
@@ -43,10 +38,55 @@ export default class AiController extends Controller {
         @CurrentUser() userId: string,
         @Body(schemaBody(typia.createValidate<CreateAIConversationInput>())) body: CreateAIConversationInput
     ) {
-        return aiService.createConversation({
+        return conversationService.create({
+            teamId,
+            userId
+        }, body);
+    }
+
+    @Route(aiRoutes.getConversation)
+    getConversation(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string
+    ) {
+        return conversationService.owned({
             teamId,
             userId,
-            ...body
+            conversationId
+        });
+    }
+
+    @Route(aiRoutes.updateConversation)
+    updateConversation(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string,
+        @Body(schemaBody(typia.createValidate<UpdateAIConversationInput>())) body: UpdateAIConversationInput
+    ) {
+        return conversationService.update({
+            teamId,
+            userId,
+            conversationId
+        }, body);
+    }
+
+    @Route(aiRoutes.deleteConversation)
+    async deleteConversation(
+        @Param('teamId') teamId: string,
+        @Param('conversationId') conversationId: string,
+        @CurrentUser() userId: string
+    ) {
+        const conversation = await conversationService.owned({
+            teamId,
+            userId,
+            conversationId
+        });
+        chatStreamService.stop(conversation.id);
+        await conversationService.delete({
+            teamId,
+            userId,
+            conversationId
         });
     }
 
@@ -57,7 +97,7 @@ export default class AiController extends Controller {
         @CurrentUser() userId: string,
         @Query() query: Record<string, string>
     ) {
-        return aiService.listMessages({
+        return conversationService.messages({
             teamId,
             userId,
             conversationId,
@@ -66,53 +106,23 @@ export default class AiController extends Controller {
         });
     }
 
-    @Route(aiRoutes.streamMessage)
-    @Middleware(streamBodyParser)
-    async streamMessage(
-        @Param('teamId') teamId: string,
-        @Param('conversationId') conversationId: string,
-        @CurrentUser() userId: string,
-        @Body(schemaBody(typia.createValidate<SendAIConversationMessageInput>())) body: SendAIConversationMessageInput,
-        @Res() res: Response
-    ): Promise<void> {
-        const value = await aiService.streamMessage({
-            teamId,
-            conversationId,
-            userId,
-            message: body.message,
-            messages: body.messages as AIConversationMessage[],
-            title: body.title,
-            provider: body.provider as AIProvider | undefined,
-            model: body.model
-        });
-        value.streamResult.pipeUIMessageStreamToResponse(res);
-    }
-
-    @Route(aiRoutes.updateConversation)
-    updateConversation(
-        @Param('teamId') teamId: string,
-        @Param('conversationId') conversationId: string,
-        @CurrentUser() userId: string,
-        @Body(schemaBody(typia.createValidate<UpdateAIConversationInput>())) body: UpdateAIConversationInput
-    ) {
-        return aiService.updateConversation({
-            teamId,
-            userId,
-            conversationId,
-            ...body
-        });
-    }
-
-    @Route(aiRoutes.deleteConversation)
-    async deleteConversation(
+    @Route(aiRoutes.compactConversation)
+    async compactConversation(
         @Param('teamId') teamId: string,
         @Param('conversationId') conversationId: string,
         @CurrentUser() userId: string
     ) {
-        await aiService.deleteConversation({
+        const conversation = await conversationService.owned({
             teamId,
             userId,
             conversationId
         });
+        if (chatStreamService.isLive(conversation.id)) {
+            throw ApplicationError.conflict(ErrorCodes.AI_TURN_IN_PROGRESS, 'Volt AI is still answering in this conversation');
+        }
+
+        const resolved = await modelResolver.resolve(conversation.teamId, conversation.provider ?? undefined, conversation.model ?? undefined);
+
+        return chatCompactionService.compactNow(conversation, resolved.model);
     }
 }

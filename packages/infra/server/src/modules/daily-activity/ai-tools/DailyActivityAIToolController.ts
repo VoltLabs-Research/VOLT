@@ -1,6 +1,6 @@
 import typia from 'typia';
 import AIToolController from '@shared/ai/AIToolController';
-import { AITool } from '@shared/ai/tool';
+import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import dailyActivityService from '@modules/daily-activity/services/DailyActivityService';
 import type { GetActivitySummaryInput } from '@volt/contracts/modules/daily-activity/ai-tools';
@@ -11,7 +11,9 @@ export default class DailyActivityAIToolController extends AIToolController {
         description: 'Summarize recent team activity (or just your own) over the last N days — '
             + 'who did what and when. Useful for "what happened this week?" questions.',
         parameters: typia.llm.parameters<GetActivitySummaryInput>(),
-        validate: typia.createValidate<GetActivitySummaryInput>()
+        validate: typia.createValidate<GetActivitySummaryInput>(),
+        access: AIToolAccess.Read,
+        permission: 'daily-activity:read'
     })
     async getActivitySummary(input: GetActivitySummaryInput & AIToolScope) {
         const { range, records } = await dailyActivityService.getTeamActivitySummary({

@@ -1,3 +1,4 @@
+import useBrowserToolBridge from '@/modules/ai/hooks/use-browser-tool-bridge';
 import useAnalysisStatusSocketSync from '@/modules/analysis/hooks/use-analysis-status-socket-sync';
 import useTeamClusterMetricsSync from '@/modules/cluster/hooks/use-team-cluster-metrics-sync';
 import useTeamJobs from '@/modules/jobs/hooks/use-team-jobs';
@@ -16,6 +17,7 @@ const ProtectedRouteRealtimeEffects = () => {
     useTeamPresenceSocket();
     useTeamRoomSubscription();
     useTeamActivityHeartbeat();
+    useBrowserToolBridge();
 
     return null;
 };

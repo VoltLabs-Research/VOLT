@@ -1,69 +1,33 @@
-import { jsonSchema, tool } from 'ai';
-import type { Tool, ToolSet } from 'ai';
 import { getAITools } from '@shared/ai/tool';
 import type { AIToolDefinition } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
-import { formatValidationErrors } from '@shared/utilities/typia-validation-errors';
 
-type ToolHandler = (input: Record<string, unknown>) => unknown;
+export type AIToolHandler = (input: Record<string, unknown>, scope: AIToolScope) => Promise<unknown>;
 
-type ValidationResult = { success: true; value: unknown } | { success: false; error: Error };
+export interface AIToolBinding {
+    definition: AIToolDefinition;
+    handler: AIToolHandler;
+}
+
+type ControllerMethod = (input: Record<string, unknown>) => unknown;
 
 export default abstract class AIToolController {
-    buildTools(scope: AIToolScope): ToolSet {
-        const tools: ToolSet = {};
-
-        for (const definition of getAITools(this.constructor)) {
-            tools[definition.name] = this.#buildTool(definition, scope);
-        }
-
-        return tools;
+    bindings(): AIToolBinding[] {
+        return getAITools(this.constructor).map((definition) => ({
+            definition,
+            handler: this.#handlerOf(definition)
+        }));
     }
 
-    #buildTool(definition: AIToolDefinition, scope: AIToolScope): Tool {
-        const toolDefinition: Record<string, unknown> = {
-            description: definition.description,
-            inputSchema: this.#buildSchema(definition)
-        };
+    #handlerOf(definition: AIToolDefinition): AIToolHandler {
+        const method = (this as unknown as Record<string | symbol, ControllerMethod | undefined>)[definition.handlerName];
 
-        if (!definition.clientExecuted) {
-            toolDefinition.execute = this.#bindHandler(definition, scope);
-        }
-
-        if (definition.needsApproval !== undefined) {
-            toolDefinition.needsApproval = definition.needsApproval;
-        }
-
-        return tool(toolDefinition as unknown as Tool);
-    }
-
-    #buildSchema(definition: AIToolDefinition) {
-        const validate = (value: unknown): ValidationResult => {
-            const result = definition.validate(value);
-
-            return result.success
-                ? {
-                    success: true,
-                    value: result.data
-                }
-                : {
-                    success: false,
-                    error: new Error(`Invalid tool input: ${formatValidationErrors(result.errors)}`)
-                };
-        };
-
-        return jsonSchema(definition.parameters as Parameters<typeof jsonSchema>[0], { validate });
-    }
-
-    #bindHandler(definition: AIToolDefinition, scope: AIToolScope): (params: unknown) => Promise<unknown> {
-        const handler = (this as unknown as Record<string | symbol, ToolHandler | undefined>)[definition.handlerName];
-
-        if (!handler) {
+        if (!method) {
             throw new Error(`AI tool "${definition.name}" has no handler method on ${this.constructor.name}.`);
         }
 
-        return async (params: unknown) => handler.call(this, {
-            ...(params as Record<string, unknown>),
+        return async (input, scope) => method.call(this, {
+            ...input,
             ...scope
         });
     }
