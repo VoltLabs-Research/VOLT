@@ -31,7 +31,7 @@ const renderAction = (
 const ModalFooterActions = ({ primary, secondary }: ModalFooterActionsProps) => {
     return (
         <>
-            {renderAction(secondary, 'ghost')}
+            {renderAction(secondary, 'secondary')}
             {renderAction(primary, 'primary')}
         </>
     );

@@ -1,3 +1,4 @@
+import { useColorScheme } from '@/shared/ui/hooks/use-color-scheme';
 import { Toaster } from 'sileo';
 import { useEffect, useRef } from 'react';
 
@@ -9,12 +10,11 @@ const POPOVER_STYLE = {
     overflow: 'visible'
 } as const;
 
-const TOASTER_DEFAULTS = {
-    fill: 'var(--surface-tertiary)'
-};
-
+// Pollium's toasts: sileo's own opaque fill for the theme, inverted against the page, so they
+// read without a blur behind them.
 const AppToaster = () => {
     const popoverRef = useRef<HTMLDivElement>(null);
+    const colorScheme = useColorScheme();
 
     useEffect(() => {
         popoverRef.current?.showPopover();
@@ -27,10 +27,7 @@ const AppToaster = () => {
             popover='manual'
             style={POPOVER_STYLE}
         >
-            <Toaster
-                position='bottom-right'
-                options={TOASTER_DEFAULTS}
-            />
+            <Toaster position='bottom-right' theme={colorScheme} />
         </div>
     );
 };
