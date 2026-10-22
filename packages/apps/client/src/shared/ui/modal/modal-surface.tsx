@@ -18,6 +18,10 @@ import { ModalTopLayer } from '@/shared/ui/modal/top-layer';
 import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 
+// The mockup's dialog heading, a step above HeroUI's 14px in VOLT's scale, and its body copy.
+const HEADING_CLASS = 'text-lg font-semibold leading-6 break-words';
+const DESCRIPTION_CLASS = 'text-base text-muted text-pretty';
+
 interface ModalSurfaceProps {
     dialogId: string;
 
@@ -64,10 +68,10 @@ export const CenteredModalSurface = ({
                     {hasCloseTrigger && <ModalCloseTrigger aria-label='Close modal' />}
 
                     {hasHeader && (
-                        <ModalHeader className={hasCloseTrigger ? 'gap-1 pe-8' : 'gap-1'}>
-                            {title && <ModalHeading id={titleId}>{title}</ModalHeading>}
+                        <ModalHeader className={hasCloseTrigger ? 'gap-2 pe-8' : 'gap-2'}>
+                            {title && <ModalHeading id={titleId} className={HEADING_CLASS}>{title}</ModalHeading>}
                             {description && (
-                                <p id={descriptionId} className='text-sm text-muted'>{description}</p>
+                                <p id={descriptionId} className={DESCRIPTION_CLASS}>{description}</p>
                             )}
                         </ModalHeader>
                     )}
@@ -116,10 +120,10 @@ export const EdgeModalSurface = ({
                     {hasCloseTrigger && <DrawerCloseTrigger aria-label='Close modal' />}
 
                     {hasHeader && (
-                        <DrawerHeader className={hasCloseTrigger ? 'gap-1 pe-8' : 'gap-1'}>
-                            {title && <DrawerHeading id={titleId}>{title}</DrawerHeading>}
+                        <DrawerHeader className={hasCloseTrigger ? 'gap-2 pe-8' : 'gap-2'}>
+                            {title && <DrawerHeading id={titleId} className={HEADING_CLASS}>{title}</DrawerHeading>}
                             {description && (
-                                <p id={descriptionId} className='text-sm text-muted'>{description}</p>
+                                <p id={descriptionId} className={DESCRIPTION_CLASS}>{description}</p>
                             )}
                         </DrawerHeader>
                     )}

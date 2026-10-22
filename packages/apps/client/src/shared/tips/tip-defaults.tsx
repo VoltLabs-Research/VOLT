@@ -27,13 +27,9 @@ export const buildContextualTipOptions = (
                 }
                 : true,
         icon: <Lightbulb size={14} strokeWidth={1.8} />,
-        fill: 'var(--surface-tertiary)',
-        roundness: 18,
+        // Fill, roundness and colours are the Toaster's, from the theme, as every other toast.
         styles: {
-            title: 'font-semibold tracking-[-0.01em] normal-case whitespace-nowrap',
-            description: 'flex flex-col gap-2 text-muted leading-[1.45] text-pretty',
-            badge: 'text-accent',
-            button: 'self-start inline-flex items-center justify-center min-h-8 px-3 py-1.5 rounded-full bg-accent-soft text-accent text-sm font-semibold no-underline transition-colors duration-150 hover:bg-accent-soft-hover focus-visible:bg-accent-soft-hover'
+            description: 'flex flex-col gap-2 text-pretty'
         },
         button: tip.dismissMode === 'manual' && onManualDismiss
             ? {

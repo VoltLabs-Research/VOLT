@@ -55,7 +55,7 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
             type='button'
             className={cn(
                 'glass-panel-item relative cursor-pointer',
-                variant === 'danger' && 'text-danger',
+                variant === 'danger' && 'text-danger-soft-foreground',
                 isLoading && 'pointer-events-none text-transparent'
             )}
             disabled={isInert}
@@ -83,7 +83,7 @@ const ContextMenuItem = forwardRef<HTMLButtonElement, ContextMenuItemProps>(({
                 <span
                     className={cn(
                         'flex size-4 shrink-0 items-center justify-center',
-                        !isLoading && (variant === 'danger' ? 'text-danger' : 'text-muted')
+                        !isLoading && (variant === 'danger' ? 'text-danger-soft-foreground' : 'text-muted')
                     )}
                     aria-hidden='true'
                 >

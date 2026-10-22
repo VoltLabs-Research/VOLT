@@ -28,8 +28,6 @@ const COARSE_POINTER_MEDIA_QUERY = '(pointer: coarse)';
 
 const DIALOG_SELECTOR = '[data-slot="modal-dialog"], [data-slot="drawer-dialog"]';
 
-const BACKDROP_VARIANT = 'blur';
-
 interface ModalPresentation {
     title?: string;
     description?: string;
@@ -172,9 +170,10 @@ export const Modal = ({
         children: paintedChildren
     };
 
+    // HeroUI's opaque scrim, a flat colour: a blurred one would be the dialog's backdrop root, and
+    // the dialog's own glass would then frost that colour instead of the page behind it.
     const backdropProps = {
         ref: setBackdropElement,
-        variant: BACKDROP_VARIANT,
         isOpen,
         onOpenChange: handleOpenChange,
         isDismissable: paintedDismissible,
