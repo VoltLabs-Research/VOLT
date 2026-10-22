@@ -7,19 +7,20 @@ interface ActivityHeatmapProps {
     data: DailyActivity[];
 };
 
+// Pollium's monochrome ramp: the foreground at rising strength, over a faint tint for empty days.
+const LEVEL_CLASS_NAMES = [
+    'bg-foreground/6',
+    'bg-foreground/22',
+    'bg-foreground/42',
+    'bg-foreground/66',
+    'bg-foreground'
+];
+
 const ActivityHeatmap = ({ data }: ActivityHeatmapProps) => {
     const { cells, weeks } = useActivityHeatmap({
         data,
         range: 365
     });
-
-    const levelClassNames = [
-        'bg-surface-tertiary',
-        'bg-[color-mix(in_srgb,var(--accent)_25%,transparent)]',
-        'bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]',
-        'bg-[color-mix(in_srgb,var(--accent)_70%,transparent)]',
-        'bg-accent'
-    ];
 
     return (
         <ScrollShadow
@@ -47,7 +48,7 @@ const ActivityHeatmap = ({ data }: ActivityHeatmapProps) => {
                             <Tooltip.Trigger
                                 role='img'
                                 aria-label={getDayAriaLabel(cell.day)}
-                                className={cn('size-2.5 rounded-sm cursor-pointer', levelClassNames[cell.day.level])}
+                                className={cn('size-2.5 rounded-sm cursor-pointer', LEVEL_CLASS_NAMES[cell.day.level])}
                             />
                             <Tooltip.Content className='max-w-[350px] min-w-[200px] p-3 break-normal'>
                                 <ActivityTooltipContent {...getDayTooltipState(cell.day)} />

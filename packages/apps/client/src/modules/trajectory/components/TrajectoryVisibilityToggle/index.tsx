@@ -66,8 +66,8 @@ const TrajectoryVisibilityToggle = ({
 
     return (
         <div className='flex flex-row items-center justify-between gap-4'>
-            <div className='flex flex-col gap-1 flex-1'>
-                <h4 className='text-xs font-medium text-foreground' id={labelId}>
+            <div className='flex flex-1 flex-col gap-0.5'>
+                <h4 className='text-sm font-medium text-foreground' id={labelId}>
                     Public visibility
                 </h4>
                 <p className='text-xs text-muted' id={descriptionId}>

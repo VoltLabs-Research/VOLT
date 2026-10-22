@@ -43,14 +43,12 @@ export default function DiscoverTeamTrajectoriesPage() {
     return (
         <main className='min-h-screen bg-background px-6 pt-8 pb-12 text-foreground max-md:px-4 max-md:pt-5 max-md:pb-8'>
             <div className='mx-auto flex w-[min(100%,1180px)] min-h-[calc(100vh-5rem)] flex-col gap-6 max-md:min-h-[calc(100vh-3.25rem)]'>
-                <section className='flex flex-row items-end justify-between gap-4 pt-2 pb-1 max-md:flex-col max-md:items-stretch' aria-labelledby='discover-team-trajectories-title'>
-                    <div className='min-w-0'>
-                        <h1 className='m-0 text-3xl font-medium leading-[1.1] text-foreground'
-                            id='discover-team-trajectories-title'
-                        >
-                            Trajectories ({summary.total})
+                <section className='flex flex-row items-end justify-between gap-4 max-md:flex-col max-md:items-stretch' aria-labelledby='discover-team-trajectories-title'>
+                    <div className='flex min-w-0 flex-col gap-1'>
+                        <h1 className='text-2xl font-semibold text-foreground' id='discover-team-trajectories-title'>
+                            Trajectories <span className='text-muted tabular-nums'>({summary.total})</span>
                         </h1>
-                        <p className='mt-1.5 mb-0 text-xs text-muted'>
+                        <p className='text-sm text-muted'>
                             {`Public trajectories from ${summary.team?.name ?? 'this team'}.`}
                         </p>
                     </div>
