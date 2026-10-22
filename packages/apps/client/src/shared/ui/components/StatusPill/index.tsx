@@ -31,9 +31,12 @@ const STATUS_TO_TONE: Record<string, StatusTone> = {
     preparing: 'working',
     uploading: 'working',
     updating: 'working',
+    connecting: 'working',
+    starting: 'working',
 
     warning: 'warning',
     pending: 'warning',
+    queued: 'warning',
     'waiting-for-process': 'warning',
     draft: 'warning',
     expiring: 'warning',
