@@ -34,3 +34,15 @@ declare module 'browserify-zlib/lib/binding' {
     const binding: Record<string, unknown>;
     export default binding;
 }
+
+// Python sources the build bundles as text (src/python).
+declare module '*.py' {
+    const source: string;
+    export default source;
+}
+
+// Pyodide's Emscripten module, which src/python bundles rather than loading at run time.
+declare module 'pyodide/pyodide.asm.mjs' {
+    const createPyodideModule: NonNullable<import('pyodide').PyodideConfig['createPyodideModule']>;
+    export default createPyodideModule;
+}

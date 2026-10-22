@@ -9,7 +9,7 @@ import { fetch } from '../platform/fetch';
 import { WebSocketConstructor } from '../platform/ws';
 import { attachFs, startFsService } from '../platform/fs/client';
 import { initSqlite } from '../platform/better-sqlite3';
-import { registerNodeProgram, registerNodeRunner } from '../platform/child-process';
+import { programExecutable, registerNodeProgram, registerNodeRunner, registerProgram } from '../platform/child-process';
 import { attachStdin } from '../platform/stdio';
 import { install } from '../platform/installs';
 import { ownBytes } from '../platform/bytes';
@@ -33,6 +33,13 @@ interface BackendWorkerScope extends MessageTarget {
     addEventListener(type: 'unhandledrejection', listener: (event: PromiseRejectionEvent) => void): void;
     close(): void;
 }
+
+// The runtime's programs besides Node (src/python), and the executables on PATH that run them.
+const PROGRAMS: Record<string, string> = { python3: './python.worker.js' };
+const PROGRAM_EXECUTABLES: Record<string, string> = { '/usr/local/bin/python3': 'python3', '/usr/local/bin/python': 'python3' };
+
+// What a login shell gives every process.
+const DEFAULT_PATH = '/usr/local/bin:/usr/bin:/bin';
 
 const scope = globalThis as unknown as BackendWorkerScope;
 
@@ -82,6 +89,7 @@ const attachToParent = ({ serialization }: NonNullable<BackendBootMessage['child
 
 const boot = async (message: BackendBootMessage): Promise<void> => {
     Object.assign(browserProcess.env, message.env);
+    browserProcess.env.PATH ??= DEFAULT_PATH;
     browserProcess.argv = ['/usr/local/bin/node', message.script ?? VOLT_PROGRAM_PATH, ...message.argv];
     browserProcess.chdir(message.cwd);
     browserProcess.stdin = attachStdin(message.child?.stdin);
@@ -91,6 +99,9 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
         registerNodeProgram(scriptPath, new URL(workerFile, import.meta.url));
     }
     registerNodeRunner(new URL('./node-runner.worker.js', import.meta.url));
+    for(const [name, workerFile] of Object.entries(PROGRAMS)){
+        registerProgram(name, new URL(workerFile, import.meta.url));
+    }
 
     if('directory' in message.fs){
         await startFsService(new URL('./fs.worker.js', import.meta.url), message.fs.directory);
@@ -106,6 +117,12 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
         if(!existsSync(scriptPath)){
             mkdirSync(path.dirname(scriptPath), { recursive: true });
             writeFileSync(scriptPath, `// Runs as ${VOLT_NODE_PROGRAMS[scriptPath]}, provided by @volt/web-runtime.\n`);
+        }
+    }
+    for(const [executable, name] of Object.entries(PROGRAM_EXECUTABLES)){
+        if(!existsSync(executable)){
+            mkdirSync(path.dirname(executable), { recursive: true });
+            writeFileSync(executable, programExecutable(name));
         }
     }
     for(const source of VOLT_INSTALLS){

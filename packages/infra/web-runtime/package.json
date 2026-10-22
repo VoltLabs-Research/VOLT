@@ -8,7 +8,7 @@
     "./vite": "./scripts/vite-plugin.mjs",
     "./virtual": "./virtual.d.ts"
   },
-  "description": "Runs the VOLT server and cluster daemon unchanged inside browser workers. src/platform implements the Node APIs they use (loopback http, fs over OPFS, better-sqlite3 and DuckDB over their WebAssembly builds, child_process and worker_threads as workers); native addons are compiled to WebAssembly from their own sources; scripts/build.mjs bundles each backend's built dist against it.",
+  "description": "Runs the VOLT server and cluster daemon unchanged inside browser workers. src/platform implements the Node APIs they use (loopback http, fs over OPFS, better-sqlite3 and DuckDB over their WebAssembly builds, child_process and worker_threads as workers); native addons are compiled to WebAssembly from their own sources; src/python is the python3 every machine has (Pyodide); scripts/build.mjs bundles each backend's built dist against it.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "smoke": "node scripts/smoke.mjs",
@@ -36,6 +36,7 @@
     "crypto-browserify": "3.12.1",
     "fzstd": "0.1.1",
     "node-stdlib-browser": "1.3.1",
-    "path-browserify": "1.0.1"
+    "path-browserify": "1.0.1",
+    "pyodide": "314.0.7"
   }
 }

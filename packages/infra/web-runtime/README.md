@@ -16,7 +16,30 @@ They run unmodified in module workers, on a Node platform implemented over brows
 
 Plugins are Node programs too. Their `wasm-wasm32` builds (CoreToolkit's `volt_wasm_program`) run as
 `bin/<name>` and query the DuckDB installed on the machine. A machine reporting `wasm32` asks the
-registry for `wasm-wasm32` bundles. Python plugins need an interpreter and cannot run here.
+registry for `wasm-wasm32` bundles.
+
+## Python
+
+Every machine has a `python3` on its `PATH` (`src/python`): CPython compiled to WebAssembly, from
+the Pyodide release in `package.json`, run as Node runs it. A backend spawns it as it spawns
+`python3` anywhere. It sees the process's files, reads and writes its standard streams, and exits
+with its code.
+
+- **Virtual environments.** `python3 -m venv DIR` writes what Python's `venv` writes. The
+  interpreter in its `bin/` is a copy of the `python3` executable, and the runtime runs a copy as
+  the program it names.
+- **Packages.** `python3 -m pip install` installs into the running environment with micropip. It
+  takes Pyodide's builds of packages with native code (numpy, pandas, pyarrow, scikit-learn, ...)
+  and pure-Python wheels from PyPI. Installs are kept with the environment. Pyodide keeps the wheels
+  it downloads next to its files in `/usr/local/lib/pyodide`.
+- **Plugins.** The daemon provisions a Python plugin as it does on a machine: a virtual environment,
+  `pip install -r requirements.txt`, then its script with the plugin stub.
+
+Python is a guest here, not the host, so a few things work differently:
+
+- There is no `subprocess` and no threads.
+- `requests` reaches the backends through the service worker's relay.
+- The first install of a package downloads it from Pyodide's CDN.
 
 ## Using it from a web client
 
@@ -67,7 +90,10 @@ VOLT_WASM_TOOLS_DIR=packages/coretoolkit/install-wasm pnpm --filter @volt/web-ru
 pnpm --filter @volt/web-runtime smoke page       # the Node platform in a worker
 pnpm --filter @volt/web-runtime smoke programs   # Node programs spawned with binary stdio
 pnpm --filter @volt/web-runtime smoke stack      # the whole stack provisioned, as the client does
+pnpm --filter @volt/web-runtime smoke python     # python3: venv, pip, stdio and exit codes
 ```
+
+The python page downloads its packages from Pyodide's CDN, so it needs the network.
 
 Each smoke runs a page of `smoke/` in headless Chrome (`CHROME_PATH`, `/usr/bin/google-chrome` by
 default) and fails unless the page reaches its last step.

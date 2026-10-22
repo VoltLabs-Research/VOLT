@@ -23,6 +23,8 @@ const addonsDir = path.join(packageDir, 'node_modules', '.cache', 'native-addons
 
 const platform = (file) => path.join(platformDir, file);
 const packageRoot = (name) => path.dirname(require.resolve(`${name}/package.json`));
+const PYODIDE_ROOT = packageRoot('pyodide');
+const PYODIDE_LOCK = JSON.parse(await readFile(path.join(PYODIDE_ROOT, 'pyodide-lock.json'), 'utf8'));
 
 // Where each backend is installed inside its worker's file system.
 const BACKENDS = [
@@ -35,6 +37,7 @@ const BACKENDS = [
         globalPackages: [],
         // Files it reads next to its modules, which its build leaves in src/.
         assets: [{ source: 'src/modules/scripting/services/templates', installed: 'dist/infra/server/src/modules/scripting/services/templates' }],
+        python: false,
         programs: []
     },
     {
@@ -50,6 +53,8 @@ const BACKENDS = [
             { source: 'dist/infra/cluster/src/modules/plugin/services/python' },
             { source: 'dist/infra/cluster/src/modules/trajectory/services/parsing/ase_export_bridge.py' }
         ],
+        // It runs Python plugins: python3 is installed before any of them starts.
+        python: true,
         programs: [
             'dist/infra/cluster/src/control-plane.js',
             'dist/infra/cluster/src/heartbeat-plane.js',
@@ -188,7 +193,7 @@ const buildProgram = async (backend, program, installs = []) => {
         // esbuild adds 'import' or 'require' itself, matching how each module is loaded.
         conditions: ['browser', 'module'],
         nodePaths: [path.join(backend.root, 'node_modules'), path.join(packageDir, 'node_modules')],
-        alias: { ...builtinAliases(), 'volt-backend-entry': program.source },
+        alias: { ...builtinAliases(), ...backend.aliases, 'volt-backend-entry': program.source },
         inject: [platform('globals.ts')],
         define: {
             // esbuild would otherwise inline its own NODE_ENV for browser builds; the backends read the booted env.
@@ -196,13 +201,14 @@ const buildProgram = async (backend, program, installs = []) => {
             VOLT_PROGRAM_PATH: JSON.stringify(program.installed),
             VOLT_NODE_PROGRAMS: JSON.stringify(nodePrograms),
             VOLT_INSTALLS: JSON.stringify(installs),
+            VOLT_PYTHON_VERSION: JSON.stringify(PYODIDE_LOCK.info.python),
             VOLT_HTTP2_CONSTANTS: JSON.stringify(http2.constants),
             VOLT_HTTP2_DEFAULT_SETTINGS: JSON.stringify(http2.getDefaultSettings())
         },
         plugins: [nativeAddonPlugin(backend), moduleLocationPlugin(backend)],
         // Optional integrations their packages load lazily and VOLT never calls.
         external: ['@aws-sdk/client-s3', 'cpu-features'],
-        loader: { '.node': 'empty', '.wasm': 'file' },
+        loader: { '.node': 'empty', '.wasm': 'file', '.py': 'text' },
         sourcemap: true,
         logLevel: 'warning',
         logLimit: 0
@@ -302,6 +308,20 @@ const installAssets = async (backend) => {
     return writeInstall(source, backend.mountPoint);
 };
 
+// Pyodide's interpreter, standard library and lock file, where src/python/interpreter.ts loads them;
+// the packages it downloads are kept next to them.
+const PYODIDE_FILES = ['pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json'];
+const installPyodide = async () => {
+    const source = 'python/pyodide';
+    const target = path.join(outDir, source);
+    await rm(target, { recursive: true, force: true });
+    await mkdir(target, { recursive: true });
+    for(const file of PYODIDE_FILES){
+        await cp(path.join(PYODIDE_ROOT, file), path.join(target, file));
+    }
+    return writeInstall(source, '/usr/local/lib/pyodide');
+};
+
 // A classic script: module service workers are not supported by every browser.
 await esbuild.build({
     entryPoints: { 'service-worker': path.join(packageDir, 'src', 'service-worker.ts') },
@@ -327,6 +347,19 @@ await esbuild.build({
 // platform alone, which every backend spawns its programs with.
 const RUNNER = { name: 'node-runner', root: packageDir, mountPoint: '/usr/local/lib/node-runner', entry: 'src/workers/node-runner.ts', programs: [], addons: [] };
 await buildProgram(RUNNER, { source: path.join(packageDir, RUNNER.entry), installed: path.posix.join(RUNNER.mountPoint, RUNNER.entry), workerFile: 'node-runner.worker.js' });
+// The python3 every backend runs (src/python), which installs Pyodide where it is missing. Its
+// Emscripten module asks Node's `module` for a require() of the built-ins it uses.
+const pyodideInstall = await installPyodide();
+const PYTHON = {
+    name: 'python',
+    root: packageDir,
+    mountPoint: '/usr/local/lib/python-runtime',
+    entry: 'src/python/python.ts',
+    programs: [],
+    addons: [],
+    aliases: { module: path.join(packageDir, 'src', 'python', 'node-module.ts'), 'node:module': path.join(packageDir, 'src', 'python', 'node-module.ts') }
+};
+await buildProgram(PYTHON, { source: path.join(packageDir, PYTHON.entry), installed: path.posix.join(PYTHON.mountPoint, PYTHON.entry), workerFile: 'python.worker.js' }, [pyodideInstall]);
 
 for(const backend of selected){
     backend.addons = await nativeAddonsOf(backend);
@@ -338,6 +371,9 @@ for(const backend of selected){
         installs.push(await installVendorTool(backend, tool));
     }
     installs.push(await installAssets(backend));
+    if(backend.python){
+        installs.push(pyodideInstall);
+    }
     // Its entry point installs them; the programs it spawns find them installed.
     const [entry, ...programs] = programsOf(backend);
     await buildProgram(backend, entry, installs.filter(Boolean));
