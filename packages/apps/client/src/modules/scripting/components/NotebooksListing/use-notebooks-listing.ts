@@ -39,6 +39,7 @@ import { createEmptyPaginatedResponse } from '@/shared/pagination/create-empty-p
 import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { ScriptingNotebookDeploymentModalRequest } from '@/modules/scripting/contracts/notebook-deployment';
+import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import { useNavigate } from 'react-router-dom';
 export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;
@@ -78,6 +79,12 @@ const SAVE_NOTEBOOK_DEPLOYMENT_TOAST = createCrudToastOptions({
     subject: 'notebook deployment',
     success: 'Notebook deployment saved successfully'
 });
+
+// Where the client runs its stack, notebooks open in its own editor, with their kernels in this
+// window; on a server, in Jupyter on one of the team's clusters.
+const opensInBrowser = localStackMode.isEnabled();
+
+export const notebookEditorPath = (notebookId: string): string => `/dashboard/notebooks/${encodeURIComponent(notebookId)}`;
 
 const useNotebooksListing = () => {
     const navigate = useNavigate();
@@ -187,6 +194,13 @@ const useNotebooksListing = () => {
             return;
         }
 
+        // Its kernel runs here: there is no cluster to choose.
+        if (opensInBrowser) {
+            const notebook = await showPromise(createNotebook({ teamId }), CREATE_NOTEBOOK_TOAST);
+            navigate(notebookEditorPath(notebook._id));
+            return;
+        }
+
         openDeploymentModal({
             teamId,
             title: 'Create Notebook',
@@ -202,7 +216,7 @@ const useNotebooksListing = () => {
                 );
             }
         });
-    }, [teamId, createNotebook, openDeploymentModal]);
+    }, [teamId, createNotebook, navigate, openDeploymentModal]);
 
     const {
         renamingEntity: renamingNotebook,
@@ -220,6 +234,11 @@ const useNotebooksListing = () => {
     });
 
     const handleOpenInNewTab = useCallback(async (notebook: ScriptingNotebook) => {
+        if (opensInBrowser) {
+            navigate(notebookEditorPath(notebook._id));
+            return;
+        }
+
         const trajectoryId = getNotebookTrajectoryId(notebook);
 
         if (trajectoryId) {
@@ -258,7 +277,7 @@ const useNotebooksListing = () => {
     const { getMenuOptions } = useListingActions<ScriptingNotebook>({
         actions: {
             open: {
-                label: 'Open in new Tab',
+                label: opensInBrowser ? 'Open' : 'Open in new Tab',
                 icon: FolderOpen,
                 handler: async ({ item: notebook }) => {
                     await handleOpenInNewTab(notebook);
@@ -287,9 +306,19 @@ const useNotebooksListing = () => {
         }
     });
 
+    const handleItemClick = useCallback((notebook: ScriptingNotebook): boolean => {
+        if (!opensInBrowser) {
+            return false;
+        }
+        navigate(notebookEditorPath(notebook._id));
+        return true;
+    }, [navigate]);
+
     return {
+        opensInBrowser,
         fetchData,
         getMenuOptions,
+        handleItemClick,
         handleCreate,
         handleDeploymentModalClose,
         handleRenameClose,
