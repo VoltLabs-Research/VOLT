@@ -29,7 +29,7 @@ export default function EditableTrajectoryName({
 
     if (readOnly || !user) {
         return (
-            <p className={`editable-name ${className}`} title={name}>
+            <p className={className} title={name}>
                 {name}
             </p>
         );
@@ -39,7 +39,7 @@ export default function EditableTrajectoryName({
         <EditableTag
             as='p'
             onSave={handleSave}
-            className={`editable-name ${className}`}
+            className={className}
             title={name}
             allowSingleClickPropagation={allowSingleClickPropagation}
         >

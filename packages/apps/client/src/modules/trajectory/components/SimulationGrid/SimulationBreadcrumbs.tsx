@@ -11,7 +11,7 @@ const DroppableCrumbLabel = ({ item }: { item: FolderBreadcrumbItem }) => {
     return (
         <span
             ref={setNodeRef}
-            className={cn('block max-w-48 truncate', isOver && 'is-drag-over underline')}
+            className={cn('block max-w-48 truncate', isOver && 'underline')}
         >
             {item.title}
         </span>

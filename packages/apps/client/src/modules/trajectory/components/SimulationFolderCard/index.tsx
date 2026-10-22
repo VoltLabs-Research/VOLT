@@ -1,6 +1,7 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/contracts/listing';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import type { MenuOption } from '@/shared/contracts/menu';
+import { formatDistanceToNowStrict } from 'date-fns';
 import { ChevronRight, Folder, MoreHorizontal } from 'lucide-react';
 import { useCallback, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
@@ -75,9 +76,11 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
         openFolder();
     }, [openFolder]);
 
+    // Pollium's folder tile: a borderless tint card. The transparent border is where GridItem
+    // shows a drop target while a trajectory is dragged over the folder.
     return (
         <article
-            className='simulation-folder-card group/card relative flex h-full min-h-[200px] cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-transparent p-6 transition-[border-color,box-shadow] duration-[160ms] hover:border-border/72'
+            className='simulation-folder-card group/card relative flex h-full min-h-64 cursor-pointer flex-col gap-4 rounded-3xl border border-transparent bg-foreground/4 p-5 transition-colors duration-150 hover:bg-foreground/7'
             onClick={handleClick}
             onKeyDown={handleKeyDown}
             onPointerDown={handlePointerDown}
@@ -89,7 +92,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
         >
             {menuOptions.length > 0 ? (
                 <div
-                    className='absolute top-2 right-2 z-[4] opacity-0 transition-[opacity,background-color] duration-[160ms] group-hover/card:opacity-100 group-focus-within/card:opacity-100'
+                    className='absolute top-3.5 right-3.5 z-10 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 group-focus-within/card:opacity-100 has-[[aria-expanded=true]]:opacity-100 [@media(hover:none)]:opacity-100'
                     data-row-click-ignore='true'
                 >
                     <ContextMenuPopover
@@ -97,7 +100,7 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                         trigger={(
                             <button
                                 type='button'
-                                className='flex size-7 cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-muted shadow-none transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground'
+                                className='flex size-8 cursor-pointer items-center justify-center rounded-xl border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground'
                                 title={`Open actions for ${folder.title}`}
                                 aria-label={`Open actions for ${folder.title}`}
                             >
@@ -112,20 +115,23 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                     />
                 </div>
             ) : null}
-            <div className='flex min-h-full flex-col gap-6 h-full'>
-                <div className='flex size-[3.25rem] flex-row items-center justify-center rounded-xl border-0 bg-surface-secondary text-muted'>
-                    <Folder size={30} strokeWidth={1.75} />
-                </div>
-                <div className='flex flex-col gap-2 flex-1'>
-                    <h3 className='text-xl font-medium text-foreground truncate'>
-                        {folder.title}
-                    </h3>
-                </div>
-                <div className='mt-auto flex flex-row items-center gap-2 text-sm text-muted'>
-                    <span>Open folder</span>
-                    <ChevronRight size={14} strokeWidth={2} />
-                </div>
+            <span className='flex size-13 items-center justify-center rounded-2xl bg-foreground/6 text-foreground'>
+                <Folder size={24} strokeWidth={1.75} />
+            </span>
+            <div className='flex min-w-0 flex-col gap-1'>
+                <h3 className='truncate text-lg font-semibold text-foreground'>
+                    {folder.title}
+                </h3>
+                {folder.updatedAt ? (
+                    <p className='truncate text-sm text-muted'>
+                        Edited {formatDistanceToNowStrict(new Date(folder.updatedAt), { addSuffix: true })}
+                    </p>
+                ) : null}
             </div>
+            <span className='mt-auto flex items-center gap-1 text-sm text-muted'>
+                Open folder
+                <ChevronRight size={14} />
+            </span>
         </article>
     );
 }

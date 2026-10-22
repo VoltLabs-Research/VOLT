@@ -3,31 +3,15 @@ import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import { teamJobsGroups } from '@/modules/jobs/hooks/queries';
 import useTrajectoryPreview from './use-trajectory-preview';
 import SimulationCardFooter from '../SimulationCardFooter';
+import SimulationCardMenu from '../SimulationCardMenu';
+import { cn } from '@heroui/react';
 import { Atom } from 'lucide-react';
 import { useMemo } from 'react';
-import type { KeyboardEvent, MouseEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { useNavigate } from 'react-router-dom';
 
-type ClassValue = string | boolean | undefined | null;
-
-const cn = (...classes: ClassValue[]): string => {
-    return classes.filter(Boolean).join(' ');
-};
-
-const NON_NAVIGABLE_CARD_TARGET_SELECTOR = [
-    '.footer-options-btn',
-    '[data-popover-trigger^="simulation-card-popover-"]'
-].join(', ');
 const RASTER_QUEUE_TYPE = 'trajectory_rasterization';
-
-const shouldSkipCardNavigation = (target: EventTarget | null): boolean => {
-    if (!(target instanceof Element)) {
-        return false;
-    }
-
-    return target.closest(NON_NAVIGABLE_CARD_TARGET_SELECTOR) !== null;
-};
 
 interface SimulationCardProps {
     trajectory: Trajectory;
@@ -66,8 +50,7 @@ export default function SimulationCard({
         return false;
     }, [jobGroups, trajectory._id]);
     const isProcessing = isProcessingStatus(trajectory.status);
-    const isNavigable = isTrajectoryNavigable(trajectory.status);
-    const canOpen = isNavigable;
+    const canOpen = isTrajectoryNavigable(trajectory.status);
     const hasPersistedPreview = trajectory.hasPreview === true;
 
     const { previewBlobUrl } = useTrajectoryPreview({
@@ -77,7 +60,6 @@ export default function SimulationCard({
         accessMode: readOnly ? 'public' : 'rbac'
     });
 
-    const processingMessage = getStageMessage(trajectory.status);
     const cardAriaLabel = isSelected
         ? `Open selected trajectory ${trajectory.name}`
         : `Open trajectory ${trajectory.name}`;
@@ -91,67 +73,65 @@ export default function SimulationCard({
         }
         : undefined;
 
-    const handleClick = (event: MouseEvent<HTMLElement>): void => {
-        const shouldSkipNavigation = shouldSkipCardNavigation(event.target);
-
-        if (shouldSkipNavigation) {
-            return;
-        }
-
+    const openCanvas = (): void => {
         navigate(canvasPath, canvasNavigationOptions);
     };
 
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
-        if (shouldSkipCardNavigation(event.target)) {
-            return;
-        }
-
-        if (event.key !== 'Enter' && event.key !== ' ') {
+        // The name inside is editable, and handles its own keys.
+        if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) {
             return;
         }
 
         event.preventDefault();
-        navigate(canvasPath, canvasNavigationOptions);
+        openCanvas();
     };
 
+    // A transparent, bordered card: the preview fills it and the title and caption sit at its foot,
+    // in the theme's colours. The menu is a sibling of the link, so its clicks never open the canvas.
     return (
-        <article
-            className={cn(
-                'simulation-card group/card relative flex h-full flex-col overflow-hidden rounded-xl border border-border transition-[background-color,border-color,box-shadow] duration-[250ms] hover:border-border-secondary',
-                canOpen && 'cursor-pointer',
-                isProcessing && 'has-jobs',
-                isSelected && 'is-selected border-accent bg-[color-mix(in_srgb,var(--surface-secondary)_90%,var(--info-soft))]'
-            )}
-            onClick={canOpen ? handleClick : undefined}
-            onKeyDown={canOpen ? handleKeyDown : undefined}
-            tabIndex={canOpen ? 0 : undefined}
-            role={canOpen ? 'link' : undefined}
-            aria-label={canOpen ? cardAriaLabel : undefined}
-            aria-busy={isProcessing}
-        >
-            <div className='relative flex h-[200px] w-full flex-row items-center justify-center overflow-hidden rounded-xl'>
+        <article className='group/card relative min-w-0' aria-busy={isProcessing}>
+            <div
+                className={cn('relative h-64 overflow-hidden rounded-3xl border border-border outline-offset-2 transition-colors duration-200 hover:border-border-secondary', canOpen && 'cursor-pointer', isSelected && 'outline-2 outline-foreground')}
+                onClick={canOpen ? openCanvas : undefined}
+                onKeyDown={canOpen ? handleKeyDown : undefined}
+                tabIndex={canOpen ? 0 : undefined}
+                role={canOpen ? 'link' : undefined}
+                aria-label={canOpen ? cardAriaLabel : undefined}
+            >
                 {previewBlobUrl ? (
                     <img
-                        className='block h-full w-full object-cover'
+                        className='absolute inset-0 size-full object-cover transition-transform duration-500 ease-(--ease-emphasized) group-hover/card:scale-105 motion-reduce:transition-none'
                         src={previewBlobUrl}
                         alt={`Preview of ${trajectory.name}`}
                     />
                 ) : (
-                    <div className='flex flex-row items-center w-full h-full justify-center text-muted text-3xl'>
-                        <Atom />
+                    <div className='absolute inset-0 flex items-center justify-center text-muted'>
+                        <Atom size={24} />
                     </div>
                 )}
+                <SimulationCardFooter
+                    trajectoryId={trajectory._id}
+                    name={trajectory.name}
+                    updatedAt={trajectory.updatedAt}
+                    atoms={trajectory.atoms}
+                    framesCount={trajectory.framesCount ?? trajectory.frames?.length ?? 0}
+                    isProcessing={isProcessing}
+                    processingMessage={getStageMessage(trajectory.status)}
+                    readOnly={readOnly}
+                />
             </div>
-            <SimulationCardFooter
-                trajectoryId={trajectory._id}
-                name={trajectory.name}
-                updatedAt={trajectory.updatedAt}
-                isProcessing={isProcessing}
-                isNavigable={isNavigable}
-                processingMessage={processingMessage}
-                onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(trajectory) : undefined}
-                readOnly={readOnly}
-            />
+
+            {!readOnly && (
+                <div className='absolute top-3 right-3 opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 group-focus-within/card:opacity-100 has-[[aria-expanded=true]]:opacity-100 [@media(hover:none)]:opacity-100'>
+                    <SimulationCardMenu
+                        trajectoryId={trajectory._id}
+                        name={trajectory.name}
+                        isNavigable={canOpen}
+                        onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(trajectory) : undefined}
+                    />
+                </div>
+            )}
         </article>
     );
 }
