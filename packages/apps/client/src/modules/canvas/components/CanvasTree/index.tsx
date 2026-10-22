@@ -7,7 +7,7 @@ import type { MenuOption } from '@/shared/contracts/menu';
 
 export type CanvasTreeIndent = 'base' | 'lg' | 'xl';
 
-export const TREE_ROW_CLASS = 'relative w-full border-none bg-transparent px-2.5 py-2 text-left [.canvas-objects-panel--analysis-compact_&]:min-h-7 [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1';
+export const TREE_ROW_CLASS = 'relative w-full rounded-xl border-none bg-transparent px-2.5 py-2 text-left outline-none transition-colors duration-[140ms] [.canvas-objects-panel--analysis-compact_&]:min-h-7 [.canvas-objects-panel--analysis-compact_&]:gap-1 [.canvas-objects-panel--analysis-compact_&]:px-1.5 [.canvas-objects-panel--analysis-compact_&]:py-1';
 
 const INDENT_CLASS: Record<CanvasTreeIndent, string> = {
     base: 'pl-4 [.canvas-objects-panel--analysis-compact_&]:pl-2.5',
@@ -23,7 +23,6 @@ export const nextTreeIndent = (indent: CanvasTreeIndent): CanvasTreeIndent => {
 };
 
 interface CanvasTreeRowProps {
-    icon?: ReactNode;
     label: ReactNode;
     isActive?: boolean;
     onClick?: () => void;
@@ -34,7 +33,6 @@ interface CanvasTreeRowProps {
 }
 
 export const CanvasTreeRow = ({
-    icon,
     label,
     isActive,
     onClick,
@@ -56,13 +54,11 @@ export const CanvasTreeRow = ({
             'flex select-none items-center gap-2 text-xs text-muted',
             TREE_ROW_CLASS,
             treeIndentClass(indent),
-            isActive && 'text-accent',
-            disabled ? 'cursor-default opacity-65' : 'hover:rounded-md hover:bg-surface-hover',
+            disabled ? 'cursor-default opacity-65' : 'hover:bg-foreground/5 focus-visible:bg-foreground/[0.06]',
             !disabled && onClick && 'cursor-pointer'
         )}
     >
-        {icon ?? <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />}
-        <span className={isActive ? 'text-foreground' : 'text-muted'}>{label}</span>
+        <span className={cn('min-w-0 truncate transition-colors duration-[180ms]', isActive ? 'text-foreground' : 'text-muted')}>{label}</span>
     </button>
 );
 
@@ -94,7 +90,6 @@ export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: Canv
                     TREE_ROW_CLASS,
                     treeIndentClass(indent)
                 )}>
-                    <span className='size-[13px] [.canvas-objects-panel--analysis-compact_&]:size-[11px]' />
                     <Skeleton className={compact ? 'h-2.5 w-20 rounded-md' : 'h-2.5 w-30 rounded-md'} />
                 </div>
             ))}

@@ -27,12 +27,6 @@ import type { SceneArtifact } from '@volt/contracts/modules/trajectory/domain';
 import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
-const ROW_ICON_STYLE = {
-    width: 12,
-    height: 12,
-    color: 'var(--accent)'
-} as const;
-
 const CHEVRON_STYLE = {
     width: 13,
     height: 13
@@ -69,7 +63,7 @@ const ArtifactTreeSection = ({
         setCurrentTimestep: state.setCurrentTimestep
     })));
 
-    const { icon: Icon, timesteps, artifactsByTimestep, expandedTimesteps, visibleCount } = section;
+    const { timesteps, artifactsByTimestep, expandedTimesteps, visibleCount } = section;
 
     const buildMenuOptions = (scene: SceneObjectType, artifact: SceneArtifact): MenuOption[] => {
         const sceneKey = getSceneKey(scene);
@@ -102,7 +96,6 @@ const ArtifactTreeSection = ({
                 <CanvasTreeRow
                     indent='lg'
                     isActive={!!scene && isSameScene(activeScene, scene)}
-                    icon={<Icon style={ROW_ICON_STYLE} />}
                     label={label}
                     onClick={() => {
                         if (!scene) return;
@@ -125,7 +118,7 @@ const ArtifactTreeSection = ({
                 <button
                     type='button'
                     id={groupId}
-                    className={cn('flex items-center gap-2', 'w-full cursor-pointer rounded-md border-none bg-transparent px-1.5 py-1 text-left text-muted hover:bg-surface-hover')}
+                    className={cn('flex items-center gap-2', 'w-full cursor-pointer rounded-xl border-none bg-transparent px-2.5 py-1.5 text-left text-xs text-muted transition-colors duration-[140ms] hover:bg-foreground/5')}
                     onClick={() => section.toggleTimestep(timestep)}
                     aria-expanded={isExpanded}
                     aria-controls={isExpanded ? `${groupId}-children` : undefined}
@@ -162,7 +155,7 @@ const ArtifactTreeSection = ({
                 {hiddenCount > 0 && (
                     <button
                         type='button'
-                        className='mx-2 mb-1.5 mt-1 cursor-pointer rounded-md border border-dashed border-border bg-transparent px-2.5 py-1.5 text-center text-xs text-muted transition-[background-color,border-color] duration-[120ms] ease-out hover:border-border-secondary hover:bg-surface-hover'
+                        className='mx-2 mb-1.5 mt-1 cursor-pointer rounded-full border-0 bg-foreground/[0.04] px-3 py-1.5 text-center text-xs text-muted transition-colors duration-[140ms] ease-out hover:bg-foreground/[0.08] hover:text-foreground'
                         onClick={section.showMoreTimesteps}
                     >
                         Show {Math.min(TIMESTEP_PAGE_SIZE, hiddenCount)} more timesteps ({hiddenCount} hidden)

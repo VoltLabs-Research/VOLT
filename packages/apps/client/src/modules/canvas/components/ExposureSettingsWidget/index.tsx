@@ -43,12 +43,7 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <div className={cn('min-w-[220px] rounded-xl border border-border bg-surface px-3 py-2.5', `canvas-widget ${isSceneInteracting ? 'is-dimmed' : ''}`)} style={{
-            bottom: '1rem',
-            right: '1rem',
-            top: 'auto',
-            left: 'auto'
-        }}>
+        <div className={cn('glass-surface absolute bottom-4 right-4 z-[22] min-w-[220px] rounded-2xl bg-overlay px-3 py-2.5 shadow-overlay transition-opacity duration-[140ms]', isSceneInteracting && 'opacity-40')}>
             <div className='flex flex-col gap-2'>
                 <FormFieldRHF
                     fieldKey="sceneOpacity"

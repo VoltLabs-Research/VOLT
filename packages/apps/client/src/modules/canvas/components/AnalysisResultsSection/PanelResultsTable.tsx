@@ -43,9 +43,9 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep, onStatusCh
     }
 
     return (
-        <div className='flex flex-col gap-1 px-2.5 pb-2'>
+        <div className='flex flex-col gap-1 pb-2.5 pl-2.5 pr-3'>
             <span className='text-2xs font-medium text-muted'>{table.title}</span>
-            <table className='w-full border-collapse text-2xs'>
+            <table className='w-full border-collapse text-2xs tabular-nums'>
                     <thead>
                         <tr className='text-muted'>
                             <th className='w-4 p-0' aria-label='Color' />
@@ -69,10 +69,8 @@ const PanelResultsTable = ({ table, analysisId, exposureId, timestep, onStatusCh
                                 <tr key={`${label}-${index}`} className='text-foreground'>
                                     <td className='p-0 align-middle'>
                                         <span
-                                            className='block size-2.5 rounded-sm'
-                                            style={swatch
-                                                ? { backgroundColor: swatch }
-                                                : { border: '1px solid var(--border)' }}
+                                            className='block size-2.5 rounded-sm shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_15%,transparent)]'
+                                            style={swatch ? { backgroundColor: swatch } : undefined}
                                             title={swatch ? undefined : 'The plugin declared no color for this category'}
                                         />
                                     </td>

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, MousePointerClick, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
     AnalysisTreeRetryRow,
     CanvasTreeEmptyRow,
@@ -150,19 +150,16 @@ const AnalysisTreeNode = ({
     const analysisMenuOptions: MenuOption[] = [
         {
             label: isCurrentAnalysis ? 'Deselect' : 'Select',
-            icon: MousePointerClick,
             onClick: handleSelectAnalysis,
             disabled: isAnalysisInProgress
         },
         {
             label: 'Download',
-            icon: Download,
             onClick: () => void downloadAnalysisListings({ analysisId: analysis._id }),
             disabled: resolvedStatus !== CanvasAnalysisStatusEnum.Completed
         },
         {
             label: 'Delete',
-            icon: Trash2,
             onClick: () => onDeleteAnalysis(analysis._id),
             destructive: true
         }
@@ -194,9 +191,8 @@ const AnalysisTreeNode = ({
                     className={cn(
                         'flex w-full cursor-pointer select-none items-center gap-2 text-xs text-muted',
                         TREE_ROW_CLASS,
-                        'hover:rounded-md hover:bg-surface-hover',
-                        treeIndentClass(indent),
-                        isCurrentAnalysis && 'text-accent'
+                        'hover:bg-foreground/5 focus-visible:bg-foreground/[0.06]',
+                        treeIndentClass(indent)
                     )}
                     role='treeitem'
                     aria-selected={isCurrentAnalysis}
@@ -237,7 +233,7 @@ const AnalysisTreeNode = ({
                     >
                         <div className='flex flex-col'>
                             {isAnalysisInProgress && (
-                                <div className='border-b border-border px-3 py-2 text-xs text-warning'>
+                                <div className='border-b border-foreground/[0.06] px-3 py-2 text-xs text-warning-soft-foreground'>
                                     Analysis still running. Some options will be disabled until it finishes.
                                 </div>
                             )}

@@ -323,7 +323,7 @@ const ObjectsPanel = ({
                         currentTimestep={currentTimestep}
                     />
                     {populatedSections.length > 0 && (
-                        <div className='flex flex-none flex-col border-t border-border'>
+                        <div className='flex flex-none flex-col border-t border-foreground/[0.06]'>
                             {populatedSections.map(renderArtifactSection)}
                         </div>
                     )}

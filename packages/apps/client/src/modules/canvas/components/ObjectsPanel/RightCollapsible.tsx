@@ -46,7 +46,7 @@ const RightCollapsible = ({
     return (
         <div data-tour-id={tourId}>
             <div className='flex flex-col'>
-                <div className='flex min-h-8 flex-row items-center justify-between gap-2 px-3 max-md:h-auto max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:h-7 [.canvas-objects-panel--analysis-compact_&]:min-h-7 [.canvas-objects-panel--analysis-compact_&]:px-2'>
+                <div className='flex min-h-8 flex-row items-center justify-between gap-2 pl-3 pr-2 max-md:h-auto max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:h-7 [.canvas-objects-panel--analysis-compact_&]:min-h-7 [.canvas-objects-panel--analysis-compact_&]:px-2'>
                     <h3 id={headingId} className='m-0 min-w-0 flex-1'>
                         <span className='flex min-h-8 w-full min-w-0 flex-row items-center gap-2 max-md:min-h-9 [.canvas-objects-panel--analysis-compact_&]:min-h-7'>
                             {collapsible ? (
@@ -64,7 +64,7 @@ const RightCollapsible = ({
                                     {actionsNode}
                                     <button
                                         type='button'
-                                        className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-0 text-muted hover:bg-surface-hover focus-visible:bg-surface-hover [.canvas-objects-panel--analysis-compact_&]:size-5'
+                                        className='flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-muted transition-colors duration-[140ms] hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] [.canvas-objects-panel--analysis-compact_&]:size-5'
                                         onClick={toggle}
                                         aria-expanded={expanded}
                                         aria-controls={bodyId}
@@ -73,7 +73,7 @@ const RightCollapsible = ({
                                         <ChevronDown
                                             size={13}
                                             aria-hidden='true'
-                                            className={expanded ? undefined : '-rotate-90'}
+                                            className={cn('transition-transform duration-200 ease-[var(--ease-emphasized)]', !expanded && '-rotate-90')}
                                         />
                                     </button>
                                 </>
