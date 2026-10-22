@@ -1,15 +1,37 @@
 .landing {
-    --lp-ground: #0a0a0a;
-    --lp-bar: #0f0f0f;
+    --lp-ground: #070708;
+    --lp-raised: #0e0e10;
+    --lp-inset: #121214;
     --lp-line: rgba(255, 255, 255, 0.07);
     --lp-line-mid: rgba(255, 255, 255, 0.14);
+    --lp-line-strong: rgba(255, 255, 255, 0.22);
     --lp-fg: #ffffff;
     --lp-dim: #8b8b8b;
     --lp-faint: #5f5f5f;
+    --lp-header: 64px;
     --lp-gutter: clamp(20px, 2.6vw, 48px);
-    --lp-section-y: clamp(72px, 8vw, 140px);
-    --lp-card-pad: clamp(24px, 2.4vw, 44px);
+    --lp-section-y: clamp(96px, 10vw, 180px);
+    --lp-card-pad: clamp(22px, 2.2vw, 36px);
+    --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* SCREEN_WIDTH and SCREEN_HEIGHT (contracts/screens.ts). */
+    --lp-screen-width: 1600;
+    --lp-screen-height: 900;
+    /* The two lights that glow behind what a section leads with, as RGB channels. */
+    --lp-glow-cool: 77 107 179;
+    --lp-glow-warm: 250 176 64;
+    --lp-shadow:
+        0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+        0 60px 160px -40px rgba(0, 0, 0, 0.95),
+        0 30px 60px -30px rgba(0, 0, 0, 0.7);
 
+    /* The page scrolls itself: the app's route wrapper (ErrorBoundary) clips with overflow
+       hidden, which would make it the scroll container every sticky element sticks to.
+       Scroll-linked motion measures against it, which needs it positioned. */
+    position: relative;
+    height: 100dvh;
+    overflow-x: clip;
+    overflow-y: auto;
+    scroll-behavior: smooth;
     background: var(--lp-ground);
     color: var(--lp-fg);
     font-family: 'Geist Variable', Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -22,31 +44,25 @@
     background: rgba(255, 255, 255, 0.18);
 }
 
+.landing :where(a):focus-visible,
+.landing :where(button):focus-visible {
+    outline: 2px solid var(--lp-fg);
+    outline-offset: 3px;
+}
+
 .landing-wrap {
     max-width: 1800px;
     margin-inline: auto;
     padding-inline: var(--lp-gutter);
 }
 
-.landing-rule {
-    max-width: 1800px;
-    margin-inline: auto;
-    padding-inline: var(--lp-gutter);
+.landing-mono {
+    font-family: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
 }
 
-.landing-rule::after {
-    content: '';
-    display: block;
-    height: 1px;
-    background: var(--lp-line);
-}
-
-.landing-display {
-    font-size: clamp(2.4rem, 4.4vw, 3.9rem);
-    line-height: 1.1;
-    letter-spacing: -0.032em;
-    font-weight: 400;
-    max-width: 16ch;
+.landing-dim {
+    color: var(--lp-dim);
 }
 
 .landing-heading {
@@ -62,16 +78,15 @@
 }
 
 .landing-dual > span + span {
-    max-width: 22ch;
     color: var(--lp-dim);
 }
 
 .landing-lead {
+    max-width: 44ch;
     font-size: clamp(1rem, 1.15vw, 1.1875rem);
     line-height: 1.5;
     letter-spacing: -0.012em;
     color: var(--lp-dim);
-    max-width: 38ch;
 }
 
 .landing-pill {
@@ -80,6 +95,7 @@
     gap: 8px;
     height: 40px;
     padding-inline: 20px;
+    border: 1px solid transparent;
     border-radius: 999px;
     font-size: 0.875rem;
     font-weight: 500;
@@ -88,40 +104,38 @@
     background: var(--lp-fg);
     color: #0a0a0a;
     text-decoration: none;
-    border: 0;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .landing-pill:hover {
     background: #dedede;
 }
 
+.landing-pill svg {
+    transition: transform 0.3s var(--lp-ease);
+}
+
+.landing-pill:hover svg {
+    transform: translateX(3px);
+}
+
 .landing-pill--lg {
-    height: 46px;
-    padding-inline: 24px;
+    height: 50px;
+    padding-inline: 26px;
     font-size: 0.9375rem;
 }
 
-.landing-hero {
-    min-height: calc(100dvh - 132px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.landing-pill--ghost {
+    border-color: var(--lp-line-strong);
+    background: rgba(7, 7, 8, 0.35);
+    color: var(--lp-fg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
 }
 
-.landing-hero-copy {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    padding-inline: var(--lp-gutter);
-    text-align: center;
-}
-
-.landing-hero-copy .landing-display {
-    margin: 0;
+.landing-pill--ghost:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .landing-quiet {
@@ -134,31 +148,572 @@
     color: var(--lp-fg);
 }
 
-.landing-card {
-    background: transparent;
-    border: 1px solid var(--lp-line);
-    padding: var(--lp-card-pad);
+/* Header: clear over the hero, then a bar once the page moves. */
+
+.landing-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.35s ease, border-color 0.35s ease;
 }
 
-.landing-mono {
-    font-family: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
-    font-variant-numeric: tabular-nums;
+.landing-header[data-scrolled='true'] {
+    border-bottom-color: var(--lp-line);
+    background: rgba(7, 7, 8, 0.72);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    backdrop-filter: blur(16px) saturate(1.2);
 }
+
+.landing-header-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(18px, 3vw, 52px);
+    height: var(--lp-header);
+}
+
+.landing-brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    color: var(--lp-fg);
+    text-decoration: none;
+}
+
+.landing-header-links {
+    display: none;
+    gap: clamp(14px, 1.6vw, 26px);
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
+}
+
+.landing-header-actions {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 1.4vw, 22px);
+    margin-inline-start: auto;
+}
+
+.landing-header-sign-in {
+    display: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--lp-fg);
+    text-decoration: none;
+}
+
+@media (width >= 56rem) {
+    .landing-header-links,
+    .landing-header-sign-in {
+        display: flex;
+    }
+}
+
+/* Hero */
+
+.landing-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: clamp(72px, 14vh, 176px);
+    padding-bottom: clamp(56px, 9vh, 112px);
+    text-align: center;
+}
+
+/* Sized so its longer line, "Modern Materials Research", holds on one line from tablets up. */
+.landing-hero-title {
+    font-size: clamp(2.75rem, 6.6vw, 8.5rem);
+    font-weight: 500;
+    line-height: 0.94;
+    letter-spacing: -0.055em;
+}
+
+.landing-hero-title .landing-line > span {
+    text-wrap: balance;
+}
+
+/* Each line rises out of its own slot; the padding keeps the descenders inside it. */
+.landing-line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+}
+
+.landing-line > span {
+    display: inline-block;
+    animation: landing-line-in 1.15s var(--lp-ease) both;
+}
+
+.landing-line + .landing-line > span {
+    animation-delay: 0.1s;
+}
+
+.landing-intro {
+    animation: landing-fade-in 1s var(--lp-ease) 0.5s both;
+}
+
+@keyframes landing-line-in {
+    from {
+        transform: translateY(108%);
+    }
+}
+
+@keyframes landing-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+}
+
+.landing-hero-lead {
+    max-width: 44ch;
+    margin-top: clamp(28px, 4.4vh, 48px);
+    font-size: clamp(1.125rem, 1.4vw, 1.375rem);
+    line-height: 1.5;
+    letter-spacing: -0.012em;
+    text-wrap: pretty;
+    color: var(--lp-dim);
+}
+
+.landing-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.landing-hero .landing-hero-actions {
+    margin-top: clamp(28px, 4.4vh, 44px);
+}
+
+/* Notes: a short title and a line or two under a rule, as the tour's steps and what the
+   assistant does are listed. */
+
+.landing-note {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding-top: 14px;
+    border-top: 1px solid var(--lp-line-mid);
+}
+
+.landing-note .landing-mono {
+    font-size: 0.75rem;
+    color: var(--lp-faint);
+}
+
+.landing-note h3 {
+    font-size: 1.0625rem;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+}
+
+.landing-note p {
+    max-width: 52ch;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--lp-dim);
+}
+
+/* Screens: the app's pages, scaled into the page from their own documents. */
+
+.landing-screen {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    /* Never shown larger than laid out. */
+    max-width: calc(var(--lp-screen-width) * 1px);
+    aspect-ratio: var(--lp-screen-width) / var(--lp-screen-height);
+    margin-inline: auto;
+    border: 1px solid var(--lp-line-mid);
+    border-radius: clamp(10px, 1vw, 16px);
+    background: var(--background);
+    box-shadow: var(--lp-shadow);
+}
+
+.landing-screen iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    transform: scale(var(--landing-screen-scale));
+    transform-origin: 0 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s var(--lp-ease);
+}
+
+.landing-screen[data-ready='true'] iframe {
+    opacity: 1;
+}
+
+/* Pinned tracks: the tour and the showcase hold their stage under the header while the page
+   scrolls through them, four fifths of a viewport for each of their steps, with the stage's
+   own height on top (see use-pinned-track.ts). */
+
+@media (width >= 64rem) {
+    .landing-track {
+        --lp-step: 80vh;
+        position: relative;
+        height: calc(var(--landing-steps) * var(--lp-step) + 100dvh);
+    }
+
+    .landing-stage {
+        position: sticky;
+        top: var(--lp-header);
+        display: grid;
+        align-items: center;
+        height: calc(100dvh - var(--lp-header));
+    }
+
+    /* Where a link to a step lands: halfway through its stretch. */
+    .landing-track-mark {
+        position: absolute;
+        top: calc((var(--landing-step) + 0.5) * var(--lp-step));
+    }
+}
+
+/* Steps: a row of notes under what is pinned, each ruled with how far the page is through it. */
+
+.landing-steps {
+    display: grid;
+    gap: 22px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The step's number beside its title, and what it shows under the title. */
+.landing-steps li {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 12px;
+    transition: opacity 0.5s var(--lp-ease);
+}
+
+.landing-steps p {
+    grid-column: 2;
+}
+
+.landing-steps-progress {
+    position: absolute;
+    top: -1px;
+    inset-inline: 0;
+    height: 1px;
+    background: var(--lp-fg);
+    transform-origin: 0 50%;
+}
+
+@media (width >= 64rem) {
+    .landing-steps {
+        grid-auto-columns: minmax(0, 1fr);
+        grid-auto-flow: column;
+        gap: clamp(24px, 2.6vw, 48px);
+    }
+
+    .landing-steps li {
+        opacity: 0.36;
+    }
+
+    .landing-steps li[data-active='true'] {
+        opacity: 1;
+    }
+}
+
+/* Viewer tour: the canvas, pinned, while its steps go by. */
+
+.landing-tour-frame {
+    display: grid;
+    gap: 24px;
+    padding-bottom: var(--lp-section-y);
+}
+
+@media (width >= 64rem) {
+    /* As wide as the screen can be while it, the row of steps under it (two lines each) and
+       the space around them fit the viewport's height. */
+    .landing-tour-frame {
+        width: 100%;
+        max-width: calc((100dvh - var(--lp-header) - 9.5rem) * var(--lp-screen-width) / var(--lp-screen-height) + 2 * var(--lp-gutter));
+        padding-bottom: 0;
+    }
+}
+
+/* Showcase: what the platform does, a chapter at a time, beside the page of the app that
+   does it. */
+
+.landing-chapters {
+    display: grid;
+    gap: var(--lp-section-y);
+}
+
+.landing-chapter {
+    display: grid;
+    gap: clamp(32px, 4vw, 56px);
+}
+
+.landing-chapter-copy {
+    display: grid;
+    gap: clamp(18px, 2vw, 32px);
+}
+
+.landing-eyebrow {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    font-size: clamp(1rem, 1.3vw, 1.25rem);
+    letter-spacing: -0.012em;
+}
+
+.landing-eyebrow .landing-mono {
+    font-size: 0.8125rem;
+    color: var(--lp-faint);
+}
+
+@media (width >= 64rem) {
+    .landing-showcase {
+        display: grid;
+        gap: clamp(32px, 4.4vh, 56px);
+        width: 100%;
+    }
+
+    /* Pinned, the chapters stack in one place and only the one the page is in shows: what the
+       others say waits a little above or below, as far as the page has gone. */
+    .landing-chapter {
+        grid-area: 1 / 1;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        align-items: center;
+        column-gap: clamp(32px, 4vw, 72px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.6s var(--lp-ease);
+    }
+
+    .landing-chapter[data-active='true'] {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .landing-chapter-copy {
+        transform: translateY(calc(var(--landing-away) * 24px));
+        transition: transform 0.6s var(--lp-ease);
+    }
+
+    /* The row of steps under the chapters names them. */
+    .landing-chapter .landing-eyebrow {
+        display: none;
+    }
+
+    /* As wide as its column, unless that leaves no room for the steps under it. */
+    .landing-chapter .landing-screen {
+        max-width: min(calc(var(--lp-screen-width) * 1px), calc((100dvh - var(--lp-header) - 12rem) * var(--lp-screen-width) / var(--lp-screen-height)));
+        margin-inline-end: 0;
+    }
+}
+
+/* Runtimes */
+
+.landing-code {
+    margin: auto 0 0;
+    padding: 12px 14px;
+    border: 1px solid var(--lp-line);
+    border-radius: 10px;
+    background: var(--lp-ground);
+    font-family: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
+    font-size: 0.75rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--lp-dim);
+}
+
+/* The how-to of the hero, spaced from it by the hero's own padding. */
+.landing-runtimes-section {
+    padding-bottom: var(--lp-section-y);
+}
+
+.landing-runtimes {
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--lp-line-mid);
+    border-radius: 30px;
+    background: var(--lp-inset);
+}
+
+.landing-runtime {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: var(--lp-card-pad);
+    border-radius: 22px;
+    background: var(--lp-ground);
+}
+
+.landing-runtime h3 {
+    margin-top: 8px;
+    font-size: clamp(1.4rem, 1.8vw, 1.75rem);
+    font-weight: 400;
+    letter-spacing: -0.026em;
+}
+
+.landing-runtime p {
+    max-width: 40ch;
+    margin-bottom: 18px;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--lp-dim);
+}
+
+.landing-runtime .landing-pill {
+    margin-top: auto;
+}
+
+.landing-runtime--lead {
+    background:
+        radial-gradient(70% 60% at 100% 0%, rgb(var(--lp-glow-cool) / 0.4), transparent 72%),
+        radial-gradient(55% 50% at 0% 100%, rgb(var(--lp-glow-warm) / 0.16), transparent 72%),
+        #141416;
+}
+
+@media (width >= 64rem) {
+    .landing-runtimes {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Closing */
+
+.landing-closing {
+    display: grid;
+    justify-items: center;
+    gap: clamp(36px, 4vw, 56px);
+    padding-block: clamp(120px, 14vw, 240px);
+    text-align: center;
+}
+
+.landing-closing-title {
+    font-size: clamp(3.25rem, 9vw, 11rem);
+    font-weight: 500;
+    line-height: 0.88;
+    letter-spacing: -0.062em;
+}
+
+.landing-closing-title > span {
+    display: block;
+}
+
+/* Footer */
+
+.landing-footer {
+    overflow: hidden;
+    border-top: 1px solid var(--lp-line);
+}
+
+.landing-footer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 20px;
+    padding-top: clamp(40px, 4vw, 64px);
+    padding-bottom: 40px;
+}
+
+.landing-footer-about {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 10px;
+    align-content: start;
+}
+
+.landing-footer-about p,
+.landing-footer nav p {
+    font-size: 0.8125rem;
+    color: var(--lp-faint);
+}
+
+.landing-footer nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.875rem;
+}
+
+.landing-footer-base {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 26px;
+    border-top: 1px solid var(--lp-line);
+    font-size: 0.8125rem;
+    color: var(--lp-faint);
+}
+
+.landing-wordmark {
+    margin: 0 0 -0.2em;
+    font-size: 31vw;
+    font-weight: 600;
+    line-height: 0.8;
+    letter-spacing: -0.06em;
+    text-align: center;
+    color: transparent;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+    -webkit-background-clip: text;
+    background-clip: text;
+    user-select: none;
+}
+
+@media (width >= 48rem) {
+    .landing-footer-grid {
+        grid-template-columns: 1.6fr 1fr 1fr;
+    }
+
+    .landing-footer-about {
+        grid-column: auto;
+    }
+}
+
+@media (width < 64rem) {
+    .landing {
+        --lp-section-y: 96px;
+    }
+}
+
+/* Reveal */
 
 .landing[data-animate='true'] .landing-rise {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(18px);
 }
 
 .landing[data-animate='true'] .landing-rise[data-shown='true'] {
     opacity: 1;
     transform: none;
     transition:
-        opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.9s var(--lp-ease),
+        transform 0.9s var(--lp-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .landing {
+        scroll-behavior: auto;
+    }
+
+    .landing-line > span,
+    .landing-intro {
+        animation: none;
+    }
+
+    .landing-screen iframe,
+    .landing-steps li,
+    .landing-chapter,
+    .landing-chapter-copy {
+        transition: none;
+    }
+
     .landing[data-animate='true'] .landing-rise,
     .landing[data-animate='true'] .landing-rise[data-shown='true'] {
         opacity: 1;
