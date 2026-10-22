@@ -19,7 +19,6 @@ import {
     transparencyOption
 } from '../../utils/tree-menus';
 
-import { Atom, Box } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { AnalysisSectionData } from '../../utils/sidebar-scene-sections';
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
@@ -60,8 +59,6 @@ interface SceneCollectionProps {
     firstAnalysisTourTargetId?: string;
     firstExposureTourTargetId?: string;
 }
-
-const TREE_SCENE_ICON_COLOR = 'var(--accent)';
 
 const SceneCollection = ({
     runSections,
@@ -173,11 +170,6 @@ const SceneCollection = ({
     const trajectoryRow = (
         <CanvasTreeRow
             isActive={!!isDefaultActive}
-            icon={<Atom style={{
-                width: 13,
-                height: 13,
-                color: TREE_SCENE_ICON_COLOR
-            }} />}
             label='Trajectory'
             onClick={() => onSelectScene(defaultScene)}
         />
@@ -186,11 +178,6 @@ const SceneCollection = ({
     const simulationCellRow = (
         <CanvasTreeRow
             isActive={showSimulationCell}
-            icon={<Box style={{
-                width: 13,
-                height: 13,
-                color: TREE_SCENE_ICON_COLOR
-            }} />}
             label='Simulation Cell'
             onClick={onToggleSimulationCell}
         />

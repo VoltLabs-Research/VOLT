@@ -1,4 +1,3 @@
-import { Download } from 'lucide-react';
 import { CanvasTreeRow, MaybeContextMenu } from '../CanvasTree';
 import { DEFAULT_LINE_WIDTH, buildPluginScene, buildSceneRenderMetadata } from '../../utils/plugin-exposure-export';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
@@ -95,7 +94,6 @@ const ExposureRow = ({
         }),
         {
             label: 'Download',
-            icon: Download,
             onClick: () => void downloadExposureListing({
                 pluginId,
                 exposureId: exposure.exposureId,

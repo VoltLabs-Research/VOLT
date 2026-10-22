@@ -1,9 +1,7 @@
 import { pruneExpandedTimesteps } from './artifact-labels';
 
-import { Filter, Palette } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ComponentType, CSSProperties } from 'react';
 import type { SceneArtifact, SceneArtifactSourceType } from '@volt/contracts/modules/trajectory/domain';
 
 export const TIMESTEP_PAGE_SIZE = 50;
@@ -16,7 +14,6 @@ interface ArtifactSectionDefinition {
     id: ArtifactSectionId;
     title: string;
     ariaLabel: string;
-    icon: ComponentType<{ style?: CSSProperties }>;
 }
 
 export interface ArtifactSection extends ArtifactSectionDefinition {
@@ -34,14 +31,12 @@ const SECTION_DEFINITIONS: ArtifactSectionDefinition[] = [
     {
         id: 'color-coding',
         title: 'Color Coding',
-        ariaLabel: 'Color Coding hierarchy',
-        icon: Palette
+        ariaLabel: 'Color Coding hierarchy'
     },
     {
         id: 'particle-filter',
         title: 'Particle Filter',
-        ariaLabel: 'Particle Filter hierarchy',
-        icon: Filter
+        ariaLabel: 'Particle Filter hierarchy'
     },
 ];
 

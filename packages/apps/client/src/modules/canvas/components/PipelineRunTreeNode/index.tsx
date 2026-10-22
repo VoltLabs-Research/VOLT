@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Layers, RotateCcw, Scissors, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@heroui/react';
 import {
     CanvasTreeRow,
@@ -37,15 +37,9 @@ const ICON_STYLE = {
 };
 
 
-const STAGE_ICON = {
-    slice: Scissors,
-    expression: SlidersHorizontal,
-    plugin: Layers
-} as const;
-
 const CachedBadge = () => (
     <span
-        className='shrink-0 rounded-sm bg-surface-tertiary px-1 py-px text-2xs leading-none text-muted'
+        className='shrink-0 rounded-full bg-foreground/[0.06] px-1.5 text-2xs leading-4 text-muted'
         title='An identical stage had already run — this run reused its result instead of recomputing.'
     >
         cached
@@ -82,14 +76,12 @@ const PipelineRunTreeNode = ({
     if (run && onRestore) {
         menuOptions.push({
             label: 'Restore into pipeline',
-            icon: RotateCcw,
             onClick: () => onRestore(run)
         });
     }
     if (run && onDelete) {
         menuOptions.push({
             label: 'Delete',
-            icon: Trash2,
             onClick: () => onDelete(run),
             destructive: true
         });
@@ -132,13 +124,13 @@ const PipelineRunTreeNode = ({
                 'flex cursor-pointer select-none items-center gap-2 text-xs',
                 TREE_ROW_CLASS,
                 treeIndentClass('base'),
-                'hover:rounded-md hover:bg-surface-hover'
+                'hover:bg-foreground/5 focus-visible:bg-foreground/[0.06]'
             )}
         >
             <span className='flex min-w-0 flex-[0_1_auto] flex-col gap-px'>
                 {title}
                 {metaLabel && (
-                    <span className='truncate text-xs leading-[1.2] text-muted opacity-90'>
+                    <span className='truncate text-xs leading-[1.2] text-muted'>
                         {metaLabel}
                     </span>
                 )}
@@ -155,15 +147,12 @@ const PipelineRunTreeNode = ({
             return renderAnalysisRow(row);
         }
 
-        const Icon = STAGE_ICON[row.stage.kind];
-
         if (row.kind === 'context') {
             return (
                 <CanvasTreeRow
                     key={row.key}
                     indent='lg'
                     disabled
-                    icon={<Icon style={ICON_STYLE} />}
                     label={<span className='truncate'>{describePipelineRunStage(row.stage)}</span>}
                     ariaLabel={`${describePipelineRunStage(row.stage)} (transform, no results)`}
                 />
@@ -175,7 +164,6 @@ const PipelineRunTreeNode = ({
                 key={row.key}
                 indent='lg'
                 disabled
-                icon={<Icon style={ICON_STYLE} />}
                 label={(
                     <span className='flex min-w-0 items-center gap-1.5'>
                         <span className='truncate'>{describePipelineRunStage(row.stage)}</span>

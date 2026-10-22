@@ -8,7 +8,7 @@ import AnalysisPluginStageEditor from './stage-editors/AnalysisPluginStageEditor
 import ColorCodingStageEditor from './stage-editors/ColorCodingStageEditor';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { memo, useEffect, useState } from 'react';
-import { GripVertical, Settings, Trash2 } from 'lucide-react';
+import { GripVertical, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PipelineStage, StageType } from '../../store/canvas-pipeline';
 import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig } from '../../store/canvas-pipeline';
@@ -117,14 +117,14 @@ const CanvasPipeline = ({
     }
 
     return (
-        <div className='flex flex-col gap-2 p-1.5'>
+        <div className='flex flex-col p-1.5'>
             <div className='flex flex-col gap-1'>
                 {stages.map((stage) => {
                     const label = stageLabel(stage, pluginNameById);
                     const canToggle = isLiveToggleStage(stage) || stage.executed;
 
                     return (
-                        <div className={cn('group overflow-hidden rounded-md border border-border', dragId === stage.id && 'opacity-50')}
+                        <div className={cn('group overflow-hidden rounded-xl bg-foreground/[0.04]', dragId === stage.id && 'opacity-50')}
                             key={stage.id}
                             draggable
                             onDragStart={() => setDragId(stage.id)}
@@ -132,8 +132,8 @@ const CanvasPipeline = ({
                             onDragOver={(e) => { e.preventDefault(); }}
                             onDrop={() => handleDrop(stage.id)}
                         >
-                            <div className={cn('flex flex-row items-center gap-2 px-1.5 py-1', !stage.enabled && 'opacity-55')}>
-                                <span className='flex cursor-grab items-center text-muted' aria-hidden='true'>
+                            <div className='flex min-h-[2.125rem] flex-row items-center gap-2 py-1 pl-2 pr-1.5'>
+                                <span className={cn('flex cursor-grab items-center text-muted', !stage.enabled && 'opacity-55')} aria-hidden='true'>
                                     <GripVertical size={12} />
                                 </span>
                                 <ContextMenuPopover
@@ -145,14 +145,11 @@ const CanvasPipeline = ({
                                     trigger={
                                         <button
                                             type='button'
-                                            className='flex min-w-0 flex-1 cursor-pointer select-none items-center gap-1.5 border-none bg-transparent p-0 text-inherit'
+                                            className={cn('flex min-w-0 flex-1 cursor-pointer select-none items-center border-none bg-transparent p-0 text-inherit', !stage.enabled && 'opacity-55')}
                                             aria-label={`${label} settings`}
                                         >
                                             <span className='min-w-0 flex-1 truncate text-left text-xs text-foreground'>
                                                 {label}
-                                            </span>
-                                            <span className='ml-auto flex items-center text-muted opacity-0 transition-opacity duration-[120ms] ease-out group-hover:opacity-100 group-focus-within:opacity-100' aria-hidden='true'>
-                                                <Settings size={12} />
                                             </span>
                                         </button>
                                     }
@@ -165,7 +162,7 @@ const CanvasPipeline = ({
                                 <div className='flex shrink-0 flex-row items-center gap-1'>
                                     <button
                                         type='button'
-                                        className={cn('flex cursor-pointer items-center rounded-md border-none bg-transparent p-0.5 text-muted hover:text-foreground', 'opacity-0 transition-opacity duration-[120ms] ease-out hover:text-danger group-hover:opacity-100 group-focus-within:opacity-100')}
+                                        className='flex size-6 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-[120ms] ease-out hover:text-danger-soft-foreground group-hover:opacity-100 group-focus-within:opacity-100'
                                         onClick={() => removeStage(stage.id, trajectoryId)}
                                         aria-label='Remove stage'
                                         title='Remove'

@@ -1,4 +1,3 @@
-import { Droplet, Eye, Frame, Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import { Button, Label, Slider } from '@heroui/react';
 
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -62,32 +61,27 @@ export const buildAddRemoveOption = ({ isActive, onAdd, onRemove }: AddRemoveOpt
     return isActive
         ? {
             label: 'Remove from scene',
-            icon: Minus,
             destructive: true,
             onClick: onRemove
         }
         : {
             label: 'Add to scene',
-            icon: Plus,
             onClick: onAdd
         };
 };
 
 export const transparencyOption = (submenuContent: React.ReactNode): MenuOption => ({
     label: 'Transparency',
-    icon: Eye,
     submenuContent
 });
 
 export const lineSettingsOption = (submenuContent: React.ReactNode): MenuOption => ({
     label: 'Line Settings',
-    icon: SlidersHorizontal,
     submenuContent
 });
 
 export const buildEdgesOption = (enabled: boolean, onToggle: () => void): MenuOption => ({
     label: enabled ? 'Hide Feature Edges' : 'Show Feature Edges',
-    icon: Frame,
     onClick: onToggle
 });
 
@@ -129,6 +123,5 @@ export const buildColorSubmenu = (
 
 export const colorOption = (submenuContent: React.ReactNode): MenuOption => ({
     label: 'Color',
-    icon: Droplet,
     submenuContent
 });
