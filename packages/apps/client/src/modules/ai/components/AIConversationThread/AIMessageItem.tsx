@@ -78,7 +78,7 @@ const AIMessageItem = memo(({
     return (
         <article
             className={cn(
-                'group/message flex min-w-0 flex-col gap-2',
+                'group/message flex min-w-0 flex-col gap-3',
                 isUser ? 'items-end' : 'items-start'
             )}
             aria-label={`${messageLabel} message ${messageIndex + 1} of ${totalMessages}`}
@@ -93,11 +93,11 @@ const AIMessageItem = memo(({
                             className={cn(
                                 'min-w-0',
                                 isUser
-                                    ? 'max-w-[80%] rounded-xl bg-surface-secondary px-4 py-2.5 max-md:max-w-[88%]'
+                                    ? 'max-w-[78%] rounded-2xl bg-default px-4 py-2.5 max-md:max-w-[88%]'
                                     : 'w-full'
                             )}
                         >
-                            <Prose components={markdownComponents}>{block.text}</Prose>
+                            <Prose size='lg' components={markdownComponents}>{block.text}</Prose>
                         </div>
                     );
                 }

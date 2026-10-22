@@ -1,4 +1,4 @@
-import { Button, ListBox, Select, Tooltip, cn } from '@heroui/react';
+import { Button, ListBox, Select, Tooltip } from '@heroui/react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { useEffect, useId, useRef } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
@@ -6,6 +6,9 @@ import type { SelectOption } from '@/shared/contracts/form-field';
 import type { KeyboardEvent } from 'react';
 
 const MAX_TEXTAREA_HEIGHT_PX = 168;
+
+// The round 36px action that ends the row: send, or stop while a reply streams.
+const ROUND_ACTION_CLASS = 'size-9 min-w-9 shrink-0 rounded-full bg-foreground text-canvas transition-opacity hover:opacity-90 disabled:opacity-40';
 
 interface AIComposerProps {
     value: string;
@@ -62,9 +65,9 @@ const AIComposer = ({
     if (error) statusMessage = error;
 
     return (
-        <div className='ai-composer mx-auto flex w-full max-w-[46rem] flex-col gap-1.5 px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] max-md:px-3 [.ai-floating-assistant_&]:px-3 [.ai-floating-assistant_&]:pb-3'>
+        <div className='mx-auto flex w-full max-w-3xl flex-col gap-2 px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] [.ai-floating-assistant_&]:p-2'>
             {error && (
-                <p className='px-1 text-xs text-danger' role='alert' aria-live='assertive'>
+                <p className='px-4 text-xs text-danger' role='alert' aria-live='assertive'>
                     {error}
                 </p>
             )}
@@ -74,7 +77,7 @@ const AIComposer = ({
                 {statusMessage}
             </span>
 
-            <div className='flex flex-col gap-1 rounded-xl border border-border bg-surface-secondary px-3 py-2.5 transition-[border-color,box-shadow] duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_14%,transparent)]'>
+            <div className='flex flex-row items-end gap-2 rounded-3xl bg-foreground/6 p-2'>
                 <textarea
                     id={inputId}
                     ref={textareaRef}
@@ -83,72 +86,67 @@ const AIComposer = ({
                     onChange={(event) => onChange(event.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder='Ask anything'
-                    className='max-h-42 w-full resize-none border-none bg-transparent p-0 text-sm leading-[1.5] text-foreground outline-none [font-family:inherit] placeholder:text-muted focus-visible:outline-none'
+                    className='max-h-42 min-w-0 flex-1 resize-none bg-transparent py-1.5 pl-3 text-base leading-6 text-foreground outline-none placeholder:text-muted focus-visible:outline-none'
                     disabled={disabled}
                     enterKeyHint='send'
                     aria-describedby={statusId}
                     aria-invalid={Boolean(error)}
                 />
 
-                <div className='flex flex-row items-center justify-between gap-2'>
-                    <Select
-                        className='min-w-0 max-w-50'
-                        selectedKey={selectedModel}
-                        onSelectionChange={(key) => {
-                            if (key === null) return;
-                            onModelChange(String(key));
-                        }}
-                        isDisabled={disabled || modelOptions.length === 0}
-                        placeholder={modelPlaceholder}
-                        aria-label='Select AI model'
-                    >
-                        <Select.Trigger className='h-6 min-h-0 w-full rounded-md border-0 bg-transparent px-1 py-0 pe-5 text-2xs text-muted shadow-none hover:text-foreground'>
-                            <Select.Value className='overflow-hidden text-ellipsis whitespace-nowrap text-2xs'>
-                                {({ isPlaceholder, selectedText, defaultChildren }) => (
-                                    isPlaceholder ? defaultChildren : selectedText
-                                )}
-                            </Select.Value>
-                            <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                            <ListBox>
-                                {modelOptions.map((option) => (
-                                    <OptionListBoxItem key={option.value} option={option} />
-                                ))}
-                            </ListBox>
-                        </Select.Popover>
-                    </Select>
+                <Select
+                    className='min-w-0 max-w-50'
+                    selectedKey={selectedModel}
+                    onSelectionChange={(key) => {
+                        if (key === null) return;
+                        onModelChange(String(key));
+                    }}
+                    isDisabled={disabled || modelOptions.length === 0}
+                    placeholder={modelPlaceholder}
+                    aria-label='Select AI model'
+                >
+                    <Select.Trigger className='h-9 min-h-9 items-center rounded-full border-0 bg-transparent py-0 ps-2.5 text-xs font-medium text-muted shadow-none hover:bg-foreground/8 hover:text-foreground aria-expanded:bg-foreground/8 aria-expanded:text-foreground'>
+                        <Select.Value className='truncate text-xs'>
+                            {({ isPlaceholder, selectedText, defaultChildren }) => (
+                                isPlaceholder ? defaultChildren : selectedText
+                            )}
+                        </Select.Value>
+                        <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                        <ListBox>
+                            {modelOptions.map((option) => (
+                                <OptionListBoxItem key={option.value} option={option} />
+                            ))}
+                        </ListBox>
+                    </Select.Popover>
+                </Select>
 
-                    {canStop ? (
-                        <Tooltip>
-                            <Button
-                                isIconOnly
-                                className='flex size-7 min-h-7 min-w-7 shrink-0 items-center justify-center rounded-full border-none bg-danger-soft p-0 text-danger'
-                                onPress={onStop}
-                                aria-label='Stop generating'
-                            >
-                                <Square size={13} />
-                            </Button>
-                            <Tooltip.Content>Stop generating</Tooltip.Content>
-                        </Tooltip>
-                    ) : (
+                {canStop ? (
+                    <Tooltip>
                         <Button
                             isIconOnly
-                            className={cn(
-                                'flex size-7 min-h-7 min-w-7 shrink-0 items-center justify-center rounded-full border-none p-0 transition-opacity duration-200',
-                                'bg-foreground text-background hover:bg-foreground hover:text-background disabled:opacity-40'
-                            )}
-                            isDisabled={!canSend}
-                            onPress={onSend}
-                            aria-label='Send message'
+                            className={ROUND_ACTION_CLASS}
+                            onPress={onStop}
+                            aria-label='Stop generating'
                         >
-                            <ArrowUp size={14} />
+                            <Square size={14} fill='currentColor' />
                         </Button>
-                    )}
-                </div>
+                        <Tooltip.Content>Stop generating</Tooltip.Content>
+                    </Tooltip>
+                ) : (
+                    <Button
+                        isIconOnly
+                        className={ROUND_ACTION_CLASS}
+                        isDisabled={!canSend}
+                        onPress={onSend}
+                        aria-label='Send message'
+                    >
+                        <ArrowUp size={18} />
+                    </Button>
+                )}
             </div>
 
-            <p className='px-1 text-2xs text-muted max-md:hidden'>
+            <p className='pl-4 text-xs text-muted max-md:hidden [.ai-floating-assistant_&]:hidden'>
                 Enter to send · Shift + Enter for a new line
             </p>
         </div>

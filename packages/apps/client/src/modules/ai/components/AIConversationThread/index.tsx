@@ -5,7 +5,6 @@ import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/Recover
 import { Button, Skeleton } from '@heroui/react';
 import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
 import type { ChatUIMessage } from '@volt/contracts/modules/ai/chat';
-import type { ReactNode } from 'react';
 
 interface AIConversationThreadProps {
     messages: ChatUIMessage[];
@@ -22,11 +21,11 @@ interface AIConversationThreadProps {
 }
 
 export const PromptStarter = () => (
-    <div className='flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-6'>
-        <p className='text-center text-lg font-medium text-foreground'>
+    <div className='flex flex-1 flex-col items-center justify-center gap-3 px-4 py-8'>
+        <p className='text-center text-2xl font-semibold tracking-tight text-foreground'>
             Ready when you are.
         </p>
-        <p className='max-w-80 text-center text-xs text-muted'>
+        <p className='max-w-md text-center text-base text-muted'>
             Ask about a trajectory, run an analysis pipeline, or have Volt AI drive the viewer for you.
         </p>
     </div>
@@ -71,15 +70,6 @@ const AIConversationThread = ({
         return <PromptStarter />;
     }
 
-    let renderAfter: ReactNode = null;
-    if (isAwaitingReply) {
-        renderAfter = (
-            <div className='flex min-w-0 flex-col items-start'>
-                <ThinkingBubble />
-            </div>
-        );
-    }
-
     const loadEarlierIndicator = (
         <div className='flex justify-center'>
             <Button
@@ -99,7 +89,7 @@ const AIConversationThread = ({
             <AutoScrollList
                 items={messages}
                 isLoading={isLoading}
-                className='mx-auto w-full max-w-[46rem] gap-6 px-4 pt-6 pb-3 max-md:px-3 [.ai-floating-assistant_&]:gap-4 [.ai-floating-assistant_&]:p-3'
+                className='mx-auto w-full max-w-3xl gap-6 px-3 pt-6 pb-3 [.ai-floating-assistant_&]:gap-4 [.ai-floating-assistant_&]:px-4 [.ai-floating-assistant_&]:py-3'
                 getItemKey={(message) => message.id}
                 hasMore={hasEarlier}
                 onLoadMore={onLoadEarlier}
@@ -108,9 +98,9 @@ const AIConversationThread = ({
                 autoScrollDependency={isAwaitingReply ? 'awaiting' : `${lastMessage?.id ?? ''}:${sizeOf(lastMessage)}`}
                 autoScrollDependencyEnabled={isStreaming}
                 renderLoading={Array.from({ length: 4 }).map((_, index) => (
-                    <Skeleton key={index} className='h-14 w-full rounded-md' />
+                    <Skeleton key={index} className='h-14 w-full rounded-2xl' />
                 ))}
-                renderAfter={renderAfter}
+                renderAfter={isAwaitingReply ? <ThinkingBubble /> : null}
                 renderItem={(message, index) => (
                     <AIMessageItem
                         message={message}
