@@ -8,6 +8,7 @@ let cachedSeenTips: Set<string> | null = null;
 let sessionTipCount = 0;
 let activeTipId: ContextualTipId | null = null;
 let activeToastId: string | null = null;
+let holds = 0;
 
 const getLocalStorage = (): Storage => {
     return window.localStorage;
@@ -75,7 +76,19 @@ const canShowMoreContextualTipsThisSession = (): boolean => {
     return sessionTipCount < MAX_CONTEXTUAL_TIPS_PER_SESSION;
 };
 
+// While held, no tip starts: for pages that show the app's components without being the app.
+export const holdContextualTips = (): (() => void) => {
+    holds += 1;
+    return () => {
+        holds = Math.max(0, holds - 1);
+    };
+};
+
 export const beginContextualTipDisplay = (tipId: ContextualTipId): boolean => {
+    if (holds > 0) {
+        return false;
+    }
+
     if (hasSeenContextualTip(tipId)) {
         return false;
     }
