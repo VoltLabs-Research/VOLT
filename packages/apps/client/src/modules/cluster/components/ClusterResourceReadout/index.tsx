@@ -33,12 +33,12 @@ const ClusterResourceReadout = ({
 }) => {
     if (!metrics) {
         return (
-            <div className='divide-y divide-border rounded-xl border border-border'>
+            <div className='divide-y divide-foreground/6 rounded-2xl bg-foreground/4'>
                 {LOADING_ROW_KEYS.map((key) => (
-                    <div className='flex flex-row items-center gap-6 px-6 py-4' key={key}>
-                        <Skeleton animationType='pulse' className='h-4 w-40 rounded-md' />
+                    <div className='flex flex-row items-center gap-6 px-5 py-4' key={key}>
+                        <Skeleton animationType='pulse' className='h-4 w-40 rounded-full' />
                         <span className='flex-1' />
-                        <Skeleton animationType='pulse' className='h-4 w-16 rounded-md' />
+                        <Skeleton animationType='pulse' className='h-4 w-16 rounded-full' />
                     </div>
                 ))}
             </div>
@@ -82,18 +82,18 @@ const ClusterResourceReadout = ({
     ];
 
     return (
-        <div className='divide-y divide-border rounded-xl border border-border'>
+        <div className='divide-y divide-foreground/6 rounded-2xl bg-foreground/4'>
             {rows.map((row) => {
                 const tone = toneFor(row.percentage);
 
                 return (
                     <div
-                        className='flex flex-row items-center gap-4 px-6 py-4 max-md:flex-wrap max-md:gap-y-2 md:gap-6'
+                        className='flex flex-row items-center gap-4 px-5 py-4 max-md:flex-wrap max-md:gap-y-2 md:gap-6'
                         key={row.name}
                     >
                         <div className='flex min-w-0 flex-col gap-0.5 md:w-64 md:shrink-0'>
-                            <span className='text-sm font-medium text-foreground'>{row.name}</span>
-                            <span className='truncate text-xs text-muted tabular-nums'>{row.detail}</span>
+                            <span className='text-base font-medium text-foreground'>{row.name}</span>
+                            <span className='truncate text-sm text-muted tabular-nums'>{row.detail}</span>
                         </div>
 
                         <div className='min-w-24 flex-1 max-md:order-last max-md:w-full max-md:flex-none'>
@@ -101,7 +101,7 @@ const ClusterResourceReadout = ({
                         </div>
 
                         <span
-                            className='shrink-0 text-xl font-medium leading-none tabular-nums md:w-28 md:text-right'
+                            className='shrink-0 text-xl font-semibold leading-none tabular-nums md:w-28 md:text-right'
                             style={{ color: tone }}
                         >
                             {row.value}

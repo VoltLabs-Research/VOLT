@@ -97,7 +97,7 @@ const DeleteClusterModal = ({ teamCluster, onDelete }: DeleteClusterModalProps) 
                             {result.message}
                         </p>
                         {result.manualUninstallCommand && (
-                            <Scrollable className='p-4 rounded-xl bg-background font-mono text-xs'>
+                            <Scrollable className='p-4 rounded-xl bg-foreground/4 font-mono text-xs'>
                                 {result.manualUninstallCommand}
                             </Scrollable>
                         )}

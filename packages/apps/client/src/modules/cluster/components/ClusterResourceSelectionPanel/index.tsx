@@ -2,7 +2,7 @@ import { Slider } from '@heroui/react';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import { Cpu, HardDrive, ServerCog } from 'lucide-react';
+import { ServerCog } from 'lucide-react';
 import { MIN_CLUSTER_CPU, MIN_CLUSTER_MEMORY_MB } from '@/modules/cluster/utils/resource-allocation';
 import type { ClusterResourceLimits, TeamCluster } from '@volt/contracts/modules/cluster/domain';
 
@@ -117,7 +117,7 @@ const ClusterResourceSelectionPanel = ({
 
     return (
         <div className='grid grid-cols-1 gap-4'>
-            <div className='flex flex-col gap-4 rounded-xl border border-border p-6'>
+            <div className='flex flex-col gap-4 rounded-2xl bg-foreground/4 p-5'>
                 <SettingsSectionHeader
                     title={clusterTitle}
                     description={clusterDescription}
@@ -137,7 +137,7 @@ const ClusterResourceSelectionPanel = ({
             </div>
 
             {showResourceSelection && (
-                <div className='flex flex-col gap-4 rounded-xl border border-border p-6'>
+                <div className='flex flex-col gap-4 rounded-2xl bg-foreground/4 p-5'>
                     <SettingsSectionHeader
                         title='Resources'
                         description='Defaults work for most notebooks. Increase only when the workload needs it.'
@@ -156,14 +156,10 @@ const ClusterResourceSelectionPanel = ({
                             {resourceStatusMessage && (
                                 <p className='text-sm text-muted'>{resourceStatusMessage}</p>
                             )}
-                            <div className='mb-3 rounded-lg p-4'>
-                                <div className='flex flex-row items-center justify-between mb-3'>
-                                    <div className='flex flex-row items-center gap-2'>
-                                        <span className='text-sm font-medium text-muted'>
-                                            <Cpu size={16} /> CPU
-                                        </span>
-                                    </div>
-                                    <span className='rounded-full bg-surface-tertiary px-2.5 py-1 text-sm font-semibold text-foreground'>{selectedCpuValue} vCPU</span>
+                            <div className='flex flex-col gap-3'>
+                                <div className='flex flex-row items-center justify-between'>
+                                    <span className='text-base font-medium text-foreground'>CPU</span>
+                                    <span className='rounded-full bg-foreground/6 px-2.5 py-1 text-sm font-semibold tabular-nums text-foreground'>{selectedCpuValue} vCPU</span>
                                 </div>
                                 <Slider
                                     aria-label='CPU'
@@ -186,14 +182,10 @@ const ClusterResourceSelectionPanel = ({
                                     <span>{maxCpu} vCPU</span>
                                 </div>
                             </div>
-                            <div className='rounded-lg p-4'>
-                                <div className='flex flex-row items-center justify-between mb-3'>
-                                    <div className='flex flex-row items-center gap-2'>
-                                        <span className='text-sm font-medium text-muted'>
-                                            <HardDrive size={16} /> Memory
-                                        </span>
-                                    </div>
-                                    <span className='rounded-full bg-surface-tertiary px-2.5 py-1 text-sm font-semibold text-foreground'>{selectedMemoryValue} MB</span>
+                            <div className='flex flex-col gap-3'>
+                                <div className='flex flex-row items-center justify-between'>
+                                    <span className='text-base font-medium text-foreground'>Memory</span>
+                                    <span className='rounded-full bg-foreground/6 px-2.5 py-1 text-sm font-semibold tabular-nums text-foreground'>{selectedMemoryValue} MB</span>
                                 </div>
                                 <Slider
                                     aria-label='Memory'
