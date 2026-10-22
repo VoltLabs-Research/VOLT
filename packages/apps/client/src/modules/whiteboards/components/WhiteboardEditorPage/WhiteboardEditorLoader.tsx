@@ -1,10 +1,8 @@
 import Loader from '@/shared/ui/components/Loader';
 
-
-
 const WhiteboardEditorLoader = () => (
     <div
-        className='flex w-full h-full items-center justify-center bg-surface'
+        className='flex h-full w-full items-center justify-center'
         role='status'
         aria-live='polite'
         aria-label='Loading whiteboard workspace'
