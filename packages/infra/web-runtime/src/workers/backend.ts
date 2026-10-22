@@ -56,6 +56,17 @@ Object.defineProperty(globalThis, 'self', { value: globalThis, writable: true, c
 
 let isThread = false;
 
+// What the parent sends before the program has started, which it receives once it has.
+let pendingMessages: unknown[] | null = [];
+
+const deliver = (ipcMessage: unknown): void => {
+    if(isThread){
+        deliverToParentPort(ipcMessage);
+    }else{
+        browserProcess.emit('message', ipcMessage);
+    }
+};
+
 const isProcessExit = (value: unknown): boolean => (value as { name?: string } | undefined)?.name === 'ProcessExit';
 
 const attachToParent = ({ serialization }: NonNullable<BackendBootMessage['child']>): void => {
@@ -144,6 +155,12 @@ const boot = async (message: BackendBootMessage): Promise<void> => {
     attachLoopbackParent(parent);
     send({ kind: 'booted' });
     await import('volt-backend-entry');
+    // The program has run its module, as Node's main module runs before the process reads its channel.
+    const received = pendingMessages ?? [];
+    pendingMessages = null;
+    for(const ipcMessage of received){
+        deliver(ipcMessage);
+    }
 };
 
 const crash = (error: unknown): void => {
@@ -174,10 +191,10 @@ scope.addEventListener('message', (event) => {
     }else if(message.kind === 'connect'){
         acceptLoopbackConnection(message, event.ports[0]);
     }else if(message.kind === 'ipc'){
-        if(isThread){
-            deliverToParentPort(message.message);
+        if(pendingMessages){
+            pendingMessages.push(message.message);
         }else{
-            browserProcess.emit('message', message.message);
+            deliver(message.message);
         }
     }else if(message.kind === 'signal'){
         handleSignal(message.signal);
