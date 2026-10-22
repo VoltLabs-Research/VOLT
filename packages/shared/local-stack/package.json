@@ -2,7 +2,7 @@
   "name": "@volt/local-stack",
   "version": "0.0.0",
   "private": true,
-  "description": "Provisioning of a single-user local VOLT stack, shared by the desktop app (Node server and daemon processes) and the web client (the same backends in browser workers): the environment each backend starts with, the bootstrap that creates the local account, team and cluster, and the default plugin seed. Raw TypeScript source, no build step, no barrel; it runs in Node and in the browser, with persistence and logging supplied by the caller.",
+  "description": "Provisioning of a single-user local VOLT stack, the one the web client and the desktop app run in workers of their page (@volt/web-runtime): the environment each backend starts with, the bootstrap that creates the local account, team and cluster, and the default plugin seed. The self-hosting CLI reuses the bootstrap for the stack it deploys with Docker. Raw TypeScript source, no build step, no barrel; it runs in Node and in the browser, with persistence and logging supplied by the caller.",
   "sideEffects": false,
   "exports": {
     "./*": "./src/*.ts"

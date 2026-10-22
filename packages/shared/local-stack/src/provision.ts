@@ -4,7 +4,7 @@ import ServerApi from './server-api';
 import { waitForCluster } from './wait-for-cluster';
 import type { BootstrapState, BootstrapStore, PluginSeedStore, ProvisioningLog } from './state';
 
-// How a host runs the two backends: the desktop as Node processes, the browser as workers.
+// How the host starts the two backends; @volt/web-runtime starts them as workers of its page.
 export interface LocalStackBackends{
     // Resolves once the server accepts requests.
     startServer(): Promise<void>;

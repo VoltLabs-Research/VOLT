@@ -16,7 +16,8 @@ export interface PluginSeedState{
     platform?: string;
 }
 
-// Where a host keeps the provisioning state between starts: the desktop's config file, the browser's storage.
+// Where a host keeps the provisioning state between starts: the page's private file system, or the
+// self-hosting CLI's config file.
 export interface BootstrapStore{
     getBootstrap(): Promise<BootstrapState | null>;
     setBootstrap(state: BootstrapState): Promise<void>;
