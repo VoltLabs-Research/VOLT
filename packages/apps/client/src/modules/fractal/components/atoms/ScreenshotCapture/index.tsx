@@ -263,7 +263,13 @@ const ScreenshotCapture = ({
         setSize
     ]);
 
-    useFrame(() => {
+    useFrame((state) => {
+        // A positive priority takes rendering over from R3F so the capture reads the frame the
+        // effect composer drew. When nothing else holds one, nothing else draws the frame.
+        if (state.internal.priority === 1) {
+            state.gl.render(state.scene, state.camera);
+        }
+
         const pending = pendingRef.current;
         if (!pending || pending.captureInFlight) {
             return;
