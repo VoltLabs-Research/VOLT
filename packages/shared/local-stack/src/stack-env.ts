@@ -22,8 +22,8 @@ export const localServerEnv = (input: {
     databasePath: string;
     secrets: StackSecrets;
     logLevel?: string;
-    // Where the web client is served from: the server itself on the desktop, the page in a browser.
-    clientOrigin?: string;
+    // Where the web client that runs the stack is served from.
+    clientOrigin: string;
     // The plugin registry, when not the public one.
     registryUrl?: string;
 }): Record<string, string> => {
@@ -35,7 +35,7 @@ export const localServerEnv = (input: {
         SERVER_HOST: '127.0.0.1',
         SERVER_PORT: String(input.ports.server),
         SERVER_ENDPOINT: origin,
-        CLIENT_HOST: input.clientOrigin ?? origin,
+        CLIENT_HOST: input.clientOrigin,
         DATABASE_URL: `sqlite:${input.databasePath}`,
         SERVER_DATA_DIR: input.dataDir,
         SECRET_KEY: input.secrets.secretKey,
