@@ -7,9 +7,11 @@ interface ScriptingNotebookTemplateDocument extends Record<string, unknown> {
     cells: Record<string, unknown>[];
 }
 
+// OVITO's example needs the package Jupyter's image has, which no kernel running in the browser
+// (NOTEBOOK_KERNELS=browser, a local stack's client) can install.
 const NOTEBOOK_TEMPLATE_PATHS = [
     path.join(__dirname, 'templates', 'default-scripting-notebook.ipynb'),
-    path.join(__dirname, 'templates', 'ovito-usage-example.ipynb')
+    ...(process.env.NOTEBOOK_KERNELS === 'browser' ? [] : [path.join(__dirname, 'templates', 'ovito-usage-example.ipynb')])
 ];
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
