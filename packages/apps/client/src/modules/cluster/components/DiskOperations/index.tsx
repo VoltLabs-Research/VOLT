@@ -1,4 +1,4 @@
-import { CHART_AXIS_COLOR, CHART_FONT_SIZE, CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
+import { CHART_FONT_SIZE, CHART_GRID_COLOR, CHART_TICK } from '@/shared/ui/utils/chart-theme';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { useMemo } from 'react';
@@ -11,7 +11,6 @@ import {
     ResponsiveContainer,
     Legend
 } from 'recharts';
-import { HardDrive } from 'lucide-react';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
 const CHART_COLORS = {
@@ -62,7 +61,6 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
 
     return (
         <ChartContainer
-            icon={HardDrive}
             title='Disk Operations'
             isLoading={!metrics}
             stats={[
@@ -99,10 +97,12 @@ const DiskOperations = ({ history, metrics }: DiskOperationsProps) => {
                             <stop offset='95%' stopColor={CHART_COLORS.write} stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke={CHART_GRID_COLOR} />
+                    <CartesianGrid vertical={false} stroke={CHART_GRID_COLOR} />
                     <YAxis
-                        stroke={CHART_AXIS_COLOR}
-                        style={{ fontSize: CHART_FONT_SIZE }}
+                        tick={CHART_TICK}
+                        axisLine={false}
+                        tickLine={false}
+                        width={40}
                     />
                     <Tooltip content={renderTooltip} />
                     <Legend

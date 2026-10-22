@@ -32,7 +32,7 @@ interface SecretKeyAsyncStateProps {
 
 const SecretKeyPageShell = ({ header, children }: SecretKeyPageShellProps) => (
     <Scrollable className='h-full text-foreground'>
-        <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
+        <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
             {header}
             {children}
         </div>

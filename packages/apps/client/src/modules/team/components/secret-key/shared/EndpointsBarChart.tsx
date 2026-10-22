@@ -1,7 +1,4 @@
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
-import { CHART_AXIS_COLOR, CHART_FONT_SIZE, CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
-import { renderEndpointsBarTooltip } from './chart-tooltip-renderer';
+import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface EndpointsBarChartDatum {
     endpoint: string;
@@ -11,50 +8,27 @@ interface EndpointsBarChartDatum {
 interface EndpointsBarChartProps {
     data: EndpointsBarChartDatum[];
     height: number;
-    barName?: string;
-    xAxisAllowDecimals?: boolean;
-    yAxisTickLine?: boolean;
 }
 
-const EndpointsBarChart = ({
-    data,
-    height,
-    barName,
-    xAxisAllowDecimals,
-    yAxisTickLine
-}: EndpointsBarChartProps) => (
-    <ResponsiveContainer width='100%' height={height}>
-        <BarChart data={data} margin={{
-            top: 10,
-            right: 10,
-            left: 0,
-            bottom: 0
-        }} layout='vertical'>
-            <CartesianGrid strokeDasharray='3 3' stroke={CHART_GRID_COLOR} />
-            <XAxis
-                type='number'
-                stroke={CHART_AXIS_COLOR}
-                style={{ fontSize: CHART_FONT_SIZE }}
-                allowDecimals={xAxisAllowDecimals}
-            />
-            <YAxis
-                type='category'
-                dataKey='endpoint'
-                stroke={CHART_AXIS_COLOR}
-                style={{ fontSize: CHART_FONT_SIZE }}
-                width={150}
-                tickLine={yAxisTickLine}
-            />
-            <Tooltip content={renderEndpointsBarTooltip} />
-            <Bar
-                dataKey='count'
-                fill={CHART_COLORS.endpoints}
-                radius={[0, 4, 4, 0]}
-                name={barName}
-                isAnimationActive={false}
-            />
-        </BarChart>
-    </ResponsiveContainer>
-);
+// Ranked bars rather than a chart: each endpoint reads in full, with its count beside it.
+const EndpointsBarChart = ({ data, height }: EndpointsBarChartProps) => {
+    const max = Math.max(1, ...data.map((entry) => entry.count));
+
+    return (
+        <Scrollable style={{ maxHeight: height }}>
+            <ol className='flex flex-col gap-3.5'>
+                {data.map((entry) => (
+                    <li className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 text-sm' key={entry.endpoint}>
+                        <span className='truncate font-mono text-foreground' title={entry.endpoint}>{entry.endpoint}</span>
+                        <span className='tabular-nums text-muted'>{entry.count.toLocaleString()}</span>
+                        <span className='col-span-full h-1.5 overflow-hidden rounded-full bg-foreground/6' aria-hidden='true'>
+                            <span className='block h-full rounded-full bg-foreground' style={{ width: `${(entry.count / max) * 100}%` }} />
+                        </span>
+                    </li>
+                ))}
+            </ol>
+        </Scrollable>
+    );
+};
 
 export default EndpointsBarChart;

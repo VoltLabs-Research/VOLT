@@ -3,7 +3,6 @@ import type { ChartStat } from '@/shared/ui/components/ChartContainer';
 import ChartTooltip from '@/shared/ui/components/ChartTooltip';
 import { CHART_FONT_SIZE } from '@/shared/ui/utils/chart-theme';
 import { formatSize } from '@/shared/utils/format';
-import { Activity } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AreaChart, Area, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { TooltipContentProps } from 'recharts';
@@ -217,7 +216,6 @@ const NetworkChart = ({
 
     return (
         <ChartContainer
-            icon={Activity}
             title={title}
             isLoading={isLoading}
             stats={statItems}

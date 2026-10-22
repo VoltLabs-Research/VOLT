@@ -1,5 +1,4 @@
 import { Skeleton } from '@heroui/react';
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 type ChartStatEmphasis = 'primary' | 'secondary';
@@ -11,7 +10,6 @@ export interface ChartStat {
 };
 
 interface ChartContainerProps {
-    icon: LucideIcon | (() => ReactNode);
     title: string;
     isLoading: boolean;
     children: ReactNode;
@@ -20,68 +18,56 @@ interface ChartContainerProps {
 };
 
 const ChartContainer = ({
-    icon: Icon,
     title,
     isLoading,
     children,
     stats,
     statsLoading = false
 }: ChartContainerProps) => {
-    const renderIcon = () => {
-        if(typeof Icon === 'function' && !('$$typeof' in Icon)){
-            return (Icon as () => ReactNode)();
-        }
-        const LucideIcon = Icon as LucideIcon;
-        return <LucideIcon className='text-muted' style={{
-            width: 20,
-            height: 20
-        }} />;
-    };
-
     const renderStat = (stat: ChartStat) => {
         const emphasis: ChartStatEmphasis = stat.emphasis ?? 'secondary';
 
         return (
             <div className='flex flex-col gap-1' key={stat.label}>
-                <span className='text-xs font-semibold uppercase tracking-[0.05em] text-muted'>
+                <dt className='text-2xs font-semibold uppercase leading-none tracking-[0.05em] text-muted'>
                     {stat.label}
-                </span>
-                {statsLoading ? (
-                    <Skeleton className={{ primary: 'h-7 w-20 rounded-md', secondary: 'h-[18px] w-[50px] rounded-md' }[emphasis]} />
-                ) : (
-                    <span className={{
-                        primary: 'tabular-nums lining-nums text-2xl font-semibold leading-none tracking-[-0.02em] text-foreground',
-                        secondary: 'tabular-nums lining-nums text-sm font-medium leading-[1.2] text-muted'
-                    }[emphasis]}>
-                        {stat.value}
-                    </span>
-                )}
+                </dt>
+                <dd className='m-0'>
+                    {statsLoading ? (
+                        <Skeleton className={{ primary: 'h-7 w-20 rounded-md', secondary: 'h-4 w-12 rounded-md' }[emphasis]} />
+                    ) : (
+                        <span className={{
+                            primary: 'tabular-nums lining-nums text-2xl font-semibold leading-none tracking-[-0.02em] text-foreground',
+                            secondary: 'tabular-nums lining-nums text-base font-medium leading-tight text-muted'
+                        }[emphasis]}>
+                            {stat.value}
+                        </span>
+                    )}
+                </dd>
             </div>
         );
     };
 
+    // The mockup's chart card: a tile on the page, its title and figures above the chart.
     return (
-        <div className='flex flex-col p-6 rounded-xl h-full max-h-[400px] border border-border bg-surface max-sm:p-1'>
-            <div className='flex justify-between mb-6 max-sm:gap-1'>
-                <div className='flex flex-row items-center gap-3'>
-                    {renderIcon()}
-                    <h3 className='text-base font-semibold text-foreground'>
-                        {title}
-                    </h3>
-                </div>
+        <section className='flex h-full max-h-[400px] min-w-0 flex-col gap-6 rounded-2xl bg-foreground/4 p-6 max-sm:p-5'>
+            <div className='flex flex-wrap items-start justify-between gap-x-6 gap-y-3'>
+                <h3 className='text-base font-semibold text-foreground'>
+                    {title}
+                </h3>
                 {stats && (
-                    <div className='flex flex-row items-end flex-wrap gap-6 max-sm:w-max max-sm:gap-1'>
+                    <dl className='m-0 flex flex-row flex-wrap items-end gap-x-6 gap-y-2'>
                         {stats.map(renderStat)}
-                    </div>
+                    </dl>
                 )}
             </div>
 
             {isLoading ? (
-                <Skeleton className='h-[280px] w-full rounded-lg' />
+                <Skeleton className='h-70 w-full rounded-2xl' />
             ) : (
                 children
             )}
-        </div>
+        </section>
     );
 };
 

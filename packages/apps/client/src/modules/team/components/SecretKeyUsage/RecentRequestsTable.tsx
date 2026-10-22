@@ -1,29 +1,30 @@
 import { cn } from '@heroui/react';
 import { formatDistanceToNow } from 'date-fns';
+import { getStatusCodeClass } from '@/modules/team/utils/secret-key/chart-helpers';
+import type { StatusCodeClass } from '@/modules/team/utils/secret-key/chart-helpers';
 import type { KeyUsageMetricsRequest } from '@volt/contracts/modules/team/domain';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
-const STATUS_COLORS: Record<string, string> = {
-    '2xx': 'var(--success)',
-    '3xx': 'var(--accent)',
-    '4xx': 'var(--warning)',
-    '5xx': 'var(--danger)'
+const STATUS_CLASS_TONES: Record<StatusCodeClass, string> = {
+    '2xx': 'text-success-soft-foreground',
+    '3xx': 'text-foreground',
+    '4xx': 'text-warning-soft-foreground',
+    '5xx': 'text-danger-soft-foreground',
+    other: 'text-muted'
 };
 
-const METHOD_COLORS: Record<string, string> = {
-    GET: 'var(--success)',
-    POST: 'var(--accent)',
-    PUT: 'var(--warning)',
-    DELETE: 'var(--danger)',
-    PATCH: 'var(--accent-purple)'
+const METHOD_TONES: Record<string, string> = {
+    GET: 'bg-success-soft text-success-soft-foreground',
+    POST: 'bg-foreground/8 text-foreground',
+    PUT: 'bg-warning-soft text-warning-soft-foreground',
+    DELETE: 'bg-danger-soft text-danger-soft-foreground',
+    PATCH: 'bg-info-soft text-info-soft-foreground'
 };
 
-const getStatusColorGroup = (code: number): string => {
-    if (code >= 200 && code < 300) return '2xx';
-    if (code >= 300 && code < 400) return '3xx';
-    if (code >= 400 && code < 500) return '4xx';
-    return '5xx';
-};
+const COLUMNS = ['Method', 'Path', 'Status', 'Time', 'When'];
+
+// The card's padding is the table's inset, so the outer columns sit flush with it.
+const CELL_CLASS = 'p-3 text-left whitespace-nowrap first:ps-0 last:pe-0';
 
 interface RecentRequestsTableProps {
     requests: KeyUsageMetricsRequest[];
@@ -31,50 +32,38 @@ interface RecentRequestsTableProps {
 
 const RecentRequestsTable = ({ requests }: RecentRequestsTableProps) => (
     <Scrollable orientation='horizontal' className='max-h-[250px]'>
-        <table className='w-full border-collapse'>
+        <table className='w-full min-w-[28rem] border-collapse text-sm'>
             <thead>
-                <tr>
-                    <th className='px-4 py-3 text-left border-b border-border text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Method</th>
-                    <th className='px-4 py-3 text-left border-b border-border text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Path</th>
-                    <th className='px-4 py-3 text-left border-b border-border text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Status</th>
-                    <th className='px-4 py-3 text-left border-b border-border text-xs font-semibold uppercase tracking-[0.05em] text-muted'>Time</th>
-                    <th className='px-4 py-3 text-left border-b border-border text-xs font-semibold uppercase tracking-[0.05em] text-muted'>When</th>
+                <tr className='border-b border-separator'>
+                    {COLUMNS.map((column) => (
+                        <th scope='col' className={cn(CELL_CLASS, 'text-2xs font-semibold uppercase leading-none tracking-[0.05em] text-muted')} key={column}>
+                            {column}
+                        </th>
+                    ))}
                 </tr>
             </thead>
             <tbody>
-                {requests.map((request, index) => {
-                    const methodColor = METHOD_COLORS[request.method] || 'var(--muted)';
-
-                    return (
-                        <tr key={index} className='transition-colors hover:bg-surface-hover last:[&>td]:border-b-0'>
-                            <td className='px-4 py-3 text-left border-b border-border text-sm'>
-                                <span
-                                    className='inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-transparent px-1.5 py-0.5 text-2xs font-medium leading-none font-mono'
-                                    style={{
-                                        color: methodColor,
-                                        background: `color-mix(in srgb, ${methodColor} 12%, transparent)`
-                                    }}
-                                >
-                                    {request.method}
-                                </span>
-                            </td>
-                            <td className={cn('px-4 py-3 text-left border-b border-border text-sm', 'font-mono text-xs text-muted truncate max-w-[200px]')} title={request.path}>
-                                {request.path}
-                            </td>
-                            <td className='px-4 py-3 text-left border-b border-border text-sm'>
-                                <span style={{ color: STATUS_COLORS[getStatusColorGroup(request.statusCode)] || 'var(--muted)' }}>
-                                    {request.statusCode}
-                                </span>
-                            </td>
-                            <td className={cn('px-4 py-3 text-left border-b border-border text-sm', 'font-mono text-xs text-muted')}>
-                                {request.responseTime.toFixed(0)}ms
-                            </td>
-                            <td className={cn('px-4 py-3 text-left border-b border-border text-sm', 'text-xs text-muted')}>
-                                {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
-                            </td>
-                        </tr>
-                    );
-                })}
+                {requests.map((request, index) => (
+                    <tr key={index} className='border-b border-separator last:border-b-0'>
+                        <td className={CELL_CLASS}>
+                            <span className={cn('inline-flex rounded-full px-2 py-0.5 font-mono text-2xs font-medium leading-none', METHOD_TONES[request.method] ?? 'bg-default text-muted')}>
+                                {request.method}
+                            </span>
+                        </td>
+                        <td className={cn(CELL_CLASS, 'max-w-[10rem] truncate font-mono text-xs text-muted')} title={request.path}>
+                            {request.path}
+                        </td>
+                        <td className={cn(CELL_CLASS, 'tabular-nums', STATUS_CLASS_TONES[getStatusCodeClass(request.statusCode)])}>
+                            {request.statusCode}
+                        </td>
+                        <td className={cn(CELL_CLASS, 'text-xs tabular-nums text-muted')}>
+                            {request.responseTime.toFixed(0)}ms
+                        </td>
+                        <td className={cn(CELL_CLASS, 'text-xs text-muted')}>
+                            {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                        </td>
+                    </tr>
+                ))}
             </tbody>
         </table>
     </Scrollable>

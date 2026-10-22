@@ -1,4 +1,5 @@
 import ChartContainer from '@/shared/ui/components/ChartContainer';
+import { CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
 import { useMemo } from 'react';
 import {
     LineChart,
@@ -7,7 +8,6 @@ import {
     CartesianGrid,
     ResponsiveContainer
 } from 'recharts';
-import { Cpu } from 'lucide-react';
 import type { ClusterMetrics } from '@volt/contracts/modules/cluster/domain';
 
 interface CpuDistributionProps {
@@ -63,7 +63,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
 
     if (!hasCoreData && !metrics) {
         return (
-            <ChartContainer icon={Cpu} title='CPU Distribution' isLoading={!metrics}>
+            <ChartContainer title='CPU Distribution' isLoading={!metrics}>
                 <div className='flex flex-1 items-center justify-center text-sm text-muted'>
                     Waiting for data...
                 </div>
@@ -73,7 +73,6 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
 
     return (
         <ChartContainer
-            icon={Cpu}
             title='CPU Distribution'
             isLoading={!metrics}
             stats={[
@@ -101,8 +100,7 @@ const CpuDistribution = ({ history, metrics }: CpuDistributionProps) => {
                     }}
                 >
                     <CartesianGrid
-                        strokeDasharray='3 3'
-                        stroke='var(--border)'
+                        stroke={CHART_GRID_COLOR}
                         vertical={false}
                     />
                     <YAxis domain={[0, 100]} hide />
