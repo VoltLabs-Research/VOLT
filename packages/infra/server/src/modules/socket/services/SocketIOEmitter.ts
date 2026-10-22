@@ -55,6 +55,20 @@ export default class SocketIOEmitter {
         if(!socket) return;
         socket.to(room).emit(event, data);
     }
+
+    async emitWithAckToSocket(
+        socketId: string,
+        event: string,
+        data: unknown,
+        timeoutMs: number
+    ): Promise<unknown> {
+        const socket = this.sockets.get(socketId);
+        if(!socket){
+            throw new Error(`socket ${socketId} is not connected`);
+        }
+
+        return socket.timeout(timeoutMs).emitWithAck(event, data);
+    }
 }
 
 export const socketIOEmitter = new SocketIOEmitter();
