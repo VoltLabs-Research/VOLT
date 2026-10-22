@@ -17,7 +17,8 @@ dependencies = [
     "requests>=2.31.0",
     "zstandard>=0.22.0",
     "semver>=3.0.0",
-    "volt-spatial-assembler>=1.0.0",
+    # Native, with no build for Pyodide, where the rest of the SDK runs (notebooks in the browser).
+    "volt-spatial-assembler>=1.0.0; sys_platform != 'emscripten'",
 ]
 
 [project.optional-dependencies]
