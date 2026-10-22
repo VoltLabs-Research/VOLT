@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { buildNativeAddon, isNativeAddon } from './native-addons.mjs';
+import { buildWheel } from './wheel.mjs';
 
 const require = createRequire(import.meta.url);
 const packageDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -322,6 +323,45 @@ const installPyodide = async () => {
     return writeInstall(source, '/usr/local/lib/pyodide');
 };
 
+// The VOLT SDK of this checkout (packages/sdk/python) as a wheel the machine has, which its pip installs
+// for `voltsdk` (src/python/pip.py): notebooks get the SDK of the server they talk to, not PyPI's.
+// Its version carries the digest of its files, so that an environment tells another build of it.
+const SDK_ROOT = path.resolve(packageDir, '..', '..', 'sdk', 'python');
+const installVoltSdk = async () => {
+    const files = {};
+    for(const entry of await readdir(path.join(SDK_ROOT, 'voltsdk'), { recursive: true, withFileTypes: true })){
+        const file = path.relative(SDK_ROOT, path.join(entry.parentPath, entry.name)).split(path.sep).join('/');
+        // Not its bytecode, nor the native runtime a platform's wheel stages in native/.
+        if(entry.isFile() && !file.includes('/__pycache__/') && !/^voltsdk\/native\/(bin|lib|share)\//.test(file)){
+            files[file] = await readFile(path.join(entry.parentPath, entry.name));
+        }
+    }
+    const pyproject = await readFile(path.join(SDK_ROOT, 'pyproject.toml'), 'utf8');
+    const field = (name) => pyproject.match(new RegExp(`^${name} = "([^"]*)"`, 'm'))[1];
+    const dependencies = [...pyproject.match(/^dependencies = \[([^\]]*)\]/m)[1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+    const version = files['voltsdk/__init__.py'].toString().match(/^__version__ = "([^"]+)"/m)[1];
+    const digest = createHash('sha256').update(pyproject);
+    for(const file of Object.keys(files).sort()){
+        digest.update(file).update(files[file]);
+    }
+    const wheel = buildWheel({
+        name: 'voltsdk',
+        version: `${version}+${digest.digest('hex').slice(0, 12)}`,
+        metadata: [
+            ['Summary', field('description')],
+            ['Requires-Python', field('requires-python')],
+            ...dependencies.map((dependency) => ['Requires-Dist', dependency])
+        ],
+        files
+    });
+    const source = 'python/wheels';
+    const target = path.join(outDir, source);
+    await rm(target, { recursive: true, force: true });
+    await mkdir(target, { recursive: true });
+    await writeFile(path.join(target, wheel.filename), wheel.data);
+    return writeInstall(source, '/usr/local/share/python-wheels');
+};
+
 // A classic script: module service workers are not supported by every browser.
 await esbuild.build({
     entryPoints: { 'service-worker': path.join(packageDir, 'src', 'service-worker.ts') },
@@ -347,9 +387,10 @@ await esbuild.build({
 // platform alone, which every backend spawns its programs with.
 const RUNNER = { name: 'node-runner', root: packageDir, mountPoint: '/usr/local/lib/node-runner', entry: 'src/workers/node-runner.ts', programs: [], addons: [] };
 await buildProgram(RUNNER, { source: path.join(packageDir, RUNNER.entry), installed: path.posix.join(RUNNER.mountPoint, RUNNER.entry), workerFile: 'node-runner.worker.js' });
-// The python3 every backend runs (src/python), which installs Pyodide where it is missing. Its
-// Emscripten module asks Node's `module` for a require() of the built-ins it uses.
+// The python3 every backend runs (src/python), which installs Pyodide and the SDK's wheel where they
+// are missing. Its Emscripten module asks Node's `module` for a require() of the built-ins it uses.
 const pyodideInstall = await installPyodide();
+const voltSdkInstall = await installVoltSdk();
 const PYTHON = {
     name: 'python',
     root: packageDir,
@@ -359,7 +400,7 @@ const PYTHON = {
     addons: [],
     aliases: { module: path.join(packageDir, 'src', 'python', 'node-module.ts'), 'node:module': path.join(packageDir, 'src', 'python', 'node-module.ts') }
 };
-await buildProgram(PYTHON, { source: path.join(packageDir, PYTHON.entry), installed: path.posix.join(PYTHON.mountPoint, PYTHON.entry), workerFile: 'python.worker.js' }, [pyodideInstall]);
+await buildProgram(PYTHON, { source: path.join(packageDir, PYTHON.entry), installed: path.posix.join(PYTHON.mountPoint, PYTHON.entry), workerFile: 'python.worker.js' }, [pyodideInstall, voltSdkInstall]);
 
 for(const backend of selected){
     backend.addons = await nativeAddonsOf(backend);

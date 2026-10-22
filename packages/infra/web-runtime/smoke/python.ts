@@ -1,7 +1,8 @@
 // Python smoke page: the runtime's python3 (src/python) as a Node program of the file system spawns
 // it: a command and its exit code, the version, standard input and output through pipes, a script
 // run by its #! line, a virtual environment, packages installed with pip into it (one of Pyodide's
-// builds and a requirements file) and imported by a later process, and files both sides see.
+// builds, a requirements file and the machine's wheel of the SDK) and imported by a later process, and
+// files both sides see.
 import { BackendHost } from '../src/host/BackendHost';
 
 const report = (step: string, value: unknown): void => console.log(`SMOKE ${step} ${JSON.stringify(value)}`);
@@ -38,6 +39,7 @@ const run = (command, args, input) => new Promise((resolve) => {
     report('venv-prefix', await run('/tmp/env/bin/python3', ['-c', 'import sys, site; print(sys.prefix, sys.base_prefix, site.getsitepackages())']));
     report('pip-install', await run('/tmp/env/bin/python3', ['-m', 'pip', 'install', 'numpy']));
     report('pip-requirements', await run('/tmp/env/bin/python3', ['-m', 'pip', 'install', '-r', '/tmp/requirements.txt']));
+    report('pip-local-wheel', await run('/tmp/env/bin/python3', ['-m', 'pip', 'install', '--no-deps', 'voltsdk']));
     report('import', await run('/tmp/env/bin/python3', ['-c', 'import numpy, msgpack; print(int(numpy.arange(4).sum()), msgpack.unpackb(msgpack.packb([1, 2])))']));
     report('pip-list', await run('/tmp/env/bin/python3', ['-m', 'pip', 'freeze']));
     report('files', await run('python3', ['-c', 'open("/tmp/from-python.txt", "w").write("written by python")']));

@@ -1,16 +1,48 @@
 """pip as the runtime's python3 runs it (`python3 -m pip`, and `%pip` in a notebook): installs into the
 running environment, the virtual environment of the interpreter or the machine's site-packages, with
-micropip: Pyodide's builds of packages with native code, and pure-Python wheels from PyPI."""
+micropip: Pyodide's builds of packages with native code, and pure-Python wheels from PyPI and from
+files."""
 
 import argparse
 import importlib
 import importlib.metadata
 import json
 import os
+import re
 import sys
 
 import micropip
 from pyodide.ffi import create_proxy, to_js
+
+# The wheels the machine has of packages of its own (the VOLT SDK of its server), which a requirement
+# that names one without a version installs, rather than the index's.
+WHEELS = "/usr/local/share/python-wheels"
+
+
+def _canonical(name):
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def local_wheel(requirement):
+    """The machine's wheel of the package a requirement names, if it names one alone."""
+    name = requirement.strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name) or not os.path.isdir(WHEELS):
+        return None
+    for filename in sorted(os.listdir(WHEELS)):
+        if filename.endswith(".whl") and _canonical(filename.split("-")[0]) == _canonical(name):
+            return os.path.join(WHEELS, filename)
+    return None
+
+
+def wheel_version(path):
+    return os.path.basename(path).split("-")[1]
+
+
+def _installed_version(name):
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 def _requirements_file(path):
@@ -110,6 +142,20 @@ class _PackageMessages:
             self._callback.destroy()
 
 
+def _wheel_file(requirement, options):
+    """The wheel file a requirement installs: the file it is, or the machine's wheel of the package it
+    names, unless the environment has that package and is not asked to change it."""
+    if requirement.endswith(".whl") and os.path.isfile(requirement):
+        return requirement
+    wheel = local_wheel(requirement)
+    if wheel is None:
+        return None
+    installed = _installed_version(requirement.strip())
+    if installed is None or options.force_reinstall or (options.upgrade and installed != wheel_version(wheel)):
+        return wheel
+    return None
+
+
 async def _install(options):
     requirements = list(options.packages)
     for path in options.requirement:
@@ -117,15 +163,19 @@ async def _install(options):
     if not requirements:
         print("ERROR: You must give at least one requirement to install", file=sys.stderr)
         return 1
+    wheels = [_wheel_file(requirement, options) for requirement in requirements]
+    # micropip reads a wheel of the file system from its emfs: URL.
+    targets = [f"emfs:{os.path.abspath(wheel)}" if wheel else requirement for requirement, wheel in zip(requirements, wheels)]
     index_urls = [url for url in [options.index_url, *options.extra_index_url] if url] or None
     before = _installed()
     with _PackageMessages(options.quiet):
         await micropip.install(
-            requirements,
+            targets,
             deps=not options.no_deps,
             pre=options.pre,
             index_urls=index_urls,
-            reinstall=options.upgrade or options.force_reinstall,
+            # A wheel file replaces the version of its package the environment has, as with pip.
+            reinstall=options.upgrade or options.force_reinstall or any(wheels),
         )
     importlib.invalidate_caches()
     changed = sorted(f"{name}-{version}" for name, version in _installed().items() if before.get(name) != version)
