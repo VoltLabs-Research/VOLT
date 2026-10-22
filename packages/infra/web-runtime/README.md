@@ -1,13 +1,13 @@
 # @volt/web-runtime
 
-VOLT's backends, run in a browser tab. The server, the cluster daemon with its planes, and the
-plugins the daemon runs are the same programs the desktop runs. They run unmodified in module
-workers, on a Node platform implemented over browser APIs:
+VOLT's backends, run in a browser tab or in the desktop app's window. The server, the cluster daemon
+with its planes, and the plugins the daemon runs are the same programs a self-hosted deployment runs.
+They run unmodified in module workers, on a Node platform implemented over browser APIs:
 
 - **Network.** A loopback network between workers (`127.0.0.1`), with `http`, `ws` and `fetch`
   over it.
 - **Files.** A synchronous `fs` on the origin private file system. The workspace persists between
-  visits, as the desktop's data directory does.
+  visits.
 - **Databases.** `better-sqlite3` on sqlite-wasm, and `@duckdb/node-api` on duckdb-wasm.
 - **Processes.** `child_process` and `worker_threads` as workers. Stdin is a shared-memory pipe, so
   a program's blocking reads work.
@@ -33,6 +33,13 @@ Then it starts the stack with `startBrowserStack` (`@volt/web-runtime/host/brows
 `packages/apps/client/src/modules/local-stack` does. The service worker relays the page's `/api` and
 `/socket.io` requests to the stack. It also makes the page cross-origin isolated, which
 `SharedArrayBuffer` needs. Only one tab of an origin runs the stack.
+
+## Using it from the desktop app
+
+The desktop app (`packages/apps/desktop`) is a window onto the same build of the client. It serves the
+client's `dist` at `https://volt.invalid`, with the COOP/COEP headers the service worker adds in a
+browser, and the client runs its stack there as it does in a tab. The origin's storage is the app's
+own and is persistent, so nothing evicts the workspace.
 
 ## Building
 
