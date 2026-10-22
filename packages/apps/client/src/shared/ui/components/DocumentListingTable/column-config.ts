@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 
-export type ListingDensity = 'default' | 'compact';
-
 export interface ColumnConfig<TRow = unknown> {
     key?: string;
     title?: string;

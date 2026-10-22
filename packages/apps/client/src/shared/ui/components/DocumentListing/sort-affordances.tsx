@@ -1,17 +1,18 @@
 import { getColumnKey, getColumnTitle } from '@/shared/ui/components/DocumentListingTable';
 import { cn } from '@heroui/react';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { SortConfig } from '@/shared/utils/sort';
 import type { ReactNode } from 'react';
 
 type AriaSort = 'ascending' | 'descending' | 'none';
 
-
 const isSortedBy = <TRow,>(col: ColumnConfig<TRow>, sortConfig: SortConfig | null): boolean => {
     return Boolean(col.sortable) && sortConfig?.key === getColumnKey(col);
 };
 
+// The mockup's chevron: hidden until the column sorts, then up for ascending and turned for
+// descending.
 export const getColumnSortIndicator = <TRow,>(
     col: ColumnConfig<TRow>,
     sortConfig: SortConfig | null
@@ -19,16 +20,17 @@ export const getColumnSortIndicator = <TRow,>(
     if(!col.sortable) return null;
 
     const isActive = isSortedBy(col, sortConfig);
-    const Icon = !isActive
-        ? ArrowUpDown
-        : sortConfig?.direction === 'asc' ? ArrowUp : ArrowDown;
 
     return (
         <span
-            className={cn('inline-flex items-center justify-center ml-1.5 text-muted opacity-60 transition-[color,opacity] duration-150 group-hover:opacity-100', isActive && 'text-foreground opacity-100')}
+            className={cn(
+                'ml-1 inline-grid size-3 shrink-0 place-content-center transition-[transform,opacity] duration-100 ease-out',
+                isActive ? 'opacity-100' : 'opacity-0',
+                isActive && sortConfig?.direction === 'desc' && 'rotate-180'
+            )}
             aria-hidden='true'
         >
-            <Icon size={12} strokeWidth={2} />
+            <ChevronUp size={12} strokeWidth={2} />
         </span>
     );
 };
@@ -49,7 +51,7 @@ export const describeSortState = <TRow,>(
     if(!sortConfig) return 'List sorted by default order.';
 
     const activeColumn = columns.find((col) => getColumnKey(col) === sortConfig.key);
-    const columnTitle = (activeColumn && getColumnTitle(activeColumn)) || 'selected flex-col';
+    const columnTitle = (activeColumn && getColumnTitle(activeColumn)) || 'the selected column';
     const directionLabel = sortConfig.direction === 'asc' ? 'ascending' : 'descending';
 
     return `Sorted by ${columnTitle} in ${directionLabel} order.`;

@@ -2,7 +2,6 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { cn } from '@heroui/react';
 import { CSS } from '@dnd-kit/utilities';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { motion } from 'framer-motion';
 import { GripVertical } from 'lucide-react';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable/column-config';
 import type { Identifiable } from '@/shared/contracts/entity';
@@ -23,8 +22,6 @@ interface TableRowProps<T extends Identifiable> {
     columnGap?: number;
     draggableId?: string | null;
     droppableId?: string | null;
-
-    compact?: boolean;
 };
 
 const TableRow = <T extends Identifiable>({
@@ -37,10 +34,9 @@ const TableRow = <T extends Identifiable>({
     onClick,
     onItemClick,
     onContextMenu,
-    columnGap = 16,
+    columnGap = 32,
     draggableId = null,
-    droppableId = null,
-    compact = false
+    droppableId = null
 }: TableRowProps<T>) => {
     const isInteractiveTarget = (event: MouseEvent<HTMLDivElement>): boolean => {
         const target = event.target;
@@ -65,7 +61,6 @@ const TableRow = <T extends Identifiable>({
             && !event.altKey;
     };
 
-    const density = compact ? 'compact' : 'default';
     const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
     const getColumnKey = (col: ColumnConfig<T>): string => col.key ?? col.path ?? '';
@@ -114,11 +109,8 @@ const TableRow = <T extends Identifiable>({
             <button
                 type='button'
                 ref={setActivatorNodeRef}
-                className={{
-                    default: 'inline-flex size-6 shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted cursor-grab active:cursor-grabbing hover:bg-surface-hover',
-                    compact: 'inline-flex size-[1.125rem] shrink-0 items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted cursor-grab active:cursor-grabbing hover:bg-surface-hover'
-                }[density]}
-                aria-label='Drag flex-row'
+                className='inline-flex size-6 shrink-0 cursor-grab items-center justify-center rounded-md border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground active:cursor-grabbing'
+                aria-label='Drag row'
                 data-row-click-ignore='true'
                 {...dragAttributes}
                 {...dragListeners}
@@ -141,21 +133,19 @@ const TableRow = <T extends Identifiable>({
     };
 
     const content = (
-        <motion.div
+        <div
             role='row'
             tabIndex={0}
             ref={setRowNodeRef}
             style={rowStyle}
             className={cn(
-                {
-                    default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover max-md:px-4 max-md:py-3',
-                    compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-0.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover'
-                }[density],
-                isSelected && 'bg-accent-soft shadow-[inset_3px_0_0_var(--accent)]',
-                isDragging && 'opacity-65 shadow-[inset_0_0_0_1px_var(--accent)]',
-                isOver && 'bg-surface-hover shadow-[inset_0_0_0_1px_var(--accent)]'
+                // The mockup's row: 56px, a hairline between rows, and a tint of the foreground
+                // over the surface for hover (8%) and selection (14%).
+                'flex min-h-14 shrink-0 cursor-pointer items-center px-4 py-2 text-base text-foreground transition-[background-color,box-shadow,opacity] duration-150 not-first:border-t not-first:border-separator/60 focus-visible:-outline-offset-2',
+                isSelected ? 'bg-foreground/14' : 'hover:bg-foreground/8',
+                isDragging && 'opacity-65 ring-1 ring-inset ring-accent',
+                isOver && 'bg-foreground/8 ring-1 ring-inset ring-accent'
             )}
-            transition={{ duration: 0.1 }}
             onClick={(event) => {
                 if (isInteractiveTarget(event)) {
                     return;
@@ -183,11 +173,7 @@ const TableRow = <T extends Identifiable>({
 
                 return (
                     <div className={cn(
-                        {
-                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm max-md:text-sm',
-                            compact: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs'
-                        }[density],
-                        colIdx === 0 ? 'text-foreground' : 'text-muted',
+                        'flex min-w-0 items-center overflow-hidden text-ellipsis whitespace-nowrap text-left',
                         col.numeric && 'justify-end text-right tabular-nums'
                     )} data-label={columnTitle} key={`cell-${columnTitle}-${colIdx}`} title={title} role='gridcell' aria-label={title ? `${columnTitle}: ${title}` : `${columnTitle}: no value`} style={columnStyles[colIdx]}>
                         {colIdx === 0 && draggableId ? (
@@ -198,14 +184,14 @@ const TableRow = <T extends Identifiable>({
                                 </span>
                             </span>
                         ) : (
-                            <span>
+                            <span className='min-w-0 truncate'>
                                 {renderCellContent(col, cellValue)}
                             </span>
                         )}
                     </div>
                 );
             })}
-        </motion.div>
+        </div>
     );
 
     if (menuOptions.length === 0) return content;

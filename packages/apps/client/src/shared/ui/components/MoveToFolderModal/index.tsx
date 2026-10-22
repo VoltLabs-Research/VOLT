@@ -6,7 +6,6 @@ import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import useFolderBreadcrumbs from '@/shared/ui/hooks/use-folder-breadcrumbs';
-import { Folder, FolderOpen, Home } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/ui/components/ModalFooterActions';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
@@ -187,10 +186,7 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                         </BreadcrumbsItem>
                     ))}
                 </BreadcrumbsRoot>
-                <div className='flex flex-row items-center gap-3'>
-                    {activeFolderId ? <FolderOpen size={16} /> : <Home size={16} />}
-                    <p className='text-sm text-muted'>Current destination: {locationLabel}</p>
-                </div>
+                <p className='text-sm text-muted'>Current destination: {locationLabel}</p>
 
                 {isCurrentDestination && (
                     <p className='text-sm text-muted'>This {itemLabel.toLowerCase()} is already in this location.</p>
@@ -210,7 +206,6 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                         className='justify-start'
                         onPress={() => setActiveFolderId(null)}
                     >
-                        <Home size={16} aria-hidden='true' />
                         Root
                     </Button>
 
@@ -241,7 +236,6 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                             className='justify-start'
                             onPress={() => setActiveFolderId(folder._id)}
                         >
-                            <Folder size={16} aria-hidden='true' />
                             {folder.title}
                         </Button>
                     ))}

@@ -1,11 +1,12 @@
 import getListingDisplayState from '@/shared/ui/components/DocumentListing/listing-state';
 import GridItem from '@/shared/ui/components/DocumentListingGrid/GridItem';
-import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import { ListingAccessDeniedState, ListingEmptyState, ListingErrorState } from '@/shared/ui/components/DocumentListing/ListingStates';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
 import { useInfiniteScroll } from '@/shared/ui/hooks/use-infinite-scroll';
 import { cn } from '@heroui/react';
 import { DndContext, DragOverlay, pointerWithin, rectIntersection } from '@dnd-kit/core';
-import { FileText, GripVertical } from 'lucide-react';
+import { GripVertical } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { CollisionDetection, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
@@ -14,9 +15,6 @@ import type { MenuOption } from '@/shared/contracts/menu';
 import type { ReactNode } from 'react';
 
 const DRAG_ACTIVATION_DISTANCE = 8;
-
-
-
 
 interface DocumentListingGridProps<T extends Identifiable> {
     data: T[];
@@ -133,28 +131,27 @@ const DocumentListingGrid = <T extends Identifiable,>({
     };
 
     const grid = (
-        <div ref={containerRef} className={cn('document-listing-grid grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(300px,1fr))] content-start gap-6 overflow-y-auto max-md:grid-cols-1 max-md:p-4', className)}>
+        <Scrollable ref={containerRef} className={cn('grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] content-start gap-4 max-md:grid-cols-1 max-md:p-4', className)}>
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <div className='col-span-full min-h-[300px] items-center justify-center'>
-                    <RecoveryState
-                        icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
+                <div className='col-span-full'>
+                    <ListingEmptyState
+                        icon={emptyIcon}
                         title={emptyTitle}
                         description={emptyMessage}
-                        retryLabel={emptyButtonText}
-                        isRetrying={emptyButtonIsLoading}
-                        onRetry={onEmptyButtonClick}
+                        actionLabel={emptyButtonText}
+                        isActionPending={emptyButtonIsLoading}
+                        onAction={onEmptyButtonClick}
                     />
                 </div>
             )}
 
             {shouldShowErrorState && (
-                <div className='col-span-full min-h-[300px] items-center justify-center'>
-                    <RecoveryState
+                <div className='col-span-full'>
+                    <ListingErrorState
                         title="Couldn't load these items"
                         description={errorMessage ?? 'Try again in a moment.'}
-                        tone={RecoveryStateTone.Error}
                         retryLabel={retryButtonText}
                         isRetrying={isLoading}
                         onRetry={onRetry}
@@ -163,12 +160,8 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowAccessDeniedState && (
-                <div className='col-span-full min-h-[300px] items-center justify-center'>
-                    <RecoveryState
-                        title='Access denied'
-                        description={errorMessage ?? "You don't have permission to view these items."}
-                        tone={RecoveryStateTone.AccessDenied}
-                    />
+                <div className='col-span-full'>
+                    <ListingAccessDeniedState description={errorMessage ?? "You don't have permission to view these items."} />
                 </div>
             )}
 
@@ -190,7 +183,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {isFetchingMore && renderSkeleton?.()}
 
             <div ref={sentinelRef} className='col-span-full h-px' aria-hidden='true' />
-        </div>
+        </Scrollable>
     );
 
     const gridContent = (
@@ -213,7 +206,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             {gridContent}
             <DragOverlay>
                 {activeDragItem ? (
-                    <div className='inline-flex min-w-[15rem] max-w-[22rem] items-center gap-3 rounded-xl px-4 py-3.5 text-foreground bg-surface border border-border'>
+                    <div className='glass-surface inline-flex min-w-60 max-w-88 items-center gap-3 rounded-2xl bg-overlay px-4 py-3.5 text-foreground shadow-overlay'>
                         {showDragAffordance ? (
                             <span className='inline-flex size-8 items-center justify-center rounded-full text-foreground'>
                                 <GripVertical size={16} strokeWidth={1.8} />

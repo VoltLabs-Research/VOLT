@@ -8,7 +8,6 @@ import {
     DropdownPopover,
     DropdownRoot,
     DropdownTrigger,
-    Skeleton,
     cn
 } from '@heroui/react';
 import { Columns3, Ellipsis, Plus } from 'lucide-react';
@@ -31,7 +30,6 @@ export interface DocumentListingCreateNew {
 interface DocumentListingHeaderProps<TRow> {
     title: ReactNode;
     description?: ReactNode;
-    showTitleSkeleton: boolean;
     columns: ColumnConfig<TRow>[];
     showColumnPicker: boolean;
     headerActions?: ReactNode;
@@ -42,10 +40,12 @@ interface DocumentListingHeaderProps<TRow> {
     preferences: ListingViewPreferences<TRow>;
 };
 
+// The 36px icon buttons beside the title.
+const TITLE_ICON_BUTTON_CLASS = 'flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground aria-expanded:bg-foreground/6 aria-expanded:text-foreground';
+
 const DocumentListingHeader = <TRow,>({
     title,
     description,
-    showTitleSkeleton,
     columns,
     showColumnPicker,
     headerActions,
@@ -74,92 +74,81 @@ const DocumentListingHeader = <TRow,>({
         });
     };
 
-    return (
-        <div className='flex flex-col gap-12'>
-            <div className='flex flex-col gap-6 p-8 max-md:gap-3 max-md:px-4 max-md:pt-5 max-md:pb-0'>
-                <div className='flex flex-row items-start justify-between gap-6 max-md:flex-col max-md:items-stretch max-md:gap-3'>
-                    <div className='flex flex-row items-center gap-4 min-w-0 max-md:justify-between max-md:gap-2'>
-                        {showTitleSkeleton ? (
-                            <div className='flex flex-col gap-1'>
-                                <Skeleton className='h-8 w-[220px] origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' />
-                                {description ? <Skeleton className='h-[18px] w-[224px] origin-[0_55%] scale-y-[0.6] rounded-md' aria-hidden='true' /> : null}
-                            </div>
-                        ) : (
-                            <div className='flex flex-col gap-1 min-w-0'>
-                                {typeof title === 'string' ? (
-                                    <h3 className='text-3xl font-medium text-foreground'>{title}</h3>
-                                ) : (
-                                    title
-                                )}
-                                {description ? (
-                                    <p className='text-xs text-muted max-w-[28rem]'>
-                                        {description}
-                                    </p>
-                                ) : null}
-                            </div>
-                        )}
-                        {(showColumnPicker || headerMenuOptions.length > 0) && (
-                            <div className='flex flex-row items-center gap-2'>
-                                {showColumnPicker && (
-                                    <DropdownRoot>
-                                        <DropdownTrigger
-                                            className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
-                                            aria-label='Toggle columns'
-                                        >
-                                            <span className='flex items-center justify-center' title='Toggle columns'>
-                                                <Columns3 size={16} aria-hidden='true' />
-                                            </span>
-                                        </DropdownTrigger>
-                                        <DropdownPopover placement='bottom start'>
-                                            <DropdownMenu
-                                                aria-label='Toggle columns'
-                                                selectionMode='multiple'
-                                                selectedKeys={visibleColumnKeys}
-                                                onSelectionChange={handleColumnSelectionChange}
-                                            >
-                                                {columns.map((col) => {
-                                                    const columnKey = getColumnKey(col);
-                                                    const columnTitle = getColumnTitle(col);
+    const hasActions = Boolean(headerActions || createNew);
 
-                                                    return (
-                                                        <DropdownItem
-                                                            key={`document-listing-column-option-${columnKey}`}
-                                                            id={columnKey}
-                                                            textValue={columnTitle}
-                                                        >
-                                                            <DropdownItemIndicator type='checkmark' />
-                                                            {columnTitle}
-                                                        </DropdownItem>
-                                                    );
-                                                })}
-                                            </DropdownMenu>
-                                        </DropdownPopover>
-                                    </DropdownRoot>
+    return (
+        <div className='flex shrink-0 flex-col'>
+            <div className='mb-6 flex flex-row flex-wrap items-start justify-between gap-4'>
+                <div className='flex min-w-0 flex-col gap-1'>
+                    <div className='flex min-w-0 flex-row items-center gap-1'>
+                        {typeof title === 'string' ? (
+                            <h1 className='min-w-0 truncate text-2xl font-semibold tracking-[-0.01em] text-foreground'>{title}</h1>
+                        ) : (
+                            title
+                        )}
+                        {showColumnPicker && (
+                            <DropdownRoot>
+                                <DropdownTrigger
+                                    className={TITLE_ICON_BUTTON_CLASS}
+                                    aria-label='Toggle columns'
+                                >
+                                    <Columns3 size={18} aria-hidden='true' />
+                                </DropdownTrigger>
+                                <DropdownPopover placement='bottom start'>
+                                    <DropdownMenu
+                                        aria-label='Toggle columns'
+                                        selectionMode='multiple'
+                                        selectedKeys={visibleColumnKeys}
+                                        onSelectionChange={handleColumnSelectionChange}
+                                    >
+                                        {columns.map((col) => {
+                                            const columnKey = getColumnKey(col);
+                                            const columnTitle = getColumnTitle(col);
+
+                                            return (
+                                                <DropdownItem
+                                                    key={`document-listing-column-option-${columnKey}`}
+                                                    id={columnKey}
+                                                    textValue={columnTitle}
+                                                >
+                                                    <DropdownItemIndicator type='checkmark' />
+                                                    {columnTitle}
+                                                </DropdownItem>
+                                            );
+                                        })}
+                                    </DropdownMenu>
+                                </DropdownPopover>
+                            </DropdownRoot>
+                        )}
+                        {headerMenuOptions.length > 0 && (
+                            <ContextMenuPopover
+                                id='document-listing-header-menu'
+                                triggerAction='click'
+                                placement='bottom-start'
+                                ariaLabel='Listing actions'
+                                menuLabel='Listing actions'
+                                options={headerMenuOptions}
+                                trigger={(
+                                    <button
+                                        type='button'
+                                        className={TITLE_ICON_BUTTON_CLASS}
+                                        title='Open listing actions'
+                                        aria-label='Open listing actions'
+                                    >
+                                        <Ellipsis size={18} aria-hidden='true' />
+                                    </button>
                                 )}
-                                {headerMenuOptions.length > 0 && (
-                                    <ContextMenuPopover
-                                        id='document-listing-header-menu'
-                                        triggerAction='click'
-                                        placement='bottom-start'
-                                        ariaLabel='Listing actions'
-                                        menuLabel='Listing actions'
-                                        options={headerMenuOptions}
-                                        trigger={(
-                                            <button
-                                                type='button'
-                                                className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
-                                                title='Open listing actions'
-                                                aria-label='Open listing actions'
-                                            >
-                                                <Ellipsis aria-hidden='true' />
-                                            </button>
-                                        )}
-                                    />
-                                )}
-                            </div>
+                            />
                         )}
                     </div>
-                    <div className='flex flex-row items-center gap-8 max-md:w-full max-md:flex-wrap max-md:gap-2 max-md:[&>*]:flex-initial'>
+                    {description ? (
+                        <p className='max-w-lg text-sm text-muted text-pretty'>
+                            {description}
+                        </p>
+                    ) : null}
+                </div>
+                {hasActions && (
+                    <div className='flex flex-row flex-wrap items-center gap-2'>
                         {headerActions}
                         {createNew && (
                             <Button variant='primary' onPress={createNew.onCreate}>
@@ -168,31 +157,33 @@ const DocumentListingHeader = <TRow,>({
                             </Button>
                         )}
                     </div>
-                </div>
+                )}
             </div>
 
             {!hideTabs && tabs.length >= 2 && (
-                <div className='px-8 max-md:px-4' role='tablist' aria-label='Listing views'>
-                    <div className='flex flex-row flex-wrap items-center gap-0.5'>
-                        {tabs.map((tab) => {
-                            const isActive = preferences.activeTabId === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type='button'
-                                    role='tab'
-                                    aria-selected={isActive}
-                                    className={cn(
-                                        'inline-flex h-7 min-h-7 cursor-pointer items-center justify-center whitespace-nowrap rounded-md border border-transparent px-2.5 text-xs font-medium leading-none select-none transition-colors duration-150 ease-out',
-                                        isActive ? 'bg-default text-foreground hover:bg-surface-hover' : 'bg-transparent text-muted hover:bg-surface-hover hover:text-foreground'
-                                    )}
-                                    onClick={() => preferences.selectTab(tab.id)}
-                                >
-                                    {tab.label}
-                                </button>
-                            );
-                        })}
-                    </div>
+                <div
+                    className='mb-4 inline-flex shrink-0 gap-0.5 self-start rounded-xl bg-foreground/5 p-0.5'
+                    role='tablist'
+                    aria-label='Listing views'
+                >
+                    {tabs.map((tab) => {
+                        const isActive = preferences.activeTabId === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type='button'
+                                role='tab'
+                                aria-selected={isActive}
+                                className={cn(
+                                    'inline-flex h-7.5 cursor-pointer items-center justify-center whitespace-nowrap rounded-xl border-0 px-3.5 text-sm font-medium select-none transition-colors duration-200 ease-out',
+                                    isActive ? 'bg-foreground/9 text-foreground' : 'bg-transparent text-muted hover:text-foreground'
+                                )}
+                                onClick={() => preferences.selectTab(tab.id)}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>

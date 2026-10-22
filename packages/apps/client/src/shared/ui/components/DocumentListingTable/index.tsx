@@ -1,46 +1,47 @@
 import getListingDisplayState from '@/shared/ui/components/DocumentListing/listing-state';
 import useListingDragAndDrop from '@/shared/ui/components/DocumentListing/use-listing-drag-and-drop';
-import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
+import { ListingAccessDeniedState, ListingEmptyState, ListingErrorState } from '@/shared/ui/components/DocumentListing/ListingStates';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import TableRow from '@/shared/ui/components/TableRow';
 import { Skeleton, cn } from '@heroui/react';
 import { useInfiniteScroll } from '@/shared/ui/hooks/use-infinite-scroll';
 import { DndContext } from '@dnd-kit/core';
-import { FileText } from 'lucide-react';
 import { useMemo, useState, useCallback } from 'react';
 import React from 'react';
 import type { CSSProperties } from 'react';
 import type { DocumentListingDragAndDropConfig } from '@/shared/ui/components/DocumentListing/drag-and-drop';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { Identifiable } from '@/shared/contracts/entity';
-import type { ColumnConfig, ListingDensity } from './column-config';
+import type { ColumnConfig } from './column-config';
 import { getColumnKey, getColumnTitle } from './column-config';
 
 export type { ColumnConfig } from './column-config';
 
 export { getColumnKey, getColumnTitle } from './column-config';
 
-const DEFAULT_MIN_COLUMN_WIDTH = 140;
-const COMPACT_MIN_COLUMN_WIDTH = 80;
+const MIN_COLUMN_WIDTH = 140;
 
-const DEFAULT_COLUMN_GAP = 16;
-const COMPACT_COLUMN_GAP = 8;
+// Each cell keeps 16px on either side, as the mockup's table does; the header's separators sit in
+// the middle of the gap.
+const COLUMN_GAP = 32;
 
 const DRAG_ACTIVATION_DISTANCE = 6;
 
-const INITIAL_SKELETON_ROWS_COUNT = 20;
+const INITIAL_SKELETON_ROWS_COUNT = 6;
+
+const ROW_CLASS = 'flex min-h-14 items-center px-4 py-2 not-first:border-t not-first:border-separator/60';
+
+const CELL_CLASS = 'flex min-w-0 items-center overflow-hidden text-ellipsis whitespace-nowrap text-left';
 
 const resolvePositive = (value: number | undefined): number | undefined => (
     value !== undefined && value > 0 ? value : undefined
 );
 
-const resolveColumnMinWidth = <TRow,>(col: ColumnConfig<TRow>, fallbackMinWidth: number): number => (
-    resolvePositive(col.width) ?? resolvePositive(col.minWidth) ?? fallbackMinWidth
+const resolveColumnMinWidth = <TRow,>(col: ColumnConfig<TRow>): number => (
+    resolvePositive(col.width) ?? resolvePositive(col.minWidth) ?? MIN_COLUMN_WIDTH
 );
 
-const resolveColumnStyle = <TRow,>(
-    col: ColumnConfig<TRow>,
-    fallbackMinWidth: number
-): CSSProperties => {
+const resolveColumnStyle = <TRow,>(col: ColumnConfig<TRow>): CSSProperties => {
     const fixedWidth = resolvePositive(col.width);
 
     if(fixedWidth !== undefined){
@@ -51,7 +52,7 @@ const resolveColumnStyle = <TRow,>(
         };
     }
 
-    const minWidth = resolveColumnMinWidth(col, fallbackMinWidth);
+    const minWidth = resolveColumnMinWidth(col);
 
     return {
         flex: `${resolvePositive(col.flex) ?? 1} 1 ${minWidth}px`,
@@ -70,6 +71,8 @@ interface DocumentListingTableProps<T extends Identifiable> {
     isLoading?: boolean;
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     dragAndDrop?: DocumentListingDragAndDropConfig<T>;
+    emptyIcon?: React.ReactNode;
+    emptyTitle?: string;
     emptyMessage?: string;
     hasMore?: boolean;
     isFetchingMore?: boolean;
@@ -78,11 +81,11 @@ interface DocumentListingTableProps<T extends Identifiable> {
     scrollContainerRef?: React.RefObject<HTMLDivElement | null> | null;
     emptyButtonText?: string;
     onEmptyButtonClick?: () => void;
+    emptyButtonIsLoading?: boolean;
     errorMessage?: string | null;
     isAccessDenied?: boolean;
     onRetry?: () => void;
     retryButtonText?: string;
-    compact?: boolean;
 };
 
 interface SkeletonRowsProps<T> {
@@ -90,17 +93,12 @@ interface SkeletonRowsProps<T> {
     keyPrefix: string;
     columns: ColumnConfig<T>[];
     columnStyles: CSSProperties[];
-    columnGap: number;
-    density: ListingDensity;
 };
 
-const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, density }: SkeletonRowsProps<T>) => (
+const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles }: SkeletonRowsProps<T>) => (
     <>
         {Array.from({ length: count }).map((_, rowIndex) => (
-            <div key={`${keyPrefix}-${rowIndex}`} className={cn({
-                default: 'flex items-center cursor-pointer px-6 py-3.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover/50 max-md:px-4 max-md:py-3',
-                compact: 'flex items-center cursor-pointer box-border h-7 max-h-7 px-2 py-0.5 transition-[background-color,box-shadow,border-color,opacity] duration-150 hover:bg-surface-hover/50'
-            }[density], 'shrink-0 cursor-auto')} role='row' aria-hidden='true' style={{ gap: `${columnGap}px` }}>
+            <div key={`${keyPrefix}-${rowIndex}`} className={ROW_CLASS} role='row' aria-hidden='true' style={{ gap: COLUMN_GAP }}>
                 {columns.map((col, colIdx) => {
                     const skeleton = col.skeleton ?? {
                         variant: 'text' as const,
@@ -108,20 +106,15 @@ const SkeletonRows = <T,>({ count, keyPrefix, columns, columnStyles, columnGap, 
                     };
 
                     return (
-                        <div className={cn({
-                            default: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-sm text-muted max-md:text-sm',
-                            compact: 'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs text-muted'
-                        }[density], col.numeric && 'justify-end text-right tabular-nums')} data-label={col.title} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
-                            <span>
-                                <Skeleton
-                                    aria-hidden='true'
-                                    className={skeleton.variant === 'rounded' ? 'shrink-0 rounded-xl' : 'shrink-0 origin-[0_55%] scale-y-[0.6] rounded-sm h-[1em]'}
-                                    style={{
-                                        width: skeleton.width,
-                                        height: skeleton.height
-                                    }}
-                                />
-                            </span>
+                        <div className={cn(CELL_CLASS, col.numeric && 'justify-end')} key={`${getColumnKey(col) || colIdx}-skeleton`} role='gridcell' style={columnStyles[colIdx]}>
+                            <Skeleton
+                                aria-hidden='true'
+                                className={cn('max-w-full shrink-0 rounded-md', skeleton.variant === 'text' && 'h-3')}
+                                style={{
+                                    width: skeleton.width,
+                                    height: skeleton.variant === 'text' ? undefined : skeleton.height
+                                }}
+                            />
                         </div>
                     );
                 })}
@@ -143,6 +136,8 @@ const DocumentListingTable = <T extends Identifiable>({
     isLoading = false,
     getMenuOptions,
     dragAndDrop,
+    emptyIcon,
+    emptyTitle = 'No items to show',
     emptyMessage = 'No documents to show.',
     hasMore = false,
     isFetchingMore = false,
@@ -151,11 +146,11 @@ const DocumentListingTable = <T extends Identifiable>({
     scrollContainerRef = null,
     emptyButtonText,
     onEmptyButtonClick,
+    emptyButtonIsLoading = false,
     errorMessage,
     isAccessDenied = false,
     onRetry,
-    retryButtonText,
-    compact = false
+    retryButtonText
 }: DocumentListingTableProps<T>) => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const {
@@ -165,21 +160,16 @@ const DocumentListingTable = <T extends Identifiable>({
         dispatchDragEnd
     } = useListingDragAndDrop(data, dragAndDrop, DRAG_ACTIVATION_DISTANCE);
 
-    const density: ListingDensity = compact ? 'compact' : 'default';
-    const resolvedMinWidth = compact ? COMPACT_MIN_COLUMN_WIDTH : DEFAULT_MIN_COLUMN_WIDTH;
-    const resolvedGap = compact ? COMPACT_COLUMN_GAP : DEFAULT_COLUMN_GAP;
-
-    const columnStyles = useMemo(() => columns.map(
-        (col) => resolveColumnStyle(col, resolvedMinWidth)
-    ), [columns, resolvedMinWidth]);
+    const columnStyles = useMemo(() => columns.map(resolveColumnStyle), [columns]);
 
     const minContentWidth = useMemo(() => {
         if(columns.length === 0) return 0;
 
-        const sum = columns.reduce((acc, col) => acc + resolveColumnMinWidth(col, resolvedMinWidth), 0);
+        const sum = columns.reduce((acc, col) => acc + resolveColumnMinWidth(col), 0);
 
-        return sum + (columns.length - 1) * resolvedGap;
-    }, [columns, resolvedMinWidth, resolvedGap]);
+        // The rows' own 16px inset on both sides.
+        return sum + (columns.length - 1) * COLUMN_GAP + 32;
+    }, [columns]);
 
     const { sentinelRef } = useInfiniteScroll({
         rootRef: scrollContainerRef,
@@ -235,6 +225,35 @@ const DocumentListingTable = <T extends Identifiable>({
         });
     }, []);
 
+    if (shouldShowEmptyState) {
+        return (
+            <ListingEmptyState
+                icon={emptyIcon}
+                title={emptyTitle}
+                description={emptyMessage}
+                actionLabel={emptyButtonText}
+                onAction={onEmptyButtonClick}
+                isActionPending={emptyButtonIsLoading}
+            />
+        );
+    }
+
+    if (shouldShowErrorState) {
+        return (
+            <ListingErrorState
+                title="Couldn't load this list"
+                description={errorMessage ?? 'Try again in a moment.'}
+                retryLabel={retryButtonText}
+                isRetrying={isLoading}
+                onRetry={onRetry}
+            />
+        );
+    }
+
+    if (shouldShowAccessDeniedState) {
+        return <ListingAccessDeniedState description={errorMessage ?? "You don't have permission to view this list."} />;
+    }
+
     const rows = data.map((item) => (
         <MemoizedTableRow
             key={item._id}
@@ -247,40 +266,58 @@ const DocumentListingTable = <T extends Identifiable>({
             onClick={handleRowClick}
             onItemClick={onItemClick}
             onContextMenu={handleRowContextMenu}
-            columnGap={resolvedGap}
+            columnGap={COLUMN_GAP}
             draggableId={draggableIdByItemId.get(item._id) ?? null}
             droppableId={droppableIdByItemId.get(item._id) ?? null}
-            compact={compact}
         />
     ));
 
+    // The frame holds to its rows and grows up to the page; past that the body scrolls under a
+    // header that stays put. HeroUI's primary table finish: the header on the frame, the rows on
+    // a surface inset 4px, so its corners are the frame's minus that inset.
     return (
-        <div className='flex h-full min-h-0 flex-col overflow-x-auto overflow-y-hidden [-webkit-overflow-scrolling:touch]' role='grid' aria-label={listingLabel} aria-colcount={columns.length} aria-rowcount={data.length} aria-busy={isLoading || isFetchingMore}>
-            {columns.length > 0 && shouldShowContent && (
-                <div className={{
-                    default: 'sticky top-0 z-[2] flex rounded-t-xl bg-surface-secondary px-6 py-3 max-md:px-4 max-md:py-3',
-                    compact: 'sticky top-0 z-10 flex bg-surface-secondary px-2 py-1'
-                }[density]} role='row' style={{
-                    minWidth: `${minContentWidth}px`,
-                    gap: `${resolvedGap}px`
-                }}>
+        <div
+            className='flex max-h-full min-h-0 flex-col overflow-x-auto overflow-y-hidden rounded-2xl bg-surface-secondary px-1 pb-1 [-webkit-overflow-scrolling:touch]'
+            role='grid'
+            aria-label={listingLabel}
+            aria-colcount={columns.length}
+            aria-rowcount={data.length}
+            aria-busy={isLoading || isFetchingMore}
+        >
+            {columns.length > 0 && (shouldShowContent || isInitialLoading) && (
+                // Over the canvas, not the frame's translucent fill alone: rows scrolled under it
+                // would otherwise show through.
+                <div
+                    className='sticky top-0 z-[2] flex shrink-0 bg-canvas bg-linear-to-b from-surface-secondary to-surface-secondary px-4 py-2.5'
+                    role='row'
+                    style={{
+                        minWidth: minContentWidth,
+                        gap: COLUMN_GAP
+                    }}
+                >
                     {columns.map((col, colIdx) => {
                         const columnTitle = getColumnTitle(col);
-                        const cellClassName = cn(
-                            'flex items-center overflow-hidden text-ellipsis whitespace-nowrap text-left no-underline text-xs font-medium text-muted',
-                            col.numeric && 'justify-end text-right tabular-nums'
-                        );
                         const heading = (
-                            <h3 className={cn('text-sm text-muted', col.headerTitleClassName ?? 'font-medium')}>
+                            <h3 className={cn('min-w-0 truncate text-xs', col.headerTitleClassName ?? 'font-medium')}>
                                 {getCellTitle(col)}
                             </h3>
                         );
                         return (
-                            <div className={cellClassName} key={`header-${columnTitle}-${colIdx}`} role='columnheader' aria-sort={getAriaSort(col)} style={columnStyles[colIdx]}>
+                            <div
+                                className={cn(
+                                    'relative flex items-center text-left text-xs font-medium text-muted',
+                                    'not-last:after:absolute not-last:after:top-1/2 not-last:after:-right-4 not-last:after:h-4 not-last:after:w-px not-last:after:-translate-y-1/2 not-last:after:rounded-sm not-last:after:bg-separator',
+                                    col.numeric && 'justify-end text-right tabular-nums'
+                                )}
+                                key={`header-${columnTitle}-${colIdx}`}
+                                role='columnheader'
+                                aria-sort={getAriaSort(col)}
+                                style={columnStyles[colIdx]}
+                            >
                                 {col.sortable ? (
                                     <button
                                         type='button'
-                                        className={cn('group flex w-full min-w-0 cursor-pointer items-center border-0 bg-transparent p-0 text-left text-muted', col.numeric && 'justify-end')}
+                                        className={cn('group flex w-full min-w-0 cursor-pointer items-center border-0 bg-transparent p-0 text-left text-muted transition-colors duration-150 hover:text-foreground', col.numeric && 'justify-end')}
                                         onClick={() => onCellClick(col)}
                                         aria-label={`Sort by ${columnTitle}`}
                                     >
@@ -293,72 +330,34 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div ref={scrollContainerRef} className={{
-                default: 'relative flex min-h-0 flex-1 flex-col overflow-y-auto rounded-b-xl border border-surface-secondary',
-                compact: 'relative flex min-h-0 flex-1 flex-col overflow-y-auto'
-            }[density]} role='rowgroup' style={{ minWidth: shouldShowContent ? `${minContentWidth}px` : undefined }}>
-                {dragAndDrop ? (
-                    <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
-                        {rows}
-                    </DndContext>
-                ) : rows}
+            <div className='flex min-h-0 shrink flex-col overflow-clip rounded-xl' style={{ minWidth: minContentWidth }}>
+                <Scrollable ref={scrollContainerRef} className='relative flex min-h-0 flex-col' role='rowgroup'>
+                    {dragAndDrop ? (
+                        <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
+                            {rows}
+                        </DndContext>
+                    ) : rows}
 
-                <div ref={sentinelRef} style={{ height: 1 }} aria-hidden='true' />
+                    {isInitialLoading && (
+                        <SkeletonRows
+                            count={INITIAL_SKELETON_ROWS_COUNT}
+                            keyPrefix='loading-skeleton'
+                            columns={columns}
+                            columnStyles={columnStyles}
+                        />
+                    )}
 
-                {isFetchingMore && (
-                    <SkeletonRows
-                        count={skeletonRowsCount}
-                        keyPrefix='fetching'
-                        columns={columns}
-                        columnStyles={columnStyles}
-                        columnGap={resolvedGap}
-                        density={density}
-                    />
-                )}
+                    {isFetchingMore && (
+                        <SkeletonRows
+                            count={skeletonRowsCount}
+                            keyPrefix='fetching'
+                            columns={columns}
+                            columnStyles={columnStyles}
+                        />
+                    )}
 
-                {shouldShowEmptyState && (
-                    <RecoveryState
-                        icon={<FileText size={26} strokeWidth={1.5} />}
-                        title='No items to show'
-                        description={emptyMessage}
-                        retryLabel={emptyButtonText}
-                        onRetry={onEmptyButtonClick}
-                    />
-                )}
-
-                {shouldShowErrorState && (
-                    <RecoveryState
-                        title="Couldn't load this list"
-                        description={errorMessage ?? 'Try again in a moment.'}
-                        tone={RecoveryStateTone.Error}
-                        retryLabel={retryButtonText}
-                        isRetrying={isLoading}
-                        onRetry={onRetry}
-                    />
-                )}
-
-                {shouldShowAccessDeniedState && (
-                    <RecoveryState
-                        title='Access denied'
-                        description={errorMessage ?? "You don't have permission to view this list."}
-                        tone={RecoveryStateTone.AccessDenied}
-                    />
-                )}
-
-                {isInitialLoading && (
-                    <div className='absolute inset-0 z-[100] h-[calc(100dvh-320px)]'>
-                        <div className='absolute inset-0 flex flex-col overflow-hidden'>
-                            <SkeletonRows
-                                count={INITIAL_SKELETON_ROWS_COUNT}
-                                keyPrefix='loading-skeleton'
-                                columns={columns}
-                                columnStyles={columnStyles}
-                                columnGap={resolvedGap}
-                                density={density}
-                            />
-                        </div>
-                    </div>
-                )}
+                    <div ref={sentinelRef} className='h-px shrink-0' aria-hidden='true' />
+                </Scrollable>
             </div>
         </div>
     );
