@@ -68,6 +68,9 @@ const stdioModes = (stdio: unknown): [StdioMode, StdioMode, StdioMode] => {
     return [modeOf(entries[0], 0), modeOf(entries[1], 1), modeOf(entries[2], 2)];
 };
 
+// Whether a process gets an IPC channel: its stdio option has an 'ipc' entry, as fork()'s has.
+const hasIpc = (stdio: unknown): boolean => Array.isArray(stdio) && stdio.includes('ipc');
+
 const SIGNAL_NUMBERS: Record<string, number> = { SIGHUP: 1, SIGINT: 2, SIGQUIT: 3, SIGKILL: 9, SIGUSR1: 10, SIGUSR2: 12, SIGTERM: 15 };
 
 let nextPid = 100;
@@ -96,13 +99,16 @@ export class ChildProcess extends EventEmitter {
     // What is written to stdin before the program starts, as a pipe holds it until read.
     private pendingStdin: Uint8Array[] | null = [];
     private stdinEnded = false;
+    // What is sent before the program starts, which its IPC channel holds until it reads it.
+    private pendingMessages: unknown[] | null = [];
 
-    constructor(command: string, args: string[], private readonly modes: [StdioMode, StdioMode, StdioMode]){
+    constructor(command: string, args: string[], private readonly modes: [StdioMode, StdioMode, StdioMode], ipc: boolean){
         super();
         nextPid += 1;
         this.pid = nextPid;
         this.spawnfile = command;
         this.spawnargs = [command, ...args];
+        this.connected = ipc;
         this.stdin = modes[0] === 'pipe'
             ? new Writable({
                 write: (chunk: Buffer, _encoding, callback) => {
@@ -122,7 +128,6 @@ export class ChildProcess extends EventEmitter {
 
     bind(handlers: ChildHandlers): void {
         this.handlers = handlers;
-        this.connected = handlers.send !== undefined;
         const pending = this.pendingStdin ?? [];
         this.pendingStdin = null;
         for(const chunk of pending){
@@ -130,6 +135,13 @@ export class ChildProcess extends EventEmitter {
         }
         if(this.stdinEnded){
             handlers.stdin?.end();
+        }
+        const messages = this.pendingMessages ?? [];
+        this.pendingMessages = null;
+        if(this.connected){
+            for(const message of messages){
+                handlers.send?.(message);
+            }
         }
     }
 
@@ -169,12 +181,16 @@ export class ChildProcess extends EventEmitter {
 
     send(message: unknown, ...rest: unknown[]): boolean {
         const callback = rest.find((arg): arg is (error: Error | null) => void => typeof arg === 'function');
-        if(!this.handlers.send || !this.connected){
+        if(!this.connected){
             const error = Object.assign(new Error('Channel closed'), { code: 'ERR_IPC_CHANNEL_CLOSED' });
             queueMicrotask(() => callback ? callback(error) : this.emit('error', error));
             return false;
         }
-        this.handlers.send(message);
+        if(this.pendingMessages){
+            this.pendingMessages.push(message);
+        }else{
+            this.handlers.send?.(message);
+        }
         callback?.(null);
         return true;
     }
@@ -351,7 +367,7 @@ const spawnError = (command: string): Error => Object.assign(new Error(`spawn ${
 export const spawn = (command: string, argsOrOptions?: readonly string[] | SpawnOptions, maybeOptions?: SpawnOptions): ChildProcess => {
     const args = Array.isArray(argsOrOptions) ? [...argsOrOptions] : [];
     const options = (Array.isArray(argsOrOptions) ? maybeOptions : argsOrOptions as SpawnOptions | undefined) ?? {};
-    const child = new ChildProcess(command, args, stdioModes(options.stdio));
+    const child = new ChildProcess(command, args, stdioModes(options.stdio), hasIpc(options.stdio));
     const program = resolveProgram(command, args, options);
     if(!program){
         child.failToSpawn(spawnError(command));
@@ -365,8 +381,12 @@ export const spawn = (command: string, argsOrOptions?: readonly string[] | Spawn
     return child;
 };
 
-export const fork = (modulePath: string, args: readonly string[] = [], options: SpawnOptions = {}): ChildProcess => (
-    spawn(process.execPath, [modulePath, ...args], options)
+// As Node's: the child inherits the parent's stdio (or pipes it, silent) and has an IPC channel.
+export const fork = (modulePath: string, args: readonly string[] = [], options: SpawnOptions & { silent?: boolean } = {}): ChildProcess => (
+    spawn(process.execPath, [modulePath, ...args], {
+        ...options,
+        stdio: options.stdio ?? (options.silent ? ['pipe', 'pipe', 'pipe', 'ipc'] : [0, 1, 2, 'ipc'])
+    })
 );
 
 type ExecCallback = (error: (Error & { code?: number | string }) | null, stdout: string, stderr: string) => void;
