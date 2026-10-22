@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/voltlabs-research/volt/main/package
 
 ### Desktop app
 
-Prefer a one-click setup? Download the desktop app. It ships the whole stack inside the installer and runs it on your machine with no Docker, database or other dependencies to install:
+Prefer a one-click setup? Download the desktop app. It runs the whole stack in its window, the same WebAssembly build the browser runs, with no Docker, database or other dependencies to install, and keeps your workspace on your computer:
 
 - [Download the latest release](https://github.com/VoltLabs-Research/VOLT/releases/latest)
 
