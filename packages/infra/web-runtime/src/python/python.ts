@@ -3,9 +3,10 @@
 // process's standard streams and ends with its exit code, so a backend runs it as python3 runs on a
 // machine. `-m venv` creates a virtual environment whose interpreter is a copy of this program's
 // executable (src/platform/child-process.ts runs a copy as the program it is); `-m pip` installs
-// packages into the running environment with micropip.
+// packages into the running environment with micropip; `-m volt_kernel` serves a notebook (kernel.ts).
 import { baseExecutable, createEnvironment, finalize, flushStreams, importOwnModule, isExitStatus, loadMicropip, processEnv, startPython } from './interpreter';
 import type { Python } from './interpreter';
+import { runKernel } from './kernel';
 import path from 'path';
 
 interface PyodideInternals {
@@ -99,6 +100,9 @@ const run = async (): Promise<number> => {
     const module = moduleOf(args);
     if(module?.name === 'venv'){
         return venv(executable, module.args);
+    }
+    if(module?.name === 'volt_kernel'){
+        return runKernel(executable, module.args);
     }
     // PYTHONINSPECT keeps an interpreter Pyodide embeds from exiting on SystemExit; this one exits.
     const python = await startPython(executable, args, { ...processEnv(), PYTHONINSPECT: '' });
