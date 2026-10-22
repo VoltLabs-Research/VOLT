@@ -4,7 +4,8 @@ import type { ScriptingNotebookContainerResources } from './domain';
 
 export interface CreateScriptingNotebookInput{
     title?: string;
-    teamClusterId: string;
+    // A connected cluster of the team's when absent.
+    teamClusterId?: string;
 }
 
 export interface UpdateScriptingNotebookInput{
