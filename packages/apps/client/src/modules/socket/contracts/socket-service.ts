@@ -15,6 +15,8 @@ export interface ISocketService {
     isConnected(): boolean;
     getConnectionStatus(): SocketConnectionStatus;
     on<TArgs extends unknown[]>(event: string, callback: (...args: TArgs) => void): () => void;
+    // Hands `event` to this client's listeners as though the server had sent it.
+    deliver(event: string, ...args: unknown[]): void;
     emit<T = unknown>(event: string, data?: unknown): Promise<T>;
     emitWithoutAck(event: string, data?: unknown): void;
     updateAuth(auth: Record<string, unknown>): void;

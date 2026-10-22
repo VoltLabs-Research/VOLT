@@ -22,13 +22,44 @@ class SocketService implements ISocketService {
     private authOverrides: SocketAuth = {};
     private appliedAuth: SocketAuth = {};
     private connectPromise: Promise<void> | null = null;
+    private holds = 0;
+    private answers = new Map<string, (data: unknown) => unknown>();
 
     constructor(
         private readonly transport: ISocketService,
         private readonly getAuth: () => SocketAuth
     ) {}
 
+    // While held, nothing opens the connection: for pages that render the app's components
+    // without being the app, whose rooms have nobody in them.
+    hold(): () => void {
+        this.holds += 1;
+        return () => {
+            this.holds = Math.max(0, this.holds - 1);
+        };
+    }
+
+    // While held, the page holding the connection plays the server: it answers what the app
+    // emits, as deliver() hands the app what the server would send.
+    answer(event: string, respond: (data: unknown) => unknown): () => void {
+        this.answers.set(event, respond);
+        return () => {
+            if (this.answers.get(event) === respond) {
+                this.answers.delete(event);
+            }
+        };
+    }
+
+    // Whether `event` reaches a server now: the real one, or the page playing it while held.
+    canReach(event: string): boolean {
+        return this.transport.isConnected() || this.answerFor(event) !== undefined;
+    }
+
     connect(): Promise<void> {
+        if (this.holds > 0) {
+            return Promise.resolve();
+        }
+
         this.syncAuth();
 
         if (this.transport.isConnected()) {
@@ -61,7 +92,16 @@ class SocketService implements ISocketService {
         return this.transport.on(event, callback);
     }
 
+    deliver(event: string, ...args: unknown[]): void {
+        this.transport.deliver(event, ...args);
+    }
+
     async emit<T = unknown>(event: string, data?: unknown): Promise<T> {
+        const respond = this.answerFor(event);
+        if (respond) {
+            return respond(data) as T;
+        }
+
         try {
             await this.ensureConnectedForEmit(event);
             return await this.transport.emit<T>(event, data);
@@ -79,6 +119,12 @@ class SocketService implements ISocketService {
     }
 
     emitWithoutAck(event: string, data?: unknown): void {
+        const respond = this.answerFor(event);
+        if (respond) {
+            respond(data);
+            return;
+        }
+
         this.syncAuth();
 
         if (!this.transport.isConnected()) {
@@ -104,6 +150,10 @@ class SocketService implements ISocketService {
 
     onConnectionStatusChange(listener: (status: SocketConnectionStatus) => void): () => void {
         return this.transport.onConnectionStatusChange(listener);
+    }
+
+    private answerFor(event: string): ((data: unknown) => unknown) | undefined {
+        return this.holds > 0 ? this.answers.get(event) : undefined;
     }
 
     private syncAuth(): void {
