@@ -2,7 +2,7 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Modal } from '@/shared/ui/modal/Modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { useCallback } from 'react';
-import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent, ReactNode } from 'react';
+import type { ChangeEvent, InputHTMLAttributes, KeyboardEvent } from 'react';
 import type { ModalFooterAction } from '@/shared/ui/components/ModalFooterActions';
 
 interface TextInputModalProps {
@@ -19,8 +19,6 @@ interface TextInputModalProps {
     isSubmitting: boolean;
     primaryIsLoading?: boolean;
     inputProps?: InputHTMLAttributes<HTMLInputElement>;
-    leadingContent?: ReactNode;
-    helperText?: ReactNode;
     onValueChange: (value: string) => void;
     onSubmit: () => void | Promise<void>;
     onCancel: () => void;
@@ -41,8 +39,6 @@ const TextInputModal = ({
     isSubmitting,
     primaryIsLoading,
     inputProps,
-    leadingContent,
-    helperText,
     onValueChange,
     onSubmit,
     onCancel,
@@ -88,7 +84,6 @@ const TextInputModal = ({
             onClose={onClose}
             footer={<ModalFooterActions primary={primaryAction} secondary={secondaryAction} />}
         >
-            {leadingContent}
             <FormFieldRHF
                 label={fieldLabel}
                 placeholder={placeholder}
@@ -98,7 +93,6 @@ const TextInputModal = ({
                 inputProps={mergedInputProps}
                 error={error}
             />
-            {helperText}
         </Modal>
     );
 };

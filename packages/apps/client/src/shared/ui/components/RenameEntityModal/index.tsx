@@ -1,7 +1,7 @@
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import TextInputModal from '@/shared/ui/components/RenameEntityModal/TextInputModal';
 import { useCallback, useEffect, useState } from 'react';
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { InputHTMLAttributes } from 'react';
 
 interface RenameEntityModalProps<TEntity> {
     entity: TEntity | null;
@@ -14,8 +14,6 @@ interface RenameEntityModalProps<TEntity> {
     validateTitle?: (title: string) => string | undefined;
     isSubmitDisabled?: (title: string, entity: TEntity | null) => boolean;
     inputProps?: InputHTMLAttributes<HTMLInputElement>;
-    leadingContent?: ReactNode;
-    helperText?: ReactNode;
     onSubmit: (title: string) => Promise<void>;
     onClose: () => void;
 };
@@ -31,8 +29,6 @@ const RenameEntityModal = <TEntity,>({
     validateTitle,
     isSubmitDisabled,
     inputProps,
-    leadingContent,
-    helperText,
     onSubmit,
     onClose
 }: RenameEntityModalProps<TEntity>) => {
@@ -96,8 +92,6 @@ const RenameEntityModal = <TEntity,>({
             submitDisabled={isSubmitting || !trimmedTitle || Boolean(isSubmitDisabled?.(trimmedTitle, entity))}
             isSubmitting={isSubmitting}
             inputProps={inputProps}
-            leadingContent={leadingContent}
-            helperText={helperText}
             onValueChange={handleTitleChange}
             onSubmit={handleSubmit}
             onCancel={handleClose}
