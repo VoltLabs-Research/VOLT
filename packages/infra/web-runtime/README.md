@@ -32,6 +32,10 @@ with its code.
   takes Pyodide's builds of packages with native code (numpy, pandas, pyarrow, scikit-learn, ...)
   and pure-Python wheels from PyPI. Installs are kept with the environment. Pyodide keeps the wheels
   it downloads next to its files in `/usr/local/lib/pyodide`.
+- **The SDK.** The build packages `packages/sdk/python` as a wheel, which every machine has in
+  `/usr/local/share/python-wheels`. `pip install voltsdk` installs that wheel rather than PyPI's,
+  so code here uses the SDK of the server it talks to. The wheel's version ends in the digest of its
+  files (`3.1.1+afe0a4816516`), and `pip install -U voltsdk` replaces another build with it.
 - **Plugins.** The daemon provisions a Python plugin as it does on a machine: a virtual environment,
   `pip install -r requirements.txt`, then its script with the plugin stub.
 
@@ -40,6 +44,8 @@ Python is a guest here, not the host, so a few things work differently:
 - There is no `subprocess` and no threads.
 - `requests` reaches the backends through the service worker's relay.
 - The first install of a package downloads it from Pyodide's CDN.
+- The SDK's `SpatialAssembler` needs `volt-spatial-assembler`, a native extension with no build
+  for Pyodide.
 
 ## Notebooks
 
