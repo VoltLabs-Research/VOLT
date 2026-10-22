@@ -1,5 +1,5 @@
 // Pyodide started as the runtime's python3 runs: Node's code paths, over the process's file system
-// and standard streams (python.ts is the program).
+// and standard streams (python.ts is the program; kernel.ts serves a notebook with it).
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -9,6 +9,8 @@ import browserProcess from '../platform/process';
 import { programExecutable } from '../platform/child-process';
 import { readStdinSync } from '../platform/stdio';
 import pipSource from './pip.py';
+import kernelSource from './kernel.py';
+import matplotlibBackendSource from './matplotlib_backend.py';
 
 // Defined by scripts/build.mjs from the Pyodide release it installs.
 declare const VOLT_PYTHON_VERSION: string;
@@ -30,10 +32,12 @@ const OWN_DIRECTORIES = new Set(['lib', 'dev', 'proc']);
 // The machine's site-packages, where the interpreter outside a virtual environment installs.
 const SITE_PACKAGES = `/usr/local/lib/${LIB}/site-packages`;
 
-// Modules of the program's own, which its pip imports (importOwnModule).
+// Modules of the program's own, which its pip and kernel import (importOwnModule).
 const OWN_MODULES_DIRECTORY = '/lib/volt';
 const OWN_MODULES: Record<string, string> = {
-    '_volt_pip.py': pipSource
+    '_volt_pip.py': pipSource,
+    'volt_kernel.py': kernelSource,
+    '_volt_matplotlib.py': matplotlibBackendSource
 };
 
 interface EmscriptenFs {
