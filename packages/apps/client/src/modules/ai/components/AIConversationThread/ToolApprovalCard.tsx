@@ -7,9 +7,9 @@ type VerdictTone = 'pending' | 'approved' | 'rejected' | 'failed';
 
 const VERDICT_TONE: Record<VerdictTone, string> = {
     pending: 'text-muted',
-    approved: 'text-success',
+    approved: 'text-success-soft-foreground',
     rejected: 'text-muted',
-    failed: 'text-danger'
+    failed: 'text-danger-soft-foreground'
 };
 
 interface Verdict {
@@ -60,7 +60,7 @@ const ToolApprovalCard = ({ activities, canDecide, onDecide }: ToolApprovalCardP
 
     return (
         <section
-            className='flex w-full flex-col gap-3 rounded-lg border border-border bg-surface-secondary p-3'
+            className='flex w-full flex-col gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4'
             aria-label={awaiting.length > 0 ? 'Volt AI is asking for approval' : 'Approval request'}
         >
             {activities.map((activity) => {
@@ -68,29 +68,37 @@ const ToolApprovalCard = ({ activities, canDecide, onDecide }: ToolApprovalCardP
                 const verdict = verdictOf(activity);
 
                 return (
-                    <div key={activity.toolCallId} className='flex min-w-0 flex-col gap-1.5'>
-                        <p className='text-sm font-medium text-foreground'>{presentRequest(activity.toolName)}</p>
+                    <div key={activity.toolCallId} className='flex min-w-0 flex-col gap-3'>
+                        <p className='text-base font-medium text-foreground'>{presentRequest(activity.toolName)}</p>
 
                         {fields.length > 0 && (
-                            <dl className='m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs'>
+                            <dl className='m-0 grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-5 gap-y-1.5 text-sm'>
                                 {fields.map((field) => (
                                     <Fragment key={field.label}>
                                         <dt className='text-muted'>{field.label}</dt>
-                                        <dd className='m-0 min-w-0 break-words text-foreground'>{field.value}</dd>
+                                        <dd className='m-0 min-w-0 break-words font-mono text-xs text-foreground'>{field.value}</dd>
                                     </Fragment>
                                 ))}
                             </dl>
                         )}
 
                         {verdict !== null && (
-                            <p className={cn('text-xs', VERDICT_TONE[verdict.tone])} role='status'>{verdict.text}</p>
+                            <p className={cn('text-sm', VERDICT_TONE[verdict.tone])} role='status'>{verdict.text}</p>
                         )}
                     </div>
                 );
             })}
 
             {awaiting.length > 0 && (
-                <div className='flex flex-row flex-wrap items-center gap-1.5'>
+                <div className='flex flex-row flex-wrap items-center justify-end gap-2'>
+                    <Button
+                        size='sm'
+                        variant='ghost'
+                        isDisabled={!canDecide}
+                        onPress={() => onDecide(awaiting, false)}
+                    >
+                        {isBatch ? 'Reject all' : 'Reject'}
+                    </Button>
                     <Button
                         size='sm'
                         variant='primary'
@@ -98,15 +106,6 @@ const ToolApprovalCard = ({ activities, canDecide, onDecide }: ToolApprovalCardP
                         onPress={() => onDecide(awaiting, true)}
                     >
                         {isBatch ? `Approve all ${awaiting.length}` : 'Approve'}
-                    </Button>
-                    <Button
-                        size='sm'
-                        variant='ghost'
-                        className='text-danger'
-                        isDisabled={!canDecide}
-                        onPress={() => onDecide(awaiting, false)}
-                    >
-                        {isBatch ? 'Reject all' : 'Reject'}
                     </Button>
                 </div>
             )}

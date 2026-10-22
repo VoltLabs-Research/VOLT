@@ -1,6 +1,5 @@
 import { parseTableFromChildren } from '@/modules/ai/utils/message-content';
 import { Button, cn } from '@heroui/react';
-import { Expand } from 'lucide-react';
 import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
 import type { ComponentPropsWithoutRef } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -32,20 +31,19 @@ export const createTableArtifactComponents = (
             };
 
             return (
-                <div className='my-1.5 overflow-hidden rounded-lg border border-border'>
-                    <Scrollable orientation='horizontal' className=''>
+                <div className='my-2.5 overflow-hidden rounded-xl border border-foreground/8'>
+                    <Scrollable orientation='horizontal'>
                         <table {...props} className={cn('m-0! rounded-none! border-0!', className)}>{children}</table>
                     </Scrollable>
                     {parsed && parsed.rows.length > 0 && (
                         <Button
                             type='button'
                             size='sm'
-                            variant='secondary'
+                            variant='ghost'
                             fullWidth
-                            className='w-full justify-start rounded-none border-0 border-t border-border'
+                            className='justify-start rounded-none border-t border-foreground/8 px-2.5 text-muted hover:text-foreground'
                             onPress={handleOpen}
                         >
-                            <Expand size={13} />
                             Open spreadsheet
                         </Button>
                     )}

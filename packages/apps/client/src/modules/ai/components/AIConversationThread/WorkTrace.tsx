@@ -3,17 +3,12 @@ import { resolveImagePayload } from '@/modules/ai/utils/message-artifacts';
 import { isFailedOutput, presentActivity } from '@/modules/ai/utils/tool-presentation';
 import Prose from '@/shared/ui/components/Prose';
 import { cn } from '@heroui/react';
-import { ChevronRight } from 'lucide-react';
+import { Check, ChevronRight, LoaderCircle, X } from 'lucide-react';
 import { useId, useState } from 'react';
 import type { ToolActivity, WorkStep } from '@/modules/ai/utils/message-blocks';
+import type { ReactNode } from 'react';
 
 type StepTone = 'live' | 'done' | 'failed';
-
-const TONE_DOT: Record<StepTone, string> = {
-    live: 'bg-warning animate-pulse',
-    done: 'bg-success',
-    failed: 'bg-danger'
-};
 
 const toneOf = ({ outcome }: ToolActivity): StepTone => {
     if (outcome.kind === 'running') return 'live';
@@ -53,32 +48,48 @@ const headlineOf = (steps: WorkStep[], isLive: boolean): string => {
     return failed === 0 ? used : `${used}, ${failed} failed`;
 };
 
+const StepMark = ({ tone }: { tone: StepTone }) => {
+    if (tone === 'live') return <LoaderCircle size={14} className='shrink-0 text-foreground motion-safe:animate-spin' aria-hidden='true' />;
+    if (tone === 'failed') return <X size={14} className='shrink-0 text-danger-soft-foreground' aria-hidden='true' />;
+    return <Check size={14} className='shrink-0 text-muted' aria-hidden='true' />;
+};
+
+// Each step but the last draws the hairline down to the next one's mark, so the guide never
+// needs a fill behind the marks to hide it, on the page or on the floating panel's glass.
+const STEP_CLASS = cn(
+    'relative flex items-start gap-2',
+    'not-last:after:absolute not-last:after:top-4.5 not-last:after:-bottom-2.5 not-last:after:left-2 not-last:after:w-px not-last:after:bg-foreground/10'
+);
+
 const StepRow = ({ step }: { step: WorkStep }) => {
+    let tone: StepTone;
+    let detail: ReactNode = null;
+
     if (step.kind === 'reasoning') {
-        return (
-            <li className='flex flex-col gap-1'>
-                <p className='text-2xs text-muted'>{stepLabel(step)}</p>
-                {step.text !== '' && (
-                    <div className='border-l-2 border-border pl-3'>
-                        <Prose size='sm'>{step.text}</Prose>
-                    </div>
-                )}
-            </li>
-        );
+        tone = step.isStreaming ? 'live' : 'done';
+        if (step.text !== '') {
+            detail = (
+                <div className='mt-1'>
+                    <Prose size='sm'>{step.text}</Prose>
+                </div>
+            );
+        }
+    } else {
+        tone = toneOf(step.activity);
+        if (step.activity.outcome.kind === 'failed') {
+            detail = <p className='mt-0.5 text-xs text-danger-soft-foreground'>{step.activity.outcome.error}</p>;
+        }
     }
 
-    const { activity } = step;
-    const tone = toneOf(activity);
-
     return (
-        <li className='flex flex-col gap-0.5'>
-            <div className='flex flex-row items-center gap-2'>
-                <span className={cn('size-1.5 shrink-0 rounded-full', TONE_DOT[tone])} aria-hidden='true' />
-                <p className='min-w-0 text-xs text-muted'>{presentActivity(activity)}</p>
+        <li className={STEP_CLASS}>
+            <span className='mt-0.5 flex size-4 shrink-0 items-center justify-center'>
+                <StepMark tone={tone} />
+            </span>
+            <div className='min-w-0 flex-1'>
+                <p className='text-sm text-muted'>{stepLabel(step)}</p>
+                {detail}
             </div>
-            {activity.outcome.kind === 'failed' && (
-                <p className='pl-3.5 text-2xs text-danger'>{activity.outcome.error}</p>
-            )}
         </li>
     );
 };
@@ -102,21 +113,21 @@ const WorkTrace = ({ steps }: WorkTraceProps) => {
     });
 
     return (
-        <div className='flex w-full min-w-0 flex-col gap-1.5'>
+        <div className='flex w-full min-w-0 flex-col gap-2'>
             <button
                 type='button'
                 onClick={() => setIsOpen((value) => !value)}
                 aria-expanded={isOpen}
                 aria-controls={listId}
-                className='flex w-fit max-w-full cursor-pointer flex-row items-center gap-1.5 rounded-md border-none bg-transparent p-0 text-left text-xs text-muted hover:text-foreground'
+                className='flex w-fit max-w-full cursor-pointer flex-row items-center gap-1 rounded-md text-left text-sm text-muted transition-colors hover:text-foreground'
             >
-                <ChevronRight size={12} aria-hidden='true' className={cn('shrink-0 transition-transform duration-200', isOpen && 'rotate-90')} />
-                {isLive && <span className={cn('size-1.5 shrink-0 rounded-full', TONE_DOT.live)} aria-hidden='true' />}
+                <ChevronRight size={14} aria-hidden='true' className={cn('shrink-0 transition-transform duration-200', isOpen && 'rotate-90')} />
+                {isLive && <StepMark tone='live' />}
                 <span className='min-w-0 truncate' role={isLive ? 'status' : undefined}>{headlineOf(steps, isLive)}</span>
             </button>
 
             {isOpen && (
-                <ol id={listId} className='m-0 flex list-none flex-col gap-2 border-l-2 border-border py-0.5 pl-3'>
+                <ol id={listId} className='m-0 flex list-none flex-col gap-2 py-0.5'>
                     {steps.map((step, index) => (
                         <StepRow key={step.kind === 'tool' ? step.activity.toolCallId : `reasoning-${index}`} step={step} />
                     ))}
@@ -129,12 +140,12 @@ const WorkTrace = ({ steps }: WorkTraceProps) => {
                     href={image.url}
                     target='_blank'
                     rel='noreferrer'
-                    className='block w-fit max-w-full overflow-hidden rounded-lg leading-none'
+                    className='block w-fit max-w-full overflow-hidden rounded-xl leading-none'
                 >
                     <img
                         src={image.url}
                         alt={image.summary ?? 'Image from Volt AI'}
-                        className='block h-auto max-w-full rounded-lg border border-border'
+                        className='block h-auto max-w-full rounded-xl border border-foreground/8'
                         loading='lazy'
                     />
                 </a>
