@@ -251,6 +251,12 @@ export const protectedRoutes: RouteConfig[] = [
         }
     },
     {
+        path: '/dashboard/notebooks/:notebookId',
+        title: 'Notebook',
+        loader: () => import('@/modules/scripting/components/NotebookEditorPage'),
+        requiredPermissions: ['plugin:read']
+    },
+    {
         path: '/dashboard/whiteboards',
         title: 'Whiteboards',
         loader: () => import('@/modules/whiteboards/components/WhiteboardsListing'),
