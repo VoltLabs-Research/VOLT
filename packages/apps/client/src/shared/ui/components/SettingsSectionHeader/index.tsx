@@ -18,8 +18,8 @@ const SettingsSectionHeader = ({
 
     return (
         <header className={cn('flex items-start justify-between gap-4 max-sm:flex-col', className)}>
-            <div className='flex flex-col gap-1 flex-1'>
-                <HeadingTag className='text-base font-semibold text-foreground'>
+            <div className='flex flex-col gap-0.5 flex-1'>
+                <HeadingTag className='text-base font-medium text-foreground'>
                     {title}
                 </HeadingTag>
                 {description && (

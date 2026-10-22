@@ -8,7 +8,6 @@ import {
     TextField,
     cn
 } from '@heroui/react';
-import { AlertCircle } from 'lucide-react';
 import { useId } from 'react';
 import type { FieldRendererProps } from '@/shared/contracts/form-field';
 import { buildFieldAccessibilityState } from './field-accessibility';
@@ -197,12 +196,12 @@ const DefaultFieldRenderer = ({
     };
 
     return (
-        <div className='form-field-container flex flex-col gap-2 w-full transition-opacity duration-150 ease-out'>
+        <div className='form-field-container flex flex-col gap-1.5 w-full transition-opacity duration-150 ease-out'>
             {label && (
                 <label
                     id={labelId}
                     htmlFor={labelTargetId}
-                    className='text-xs font-medium text-muted'
+                    className='text-base font-medium text-foreground'
                 >
                     {label}
                 </label>
@@ -213,10 +212,9 @@ const DefaultFieldRenderer = ({
             </div>
 
             {error && (
-                <div id={errorId} role='status' aria-live='polite' aria-atomic='true' className='form-field-error flex items-center gap-1 text-danger text-xs'>
-                    <AlertCircle size={12} />
-                    <span>{error}</span>
-                </div>
+                <p id={errorId} role='status' aria-live='polite' aria-atomic='true' className='form-field-error text-xs text-danger-soft-foreground'>
+                    {error}
+                </p>
             )}
         </div>
     );

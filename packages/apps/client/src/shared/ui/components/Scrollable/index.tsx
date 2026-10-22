@@ -6,7 +6,7 @@ type ScrollShadowProps = ComponentProps<typeof ScrollShadow>;
 
 type ScrollableProps = Omit<ScrollShadowProps, 'hideScrollBar' | 'variant'>;
 
-const DEFAULT_SHADOW_SIZE = 24;
+const DEFAULT_SHADOW_SIZE = 20;
 
 const Scrollable = ({ size = DEFAULT_SHADOW_SIZE, style, ...props }: ScrollableProps) => (
     <ScrollShadow
