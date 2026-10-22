@@ -103,14 +103,14 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
     const isFullyCompleted = rows.every((row) => row.status === 'completed' || row.status === 'cached');
 
     const rowToneClass = {
-        running: '[&_[data-execution-label]]:text-accent',
+        running: '[&_[data-execution-label]]:text-info-soft-foreground',
         completed: '[&_[data-execution-label]]:text-success max-md:hidden',
         cached: '[&_[data-execution-label]]:text-success max-md:hidden',
         failed: '[&_[data-execution-label]]:text-danger'
     } as const;
 
     const iconToneClass = {
-        running: 'text-accent',
+        running: 'text-info-soft-foreground',
         completed: 'text-success',
         cached: 'text-success',
         failed: 'text-danger'
@@ -119,7 +119,7 @@ const AnalysisExecutionOverlay = ({ trajectory, analysisId, currentTimestep }: A
     return (
         <Scrollable className={cn(
             'canvas-analysis-execution-overlay',
-            'group pointer-events-auto absolute bottom-[calc(var(--canvas-timeline-size,12rem)+1rem)] left-4 z-[21] w-[min(320px,calc(100%-2rem))] max-h-[min(42vh,360px)] rounded-xl px-2.5 py-2 max-md:bottom-24 max-md:left-4 max-md:z-[21] max-md:w-[min(240px,calc(100%-2rem))] max-md:max-h-30 max-md:rounded-xl max-md:px-2 max-md:py-1.5',
+            'group pointer-events-auto absolute bottom-[calc(var(--canvas-timeline-size,12rem)+1rem)] left-4 z-[21] w-[min(320px,calc(100%-2rem))] max-h-[min(42vh,360px)] rounded-2xl bg-overlay px-2.5 py-2 shadow-overlay max-md:bottom-24 max-md:left-2 max-md:w-[min(240px,calc(100%-1rem))] max-md:max-h-30 max-md:px-2 max-md:py-1.5',
             isFullyCompleted && 'canvas-analysis-execution-overlay--completed max-md:hidden'
         )}>
             <div className='m-0 border-l-0 p-0' role='group' aria-label={`${analysis.pluginDisplayName} execution timeline`}>
