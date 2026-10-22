@@ -1,9 +1,14 @@
 import { Button, Tooltip } from '@heroui/react';
 import { Download, LayoutGrid } from 'lucide-react';
+import { lazy, Suspense } from 'react';
+import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { MAX_VIEWPORT_PANES } from '@/modules/canvas/store/editor/model-slice';
 import ScreenshotMenuPopover from '../ScreenshotMenuPopover';
 import useDownloadAnalysisListings from '../../hooks/use-download-analysis-listings';
+
+// Loaded on its own: most visits to the canvas never open the assistant.
+const AIFloatingAssistantPanel = lazy(() => import('@/modules/ai/components/AIFloatingAssistantPanel'));
 
 interface CanvasToolbarActionsProps {
     analysisId?: string;
@@ -14,6 +19,8 @@ const CanvasToolbarActions = ({ analysisId, canDownloadAnalysis }: CanvasToolbar
     const { download, isDownloading } = useDownloadAnalysisListings();
     const paneCount = useEditorStore((state) => state.viewportPanes.length);
     const addViewportPane = useEditorStore((state) => state.addViewportPane);
+    // A shared trajectory opens to anyone; the assistant is for those signed in to a team.
+    const isSignedIn = Boolean(useCurrentUser());
 
     return (
         <div className='flex flex-row items-center gap-1'>
@@ -47,6 +54,11 @@ const CanvasToolbarActions = ({ analysisId, canDownloadAnalysis }: CanvasToolbar
                     </Button>
                     <Tooltip.Content placement='bottom'>Download every listing and sub-listing as CSV</Tooltip.Content>
                 </Tooltip>
+            )}
+            {isSignedIn && (
+                <Suspense fallback={null}>
+                    <AIFloatingAssistantPanel compact />
+                </Suspense>
             )}
         </div>
     );
