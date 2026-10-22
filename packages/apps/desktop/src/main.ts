@@ -1,20 +1,19 @@
-import { app, BrowserWindow, screen } from 'electron';
+import { app, BrowserWindow, dialog, screen } from 'electron';
+import { existsSync } from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import AppConfig, { WindowBounds } from '@/services/AppConfig';
-import LocalDeploy from '@/services/LocalDeploy';
 import { resolveAppPaths } from '@/services/AppPaths';
-import bus from '@/services/EventBus';
-import { applyWindowSecurity } from '@/services/WindowSecurity';
+import { CLIENT_ORIGIN, clientSession } from '@/services/ClientProtocol';
+import { applyWindowSecurity, sendToClient } from '@/services/WindowSecurity';
 import { startAppUpdater } from '@/services/AppUpdater';
 import { registerIpc } from '@/ipc';
 
+// The window's page hosts the whole stack in its workers: it keeps running when the window is hidden.
 app.commandLine.appendSwitch('disable-http-cache');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 if(process.platform === 'win32') app.setAppUserModelId('com.voltlabs.volt');
-
-const isDev = !!process.env['ELECTRON_RENDERER_URL'];
 
 process.on('unhandledRejection', (reason: unknown) => {
     console.error('[main] unhandled rejection:', reason instanceof Error ? reason.stack ?? reason.message : reason);
@@ -54,15 +53,6 @@ const visualChrome = (): Electron.BrowserWindowConstructorOptions => {
     };
 };
 
-const loadShell = (win: BrowserWindow, hash?: string): void => {
-    const devUrl = process.env['ELECTRON_RENDERER_URL'];
-    const navigation = devUrl
-        ? win.loadURL(hash ? `${devUrl}#${hash}` : devUrl)
-        : win.loadFile(path.join(__dirname, '../renderer/index.html'), hash ? { hash } : undefined);
-
-    void navigation.catch(() => undefined);
-};
-
 const visibleBounds = (bounds: WindowBounds | null): WindowBounds | null => {
     if(!bounds || bounds.x === undefined || bounds.y === undefined) return bounds;
     const { x, y, width, height } = bounds;
@@ -80,7 +70,7 @@ const visibleBounds = (bounds: WindowBounds | null): WindowBounds | null => {
     };
 };
 
-const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
+const createWindow = (initialBounds: WindowBounds | null, clientDir: string): BrowserWindow => {
     const win = new BrowserWindow({
         width: Math.max(initialBounds?.width ?? 1600, MIN_WIDTH),
         height: Math.max(initialBounds?.height ?? 1000, MIN_HEIGHT),
@@ -92,70 +82,43 @@ const createWindow = (initialBounds: WindowBounds | null): BrowserWindow => {
         frame: false,
         ...visualChrome(),
         webPreferences: {
-            devTools: isDev,
-            preload: path.join(__dirname, '../preload/preload.mjs'),
+            session: clientSession(clientDir),
+            devTools: !app.isPackaged,
+            preload: path.join(__dirname, '../preload/preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: false
+            backgroundThrottling: false
         }
     });
 
     if(initialBounds?.maximized) win.maximize();
-    if(isDev) win.webContents.openDevTools({ mode: 'detach' });
 
     const emitWindowState = (): void => {
-        if(!win.isDestroyed()) bus.emit('window:state', { maximized: win.isMaximized() });
+        sendToClient(win, 'window:state', { maximized: win.isMaximized() });
     };
     win.on('maximize', emitWindowState);
     win.on('unmaximize', emitWindowState);
-
-    let recovering = false;
-    win.webContents.on('did-fail-load', (_event, errorCode, _description, _url, isMainFrame) => {
-        if(!isMainFrame || errorCode === -3 || recovering) return; 
-        recovering = true;
-        loadShell(win, 'client-error');
-    });
-    win.webContents.on('did-finish-load', () => {
-        recovering = false;
-        emitWindowState();
-    });
+    win.webContents.on('did-finish-load', emitWindowState);
 
     win.on('ready-to-show', () => win.show());
-    loadShell(win);
+    void win.loadURL(`${CLIENT_ORIGIN}/dashboard`).catch(() => undefined);
 
     return win;
 };
 
 app.whenReady().then(async () => {
     const paths = resolveAppPaths();
-
-    const appConfig = new AppConfig({ configFile: paths.configFile });
-
-    const deploy = new LocalDeploy({
-        appConfig,
-        paths: {
-            runtimeDir: paths.runtimeDir,
-            stackDataDir: paths.stackDataDir,
-            logsDir: paths.logsDir
-        }
-    });
+    if(!existsSync(path.join(paths.clientDir, 'index.html'))){
+        dialog.showErrorBox('Volt', `The web client is not built at ${paths.clientDir}. Build it with "pnpm --filter volt-webapp... build".`);
+        app.quit();
+        return;
+    }
 
     for(const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => app.quit());
 
-    let quitting = false;
-    app.on('before-quit', (event) => {
-        if(quitting) return;
-        quitting = true;
-        event.preventDefault();
-        deploy.stop().catch(() => {}).finally(() => app.quit());
-    });
-
-    const initialBounds = visibleBounds(await appConfig.getWindowBounds());
-    const win = createWindow(initialBounds);
-
-    const allowedOrigins = async (): Promise<readonly string[]> => [];
-
-    applyWindowSecurity(win, { allowedOrigins });
+    const appConfig = new AppConfig({ configFile: paths.configFile });
+    const win = createWindow(visibleBounds(await appConfig.getWindowBounds()), paths.clientDir);
+    applyWindowSecurity(win);
 
     let persistTimer: NodeJS.Timeout | null = null;
     const persistBounds = (): void => {
@@ -182,12 +145,7 @@ app.whenReady().then(async () => {
         persistBounds();
     });
 
-    registerIpc(win, {
-        deploy,
-        appConfig,
-        loadShell: (hash?: string) => loadShell(win, hash),
-        allowedOrigins
-    });
+    registerIpc(win);
     startAppUpdater();
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();

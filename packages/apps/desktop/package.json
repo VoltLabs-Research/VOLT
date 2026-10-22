@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "productName": "Volt",
   "desktopName": "volt.desktop",
-  "description": "Volt desktop \u2014 runs the local Volt stack on this machine, no Docker required",
+  "description": "Volt desktop: the web client in a window of its own, running the whole stack in that window as a browser tab does",
   "author": "Volt Labs",
   "homepage": "https://github.com/voltlabs-research/volt",
   "type": "module",
@@ -12,12 +12,11 @@
     "build": "electron-vite build",
     "cli:build": "esbuild src/cli.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/cli.cjs --alias:ssh2=./scripts/native-stub.cjs --alias:cpu-features=./scripts/native-stub.cjs",
     "deploy": "tsx src/cli.ts",
-    "dev": "electron-vite dev -- --no-sandbox",
+    "dev": "electron-vite dev -- --no-sandbox --user-data-dir=.dev-profile",
     "lint": "eslint .",
-    "package": "pnpm run stack:build && electron-vite build && electron-builder --publish never",
-    "typecheck": "tsc --noEmit",
-    "stack:build": "node scripts/build-stack.mjs",
-    "package:only": "electron-vite build && electron-builder --publish never"
+    "package": "pnpm --filter \"volt-webapp...\" build && pnpm run package:only",
+    "package:only": "electron-vite build && electron-builder --publish never",
+    "typecheck": "tsc --noEmit"
   },
   "build": {
     "appId": "com.voltlabs.volt",
@@ -25,13 +24,18 @@
       "output": "dist"
     },
     "files": [
-      "out/**/*",
+      "out/main/**/*",
+      "out/preload/**/*",
       "package.json"
     ],
     "extraResources": [
       {
-        "from": "stack-runtime",
-        "to": "stack"
+        "from": "../client/dist",
+        "to": "client",
+        "filter": [
+          "**/*",
+          "!**/*.map"
+        ]
       }
     ],
     "publish": {
@@ -76,35 +80,22 @@
   },
   "dependencies": {
     "@clack/prompts": "1.5.1",
-    "@heroui/react": "^3.2.4",
-    "@heroui/styles": "^3.2.4",
     "dockerode": "^5.0.0",
     "electron-updater": "^6.8.9",
     "extract-zip": "^2.0.1",
-    "lucide-react": "^1.17.0",
     "octokit": "^5.0.5",
-    "p-wait-for": "^6.0.0",
-    "react-aria": "^3.51.0",
-    "sileo": "^0.1.5"
+    "p-wait-for": "^6.0.0"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@tailwindcss/vite": "^4.3.3",
     "@types/dockerode": "^4.0.1",
     "@types/node": "^22.10.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
     "@volt/contracts": "workspace:*",
-    "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.0",
     "electron-builder": "^26.8.1",
     "electron-vite": "^2.3.0",
     "esbuild": "^0.21.5",
     "eslint": "^9.39.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "tailwindcss": "^4.3.3",
     "tsx": "^4.22.4",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.65.0",

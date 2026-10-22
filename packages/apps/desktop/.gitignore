@@ -1,6 +1,10 @@
-# Estado por-máquina escrito en runtime (env del stack + bootstrap con credenciales).
-# No es fuente: lo regenera AppConfig.ensureStackDefaults / Bootstrap en cada arranque.
+# Left in the package by the former native stack: the runtime scripts/build-stack.mjs assembled, its
+# workspace in development, and that workspace's config, with credentials. Nothing writes them anymore;
+# they stay ignored so a checkout that still has them never commits them.
 app-config.json
+stack-runtime/
+local-stack/
+
 .docker-home/
 # Repowise
 .repowise
@@ -9,8 +13,5 @@ app-config.json
 .mcp.json
 .claude
 
-# Assembled by scripts/build-stack.mjs; packaged as resources/stack
-stack-runtime/
-
-# Runtime data of the local stack in dev (userData/local-stack when packaged)
-local-stack/
+# The Electron profile `pnpm dev` runs with: the window's storage, where the stack keeps its workspace.
+.dev-profile/

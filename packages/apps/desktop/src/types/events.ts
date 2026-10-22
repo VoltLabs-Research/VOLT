@@ -1,15 +1,3 @@
-export const CHANNELS = [
-    'deploy:log',
-    'deploy:state',
-    'source:progress',
-    'deploy:phases',
-    'deploy:phase',
-    'deploy:preflight',
-    'window:state'
-] as const;
-
-type Channel = typeof CHANNELS[number];
-
 export interface PhaseSpec{
     id: string;
     label: string;
@@ -66,12 +54,5 @@ export interface AppEvents{
         serverVersion?: string;
         composeVersion?: string;
         detail?: string;
-    },
-    'window:state': {
-        maximized: boolean;
     }
 };
-
-type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
-const _channelsMatchAppEvents: Equal<Channel, keyof AppEvents> = true;
-void _channelsMatchAppEvents;

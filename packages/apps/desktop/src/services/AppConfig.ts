@@ -1,6 +1,6 @@
 import { readFile, writeFile, chmod } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import type { BootstrapState, BootstrapStore, PluginSeedState, PluginSeedStore } from '@volt/local-stack/state';
+import type { BootstrapState, BootstrapStore } from '@volt/local-stack/state';
 
 interface AppConfigProps{
     configFile: string;
@@ -20,11 +20,9 @@ export interface WindowBounds{
     maximized?: boolean;
 }
 
-export type ThemePreference = 'system' | 'light' | 'dark';
-
 export type DeployMode = 'server' | 'cluster';
 
-export default class AppConfig implements BootstrapStore, PluginSeedStore{
+export default class AppConfig implements BootstrapStore{
     constructor(private readonly props: AppConfigProps){}
 
     async #write(config: object){
@@ -94,27 +92,6 @@ export default class AppConfig implements BootstrapStore, PluginSeedStore{
         await this.#write(current);
     }
 
-    async getPluginSeed(): Promise<PluginSeedState | null>{
-        const seed = await this.#field<Partial<PluginSeedState>>('pluginSeed');
-        if(!seed?.teamId) return null;
-        return {
-            done: seed.done === true,
-            teamId: seed.teamId,
-            installed: Array.isArray(seed.installed) ? seed.installed.filter((item): item is string => typeof item === 'string') : [],
-            platform: typeof seed.platform === 'string' ? seed.platform : undefined
-        };
-    }
-
-    async setPluginSeed(state: PluginSeedState){
-        await this.#update({ pluginSeed: state });
-    }
-
-    async clearPluginSeed(){
-        const current = await this.get();
-        delete current.pluginSeed;
-        await this.#write(current);
-    }
-
     async getActiveDevMode(): Promise<DevModeState | null>{
         const dev = await this.getPersistedDevMode();
         if(!dev?.enabled || !dev.voltPath) return null;
@@ -137,9 +114,5 @@ export default class AppConfig implements BootstrapStore, PluginSeedStore{
 
     async setWindowBounds(bounds: WindowBounds){
         await this.#update({ windowBounds: bounds });
-    }
-
-    async setTheme(theme: ThemePreference){
-        await this.#update({ theme });
     }
 };
