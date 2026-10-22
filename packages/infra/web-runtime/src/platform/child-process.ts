@@ -2,8 +2,9 @@
 // to the parent's file system and loopback network, with stdio pipes, an IPC channel, exit codes and
 // signals as Node gives them: one the runtime ships a bundle for (the daemon's planes), or a script in
 // the file system, run by `node` or by its `#!/usr/bin/env node` line as an executable is (programs
-// compiled to WebAssembly for Node, such as analysis plugins). Anything else fails to spawn with
-// ENOENT, as a missing binary does.
+// compiled to WebAssembly for Node, such as analysis plugins). The runtime's other programs (python3)
+// run the same way, from their executables or a script's #! line naming one. Anything else fails to
+// spawn with ENOENT, as a missing binary does.
 import { EventEmitter } from 'events';
 import { PassThrough, Writable } from 'stream';
 import pathModule from 'path';
@@ -34,6 +35,19 @@ export const registerNodeProgram = (scriptPath: string, workerUrl: string | URL)
 export const registerNodeRunner = (workerUrl: string | URL): void => {
     nodeRunner = workerUrl;
 };
+
+// The runtime's programs besides Node, by name. A program's executable is a file whose first line
+// names it: the runtime installs one on PATH, and copies of it run the same program under their own
+// path (a virtual environment's interpreter is a copy of python3's).
+const programs = new Map<string, string | URL>();
+
+export const registerProgram = (name: string, workerUrl: string | URL): void => {
+    programs.set(name, workerUrl);
+};
+
+export const programExecutable = (name: string): string => `#!@volt/web-runtime ${name}\n`;
+
+const PROGRAM_LINE = /^#!@volt\/web-runtime\s+(\S+)/;
 
 export interface SpawnOptions {
     cwd?: string;
@@ -316,19 +330,20 @@ export const nodeWorkerFor = (script: string): string | URL | null => {
     return nodePrograms.get(resolved) ?? (nodeRunner && isFile(resolved) ? nodeRunner : null);
 };
 
-const NODE_INTERPRETER = /^#!\s*(?:\/usr\/bin\/env\s+(?:-S\s+)?node|\S*\/node)(?:\s|$)/;
-
-// An executable the kernel would run with node: its first line names node as its interpreter.
-const isNodeScript = (file: string): boolean => {
-    const head = new Uint8Array(64);
+const firstLine = (file: string): string => {
+    const head = new Uint8Array(256);
     const fd = openSync(file, 'r');
     try{
         const count = readSync(fd, head, 0, head.length, 0);
-        return NODE_INTERPRETER.test(new TextDecoder().decode(head.subarray(0, count)));
+        return new TextDecoder().decode(head.subarray(0, count)).split('\n', 1)[0];
     }finally{
         closeSync(fd);
     }
 };
+
+// The interpreter a script's #! line names, as the kernel reads it: a path, or a command
+// `/usr/bin/env` finds on PATH.
+const INTERPRETER_LINE = /^#!\s*(\S+)(?:\s+(?:-S\s+)?(\S+))?/;
 
 // A command as the shell finds it: a path, or the first match among the PATH directories.
 const findExecutable = (command: string, options: SpawnOptions): string | null => {
@@ -346,15 +361,40 @@ const findExecutable = (command: string, options: SpawnOptions): string | null =
     return null;
 };
 
+const isNodeCommand = (command: string): boolean => command === process.execPath || pathModule.basename(command) === 'node';
+
+// The worker of a program's executable, when the file is one.
+const programAt = (executable: string): string | URL | null => {
+    const name = PROGRAM_LINE.exec(firstLine(executable))?.[1];
+    return (name && programs.get(name)) ?? null;
+};
+
 const resolveProgram = (command: string, args: string[], options: SpawnOptions): SpawnedProgram | null => {
-    const isNode = command === process.execPath || pathModule.basename(command) === 'node';
-    if(isNode){
+    if(isNodeCommand(command)){
         const script = args[0] && pathModule.resolve(options.cwd ?? process.cwd(), args[0]);
         const workerUrl = script ? nodeWorkerFor(script) : null;
         return script && workerUrl ? nodeProgram(workerUrl, script, args.slice(1)) : null;
     }
     const executable = findExecutable(command, options);
-    return executable && nodeRunner && isNodeScript(executable) ? nodeProgram(nodeRunner, executable, args) : null;
+    if(!executable){
+        return null;
+    }
+    const program = programAt(executable);
+    if(program){
+        return nodeProgram(program, executable, args);
+    }
+    // A script runs as its interpreter's argument, as the kernel runs it.
+    const [, interpreterPath, envCommand] = INTERPRETER_LINE.exec(firstLine(executable)) ?? [];
+    const interpreter = interpreterPath && pathModule.basename(interpreterPath) === 'env' ? envCommand : interpreterPath;
+    if(!interpreter){
+        return null;
+    }
+    if(isNodeCommand(interpreter)){
+        return nodeRunner ? nodeProgram(nodeRunner, executable, args) : null;
+    }
+    const interpreterExecutable = findExecutable(interpreter, options);
+    const interpreterProgram = interpreterExecutable ? programAt(interpreterExecutable) : null;
+    return interpreterExecutable && interpreterProgram ? nodeProgram(interpreterProgram, interpreterExecutable, [executable, ...args]) : null;
 };
 
 const spawnError = (command: string): Error => Object.assign(new Error(`spawn ${command} ENOENT`), {
