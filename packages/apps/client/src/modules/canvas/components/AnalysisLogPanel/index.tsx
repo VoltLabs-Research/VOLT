@@ -112,7 +112,7 @@ const AnalysisLogPanel = ({
     return (
         <div className='relative flex h-full min-h-0 flex-1 flex-col'>
             {title && (
-                <div className='pointer-events-none absolute inset-x-0 top-0 z-[1] flex h-8 flex-row items-center gap-2 bg-transparent px-4 text-xs backdrop-blur-[6px]'>
+                <div className='pointer-events-none absolute inset-x-0 top-0 z-[1] flex h-8 flex-row items-center gap-2 bg-canvas/[0.88] px-4 text-xs'>
                     <span className={cn('truncate font-medium', activityStatus ? TITLE_TONE[activityStatus] : 'text-foreground')}>
                         {title}
                     </span>
@@ -120,7 +120,7 @@ const AnalysisLogPanel = ({
                     {timestep !== undefined && <span className='shrink-0 text-muted'>Frame {timestep}</span>}
                 </div>
             )}
-            <Scrollable className='min-h-0 flex-1 bg-surface' ref={scrollRef}>
+            <Scrollable className='min-h-0 flex-1' ref={scrollRef}>
                 {helperText ? (
                     <div className='flex min-h-0 flex-1 flex-row items-center justify-center p-4'>
                         <p className='text-xs text-muted'>{helperText}</p>
