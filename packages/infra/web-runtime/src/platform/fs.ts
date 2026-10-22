@@ -375,6 +375,16 @@ export const fchmodSync = (): void => {};
 
 export const fchownSync = chownSync;
 
+// A descriptor's times are its file's, set by path (utimesSync).
+export const futimesSync = (): void => {};
+
+// The origin's storage has no fixed size the file system could report synchronously: it is reported
+// as a large disk with that much free.
+export const statfsSync = (): { type: number; bsize: number; blocks: number; bfree: number; bavail: number; files: number; ffree: number } => {
+    const blocks = 64 * 1024 ** 3 / 4096;
+    return { type: 0, bsize: 4096, blocks, bfree: blocks, bavail: blocks, files: 1 << 20, ffree: 1 << 20 };
+};
+
 let temporaryCounter = 0;
 
 export const mkdtempSync = (prefix: string): string => {
@@ -716,7 +726,7 @@ export const copyFile = withCallback(copyFileSync);
 export const cp = withCallback(cpSync);
 export const truncate = withCallback(truncateSync);
 export const utimes = withCallback(utimesSync);
-export const futimes = withCallback(() => undefined);
+export const futimes = withCallback(futimesSync);
 export const chmod = withCallback(chmodSync);
 export const fchmod = futimes;
 export const chown = withCallback(chownSync);
@@ -758,7 +768,7 @@ const fs = {
     statSync, lstatSync, existsSync, accessSync, realpathSync, readdirSync, mkdirSync, rmSync, rmdirSync,
     unlinkSync, renameSync, copyFileSync, cpSync, openSync, closeSync, readSync, writeSync, readvSync, writevSync, fstatSync,
     ftruncateSync, truncateSync, fsyncSync, fdatasyncSync, readFileSync, writeFileSync, appendFileSync,
-    utimesSync, chmodSync, chownSync, fchmodSync, fchownSync, mkdtempSync, readlinkSync, symlinkSync, linkSync,
+    utimesSync, futimesSync, chmodSync, chownSync, fchmodSync, fchownSync, statfsSync, mkdtempSync, readlinkSync, symlinkSync, linkSync,
     access, stat, lstat, realpath, readdir, mkdir, mkdtemp, readFile, writeFile, appendFile, rm, rmdir,
     unlink, rename, copyFile, cp, truncate, utimes, futimes, chmod, fchmod, chown, fchown, lchown, symlink,
     link, readlink, open, close, fstat, ftruncate, fsync, fdatasync, read, write, readv, writev, exists,
