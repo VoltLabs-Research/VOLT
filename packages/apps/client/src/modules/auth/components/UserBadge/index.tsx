@@ -1,5 +1,4 @@
 import { Button } from '@heroui/react';
-import { CheckCircle2 } from 'lucide-react';
 
 interface UserBadgeProps{
     label: string;
@@ -8,17 +7,16 @@ interface UserBadgeProps{
 }
 
 const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
-    <div className='flex flex-row items-center justify-between gap-4 rounded-xl border border-border/85 p-4'>
-        <div className='flex min-w-0 flex-1 flex-row items-center gap-3'>
-            <CheckCircle2 size={18} className='shrink-0 text-success' />
-            <div className='flex flex-col'>
-                <span className='text-xs text-muted'>{label}</span>
-                <span className='block truncate text-sm font-medium text-foreground'>{email}</span>
-            </div>
+    <div className='flex items-center gap-3 rounded-xl bg-foreground/5 py-2.5 pr-2 pl-3'>
+        <div className='flex min-w-0 flex-1 flex-col'>
+            <span className='text-xs text-muted'>{label}</span>
+            <span className='truncate text-sm font-medium text-foreground'>{email}</span>
         </div>
 
         <Button
             variant='ghost'
+            size='sm'
+            className='text-muted hover:text-foreground'
             onPress={onChangeClick}>
             Change
         </Button>

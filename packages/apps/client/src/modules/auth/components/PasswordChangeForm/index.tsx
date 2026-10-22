@@ -1,12 +1,12 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Alert, Button } from '@heroui/react';
-import { AlertCircle, Lock, Key } from 'lucide-react';
+import { Button } from '@heroui/react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
 import type { PasswordInfo } from '@volt/contracts/modules/auth/domain';
 
 interface PasswordChangeFormProps {
+    id?: string;
     passwordInfo: PasswordInfo | null;
     isOpen: boolean;
     onSubmit: (data: UpdatePasswordInput) => Promise<void>;
@@ -14,6 +14,7 @@ interface PasswordChangeFormProps {
 }
 
 const PasswordChangeForm = ({
+    id,
     passwordInfo,
     isOpen,
     onSubmit,
@@ -74,7 +75,7 @@ const PasswordChangeForm = ({
     };
 
     return (
-        <form className='flex flex-col gap-12 border border-border rounded-xl p-6' onSubmit={onFormSubmit} noValidate>
+        <form id={id} className='flex flex-col gap-4 rounded-2xl bg-foreground/4 p-5' onSubmit={onFormSubmit} noValidate>
             {passwordInfo?.hasPassword && (
                 <FormFieldRHF
                     name='currentPassword'
@@ -82,7 +83,6 @@ const PasswordChangeForm = ({
                     label='Current Password'
                     type='password'
                     placeholder='Enter your current password'
-                    icon={<Key size={18} />}
                     inputProps={{
                         autoComplete: 'current-password',
                         inputMode: 'text',
@@ -100,7 +100,6 @@ const PasswordChangeForm = ({
                 label='New Password'
                 type='password'
                 placeholder='Enter new password (min. 8 characters)'
-                icon={<Lock size={18} />}
                 inputProps={{
                     autoComplete: 'new-password',
                     inputMode: 'text',
@@ -116,7 +115,6 @@ const PasswordChangeForm = ({
                 label='Confirm New Password'
                 type='password'
                 placeholder='Confirm your new password'
-                icon={<Lock size={18} />}
                 inputProps={{
                     autoComplete: 'new-password',
                     inputMode: 'text',
@@ -128,36 +126,28 @@ const PasswordChangeForm = ({
             />
 
             {submitError && (
-                <Alert
-                    status='warning'
-                    role='status'
-                    aria-live='polite'
-                    className='-mt-2'
-                >
-                    <Alert.Indicator>
-                        <AlertCircle size={16} />
-                    </Alert.Indicator>
-                    <Alert.Content>
-                        <Alert.Description>{submitError}</Alert.Description>
-                    </Alert.Content>
-                </Alert>
+                <p className='text-xs text-danger-soft-foreground' role='status' aria-live='polite'>
+                    {submitError}
+                </p>
             )}
 
-            <div className='flex flex-wrap gap-3'>
+            <div className='flex flex-wrap justify-end gap-2'>
+                <Button
+                    type='button'
+                    variant='secondary'
+                    size='sm'
+                    onPress={handleCancel}
+                >
+                    Cancel
+                </Button>
                 <Button
                     type='submit'
                     variant='primary'
+                    size='sm'
                     isPending={isSubmitting}
                     isDisabled={isSubmitting}
                 >
                     {passwordInfo?.hasPassword ? 'Change Password' : 'Set Password'}
-                </Button>
-                <Button
-                    type='button'
-                    variant='ghost'
-                    onPress={handleCancel}
-                >
-                    Cancel
                 </Button>
             </div>
         </form>

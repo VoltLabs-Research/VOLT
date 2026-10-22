@@ -23,11 +23,11 @@ const UserInfo = ({
                 isOnline={isOnline}
             />
             <div className='flex-1 min-w-0'>
-                <p className='m-0 flex items-center gap-1 overflow-hidden text-sm font-semibold text-ellipsis whitespace-nowrap text-foreground'>
+                <p className='m-0 flex items-center gap-1 truncate text-sm font-medium text-foreground'>
                     {user?.firstName} {user?.lastName}
                     {suffix}
                 </p>
-                <p className='m-0 overflow-hidden text-xs text-ellipsis whitespace-nowrap text-muted'>
+                <p className='m-0 truncate text-xs text-muted'>
                     {user?.email}
                 </p>
             </div>

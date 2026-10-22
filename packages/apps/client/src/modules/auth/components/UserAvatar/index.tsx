@@ -25,11 +25,11 @@ const UserAvatar = ({
 
     return (
         <AvatarRoot
-            className='relative shrink-0 overflow-hidden rounded-full bg-surface-tertiary text-muted size-8'
+            className='relative size-8 shrink-0 overflow-hidden rounded-full bg-default text-foreground'
         >
             {avatarSrc && <AvatarImage src={avatarSrc} alt={altText} className='object-cover' />}
             <AvatarFallback
-                className='bg-surface-tertiary font-semibold text-muted text-xs'
+                className='bg-default text-xs font-medium text-foreground'
             >
                 {initials}
             </AvatarFallback>
@@ -37,7 +37,7 @@ const UserAvatar = ({
             {showStatus && (
                 <span
                     className={cn(
-                        'absolute right-0 bottom-0 size-2 rounded-full ring-2 ring-surface-secondary',
+                        'absolute right-0 bottom-0 size-2 rounded-full ring-2 ring-canvas',
                         isOnline ? 'bg-success' : 'bg-muted'
                     )}
                 />

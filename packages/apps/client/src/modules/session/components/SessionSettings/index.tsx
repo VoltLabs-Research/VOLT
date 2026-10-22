@@ -1,29 +1,18 @@
 import { REVOKE_ALL_MODAL_ID } from '@/modules/session/contracts/modal-ids';
-import { formatSessionRelativeTime, getSessionActivityIcon, SESSION_ACTION_LABELS } from '@/modules/session/utils/session-display';
+import { formatSessionRelativeTime, SESSION_ACTION_LABELS } from '@/modules/session/utils/session-display';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import { parseUserAgent as parseSessionUserAgent } from '@volt/contracts/modules/session/user-agent';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
-import { Avatar, Button, Card, Chip, Separator, Skeleton } from '@heroui/react';
+import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
+import { Button, Chip, Skeleton, cn } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import useSessionData from './use-session-data';
 import useTip from '@/shared/tips/use-tip';
-import { Clock, Monitor, Shield, Smartphone } from 'lucide-react';
-import { Fragment } from 'react';
-import { SessionActivityType } from '@volt/contracts/modules/session/domain';
+import { Clock, Shield } from 'lucide-react';
 import type { ActiveSession, LoginActivityEntry } from '@volt/contracts/modules/session/domain';
-import type { ComponentProps, ReactNode } from 'react';
-
-type AvatarColor = NonNullable<ComponentProps<typeof Avatar.Fallback>['color']>;
-
-const getActivityAvatarColor = (activity: LoginActivityEntry): AvatarColor => {
-    if(!activity.success) return 'danger';
-    if(activity.action === SessionActivityType.OAuthLogin) return 'accent';
-    if(activity.action === SessionActivityType.PasswordUpdate) return 'warning';
-    if(activity.action === SessionActivityType.Login) return 'success';
-    return 'default';
-};
+import type { ReactNode } from 'react';
 
 const SessionSettings = () => {
     useTip('session-management');
@@ -41,104 +30,82 @@ const SessionSettings = () => {
         sessions
     } = useSessionData();
 
-    const renderSession = (session: ActiveSession) => {
-        const DeviceIcon = session.isMobile ? Smartphone : Monitor;
-
-        return (
-            <li key={session._id} className='flex items-center gap-3 py-3'>
-                <Avatar variant='soft'>
-                    <Avatar.Fallback color={session.isCurrent ? 'success' : 'default'}>
-                        <DeviceIcon size={16} aria-hidden='true' />
-                    </Avatar.Fallback>
-                </Avatar>
-                <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                    <div className='flex min-w-0 items-center gap-2'>
-                        <span className='truncate text-sm font-medium text-foreground'>{session.browser} on {session.os}</span>
-                        {session.isCurrent && (
-                            <Chip color='success' variant='soft' size='sm'>
-                                <Chip.Label>Current</Chip.Label>
-                            </Chip>
-                        )}
-                    </div>
-                    <span className='truncate text-xs text-muted tabular-nums'>
-                        {session.ip} · {session.isCurrent ? 'Active now' : formatSessionRelativeTime(session.lastActivity)}
-                    </span>
+    const renderSession = (session: ActiveSession) => (
+        <li key={session._id} className='flex items-center gap-3 py-3.5'>
+            <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+                <div className='flex min-w-0 items-center gap-2'>
+                    <span className='truncate text-base font-medium text-foreground'>{session.browser} on {session.os}</span>
+                    {session.isCurrent && (
+                        <Chip color='success' variant='soft' size='sm'>
+                            <Chip.Label>Current</Chip.Label>
+                        </Chip>
+                    )}
                 </div>
-                {!session.isCurrent && (
-                    <Button
-                        variant='danger-soft'
-                        size='sm'
-                        onPress={() => { void revokeSession(session); }}
-                        isDisabled={isRevoking}
-                        className='shrink-0'
-                    >
-                        Revoke
-                    </Button>
-                )}
-            </li>
-        );
-    };
+                <span className='truncate text-sm text-muted tabular-nums'>
+                    {session.ip} · {session.isCurrent ? 'Active now' : formatSessionRelativeTime(session.lastActivity)}
+                </span>
+            </div>
+            {!session.isCurrent && (
+                <Button
+                    variant='ghost'
+                    size='sm'
+                    onPress={() => { void revokeSession(session); }}
+                    isDisabled={isRevoking}
+                    className='shrink-0'
+                >
+                    Revoke
+                </Button>
+            )}
+        </li>
+    );
 
     const renderActivity = (activity: LoginActivityEntry) => {
         const { browser, os } = parseSessionUserAgent(activity.userAgent);
-        const ActionIcon = getSessionActivityIcon(activity.action);
         const actionLabel = activity.success
             ? SESSION_ACTION_LABELS[activity.action]
             : 'Failed sign-in';
-        const ariaLabel = `${actionLabel} · ${browser} on ${os} · ${activity.ip}`;
+        const relativeTime = formatSessionRelativeTime(activity.createdAt);
+        const ariaLabel = `${actionLabel} · ${browser} on ${os} · ${activity.ip} · ${relativeTime}`;
 
         return (
-            <li key={activity._id} className='flex items-center gap-3 py-3' aria-label={ariaLabel}>
-                <Avatar variant='soft'>
-                    <Avatar.Fallback color={getActivityAvatarColor(activity)}>
-                        <ActionIcon size={16} aria-hidden='true' />
-                    </Avatar.Fallback>
-                </Avatar>
+            <li key={activity._id} className='flex items-center gap-3 py-3.5' aria-label={ariaLabel}>
                 <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                    <span className='truncate text-sm font-medium text-foreground'>{actionLabel}</span>
-                    <span className='truncate text-xs text-muted tabular-nums'>
-                        {browser} on {os} · {activity.ip} · {formatSessionRelativeTime(activity.createdAt)}
+                    <span className={cn('truncate text-base font-medium', activity.success ? 'text-foreground' : 'text-danger-soft-foreground')}>{actionLabel}</span>
+                    <span className='truncate text-sm text-muted tabular-nums'>
+                        {browser} on {os} · {activity.ip}
                     </span>
                 </div>
-                {!activity.success && (
-                    <Chip color='danger' variant='soft' size='sm' className='shrink-0'>
-                        <Chip.Label>Failed</Chip.Label>
-                    </Chip>
-                )}
+                <span className='shrink-0 text-sm text-muted tabular-nums'>{relativeTime}</span>
             </li>
         );
     };
 
     const renderRowSkeleton = (key: string) => (
-        <li key={key} className='flex items-center gap-3 py-3'>
-            <Skeleton animationType='pulse' className='size-10 rounded-xl' />
-            <div className='flex min-w-0 flex-1 flex-col gap-1.5'>
-                <Skeleton animationType='pulse' className='rounded-md origin-[0_55%] scale-y-60 h-[14px] w-[45%]' />
-                <Skeleton animationType='pulse' className='rounded-md origin-[0_55%] scale-y-60 h-[12px] w-[30%]' />
-            </div>
+        <li key={key} className='flex flex-col gap-2 py-4'>
+            <Skeleton animationType='pulse' className='h-3.5 w-2/5 rounded-md' />
+            <Skeleton animationType='pulse' className='h-3 w-1/3 rounded-md' />
         </li>
     );
 
-    const renderList = (rows: ReactNode[], isEmptyState: boolean) => (
-        <Scrollable className={isEmptyState ? '' : 'max-h-[26rem]'}>
-            <ul className='m-0 p-0 list-none flex flex-col'>
-                {rows.map((row, index) => (
-                    <Fragment key={index}>
-                        {index > 0 && <Separator />}
-                        {row}
-                    </Fragment>
-                ))}
-            </ul>
-        </Scrollable>
+    // A list of rows in one tile, or a lone empty state centred in it.
+    const renderList = (rows: ReactNode[], emptyState: ReactNode | null) => (
+        <div className='rounded-2xl bg-foreground/4 px-5 py-1'>
+            {emptyState ?? (
+                <Scrollable className='max-h-[26rem]'>
+                    <ul className='m-0 flex list-none flex-col divide-y divide-separator p-0'>
+                        {rows}
+                    </ul>
+                </Scrollable>
+            )}
+        </div>
     );
 
     let activeSessionsAction: ReactNode;
     if (otherSessionsCount > 0) {
         activeSessionsAction = (
             <Button
-                variant='danger-soft'
+                variant='secondary'
                 size='sm'
-                className='shrink-0'
                 onPress={openRevokeAllSessionsModal}
             >
                 Revoke all others
@@ -146,63 +113,49 @@ const SessionSettings = () => {
         );
     }
 
-    let sessionRows: ReactNode[];
+    let sessionRows: ReactNode[] = sessions.map(renderSession);
     if (loadingSessions) {
         sessionRows = Array.from({ length: 2 }).map((_, i) => renderRowSkeleton(`s-${i}`));
-    } else if (sessions.length === 0) {
-        sessionRows = [
-            <RecoveryState
-                icon={<Shield size={24} />}
-                title='No active sessions'
-                description='There are no active sessions for your account.'
-            />
-        ];
-    } else {
-        sessionRows = sessions.map(renderSession);
     }
 
-    let activityRows: ReactNode[];
+    let activityRows: ReactNode[] = activities.map(renderActivity);
     if (loadingActivity) {
         activityRows = Array.from({ length: 3 }).map((_, i) => renderRowSkeleton(`a-${i}`));
-    } else if (activities.length === 0) {
-        activityRows = [
-            <RecoveryState
-                icon={<Clock size={24} />}
-                title='No login activity'
-                description='No recent login attempts found.'
-            />
-        ];
-    } else {
-        activityRows = activities.map(renderActivity);
     }
+
+    const sessionsEmptyState = !loadingSessions && sessions.length === 0 ? (
+        <RecoveryState
+            className='py-8'
+            icon={<Shield size={24} />}
+            title='No active sessions'
+            description='There are no active sessions for your account.'
+        />
+    ) : null;
+
+    const activityEmptyState = !loadingActivity && activities.length === 0 ? (
+        <RecoveryState
+            className='py-8'
+            icon={<Clock size={24} />}
+            title='No login activity'
+            description='No recent login attempts found.'
+        />
+    ) : null;
 
     return (
         <SettingsPage title='Session Management'>
-            <Card>
-                <Card.Header>
-                    <div className='flex w-full items-center justify-between gap-4 max-sm:flex-col max-sm:items-start'>
-                        <div className='flex flex-col gap-1'>
-                            <Card.Title>Active Sessions</Card.Title>
-                            <Card.Description>Devices currently signed in to your account</Card.Description>
-                        </div>
-                        {activeSessionsAction}
-                    </div>
-                </Card.Header>
-                <Card.Content>
-                    {renderList(sessionRows, !loadingSessions && sessions.length === 0)}
-                </Card.Content>
-            </Card>
-            <Card>
-                <Card.Header>
-                    <div className='flex flex-col gap-1'>
-                        <Card.Title>Login Activity</Card.Title>
-                        <Card.Description>Recent login attempts on your account</Card.Description>
-                    </div>
-                </Card.Header>
-                <Card.Content>
-                    {renderList(activityRows, !loadingActivity && activities.length === 0)}
-                </Card.Content>
-            </Card>
+            <section className='flex flex-col gap-3'>
+                <SettingsSectionHeader
+                    title='Active Sessions'
+                    description='Devices currently signed in to your account'
+                    action={activeSessionsAction} />
+                {renderList(sessionRows, sessionsEmptyState)}
+            </section>
+            <section className='flex flex-col gap-3'>
+                <SettingsSectionHeader
+                    title='Login Activity'
+                    description='Recent login attempts on your account' />
+                {renderList(activityRows, activityEmptyState)}
+            </section>
             <Modal
                 id={REVOKE_ALL_MODAL_ID}
                 title='Revoke All Other Sessions'

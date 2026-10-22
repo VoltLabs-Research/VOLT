@@ -1,19 +1,20 @@
 import { passwordInfoQuery, useChangePasswordMutation } from '@/modules/auth/hooks/queries';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import SettingsRow from '@/modules/auth/components/SettingsRow';
-import { Button } from '@heroui/react';
+import { Button, cn } from '@heroui/react';
 import { format } from 'date-fns';
-import { Activity, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import PasswordChangeForm from '@/modules/auth/components/PasswordChangeForm';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { UpdatePasswordInput } from '@volt/contracts/modules/auth/http';
 import { useNavigate } from 'react-router-dom';
 
 const AuthenticationSettings = () => {
     const navigate = useNavigate();
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+    const passwordFormId = useId();
 
     const { data: passwordInfo } = passwordInfoQuery(undefined);
     const changePasswordMutation = useChangePasswordMutation();
@@ -42,44 +43,47 @@ const AuthenticationSettings = () => {
 
     return (
         <SettingsPage title="Authentication Settings">
-            <div className='flex flex-col gap-4'>
+            <div className='flex flex-col gap-3'>
                 <SettingsSectionHeader
                     title="Password"
                     description="Manage your password and security settings" />
 
-                <div className='flex flex-col gap-4'>
-                    <SettingsRow
-                        icon={<Lock size={20} />}
-                        title="Password"
-                        description={passwordDescription}
-                        rightContent={(
-                            <Button
-                                variant="secondary"
-                                onPress={() => setIsPasswordFormOpen(!isPasswordFormOpen)}
-                            >
-                                {passwordInfo?.hasPassword ? 'Change' : 'Set Password'}
-                                {isPasswordFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </Button>
-                        )} />
+                <SettingsRow
+                    title="Password"
+                    description={passwordDescription}
+                    rightContent={(
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            aria-expanded={isPasswordFormOpen}
+                            aria-controls={isPasswordFormOpen ? passwordFormId : undefined}
+                            onPress={() => setIsPasswordFormOpen(!isPasswordFormOpen)}
+                        >
+                            {passwordInfo?.hasPassword ? 'Change' : 'Set Password'}
+                            <ChevronDown
+                                size={16}
+                                className={cn('transition-transform duration-200 ease-out-fluid', isPasswordFormOpen && 'rotate-180')}
+                                aria-hidden='true' />
+                        </Button>
+                    )} />
 
-                    <PasswordChangeForm
-                        passwordInfo={passwordInfo ?? null}
-                        isOpen={isPasswordFormOpen}
-                        onSubmit={handleChangePassword}
-                        onCancel={() => setIsPasswordFormOpen(false)} />
-                </div>
+                <PasswordChangeForm
+                    id={passwordFormId}
+                    passwordInfo={passwordInfo ?? null}
+                    isOpen={isPasswordFormOpen}
+                    onSubmit={handleChangePassword}
+                    onCancel={() => setIsPasswordFormOpen(false)} />
             </div>
 
-            <div className='flex flex-col gap-4'>
+            <div className='flex flex-col gap-3'>
                 <SettingsSectionHeader
                     title="Login Activity"
                     description="Monitor recent login sessions and devices" />
 
                 <SettingsRow
-                    icon={<Activity size={20} />}
                     title="Recent Sessions"
                     description="View your login history and active sessions"
-                    rightContent={<Button variant="secondary" onPress={() => navigate('/dashboard/settings/sessions')}>View Activity</Button>}
+                    rightContent={<Button variant="secondary" size="sm" onPress={() => navigate('/dashboard/settings/sessions')}>View Activity</Button>}
                 />
             </div>
         </SettingsPage>

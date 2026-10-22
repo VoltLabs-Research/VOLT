@@ -6,12 +6,13 @@ import { runAction } from '@/shared/ui/actions/run-action';
 import AvatarUpload from '@/modules/auth/components/AvatarUpload';
 import ProfileForm from '@/modules/auth/components/ProfileForm';
 import { Theme, useTheme } from '@/shared/ui/hooks/use-theme';
-import { Alert, Button, ToggleButton, ToggleButtonGroup } from '@heroui/react';
+import { Button, ToggleButton, ToggleButtonGroup } from '@heroui/react';
 import SettingsPage from '@/shared/ui/components/SettingsPage';
 import SettingsSectionHeader from '@/shared/ui/components/SettingsSectionHeader';
+import SettingsRow from '@/modules/auth/components/SettingsRow';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { Monitor, Moon, Sun, Trash2 } from 'lucide-react';
-import { resolveAvatarUrl } from '@/shared/utils/user';
+import { getInitialsFromUser, resolveAvatarUrl } from '@/shared/utils/user';
 import { useMemo, useState } from 'react';
 import type { Key } from 'react';
 import type { ProfileForm as ProfileFormType } from '@/modules/auth/components/ProfileForm/validation-schema';
@@ -91,59 +92,63 @@ const GeneralSettings = () => {
     return (
         <SettingsPage title="General Settings">
             {!singleTenant && (
-                <div className='flex flex-col gap-4'>
+                <div className='flex flex-col gap-3'>
                     <SettingsSectionHeader
                         title="Profile"
                         description="Update your personal information and profile picture" />
-                    <div className='flex flex-col gap-4'>
-                        <AvatarUpload
-                            avatarUrl={resolveAvatarUrl(user?.avatar) || null}
-                            isUploading={isUploadingAvatar}
-                            onUpload={handleAvatarUpload} />
+                    <AvatarUpload
+                        avatarUrl={resolveAvatarUrl(user?.avatar) || null}
+                        initials={getInitialsFromUser(user)}
+                        isUploading={isUploadingAvatar}
+                        onUpload={handleAvatarUpload} />
+                    <div className='rounded-2xl bg-foreground/4 p-5'>
                         <ProfileForm
                             initialValues={profileInitialValues}
                             onUpdate={handleProfileUpdate} />
                     </div>
                 </div>
             )}
-            <div className='flex flex-col gap-4'>
-                <SettingsSectionHeader
-                    title="Appearance"
-                    description="Choose your preferred theme for the interface" />
-                <ToggleButtonGroup
-                    size='sm'
-                    selectionMode='single'
-                    disallowEmptySelection
-                    selectedKeys={[preference]}
-                    onSelectionChange={handleThemeChange}
-                    aria-label='Theme'
-                >
-                    {THEME_OPTIONS.map((option) => (
-                        <ToggleButton key={option.value} id={option.value}>
-                            <option.icon size={14} aria-hidden='true' />
-                            {option.label}
-                        </ToggleButton>
-                    ))}
-                </ToggleButtonGroup>
+            <div className='flex flex-col gap-3'>
+                <SettingsSectionHeader title="Appearance" />
+                <SettingsRow
+                    title='Theme'
+                    description='Choose your preferred theme for the interface'
+                    rightContent={(
+                        <ToggleButtonGroup
+                            selectionMode='single'
+                            disallowEmptySelection
+                            selectedKeys={[preference]}
+                            onSelectionChange={handleThemeChange}
+                            aria-label='Theme'
+                        >
+                            {THEME_OPTIONS.map((option) => (
+                                <ToggleButton
+                                    key={option.value}
+                                    id={option.value}
+                                    variant='ghost'
+                                >
+                                    <option.icon size={14} aria-hidden='true' />
+                                    {option.label}
+                                </ToggleButton>
+                            ))}
+                        </ToggleButtonGroup>
+                    )} />
             </div>
             {!singleTenant && (
-                <Alert status='danger' role='region' aria-label='Delete Account'>
-                    <Alert.Content>
-                        <Alert.Title>Delete Account</Alert.Title>
-                        <Alert.Description>
-                            Permanently delete your account and all associated data
-                        </Alert.Description>
-                    </Alert.Content>
-                    <Button
-                        variant='ghost'
-                        size='sm'
-                        className='text-danger'
-                        onPress={handleDeleteAccount}
-                    >
-                        <Trash2 size={16} />
-                        Delete Account
-                    </Button>
-                </Alert>
+                <SettingsRow
+                    isDanger
+                    title='Delete Account'
+                    description='Permanently delete your account and all associated data'
+                    rightContent={(
+                        <Button
+                            variant='danger-soft'
+                            size='sm'
+                            onPress={handleDeleteAccount}
+                        >
+                            <Trash2 size={16} aria-hidden='true' />
+                            Delete Account
+                        </Button>
+                    )} />
             )}
         </SettingsPage>
     );
