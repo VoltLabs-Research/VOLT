@@ -41,6 +41,17 @@ Python is a guest here, not the host, so a few things work differently:
 - `requests` reaches the backends through the service worker's relay.
 - The first install of a package downloads it from Pyodide's CDN.
 
+## Notebooks
+
+A client running its stack runs its notebooks' kernels in the page (`src/host/notebook-kernels.ts`).
+Each kernel is a `python3 -m volt_kernel` process with the notebook's credentials for the server. It
+runs cells as IPython does: rich outputs, matplotlib figures, top-level `await`, `%pip`, `input()`
+and interrupts.
+
+The kernels share a file system of their own. In it, each workspace has a virtual environment and a
+working directory that all its notebooks use: what one notebook installs or writes, the others have.
+The first kernel of a workspace creates its environment and installs `voltsdk`.
+
 ## Using it from a web client
 
 The client adds the Vite plugin. It serves the built runtime under `/volt-runtime/` and the service
@@ -91,9 +102,10 @@ pnpm --filter @volt/web-runtime smoke page       # the Node platform in a worker
 pnpm --filter @volt/web-runtime smoke programs   # Node programs spawned with binary stdio
 pnpm --filter @volt/web-runtime smoke stack      # the whole stack provisioned, as the client does
 pnpm --filter @volt/web-runtime smoke python     # python3: venv, pip, stdio and exit codes
+pnpm --filter @volt/web-runtime smoke notebook   # notebook kernels in the page
 ```
 
-The python page downloads its packages from Pyodide's CDN, so it needs the network.
+The Python pages download their packages from Pyodide's CDN, so they need the network.
 
 Each smoke runs a page of `smoke/` in headless Chrome (`CHROME_PATH`, `/usr/bin/google-chrome` by
 default) and fails unless the page reaches its last step.

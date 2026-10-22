@@ -1,6 +1,7 @@
 // A local stack in the browser: the server and daemon as workers of this page, provisioned by
-// @volt/local-stack. The web client runs it in a tab, and the desktop app in its window. Their files
-// live in the origin's private file system, so the workspace persists between visits and launches.
+// @volt/local-stack, with the notebooks' kernels in the page too. The web client runs it in a tab,
+// and the desktop app in its window. Their files live in the origin's private file system, so the
+// workspace persists between visits and launches.
 import { BackendHost } from './BackendHost';
 import { BrowserStackStore } from './browser-stack-store';
 import { DEFAULT_DAEMON_PORT, DEFAULT_SERVER_PORT, serverOriginFor } from '@volt/local-stack/defaults';
@@ -53,14 +54,18 @@ export const startBrowserStack = async (options: BrowserStackOptions): Promise<B
                 scriptUrl: new URL('server.worker.js', options.runtimeUrl),
                 port: PORTS.server,
                 boot: {
-                    env: localServerEnv({
-                        ports: PORTS,
-                        dataDir: '/data/server',
-                        databasePath: '/data/server/server.sqlite',
-                        secrets,
-                        clientOrigin: options.clientOrigin,
-                        registryUrl: options.registryUrl
-                    }),
+                    env: {
+                        ...localServerEnv({
+                            ports: PORTS,
+                            dataDir: '/data/server',
+                            databasePath: '/data/server/server.sqlite',
+                            secrets,
+                            clientOrigin: options.clientOrigin,
+                            registryUrl: options.registryUrl
+                        }),
+                        // The client runs the notebooks' kernels in this page (notebook-kernels.ts).
+                        NOTEBOOK_KERNELS: 'browser'
+                    },
                     argv: [],
                     cwd: '/app/server',
                     fs: { directory: `${prefix}-server` },

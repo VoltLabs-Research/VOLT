@@ -152,13 +152,13 @@ jobs:
         run: pnpm --filter @volt/web-runtime typecheck
 
       # The runtime's smoke pages in headless Chrome: Node's platform in a worker, the
-      # Node programs a backend spawns, the whole local stack provisioned, and python3
-      # (venv, pip, stdio).
+      # Node programs a backend spawns, the whole local stack provisioned, python3 (venv,
+      # pip, stdio) and the notebooks' kernels.
       - name: Smoke-test the web runtime
         env:
           CHROME_PATH: /usr/bin/google-chrome
         run: |
-          for page in page programs stack python; do
+          for page in page programs stack python notebook; do
             pnpm --filter @volt/web-runtime smoke "$page"
           done
 
