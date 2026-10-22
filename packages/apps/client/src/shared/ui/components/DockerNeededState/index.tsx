@@ -17,23 +17,21 @@ const DockerNeededState = ({ feature }: DockerNeededStateProps) => {
             aria-labelledby={headingId}
             className='flex flex-row items-center justify-center w-full h-full max-md:min-h-[300px]'
         >
-            <div className='flex flex-col items-center gap-6 text-center max-w-[420px] max-md:max-w-[90%]'>
-                <div className='flex flex-row items-center justify-center shrink-0 text-muted'>
+            <div className='flex flex-col items-center text-center max-w-md max-md:max-w-[90%]'>
+                <div className='flex size-12 shrink-0 items-center justify-center rounded-full bg-foreground/6 text-foreground' aria-hidden='true'>
                     <Container size={24} />
                 </div>
-                <div className='flex flex-col gap-2 text-center'>
-                    <h2 className='text-base font-medium text-foreground' id={headingId}>
-                        {`${feature} needs a container runtime`}
-                    </h2>
-                    <span className='text-sm text-muted leading-normal'>
-                        {singleTenant
-                            ? 'This computer has no container runtime available, so Volt cannot start containers. Install Docker Desktop and this page works on the next heartbeat.'
-                            : 'This cluster\u2019s machine has no container runtime available, so Volt cannot start containers on it. Install Docker there and this page works on the next heartbeat.'}
-                    </span>
-                    <span className='text-xs text-muted leading-normal'>
-                        Nothing else is affected: trajectories, analyses and plugins do not use containers.
-                    </span>
-                </div>
+                <h2 className='mt-5 text-base font-medium text-foreground' id={headingId}>
+                    {`${feature} needs a container runtime`}
+                </h2>
+                <p className='mt-2 text-base text-muted text-pretty'>
+                    {singleTenant
+                        ? 'This computer has no container runtime available, so Volt cannot start containers. Install Docker Desktop and this page works on the next heartbeat.'
+                        : 'This cluster\u2019s machine has no container runtime available, so Volt cannot start containers on it. Install Docker there and this page works on the next heartbeat.'}
+                </p>
+                <p className='mt-2 text-sm text-muted text-pretty'>
+                    Nothing else is affected: trajectories, analyses and plugins do not use containers.
+                </p>
             </div>
         </EmptyStateRoot>
     );
