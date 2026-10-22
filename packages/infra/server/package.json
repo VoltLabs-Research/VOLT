@@ -7,6 +7,7 @@
     "lint": "eslint .",
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && node -r ts-node/register -r tsconfig-paths/register src/server.ts",
     "start:dist": "node dist/infra/server/src/server.js",
+    "test": "LOG_LEVEL=silent DATABASE_URL=sqlite::memory: node --test -r ts-node/register -r tsconfig-paths/register 'src/**/*.test.ts'",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
