@@ -17,12 +17,10 @@ import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import { Button } from '@heroui/react';
 import { useStepper } from '@/shared/ui/hooks/use-stepper';
-import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { buildBackendUrl, isEndpointPinnedByEnv } from '@/app/core/http/utils/backend-origin';
 import { resetBackendEndpoint } from '@/modules/auth/services/endpoint-session';
-import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
-import { useEffect, useId, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
 import type { OAuthProviderId } from '@volt/contracts/modules/auth/domain';
@@ -33,29 +31,6 @@ enum SignInStep {
     Password = 'password',
     Register = 'register'
 }
-
-type StepDirection = 'forward' | 'backward';
-
-const stepVariants = {
-    enter: (direction: StepDirection) => ({
-        x: direction === 'forward' ? 20 : -20,
-        opacity: 0
-    }),
-    center: {
-        x: 0,
-        opacity: 1
-    },
-    exit: (direction: StepDirection) => ({
-        x: direction === 'forward' ? -20 : 20,
-        opacity: 0
-    })
-};
-
-const staticStepVariants = {
-    enter: { x: 0, opacity: 0 },
-    center: { x: 0, opacity: 1 },
-    exit: { x: 0, opacity: 0 }
-};
 
 interface StepTitle {
     title: string;
@@ -80,13 +55,6 @@ const stepTitles: Record<SignInStep, StepTitle> = {
 const SignInTemplate = () => {
     const navigate = useNavigate();
     const { step, goTo } = useStepper<SignInStep>(SignInStep.Email);
-    const prefersReducedMotion = usePrefersReducedMotion();
-    const panelBaseId = useId();
-    const [previousStep, setPreviousStep] = useState<SignInStep>(SignInStep.Email);
-
-    useEffect(() => {
-        setPreviousStep(step);
-    }, [step]);
 
     const checkEmail = useCheckEmailMutation();
     const signIn = useSignInMutation();
@@ -242,86 +210,67 @@ const SignInTemplate = () => {
         goTo(SignInStep.Email);
     };
 
-    const signInSteps = [{
-        key: SignInStep.Email,
-        content: (
-            <EmailStep
-                control={control}
-                isLoading={isSubmitting}
-                onSubmit={handleSubmit}
-                onOAuth={handleOAuthRedirect}
-                availableProviders={availableProviders} />
-        )
-    }, step === SignInStep.Register ? {
-        key: SignInStep.Register,
-        content: (
-            <RegisterStep
-                email={getValues('email')}
-                control={control}
-                isLoading={isSubmitting}
-                onSubmit={handleSubmit}
-                onBack={goBack} />
-        )
-    } : {
-        key: SignInStep.Password,
-        content: (
+    let stepContent = (
+        <EmailStep
+            control={control}
+            isLoading={isSubmitting}
+            onSubmit={handleSubmit}
+            onOAuth={handleOAuthRedirect}
+            availableProviders={availableProviders} />
+    );
+
+    if (step === SignInStep.Password) {
+        stepContent = (
             <PasswordStep
                 email={getValues('email')}
                 control={control}
                 isLoading={isSubmitting}
                 onSubmit={handleSubmit}
                 onBack={goBack} />
-        )
-    }];
+        );
+    }
 
-    const activeStepIndex = signInSteps.findIndex((candidate) => candidate.key === step);
-    const previousStepIndex = signInSteps.findIndex((candidate) => candidate.key === previousStep);
-    const direction: StepDirection = activeStepIndex >= previousStepIndex ? 'forward' : 'backward';
+    if (step === SignInStep.Register) {
+        stepContent = (
+            <RegisterStep
+                email={getValues('email')}
+                control={control}
+                isLoading={isSubmitting}
+                onSubmit={handleSubmit}
+                onBack={goBack} />
+        );
+    }
 
     return (
-        <main className='min-h-dvh bg-background'>
-            <section className='relative flex min-h-dvh flex-col justify-center bg-background p-6 max-sm:p-4' aria-labelledby='sign-in-form-title'>
-                <div className='mx-auto flex w-full max-w-[26rem] flex-col gap-8'>
+        <main className='flex min-h-dvh items-center justify-center bg-background px-4 py-18' aria-labelledby='sign-in-form-title'>
+            <div className='flex w-full max-w-sm flex-col gap-6'>
+                {/* Keyed by step, so each step rises in with its own title. */}
+                <div key={step} className='flex flex-col gap-6 animate-in fade-in-0 slide-in-from-bottom-3 duration-280 ease-out-fluid'>
                     <header className='flex flex-col gap-2'>
-                        <h1 className='text-3xl font-semibold tracking-[-0.03em] text-foreground max-lg:text-2xl' id='sign-in-form-title'>{title}</h1>
-                        <p>{subtitle}</p>
+                        <h1 className='text-3xl font-semibold tracking-[-0.03em] text-foreground' id='sign-in-form-title'>{title}</h1>
+                        <p className='text-base text-muted'>{subtitle}</p>
                     </header>
-                    <div className='w-full'>
-                        <AnimatePresence mode='wait' custom={direction} initial={false}>
-                            <motion.div
-                                key={step}
-                                custom={direction}
-                                variants={prefersReducedMotion ? staticStepVariants : stepVariants}
-                                initial='enter'
-                                animate='center'
-                                exit='exit'
-                                transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
-                                className='w-full [will-change:opacity,transform]'
-                                id={`${panelBaseId}-${step}-panel`}
-                                tabIndex={0}
-                            >
-                                {signInSteps[activeStepIndex]?.content}
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
-                    <p className='border-t border-border/70 pt-2 text-center text-sm leading-[1.6] text-muted'>
+                    {stepContent}
+                </div>
+
+                <div className='flex flex-col items-center gap-3'>
+                    <p className='text-center text-xs text-muted'>
                         By continuing with email or a social provider, you agree to our{' '}
-                        <span className='font-medium text-foreground'>Terms</span> and{' '}
-                        <span className='font-medium text-foreground'>Privacy Policy</span>.
+                        <span className='text-foreground'>Terms</span> and{' '}
+                        <span className='text-foreground'>Privacy Policy</span>.
                     </p>
 
                     {!isEndpointPinnedByEnv() && (
                         <Button
                             variant='ghost'
                             size='sm'
-                            fullWidth
                             onPress={() => void resetBackendEndpoint()}
                         >
                             Change server
                         </Button>
                     )}
                 </div>
-            </section>
+            </div>
         </main>
     );
 };

@@ -2,7 +2,7 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import GoogleIcon from '@/modules/auth/components/icons/GoogleIcon';
 import MicrosoftIcon from '@/modules/auth/components/icons/MicrosoftIcon';
 import { Button } from '@heroui/react';
-import { Github, Mail } from 'lucide-react';
+import { Github } from 'lucide-react';
 import type { FormEventHandler, ReactNode } from 'react';
 import type { Control } from 'react-hook-form';
 import type { OAuthProviderId } from '@volt/contracts/modules/auth/domain';
@@ -40,27 +40,20 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
     const visibleProviders = oauthProviders.filter((provider) => availableProviders.includes(provider.key));
 
     return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-8'>
         {visibleProviders.length > 0 && (
-            <>
-                <div className='flex flex-col gap-4'>
-                    {visibleProviders.map(({ key, label, icon }) => (
-                        <Button
-                            key={key}
-                            variant='outline'
-                            fullWidth
-                            onPress={() => onOAuth(key)}>
-                            {icon}
-                            Continue with {label}
-                        </Button>
-                    ))}
-                </div>
-                <div className='mt-5 mb-1 flex flex-row items-center text-xs font-semibold tracking-[0.05em] text-muted uppercase'>
-                    <span className='h-px flex-1 bg-border' aria-hidden='true' />
-                    <span className='px-4'>Or continue with email</span>
-                    <span className='h-px flex-1 bg-border' aria-hidden='true' />
-                </div>
-            </>
+            <div className='flex flex-col gap-3'>
+                {visibleProviders.map(({ key, label, icon }) => (
+                    <Button
+                        key={key}
+                        variant='outline'
+                        fullWidth
+                        onPress={() => onOAuth(key)}>
+                        {icon}
+                        Continue with {label}
+                    </Button>
+                ))}
+            </div>
         )}
 
         <form className='flex flex-col gap-4' onSubmit={onSubmit}>
@@ -71,7 +64,6 @@ const EmailStep = ({ control, isLoading, onSubmit, onOAuth, availableProviders }
                 type='email'
                 placeholder='name@example.com'
                 autoFocus
-                icon={<Mail size={18} />}
                 inputProps={{
                     autoComplete: 'email',
                     inputMode: 'email',

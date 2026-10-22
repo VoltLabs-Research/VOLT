@@ -9,7 +9,6 @@ import {
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
-import { Monitor, Server } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { FormEvent } from 'react';
@@ -55,60 +54,56 @@ const ConnectEndpointTemplate = () => {
     };
 
     return (
-        <main className='min-h-dvh bg-background'>
-            <section className='relative flex min-h-dvh flex-col justify-center bg-background p-6 max-sm:p-4' aria-labelledby='connect-form-title'>
-                <div className='mx-auto flex w-full max-w-[26rem] flex-col gap-8'>
-                    <header className='flex flex-col gap-2'>
-                        <h1 className='text-3xl font-semibold tracking-[-0.03em] text-foreground max-lg:text-2xl' id='connect-form-title'>Connect to a server</h1>
-                        <p>Enter the address of the VOLT deployment you want to work on.</p>
-                    </header>
+        <main className='flex min-h-dvh items-center justify-center bg-background px-4 py-18' aria-labelledby='connect-form-title'>
+            <div className='flex w-full max-w-sm flex-col gap-6'>
+                <header className='flex flex-col gap-2'>
+                    <h1 className='heading-reveal text-3xl font-semibold tracking-tight text-foreground sm:text-4xl' id='connect-form-title'>Connect to a server</h1>
+                    <p className='text-base text-muted'>Enter the address of the VOLT deployment you want to work on.</p>
+                </header>
 
-                    <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
-                        <FormFieldRHF
-                            name='endpoint'
-                            control={control}
-                            label='Server address'
-                            type='text'
-                            placeholder='https://volt.your-university.edu'
-                            autoFocus
-                            icon={<Server size={18} />}
-                            inputProps={{
-                                autoComplete: 'url',
-                                inputMode: 'url',
-                                spellCheck: false,
-                                name: 'endpoint',
-                                autoCapitalize: 'none',
-                                autoCorrect: 'off'
-                            }}
-                        />
+                <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
+                    <FormFieldRHF
+                        name='endpoint'
+                        control={control}
+                        label='Server address'
+                        type='text'
+                        placeholder='https://volt.your-university.edu'
+                        autoFocus
+                        inputProps={{
+                            autoComplete: 'url',
+                            inputMode: 'url',
+                            spellCheck: false,
+                            name: 'endpoint',
+                            autoCapitalize: 'none',
+                            autoCorrect: 'off'
+                        }}
+                    />
 
-                        <Button
-                            type='submit'
-                            isPending={isVerifying}
-                            variant='primary'
-                            fullWidth
-                        >
-                            {isVerifying ? 'Verifying…' : 'Continue'}
-                        </Button>
-                    </form>
+                    <Button
+                        type='submit'
+                        isPending={isVerifying}
+                        variant='primary'
+                        fullWidth
+                    >
+                        {isVerifying ? 'Verifying…' : 'Continue'}
+                    </Button>
+                </form>
 
-                    <div className='flex flex-col gap-3 border-t border-border/70 pt-6'>
-                        <p className='text-sm text-muted'>Or run VOLT entirely in this browser: the server and a compute cluster start in this tab, and your work stays on this device.</p>
-                        <Button
-                            variant='secondary'
-                            fullWidth
-                            onPress={runLocalStack}
-                        >
-                            <Monitor size={18} />
-                            Run in this browser
-                        </Button>
-                    </div>
-
-                    <p className='border-t border-border/70 pt-2 text-center text-sm leading-[1.6] text-muted'>
-                        Need help? Read the <a href='https://docs.voltcloud.dev' target='_blank' rel='noreferrer'>docs</a>.
-                    </p>
+                <div className='flex flex-col gap-3 pt-2'>
+                    <p className='text-sm text-muted'>Or run VOLT entirely in this browser: the server and a compute cluster start in this tab, and your work stays on this device.</p>
+                    <Button
+                        variant='secondary'
+                        fullWidth
+                        onPress={runLocalStack}
+                    >
+                        Run in this browser
+                    </Button>
                 </div>
-            </section>
+
+                <p className='text-center text-sm text-muted'>
+                    Need help? Read the <a className='text-foreground underline decoration-foreground/15 underline-offset-2 transition-colors hover:decoration-current' href='https://docs.voltcloud.dev' target='_blank' rel='noreferrer'>docs</a>.
+                </p>
+            </div>
         </main>
     );
 };
