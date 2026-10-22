@@ -56,6 +56,15 @@ export default defineConfig(({ mode }) => {
         },
         optimizeDeps: {
             include: ['zod']
+        },
+        build: {
+            rollupOptions: {
+                // The landing's screens are documents of their own (see src/app/screen.tsx).
+                input: {
+                    main: path.resolve(__dirname, 'index.html'),
+                    screen: path.resolve(__dirname, 'landing-screen.html')
+                }
+            }
         }
     };
 });
