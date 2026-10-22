@@ -63,8 +63,7 @@ const PublicSimulationGrid = ({ teamId, onPublicListingChange }: PublicSimulatio
             includeCopyDocumentId={false}
             emptyTitle='No public trajectories'
             emptyMessage='This team has no public trajectories.'
-
-            gridClassName='public-simulation-grid max-md:p-0'
+            gridClassName='gap-4 max-md:p-0'
         />
     );
 };

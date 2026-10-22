@@ -10,7 +10,7 @@ import { isTrajectoryFolderRow } from '@/modules/trajectory/utils/listing';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { FolderedListingModals } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
-import { Download, Upload } from 'lucide-react';
+import { Atom, Upload } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
 
@@ -100,7 +100,7 @@ const DashboardSimulationGrid = () => {
             buttonIsLoading: isUploading
         }
         : {
-            icon: <Download size={24} strokeWidth={1.5} />,
+            icon: <Atom size={24} strokeWidth={1.5} />,
             title: 'No simulations yet',
             message: 'Download the sample simulations to get started. After that, upload any of those files here.',
             buttonText: 'Download sample simulations',
@@ -136,6 +136,7 @@ const DashboardSimulationGrid = () => {
                 hideHeader={true}
                 hideTabs={true}
                 renderGridSkeleton={renderGridSkeleton}
+                gridClassName='gap-4 max-md:p-0'
                 emptyIcon={emptyState.icon}
                 emptyTitle={emptyState.title}
                 emptyMessage={emptyState.message}

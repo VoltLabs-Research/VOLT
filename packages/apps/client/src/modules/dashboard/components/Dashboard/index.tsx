@@ -11,7 +11,7 @@ import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { FolderPlus, Server, Upload } from 'lucide-react';
 
-const PAGE_CLASS = 'mx-auto flex w-full max-w-[1440px] flex-col gap-4 p-4 max-[768px]:gap-3 max-[768px]:p-3';
+const PAGE_CLASS = 'mx-auto flex w-full max-w-[1440px] flex-col gap-6 p-4 max-[768px]:gap-3 max-[768px]:p-3';
 
 const DashboardPage = () => {
     usePageTitle('Dashboard');
@@ -41,29 +41,27 @@ const DashboardPage = () => {
 
     return (
         <div className={PAGE_CLASS}>
-            <div className='flex flex-row items-center justify-between gap-4 min-w-0 max-[768px]:gap-2'>
-                <h3 className='text-xl font-medium text-foreground'>Trajectories</h3>
+            <div className='flex min-w-0 flex-row flex-wrap items-center justify-between gap-4 max-[768px]:gap-2'>
+                <h3 className='text-2xl font-semibold text-foreground'>Trajectories</h3>
                 {canCreateTrajectoryFolders && (
                     <div className='flex flex-row items-center gap-2'>
                         <input ref={fileInputRef} type='file' multiple hidden onChange={handlePickerChange} />
                         <Button
-                            variant='ghost'
-                            size='sm'
+                            variant='secondary'
+                            className='shrink-0'
+                            onPress={() => openModal(trajectoriesListingResource.modalIds.newFolder)}
+                        >
+                            <FolderPlus size={18} aria-hidden='true' />
+                            New folder
+                        </Button>
+                        <Button
+                            variant='primary'
                             className='shrink-0'
                             onPress={openFilePicker}
                             isDisabled={isUploading}
                         >
-                            <Upload size={14} />
+                            <Upload size={18} aria-hidden='true' />
                             Upload
-                        </Button>
-                        <Button
-                            variant='ghost'
-                            size='sm'
-                            className='shrink-0'
-                            onPress={() => openModal(trajectoriesListingResource.modalIds.newFolder)}
-                        >
-                            <FolderPlus size={14} />
-                            New folder
                         </Button>
                     </div>
                 )}
