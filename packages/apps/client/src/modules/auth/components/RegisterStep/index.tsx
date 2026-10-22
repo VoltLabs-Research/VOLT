@@ -1,7 +1,6 @@
 import UserBadge from '../UserBadge';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';
-import { ArrowLeft } from 'lucide-react';
 import type { FormEventHandler } from 'react';
 import type { Control } from 'react-hook-form';
 import type { SignInForm } from '../SignIn/validation-schema';
@@ -21,7 +20,7 @@ const RegisterStep = ({
     onSubmit,
     onBack
 }: RegisterStepProps) => (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-6'>
         <UserBadge
             label='Signing up as'
             email={email}
@@ -80,7 +79,6 @@ const RegisterStep = ({
                 variant='ghost'
                 fullWidth
                 onPress={onBack}>
-                <ArrowLeft size={16} />
                 Back
             </Button>
         </form>

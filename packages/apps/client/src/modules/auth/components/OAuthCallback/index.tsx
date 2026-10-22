@@ -7,10 +7,8 @@ import {
 } from '@/modules/auth/services/post-auth-destination-storage';
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
 import { resolveErrorTitle } from '@/shared/errors/core/report-error';
-import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-
-import { motion } from 'framer-motion';
-import { CheckCircle } from 'lucide-react';
+import { Button } from '@heroui/react';
+import { Check } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -82,82 +80,52 @@ const OAuthCallbackTemplate = () => {
         };
     }, [markAuthenticated, navigate, next, params]);
 
-    return (
-        <div className='flex flex-row items-center justify-center relative overflow-hidden h-dvh bg-background'>
-            <div className='absolute overflow-hidden inset-0'>
-                <div className='rounded-full absolute -top-[20%] -left-[10%] w-1/2 h-1/2 bg-accent/10 blur-[120px] opacity-50' />
-                <div className='rounded-full absolute top-[20%] -right-[10%] w-2/5 h-2/5 bg-accent/10 blur-[120px] opacity-50' />
+    let content = (
+        <>
+            <Loader size='md' color='current' className='text-muted' />
+            <div className='flex flex-col gap-2'>
+                <h1 className='text-2xl font-semibold tracking-tight text-foreground'>Authenticating...</h1>
+                <p className='text-base text-muted'>Please wait while we verify your credentials.</p>
             </div>
+        </>
+    );
 
-            {status === 'error' ? (
-                <RecoveryState
-                    tone={RecoveryStateTone.Error}
-                    title='Authentication failed'
-                    description={errorMessage}
-                    retryLabel='Back to sign in'
-                    onRetry={handleBackToSignIn}
-                />
-            ) : (
-                <motion.div
-                    initial={{
-                        opacity: 0,
-                        scale: 0.95
-                    }}
-                    animate={{
-                        opacity: 1,
-                        scale: 1
-                    }}
-                    className='z-10 max-w-[28rem] bg-surface border border-border rounded-xl relative w-full text-center p-8'
-                >
-                    <div className='flex flex-row items-center justify-center mb-6'>
-                        {status === 'loading' && (
-                            <Loader size='lg' color='current' />
-                        )}
+    if (status === 'success') {
+        content = (
+            <>
+                <Check size={28} className='text-muted' aria-hidden='true' />
+                <div className='flex flex-col gap-2'>
+                    <h1 className='text-2xl font-semibold tracking-tight text-foreground'>Successfully Authenticated!</h1>
+                    <p className='text-base text-muted'>Redirecting you to setup...</p>
+                </div>
+            </>
+        );
+    }
 
-                        {status === 'success' && (
-                            <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{
-                                    type: 'spring',
-                                    stiffness: 200,
-                                    damping: 10
-                                }}
-                            >
-                                <CheckCircle size={48} className='text-success' />
-                            </motion.div>
-                        )}
-                    </div>
-                    <motion.div
-                        key={status}
-                        initial={{
-                            opacity: 0,
-                            y: 10
-                        }}
-                        animate={{
-                            opacity: 1,
-                            y: 0
-                        }}
-                    >
-                        <h3 className='mb-2 text-2xl font-semibold text-foreground'>
-                            {status === 'loading' && 'Authenticating...'}
-                            {status === 'success' && 'Successfully Authenticated!'}
-                        </h3>
-                    </motion.div>
-                    <motion.div
-                        key={`desc-${status}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                    >
-                        <p className='text-muted'>
-                            {status === 'loading' && 'Please wait while we verify your credentials.'}
-                            {status === 'success' && 'Redirecting you to setup...'}
-                        </p>
-                    </motion.div>
-                </motion.div>
-            )}
-        </div>
+    if (status === 'error') {
+        content = (
+            <>
+                <div className='flex flex-col gap-2'>
+                    <h1 className='text-2xl font-semibold tracking-tight text-foreground'>Authentication failed</h1>
+                    <p className='text-base text-muted'>{errorMessage}</p>
+                </div>
+                <Button variant='primary' size='sm' onPress={handleBackToSignIn}>Back to sign in</Button>
+            </>
+        );
+    }
+
+    return (
+        <main className='flex min-h-dvh items-center justify-center bg-background px-4 py-18'>
+            {/* Keyed by status, so each state rises in on its own. */}
+            <section
+                key={status}
+                className='flex w-full max-w-sm flex-col items-center gap-5 text-center animate-in fade-in-0 slide-in-from-bottom-3 duration-280 ease-out-fluid'
+                role={status === 'error' ? 'alert' : 'status'}
+                aria-live={status === 'error' ? undefined : 'polite'}
+            >
+                {content}
+            </section>
+        </main>
     );
 };
 

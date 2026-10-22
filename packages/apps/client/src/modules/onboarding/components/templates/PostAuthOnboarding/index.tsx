@@ -28,7 +28,7 @@ const PostAuthOnboarding = () => {
     });
     const user = useCurrentUser();
 
-    const [teamName, setTeamName] = useState(user ? `${user.firstName} ${user.lastName} team's` : "My team's");
+    const [teamName, setTeamName] = useState(user ? `${user.firstName} ${user.lastName}'s team` : 'My team');
     const [nameError, setNameError] = useState<string | undefined>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
@@ -97,48 +97,45 @@ const PostAuthOnboarding = () => {
         >
             {isLoading ? (
                 <div
-                    className='flex flex-col items-center justify-center gap-4 w-[min(100%,24rem)] min-h-[18rem]'
+                    className='flex w-full max-w-sm flex-col items-center justify-center gap-4'
                     role='status'
                     aria-live='polite'
                     aria-atomic='true'
                 >
-                    <Loader size='lg' />
-                    <span className='text-sm text-muted text-center leading-normal'>
+                    <Loader size='md' color='current' className='text-muted' />
+                    <span className='text-center text-sm text-muted'>
                         Loading onboarding
                     </span>
                 </div>
             ) : (
-                <div className='flex flex-col gap-8 w-[min(100%,32rem)] max-[768px]:w-full'>
-                    <form className='flex flex-col gap-8 w-full' onSubmit={handleSubmit}>
-                        <div className='flex flex-col gap-4 text-center'>
-                            <h1 className='text-3xl font-semibold text-foreground'>
-                                Let&apos;s create a team for you!
-                            </h1>
-                            <p className='text-muted text-lg leading-[1.6] max-[768px]:text-base'>
-                                Invite other users to collaborate or join existing teams. You&apos;ll have the option to create new teams later.
-                            </p>
-                        </div>
+                <div className='flex w-full max-w-sm flex-col gap-8'>
+                    <header className='flex flex-col gap-2'>
+                        <h1 className='heading-reveal text-3xl font-semibold tracking-[-0.03em] text-foreground'>
+                            Let&apos;s create a team for you!
+                        </h1>
+                        <p className='text-base text-muted'>
+                            Invite other users to collaborate or join existing teams. You&apos;ll have the option to create new teams later.
+                        </p>
+                    </header>
 
-                        <div className='flex flex-col gap-4'>
-                            <FormFieldRHF
-                                label='Team name'
-                                placeholder='e.g., Research Lab'
-                                value={teamName}
-                                error={nameError}
-                                onChange={(event) => {
-                                    setTeamName(event.target.value);
-                                    if (nameError) {
-                                        setNameError(undefined);
-                                    }
-                                }}
-                            />
-                        </div>
+                    <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
+                        <FormFieldRHF
+                            label='Team name'
+                            placeholder='e.g., Research Lab'
+                            value={teamName}
+                            error={nameError}
+                            onChange={(event) => {
+                                setTeamName(event.target.value);
+                                if (nameError) {
+                                    setNameError(undefined);
+                                }
+                            }}
+                        />
 
                         <Button
                             variant='primary'
                             size='lg'
                             fullWidth
-                            className='rounded-full'
                             type='submit'
                             isPending={isSubmitting}
                         >
