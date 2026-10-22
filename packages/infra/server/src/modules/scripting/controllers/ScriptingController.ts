@@ -1,4 +1,5 @@
 import typia from 'typia';
+import express from 'express';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
 import { Body, schemaBody, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
@@ -7,9 +8,10 @@ import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { Resource } from '@core/constants/resources';
 import scriptingService from '@modules/scripting/services/ScriptingService';
 import scriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
+import notebookKernelService from '@modules/scripting/services/NotebookKernelService';
 import { clearJupyterProxyAccessCookie, setJupyterProxyAccessCookie } from '@modules/scripting/services/ScriptingJupyterProxySupport';
 import { scriptingRoutes } from '@volt/contracts/modules/scripting/routes';
-import { type ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
+import { NOTEBOOK_MEDIA_TYPE, type ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import type {
     CreateScriptingNotebookInput,
     UpdateScriptingNotebookInput,
@@ -18,6 +20,12 @@ import type {
 import BaseResponse from '@shared/http/responses/BaseResponse';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import type { Response } from 'express';
+
+// A notebook's document, with the images its outputs hold: larger than the JSON bodies of other requests.
+const notebookDocumentBody = express.json({
+    type: NOTEBOOK_MEDIA_TYPE,
+    limit: '64mb'
+});
 
 @Middleware(protect, teamScoped(Resource.SCRIPTING))
 export default class ScriptingController extends Controller {
@@ -62,6 +70,44 @@ export default class ScriptingController extends Controller {
             title: body.title,
             teamClusterId: body.teamClusterId,
             containerResources: body.containerResources
+        });
+    }
+
+    @Route(scriptingRoutes.getNotebook)
+    getNotebook(
+        @Param('teamId') teamId: string,
+        @Param('notebookId') notebookId: string
+    ) {
+        return scriptingService.getNotebook({
+            teamId,
+            notebookId
+        });
+    }
+
+    @Route(scriptingRoutes.saveNotebookContent)
+    @Middleware(notebookDocumentBody)
+    saveNotebookContent(
+        @Param('teamId') teamId: string,
+        @Param('notebookId') notebookId: string,
+        @Body() content: unknown
+    ) {
+        return scriptingService.saveNotebookContent({
+            teamId,
+            notebookId,
+            content
+        });
+    }
+
+    @Route(scriptingRoutes.createNotebookKernel)
+    createNotebookKernel(
+        @Param('teamId') teamId: string,
+        @Param('notebookId') notebookId: string,
+        @CurrentUser() userId: string
+    ) {
+        return notebookKernelService.createEnvironment({
+            teamId,
+            notebookId,
+            userId
         });
     }
 
