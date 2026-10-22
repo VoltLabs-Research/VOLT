@@ -1,5 +1,5 @@
 import { SECRET_KEY_CREATION_MODAL_ID } from '@/modules/team/contracts/modal-ids';
-import { Alert } from '@heroui/react';
+import { Alert, Checkbox, Label } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { resetModal } from '@/shared/ui/modal/use-modal-store';
 import { runAction } from '@/shared/ui/actions/run-action';
@@ -122,68 +122,64 @@ export const SecretKeyCreationModal = () => {
                 />
             }
         >
-            <div>
-                <form id={SECRET_KEY_CREATION_FORM_ID} onSubmit={handleFormSubmit}>
-                    <div className='flex flex-col gap-6'>
-                    {generatedKey ? (
-                        <>
-                            <Alert status='warning' role='alert' aria-live='polite'>
-                                <Alert.Content>
-                                    <Alert.Title>Copy this key now</Alert.Title>
-                                    <Alert.Description>
-                                        This is the only time you&apos;ll see this key. Copy and store it securely now — you won&apos;t be able to view it again after closing.
-                                    </Alert.Description>
-                                </Alert.Content>
-                            </Alert>
-                            <CopyableField
-                                value={generatedKey}
-                                successMessage='Secret key copied to clipboard'
-                            />
-                            <label className='flex flex-row items-center gap-3 cursor-pointer text-muted text-sm'>
-                                <input
-                                    type='checkbox'
-                                    checked={hasConfirmedCopy}
-                                    onChange={(event) => setHasConfirmedCopy(event.target.checked)}
-                                />
-                                <span>I copied or stored this secret key somewhere safe.</span>
-                            </label>
-                        </>
-                    ) : (
-                        <>
-                            <FormFieldRHF
-                                label='Key Name'
-                                placeholder='e.g., Production API Key'
-                                error={errors.name}
-                                value={name}
-                                onChange={(e) => {
-                                    setName(e.target.value);
-                                    if (errors.name) setErrors({
-                                        ...errors,
-                                        name: undefined
-                                    });
-                                }}
-                            />
-                            <FormFieldRHF
-                                fieldType='select'
-                                variant='inline'
-                                label='Role'
-                                options={roleOptions}
-                                placeholder={roleOptions.length ? 'Select a role...' : 'No roles for selected team'}
-                                error={errors.roleId}
-                                value={roleId}
-                                onChange={(e) => {
-                                    setRoleId(e.target.value);
-                                    if (errors.roleId) setErrors({
-                                        ...errors,
-                                        roleId: undefined
-                                    });
-                                }}
-                            />
-                        </>
-                    )}
-                    </div>
-                </form>
-            </div>
+            <form id={SECRET_KEY_CREATION_FORM_ID} onSubmit={handleFormSubmit} className='flex flex-col gap-5'>
+                {generatedKey ? (
+                    <>
+                        <Alert status='warning' role='alert' aria-live='polite'>
+                            <Alert.Content>
+                                <Alert.Title>Copy this key now</Alert.Title>
+                                <Alert.Description>
+                                    This is the only time you&apos;ll see this key. Copy and store it securely now — you won&apos;t be able to view it again after closing.
+                                </Alert.Description>
+                            </Alert.Content>
+                        </Alert>
+                        <CopyableField
+                            value={generatedKey}
+                            successMessage='Secret key copied to clipboard'
+                        />
+                        <Checkbox isSelected={hasConfirmedCopy} onChange={setHasConfirmedCopy}>
+                            <Checkbox.Control>
+                                <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <Checkbox.Content>
+                                <Label className='text-sm text-muted'>I copied or stored this secret key somewhere safe.</Label>
+                            </Checkbox.Content>
+                        </Checkbox>
+                    </>
+                ) : (
+                    <>
+                        <FormFieldRHF
+                            label='Key Name'
+                            placeholder='e.g., Production API Key'
+                            error={errors.name}
+                            value={name}
+                            onChange={(e) => {
+                                setName(e.target.value);
+                                if (errors.name) setErrors({
+                                    ...errors,
+                                    name: undefined
+                                });
+                            }}
+                        />
+                        <FormFieldRHF
+                            fieldType='select'
+                            variant='inline'
+                            label='Role'
+                            options={roleOptions}
+                            placeholder={roleOptions.length ? 'Select a role...' : 'No roles for selected team'}
+                            error={errors.roleId}
+                            value={roleId}
+                            onChange={(e) => {
+                                setRoleId(e.target.value);
+                                if (errors.roleId) setErrors({
+                                    ...errors,
+                                    roleId: undefined
+                                });
+                            }}
+                        />
+                    </>
+                )}
+            </form>
         </Modal>
     );
 };

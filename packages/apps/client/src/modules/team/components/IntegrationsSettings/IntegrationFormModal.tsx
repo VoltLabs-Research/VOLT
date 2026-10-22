@@ -100,7 +100,7 @@ const IntegrationFormModal = ({
             footer={(
                 <>
                     <Button
-                        variant='outline'
+                        variant='ghost'
                         onPress={() => closeModal(TEAM_AI_INTEGRATION_MODAL_ID)}
                         isDisabled={isSaving}
                     >
@@ -122,8 +122,8 @@ const IntegrationFormModal = ({
             <form id={TEAM_AI_INTEGRATION_FORM_ID} onSubmit={handleSubmit}>
                 <div className='flex flex-col gap-4'>
                     {!editingProvider ? (
-                        <div className='flex flex-col gap-2'>
-                            <label className='text-sm font-medium text-muted' id={providerLabelId}>Provider</label>
+                        <div className='flex flex-col gap-1.5'>
+                            <label className='text-base font-medium text-foreground' id={providerLabelId}>Provider</label>
                             <Select
                                 selectedKey={provider}
                                 onSelectionChange={handleProviderSelectionChange}
@@ -153,9 +153,9 @@ const IntegrationFormModal = ({
                             </Select>
                         </div>
                     ) : (
-                        <div className='flex flex-col gap-1'>
-                            <p className='text-xs text-muted'>Provider</p>
-                            <p className='text-base font-medium text-foreground'>
+                        <div className='flex flex-col gap-1.5'>
+                            <p className='text-base font-medium text-foreground'>Provider</p>
+                            <p className='text-base text-muted'>
                                 {integrationsByProvider.get(editingProvider)?.providerName || editingProvider}
                             </p>
                         </div>
@@ -195,8 +195,8 @@ const IntegrationFormModal = ({
                         onAddModel={handleAddModel}
                         onRemoveModel={handleRemoveModel}
                     />
-                    <div className='flex flex-col gap-2'>
-                        <label className='text-sm font-medium text-muted' id={defaultModelLabelId}>Default model</label>
+                    <div className='flex flex-col gap-1.5'>
+                        <label className='text-base font-medium text-foreground' id={defaultModelLabelId}>Default model</label>
                         <Select
                             selectedKey={draft.defaultModel}
                             onSelectionChange={handleDefaultModelSelectionChange}
@@ -225,8 +225,8 @@ const IntegrationFormModal = ({
                             </Select.Popover>
                         </Select>
                     </div>
-                    <div className='flex flex-row items-center justify-between gap-2 border-t border-border pt-3 mt-1'>
-                        <p className='text-sm text-muted' id={enabledLabelId}>Enabled</p>
+                    <div className='flex flex-row items-center justify-between gap-2 pt-1'>
+                        <p className='text-base font-medium text-foreground' id={enabledLabelId}>Enabled</p>
                         <Switch
                             isSelected={draft.isEnabled}
                             onChange={(isEnabled) => setDraft((current) => ({

@@ -5,6 +5,9 @@ import { Settings2, Trash2 } from 'lucide-react';
 import type { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { TeamAIIntegration } from '@volt/contracts/modules/team/domain';
 
+// 36px icon buttons, muted until hovered, like the rest of the chrome.
+const ROW_ICON_BUTTON_CLASS = 'rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground';
+
 interface ProviderListProps {
     integrations: TeamAIIntegration[];
     isLoading: boolean;
@@ -26,14 +29,11 @@ const ProviderList = ({
 }: ProviderListProps) => {
     if (isLoading) {
         return (
-            <div className='border-t border-border'>
+            <div className='flex flex-col gap-2'>
                 {Array.from({ length: 3 }).map((_, index) => (
-                    <div className='group flex flex-row items-center justify-between gap-4 border-b border-border py-3 min-h-14 transition-colors duration-[120ms] ease-out' key={index}>
-                        <Skeleton className='h-5 w-[100px] rounded-md' />
-                        <div className='flex flex-row items-center gap-1'>
-                            <Skeleton className='size-6 rounded-full' />
-                            <Skeleton className='size-6 rounded-full' />
-                        </div>
+                    <div className='flex flex-col gap-2 rounded-2xl bg-foreground/4 p-5' key={index}>
+                        <Skeleton className='h-4 w-24 rounded-full' />
+                        <Skeleton className='h-3.5 w-48 rounded-full' />
                     </div>
                 ))}
             </div>
@@ -63,36 +63,35 @@ const ProviderList = ({
     }
 
     return (
-        <div className='border-t border-border'>
+        <div className='flex flex-col gap-2'>
             {integrations.map((integration) => (
-                <div className='group flex flex-row items-center justify-between gap-4 border-b border-border py-3 min-h-14 transition-colors duration-[120ms] ease-out' key={integration.provider}>
-                    <div className='flex flex-col gap-1 min-w-0'>
-                        <p className='text-sm font-medium text-foreground'>
+                <div className='flex flex-row items-center justify-between gap-4 rounded-2xl bg-foreground/4 p-5' key={integration.provider}>
+                    <div className='flex flex-col gap-0.5 min-w-0'>
+                        <p className='text-base font-medium text-foreground'>
                             {integration.providerName}
                         </p>
-                        <p className='text-xs text-muted truncate' title={integration.defaultModel ?? 'No default model selected'}>
+                        <p className='text-sm text-muted truncate' title={integration.defaultModel ?? 'No default model selected'}>
                             {integration.defaultModel
                                 ? `Default model: ${integration.defaultModel}`
                                 : 'No default model selected'}
                         </p>
                     </div>
-                    <div className='flex flex-row items-center gap-1 opacity-75 transition-opacity duration-[120ms] group-hover:opacity-100 max-[640px]:opacity-100'>
+                    <div className='flex flex-row items-center gap-1'>
                         <Button
                             isIconOnly
-                            size='sm'
                             variant='ghost'
+                            className={ROW_ICON_BUTTON_CLASS}
                             onPress={() => onConfigure(integration)}
                             aria-label={`Configure ${integration.providerName}`}
                         >
                             <span className='flex items-center justify-center' title={`Configure ${integration.providerName}`}>
-                                <Settings2 size={14} aria-hidden='true' />
+                                <Settings2 size={16} aria-hidden='true' />
                             </span>
                         </Button>
                         <Button
                             isIconOnly
-                            size='sm'
                             variant='ghost'
-                            className='text-danger'
+                            className={ROW_ICON_BUTTON_CLASS}
                             onPress={() => onRemove(integration.provider)}
                             isPending={busyProvider === integration.provider}
                             aria-label={`Remove ${integration.providerName}`}
@@ -100,7 +99,7 @@ const ProviderList = ({
                             <span className='flex items-center justify-center' title={`Remove ${integration.providerName}`}>
                                 {busyProvider === integration.provider
                                     ? <Loader size='sm' color='current' />
-                                    : <Trash2 size={14} aria-hidden='true' />}
+                                    : <Trash2 size={16} aria-hidden='true' />}
                             </span>
                         </Button>
                     </div>

@@ -14,7 +14,7 @@ import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import useListingActions from '@/shared/ui/hooks/use-listing-actions';
 import useTip from '@/shared/tips/use-tip';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import { ChartColumn, ChartLine, Copy, Key, ShieldCheck } from 'lucide-react';
+import { ChartColumn, ChartLine, Copy, ShieldCheck } from 'lucide-react';
 import { useCallback } from 'react';
 import type { SecretKey } from '@volt/contracts/modules/team/domain';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
@@ -44,7 +44,7 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
     {
         key: 'name',
         title: 'Name',
-        render: (_value, key) => key.name,
+        render: (_value, key) => <span className='font-medium text-foreground'>{key.name}</span>,
         skeleton: {
             variant: 'text',
             width: 120
@@ -54,8 +54,7 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
         key: 'keyPrefix',
         title: 'Prefix',
         render: (_value, key) => (
-
-            <Chip color='default' variant='soft' size='sm' className='rounded-lg font-mono'>
+            <Chip color='default' variant='soft' size='sm' className='font-mono'>
                 <Chip.Label>{key.keyPrefix}...</Chip.Label>
             </Chip>
         ),
@@ -195,9 +194,7 @@ export default function SecretKeysListing() {
                     handleOpenSecretKey(secretKey._id);
                     return true;
                 }}
-                emptyTitle='No secret keys found'
                 emptyMessage='Create a secret key to authenticate your applications.'
-                emptyIcon={<Key size={32} />}
                 emptyButtonText='Create new'
                 onEmptyButtonClick={handleCreateKey}
                 createNew={canCreate ? {

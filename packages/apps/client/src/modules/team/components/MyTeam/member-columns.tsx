@@ -1,6 +1,7 @@
 import { Chip, ListBox, Select } from '@heroui/react';
 import ListingUserCell from '@/shared/ui/components/ListingUserCell';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
+import StatusPill from '@/shared/ui/components/StatusPill';
 import { resolveTeamUserOnline } from '@/modules/team/utils/member/presence';
 import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { formatDuration } from '@/shared/utils/format';
@@ -107,18 +108,12 @@ export const createTeamMemberColumns = ({
             const lastSeenAt = member.user.lastSeenAt ? new Date(member.user.lastSeenAt) : null;
 
             if (resolveTeamUserOnline(member.user, onlineUserIds, hasPresenceSnapshot)) {
-                return (
-                    <Chip color='success' variant='soft' size='sm'>
-                        <Chip.Label>Online</Chip.Label>
-                    </Chip>
-                );
+                return <StatusPill status='online' />;
             }
 
             return (
-                <div className='flex flex-col'>
-                    <Chip color='default' variant='soft' size='sm'>
-                        <Chip.Label>Offline</Chip.Label>
-                    </Chip>
+                <div className='flex flex-col items-start gap-1'>
+                    <StatusPill status='offline' />
                     <span className='text-sm text-muted'>
                         {lastSeenAt
                             ? `Seen ${formatDistanceToNow(lastSeenAt)} ago`

@@ -103,22 +103,18 @@ export default function MyTeamTemplate() {
     }), [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot, timeSpentByUser]);
 
     return (
-        <div className='h-full my-team-page'>
+        <div className='h-full'>
             <DocumentListing<TeamMemberStats>
-                title={(
-                    <div className='flex flex-row items-center gap-4'>
-                        {canInvite ? (
-                            <EditableTag
-                                as='h1'
-                                className='text-3xl font-medium sm:font-size-4 text-foreground'
-                                onSave={handleSaveTeamName}
-                            >
-                                {selectedTeam.name}
-                            </EditableTag>
-                        ) : (
-                            <h1 className='text-base font-medium text-foreground text-3xl sm:font-size-4'>{selectedTeam.name}</h1>
-                        )}
-                    </div>
+                title={canInvite ? (
+                    <EditableTag
+                        as='h1'
+                        className='text-2xl font-semibold tracking-[-0.01em] text-foreground'
+                        onSave={handleSaveTeamName}
+                    >
+                        {selectedTeam.name}
+                    </EditableTag>
+                ) : (
+                    <h1 className='text-2xl font-semibold tracking-[-0.01em] text-foreground'>{selectedTeam.name}</h1>
                 )}
                 queryKey={queryKey}
                 columns={columns}

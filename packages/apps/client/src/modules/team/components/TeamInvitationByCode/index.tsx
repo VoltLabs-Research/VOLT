@@ -1,9 +1,10 @@
-import Loader from '@/shared/ui/components/Loader';
-import { Button, Chip } from '@heroui/react';
+import { Button } from '@heroui/react';
 import {
+    TeamInvitationActions,
     TeamInvitationCard,
     TeamInvitationDetailItem,
     TeamInvitationDetails,
+    TeamInvitationHeading,
     TeamInvitationStateCard
 } from '@/modules/team/components/TeamInvitationShared';
 import {
@@ -16,7 +17,6 @@ import { useJoinByCodeMutation, usePreviewJoinByCodeQuery } from '@/modules/team
 import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
-import { AlertCircle, CheckCircle, ShieldCheck, Users, XCircle } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 
@@ -102,11 +102,6 @@ const TeamInvitationByCodeTemplate = () => {
 
         return (
             <TeamInvitationStateCard
-                icon={(
-                    <div className='flex size-16 items-center justify-center rounded-full text-accent bg-accent/10'>
-                        <Loader size='lg' color='current' />
-                    </div>
-                )}
                 title={isJoining ? 'Joining team...' : 'Reviewing invite...'}
                 description={isJoining
                     ? 'We are confirming your membership and preparing your workspace.'
@@ -118,25 +113,22 @@ const TeamInvitationByCodeTemplate = () => {
     if (isAlreadyMember) {
         return (
             <TeamInvitationCard>
-                <Chip color='success' variant='soft' size='md'>
-                    <Users size={20} aria-hidden='true' />
-                    <Chip.Label>Already joined</Chip.Label>
-                </Chip>
-                <h3 className='text-xl font-semibold text-foreground'>You are already in this team</h3>
+                <TeamInvitationHeading
+                    title='You are already in this team'
+                    description={joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
+                />
                 {preview && (
                     <TeamInvitationDetails>
                         <TeamInvitationDetailItem label='Team' value={preview.teamName} />
                         <TeamInvitationDetailItem label='Owner' value={preview.ownerName} />
                     </TeamInvitationDetails>
                 )}
-                <p className='text-muted'>
-                    {joinErrorMessage || 'You already have access to this team. Continue to your dashboard when you are ready.'}
-                </p>
                 <Button
                     variant='primary'
+                    size='sm'
+                    className='self-start'
                     onPress={handleNavigateToNextDestination}
                 >
-                    <CheckCircle size={18} aria-hidden='true' />
                     Go to Dashboard
                 </Button>
             </TeamInvitationCard>
@@ -146,58 +138,46 @@ const TeamInvitationByCodeTemplate = () => {
     if (hasError) {
         return (
             <TeamInvitationStateCard
-                icon={(
-                    <div className='text-danger'>
-                        <XCircle size={48} />
-                    </div>
-                )}
                 title='Could not join this team'
-                description={joinErrorMessage || previewErrorMessage || 'This invite link is invalid or has expired.'}
+                description={`${joinErrorMessage || previewErrorMessage || 'This invite link is invalid or has expired.'} Please ask for a new invite link or try again later.`}
                 action={(
                     <Button
                         variant='primary'
+                        size='sm'
                         onPress={handleNavigateToNextDestination}
                     >
                         Back to Dashboard
                     </Button>
                 )}
-            >
-                <Chip color='danger' variant='soft' size='md'>
-                    <AlertCircle size={16} aria-hidden='true' />
-                    <Chip.Label>Please ask for a new invite link or try again later.</Chip.Label>
-                </Chip>
-            </TeamInvitationStateCard>
+            />
         );
     }
 
     return (
         <TeamInvitationCard>
-            <div className='flex size-16 items-center justify-center rounded-full text-success bg-success-soft'>
-                <ShieldCheck size={40} />
-            </div>
-            <h3 className='text-xl font-semibold text-foreground'>Join this team?</h3>
-            <p className='text-muted'>
-                Review the invite details below, then confirm to join this workspace.
-            </p>
+            <TeamInvitationHeading
+                title='Join this team?'
+                description='Review the invite details below, then confirm to join this workspace.'
+            />
             {preview && (
                 <TeamInvitationDetails>
                     <TeamInvitationDetailItem label='Team' value={preview.teamName} />
                     <TeamInvitationDetailItem label='Owner' value={preview.ownerName} />
-                    <TeamInvitationDetailItem label='Invite code' value={normalizedCode} />
+                    <TeamInvitationDetailItem label='Invite code' value={normalizedCode} valueClassName='font-mono tracking-[0.18em]' />
                 </TeamInvitationDetails>
             )}
-            <div className='flex flex-row items-center gap-3 mt-4'>
-                <Button variant='ghost' onPress={handleNavigateToNextDestination}>
+            <TeamInvitationActions>
+                <Button variant='secondary' fullWidth onPress={handleNavigateToNextDestination}>
                     Cancel
                 </Button>
                 <Button
                     variant='primary'
+                    fullWidth
                     onPress={handleJoinTeam}
                 >
-                    <CheckCircle size={18} aria-hidden='true' />
                     Join Team
                 </Button>
-            </div>
+            </TeamInvitationActions>
         </TeamInvitationCard>
     );
 };

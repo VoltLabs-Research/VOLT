@@ -1,3 +1,5 @@
+import Loader from '@/shared/ui/components/Loader';
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 type TeamInvitationCardProps = {
@@ -5,11 +7,15 @@ type TeamInvitationCardProps = {
 };
 
 type TeamInvitationStateCardProps = {
-    icon?: ReactNode;
     title: ReactNode;
     description?: ReactNode;
-    children?: ReactNode;
     action?: ReactNode;
+};
+
+type TeamInvitationHeadingProps = {
+    eyebrow?: ReactNode;
+    title: ReactNode;
+    description?: ReactNode;
 };
 
 type TeamInvitationDetailsProps = {
@@ -19,53 +25,76 @@ type TeamInvitationDetailsProps = {
 type TeamInvitationDetailItemProps = {
     label: ReactNode;
     value: ReactNode;
+    valueClassName?: string;
 };
 
+type TeamInvitationActionsProps = {
+    children: ReactNode;
+};
+
+// A plain column on the page: no card, no glyph, no box around the details.
 export const TeamInvitationCard = ({ children }: TeamInvitationCardProps) => {
     return (
-        <div className='flex flex-col items-center justify-center w-full h-dvh bg-background'>
-            <div className='flex flex-col items-center gap-6 rounded-xl text-center max-w-[480px] p-10'>
+        <div className='flex items-center justify-center w-full min-h-dvh bg-background px-4 py-18'>
+            <div className='flex flex-col gap-7 w-full max-w-md'>
                 {children}
             </div>
         </div>
     );
 };
 
+export const TeamInvitationHeading = ({ eyebrow, title, description }: TeamInvitationHeadingProps) => {
+    return (
+        <div className='flex flex-col gap-2'>
+            {eyebrow && <p className='text-sm text-muted'>{eyebrow}</p>}
+            <h1 className='text-2xl font-semibold tracking-tight text-balance text-foreground'>{title}</h1>
+            {description && <p className='text-sm text-muted'>{description}</p>}
+        </div>
+    );
+};
+
 export const TeamInvitationStateCard = ({
-    icon,
     title,
     description,
-    children,
     action
 }: TeamInvitationStateCardProps) => {
     return (
         <TeamInvitationCard>
-            {icon}
-            <h3 className='text-xl font-semibold text-foreground'>{title}</h3>
-            {description && (
-                <p className='text-muted'>
-                    {description}
-                </p>
-            )}
-            {children}
-            {action}
+            <TeamInvitationHeading title={title} description={description} />
+            {action && <div className='self-start'>{action}</div>}
         </TeamInvitationCard>
+    );
+};
+
+export const TeamInvitationLoader = () => {
+    return (
+        <div className='flex items-center justify-center w-full min-h-dvh bg-background'>
+            <Loader aria-label='Loading invitation' />
+        </div>
     );
 };
 
 export const TeamInvitationDetails = ({ children }: TeamInvitationDetailsProps) => {
     return (
-        <div className='flex flex-row items-start flex-wrap gap-4 rounded-xl p-4 bg-surface-tertiary w-full'>
+        <dl className='grid gap-2 text-base'>
             {children}
+        </dl>
+    );
+};
+
+export const TeamInvitationDetailItem = ({ label, value, valueClassName }: TeamInvitationDetailItemProps) => {
+    return (
+        <div className='grid grid-cols-[6rem_minmax(0,1fr)] gap-4'>
+            <dt className='text-muted'>{label}</dt>
+            <dd className={cn('text-foreground wrap-anywhere', valueClassName)}>{value}</dd>
         </div>
     );
 };
 
-export const TeamInvitationDetailItem = ({ label, value }: TeamInvitationDetailItemProps) => {
+export const TeamInvitationActions = ({ children }: TeamInvitationActionsProps) => {
     return (
-        <div className='flex flex-col flex-1 min-w-[100px]'>
-            <span className='block text-xs text-muted mb-1'>{label}</span>
-            <span className='text-sm text-muted justify-center'>{value}</span>
+        <div className='grid grid-cols-1 gap-2 min-[30rem]:grid-cols-2'>
+            {children}
         </div>
     );
 };
