@@ -2,7 +2,7 @@ import { CLUSTER_QUEUE_CONCURRENCY_MODAL_ID } from '@/modules/cluster/contracts/
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
-import { Disclosure } from '@heroui/react';
+import { Disclosure, Input } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
@@ -275,24 +275,24 @@ const ClusterQueueConcurrencyModal = ({ teamCluster, onSave }: ClusterQueueConcu
                                     <table className='w-full border-collapse'>
                                         <thead>
                                             <tr>
-                                                <th scope='col' className='text-left px-4 py-2.5 text-2xs font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Queue</th>
-                                                <th scope='col' className='text-left px-4 py-2.5 text-2xs font-medium text-muted uppercase tracking-[0.06em] border-b border-border whitespace-nowrap'>Max / trajectory</th>
+                                                <th scope='col' className='text-left ps-0 pe-4 py-2.5 text-2xs font-medium text-muted uppercase tracking-[0.06em] border-b border-separator whitespace-nowrap'>Queue</th>
+                                                <th scope='col' className='text-left px-4 py-2.5 text-2xs font-medium text-muted uppercase tracking-[0.06em] border-b border-separator whitespace-nowrap'>Max / trajectory</th>
                                             </tr>
                                         </thead>
                                         <tbody className='[&_tr:last-child_td]:border-b-0'>
                                             {QUEUE_SCOPE_FIELDS.map((row) => (
-                                                <tr className='hover:bg-surface-hover' key={row.key}>
-                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-sm'>
-                                                        <span className='text-xs font-medium'>{row.label}</span>
+                                                <tr key={row.key}>
+                                                    <td className='ps-0 pe-4 py-2.5 border-b border-separator text-foreground text-sm font-medium'>
+                                                        {row.label}
                                                     </td>
-                                                    <td className='px-4 py-2.5 border-b border-border text-foreground text-sm'>
-                                                        <input
+                                                    <td className='px-4 py-2.5 border-b border-separator text-foreground text-sm'>
+                                                        <Input
                                                             type='number'
                                                             min={MIN_SCOPE_LIMIT}
                                                             step={1}
                                                             inputMode='numeric'
                                                             aria-label={`${row.label} max per trajectory`}
-                                                            className='w-20 min-w-0 px-3 py-1.5 border border-border rounded-lg bg-transparent text-foreground text-sm placeholder:text-muted focus:border-accent'
+                                                            className='w-20 min-w-0 tabular-nums'
                                                             value={scopeValues[row.key].maxRunningPerTrajectory}
                                                             onChange={(e) => handleScopeFieldChange(row.key, e.target.value)}
                                                         />

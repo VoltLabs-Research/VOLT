@@ -10,8 +10,9 @@ import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/module
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import OnboardingLayout from '@/modules/onboarding/components/templates/OnboardingLayout';
 import ClusterStatusDot from '@/modules/cluster/components/shared/ClusterStatusDot';
-import { Button, buttonVariants } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import { closeModal, openModal, useModalPayload } from '@/shared/ui/modal/use-modal-store';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
@@ -167,30 +168,6 @@ const ClusterOnboardingPage = () => {
     const statusLabel = liveCluster ? getTeamClusterStatusLabel(liveCluster.status) : 'Waiting for connection';
     const successMessage = connectedClusterName ? `${connectedClusterName} connected!` : 'Cluster connected!';
 
-    const leftSlot = hasConnectedCluster ? (
-        <nav className='flex items-center gap-1' aria-label='Cluster onboarding breadcrumbs'>
-            <Link
-                to='/dashboard'
-                className={buttonVariants({
-                    variant: 'ghost',
-                    size: 'sm',
-                    className: 'px-0 text-sm'
-                })}
-            >
-                Dashboard
-            </Link>
-            <ChevronRight size={14} className='shrink-0 text-muted' />
-            <p className='text-sm text-muted' aria-current='page'>Add new cluster</p>
-        </nav>
-    ) : undefined;
-
-    const overlay = clusters.length > 0 ? (
-        <ClusterListPanel
-            clusters={clusters}
-            onDelete={handlePanelDelete}
-        />
-    ) : null;
-
     if (step === ClusterOnboardingStep.Success) {
         return (
             <OnboardingLayout
@@ -198,11 +175,11 @@ const ClusterOnboardingPage = () => {
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
             >
-                <div className='flex flex-col items-center justify-center gap-4 h-full min-h-0' role='status' aria-live='polite' aria-atomic='true'>
-                    <h1 className='text-center text-[clamp(2.25rem,5vw,3rem)] font-semibold text-foreground animate-in fade-in-0 slide-in-from-bottom-3 duration-400 ease-out'>
+                <div className='flex w-full max-w-md flex-col gap-2' role='status' aria-live='polite' aria-atomic='true'>
+                    <h1 className='text-3xl font-semibold tracking-tight text-foreground animate-in fade-in-0 slide-in-from-bottom-3 duration-400 ease-out'>
                         {successMessage}
                     </h1>
-                    <p className='text-muted'>
+                    <p className='text-base text-muted'>
                         Redirecting you to your workspace.
                     </p>
                 </div>
@@ -212,54 +189,62 @@ const ClusterOnboardingPage = () => {
 
     return (
         <OnboardingLayout
-            leftSlot={leftSlot}
             onSettingsClick={handleSettingsClick}
             onSignOut={handleSignOut}
             isSigningOut={isSigningOut}
-            overlay={overlay}
         >
             <>
-                <div className='relative flex items-center justify-center w-[min(100%,560px)] h-full min-h-0 max-h-full px-4 py-8 max-md:px-0 max-md:pt-4 max-md:pb-0'>
-                    <div className='flex flex-col items-center w-full gap-6'>
-                        <form className='w-full flex flex-col gap-6 items-center' onSubmit={handleSubmit}>
-                            <div className='flex flex-col items-center gap-3'>
-                                <h3 className='text-2xl font-semibold text-foreground text-center'>
-                                    Let's name your cluster
-                                </h3>
-                            </div>
-                            <div className='w-full'>
-                                <FormFieldRHF
-                                    label='Cluster name'
-                                    className='rounded-full'
-                                    placeholder='e.g., Research Lab Cluster'
-                                    value={name}
-                                    error={error}
-                                    onChange={(event) => {
-                                        setName(event.target.value);
-                                        if (error) {
-                                            setError(undefined);
-                                        }
-                                    }}
-                                />
-                            </div>
+                <Scrollable className='w-full max-w-md min-h-0 max-h-full'>
+                    <div className='flex flex-col gap-8 py-8 max-md:pt-4'>
+                        <div className='flex flex-col gap-3'>
+                            {hasConnectedCluster && (
+                                <nav className='flex flex-wrap items-center gap-1 text-sm text-muted' aria-label='Cluster onboarding breadcrumbs'>
+                                    <Link to='/dashboard' className='transition-colors hover:text-foreground'>
+                                        Dashboard
+                                    </Link>
+                                    <ChevronRight size={14} className='shrink-0' aria-hidden='true' />
+                                    <span className='text-foreground' aria-current='page'>Add new cluster</span>
+                                </nav>
+                            )}
+                            <h1 className='text-3xl font-semibold tracking-tight text-foreground'>
+                                Let's name your cluster
+                            </h1>
+                        </div>
+                        <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
+                            <FormFieldRHF
+                                label='Cluster name'
+                                placeholder='e.g., Research Lab Cluster'
+                                value={name}
+                                error={error}
+                                onChange={(event) => {
+                                    setName(event.target.value);
+                                    if (error) {
+                                        setError(undefined);
+                                    }
+                                }}
+                            />
                             <Button
-                                className='min-w-[200px] rounded-full max-sm:w-full max-sm:min-w-0'
                                 variant='primary'
                                 size='lg'
                                 type='submit'
+                                fullWidth
                                 isPending={isSubmitting}
                             >
                                 Continue
                             </Button>
                         </form>
+                        <ClusterListPanel
+                            clusters={clusters}
+                            onDelete={handlePanelDelete}
+                        />
                     </div>
-                </div>
+                </Scrollable>
                 <Modal
                     id={INSTALL_MODAL_ID}
                     title='Copy & Paste on your cluster host'
                     description='This command installs the Volt Cluster Daemon, enabling Volt servers to communicate with the machine and use it as a compute resource.'
                 >
-                    <div className='flex flex-col gap-4 p-4'>
+                    <div className='flex flex-col gap-4'>
                         <ClusterInstallCommandPicker
                             clusterId={createdCluster?._id ?? null}
                             enrollmentToken={enrollmentToken}
@@ -274,7 +259,6 @@ const ClusterOnboardingPage = () => {
                                 onRetry={handleRetryWait}
                             />
                         ) : (
-
                             <div className='flex flex-row items-center flex-wrap gap-x-3 gap-y-2' role='status' aria-live='polite' aria-atomic='true'>
                                 <div className='flex flex-row items-center gap-2'>
                                     <ClusterStatusDot

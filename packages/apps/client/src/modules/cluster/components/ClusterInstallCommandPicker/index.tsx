@@ -29,7 +29,6 @@ const ClusterInstallCommandPicker = ({
     }, [activePlatform, clusterId, enrollmentToken]);
 
     return (
-
         <div className='flex w-full min-w-0 flex-col gap-3'>
             <ToggleButtonGroup
                 aria-label='Cluster host operating system'
@@ -46,7 +45,7 @@ const ClusterInstallCommandPicker = ({
                     }
                 }}
                 size='sm'
-                fullWidth
+                className='self-start'
             >
                 {CLUSTER_INSTALL_PLATFORM_OPTIONS.map((option) => (
                     <ToggleButton key={option.id} id={option.id}>

@@ -120,7 +120,7 @@ const ClusterTransferModal = ({
         <Modal id={CLUSTER_TRANSFER_MODAL_ID} title={`Transfer cluster data for ${teamCluster?.name ?? 'cluster'}`} description='Queue storage transfer jobs from this cluster to another storage-capable cluster. The transfer always moves authoritative object store data and purges the source daemon listing tables after verify and switch complete.' footer={footer} onClose={handleClose}>
             <div className='flex flex-col gap-4'>
                 <div className='flex flex-col gap-2'>
-                    <h3 className='text-sm font-medium text-muted'>Destination cluster</h3>
+                    <h3 className='text-base font-medium text-foreground'>Destination cluster</h3>
                     <p className='text-sm text-muted'>
                         Volt creates one transfer job per authoritative placement currently owned by the source cluster.
                     </p>
@@ -140,28 +140,28 @@ const ClusterTransferModal = ({
                         isDisabled={isSubmitting}
                     />
                 ) : (
-                    <p className='text-sm text-warning'>
+                    <p className='text-sm text-warning-soft-foreground'>
                         No connected destination clusters can currently accept storage writes.
                     </p>
                 )}
-                <div className='flex flex-col gap-2 p-4 rounded-xl bg-background'>
+                <div className='flex flex-col gap-2 p-4 rounded-xl bg-foreground/4'>
                     <p className='text-xs text-muted'>
                         Source cluster must stay connected during copy and verify. After the destination becomes authoritative, Volt removes the source objects and purges the related daemon listing tables automatically.
                     </p>
                 </div>
                 {queuedMessage && (
-                    <p className='text-sm text-success'>{queuedMessage}</p>
+                    <p className='text-sm text-success-soft-foreground'>{queuedMessage}</p>
                 )}
                 {error && (
                     <p className='text-sm text-danger'>{error}</p>
                 )}
                 <div className='flex flex-col gap-3'>
-                    <h3 className='text-sm font-medium text-muted'>Recent transfer jobs</h3>
+                    <h3 className='text-base font-medium text-foreground'>Recent transfer jobs</h3>
                     {transferJobsQuery.isLoading ? (
                         <p className='text-xs text-muted'>Loading transfer jobs...</p>
                     ) : transferJobs.length > 0 ? (
                         transferJobs.map((job) => (
-                            <div className='flex flex-col gap-2 p-4 rounded-xl bg-background' key={job._id}>
+                            <div className='flex flex-col gap-2 p-4 rounded-xl bg-foreground/4' key={job._id}>
                                 <div className='flex flex-row items-center flex-wrap gap-2'>
                                     <ClusterStatusBadge tone={getClusterTransferJobStateBadgeVariant(job.state)}>
                                         {getClusterTransferJobStateLabel(job.state)}

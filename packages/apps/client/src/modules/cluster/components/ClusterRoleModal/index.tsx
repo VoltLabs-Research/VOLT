@@ -3,13 +3,12 @@ import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import ClusterModalActionFooter from '@/modules/cluster/components/shared/ClusterModalActionFooter';
 import ClusterOptionSelect from '@/modules/cluster/components/shared/ClusterOptionSelect';
-import ClusterStatusBadge from '@/modules/cluster/components/shared/ClusterStatusBadge';
+import { Chip } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
 import {
     describeTeamClusterDraining,
-    getTeamClusterRoleBadgeVariant,
     getTeamClusterRoleDescription,
     getTeamClusterRoleLabel,
     getTeamClusterRoleSummary,
@@ -25,7 +24,6 @@ interface ClusterRoleModalProps {
     teamCluster: TeamCluster | null;
     onSave: (role: TeamClusterRole) => Promise<UpdateTeamClusterRoleResponse>;
 }
-
 
 const ClusterRoleModal = ({ teamCluster, onSave }: ClusterRoleModalProps) => {
     const [selectedRole, setSelectedRole] = useState<TeamClusterRole>('cluster');
@@ -84,23 +82,23 @@ const ClusterRoleModal = ({ teamCluster, onSave }: ClusterRoleModalProps) => {
         <Modal id={CLUSTER_ROLE_MODAL_ID} title={`Runtime role for ${clusterName}`} description='Control whether this cluster behaves as a combined node, storage authority, or compute-only worker.' footer={footer} onClose={handleClose}>
             <div className='flex flex-col gap-4'>
                 <div className='flex flex-col gap-2'>
-                    <h3 className='text-sm font-medium text-muted'>Cluster scheduling role</h3>
+                    <h3 className='text-base font-medium text-foreground'>Cluster scheduling role</h3>
                     <p className='text-sm text-muted'>{saveMessage}</p>
                 </div>
                 {teamCluster && (
-                    <div className='flex flex-col gap-3 p-4 rounded-xl bg-background'>
+                    <div className='flex flex-col gap-3 p-4 rounded-xl bg-foreground/4'>
                         <div className='flex flex-row items-center flex-wrap gap-2'>
                             <p className='text-xs text-muted'>Desired</p>
-                            <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.desiredRole)}>
-                                {getTeamClusterRoleLabel(teamCluster.roleConfig.desiredRole)}
-                            </ClusterStatusBadge>
+                            <Chip color='default' variant='soft' size='sm'>
+                                <Chip.Label>{getTeamClusterRoleLabel(teamCluster.roleConfig.desiredRole)}</Chip.Label>
+                            </Chip>
                             <p className='text-xs text-muted'>Effective</p>
-                            <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(teamCluster.roleConfig.effectiveRole)}>
-                                {getTeamClusterRoleLabel(teamCluster.roleConfig.effectiveRole)}
-                            </ClusterStatusBadge>
+                            <Chip color='default' variant='soft' size='sm'>
+                                <Chip.Label>{getTeamClusterRoleLabel(teamCluster.roleConfig.effectiveRole)}</Chip.Label>
+                            </Chip>
                         </div>
                         {isTransitionPending && (
-                            <p className='text-xs text-warning'>
+                            <p className='text-xs text-warning-soft-foreground'>
                                 {drainingSummary
                                     ? `${drainingSummary}. Effective role is still converging.`
                                     : 'The daemon is still converging to the desired role.'}
@@ -125,12 +123,12 @@ const ClusterRoleModal = ({ teamCluster, onSave }: ClusterRoleModalProps) => {
                     placeholder='Select a role...'
                     isDisabled={isSubmitting}
                 />
-                <div className='flex flex-col gap-2 p-4 rounded-xl bg-background'>
+                <div className='flex flex-col gap-2 p-4 rounded-xl bg-foreground/4'>
                     <div className='flex flex-row items-center flex-wrap gap-2'>
                         <p className='text-xs text-muted'>Selected role</p>
-                        <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(selectedRole)}>
-                            {getTeamClusterRoleLabel(selectedRole)}
-                        </ClusterStatusBadge>
+                        <Chip color='default' variant='soft' size='sm'>
+                            <Chip.Label>{getTeamClusterRoleLabel(selectedRole)}</Chip.Label>
+                        </Chip>
                     </div>
                     <p className='text-sm text-muted'>
                         {getTeamClusterRoleDescription(selectedRole)}

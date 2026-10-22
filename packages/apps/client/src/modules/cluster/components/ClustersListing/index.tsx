@@ -1,5 +1,5 @@
 import { CLUSTER_INSTALL_COMMAND_MODAL_ID, CLUSTER_QUEUE_CONCURRENCY_MODAL_ID, CLUSTER_ROLE_MODAL_ID, CLUSTER_TRANSFER_MODAL_ID, DELETE_CLUSTER_MODAL_ID } from '@/modules/cluster/contracts/modal-ids';
-import { buttonVariants, cn } from '@heroui/react';
+import { Chip, cn } from '@heroui/react';
 import ClusterQueueConcurrencyModal from '@/modules/cluster/components/ClusterQueueConcurrencyModal';
 import ClusterRoleModal from '@/modules/cluster/components/ClusterRoleModal';
 import ClusterTransferModal from '@/modules/cluster/components/ClusterTransferModal';
@@ -15,7 +15,6 @@ import { formatClusterTimestamp } from '@/modules/cluster/utils/format-cluster-t
 import { getTeamClusterStatusLabel, getTeamClusterStatusVariant } from '@/modules/cluster/utils/team-cluster-status';
 import {
     describeTeamClusterDraining,
-    getTeamClusterRoleBadgeVariant,
     getTeamClusterRoleLabel,
     getTeamClusterRoleSummary,
     isTeamClusterRoleTransitionPending
@@ -32,34 +31,39 @@ import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentLi
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuOption } from '@/shared/contracts/menu';
 import type { ServerRow } from '@/modules/cluster/utils/transform-cluster-row';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
+const METER_BAR_HEIGHTS = ['h-[30%]', 'h-[47%]', 'h-[64%]', 'h-[82%]', 'h-full'];
+
+// Five rising bars, lit up to the share in use; the lit ones warn from 60% and turn red from 80%.
 const renderMetricBars = (percentage: number, label: string): ReactNode => {
-    const activeBars = Math.floor(percentage / 20);
+    const activeBars = Math.max(1, Math.round(percentage / 20));
+    const activeTone = percentage >= 80 ? 'bg-danger' : percentage >= 60 ? 'bg-warning' : 'bg-foreground';
+
     return (
         <div className='flex flex-row items-center gap-2'>
-            <div className='flex gap-0.5'>
-                {[0, 1, 2, 3, 4].map((i) => (
-                    <div key={i} className={cn('w-[4px] h-5 rounded-md transition-colors duration-200 ease-out', i < activeBars ? 'bg-accent' : 'bg-border')} />
+            <div className='flex h-3.5 items-end gap-0.5' aria-hidden='true'>
+                {METER_BAR_HEIGHTS.map((height, i) => (
+                    <div key={height} className={cn('w-[3px] rounded-sm', height, i < activeBars ? activeTone : 'bg-foreground/15')} />
                 ))}
             </div>
-            <p className='text-xs text-muted'>{label}</p>
+            <span className='tabular-nums text-foreground'>{label}</span>
         </div>
     );
 };
 
 const renderMetricValue = (value: number | null): ReactNode => {
     return value === null
-        ? <p className='text-xs text-muted'>--</p>
+        ? <span className='text-muted'>—</span>
         : renderMetricBars(value, `${value}%`);
 };
 
 const renderDiskValue = (row: ServerRow): ReactNode => {
     if (row.diskUsagePercent === null || row.diskFree === null) {
-        return <p className='text-xs text-muted'>--</p>;
+        return <span className='text-muted'>—</span>;
     }
 
-    return renderMetricBars(row.diskUsagePercent, `${row.diskFree.toFixed(1)}GB Available`);
+    return renderMetricBars(row.diskUsagePercent, `${row.diskFree.toFixed(1)} GB Available`);
 };
 
 const createMetricColumn = (key: 'cpu' | 'memory', title: string): ColumnConfig<ServerRow> => ({
@@ -76,11 +80,7 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         title: 'Cluster',
         sortable: true,
         width: 240,
-        render: (_, row) => (
-            <div className='flex flex-row items-center gap-2'>
-                <p className='text-sm font-medium text-foreground'>{row.name}</p>
-            </div>
-        )
+        render: (_, row) => <span className='font-medium text-foreground'>{row.name}</span>
     },
     {
         key: 'lifecycleStatus',
@@ -103,11 +103,11 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
             const drainingSummary = describeTeamClusterDraining(row.teamCluster);
 
             return (
-                <div className='flex flex-col gap-1'>
-                    <ClusterStatusBadge tone={getTeamClusterRoleBadgeVariant(row.desiredRole)}>
-                        {getTeamClusterRoleLabel(row.desiredRole)}
-                    </ClusterStatusBadge>
-                    <p className={cn('text-xs', isTransitionPending ? 'text-warning' : 'text-muted')}>
+                <div className='flex flex-row flex-wrap items-center gap-x-2 gap-y-1'>
+                    <Chip color='default' variant='soft' size='sm'>
+                        <Chip.Label>{getTeamClusterRoleLabel(row.desiredRole)}</Chip.Label>
+                    </Chip>
+                    <p className={cn('text-xs', isTransitionPending ? 'text-warning-soft-foreground' : 'text-muted')}>
                         {isTransitionPending
                             ? `${drainingSummary ? `${drainingSummary}, ` : ''}effective ${getTeamClusterRoleLabel(row.effectiveRole)}`
                             : getTeamClusterRoleSummary(row.desiredRole)}
@@ -141,7 +141,7 @@ const CLUSTER_COLUMNS: ColumnConfig<ServerRow>[] = [
         title: 'Last Heartbeat',
         sortable: true,
         width: 180,
-        render: (_, row) => <p className='text-xs text-muted'>{formatClusterTimestamp(row.lastHeartbeatAt)}</p>
+        render: (_, row) => <span className='text-muted'>{formatClusterTimestamp(row.lastHeartbeatAt)}</span>
     }
 ];
 
@@ -268,21 +268,9 @@ const ClustersListing = () => {
                     return true;
                 }}
                 defaultLimit={20}
-                emptyMessage='No clusters found.'
-                emptyIcon={(
-                    <div className='flex flex-col items-start gap-4 p-6 rounded-xl border border-border bg-surface-secondary'>
-                        <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
-                        <p className='text-sm text-muted'>
-                            Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.
-                        </p>
-                        <Link
-                            to='/onboarding/cluster/setup'
-                            className={buttonVariants({ variant: 'primary' })}
-                        >
-                            Add New Cluster
-                        </Link>
-                    </div>
-                )}
+                emptyMessage='Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.'
+                emptyButtonText='Add New Cluster'
+                onEmptyButtonClick={() => navigate('/onboarding/cluster/setup')}
                 createNew={{
                     buttonTitle: 'Add new Cluster',
                     onCreate: () => navigate('/onboarding/cluster/setup')

@@ -7,11 +7,10 @@ import { isTeamClusterWaiting } from '@/modules/cluster/utils/is-team-cluster-wa
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { Button, Tooltip } from '@heroui/react';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
-import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface ClusterListPanelProps {
     clusters: TeamCluster[];
@@ -23,6 +22,7 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
     const regenerateToken = useRegenerateTeamClusterEnrollmentTokenMutation();
     const [installClusterId, setInstallClusterId] = useState<string | null>(null);
     const [installToken, setInstallToken] = useState<string | null>(null);
+    const headingId = useId();
 
     if (clusters.length === 0) {
         return null;
@@ -49,25 +49,24 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
         const canConnect = isTeamClusterWaiting(cluster.status);
 
         return (
-            <div className='flex flex-row items-center gap-2 px-3 py-2 transition-colors duration-150 ease-out [&:not(:last-child)]:border-b [&:not(:last-child)]:border-border hover:bg-surface-tertiary focus-within:bg-surface-tertiary' key={cluster._id}>
-                <div className='flex flex-col gap-1 flex-1 min-w-0'>
-                    <p className='text-sm font-medium text-foreground truncate min-w-0' title={cluster.name}>
-                        {cluster.name}
-                    </p>
-                    <div className='flex flex-row items-center gap-2'>
-                        <ClusterStatusDot
-                            tone={variant === 'inactive' ? 'neutral' : variant}
-                            pulse={variant !== 'inactive'}
-                            glow={variant !== 'inactive'}
-                        />
-                        <p className='text-xs text-muted'>{label}</p>
-                    </div>
-                </div>
-                <div className='flex flex-row items-center gap-1 flex-shrink-0'>
+            <li className='grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 gap-y-1 py-2 text-base max-sm:grid-cols-[minmax(0,1fr)_auto] [&+&]:border-t [&+&]:border-separator' key={cluster._id}>
+                <span className='truncate font-medium text-foreground' title={cluster.name}>
+                    {cluster.name}
+                </span>
+                <span className='inline-flex items-center gap-2 text-sm text-muted max-sm:col-start-1 max-sm:row-start-2'>
+                    <ClusterStatusDot
+                        tone={variant === 'inactive' ? 'neutral' : variant}
+                        pulse={variant !== 'inactive'}
+                        glow={variant !== 'inactive'}
+                    />
+                    {label}
+                </span>
+                <div className='flex flex-row items-center gap-1 max-sm:row-span-2'>
                     {canConnect && (
                         <Button
                             variant='ghost'
                             size='sm'
+                            className='text-muted hover:text-foreground'
                             onPress={() => handleConnect(cluster)}
                         >
                             Connect
@@ -80,6 +79,7 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                                 variant='ghost'
                                 size='sm'
                                 isIconOnly
+                                className='text-muted hover:text-foreground'
                                 aria-label={`Delete cluster ${cluster.name}`}
                                 onPress={() => onDelete(cluster)}
                             >
@@ -91,23 +91,22 @@ const ClusterListPanel = ({ clusters, onDelete }: ClusterListPanelProps) => {
                         </Tooltip.Content>
                     </Tooltip>
                 </div>
-            </div>
+            </li>
         );
     };
 
+    // Plain rows under the form: the clusters already set up, and a way to finish connecting them.
     return (
-        <div className='fixed top-20 left-6 w-[280px] max-h-[min(320px,calc(100dvh-10rem))] overflow-hidden max-md:top-auto max-md:right-[max(0.75rem,env(safe-area-inset-right,0px))] max-md:bottom-[calc(max(4.25rem,env(safe-area-inset-bottom,0px))+3.25rem)] max-md:left-[max(0.75rem,env(safe-area-inset-left,0px))] max-md:w-auto max-md:max-h-[min(280px,calc(100dvh-12rem))]'>
-            <div className='px-3 py-2.5 border-b border-border'>
-                <p className='text-sm font-semibold text-foreground'>Your clusters</p>
-            </div>
-            <Scrollable className='max-h-[min(264px,calc(100dvh-14rem))] max-md:max-h-[min(224px,calc(100dvh-16rem))]'>
+        <section className='flex flex-col gap-2' aria-labelledby={headingId}>
+            <h2 className='text-sm text-muted' id={headingId}>Your clusters</h2>
+            <ul className='flex flex-col'>
                 {clusters.map(renderRow)}
-            </Scrollable>
+            </ul>
             <ClusterInstallCommandModal
                 clusterId={installClusterId}
                 enrollmentToken={installToken}
             />
-        </div>
+        </section>
     );
 };
 

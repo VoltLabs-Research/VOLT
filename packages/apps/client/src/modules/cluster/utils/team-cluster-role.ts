@@ -1,11 +1,9 @@
 import type { TeamCluster, TeamClusterRole } from '@volt/contracts/modules/cluster/domain';
 import type { SelectOption } from '@/shared/contracts/form-field';
-import type { ClusterBadgeTone } from '@/modules/cluster/components/shared/ClusterStatusBadge';
 
 interface TeamClusterRoleOption extends SelectOption {
     value: TeamClusterRole;
     summary: string;
-    badgeVariant: ClusterBadgeTone;
 }
 
 const TEAM_CLUSTER_ROLE_META: Record<TeamClusterRole, TeamClusterRoleOption> = {
@@ -13,22 +11,19 @@ const TEAM_CLUSTER_ROLE_META: Record<TeamClusterRole, TeamClusterRoleOption> = {
         value: 'cluster',
         title: 'Cluster',
         description: 'Runs compute jobs and also owns authoritative storage.',
-        summary: 'Compute + storage',
-        badgeVariant: 'brand'
+        summary: 'Compute + storage'
     },
     'storage-server': {
         value: 'storage-server',
         title: 'Storage server',
         description: 'Accepts authoritative writes and serves downloads, but does not run compute jobs.',
-        summary: 'Storage only',
-        badgeVariant: 'primary'
+        summary: 'Storage only'
     },
     'compute-node': {
         value: 'compute-node',
         title: 'Compute node',
         description: 'Runs compute jobs with remote reads and writes, but does not own authoritative storage.',
-        summary: 'Compute only',
-        badgeVariant: 'neutral'
+        summary: 'Compute only'
     }
 };
 
@@ -44,10 +39,6 @@ export const getTeamClusterRoleDescription = (role: TeamClusterRole): string => 
 
 export const getTeamClusterRoleSummary = (role: TeamClusterRole): string => {
     return TEAM_CLUSTER_ROLE_META[role].summary;
-};
-
-export const getTeamClusterRoleBadgeVariant = (role: TeamClusterRole): ClusterBadgeTone => {
-    return TEAM_CLUSTER_ROLE_META[role].badgeVariant;
 };
 
 export const isTeamClusterRole = (value: string): value is TeamClusterRole => {
