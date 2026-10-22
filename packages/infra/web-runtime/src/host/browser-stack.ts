@@ -1,6 +1,6 @@
-// A local stack in the browser: the server and daemon as workers of this page, provisioned exactly as
-// the desktop provisions its own (@volt/local-stack). Their files live in the origin's private file
-// system, so the workspace persists between visits as the desktop's data directory does.
+// A local stack in the browser: the server and daemon as workers of this page, provisioned by
+// @volt/local-stack. The web client runs it in a tab, and the desktop app in its window. Their files
+// live in the origin's private file system, so the workspace persists between visits and launches.
 import { BackendHost } from './BackendHost';
 import { BrowserStackStore } from './browser-stack-store';
 import { DEFAULT_DAEMON_PORT, DEFAULT_SERVER_PORT, serverOriginFor } from '@volt/local-stack/defaults';
@@ -35,7 +35,7 @@ export const startBrowserStack = async (options: BrowserStackOptions): Promise<B
     const prefix = options.storagePrefix ?? 'volt';
     const serverOrigin = serverOriginFor(PORTS.server);
     const host = new BackendHost();
-    // Provisioning reaches the server at its loopback origin, as it does on the desktop.
+    // Provisioning reaches the server at its loopback origin, as it would on a Node machine.
     Object.assign(globalThis, { fetch: host.fetch });
 
     let daemonFailure: string | null = null;

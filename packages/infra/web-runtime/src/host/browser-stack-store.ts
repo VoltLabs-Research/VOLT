@@ -1,5 +1,5 @@
-// The browser's counterpart of the desktop's AppConfig: what a local stack keeps between starts (its
-// provisioning, plugin seed and secrets), as one JSON document in the origin's private file system.
+// What a local stack keeps between starts (its provisioning, plugin seed and secrets), as one JSON
+// document in the origin's private file system.
 import { randomStackSecret, type StackSecrets } from '@volt/local-stack/stack-env';
 import type { BootstrapState, BootstrapStore, PluginSeedState, PluginSeedStore } from '@volt/local-stack/state';
 
