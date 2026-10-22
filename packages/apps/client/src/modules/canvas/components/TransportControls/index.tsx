@@ -125,7 +125,6 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             <Button
                 variant='ghost'
                 size='sm'
-                className='rounded-md'
                 isIconOnly
                 aria-label={btn.label}
                 data-transport-action={btn.action}
@@ -150,7 +149,7 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
                 {buttons.map(renderButton)}
             </div>
             <div className='hidden max-md:contents'>
-                <div className='canvas-transport-mobile-step-controls flex flex-row items-center max-md:rounded-md max-md:bg-surface-secondary max-md:flex-none max-md:gap-0.5 max-md:[&_button]:size-7 max-md:[&_button]:min-h-7'>
+                <div className='flex flex-row items-center max-md:flex-none max-md:gap-0.5 max-md:[&_button]:size-7 max-md:[&_button]:min-h-7'>
                     {renderButton(previousButton)}
                     {renderButton(nextButton)}
                 </div>

@@ -34,13 +34,11 @@ const useCanvasAccessPublication = ({
 
     useEffect(() => resetAccess, [resetAccess]);
 
-    const hasResolvedAccess = isLocalGlbViewer || Boolean(access);
     const canMutateCanvas = isLocalGlbViewer || Boolean(access?.hasTeamMembership);
 
     return {
         canCollaborate,
-        canMutateCanvas,
-        isReadOnlyCanvas: !isLocalGlbViewer && hasResolvedAccess && !canMutateCanvas
+        canMutateCanvas
     };
 };
 

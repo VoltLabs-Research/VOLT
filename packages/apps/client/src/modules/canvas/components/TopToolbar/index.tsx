@@ -9,7 +9,7 @@ import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { memo, useCallback } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { Button, cn } from '@heroui/react';
+import { Button } from '@heroui/react';
 
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 import type { ReactNode } from 'react';
@@ -52,7 +52,7 @@ const TopToolbar = ({
     const canShowPeers = !singleTenant && Boolean(onSelectWorkspacePeer && (workspacePeers?.length ?? 0) > 0);
 
     return (
-        <header className='relative z-[4] flex h-[var(--canvas-header-height,55px)] shrink-0 select-none items-stretch bg-chrome px-4 max-md:px-3 canvas-top-toolbar'>
+        <header className='canvas-top-toolbar relative z-[4] flex h-[var(--canvas-header-height,55px)] shrink-0 select-none items-stretch pl-[max(0.5rem,env(safe-area-inset-left,0px))] pr-2 max-md:pr-[max(0.5rem,env(safe-area-inset-right,0px))]'>
             <div className='grid h-[var(--canvas-header-height,55px)] w-full grid-cols-[minmax(0,1fr)_minmax(0,420px)_minmax(0,1fr)] items-center gap-2 max-md:h-[var(--canvas-header-height,40px)] max-md:grid-cols-[auto_minmax(0,1fr)]'>
                 <div className='flex min-w-0 flex-row flex-nowrap items-center overflow-hidden'>
                     <Button
@@ -72,7 +72,7 @@ const TopToolbar = ({
                             <EditableTrajectoryName
                                 trajectoryId={trajectory._id}
                                 name={trajectory.name}
-                                className='overflow-hidden text-ellipsis whitespace-nowrap text-xs leading-6 text-foreground'
+                                className='overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium leading-6 text-foreground'
                             />
                         </div>
                     )}
@@ -82,7 +82,7 @@ const TopToolbar = ({
                     {canMutateCanvas && <CanvasPluginSearch />}
                 </div>
 
-                <div className={cn('flex min-w-0 flex-row items-center justify-end gap-1', 'max-md:hidden')}>
+                <div className='flex min-w-0 flex-row items-center justify-end gap-0.5 max-md:hidden'>
                     {contextualActions}
                     <ThemeToggleButton />
                     {canShowPeers && onSelectWorkspacePeer && (

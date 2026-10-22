@@ -76,19 +76,19 @@ const ViewportGrid = ({
                     renderScene={renderScene}
                 />
             ) : (
-                <div className={cn('grid min-h-0 w-full flex-1 gap-px bg-border', gridClassName(viewportPanes.length))}>
+                <div className={cn('grid min-h-0 w-full flex-1 gap-px bg-foreground/10', gridClassName(viewportPanes.length))}>
                     {viewportPanes.map((pane, index) => {
                         const focused = pane.id === focusedViewportPaneId;
                         return (
                             <div
                                 key={pane.id}
                                 className={cn(
-                                    'relative flex min-h-0 min-w-0 flex-col overflow-hidden bg-background',
-                                    focused ? 'ring-1 ring-inset ring-accent' : 'ring-0'
+                                    'relative flex min-h-0 min-w-0 flex-col overflow-hidden bg-white dark:bg-canvas',
+                                    focused ? 'ring-1 ring-inset ring-foreground' : 'ring-0'
                                 )}
                                 onPointerDown={() => focusViewportPane(pane.id)}
                             >
-                                <div className='pointer-events-none absolute left-2 top-2 z-[3] rounded-md bg-surface-secondary px-1.5 py-0.5 text-2xs font-medium text-muted'>
+                                <div className='pointer-events-none absolute left-2 top-2 z-[3] flex h-[1.375rem] items-center rounded-full bg-canvas/70 px-2 text-2xs font-medium text-muted'>
                                     Pane {index + 1}
                                 </div>
                                 <div className='absolute right-1.5 top-1.5 z-[3]'>

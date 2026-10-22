@@ -163,8 +163,9 @@ const Timeline = ({
                 }}
             />
 
+            {/* The ruler stays compact at the dock's default size and grows with what it is dragged past it. */}
             {activeTab === TimelineTab.Timeline && (
-                <div className='relative h-[25px] min-h-[25px] flex-none max-md:pointer-events-auto max-md:order-2 max-md:h-8 max-md:min-h-8 max-md:min-w-0 max-md:self-stretch max-md:overflow-auto' data-tour-id='canvas-timeline-ruler'>
+                <div className='relative h-[max(25px,calc(var(--canvas-timeline-size,12rem)-12rem+25px))] min-h-[25px] flex-none max-md:pointer-events-auto max-md:order-2 max-md:h-8 max-md:min-h-8 max-md:min-w-0 max-md:self-stretch max-md:overflow-auto' data-tour-id='canvas-timeline-ruler'>
                     <TimelineRuler
                         rulerRef={rulerRef}
                         ticks={ticks}

@@ -140,8 +140,8 @@ const CanvasPluginSearch = () => {
                 onChange={(next) => { setQuery(next); setIsOpen(true); setActiveIndex(-1); }}
                 fullWidth
             >
-                <SearchField.Group>
-                    <SearchField.SearchIcon />
+                <SearchField.Group className='rounded-full'>
+                    <SearchField.SearchIcon className='shrink-0 text-muted' />
                     <SearchField.Input
                         ref={inputRef}
                         id={searchInputId}

@@ -1,4 +1,4 @@
-import { Users } from 'lucide-react';
+import { Button } from '@heroui/react';
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 
 interface CanvasBannersProps {
@@ -24,37 +24,26 @@ const CanvasBanners = ({
     isWorkspaceOwner,
     onLeaveCollaboration
 }: CanvasBannersProps) => {
-    const showCollabBanner = Boolean(collaborationOwner) && !isWorkspaceOwner;
-
-    if (!showCollabBanner) {
+    if (!collaborationOwner || isWorkspaceOwner) {
         return null;
     }
 
     return (
-        <div className='flex flex-col z-[4] border-b border-border' role='region' aria-label='Canvas notifications'>
-            {showCollabBanner && collaborationOwner && (
-                <div className='flex flex-row items-center w-full gap-3 border-b border-border px-3.5 py-2 text-sm leading-[1.35] last:border-b-0 bg-[color-mix(in_srgb,var(--accent)_14%,var(--background))] text-foreground' role='status'>
-                    <span className='inline-flex shrink-0 items-center justify-center' aria-hidden='true'>
-                        <Users size={14} />
-                    </span>
-                    <span className='min-w-0 flex-1'>
-                        You are viewing <strong>{formatPeerName(collaborationOwner)}</strong>'s session.
-                        Changes are broadcast live — scene edits go to their viewport.
-                    </span>
-                    {onLeaveCollaboration && (
-                        <span className='inline-flex shrink-0 gap-1.5'>
-                            <button
-                                type='button'
-                                className='inline-flex size-[22px] cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 text-current opacity-70 hover:bg-[color-mix(in_srgb,currentColor_12%,transparent)] hover:opacity-100'
-                                onClick={onLeaveCollaboration}
-                                aria-label='Leave session and return to your workspace'
-                                title='Leave session'
-                            >
-                                Leave
-                            </button>
-                        </span>
-                    )}
-                </div>
+        <div className='z-[4] mb-2 ml-[max(0.5rem,env(safe-area-inset-left,0px))] mr-2 flex flex-row items-center gap-3 rounded-2xl bg-foreground/[0.08] py-2 pl-3.5 pr-2 text-sm leading-[1.35] text-foreground' role='status' aria-label='Canvas notifications'>
+            <span className='min-w-0 flex-1'>
+                You are viewing <strong>{formatPeerName(collaborationOwner)}</strong>'s session.
+                Changes are broadcast live — scene edits go to their viewport.
+            </span>
+            {onLeaveCollaboration && (
+                <Button
+                    variant='ghost'
+                    size='sm'
+                    className='shrink-0'
+                    onPress={onLeaveCollaboration}
+                    aria-label='Leave session and return to your workspace'
+                >
+                    Leave
+                </Button>
             )}
         </div>
     );

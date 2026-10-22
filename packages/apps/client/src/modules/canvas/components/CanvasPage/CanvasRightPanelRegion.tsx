@@ -3,6 +3,7 @@ import ResizeHandle from '../ResizeHandle';
 import { ResizeDirection } from '../../hooks/use-resizable';
 import { useMedia } from '@/shared/ui/hooks/use-media';
 import { PanelRight } from 'lucide-react';
+import { cn } from '@heroui/react';
 
 import type { ComponentProps, Dispatch, SetStateAction } from 'react';
 import type useResizable from '../../hooks/use-resizable';
@@ -16,7 +17,18 @@ interface CanvasRightPanelRegionProps extends Omit<ComponentProps<typeof Objects
 
 const COMPACT_ANALYSIS_MEDIA_QUERY = '(max-width: 768px)';
 
+const PANEL_CLASS = 'relative z-[3] flex shrink-0 flex-col overflow-hidden pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)]';
 
+// Under 1200px the panel is a glass drawer over the page; on phones, a floating card under its round trigger.
+const DRAWER_CLASS = [
+    'glass-surface absolute inset-y-0 right-0 z-[5] w-[min(400px,86vw)]! bg-overlay shadow-overlay',
+    'transition-transform duration-[220ms] ease-out-fluid data-[drawer-open=false]:translate-x-full data-[drawer-open=false]:shadow-none',
+    'max-md:inset-auto max-md:left-[var(--canvas-mobile-panel-left)] max-md:top-[var(--canvas-mobile-panel-top)] max-md:z-[140]',
+    'max-md:h-[min(24rem,calc(100dvh_-_var(--canvas-mobile-panel-top)_-_9.25rem))] max-md:w-[min(22rem,calc(100vw_-_5.5rem))]!',
+    'max-md:origin-top-left max-md:rounded-2xl max-md:bg-canvas/85 max-md:py-1 max-md:pr-0',
+    'max-md:transition-[opacity,transform,visibility] max-md:duration-[180ms] max-md:data-[drawer-open=false]:pointer-events-none',
+    'max-md:data-[drawer-open=false]:invisible max-md:data-[drawer-open=false]:-translate-y-2 max-md:data-[drawer-open=false]:scale-[0.98] max-md:data-[drawer-open=false]:opacity-0'
+].join(' ');
 
 const CanvasRightPanelRegion = ({
     panel,
@@ -33,7 +45,7 @@ const CanvasRightPanelRegion = ({
             {isNarrowViewport && (
                 <button
                     type='button'
-                    className='absolute right-0 top-1/2 z-[6] flex h-[54px] w-[26px] -translate-y-1/2 cursor-pointer items-center justify-center p-0 rounded-l-md border border-r-0 border-border bg-surface-secondary text-muted backdrop-blur-[6px] transition-[background-color,color] duration-[140ms] ease-out hover:bg-surface-hover hover:text-foreground pointer-coarse:md:max-[1199px]:h-16 pointer-coarse:md:max-[1199px]:w-8 pointer-coarse:md:max-[1199px]:bg-surface pointer-coarse:md:max-[1199px]: pointer-coarse:md:max-[1199px]:mr-[env(safe-area-inset-right,0px)] max-md:left-auto max-md:right-[var(--canvas-mobile-control-column-right)] max-md:top-[var(--canvas-mobile-drawer-trigger-top)] max-md:z-[125] max-md:h-[var(--canvas-mobile-control-column-size)] max-md:w-[var(--canvas-mobile-control-column-size)] max-md:translate-y-0 max-md:rounded-full max-md:border-0 max-md:bg-surface-secondary max-md:'
+                    className='glass-surface absolute right-0 top-1/2 z-[6] flex h-[54px] w-[26px] -translate-y-1/2 cursor-pointer items-center justify-center rounded-l-full border-0 bg-overlay p-0 text-muted shadow-overlay transition-colors duration-[140ms] ease-out hover:text-foreground aria-expanded:text-foreground pointer-coarse:md:max-[1199px]:mr-[env(safe-area-inset-right,0px)] pointer-coarse:md:max-[1199px]:h-16 pointer-coarse:md:max-[1199px]:w-8 max-md:right-[var(--canvas-mobile-control-right)] max-md:top-[var(--canvas-mobile-control-top)] max-md:z-[125] max-md:size-[var(--canvas-mobile-control-size)] max-md:translate-y-0 max-md:rounded-full'
                     onClick={() => onDrawerOpenChange((open) => !open)}
                     aria-label={drawerLabel}
                     title={drawerLabel}
@@ -62,7 +74,7 @@ const CanvasRightPanelRegion = ({
                     />
                 </div>
             )}
-            <div className='relative z-[3] flex shrink-0 flex-col overflow-hidden bg-chrome [.canvas-editor-root--narrow_&]:absolute [.canvas-editor-root--narrow_&]:inset-y-0 [.canvas-editor-root--narrow_&]:right-0 [.canvas-editor-root--narrow_&]:z-[5] [.canvas-editor-root--narrow_&]:w-[min(400px,86vw)]! [.canvas-editor-root--narrow_&]:max-w-[86vw] [.canvas-editor-root--narrow_&]:rounded-none [.canvas-editor-root--narrow_&]:bg-chrome [.canvas-editor-root--narrow_&]:pr-[env(safe-area-inset-right,0px)] [.canvas-editor-root--narrow_&]:shadow-[-8px_0_32px_rgba(0,0,0,0.35)] [.canvas-editor-root--narrow_&]:transition-transform [.canvas-editor-root--narrow_&]:duration-[220ms] [.canvas-editor-root--narrow_&]:ease-out-fluid [.canvas-editor-root--narrow_&]:data-[drawer-open=false]:translate-x-full [.canvas-editor-root--narrow_&]:data-[drawer-open=false]:shadow-none max-md:[.canvas-editor-root--narrow_&]:inset-auto max-md:[.canvas-editor-root--narrow_&]:z-[140] max-md:[.canvas-editor-root--narrow_&]:top-[var(--canvas-mobile-panel-top)] max-md:[.canvas-editor-root--narrow_&]:left-[calc(var(--canvas-mobile-panel-edge)_+_env(safe-area-inset-left,0px))] max-md:[.canvas-editor-root--narrow_&]:w-[min(22rem,calc(100vw_-_var(--canvas-mobile-controls-gutter)_-_var(--canvas-mobile-panel-edge)_-_env(safe-area-inset-left,0px)_-_env(safe-area-inset-right,0px)))]! max-md:[.canvas-editor-root--narrow_&]:max-w-[calc(100vw_-_var(--canvas-mobile-controls-gutter)_-_var(--canvas-mobile-panel-edge)_-_env(safe-area-inset-left,0px)_-_env(safe-area-inset-right,0px))] max-md:[.canvas-editor-root--narrow_&]:h-[min(24rem,calc(100dvh_-_var(--canvas-mobile-panel-top)_-_1rem_-_env(safe-area-inset-bottom,0px)))] max-md:[.canvas-editor-root--narrow_&]:max-h-[calc(100dvh_-_var(--canvas-mobile-panel-top)_-_1rem_-_env(safe-area-inset-bottom,0px))] max-md:[.canvas-editor-root--narrow_&]:rounded-xl max-md:[.canvas-editor-root--narrow_&]:border-0 max-md:[.canvas-editor-root--narrow_&]:bg-surface-secondary max-md:[.canvas-editor-root--narrow_&]:pr-0 max-md:[.canvas-editor-root--narrow_&]: max-md:[.canvas-editor-root--narrow_&]:origin-top-left max-md:[.canvas-editor-root--narrow_&]:translate-y-0 max-md:[.canvas-editor-root--narrow_&]:scale-100 max-md:[.canvas-editor-root--narrow_&]:transition-[opacity,transform,visibility] max-md:[.canvas-editor-root--narrow_&]:duration-[180ms] max-md:[.canvas-editor-root--narrow_&]:data-[drawer-open=false]:invisible max-md:[.canvas-editor-root--narrow_&]:data-[drawer-open=false]:pointer-events-none max-md:[.canvas-editor-root--narrow_&]:data-[drawer-open=false]:opacity-0 max-md:[.canvas-editor-root--narrow_&]:data-[drawer-open=false]:-translate-y-2 max-md:[.canvas-editor-root--narrow_&]:data-[drawer-open=false]:scale-[0.98] max-md:[.canvas-editor-root--narrow_&]:data-[analysis-compact=true]:w-[min(18rem,calc(100vw_-_var(--canvas-mobile-controls-gutter)_-_var(--canvas-mobile-panel-edge)_-_env(safe-area-inset-left,0px)_-_env(safe-area-inset-right,0px)))]! max-md:[.canvas-editor-root--narrow_&]:data-[analysis-compact=true]:max-w-[calc(100vw_-_var(--canvas-mobile-controls-gutter)_-_var(--canvas-mobile-panel-edge)_-_env(safe-area-inset-left,0px)_-_env(safe-area-inset-right,0px))] max-md:[.canvas-editor-root--narrow_&]:data-[analysis-compact=true]:h-[min(18rem,calc(100dvh_-_var(--canvas-mobile-panel-top)_-_1rem_-_env(safe-area-inset-bottom,0px)))] max-md:[.canvas-editor-root--narrow_&]:data-[analysis-compact=true]:max-h-[calc(100dvh_-_var(--canvas-mobile-panel-top)_-_1rem_-_env(safe-area-inset-bottom,0px))]'
+            <div className={cn(PANEL_CLASS, isNarrowViewport && DRAWER_CLASS)}
                 id='canvas-right-panel'
                 style={{ width: panel.size }}
                 data-drawer-open={isNarrowViewport ? (isDrawerOpen ? 'true' : 'false') : undefined}

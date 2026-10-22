@@ -30,7 +30,7 @@ const TrajectorySharePanelPopover = ({
                 <Share2 size={14} aria-hidden='true' />
             </Button>
             <Popover.Content placement='bottom end'>
-                <Popover.Dialog id={`trajectory-share-${trajectoryId}`} aria-label={triggerLabel} className='flex max-h-[360px] w-full max-w-[320px] flex-col overflow-hidden p-0'>
+                <Popover.Dialog id={`trajectory-share-${trajectoryId}`} aria-label={triggerLabel} className='flex max-h-[360px] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden p-2'>
                     <TrajectorySharePanel
                         trajectoryId={trajectoryId}
                         isPublic={isPublic}
