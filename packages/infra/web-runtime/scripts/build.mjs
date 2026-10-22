@@ -24,7 +24,7 @@ const addonsDir = path.join(packageDir, 'node_modules', '.cache', 'native-addons
 const platform = (file) => path.join(platformDir, file);
 const packageRoot = (name) => path.dirname(require.resolve(`${name}/package.json`));
 
-// Where each backend is installed inside its worker's file system, as it is on the desktop.
+// Where each backend is installed inside its worker's file system.
 const BACKENDS = [
     {
         name: 'server',
@@ -33,6 +33,8 @@ const BACKENDS = [
         entry: 'dist/infra/server/src/server.js',
         vendor: [],
         globalPackages: [],
+        // Files it reads next to its modules, which its build leaves in src/.
+        assets: [{ source: 'src/modules/scripting/services/templates', installed: 'dist/infra/server/src/modules/scripting/services/templates' }],
         programs: []
     },
     {
@@ -44,6 +46,10 @@ const BACKENDS = [
         vendor: ['volt-dump-transform', 'zstd'],
         // The analysis plugins it runs keep their tables in DuckDB.
         globalPackages: ['@duckdb/duckdb-wasm'],
+        assets: [
+            { source: 'dist/infra/cluster/src/modules/plugin/services/python' },
+            { source: 'dist/infra/cluster/src/modules/trajectory/services/parsing/ase_export_bridge.py' }
+        ],
         programs: [
             'dist/infra/cluster/src/control-plane.js',
             'dist/infra/cluster/src/heartbeat-plane.js',
@@ -99,7 +105,7 @@ const builtinAliases = () => {
 };
 
 // __dirname/__filename of every bundled file, as its path in the installed backend: code that
-// locates its own files (plane scripts, static assets) finds them where the desktop has them.
+// locates its own files (plane scripts, static assets) finds them where an installed backend has them.
 // A native addon's glue is installed where node-gyp-build finds the addon it replaces.
 const moduleLocationPlugin = (backend) => ({
     name: 'module-location',
@@ -282,6 +288,20 @@ const installVendorTool = async (backend, tool) => {
     return writeInstall(source, path.posix.join(backend.mountPoint, 'vendor', tool));
 };
 
+// The files a backend reads from its own package besides its modules, installed where they are in it.
+const installAssets = async (backend) => {
+    if(!backend.assets?.length){
+        return null;
+    }
+    const source = `${backend.name}/assets`;
+    const target = path.join(outDir, source);
+    await rm(target, { recursive: true, force: true });
+    for(const asset of backend.assets){
+        await cp(path.join(backend.root, asset.source), path.join(target, asset.installed ?? asset.source), { recursive: true });
+    }
+    return writeInstall(source, backend.mountPoint);
+};
+
 // A classic script: module service workers are not supported by every browser.
 await esbuild.build({
     entryPoints: { 'service-worker': path.join(packageDir, 'src', 'service-worker.ts') },
@@ -317,6 +337,7 @@ for(const backend of selected){
     for(const tool of backend.vendor){
         installs.push(await installVendorTool(backend, tool));
     }
+    installs.push(await installAssets(backend));
     // Its entry point installs them; the programs it spawns find them installed.
     const [entry, ...programs] = programsOf(backend);
     await buildProgram(backend, entry, installs.filter(Boolean));
