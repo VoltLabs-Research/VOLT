@@ -25,7 +25,7 @@ const renderDeferredVisualizationsFallback = () => (
         aria-live='polite'
         aria-atomic='true'
     >
-        <div className='flex flex-col items-center gap-8'>
+        <div className='flex flex-col items-center gap-3'>
             <Loader size='sm' />
             <span className='text-sm text-muted text-center leading-normal'>Loading live charts</span>
         </div>
@@ -84,25 +84,28 @@ const ClusterMonitoringPage = () => {
     const shouldShowProgressiveVisualizationLoader = hasRenderableMetrics && !shouldRenderVisualizations;
 
     return (
-
         <Scrollable className='h-full! text-foreground'>
-            <div className='flex flex-col gap-6 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
+            <div className='flex flex-col gap-4 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
                 {vm.isLoading && !vm.hasClusters && (
-                    <Loader />
+                    <div className='flex min-h-72 items-center justify-center'>
+                        <Loader />
+                    </div>
                 )}
 
                 {!vm.isLoading && !vm.hasClusters && (
-                    <div className='flex flex-col items-start gap-4 p-6 rounded-xl border border-border bg-surface-secondary'>
-                        <h3 className='text-xl font-semibold text-foreground'>No clusters connected yet</h3>
-                        <p className='text-sm text-muted'>
+                    <div className='flex min-h-72 flex-col items-center justify-center gap-4 text-center'>
+                        <div className='flex flex-col gap-2'>
+                            <h1 className='text-base font-medium text-foreground'>No clusters connected yet</h1>
+                            <p className='max-w-sm text-sm text-muted'>
                             {singleTenant
                                 ? 'The local compute daemon has not connected yet. Live metrics appear here as soon as it does.'
                                 : 'Create a team cluster to provision your first compute environment and unlock live metrics on this dashboard.'}
-                        </p>
+                            </p>
+                        </div>
                         {!singleTenant && (
                             <Link
                                 to='/onboarding/cluster/setup'
-                                className={buttonVariants({ variant: 'primary' })}
+                                className={buttonVariants({ variant: 'primary', size: 'sm' })}
                             >
                                 Add New Cluster
                             </Link>
@@ -128,7 +131,7 @@ const ClusterMonitoringPage = () => {
 
                                 <CpuDistribution history={vm.history} metrics={vm.metrics} />
 
-                                <div className='md:grid md:grid-cols-2 md:gap-6 min-[1440px]:gap-8'>
+                                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                                     <NetworkChart
                                         data={networkData}
                                         isLoading={!vm.metrics}

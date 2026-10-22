@@ -11,7 +11,7 @@ import useSecretKeyUsage from './use-secret-key-usage';
 import ChartContainer from '@/shared/ui/components/ChartContainer';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Activity, BarChart3, PieChart as PieChartIcon, List, Clock, Zap, CheckCircle, Hash } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -51,7 +51,7 @@ export default function SecretKeyUsage() {
         <Button
             variant='ghost'
             size='sm'
-            className='min-h-10 hover:text-accent focus-visible:text-accent'
+            className='shrink-0'
             onPress={() => navigate(-1)}
         >
             <ArrowLeft size={18} aria-hidden='true' />
@@ -65,7 +65,7 @@ export default function SecretKeyUsage() {
                 header={(
                     <div className='flex flex-row items-center gap-4'>
                         {backButton}
-                        <h3 className='text-2xl font-semibold text-foreground'>Key Usage</h3>
+                        <h1 className='text-2xl font-semibold tracking-[-0.01em] text-foreground'>Key Usage</h1>
                     </div>
                 )}
                 isLoading={isLoading}
@@ -81,24 +81,19 @@ export default function SecretKeyUsage() {
 
     const cards = [
         {
-            icon: Hash,
             title: 'Total Requests',
             value: usage.stats.totalRequests.toLocaleString()
         },
         {
-            icon: Zap,
             title: 'Avg Response Time',
             value: `${usage.stats.avgResponseTime.toFixed(0)}ms`
         },
         {
-            icon: CheckCircle,
             title: 'Success Rate',
             value: `${usage.stats.successRate.toFixed(1)}%`
         },
         {
-            icon: Clock,
             title: 'Last Used',
-
             value: usage.key.lastUsedAt
                 ? formatDistanceToNow(new Date(usage.key.lastUsedAt), { addSuffix: true })
                 : 'Never'
@@ -107,30 +102,27 @@ export default function SecretKeyUsage() {
 
     return (
         <Scrollable className='h-full text-foreground'>
-            <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto md:py-4 md:px-8 min-[1440px]:px-12'>
-                <div className='flex flex-col gap-2'>
-                    <div className='flex flex-row items-center gap-4'>
-                        {backButton}
-                        <h3 className='text-2xl font-semibold text-foreground'>{`${usage.key.name} (${usage.key.keyPrefix}...)`}</h3>
+            <div className='flex flex-col gap-8 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
+                <div className='flex flex-row items-start gap-4'>
+                    {backButton}
+                    <div className='flex min-w-0 flex-col gap-2'>
+                        <h1 className='text-2xl font-semibold tracking-[-0.01em] text-foreground'>{`${usage.key.name} (${usage.key.keyPrefix}...)`}</h1>
+                        <p className='text-sm text-muted tabular-nums'>
+                            {usage.stats.totalRequests.toLocaleString()} total requests
+                        </p>
                     </div>
-                    <p className='text-sm text-muted ms-8'>
-                        {usage.stats.totalRequests.toLocaleString()} total requests
-                    </p>
                 </div>
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
                     {cards.map((card) => (
                         <SecretKeyStatCard
                             key={card.title}
-                            icon={<card.icon size={16} />}
                             label={card.title}
                             value={card.value}
-                            className='bg-surface border border-border'
                         />
                     ))}
                 </div>
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-6 min-[1440px]:gap-8'>
                     <ChartContainer
-                        icon={Activity}
                         title='Hourly Requests'
                         isLoading={false}
                         stats={[
@@ -146,15 +138,12 @@ export default function SecretKeyUsage() {
                     >
                         <RequestsAreaChart
                             data={hourlyData}
-                            gradientId='colorHourlyReqs'
                             height={250}
                             tooltipContent={renderRequestsAreaTooltip}
-                            xAxisTickLine={false}
                             yAxisAllowDecimals={false}
                         />
                     </ChartContainer>
                     <ChartContainer
-                        icon={BarChart3}
                         title='Top Endpoints'
                         isLoading={false}
                         stats={[
@@ -167,12 +156,9 @@ export default function SecretKeyUsage() {
                         <EndpointsBarChart
                             data={endpointData}
                             height={250}
-                            xAxisAllowDecimals={false}
-                            yAxisTickLine={false}
                         />
                     </ChartContainer>
                     <ChartContainer
-                        icon={PieChartIcon}
                         title='Status Codes'
                         isLoading={false}
                         stats={[
@@ -185,7 +171,6 @@ export default function SecretKeyUsage() {
                         <StatusCodesPieChart data={statusData} />
                     </ChartContainer>
                     <ChartContainer
-                        icon={List}
                         title='Recent Requests'
                         isLoading={false}
                         stats={[

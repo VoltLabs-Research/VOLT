@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CHART_COLORS } from '@/modules/team/utils/secret-key/chart-helpers';
-import { CHART_AXIS_COLOR, CHART_FONT_SIZE, CHART_GRID_COLOR } from '@/shared/ui/utils/chart-theme';
+import { CHART_GRID_COLOR, CHART_TICK } from '@/shared/ui/utils/chart-theme';
 import type { ContentType } from 'recharts/types/component/Tooltip';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
@@ -11,21 +11,17 @@ interface RequestsAreaChartDatum {
 
 interface RequestsAreaChartProps {
     data: RequestsAreaChartDatum[];
-    gradientId: string;
     height: number;
     tooltipContent: ContentType<ValueType, NameType>;
     areaName?: string;
-    xAxisTickLine?: boolean;
     yAxisAllowDecimals?: boolean;
 }
 
 const RequestsAreaChart = ({
     data,
-    gradientId,
     height,
     tooltipContent,
     areaName,
-    xAxisTickLine,
     yAxisAllowDecimals
 }: RequestsAreaChartProps) => (
     <ResponsiveContainer width='100%' height={height}>
@@ -35,22 +31,18 @@ const RequestsAreaChart = ({
             left: 0,
             bottom: 0
         }}>
-            <defs>
-                <linearGradient id={gradientId} x1='0' y1='0' x2='0' y2='1'>
-                    <stop offset='5%' stopColor={CHART_COLORS.requests} stopOpacity={0.3} />
-                    <stop offset='95%' stopColor={CHART_COLORS.requests} stopOpacity={0} />
-                </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray='3 3' stroke={CHART_GRID_COLOR} />
+            <CartesianGrid vertical={false} stroke={CHART_GRID_COLOR} />
             <XAxis
                 dataKey='date'
-                stroke={CHART_AXIS_COLOR}
-                style={{ fontSize: CHART_FONT_SIZE }}
-                tickLine={xAxisTickLine}
+                tick={CHART_TICK}
+                axisLine={false}
+                tickLine={false}
             />
             <YAxis
-                stroke={CHART_AXIS_COLOR}
-                style={{ fontSize: CHART_FONT_SIZE }}
+                tick={CHART_TICK}
+                axisLine={false}
+                tickLine={false}
+                width={40}
                 allowDecimals={yAxisAllowDecimals}
             />
             <Tooltip content={tooltipContent} />
@@ -59,8 +51,8 @@ const RequestsAreaChart = ({
                 dataKey='count'
                 stroke={CHART_COLORS.requests}
                 strokeWidth={2}
-                fillOpacity={1}
-                fill={`url(#${gradientId})`}
+                fill={CHART_COLORS.requests}
+                fillOpacity={0.1}
                 name={areaName}
                 isAnimationActive={false}
             />

@@ -46,5 +46,3 @@ export const createTooltipRenderer = (
 };
 
 export const renderRequestsAreaTooltip = createTooltipRenderer('date', 'Requests', CHART_COLORS.requests);
-
-export const renderEndpointsBarTooltip = createTooltipRenderer('endpoint', 'Requests', CHART_COLORS.endpoints);
