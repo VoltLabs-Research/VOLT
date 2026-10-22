@@ -26,14 +26,11 @@
     --font-weight-medium: 480;
     --font-weight-semibold: 550;
     --font-weight-bold: 620;
-
-    --radius-xl: 0.625rem;
-    --radius-2xl: 0.625rem;
-    --radius-3xl: 0.625rem;
 }
 
 @theme inline {
-    --color-chrome: var(--chrome);
+    --color-canvas: var(--canvas);
+    --color-dashboard-surface: var(--dashboard-surface);
     --color-info: var(--info);
     --color-info-foreground: var(--info-foreground);
     --color-info-soft: var(--info-soft);
@@ -49,7 +46,7 @@
 .dark,
 [data-theme='dark'] {
     --accent: var(--foreground);
-    --accent-foreground: var(--background);
+    --accent-foreground: var(--canvas);
     --accent-soft-foreground: var(--default-foreground);
     --link: var(--foreground);
 }
@@ -62,9 +59,6 @@
     --field-shadow: 0 0 0 0 transparent inset;
     --field-border-width: 1px;
     --field-border: var(--border);
-    --field-background: transparent;
-
-    --radius: 0.25rem;
 }
 
 :root,
@@ -87,21 +81,20 @@
 :root,
 .light,
 [data-theme='light'] {
-    --background: oklch(0.9702 0 0);
+    --canvas: #f5f5f5;
+    --background: rgba(245, 245, 245, 0.9);
     --foreground: #28282b;
 
-    --surface-solid: #ffffff;
-    --surface-secondary-solid: oklch(0.9524 0.0013 286.37);
-    --surface-tertiary-solid: oklch(0.9373 0.0013 286.37);
+    --dashboard-surface: rgba(238, 238, 240, 0.75);
+    --surface: rgba(255, 255, 255, 0.75);
+    --surface-secondary: rgba(232, 232, 234, 0.8);
+    --surface-tertiary: rgba(224, 224, 227, 0.85);
+    --overlay: rgba(255, 255, 255, 0.72);
+    --field-background: rgba(255, 255, 255, 0.55);
 
-    --overlay-solid: #ffffff;
-    --overlay-alpha: 72%;
-    --glass-panel-alpha: 90%;
-    --chrome-solid: oklch(0.9702 0 0);
-
-    --glass-filter: blur(16px) saturate(1.4) brightness(1.06);
-
-    --default: oklch(94% 0.001 286.375);
+    /* A step below Pollium's 94%: tiles are 4% of the foreground over the canvas, about 94% too,
+       and a secondary button on one would all but vanish. */
+    --default: oklch(91.5% 0.002 286.375);
     --default-foreground: var(--foreground);
 
     --muted: #5e5e61;
@@ -120,19 +113,16 @@
 
 .dark,
 [data-theme='dark'] {
-    --background: #0c0c0e;
+    --canvas: #090909;
+    --background: rgba(9, 9, 9, 0.85);
     --foreground: #e9e9ec;
 
-    --surface-solid: #101011;
-    --surface-secondary-solid: #171719;
-    --surface-tertiary-solid: #1d1d20;
-
-    --overlay-solid: #0d0d0d;
-    --overlay-alpha: 68%;
-    --glass-panel-alpha: 85%;
-    --chrome-solid: #0c0c0e;
-
-    --glass-filter: blur(16px) saturate(1.4) brightness(0.82);
+    --dashboard-surface: rgba(20, 20, 22, 0.75);
+    --surface: rgba(28, 28, 32, 0.75);
+    --surface-secondary: rgba(42, 42, 46, 0.8);
+    --surface-tertiary: rgba(52, 52, 56, 0.85);
+    --overlay: rgba(24, 24, 27, 0.68);
+    --field-background: rgba(23, 23, 25, 0.55);
 
     --default: #2b2b2e;
     --default-foreground: var(--foreground);
@@ -151,36 +141,42 @@
     --info-foreground: var(--snow);
 }
 
-:root,
-.light,
-[data-theme='light'],
-.dark,
-[data-theme='dark'] {
-    --glass-alpha: 88%;
-
-    --surface: color-mix(in srgb, var(--surface-solid) var(--glass-alpha), transparent);
-    --surface-secondary: color-mix(in srgb, var(--surface-secondary-solid) var(--glass-alpha), transparent);
-    --surface-tertiary: color-mix(in srgb, var(--surface-tertiary-solid) var(--glass-alpha), transparent);
-    --overlay: color-mix(in srgb, var(--overlay-solid) var(--overlay-alpha), transparent);
-    --chrome: color-mix(in srgb, var(--chrome-solid) var(--glass-alpha), transparent);
+/* Pollium's layering: an opaque canvas with translucent surfaces over it, so the glass on what
+   floats has something to show. One glass for both themes, without brightness(), which made dark
+   panels murky. Reduced transparency drops the blur and makes the same colours solid. */
+:root {
+    --glass-backdrop: blur(16px) saturate(1.2);
 }
 
 @media (prefers-reduced-transparency: reduce) {
+    :root {
+        --glass-backdrop: none;
+    }
+
     :root,
     .light,
-    [data-theme='light'],
+    [data-theme='light'] {
+        --background: var(--canvas);
+        --dashboard-surface: rgb(238, 238, 240);
+        --surface: rgb(255, 255, 255);
+        --surface-secondary: rgb(232, 232, 234);
+        --surface-tertiary: rgb(224, 224, 227);
+        --overlay: rgb(255, 255, 255);
+    }
+
     .dark,
     [data-theme='dark'] {
-        --glass-alpha: 100%;
-        --overlay-alpha: 100%;
-        --glass-panel-alpha: 100%;
-        --glass-filter: none;
+        --background: var(--canvas);
+        --dashboard-surface: rgb(20, 20, 22);
+        --surface: rgb(28, 28, 32);
+        --surface-secondary: rgb(42, 42, 46);
+        --surface-tertiary: rgb(52, 52, 56);
+        --overlay: rgb(24, 24, 27);
     }
 }
 
 /* Everything that floats over the page (menus, popovers, listboxes, tooltips, dialogs) is frosted
-   glass: --overlay is translucent and what is behind it is blurred. .glass-surface gives the same
-   look to floating panels that are not HeroUI components. */
+   glass. .glass-surface gives the same look to floating panels that are not HeroUI components. */
 .glass-surface,
 .glass-panel,
 .toast,
@@ -196,8 +192,8 @@
 .modal__dialog,
 .alert-dialog__dialog,
 .drawer__dialog {
-    -webkit-backdrop-filter: var(--glass-filter);
-    backdrop-filter: var(--glass-filter);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    backdrop-filter: var(--glass-backdrop);
 }
 
 :root,
@@ -222,11 +218,13 @@
     outline-offset: 2px;
 }
 
+/* The fill is layered over the canvas: --surface-secondary is translucent, and the browser's own
+   autofill colour would show through it. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 1000px var(--surface-secondary) inset !important;
-    box-shadow: 0 0 0 1000px var(--surface-secondary) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--surface-secondary) inset, 0 0 0 1000px var(--canvas) inset !important;
+    box-shadow: 0 0 0 1000px var(--surface-secondary) inset, 0 0 0 1000px var(--canvas) inset !important;
     -webkit-text-fill-color: var(--field-foreground, var(--foreground)) !important;
 }
 
@@ -245,7 +243,7 @@ html {
     font-size: 16px;
     max-width: var(--volt-app-max-width, 2560px);
     margin-inline: auto;
-    background-color: var(--background);
+    background-color: var(--canvas);
 }
 
 html,
@@ -282,7 +280,7 @@ html[data-volt-desktop] body {
 html[data-volt-desktop] #root {
     border-radius: 20px;
     overflow: hidden;
-    background-color: var(--background);
+    background-color: var(--canvas);
 }
 
 html[data-volt-desktop][data-volt-maximized] #root {
@@ -314,31 +312,46 @@ html[data-volt-desktop][data-volt-maximized] #root {
     height: 3px;
 }
 
-.app-sidebar > * {
-    transition:
-        opacity 240ms var(--ease-out-fluid),
-        transform 420ms var(--ease-out-fluid);
+/* ---- Shell: the app chrome (DashboardLayout, its sidebar panels and the page motion) ---- */
+
+/* Pollium's motion tokens. */
+:root {
+    --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: linear(0, 0.0856, 0.2678, 0.4696, 0.6502, 0.7926, 0.8944, 0.9607, 0.9993, 1.0184, 1.025, 1.0244, 1.0204, 1.0153, 1.0104, 1.0064, 1.0035, 1.0015, 1.0003, 0.9997, 0.9994, 0.9994, 0.9994, 0.9996, 1);
+    --duration-quick: 140ms;
+    --duration-fast: 200ms;
+    --duration-base: 320ms;
+    --duration-slow: 420ms;
+    --duration-page: 280ms;
 }
 
-@media (width >= 1024.05px) {
+.app-sidebar > * {
+    transition:
+        opacity var(--duration-base) var(--ease-emphasized),
+        transform var(--duration-slow) var(--ease-emphasized);
+}
+
+@media (width >= 64rem) {
     .app-sidebar[data-rail='hidden'] > * {
         opacity: 0;
         transform: translateX(-8px);
     }
 }
 
+/* The panels share one grid cell. When the route changes section, the one leaving slides away and
+   blurs, and the next one's rows come in one after another. */
 .sidebar-panel {
     grid-area: 1 / 1;
     transition:
-        opacity 420ms var(--ease-out-fluid),
-        transform 420ms var(--ease-out-fluid),
-        filter 420ms var(--ease-out-fluid);
+        opacity var(--duration-slow) var(--ease-emphasized),
+        transform var(--duration-slow) var(--ease-emphasized),
+        filter var(--duration-slow) var(--ease-emphasized);
 }
 
 .sidebar-panel > * {
     transition:
-        color 150ms var(--ease-out-fluid),
-        opacity 420ms var(--ease-out-fluid) var(--sidebar-item-delay, 0ms);
+        color var(--duration-quick) var(--ease-emphasized),
+        opacity var(--duration-slow) var(--ease-emphasized) var(--sidebar-item-delay, 0ms);
 }
 
 .sidebar-panel > *:nth-child(2) {
@@ -377,8 +390,131 @@ html[data-volt-desktop][data-volt-maximized] #root {
     transition-delay: 0ms;
 }
 
+/* A panel scrolls, so a ring drawn outside its rows would be clipped: it goes inside them. */
+.sidebar-panel :is(a, button, [role='button']):focus-visible {
+    outline-offset: -2px;
+}
+
+/* A move between dashboard pages is a View Transition (app/routes/view-transitions.ts). Only the
+   page and the active pill take part: the page leaves blurring and the next one rises in, while
+   the pill slides to its new row. The rest of the chrome stays put. */
+:root {
+    view-transition-name: none;
+}
+
+.page-view {
+    view-transition-name: page;
+}
+
+@media (width >= 64rem) {
+    .sidebar-panel[data-state='active'] .nav-indicator {
+        view-transition-name: nav-panel;
+    }
+}
+
+::view-transition-group(page) {
+    animation-duration: var(--duration-page);
+    animation-timing-function: var(--ease-emphasized);
+}
+
+::view-transition-old(page) {
+    animation: page-exit var(--duration-fast) var(--ease-emphasized) both;
+}
+
+::view-transition-new(page) {
+    animation: page-enter var(--duration-page) var(--ease-spring) both;
+}
+
+::view-transition-group(nav-panel) {
+    animation-duration: var(--duration-fast);
+    animation-timing-function: var(--ease-emphasized);
+}
+
+@keyframes page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+}
+
+@keyframes page-exit {
+    to {
+        opacity: 0;
+        filter: blur(4px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
+}
+
+/* ---- End of shell ---- */
+
 .react-flow__attribution {
     display: none;
+}
+
+/* Plugin builder. React Flow reads its colours from these variables, so edges, handles and the
+   minimap follow the theme without reading computed styles. Its own sheet loads after this one,
+   hence the extra class on each override. */
+.plugin-builder-canvas {
+    --xy-edge-stroke: color-mix(in oklab, var(--foreground) 30%, transparent);
+    --xy-edge-stroke-selected: var(--foreground);
+    --xy-edge-stroke-width: 2;
+    --xy-connectionline-stroke: var(--foreground);
+    --xy-connectionline-stroke-width: 2;
+}
+
+.plugin-builder-canvas .react-flow__handle {
+    width: 0.625rem;
+    height: 0.625rem;
+    border: 0;
+    background: var(--canvas);
+    box-shadow: 0 0 0 1.5px var(--muted);
+    transition: background-color var(--duration-quick) ease, box-shadow var(--duration-quick) ease;
+}
+
+/* A wider hit area than the 10px dot. */
+.plugin-builder-canvas .react-flow__handle::after {
+    content: '';
+    position: absolute;
+    inset: -0.5rem;
+    border-radius: 9999px;
+}
+
+.plugin-builder-canvas .react-flow__handle:is(:hover, .connectingto, .valid) {
+    background: var(--foreground);
+    box-shadow: 0 0 0 1.5px var(--foreground);
+}
+
+.plugin-builder-canvas .react-flow__minimap {
+    margin: 0.75rem;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--overlay-shadow);
+}
+
+/* On a phone the canvas toolbar takes the bottom edge. */
+@media (width < 48rem) {
+    .plugin-builder-canvas .react-flow__minimap {
+        display: none;
+    }
+}
+
+/* A node's output or log hangs below it, over the nodes that follow; React Flow stacks nodes with
+   an inline z-index. */
+.plugin-builder-canvas .react-flow__node:has([data-node-inspect]) {
+    z-index: 1001 !important;
+}
+
+@keyframes plugin-node-pulse {
+    50% {
+        box-shadow: 0 0 0 1.5px var(--foreground), 0 0 0 9px color-mix(in oklab, var(--foreground) 6%, transparent);
+    }
 }
 
 @keyframes canvas-drawer-backdrop-in {
@@ -391,15 +527,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-@keyframes loader-spoke-fade {
-    from { opacity: 1; }
-    to { opacity: 0.15; }
-}
-
-.loader-spoke {
-    animation: loader-spoke-fade 0.8s linear infinite;
-}
-
 [data-volt-desktop] .canvas-top-toolbar {
     -webkit-app-region: drag;
 }
@@ -408,8 +535,11 @@ html[data-volt-desktop][data-volt-maximized] #root {
     -webkit-app-region: no-drag;
 }
 
+/* The one glass over the scene: brightness() washed the atoms out under it and a second blur
+   radius cost a second blur pass every frame, so it takes the shared glass like the dock. */
 .canvas-analysis-execution-overlay {
-    backdrop-filter: blur(8px) brightness(1.3) saturate(0.6);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    backdrop-filter: var(--glass-backdrop);
 }
 
 .canvas-analysis-execution-overlay--completed {
@@ -460,42 +590,18 @@ html[data-volt-desktop][data-volt-maximized] #root {
         }
     }
 
-    /* The docked chrome that overlays the viewport. The right panel is a flex sibling
-       with only --background behind it, so a filter there would blur nothing. */
-    .canvas-top-toolbar,
-    .canvas-viewport-floating-controls,
+    /* The timeline is docked over the viewport, so it is glass. The toolbar and the wide right
+       panel sit on the bare canvas beside the viewport, where a filter would blur nothing. */
     #canvas-center-timeline {
-        -webkit-backdrop-filter: var(--glass-filter);
-        backdrop-filter: var(--glass-filter);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        backdrop-filter: var(--glass-backdrop);
     }
 
-    /* Floating surfaces are rounded like Pollium's, which keeps HeroUI's own radius scale
-       (--radius: 0.5rem). VOLT's scale is tighter, so the containers get those radii here
-       rather than through --radius, which would also change the buttons and fields inside
-       dialogs. Same layer as HeroUI, so its variants (full-screen modal, drawer sides) still win. */
-    .popover,
-    .dropdown__popover,
-    .select__popover,
-    .combo-box__popover,
-    .autocomplete__popover,
-    .modal__dialog,
-    .alert-dialog__dialog {
-        border-radius: 1.5rem;
-    }
-
-    .color-picker__popover,
-    .date-picker__popover,
-    .date-range-picker__popover {
-        border-radius: 1.25rem;
-    }
-
-    .tooltip {
-        border-radius: 0.75rem;
-    }
-
+    /* Rows are concentric with the 24px popover around them: its menu or listbox is inset 6px,
+       which leaves 18px, a pill for a one-line row. HeroUI's 16px would sit tighter than the edge. */
     .menu-item,
     .list-box-item {
-        border-radius: 1rem;
+        border-radius: calc(var(--radius-3xl) - 0.375rem);
     }
 
     /* HeroUI sets popover text with text-sm, 14px in Pollium; VOLT's text-sm is 13px, and its
@@ -511,12 +617,11 @@ html[data-volt-desktop][data-volt-maximized] #root {
     /* Pollium's own floating lists (context menu, command picker, slash menu): a 12px glass
        panel of 8px rows, highlighted with 6% of the foreground. */
     .glass-panel {
-        @apply rounded-[0.75rem] border border-foreground/10 p-1.5 shadow-lg;
-        background-color: color-mix(in srgb, var(--background) var(--glass-panel-alpha), transparent);
+        @apply rounded-xl bg-overlay p-1.5 shadow-overlay;
     }
 
     .glass-panel-item {
-        @apply flex w-full shrink-0 items-center gap-2.5 rounded-[0.5rem] border-0 bg-transparent px-2.5 py-1.5 text-start text-base text-foreground outline-none;
+        @apply flex w-full shrink-0 items-center gap-2.5 rounded-lg border-0 bg-transparent px-2.5 py-1.5 text-start text-base text-foreground outline-none;
     }
 
     /* Listbox options follow the highlighted option (keyboard or pointer); menu items, the pointer and focus. */
@@ -529,14 +634,92 @@ html[data-volt-desktop][data-volt-maximized] #root {
         @apply opacity-40;
     }
 
-    .glass-panel-separator {
-        @apply my-1 h-px shrink-0 bg-foreground/[0.06];
+    /* HeroUI's ToggleButtonGroup as the mockup's segmented control: a 12px well tinted 5% of the
+       foreground, its segments 2px in and 12px as well, the selected one tinted 9%. */
+    .toggle-button-group {
+        @apply gap-0.5 rounded-xl bg-foreground/5 p-0.5;
+    }
+
+    /* :is() matches the specificity of HeroUI's first- and last-child corner rules. */
+    .toggle-button-group .toggle-button:is(:nth-child(n), :first-child:last-child) {
+        --toggle-button-bg: transparent;
+        --toggle-button-bg-hover: transparent;
+        --toggle-button-bg-pressed: transparent;
+        --toggle-button-fg: var(--muted);
+        --toggle-button-bg-selected: color-mix(in oklab, var(--foreground) 9%, transparent);
+        --toggle-button-bg-selected-hover: var(--toggle-button-bg-selected);
+        --toggle-button-bg-selected-pressed: var(--toggle-button-bg-selected);
+        --toggle-button-fg-selected: var(--foreground);
+        @apply h-7.5 gap-1.5 rounded-xl px-3.5 text-sm;
+    }
+
+    .toggle-button-group .toggle-button:is(:hover, [data-hovered='true']) {
+        --toggle-button-fg: var(--foreground);
+    }
+
+    .toggle-button-group .toggle-button-group__separator {
+        display: none;
     }
 }
 
-.modal-backdrop,
-.drawer-backdrop {
-    z-index: 200;
+/* Toasts are sileo's, themed by the Toaster: an opaque fill inverted against the page. Pollium's
+   finish on top: titles as written, quieter descriptions, and state colours deep enough for the
+   light fill a dark page gets. */
+html [data-sileo-title] {
+    text-transform: none;
+}
+
+html [data-sileo-viewport][data-theme='dark'] {
+    --sileo-state-success: oklch(0.48 0.13 152);
+    --sileo-state-warning: oklch(0.53 0.12 74);
+    --sileo-state-info: oklch(0.5 0.14 245);
+    --sileo-state-error: oklch(0.5 0.18 25);
+    --sileo-state-loading: oklch(0.45 0 0);
+}
+
+html [data-sileo-viewport][data-theme='dark'] [data-sileo-description] {
+    color: rgba(0, 0, 0, 0.68);
+}
+
+html [data-sileo-viewport][data-theme='light'] [data-sileo-description] {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+/* Clear the dashboard's tab bar. */
+@media (width < 64rem) {
+    html [data-sileo-viewport][data-position^='bottom'] {
+        bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* The mockup's auth headings: a 720ms sweep that uncovers the title from the left. */
+.heading-reveal {
+    -webkit-mask-image: linear-gradient(to right, #000 33%, transparent 66%);
+    mask-image: linear-gradient(to right, #000 33%, transparent 66%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    animation: heading-reveal 720ms var(--ease-emphasized) both;
+}
+
+@keyframes heading-reveal {
+    from {
+        -webkit-mask-position: 100% 0;
+        mask-position: 100% 0;
+    }
+
+    to {
+        -webkit-mask-position: 0 0;
+        mask-position: 0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heading-reveal {
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
