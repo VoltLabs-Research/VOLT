@@ -4,7 +4,7 @@ import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import UserAvatar from '@/modules/auth/components/UserAvatar';
 import UserInfo from '@/modules/auth/components/UserInfo';
 import { DropdownItem, DropdownMenu, DropdownPopover, DropdownRoot, DropdownTrigger } from '@heroui/react';
-import { EllipsisVertical, Settings, X } from 'lucide-react';
+import { EllipsisVertical, LogOut, Settings } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface UserMenuPopoverProps {
@@ -23,7 +23,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, col
     let triggerContent: ReactNode = (
         <>
             <UserInfo user={user} />
-            <EllipsisVertical size={16} className='shrink-0' aria-hidden='true' />
+            <EllipsisVertical size={16} className='shrink-0 text-muted' aria-hidden='true' />
         </>
     );
 
@@ -36,8 +36,8 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, col
             <DropdownTrigger
                 aria-label='Open user menu'
                 className={collapsed
-                    ? 'user-menu-trigger-collapsed flex w-full items-center justify-center rounded-lg p-2 transition-colors duration-150 hover:bg-surface-tertiary'
-                    : 'flex w-full items-center rounded-lg p-3 text-left transition-colors duration-150 hover:bg-surface-tertiary'}
+                    ? 'flex items-center justify-center rounded-full p-1 transition-colors duration-150 hover:bg-foreground/6 aria-expanded:bg-foreground/6'
+                    : 'flex w-full items-center gap-2 rounded-lg p-2 text-left transition-colors duration-150 hover:bg-foreground/6 aria-expanded:bg-foreground/6'}
             >
                 {triggerContent}
             </DropdownTrigger>
@@ -48,7 +48,7 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, col
                         Account Settings
                     </DropdownItem>
                     <DropdownItem onAction={onSignOut} isDisabled={isSigningOut}>
-                        {isSigningOut ? <Loader size='sm' color='current' /> : <X aria-hidden='true' />}
+                        {isSigningOut ? <Loader size='sm' color='current' /> : <LogOut aria-hidden='true' />}
                         Sign Out
                     </DropdownItem>
                 </DropdownMenu>

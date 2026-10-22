@@ -1,7 +1,6 @@
-import Loader from '@/shared/ui/components/Loader';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, LoaderCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { ProfileForm as ProfileFormType } from './validation-schema';
@@ -117,33 +116,27 @@ const ProfileForm = ({
 
     if (saveState === ProfileSaveState.Saving) {
         saveFeedback = (
-            <div className='flex flex-row items-center gap-2 text-sm' role='status' aria-live='polite' aria-atomic='true'>
-                <span className='flex items-center' aria-hidden='true'>
-                    <Loader size='sm' color='current' />
-                </span>
-                <span className='text-sm text-muted'>Saving changes...</span>
+            <div className='flex items-center gap-1.5 text-xs text-muted' role='status' aria-live='polite' aria-atomic='true'>
+                <LoaderCircle size={14} className='animate-spin' aria-hidden='true' />
+                <span>Saving changes...</span>
             </div>
         );
     }
 
     if (saveState === ProfileSaveState.Saved) {
         saveFeedback = (
-            <div className='flex flex-row items-center gap-2 text-sm' role='status' aria-live='polite' aria-atomic='true'>
-                <span className='flex items-center' aria-hidden='true'>
-                    <CheckCircle2 size={14} className='text-success' />
-                </span>
-                <span className='text-sm text-muted'>Changes saved</span>
+            <div className='flex items-center gap-1.5 text-xs text-muted' role='status' aria-live='polite' aria-atomic='true'>
+                <CheckCircle2 size={14} aria-hidden='true' />
+                <span>Changes saved</span>
             </div>
         );
     }
 
     if (saveState === ProfileSaveState.Error) {
         saveFeedback = (
-            <div className='flex flex-row items-center gap-2 text-sm text-danger' role='alert' aria-live='assertive' aria-atomic='true'>
-                <span className='flex items-center' aria-hidden='true'>
-                    <AlertCircle size={14} />
-                </span>
-                <span className='text-sm'>Could not save changes. We will retry after your next edit.</span>
+            <div className='flex items-center gap-1.5 text-xs text-danger-soft-foreground' role='alert' aria-live='assertive' aria-atomic='true'>
+                <AlertCircle size={14} aria-hidden='true' />
+                <span>Could not save changes. We will retry after your next edit.</span>
             </div>
         );
     }

@@ -1,37 +1,44 @@
+import { cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 interface SettingsRowProps {
-    icon?: ReactNode;
     title: string;
     description?: string;
+    // Content that belongs to the row's subject, such as the profile picture itself.
+    leading?: ReactNode;
     rightContent?: ReactNode;
+    isDanger?: boolean;
 }
 
 const SettingsRow = ({
-    icon,
     title,
     description,
-    rightContent
+    leading,
+    rightContent,
+    isDanger = false
 }: SettingsRowProps) => {
     return (
-        <div className='flex flex-row items-center gap-3 rounded-xl p-2 transition-colors duration-200 max-sm:flex-wrap'>
-            {icon && (
-                <div className='flex flex-row items-center justify-center shrink-0 text-xl text-muted'>
-                    {icon}
-                </div>
+        <div
+            className={cn(
+                'flex flex-wrap items-center justify-between gap-4 rounded-2xl p-5',
+                isDanger ? 'border border-danger/30' : 'bg-foreground/4'
             )}
-            <div className='flex flex-col gap-1 flex-1 min-w-0'>
-                <p className='text-sm font-medium'>
-                    {title}
-                </p>
-                {description && (
-                    <p className='text-xs text-muted'>
-                        {description}
+        >
+            <div className='flex min-w-48 flex-1 items-center gap-4'>
+                {leading}
+                <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+                    <p className='text-base font-medium text-foreground'>
+                        {title}
                     </p>
-                )}
+                    {description && (
+                        <p className='text-sm text-muted'>
+                            {description}
+                        </p>
+                    )}
+                </div>
             </div>
             {rightContent && (
-                <div className='flex flex-row items-center shrink-0 max-sm:basis-full max-sm:ml-8'>
+                <div className='flex shrink-0 items-center gap-2'>
                     {rightContent}
                 </div>
             )}
