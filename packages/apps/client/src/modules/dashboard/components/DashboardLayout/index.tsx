@@ -6,12 +6,14 @@ import {
 } from '@heroui/react';
 import AppNav from '@/modules/dashboard/components/AppNav';
 import DashboardHeader from '@/modules/dashboard/components/DashboardHeader';
-import DashboardBottomBar from '@/modules/dashboard/components/DashboardBottomBar';
+import DashboardTabBar from '@/modules/dashboard/components/DashboardTabBar';
 import SettingsNav from '@/modules/dashboard/components/SettingsNav';
+import TrajectoriesNav from '@/modules/dashboard/components/SectionNav/TrajectoriesNav';
+import SecretKeysNav from '@/modules/dashboard/components/SectionNav/SecretKeysNav';
 import DashboardSidePanel from '@/modules/dashboard/components/DashboardSidePanel';
 import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
-import { SIDEBAR_RESTING_WIDTH_CLASS } from '@/modules/dashboard/utils/sidebar-width';
-import ActivityDrawer from '@/modules/dashboard/components/ActivityDrawer';
+import { dashboardPageKey } from '@/modules/dashboard/utils/page-key';
+import { sidebarPanelFor } from '@/modules/dashboard/utils/sidebar-panels';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
 import useUserSessionActions from '@/modules/auth/hooks/use-user-session-actions';
 import AINav from '@/modules/ai/components/AINav';
@@ -28,54 +30,26 @@ import { JoinTeamModal } from '@/modules/team/components/JoinTeamModal';
 import useTeamData from '@/modules/team/hooks/team/use-team-data';
 import useTip from '@/shared/tips/use-tip';
 import { useMedia } from '@/shared/ui/hooks/use-media';
-import { usePrefersReducedMotion } from '@/shared/ui/hooks/use-prefers-reduced-motion';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import type {
     DashboardGlobalSearchBreadcrumb,
     DashboardHeaderContext
 } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import Scrollable from '@/shared/ui/components/Scrollable';
-import type { SidebarPanelName } from '@/shared/ui/components/SidebarPanel';
-
-const panelFor = (pathname: string): SidebarPanelName => {
-    if (pathname.startsWith('/dashboard/settings')) {
-        return 'settings';
-    }
-
-    if (pathname.startsWith('/dashboard/ai')) {
-        return 'ai';
-    }
-
-    return 'app';
-};
 
 type SidebarRailState = 'expanded' | 'collapsed' | 'hidden';
 
-const NESTED_LAYOUT_PATH_PATTERNS: ReadonlyArray<RegExp> = [
-    /^\/dashboard\/ai(?=\/|$)/
-];
-
-const getOutletTransitionKey = (pathname: string): string => {
-    for (const pattern of NESTED_LAYOUT_PATH_PATTERNS) {
-        const match = pathname.match(pattern);
-        if (match) return match[0];
-    }
-    return pathname;
-};
-
 const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
-const RAIL_VIEWPORT_QUERY = '(min-width: 1024.05px)';
+const RAIL_VIEWPORT_QUERY = '(width >= 64rem)';
 
 const DashboardLayout = () => {
     useGlobalSocketCacheSync();
 
     const { teams } = useTeamData();
     const location = useLocation();
-    const panel = panelFor(location.pathname);
-    const prefersReducedMotion = usePrefersReducedMotion();
+    const panel = sidebarPanelFor(location.pathname);
     const isRailViewport = useMedia(RAIL_VIEWPORT_QUERY);
     const { handleSettingsClick, handleSignOut, isSigningOut } = useUserSessionActions();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -109,10 +83,18 @@ const DashboardLayout = () => {
         enabled: !railHidden
     });
 
-    const expandSidebar = useCallback(() => {
-        writeStoredString(SIDEBAR_COLLAPSED_KEY, 'false');
-        setSidebarCollapsedPreference(false);
+    // What the reader chooses wins over a page's own request (the AI page collapses the rail).
+    const setSidebarCollapsed = useCallback((next: boolean) => {
+        writeStoredString(SIDEBAR_COLLAPSED_KEY, String(next));
+        setSidebarCollapsedPreference(next);
+
+        if (!next) {
+            setSidebarCollapsedOverride(false);
+        }
     }, []);
+
+    const expandSidebar = useCallback(() => setSidebarCollapsed(false), [setSidebarCollapsed]);
+    const toggleSidebar = useCallback(() => setSidebarCollapsed(!collapsed), [collapsed, setSidebarCollapsed]);
 
     useEffect(() => {
         setGlobalSearchBreadcrumb(null);
@@ -144,14 +126,16 @@ const DashboardLayout = () => {
     return (
         <>
             <AIPageExitWidgetBridge />
+            {/* Pollium's chrome: the navigation sits on the canvas and the page on one surface,
+                inset 8px with a 16px corner from 64rem up, and edge to edge below. */}
             <main className='flex h-dvh flex-row bg-background'>
                 <TeamCreatorModal isRequired={teams.length === 0} />
                 <JoinTeamModal />
 
                 <div
                     className={cn(
-                        'fixed inset-0 z-[99] hidden bg-[color-mix(in_srgb,var(--overlay-solid)_78%,transparent)] backdrop-blur-[8px] backdrop-saturate-[1.4]',
-                        sidebarOpen && 'max-[1024px]:block'
+                        'fixed inset-0 z-[99] hidden bg-canvas/80',
+                        sidebarOpen && 'max-lg:block'
                     )}
                     onClick={() => setSidebarOpen(false)}
                 />
@@ -160,29 +144,32 @@ const DashboardLayout = () => {
                     data-rail={rail}
                     inert={railHidden || (!isRailViewport && !sidebarOpen)}
                     className={cn(
-                        'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden bg-transparent pt-5 transition-[width] duration-[420ms] ease-out-fluid max-[1024px]:fixed max-[1024px]:top-0 max-[1024px]:left-0 max-[1024px]:border-r max-[1024px]:border-border max-[1024px]:bg-surface max-[1024px]:shadow-[8px_0_32px_rgba(0,0,0,0.3)] max-[1024px]:transition-[transform] max-[1024px]:duration-[250ms]',
+                        'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden pt-5 transition-[width] duration-[420ms] ease-out-fluid',
+                        'max-lg:fixed max-lg:top-0 max-lg:left-0 max-lg:w-68 max-lg:max-w-[85vw] max-lg:bg-dashboard-surface max-lg:pt-3 max-lg:transition-transform max-lg:[backdrop-filter:var(--glass-backdrop)]',
                         {
-                            expanded: cn('w-[280px]', SIDEBAR_RESTING_WIDTH_CLASS),
-                            collapsed: 'w-[280px] min-[1024.05px]:w-16',
-                            hidden: 'w-[280px] min-[1024.05px]:w-0'
+                            expanded: 'lg:w-60',
+                            collapsed: 'lg:w-16',
+                            hidden: 'lg:w-0'
                         }[rail],
-                        sidebarOpen ? 'max-[1024px]:translate-x-0' : 'max-[1024px]:-translate-x-full'
+                        sidebarOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
                     )}
                 >
-                    <Tooltip>
-                        <Button
-                            isIconOnly
-                            variant='ghost'
-                            className='absolute top-4 right-4 hidden items-center justify-center rounded-md border border-border bg-surface-tertiary max-[1024px]:flex max-[1024px]:size-11 max-[1024px]:p-0'
-                            aria-label='Close sidebar'
-                            onPress={() => setSidebarOpen(false)}
-                        >
-                            <X size={20} />
-                        </Button>
-                        <Tooltip.Content placement='bottom'>Close sidebar</Tooltip.Content>
-                    </Tooltip>
+                    <div className='hidden shrink-0 justify-end px-3 pb-1 max-lg:flex'>
+                        <Tooltip>
+                            <Button
+                                isIconOnly
+                                variant='ghost'
+                                className='rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground'
+                                aria-label='Close navigation'
+                                onPress={() => setSidebarOpen(false)}
+                            >
+                                <X size={18} />
+                            </Button>
+                            <Tooltip.Content placement='bottom'>Close navigation</Tooltip.Content>
+                        </Tooltip>
+                    </div>
 
-                    <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pt-2 pb-2'>
+                    <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pb-3'>
                         <AppNav
                             active={panel === 'app'}
                             collapsed={collapsed}
@@ -190,12 +177,14 @@ const DashboardLayout = () => {
                             onExpandSidebar={expandSidebar}
                         />
                         <SettingsNav active={panel === 'settings'} collapsed={collapsed} />
+                        <SecretKeysNav active={panel === 'secret-keys'} collapsed={collapsed} />
+                        <TrajectoriesNav active={panel === 'trajectories'} collapsed={collapsed} />
                         <AINav active={panel === 'ai'} collapsed={collapsed} />
                     </div>
 
                     <div
                         className={cn(
-                            'flex flex-col gap-2 p-0',
+                            'flex flex-col gap-2 px-3 pb-3 empty:hidden',
                             collapsed && 'items-center'
                         )}
                     >
@@ -208,37 +197,32 @@ const DashboardLayout = () => {
                     </div>
                 </aside>
 
-                <div className='flex h-dvh min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface'>
-                    {!headerHidden && (
-                        <DashboardHeader
-                            setSidebarOpen={setSidebarOpen}
-                            globalSearchBreadcrumb={globalSearchBreadcrumb}
-                        />
-                    )}
+                <div className='flex min-w-0 flex-1 lg:p-2'>
+                    <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden lg:rounded-2xl dark:bg-background'>
+                        {!headerHidden && (
+                            <DashboardHeader
+                                setSidebarOpen={setSidebarOpen}
+                                isSidebarCollapsed={collapsed}
+                                onToggleSidebar={toggleSidebar}
+                                globalSearchBreadcrumb={globalSearchBreadcrumb}
+                            />
+                        )}
 
-                    <Scrollable className='relative min-h-0 flex-1'>
-                        <TrajectoryUploaderContainer>
-                            <motion.div
-                                key={getOutletTransitionKey(location.pathname)}
-                                initial={prefersReducedMotion ? false : { opacity: 0 }}
-                                animate={prefersReducedMotion ? undefined : { opacity: 1 }}
-                                transition={prefersReducedMotion ? { duration: 0 } : {
-                                    duration: 0.22,
-                                    ease: [0.32, 0.72, 0, 1]
-                                }}
-                                style={{ height: '100%' }}
-                            >
-                                <Outlet context={outletContext} />
-                            </motion.div>
-                        </TrajectoryUploaderContainer>
-                    </Scrollable>
+                        <Scrollable className='page-view relative min-h-0 flex-1'>
+                            <TrajectoryUploaderContainer>
+                                {/* A new page is a new outlet, as it was under the old fade: its state starts over. */}
+                                <div key={dashboardPageKey(location.pathname)} className='h-full'>
+                                    <Outlet context={outletContext} />
+                                </div>
+                            </TrajectoryUploaderContainer>
+                        </Scrollable>
 
-                    {!headerHidden && <DashboardBottomBar />}
+                        {!headerHidden && <DashboardTabBar />}
+                    </div>
                 </div>
 
                 <DashboardSidePanel />
 
-                <ActivityDrawer />
             </main>
         </>
     );

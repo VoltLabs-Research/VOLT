@@ -1,5 +1,5 @@
 import NavItem from '@/shared/ui/components/NavItem';
-import { Tooltip } from '@heroui/react';
+import { Tooltip, cn } from '@heroui/react';
 import { useEffect, useId, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -10,6 +10,9 @@ export interface NavTreeNode {
     isSelected?: boolean;
     children?: NavTreeNode[];
 }
+
+// An open group hangs from a hairline under its parent's icon (or, one level down, its label).
+const GROUP_LIST_CLASS = 'relative flex flex-col gap-0.5 before:absolute before:inset-y-1 before:w-px before:bg-foreground/8';
 
 interface NavTreeGroupProps {
     node: NavTreeNode;
@@ -32,7 +35,7 @@ const NavTreeGroup = ({ node, collapsed }: NavTreeGroupProps) => {
         <li className='flex flex-col gap-0.5'>
             <NavItem
                 label={node.label}
-                depth={1}
+                isNested
                 collapsed={collapsed}
                 isActive={Boolean(node.isSelected) || childSelected}
                 isExpanded={expanded}
@@ -41,12 +44,12 @@ const NavTreeGroup = ({ node, collapsed }: NavTreeGroupProps) => {
             />
 
             {expanded ? (
-                <ul id={listId} className='flex flex-col gap-0.5'>
+                <ul id={listId} className={cn(GROUP_LIST_CLASS, 'pl-4 before:left-2')}>
                     {children.map((child) => (
                         <li key={child.label}>
                             <NavItem
                                 label={child.label}
-                                depth={2}
+                                isNested
                                 collapsed={collapsed}
                                 to={child.to}
                                 onClick={child.onClick}
@@ -123,7 +126,7 @@ const NavTreeSection = ({
             </Tooltip>
 
             {expanded && !isDisabled && !collapsed ? (
-                <ul id={listId} className='flex flex-col gap-0.5'>
+                <ul id={listId} className={cn(GROUP_LIST_CLASS, 'pl-9 before:left-5')}>
                     {items.map((item) => {
                         if (item.children) {
                             return <NavTreeGroup key={item.label} node={item} collapsed={collapsed} />;
@@ -133,7 +136,7 @@ const NavTreeSection = ({
                             <li key={item.label}>
                                 <NavItem
                                     label={item.label}
-                                    depth={1}
+                                    isNested
                                     collapsed={collapsed}
                                     to={item.to}
                                     onClick={item.onClick}

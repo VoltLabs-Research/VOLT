@@ -57,11 +57,11 @@ export default function TeamSelector() {
         >
             <Select.Trigger
                 onFocus={() => setTipTrigger((current) => current + 1)}
-                className='flex h-8 min-h-0 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-base font-medium text-foreground transition-colors duration-150 hover:bg-surface-hover'
+                className='flex h-9 min-h-0 min-w-0 cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent px-2 text-base font-medium text-foreground transition-colors duration-150 hover:bg-default aria-expanded:bg-default'
             >
-                <Select.Value>
+                <Select.Value className='min-w-0'>
                     {({ isPlaceholder, selectedText, defaultChildren }) => (
-                        <span className='max-w-28 truncate capitalize sm:max-w-40' title='Switch team'>
+                        <span className='block min-w-0 max-w-28 truncate capitalize sm:max-w-40' title='Switch team'>
                             {isPlaceholder ? defaultChildren : selectedText}
                         </span>
                     )}
@@ -89,7 +89,7 @@ export default function TeamSelector() {
                             >
                                 <button
                                     type='button'
-                                    className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-150 ease-out group-data-[hovered=true]:opacity-100 hover:text-danger'
+                                    className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted opacity-0 transition-[opacity,color] duration-150 ease-out group-data-[hovered=true]:opacity-100 hover:text-danger'
                                     onClick={(event) => handleLeaveTeam(event, option.value)}
                                     aria-label={`Leave ${option.title}`}
                                 >

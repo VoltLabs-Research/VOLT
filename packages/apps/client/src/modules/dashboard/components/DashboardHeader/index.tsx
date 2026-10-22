@@ -1,4 +1,5 @@
 import GlobalSearch from '@/modules/dashboard/components/GlobalSearch';
+import DashboardJobsChip from '@/modules/dashboard/components/DashboardJobsChip';
 import { TeamInvitePanelPopover } from '@/modules/team/components/TeamInvitePanelPopover';
 import TeamSelector from '@/modules/team/components/TeamSelector';
 import AIFloatingAssistantPanel from '@/modules/ai/components/AIFloatingAssistantPanel';
@@ -14,29 +15,47 @@ import {
     DropdownPopover,
     DropdownRoot,
     DropdownTrigger,
-    Tooltip
+    Tooltip,
+    cn
 } from '@heroui/react';
 import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
 import WindowControls from '@/shared/ui/components/WindowControls';
-import { Menu, Plus, UserPlus } from 'lucide-react';
+import { Menu, PanelLeft, Plus, Search, UserPlus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+
+// The header's icon buttons: 36px, muted until hovered.
+const HEADER_ICON_BUTTON_CLASS = 'rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground';
 
 interface DashboardHeaderProps {
     setSidebarOpen: (status: boolean) => void;
+    isSidebarCollapsed: boolean;
+    onToggleSidebar: () => void;
     globalSearchBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
 }
 
 const DashboardHeader = ({
     setSidebarOpen,
+    isSidebarCollapsed,
+    onToggleSidebar,
     globalSearchBreadcrumb
 }: DashboardHeaderProps) => {
+    const { pathname } = useLocation();
     const { canAccess } = useTeamPermissions();
     const singleTenant = useSingleTenant();
     const canInvite = canAccess(['team-invitation:create']);
+    // On a phone the search is a button that opens the field over the header.
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const sidebarToggleLabel = isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+
+    useEffect(() => {
+        setIsSearchOpen(false);
+    }, [pathname]);
 
     let inviteAction = (
         <Tooltip>
             <Tooltip.Trigger>
-                <Button isIconOnly variant='ghost' isDisabled aria-label='Invite members'>
+                <Button isIconOnly variant='ghost' className={HEADER_ICON_BUTTON_CLASS} isDisabled aria-label='Invite members'>
                     <UserPlus size={18} />
                 </Button>
             </Tooltip.Trigger>
@@ -49,17 +68,32 @@ const DashboardHeader = ({
     }
 
     return (
-        <header className='dashboard-top-header flex flex-row items-center gap-4 sticky top-0 z-50 px-8 py-4 max-[768px]:flex-wrap max-[768px]:gap-2 max-[768px]:p-3'>
-            <Button
-                isIconOnly
-                variant='ghost'
-                className='hidden rounded-md bg-transparent border-none hover:bg-surface-hover max-[1024px]:flex'
-                aria-label='Open sidebar'
-                onPress={() => setSidebarOpen(true)}
-            >
-                <Menu size={20} />
-            </Button>
-            <div className='flex flex-row items-center gap-1.5 flex-1 min-w-0 max-[768px]:flex-auto max-[768px]:overflow-hidden'>
+        <header className='relative flex h-14 shrink-0 flex-row items-center gap-2 px-4 lg:px-6'>
+            {/* The team keeps its name and the search gives way; only a phone, without the search, truncates it. */}
+            <div className='flex min-w-0 flex-1 flex-row items-center gap-0.5 sm:min-w-max'>
+                <Button
+                    isIconOnly
+                    variant='ghost'
+                    className={cn(HEADER_ICON_BUTTON_CLASS, 'lg:hidden')}
+                    aria-label='Open navigation'
+                    onPress={() => setSidebarOpen(true)}
+                >
+                    <Menu size={18} />
+                </Button>
+
+                <Tooltip>
+                    <Button
+                        isIconOnly
+                        variant='ghost'
+                        className={cn(HEADER_ICON_BUTTON_CLASS, 'max-lg:hidden')}
+                        aria-label={sidebarToggleLabel}
+                        onPress={onToggleSidebar}
+                    >
+                        <PanelLeft size={18} />
+                    </Button>
+                    <Tooltip.Content placement='bottom'>{sidebarToggleLabel}</Tooltip.Content>
+                </Tooltip>
+
                 {!singleTenant && (
                     <>
                         <TeamSelector />
@@ -67,7 +101,7 @@ const DashboardHeader = ({
                         <DropdownRoot>
                             <Tooltip>
                                 <DropdownTrigger
-                                    className='flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
+                                    className='flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground'
                                     aria-label='Team actions'
                                 >
                                     <Plus size={16} aria-hidden='true' />
@@ -90,11 +124,34 @@ const DashboardHeader = ({
                     </>
                 )}
             </div>
-            <div className='flex justify-center w-[min(400px,100%)] min-w-0 flex-[0_1_400px] max-[768px]:order-4 max-[768px]:w-full max-[768px]:flex-[1_1_100%]'>
-                <GlobalSearch contextBreadcrumb={globalSearchBreadcrumb} />
+
+            <div
+                className={cn(
+                    'flex min-w-0 flex-row items-center justify-center gap-2 sm:flex-[0_1_25rem]',
+                    isSearchOpen ? 'max-sm:absolute max-sm:inset-0 max-sm:z-10 max-sm:bg-canvas max-sm:px-4' : 'max-sm:hidden'
+                )}
+            >
+                <GlobalSearch
+                    contextBreadcrumb={globalSearchBreadcrumb}
+                    autoFocus={isSearchOpen}
+                    onDismiss={isSearchOpen ? () => setIsSearchOpen(false) : undefined}
+                />
             </div>
-            <div className='flex flex-row items-center justify-end gap-2 flex-1 max-[768px]:min-w-0 max-[768px]:flex-none max-[768px]:gap-1'>
-                {!singleTenant && <span className='contents max-[768px]:hidden'>{inviteAction}</span>}
+
+            <div className='flex flex-1 shrink-0 flex-row items-center justify-end gap-1'>
+                <Button
+                    isIconOnly
+                    variant='ghost'
+                    className={cn(HEADER_ICON_BUTTON_CLASS, 'sm:hidden')}
+                    aria-label='Search'
+                    onPress={() => setIsSearchOpen(true)}
+                >
+                    <Search size={18} />
+                </Button>
+
+                <DashboardJobsChip />
+
+                {!singleTenant && <span className='contents max-sm:hidden'>{inviteAction}</span>}
 
                 <ThemeToggleButton />
                 <AIFloatingAssistantPanel />

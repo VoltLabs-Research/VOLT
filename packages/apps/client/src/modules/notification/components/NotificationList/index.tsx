@@ -1,8 +1,6 @@
 import NotificationItem from '../NotificationItem';
-import RecoveryState from '@/shared/ui/components/RecoveryState';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import { Skeleton } from '@heroui/react';
-import { BellOff } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Notification } from '@volt/contracts/modules/notification/domain';
 
@@ -18,8 +16,8 @@ const LOAD_MORE_THRESHOLD = 50;
 
 const skeletonLines = (
     <>
-        <Skeleton className='h-3 w-[60%] rounded-sm' />
-        <Skeleton className='h-2.5 w-[90%] rounded-sm' />
+        <Skeleton className='h-3 w-[60%] rounded-md' />
+        <Skeleton className='h-2.5 w-[90%] rounded-md' />
     </>
 );
 
@@ -50,9 +48,9 @@ const NotificationList = ({
 
     if (isLoading && notifications.length === 0) {
         return (
-            <div className='flex flex-col gap-2 p-2'>
+            <div className='flex flex-col gap-0.5'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <div className='flex flex-col gap-2 p-3 rounded-lg' key={`notif-skel-${i}`}>
+                    <div className='flex flex-col gap-2 px-3.5 py-3' key={`notif-skel-${i}`}>
                         {skeletonLines}
                     </div>
                 ))}
@@ -62,22 +60,20 @@ const NotificationList = ({
 
     if (notifications.length === 0) {
         return (
-            <RecoveryState
-                title='No notifications'
-                description="You're all caught up!"
-                icon={<BellOff size={26} strokeWidth={1.5} />}
-                className='p-4'
-            />
+            <div className='flex flex-col items-center gap-1 px-2.5 py-8 text-center'>
+                <p className='text-base font-medium'>No notifications</p>
+                <p className='text-sm text-muted'>You&apos;re all caught up!</p>
+            </div>
         );
     }
 
     return (
         <Scrollable
             ref={containerRef}
-            className='max-h-[360px] max-[480px]:max-h-[calc(60vh-60px)]'
+            className='min-h-0 flex-1'
         >
             <ul
-                className='flex flex-col gap-2 p-2 m-0 list-none'
+                className='m-0 flex list-none flex-col gap-0.5 p-0'
                 aria-busy={isLoading}
             >
                 {notifications.map((notification) => (
@@ -89,7 +85,7 @@ const NotificationList = ({
                 ))}
                 {isLoading && (
                     <li className='list-none'>
-                        <div className='flex flex-col gap-2 p-3 rounded-lg'>
+                        <div className='flex flex-col gap-2 px-3.5 py-3'>
                             {skeletonLines}
                         </div>
                     </li>

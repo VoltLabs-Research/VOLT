@@ -1,50 +1,58 @@
 import Loader from '@/shared/ui/components/Loader';
-import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, SearchField, cn } from '@heroui/react';
+import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, Kbd, SearchField, cn } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from './use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
 import useTip from '@/shared/tips/use-tip';
 import { FloatingPortal } from '@floating-ui/react';
-import { useId, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { Box as CubeIcon, ScanSearch, Users, Workflow } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
 type SectionConfig = {
     key: GlobalSearchSectionKey;
-    icon: ReactNode;
     title: string;
 };
 
 const SECTIONS: SectionConfig[] = [
     {
         key: 'analyses',
-        icon: <Workflow />,
         title: 'Analyses'
     },
     {
         key: 'trajectories',
-        icon: <ScanSearch size={16} />,
         title: 'Trajectories'
     },
     {
         key: 'plugins',
-        icon: <CubeIcon size={16} />,
         title: 'Plugins'
     },
     {
         key: 'teams',
-        icon: <Users />,
         title: 'Teams'
     }
 ];
 
+const IS_APPLE_PLATFORM = /Mac|iPhone|iPad/u.test(navigator.userAgent);
+const SHORTCUT_LABEL = IS_APPLE_PLATFORM ? '⌘K' : 'Ctrl K';
+
+const isEditableTarget = (target: EventTarget | null): boolean => (
+    target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+);
+
 interface GlobalSearchProps {
     contextBreadcrumb?: DashboardGlobalSearchBreadcrumb | null;
+    // Focuses the field whenever it turns true.
+    autoFocus?: boolean;
+    // The field is leaving: it lost focus or the reader pressed Escape.
+    onDismiss?: () => void;
 }
 
-const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
+// A press anywhere in the results keeps the field focused: its blur closes the phone overlay.
+const keepInputFocus = (event: MouseEvent) => event.preventDefault();
+
+const GlobalSearch = ({ contextBreadcrumb = null, autoFocus = false, onDismiss }: GlobalSearchProps) => {
     const {
         refs,
         floatingStyles,
@@ -62,6 +70,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         handleSelect
     } = useDashboardGlobalSearch();
     const floatingRoot = useFloatingRoot();
+    const inputRef = useRef<HTMLInputElement>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [focusTipTrigger, setFocusTipTrigger] = useState(0);
     const searchInputId = useId();
@@ -77,6 +86,37 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     });
 
     const showContextBreadcrumb = !isFocused && query.length === 0 && !!contextBreadcrumb?.items.length;
+
+    // ⌘K / Ctrl K focuses the field, unless the reader is typing somewhere else (an editor's own chords).
+    useEffect(() => {
+        const handleShortcut = (event: globalThis.KeyboardEvent) => {
+            const input = inputRef.current;
+            if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 'k') return;
+            if (!input || input.offsetParent === null || isEditableTarget(event.target)) return;
+
+            event.preventDefault();
+            input.focus();
+            input.select();
+        };
+
+        window.addEventListener('keydown', handleShortcut);
+        return () => window.removeEventListener('keydown', handleShortcut);
+    }, []);
+
+    // The field can be on the page already, hidden, when it is asked for; autoFocus would miss that.
+    useEffect(() => {
+        if (autoFocus) {
+            inputRef.current?.focus();
+        }
+    }, [autoFocus]);
+
+    const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+        handleKeyDown(event);
+
+        if (event.key === 'Escape') {
+            onDismiss?.();
+        }
+    };
 
     const breadcrumbOverlay = useMemo(() => {
         if (!contextBreadcrumb?.items.length) {
@@ -107,7 +147,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         const optionId = `${resultsListId}-option-${itemIndex}`;
 
         return (
-            <div className={cn('glass-panel-item min-w-0 cursor-pointer flex-col items-start gap-0 hover:bg-foreground/[0.06]', isDisabled && 'opacity-40 cursor-not-allowed pointer-events-none')} key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} onMouseDown={(event) => event.preventDefault()} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title}>
+            <div className={cn('glass-panel-item min-w-0 cursor-pointer flex-col items-start gap-0 hover:bg-foreground/[0.06]', isDisabled && 'opacity-40 cursor-not-allowed pointer-events-none')} key={item.id} id={optionId} role='option' aria-selected={isActive} aria-disabled={isDisabled} tabIndex={-1} onClick={() => handleSelect(item)} title={item.subtitle ? `${item.title} - ${item.subtitle}` : item.title} aria-label={item.subtitle ? `${item.title}. ${item.subtitle}` : item.title}>
                 <p className='m-0 w-full truncate' title={item.title}>{item.title}</p>
                 {item.subtitle ? (
                     <p className='m-0 w-full truncate text-xs leading-snug text-muted' title={item.subtitle}>{item.subtitle}</p>
@@ -116,7 +156,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
         );
     };
 
-    const renderSection = ({ key, icon, title }: SectionConfig) => {
+    const renderSection = ({ key, title }: SectionConfig) => {
         const section = sections.find((entry) => entry.key === key);
         const items = section?.items ?? [];
 
@@ -126,10 +166,7 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
 
         return (
             <div className='py-1 border-b border-foreground/[0.06] last:border-b-0' key={key} role='group' aria-labelledby={`${resultsListId}-${key}-label`}>
-                <div className='flex flex-row items-center gap-2 px-2.5 pt-1.5 pb-1 text-muted' id={`${resultsListId}-${key}-label`}>
-                    <span aria-hidden='true'>{icon}</span>
-                    <p className='text-xs font-medium'>{title}</p>
-                </div>
+                <p className='px-2.5 pt-1.5 pb-1 text-xs text-muted' id={`${resultsListId}-${key}-label`}>{title}</p>
                 <div className='flex flex-col gap-0.5'>
                     {items.map(renderItem)}
                 </div>
@@ -138,9 +175,10 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
     };
 
     return (
-        <div className='w-[min(100%,400px)] min-w-0 max-[768px]:w-full' ref={refs.setReference} {...getReferenceProps()}>
+        <div className='w-full max-w-100 min-w-0' ref={refs.setReference} {...getReferenceProps()}>
             <SearchField
                 fullWidth
+                variant='secondary'
                 value={query}
                 onChange={setQuery}
                 aria-label='Global search'
@@ -149,18 +187,22 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                     setFocusTipTrigger((current) => current + 1);
                     handleFocus();
                 }}
-                onBlur={() => setIsFocused(false)}
+                onBlur={() => {
+                    setIsFocused(false);
+                    onDismiss?.();
+                }}
             >
-                <SearchField.Group>
+                <SearchField.Group className='rounded-full border-0 bg-foreground/5 pe-1.5 hover:bg-foreground/8 focus-within:bg-foreground/8'>
                     <SearchField.SearchIcon className='shrink-0 text-muted' />
                     <div className='relative min-w-0 flex-1'>
                         {showContextBreadcrumb && breadcrumbOverlay && (
-                            <div className='pointer-events-none absolute inset-0 z-[2] flex items-center overflow-hidden whitespace-nowrap'>
+                            <div className='pointer-events-none absolute inset-0 z-[2] flex items-center overflow-hidden ps-2 whitespace-nowrap'>
                                 {breadcrumbOverlay}
                             </div>
                         )}
 
                         <SearchField.Input
+                            ref={inputRef}
                             id={searchInputId}
                             className={cn('relative z-[1]', showContextBreadcrumb && 'text-transparent caret-[var(--foreground)]')}
                             placeholder={showContextBreadcrumb ? '' : 'Search…'}
@@ -170,15 +212,20 @@ const GlobalSearch = ({ contextBreadcrumb = null }: GlobalSearchProps) => {
                             aria-haspopup='listbox'
                             aria-controls={showResults ? resultsListId : undefined}
                             aria-activedescendant={activeOptionId}
-                            onKeyDown={handleKeyDown}
+                            onKeyDown={handleInputKeyDown}
                         />
                     </div>
+                    {!isFocused && query.length === 0 && (
+                        <Kbd className='h-5 shrink-0 rounded-sm bg-foreground/6 px-1.5 text-2xs [word-spacing:normal]' aria-hidden='true'>
+                            <Kbd.Content>{SHORTCUT_LABEL}</Kbd.Content>
+                        </Kbd>
+                    )}
                 </SearchField.Group>
             </SearchField>
 
             {showResults && (
                 <FloatingPortal root={floatingRoot}>
-                    <Scrollable ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] glass-panel z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps()}>
+                    <Scrollable ref={refs.setFloating} className='w-[min(32rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] max-h-[60vh] glass-panel z-[var(--z-floating)] max-[768px]:max-h-[min(60vh,28rem)]' aria-busy={isLoading} style={floatingStyles} {...getFloatingProps({ onMouseDown: keepInputFocus })}>
                         <p className='sr-only' role='status' aria-live='polite' aria-atomic='true'>
                             {isLoading ? 'Searching…' : totalResults === 0 ? 'No results found.' : `${totalResults} result${totalResults === 1 ? '' : 's'} available.`}
                         </p>

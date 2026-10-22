@@ -16,7 +16,7 @@ interface ConversationNavRowProps {
     onDelete: (conversation: AIConversation) => Promise<void>;
 }
 
-const ROW_ACTION_CLASS = 'inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
+const ROW_ACTION_CLASS = 'inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent text-muted transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50';
 
 const ConversationNavRow = ({
     conversation,
@@ -66,7 +66,7 @@ const ConversationNavRow = ({
     if (isEditing) {
         return (
             <input
-                className='h-8 w-full rounded-md border border-border bg-transparent px-2 text-sm text-foreground outline-none focus-visible:border-accent'
+                className='h-11 w-full rounded-md border border-border bg-transparent px-2 text-base text-foreground lg:h-8 outline-none focus-visible:border-accent'
                 value={draftTitle}
                 autoFocus
                 aria-label={`Rename ${title}`}
@@ -80,8 +80,8 @@ const ConversationNavRow = ({
     return (
         <div
             className={cn(
-                'group/conv flex h-8 w-full min-w-0 cursor-pointer flex-row items-center gap-1 rounded-md px-2 text-sm transition-colors duration-150 ease-out-fluid',
-                isActive ? 'bg-surface-hover font-medium text-foreground' : 'text-muted hover:text-foreground'
+                'group/conv relative isolate flex h-11 w-full min-w-0 cursor-pointer flex-row items-center gap-1 rounded-md px-2 text-base transition-colors duration-150 ease-out-fluid lg:h-8',
+                isActive ? 'font-medium text-foreground' : 'text-muted hover:text-foreground'
             )}
             role='button'
             tabIndex={0}
@@ -93,6 +93,8 @@ const ConversationNavRow = ({
                 }
             }}
         >
+            {isActive && <span className='nav-indicator absolute inset-0 -z-10 rounded-md bg-foreground/6' aria-hidden='true' />}
+
             <span className='min-w-0 flex-1 truncate' title={title}>{title}</span>
 
             <span className={cn(

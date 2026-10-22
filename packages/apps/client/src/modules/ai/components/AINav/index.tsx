@@ -1,7 +1,7 @@
 import ConversationNavRow from '@/modules/ai/components/AINav/ConversationNavRow';
 import NavItem from '@/shared/ui/components/NavItem';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import SidebarPanel from '@/shared/ui/components/SidebarPanel';
+import SidebarPanel, { SidebarPanelTitle } from '@/shared/ui/components/SidebarPanel';
 import useConversations from '@/modules/ai/hooks/use-conversations';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { resolveErrorTitle } from '@/shared/errors/core/report-error';
@@ -91,7 +91,7 @@ const AINav = ({ active, collapsed }: AINavProps) => {
 
     if (isConversationsLoading) {
         listContent = Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className='h-8 w-full rounded-md' aria-hidden='true' />
+            <Skeleton key={index} className='h-11 w-full rounded-md lg:h-8' aria-hidden='true' />
         ));
     } else if (conversationsError) {
         listContent = (
@@ -134,21 +134,25 @@ const AINav = ({ active, collapsed }: AINavProps) => {
             </Tooltip>
 
             {!collapsed && (
-                <div className='mt-2 flex min-h-0 flex-col gap-1'>
+                <div className='flex min-h-0 flex-col'>
                     {showSearch && (
                         <SearchField
                             value={query}
                             onChange={setQuery}
                             aria-label='Search conversations'
+                            variant='secondary'
                             fullWidth
+                            className='mt-1'
                         >
-                            <SearchField.Group>
+                            <SearchField.Group className='rounded-full border-0 bg-foreground/5 hover:bg-foreground/8 focus-within:bg-foreground/8'>
                                 <SearchField.SearchIcon />
                                 <SearchField.Input placeholder='Search…' />
                                 <SearchField.ClearButton />
                             </SearchField.Group>
                         </SearchField>
                     )}
+
+                    <SidebarPanelTitle>Recent</SidebarPanelTitle>
 
                     <Scrollable className='flex min-h-0 flex-col gap-0.5'>
                         {listContent}

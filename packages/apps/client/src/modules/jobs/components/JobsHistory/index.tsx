@@ -1,7 +1,5 @@
 import JobSkeleton from '@/modules/jobs/components/JobSkeleton';
 import JobGroup from '@/modules/jobs/components/JobGroup';
-import RecoveryState from '@/shared/ui/components/RecoveryState';
-import { Inbox } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { TrajectoryJobGroup as TJG } from '@volt/contracts/modules/jobs/domain';
@@ -37,16 +35,15 @@ const JobsHistory = ({
         content = <JobSkeleton />;
     } else if (filteredGroups.length === 0) {
         content = (
-            <RecoveryState
-                title='No events to display'
-                description='No jobs match the current filters yet.'
-                icon={<Inbox size={24} strokeWidth={1} className='text-muted' />}
-            />
+            <div className='flex flex-1 flex-col items-center justify-center gap-1 px-2.5 py-8 text-center'>
+                <p className='text-base font-medium'>No events to display</p>
+                <p className='text-sm text-muted'>No jobs match the current filters yet.</p>
+            </div>
         );
     }
 
     return (
-        <div className='flex flex-col gap-2 h-full' role='list'>
+        <div className='flex flex-col gap-0.5 h-full' role='list'>
             {content}
         </div>
     );

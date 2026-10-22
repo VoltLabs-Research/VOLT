@@ -23,17 +23,18 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
                 variant='ghost'
                 fullWidth
                 className={cn(
-                    'flex flex-col items-start justify-start h-auto whitespace-normal text-left leading-[1.4] border-0 p-3 rounded-lg',
-                    !notification.read && 'bg-[color-mix(in_srgb,var(--accent)_8%,var(--surface-secondary))] hover:bg-surface-hover'
+                    'relative flex h-auto flex-col items-start justify-start gap-0.5 rounded-3xl border-0 py-2.5 pr-7 pl-3.5 text-left leading-snug whitespace-normal hover:bg-foreground/6',
+                    !notification.read && 'bg-foreground/4'
                 )}
                 onPress={handleClick}
             >
-                <span className='flex flex-row items-center justify-between gap-2 w-full'>
-                    <span className='text-sm font-semibold block w-full min-w-0 text-left'>
-                        {notification.title}
-                    </span>
+                {!notification.read && (
+                    <span className='absolute top-4 right-3 size-1.5 rounded-full bg-foreground' aria-hidden='true' />
+                )}
+                <span className='block w-full min-w-0 text-sm font-medium text-foreground'>
+                    {notification.title}
                 </span>
-                <span className='text-xs text-muted block w-full text-left mt-1'>
+                <span className='block w-full text-xs font-normal text-muted'>
                     {notification.content}
                 </span>
             </Button>
