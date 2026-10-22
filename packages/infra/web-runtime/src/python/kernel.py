@@ -403,21 +403,27 @@ def complete(code, cursor):
     return json.dumps({"matches": matches, "cursor_start": start, "cursor_end": cursor})
 
 
-def _is_installed(requirement):
+def _is_current(requirement):
+    """Whether the environment has a requirement: installed, and from the machine's own wheel of it
+    when the machine has one."""
+    import _volt_pip
+
     name = re.split(r"[\s<>=!~;\[]", requirement, maxsplit=1)[0]
     try:
-        importlib.metadata.distribution(name)
-        return True
+        version = importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError:
         return False
+    wheel = _volt_pip.local_wheel(requirement)
+    return wheel is None or _volt_pip.wheel_version(wheel) == version
 
 
 async def prepare(requirements):
-    """Installs the packages every notebook of the environment has, the first time."""
-    missing = [requirement for requirement in requirements if not _is_installed(requirement)]
-    if missing:
-        await _pip(["install", *missing])
-    return json.dumps({"installed": missing})
+    """Installs the packages every notebook of the environment has: the first time, and again when
+    the machine has another build of one of its own (the VOLT SDK, once VOLT updates)."""
+    outdated = [requirement for requirement in requirements if not _is_current(requirement)]
+    if outdated:
+        await _pip(["install", "--upgrade", *outdated])
+    return json.dumps({"installed": outdated})
 
 
 def start(bridge):

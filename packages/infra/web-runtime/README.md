@@ -56,7 +56,8 @@ and interrupts.
 
 The kernels share a file system of their own. In it, each workspace has a virtual environment and a
 working directory that all its notebooks use: what one notebook installs or writes, the others have.
-The first kernel of a workspace creates its environment and installs `voltsdk`.
+The first kernel of a workspace creates its environment and installs `voltsdk`. A kernel that finds
+another build of the SDK than the machine's installs the machine's, so notebooks follow VOLT's updates.
 
 ## Using it from a web client
 
