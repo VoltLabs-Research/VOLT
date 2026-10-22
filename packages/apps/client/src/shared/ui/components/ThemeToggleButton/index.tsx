@@ -11,13 +11,13 @@ const ThemeToggleButton = () => {
     return (
         <Tooltip>
             <Button
-                size='sm'
                 variant='ghost'
                 isIconOnly
+                className='rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground'
                 aria-label={label}
                 onPress={() => setTheme(nextTheme)}
             >
-                {isDarkTheme ? <Sun size={16} /> : <Moon size={16} />}
+                {isDarkTheme ? <Sun size={18} /> : <Moon size={18} />}
             </Button>
             <Tooltip.Content placement='bottom'>{label}</Tooltip.Content>
         </Tooltip>

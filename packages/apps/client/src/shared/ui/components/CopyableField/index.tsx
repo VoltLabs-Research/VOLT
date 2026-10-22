@@ -25,17 +25,19 @@ const CopyableField = ({ value, successMessage = 'Copied to clipboard', classNam
     };
 
     return (
-        <div className={cn('copyable-field flex flex-row items-center justify-between gap-4 rounded-xl border border-border bg-surface-tertiary/55 p-4', className)}>
-            <p className='copyable-field-value break-all font-mono text-sm text-foreground'>
+        // The mockup's command block: a 12px tile tinted 5% of the foreground, the copy button inset.
+        <div className={cn('copyable-field flex flex-row items-center justify-between gap-3 rounded-xl bg-foreground/5 py-1.5 pr-1.5 pl-4', className)}>
+            <p className='copyable-field-value min-w-0 break-all font-mono text-sm text-foreground'>
                 {value}
             </p>
             <Button
                 variant='ghost'
                 isIconOnly
+                className='shrink-0 rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground'
                 onPress={() => void handleCopy()}
                 aria-label='Copy to clipboard'
             >
-                {copied ? <Check className='text-success' /> : <Copy />}
+                {copied ? <Check size={16} className='text-success' /> : <Copy size={16} />}
             </Button>
         </div>
     );

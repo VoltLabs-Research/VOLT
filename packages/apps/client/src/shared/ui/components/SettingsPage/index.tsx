@@ -10,11 +10,12 @@ const SettingsPage = ({ title, children }: SettingsPageProps) => {
     const titleId = useId();
 
     return (
-        <section className='flex flex-col gap-12 p-8 max-w-[800px] mx-auto' aria-labelledby={titleId}>
-            <h1 className='text-2xl font-semibold text-foreground' id={titleId}>
+        // The mockup's settings page body: 48rem at most, the title 24px above sections 32px apart.
+        <section className='mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 pt-3 pb-8' aria-labelledby={titleId}>
+            <h1 className='text-2xl font-semibold tracking-[-0.01em] text-foreground' id={titleId}>
                 {title}
             </h1>
-            <div className='flex flex-col gap-12 min-w-0'>
+            <div className='flex flex-col gap-8 min-w-0'>
                 {children}
             </div>
         </section>
