@@ -240,7 +240,6 @@ export const protectedRoutes: RouteConfig[] = [
     {
         path: '/dashboard/notebooks',
         title: 'Notebooks',
-        requiresMachine: true,
         loader: () => import('@/modules/scripting/components/NotebooksListing'),
         requiredPermissions: ['plugin:read'],
         navigation: {

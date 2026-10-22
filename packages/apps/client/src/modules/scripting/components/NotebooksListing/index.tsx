@@ -119,8 +119,10 @@ const NotebooksListing = () => {
     const containerRuntime = useContainerRuntimeAvailability();
     const [activeTab, setActiveTab] = useState<NotebooksListingTabId>(NotebooksListingTabId.List);
     const {
+        opensInBrowser,
         fetchData,
         getMenuOptions,
+        handleItemClick,
         handleCreate,
         handleDeploymentModalClose,
         handleRenameClose,
@@ -149,7 +151,8 @@ const NotebooksListing = () => {
         handleCreate();
     }, [activeTab, handleCreate]);
 
-    if(containerRuntime === 'unavailable') return <DockerNeededState feature='Notebooks' />;
+    // Kernels in this window need no containers.
+    if(containerRuntime === 'unavailable' && !opensInBrowser) return <DockerNeededState feature='Notebooks' />;
 
     return (
         <>
@@ -162,6 +165,7 @@ const NotebooksListing = () => {
                 defaultTabId={NotebooksListingTabId.List}
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}
+                onItemClick={handleItemClick}
                 createNew={createNew}
                 emptyTitle={view.emptyTitle}
                 emptyMessage={view.emptyMessage}
