@@ -122,7 +122,7 @@ const AnalysesListing = () => {
             render: (_value, analysis) => {
                 const listingPath = resolveAnalysisListingPath(analysis, pluginsById[resolveAnalysisPluginId(analysis)]);
                 if (!listingPath) {
-                    return '-';
+                    return <span className='text-muted'>-</span>;
                 }
 
                 return (
@@ -131,8 +131,8 @@ const AnalysesListing = () => {
                         size='sm'
                         onPress={() => { navigate(listingPath); }}
                     >
-                        <ExternalLink size={14} />
                         View results
+                        <ExternalLink size={14} aria-hidden='true' />
                     </Button>
                 );
             },

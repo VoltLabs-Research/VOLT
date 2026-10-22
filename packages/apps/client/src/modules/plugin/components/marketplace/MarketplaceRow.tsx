@@ -1,4 +1,4 @@
-import { cn } from '@heroui/react';
+import { Chip, cn } from '@heroui/react';
 import { resolveInstallState } from '@/modules/plugin/components/marketplace/registry-version';
 
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
@@ -20,26 +20,21 @@ const MarketplaceRow = ({ item, installedVersion, isSelected, onSelect }: Market
             aria-selected={isSelected}
             onClick={() => onSelect(item)}
             className={cn(
-                'flex w-full cursor-pointer flex-row items-center gap-2 rounded-md border-0 px-3 py-2 text-left',
-                isSelected ? 'bg-surface-hover' : 'bg-transparent hover:bg-surface-hover/60'
+                'flex w-full cursor-pointer flex-row items-center gap-3 rounded-lg border-0 px-3 py-2.5 text-left transition-colors duration-150',
+                isSelected ? 'bg-foreground/8' : 'bg-transparent hover:bg-foreground/4'
             )}
         >
-            <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                <span className='truncate text-sm text-foreground' title={item.name}>
+            <span className='flex min-w-0 flex-1 flex-col'>
+                <span className='truncate text-base font-medium text-foreground' title={item.name}>
                     {item.name}
                 </span>
-                <span className='truncate text-2xs text-muted'>
-                    {`@${item.username}`}
+                <span className='truncate text-xs text-muted tabular-nums lining-nums'>
+                    {item.latest ? `@${item.username} · v${item.latest}` : `@${item.username}`}
                 </span>
             </span>
 
-            <span className='flex shrink-0 flex-col items-end gap-0.5'>
-                {item.latest && (
-                    <span className='text-2xs text-muted tabular-nums lining-nums'>{`v${item.latest}`}</span>
-                )}
-                {state === 'installed' && <span className='text-2xs text-muted'>Installed</span>}
-                {state === 'update' && <span className='text-2xs text-accent'>Update</span>}
-            </span>
+            {state === 'installed' && <Chip size='sm' variant='soft' className='px-2'>Installed</Chip>}
+            {state === 'update' && <Chip size='sm' variant='soft' color='warning' className='px-2'>Update</Chip>}
         </button>
     );
 };
