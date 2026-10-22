@@ -37,7 +37,7 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         key: 'name',
         title: 'Role Name',
         render: (_value, role) => (
-            <span className='font-medium text-muted'>{role.name}</span>
+            <span className='font-medium text-foreground'>{role.name}</span>
         )
     },
     {
@@ -55,14 +55,14 @@ const COLUMNS: ColumnConfig<TeamRole>[] = [
         render: (_value, role) => {
             if(role.permissions.includes('*')){
                 return (
-                    <Chip color='default' variant='soft' size='sm'>
+                    <Chip color='success' variant='soft' size='sm'>
                         <Chip.Label>All Permissions</Chip.Label>
                     </Chip>
                 );
             }
             const count = role.permissions.length;
             return (
-                <span className='text-sm text-muted'>
+                <span className='text-sm text-foreground tabular-nums'>
                     {count} permission{count !== 1 ? 's' : ''}
                 </span>
             );
@@ -138,7 +138,7 @@ export default function ManageRolesTemplate() {
     }, [canDelete, canRead, canUpdate, getMenuOptions, getSelectionActionOptions]);
 
     return (
-        <div className='h-full manage-roles-page'>
+        <div className='h-full'>
             <DocumentListing<TeamRole>
                 title='Manage Roles'
                 queryKey={queryKey}

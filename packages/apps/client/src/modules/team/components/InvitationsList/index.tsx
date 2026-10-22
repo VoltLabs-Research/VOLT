@@ -34,7 +34,7 @@ export const InvitationsList = ({
             <EmptyStateRoot<'section'>
                 render={(props) => <section {...props} />}
                 aria-labelledby={emptyHeadingId}
-                className='flex flex-col items-center justify-center w-max h-auto p-8'
+                className='flex flex-col items-center justify-center w-full h-auto p-8'
             >
                 <div className='flex flex-col items-center gap-6 text-center max-w-[320px] max-md:max-w-[90%]'>
                     <div className='flex flex-col gap-2 text-center'>

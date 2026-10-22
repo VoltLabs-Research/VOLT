@@ -43,7 +43,7 @@ const IntegrationModelList = ({
 
     return (
         <div className='flex flex-col gap-2'>
-            <p className='text-sm font-medium text-muted'>
+            <p className='text-base font-medium text-foreground'>
                 Models
             </p>
             <div className='flex flex-row items-end gap-2 [&>*:nth-child(-n+2)]:flex-1 [&>*:nth-child(-n+2)]:min-w-0'>
@@ -63,7 +63,7 @@ const IntegrationModelList = ({
                 />
                 <Button
                     size='sm'
-                    variant='outline'
+                    variant='secondary'
                     onPress={handleAddModel}
                     isDisabled={!newModelId.trim()}
                 >
@@ -71,12 +71,12 @@ const IntegrationModelList = ({
                 </Button>
             </div>
             {models.length > 0 && (
-                <Scrollable className='max-h-[200px]'>
+                <Scrollable className='flex flex-col gap-0.5 max-h-[200px]'>
                     {models.map((model) => {
                         const modelSummary = defaultModel === model.id ? `${model.id} · default` : model.id;
 
                         return (
-                            <div className='flex flex-row items-center justify-between gap-2 px-2.5 py-2 min-h-12 select-none border-b border-border last:border-b-0 transition-colors duration-[120ms] hover:bg-surface-hover' key={model.id}>
+                            <div className='flex flex-row items-center justify-between gap-2 px-2.5 py-2 min-h-12 select-none rounded-lg transition-colors duration-[120ms] hover:bg-foreground/4' key={model.id}>
                                 <div className='flex flex-col min-w-0'>
                                     <p className='text-sm text-foreground truncate' title={model.name}>
                                         {model.name}

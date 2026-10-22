@@ -29,18 +29,18 @@ export const InviteCodeSection = ({
 
     return (
         <div className='flex flex-col gap-3 p-6'>
-            <p className='text-sm font-medium text-muted'>
+            <p className='text-base font-medium text-foreground'>
                 Invite Code
             </p>
 
             {inviteCode ? (
                 <div className='flex flex-row items-center gap-2'>
-                    <div className='rounded-lg flex-1 px-3 py-2 bg-surface-tertiary border border-border tracking-[0.15em] text-xl font-semibold font-mono'>
+                    <div className='rounded-xl flex-1 px-3 py-2 bg-foreground/4 tracking-[0.15em] text-xl font-semibold font-mono'>
                         {inviteCode}
                     </div>
                     <DropdownRoot>
                         <DropdownTrigger
-                            className='flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50'
+                            className='flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent p-0 text-muted transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50'
                             aria-label='Open invite code actions'
                             isDisabled={isLoading}
                         >

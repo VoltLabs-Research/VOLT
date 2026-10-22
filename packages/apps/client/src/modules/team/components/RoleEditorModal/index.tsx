@@ -1,6 +1,6 @@
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
-import { Alert } from '@heroui/react';
+import { Alert, Checkbox } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import { runAction } from '@/shared/ui/actions/run-action';
@@ -120,9 +120,8 @@ export const RoleEditorModal = ({
             width='720px'
             footer={footer}
         >
-            <Scrollable className='flex flex-col gap-8 p-8 max-h-[70vh]'>
+            <Scrollable className='flex flex-col gap-5 max-h-[70vh]'>
                 {isSystemRole && (
-
                     <Alert status='warning' role='status' aria-live='polite'>
                         <Alert.Indicator>
                             <TriangleAlert size={18} aria-hidden='true' />
@@ -143,50 +142,52 @@ export const RoleEditorModal = ({
                     disabled={isSystemRole}
                     autoFocus={!isEditing}
                 />
-                <fieldset className='flex flex-col gap-4 border-0 m-0 p-0 min-w-0'>
-                    <legend className='p-0'>
-                        <h3 className='text-base font-semibold text-muted'>Permissions</h3>
-                    </legend>
-                    <div className='grid grid-cols-[160px_repeat(4,1fr)] gap-0 max-md:grid-cols-[120px_repeat(4,1fr)]'>
-                        <div className='p-2 text-sm font-semibold normal-case tracking-normal text-foreground border-b-2 border-border mb-1 text-left'>Resource</div>
-                        {actions.map((action) => (
-                            <div className='p-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted border-b-2 border-border mb-1 text-center' key={action.key}>
-                                {action.label}
-                            </div>
-                        ))}
+                <fieldset className='flex flex-col gap-2 border-0 m-0 p-0 min-w-0'>
+                    <legend className='mb-1.5 p-0 text-base font-medium text-foreground'>Permissions</legend>
+                    <Scrollable orientation='horizontal'>
+                        <div className='grid min-w-[30rem] grid-cols-[minmax(7rem,10rem)_repeat(4,minmax(3.5rem,1fr))] items-center text-sm [&>*]:border-b [&>*]:border-foreground/6 [&>*:nth-last-child(-n+5)]:border-b-0'>
+                            <div className='p-2 text-2xs font-medium uppercase tracking-[0.06em] text-muted'>Resource</div>
+                            {actions.map((action) => (
+                                <div className='p-2 text-center text-2xs font-medium uppercase tracking-[0.06em] text-muted' key={action.key}>
+                                    {action.label}
+                                </div>
+                            ))}
 
-                        {resources.map((resource) => {
-                            const resourcePermissions = actions.map((action) => getPermission(resource.key, action.key));
-                            const areAllPermissionsChecked = resourcePermissions.every(permissions.has, permissions);
+                            {resources.map((resource) => {
+                                const resourcePermissions = actions.map((action) => getPermission(resource.key, action.key));
+                                const areAllPermissionsChecked = resourcePermissions.every(permissions.has, permissions);
 
-                            return (
-                                <Fragment key={resource.key}>
-                                    <button
-                                        type='button'
-                                        className='flex items-center py-2.5 px-0 min-h-11 text-left bg-transparent border-0 border-b border-border text-sm font-medium text-foreground max-md:p-2 max-md:text-xs [&:nth-last-child(-n+5)]:border-b-0'
-                                        onClick={() => handleToggleResourceAll(resource.key)}
-                                        disabled={isSystemRole}
-                                        aria-pressed={areAllPermissionsChecked}
-                                        title={isSystemRole ? 'System permissions are read-only' : `Toggle all permissions for ${resource.label}`}
-                                    >
-                                        {resource.label}
-                                    </button>
-                                    {actions.map((action) => (
-                                        <div key={`${resource.key}-${action.key}`} className='flex items-center justify-center px-2 py-2.5 border-b border-border max-md:p-2 max-md:text-xs [&:nth-last-child(-n+5)]:border-b-0'>
-                                            <input
-                                                type='checkbox'
-                                                checked={isPermissionChecked(resource.key, action.key)}
-                                                onChange={() => handleTogglePermission(resource.key, action.key)}
-                                                disabled={isSystemRole || hasWildcard}
-                                                className='size-[18px] cursor-pointer accent-accent disabled:cursor-not-allowed'
-                                                aria-label={`${action.label} permission for ${resource.label}`}
-                                            />
-                                        </div>
-                                    ))}
-                                </Fragment>
-                            );
-                        })}
-                    </div>
+                                return (
+                                    <Fragment key={resource.key}>
+                                        <button
+                                            type='button'
+                                            className='h-full rounded-md p-2 text-left font-medium text-foreground underline-offset-2 decoration-foreground/15 enabled:hover:underline disabled:cursor-default'
+                                            onClick={() => handleToggleResourceAll(resource.key)}
+                                            disabled={isSystemRole}
+                                            aria-pressed={areAllPermissionsChecked}
+                                            title={isSystemRole ? 'System permissions are read-only' : `Toggle all permissions for ${resource.label}`}
+                                        >
+                                            {resource.label}
+                                        </button>
+                                        {actions.map((action) => (
+                                            <div key={`${resource.key}-${action.key}`} className='flex h-full items-center justify-center p-2'>
+                                                <Checkbox
+                                                    isSelected={isPermissionChecked(resource.key, action.key)}
+                                                    onChange={() => handleTogglePermission(resource.key, action.key)}
+                                                    isDisabled={isSystemRole || hasWildcard}
+                                                    aria-label={`${action.label} permission for ${resource.label}`}
+                                                >
+                                                    <Checkbox.Control>
+                                                        <Checkbox.Indicator />
+                                                    </Checkbox.Control>
+                                                </Checkbox>
+                                            </div>
+                                        ))}
+                                    </Fragment>
+                                );
+                            })}
+                        </div>
+                    </Scrollable>
                 </fieldset>
             </Scrollable>
         </Modal>

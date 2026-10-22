@@ -135,7 +135,7 @@ export const TeamInvitePanel = ({
                     <>
                         <div className='flex flex-col gap-3 p-4'>
                             <span className='text-sm font-medium text-foreground'>Public Trajectories</span>
-                            <div className='min-w-0 p-3 border border-border rounded-lg bg-surface-tertiary/55'>
+                            <div className='min-w-0 px-3 py-2.5 rounded-xl bg-foreground/4'>
                                 <span className='block min-w-0 truncate font-mono text-xs text-muted'>
                                     {publicTrajectoriesLink || 'No team selected'}
                                 </span>

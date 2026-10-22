@@ -51,8 +51,7 @@ export default function IntegrationsSettings() {
                     action={(
                         <Button
                             size='sm'
-                            variant='primary'
-                            className='rounded-full'
+                            variant='secondary'
                             onPress={handleCreateProvider}
                             isDisabled={!teamId || availableProviders.length === 0}
                         >

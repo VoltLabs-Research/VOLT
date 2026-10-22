@@ -1,7 +1,12 @@
 import Loader from '@/shared/ui/components/Loader';
-import { Button, Chip } from '@heroui/react';
+import { Button } from '@heroui/react';
 import {
+    TeamInvitationActions,
     TeamInvitationCard,
+    TeamInvitationDetailItem,
+    TeamInvitationDetails,
+    TeamInvitationHeading,
+    TeamInvitationLoader,
     TeamInvitationStateCard
 } from '@/modules/team/components/TeamInvitationShared';
 import { useAcceptInvitationMutation, useInvitationDetailsQuery, useRejectInvitationMutation } from '@/modules/team/hooks/invitation/queries';
@@ -16,7 +21,6 @@ import { ErrorSurface } from '@/shared/contracts/errors';
 import { isAccessDeniedError, reportError } from '@/shared/errors/core/report-error';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
-import { AlertCircle, CheckCircle, Clock, Mail, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 
@@ -96,18 +100,14 @@ export default function TeamInvitationTemplate() {
         }
     };
 
-    const renderUnavailableCard = (icon: 'error' | 'warning', title: string, description: string) => (
+    const renderUnavailableCard = (title: string, description: string) => (
         <TeamInvitationStateCard
-            icon={(
-                <div className={icon === 'error' ? 'text-danger' : 'text-warning'}>
-                    {icon === 'error' ? <XCircle size={48} /> : <Clock size={48} />}
-                </div>
-            )}
             title={title}
             description={description}
             action={(
                 <Button
                     variant='primary'
+                    size='sm'
                     onPress={() => navigate(getPostAuthRedirectPath(nextDestination))}
                 >
                     Back to Dashboard
@@ -117,16 +117,11 @@ export default function TeamInvitationTemplate() {
     );
 
     if(invitationQuery.isLoading){
-        return (
-            <TeamInvitationCard>
-                <p className='text-muted'>Loading invitation...</p>
-            </TeamInvitationCard>
-        );
+        return <TeamInvitationLoader />;
     }
 
     if(displayError || !invitation){
         return renderUnavailableCard(
-            'error',
             'Invalid Invitation',
             displayError || 'This invitation is not valid or has expired'
         );
@@ -136,7 +131,6 @@ export default function TeamInvitationTemplate() {
 
     if(new Date() > expiresAt){
         return renderUnavailableCard(
-            'warning',
             'Invitation Expired',
             `This invitation expired on ${expiresAt.toLocaleString()}`
         );
@@ -144,77 +138,52 @@ export default function TeamInvitationTemplate() {
 
     return (
         <TeamInvitationCard>
-            <Chip color='success' variant='soft' size='md'>
-                <CheckCircle size={20} aria-hidden='true' />
-                <Chip.Label>You&apos;ve been invited!</Chip.Label>
-            </Chip>
+            <TeamInvitationHeading
+                eyebrow='You&apos;ve been invited!'
+                title={invitation.team.name}
+                description={`${invitation.invitedBy.firstName} ${invitation.invitedBy.lastName} invited you to join this team.`}
+            />
 
-            <h3 className='text-2xl font-semibold text-foreground'>{invitation.team.name}</h3>
+            <TeamInvitationDetails>
+                <TeamInvitationDetailItem label='Email' value={invitation.email} />
+                <TeamInvitationDetailItem label='Invited' value={new Date(invitation.createdAt).toLocaleDateString()} />
+                <TeamInvitationDetailItem
+                    label='Expires'
+                    value={expiresAt.toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    })}
+                />
+            </TeamInvitationDetails>
 
-            <p className='text-muted'>
-                You've been invited to join this team
-            </p>
-
-            <p className='text-sm text-muted'>
-                Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
-            </p>
-
-            <div className='flex flex-row items-center justify-center flex-wrap gap-4 rounded-xl p-4 bg-surface-tertiary w-full'>
-                <div className='flex flex-col text-center flex-1 min-w-[100px]'>
-                    <span className='block text-xs text-muted mb-1'>Email</span>
-                    <p className='flex flex-row items-center gap-1 text-sm text-muted justify-center'>
-                        <Mail size={14} />
-                        {invitation.email}
-                    </p>
-                </div>
-                <div className='flex flex-col text-center flex-1 min-w-[100px]'>
-                    <span className='block text-xs text-muted mb-1'>Invited</span>
-                    <p className='flex flex-row items-center gap-1 text-sm text-muted justify-center'>
-                        <Clock size={14} />
-                        {new Date(invitation.createdAt).toLocaleDateString()}
-                    </p>
-                </div>
-                <div className='flex flex-col text-center flex-1 min-w-[100px]'>
-                    <span className='block text-xs text-muted mb-1'>Expires</span>
-                    <p className='text-sm text-muted justify-center'>
-                        {expiresAt.toLocaleString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                        })}
-                    </p>
-                </div>
-            </div>
-
-            <div className='flex flex-row items-center gap-4 w-full mt-4'>
+            <TeamInvitationActions>
                 <Button
                     variant='primary'
                     fullWidth
                     onPress={() => respondToInvitation('accept')}
                     isDisabled={actionLoading}
-                    isPending={actionLoading}
+                    isPending={acceptMutation.isPending}
                 >
-                    {actionLoading
-                        ? <Loader size='sm' color='current' />
-                        : <CheckCircle size={20} aria-hidden='true' />}
+                    {acceptMutation.isPending && <Loader size='sm' color='current' />}
                     Accept Invitation
                 </Button>
                 <Button
-                    variant='outline'
+                    variant='secondary'
                     fullWidth
                     onPress={() => respondToInvitation('reject')}
                     isDisabled={actionLoading}
+                    isPending={rejectMutation.isPending}
                 >
-                    <XCircle size={20} aria-hidden='true' />
+                    {rejectMutation.isPending && <Loader size='sm' color='current' />}
                     Reject Invitation
                 </Button>
-            </div>
+            </TeamInvitationActions>
 
             {error && (
-                <Chip color='danger' variant='soft' size='md'>
-                    <AlertCircle size={16} aria-hidden='true' />
-                    <Chip.Label>{error}</Chip.Label>
-                </Chip>
+                <p className='text-sm text-danger-soft-foreground' role='alert'>
+                    {error}
+                </p>
             )}
         </TeamInvitationCard>
     );
