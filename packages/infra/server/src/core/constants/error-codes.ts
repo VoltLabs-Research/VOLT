@@ -127,6 +127,12 @@ export const ErrorCodes = createErrorCodes({
     SECRET_KEY_NOT_FOUND: 'SecretKey::NotFound',
 
     AI_CONVERSATION_NOT_FOUND: 'AI::Conversation::NotFound',
+    AI_CONVERSATION_NOT_JOINED: 'AI::Conversation::NotJoined',
+    AI_CONVERSATION_NOTHING_TO_COMPACT: 'AI::Conversation::NothingToCompact',
+    AI_TURN_IN_PROGRESS: 'AI::Turn::InProgress',
+    AI_TURN_MALFORMED: 'AI::Turn::Malformed',
+    AI_APPROVAL_NOT_FOUND: 'AI::Approval::NotFound',
+    AI_TOOL_NOT_FOUND: 'AI::Tool::NotFound',
     AI_INTEGRATION_NOT_CONFIGURED: 'AI::Integration::NotConfigured',
     AI_PROVIDER_UNAVAILABLE: 'AI::Provider::Unavailable',
     OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error',
