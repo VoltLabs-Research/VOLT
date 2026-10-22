@@ -138,6 +138,12 @@ class SocketIOAdapter implements ISocketService {
         }
     }
 
+    deliver(event: string, ...args: unknown[]): void {
+        for (const subscription of this.subscriptions.filter((sub) => sub.event === event)) {
+            subscription.callback(...args);
+        }
+    }
+
     private static readonly ACK_TIMEOUT_MS = 30_000;
 
     emit<T = unknown>(event: string, data?: unknown): Promise<T> {
