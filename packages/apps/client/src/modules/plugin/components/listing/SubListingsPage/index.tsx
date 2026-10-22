@@ -166,7 +166,7 @@ const SubListingsPage = () => {
                 />
             </div>
             {selectedRow && (
-                <div className='flex min-h-0 flex-col overflow-hidden flex-[0_0_clamp(320px,38%,520px)] max-[900px]:flex-[0_0_45%] max-[900px]:border-t max-[900px]:border-border'>
+                <div className='flex min-h-0 flex-col overflow-hidden flex-[0_0_clamp(320px,38%,520px)] py-3 pr-3 max-[900px]:flex-[0_0_45%] max-[900px]:pl-3'>
                     <SubListingDetailPanel
                         row={selectedRow}
                         columns={columns}

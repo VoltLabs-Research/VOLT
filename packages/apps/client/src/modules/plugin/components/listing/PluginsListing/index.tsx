@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react';
+import { Button, Chip } from '@heroui/react';
 import { Ban, Check, Copy, Download, FilePen, Pencil, Upload } from 'lucide-react';
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useDeletePluginMutation, useImportPluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from './use-export-plugin';
@@ -82,7 +82,7 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         title: 'Name',
         sortable: true,
         render: (_, plugin) => (
-            <span className='text-sm font-medium text-foreground transition-colors duration-150 ease-out-fluid hover:text-accent'>
+            <span className='font-medium text-foreground'>
                 {plugin.modifier?.name}
             </span>
         ),
@@ -95,7 +95,7 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         key: 'modifier.version',
         title: 'Version',
         sortable: true,
-        render: (_, plugin) => plugin.modifier?.version,
+        render: (_, plugin) => <span className='tabular-nums'>{plugin.modifier?.version}</span>,
         skeleton: {
             variant: 'text',
             width: 70
@@ -109,9 +109,9 @@ const COLUMNS: ColumnConfig<Plugin>[] = [
         key: 'exposures',
         title: 'Exposures',
         render: (_, plugin) => (
-            <span className='min-w-6 rounded-lg bg-default px-1.5 py-0.5 text-xs font-semibold'>
+            <Chip size='sm' className='min-w-6 justify-center px-1.5 tabular-nums'>
                 {(plugin.exposures ?? []).length}
-            </span>
+            </Chip>
         ),
         skeleton: {
             variant: 'text',
@@ -267,7 +267,6 @@ const PluginsListing = () => {
                         />
                         <Button
                             variant='ghost'
-                            className='transition-colors duration-150 ease-out-fluid'
                             onPress={() => importInputRef.current?.click()}
                             isDisabled={importPluginMutation.isPending}
                             isPending={importPluginMutation.isPending}

@@ -101,13 +101,11 @@ const MarketplacePage = () => {
     const renderListBody = () => {
         if (error) {
             return (
-                <div className='p-3'>
-                    <RecoveryState
-                        title='Unable to reach the registry'
-                        description={error.message}
-                        tone={RecoveryStateTone.Error}
-                    />
-                </div>
+                <RecoveryState
+                    title='Unable to reach the registry'
+                    description={error.message}
+                    tone={RecoveryStateTone.Error}
+                />
             );
         }
 
@@ -122,14 +120,14 @@ const MarketplacePage = () => {
 
         if (items.length === 0) {
             return (
-                <p className='px-3 py-10 text-center text-xs text-muted' aria-live='polite'>
+                <p className='px-3 py-10 text-center text-sm text-muted' aria-live='polite'>
                     {debouncedSearch ? `Nothing matches “${debouncedSearch}”.` : 'The registry returned nothing.'}
                 </p>
             );
         }
 
         return (
-            <div className='flex flex-col gap-px p-2' role='listbox' aria-label='Registry packages'>
+            <div className='flex flex-col gap-0.5' role='listbox' aria-label='Registry packages'>
                 {items.map((item) => (
                     <MarketplaceRow
                         key={item.fullName}
@@ -144,21 +142,21 @@ const MarketplacePage = () => {
     };
 
     return (
-        <div className='flex h-full w-full flex-row overflow-hidden'>
+        <div className='mx-auto flex h-full w-full max-w-7xl flex-row gap-4 overflow-hidden px-6 pt-3 pb-6'>
             <div
                 className={cn(
-                    'flex min-h-0 w-80 shrink-0 flex-col border-r border-border max-md:w-full',
+                    'flex min-h-0 w-80 shrink-0 flex-col gap-3 max-md:w-full',
                     selectedItem && 'max-md:hidden'
                 )}
             >
-                <div className='shrink-0 border-b border-border p-3'>
+                <div className='shrink-0'>
                     <SearchField
                         value={search}
                         onChange={setSearch}
                         aria-label='Search the plugin registry'
                         fullWidth
                     >
-                        <SearchField.Group>
+                        <SearchField.Group className='rounded-full border-0 bg-foreground/5 hover:bg-foreground/8 focus-within:bg-foreground/8'>
                             <SearchField.SearchIcon />
                             <SearchField.Input placeholder='Search plugins…' />
                             <SearchField.ClearButton />

@@ -1,4 +1,5 @@
-import { Button } from '@heroui/react';
+import { Button, Chip } from '@heroui/react';
+import { Fragment } from 'react';
 import { formatCompactRelativeTime } from '@/shared/utils/format-relative-time';
 import { resolveInstallState } from '@/modules/plugin/components/marketplace/registry-version';
 import { ArrowLeft } from 'lucide-react';
@@ -60,7 +61,7 @@ const MarketplaceDetail = ({
         : 'You do not have permission to install plugins.';
 
     return (
-        <div className='flex flex-col gap-8 p-8 max-md:gap-6 max-md:p-5'>
+        <div className='flex flex-col gap-6 rounded-3xl bg-foreground/4 p-6 max-md:p-5'>
             <Button
                 variant='ghost'
                 size='sm'
@@ -74,12 +75,12 @@ const MarketplaceDetail = ({
             <div className='flex flex-col gap-4'>
                 <div className='flex flex-row flex-wrap items-start justify-between gap-4'>
                     <div className='flex min-w-0 flex-col gap-1'>
-                        <h3 className='text-xl font-medium text-foreground'>{item.name}</h3>
-                        <span className='text-xs text-muted'>{`@${item.username}`}</span>
+                        <h3 className='text-xl font-semibold text-foreground'>{item.name}</h3>
+                        <span className='text-sm text-muted'>{`@${item.username}`}</span>
                     </div>
 
                     {state === 'installed' ? (
-                        <span className='shrink-0 text-xs text-muted'>Installed</span>
+                        <span className='shrink-0 text-sm text-muted'>Installed</span>
                     ) : (
                         <span className='inline-flex shrink-0' title={installDisabledReason}>
                             <Button
@@ -95,31 +96,32 @@ const MarketplaceDetail = ({
                 </div>
 
                 {item.description && (
-                    <p className='max-w-prose text-sm leading-normal text-foreground'>{item.description}</p>
+                    <p className='max-w-prose text-base leading-relaxed text-foreground'>{item.description}</p>
                 )}
             </div>
 
             {item.keywords && item.keywords.length > 0 && (
-                <div className='flex flex-row flex-wrap gap-1.5'>
+                <div className='flex flex-row flex-wrap gap-1'>
                     {item.keywords.map((keyword) => (
-                        <span
-                            className='rounded-md bg-surface-secondary px-2 py-1 text-2xs text-muted'
+                        <Chip
+                            variant='tertiary'
+                            className='text-muted ring-1 ring-inset ring-foreground/10'
                             key={keyword}
                         >
                             {keyword}
-                        </span>
+                        </Chip>
                     ))}
                 </div>
             )}
 
-            <dl className='flex flex-col divide-y divide-border border-t border-border'>
+            <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-6 gap-y-2.5 text-base'>
                 {facts.map((fact) => (
-                    <div className='flex flex-row items-baseline justify-between gap-4 py-2.5' key={fact.label}>
-                        <dt className='text-xs text-muted'>{fact.label}</dt>
-                        <dd className='min-w-0 truncate text-xs text-foreground tabular-nums' title={fact.value}>
+                    <Fragment key={fact.label}>
+                        <dt className='text-muted'>{fact.label}</dt>
+                        <dd className='min-w-0 text-foreground tabular-nums [overflow-wrap:anywhere]'>
                             {fact.value}
                         </dd>
-                    </div>
+                    </Fragment>
                 ))}
             </dl>
         </div>

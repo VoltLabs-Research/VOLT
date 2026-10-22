@@ -83,17 +83,17 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
     const recordCopied = copiedKey === RECORD_COPY_KEY;
 
     return (
-        <aside className='flex h-full min-h-0 flex-col bg-surface' aria-label='Row detail'>
-            <header className='flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border px-3.5 py-2.5'>
+        <aside className='glass-surface flex h-full min-h-0 flex-col overflow-hidden rounded-3xl bg-overlay shadow-[var(--overlay-shadow)]' aria-label='Row detail'>
+            <header className='flex shrink-0 flex-row items-center justify-between gap-2 pt-3.5 pr-3 pb-2 pl-5'>
                 {shortId ? (
                     <span
-                        className='min-w-0 overflow-hidden whitespace-nowrap text-ellipsis text-xs font-medium text-foreground'
+                        className='min-w-0 truncate text-base font-semibold text-foreground'
                         title={identifier ?? undefined}
                     >
                         {shortId}
                     </span>
                 ) : (
-                    <span className='text-xs font-medium text-muted'>Record</span>
+                    <span className='text-base font-semibold text-foreground'>Record</span>
                 )}
                 <div className='flex shrink-0 flex-row gap-0.5'>
                     <Button
@@ -116,18 +116,18 @@ const SubListingDetailPanel = ({ row, columns, onClose }: SubListingDetailPanelP
                     </Button>
                 </div>
             </header>
-            <Scrollable className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-x-5 gap-y-4 overflow-x-hidden p-3.5'>
+            <Scrollable className='grid min-h-0 flex-1 grid-cols-[repeat(auto-fill,minmax(140px,1fr))] content-start gap-2 overflow-x-hidden px-5 pt-2 pb-5'>
                 {fields.map((field) => {
                     const copiedThisField = copiedKey === field.key;
 
                     return (
                         <section
                             key={field.key}
-                            className={cn('group flex min-w-0 flex-col gap-1', field.isFullWidth ? 'col-span-full' : null)}
+                            className={cn('group flex min-w-0 flex-col gap-0.5 rounded-xl bg-foreground/4 px-3 py-2.5', field.isFullWidth ? 'col-span-full' : null)}
                         >
                             <div className='flex min-w-0 flex-row items-center justify-between gap-1.5'>
                                 <div
-                                    className='min-w-0 overflow-hidden whitespace-nowrap text-ellipsis text-2xs font-medium text-muted'
+                                    className='min-w-0 truncate text-xs text-muted'
                                     title={field.title}
                                 >
                                     {field.title}
