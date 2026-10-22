@@ -9,6 +9,18 @@ import { overflowBaseline } from './eslint.overflow-baseline.js';
 
 const LOCAL_CSS_IMPORT = '^(\\.{1,2}/|@/).*\\.css(\\?.*)?$';
 
+// HeroUI's scale (--radius: 0.5rem), by role. Kept in sync with the radius roles in the port contract.
+const RADIUS_ROLES = [
+    'Use the radius roles: rounded-sm 4px (tiny inline marks: kbd, inline code, swatches, chart cells),',
+    'rounded-md 6px (dense controls: 28px icon buttons, sidebar nav rows, status badges, skeleton lines),',
+    'rounded-lg 8px (rows inside a surface: list, tree and context-menu rows; 36px icon buttons),',
+    'rounded-xl 12px (tiles and blocks inside a section, tooltips, context menus, segmented controls),',
+    'rounded-2xl 16px (sections, cards, the chrome surface, toasts, floating panels, table frames),',
+    'rounded-3xl 24px (covers, dialogs, popovers, detail panels),',
+    'rounded-full (pills: buttons, chips, search fields, avatars, dots, progress tracks).',
+    'An inner radius is concentric with its container (outer radius minus padding), or a pill when the row is short.'
+].join(' ');
+
 const BANNED_CLASS_PATTERNS = [
     [
         'text-\\u005B\\d',
@@ -20,11 +32,11 @@ const BANNED_CLASS_PATTERNS = [
     ],
     [
         'rounded(-(tl|tr|bl|br|ss|se|es|ee|t|b|l|r|s|e))?-\\u005B\\d',
-        'Arbitrary radii are closed. Use the radius roles: rounded-sm (tiny inline), rounded-md (controls), rounded-lg (surfaces), rounded-xl (overlays).'
+        `Arbitrary radii are closed. ${RADIUS_ROLES}`
     ],
     [
-        'rounded(-(tl|tr|bl|br|ss|se|es|ee|t|b|l|r|s|e))?-(xs|2xl|3xl|4xl)(\\s|$)',
-        'The radius scale stops at rounded-xl (overlays). rounded-xs was retired for rounded-sm; 2xl+ belongs to HeroUI overlay internals only.'
+        'rounded(-(tl|tr|bl|br|ss|se|es|ee|t|b|l|r|s|e))?-(xs|4xl)(\\s|$)',
+        `rounded-xs and rounded-4xl have no role. ${RADIUS_ROLES}`
     ],
     [
         '(^|\\s|:)-?(px|py|pt|pb|pl|pr|p|mx|my|mt|mb|ml|mr|m|gap-x|gap-y|gap|space-x|space-y)-\\u005B\\d',
@@ -66,10 +78,9 @@ const LAYER_COMPONENT_MESSAGE = [
 ].join(' ');
 
 const CSS_BOUNDARY_MESSAGE = [
-    'Per-component stylesheets are closed. Layout and typography belong to bravais:',
-    'use Box/Stack/Row/Grid style props (display, direction, align, justify, gap, p, radius, border, overflow)',
-    'and Text/Heading (size, tone, weight) instead of a .css file.',
-    'Global sheets are wired in src/app/, and shared visual language belongs in bravais itself.'
+    'Per-component stylesheets are closed. Style with HeroUI components and their variants and with',
+    'Tailwind utilities on the tokens in src/shared/ui/assets/stylesheets/index.css instead of a .css file.',
+    'A rule Tailwind cannot express goes in that index.css; global sheets are wired in src/app/.'
 ].join(' ');
 
 const cssImportPattern = {
