@@ -1,6 +1,5 @@
 import { CloseButton } from '@heroui/react';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { NodeType } from '@volt/contracts/modules/plugin/enums';
@@ -17,24 +16,6 @@ interface PanelPosition {
     right: number;
     maxHeight: number;
 }
-
-const panelVariants = {
-    hidden: {
-        opacity: 0,
-        scale: 0.95,
-        y: 8
-    },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        y: 0
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.97,
-        y: 4
-    }
-};
 
 const FloatingNodePanel = () => {
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
@@ -98,38 +79,32 @@ const FloatingNodePanel = () => {
 
     const config = liveSelectedNode ? NODE_CONFIGS[liveSelectedNode.type as NodeType] : null;
 
-    return (
-        <AnimatePresence mode='wait'>
-            {liveSelectedNode && config && position && (
-                <motion.div
-                    className='absolute z-[100] flex w-[400px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--overlay-shadow)] max-[768px]:fixed! max-[768px]:inset-auto! max-[768px]:bottom-2! max-[768px]:left-2! max-[768px]:right-2! max-[768px]:top-auto! max-[768px]:w-auto! max-[768px]:max-w-[calc(100vw-1rem)]! max-[768px]:max-h-[min(70dvh,560px)] max-[768px]:rounded-xl'
-                    style={{
-                        top: position.top,
-                        right: position.right,
-                        maxHeight: position.maxHeight
-                    }}
-                    variants={panelVariants}
-                    initial='hidden'
-                    animate='visible'
-                    exit='exit'
-                    transition={{
-                        duration: 0.18,
-                        ease: [0.32, 0.72, 0, 1]
-                    }}
-                    key={liveSelectedNode.id}
-                    onClick={(event) => event.stopPropagation()}
-                >
-                    <div className='flex shrink-0 flex-row items-center gap-3 border-b border-border p-4'>
-                        <h3 className='flex-1 text-base font-semibold text-foreground'>
-                            {config.label}
-                        </h3>
-                        <CloseButton onPress={() => selectNode(null)} />
-                    </div>
+    if (!liveSelectedNode || !config || !position) {
+        return null;
+    }
 
-                    <NodeEditor node={liveSelectedNode} />
-                </motion.div>
-            )}
-        </AnimatePresence>
+    // Keyed by node, so each newly selected node's panel is a new element and rises in from its
+    // @starting-style.
+    return (
+        <div
+            key={liveSelectedNode.id}
+            className='glass-surface absolute z-[100] flex w-[400px] max-w-[calc(100vw-1rem)] select-text flex-col overflow-hidden rounded-3xl bg-overlay shadow-[var(--overlay-shadow)] transition-[opacity,translate,scale] duration-200 ease-[var(--ease-emphasized)] starting:translate-y-2 starting:scale-96 starting:opacity-0 max-[768px]:fixed! max-[768px]:z-[300] max-[768px]:inset-auto! max-[768px]:bottom-2! max-[768px]:left-2! max-[768px]:right-2! max-[768px]:top-auto! max-[768px]:w-auto! max-[768px]:max-w-[calc(100vw-1rem)]! max-[768px]:max-h-[min(70dvh,560px)]'
+            style={{
+                top: position.top,
+                right: position.right,
+                maxHeight: position.maxHeight
+            }}
+            onClick={(event) => event.stopPropagation()}
+        >
+            <div className='flex shrink-0 flex-row items-center gap-3 pt-3.5 pr-2.5 pb-2.5 pl-5'>
+                <h3 className='flex-1 text-base font-semibold text-foreground'>
+                    {config.label}
+                </h3>
+                <CloseButton onPress={() => selectNode(null)} />
+            </div>
+
+            <NodeEditor node={liveSelectedNode} />
+        </div>
     );
 };
 

@@ -58,14 +58,14 @@ const DebugExecutionTraceTree = ({
     };
 
     return (
-        <div className={cn('flex flex-col gap-1.5', depth >= 1 && depth <= MAX_INDENTED_TRACE_DEPTH ? 'ml-2.5 border-l border-border/80 pl-2' : null)}>
+        <div className={cn('flex flex-col gap-1.5', depth >= 1 && depth <= MAX_INDENTED_TRACE_DEPTH ? 'ml-2.5 border-l border-separator pl-2' : null)}>
             {nodes.map((node) => {
                 const children = node.children ?? [];
                 const hasDetails = Boolean(node.output || node.error || node.reason || children.length > 0);
                 const isExpanded = expandedTraceIds.has(node.traceId);
 
                 return (
-                    <div className={cn('rounded-md border bg-surface-tertiary/85 px-1.5 py-1.5', itemStatusClass[node.status])} key={node.traceId}>
+                    <div className={cn('rounded-lg border bg-foreground/4 px-2 py-1.5', itemStatusClass[node.status])} key={node.traceId}>
                         <div className={cn('flex flex-row items-start justify-between gap-2 text-2xs', hasDetails ? 'cursor-pointer' : null)} onClick={() => {
                                 if (hasDetails) {
                                     onToggleTraceNode(node.traceId);
@@ -95,7 +95,7 @@ const DebugExecutionTraceTree = ({
                         {isExpanded && (
                             <div className='flex flex-col gap-1.5 mt-1.5'>
                                 {node.error && (
-                                    <div className='rounded-sm px-1.5 py-1.5 bg-danger/8 text-danger'>
+                                    <div className='rounded-md bg-danger-soft px-1.5 py-1.5 text-danger-soft-foreground'>
                                         <p className='text-xs'>{node.error}</p>
                                         {node.stack && (
                                             <pre className='m-0 whitespace-pre-wrap break-all font-mono text-2xs opacity-80'>{node.stack}</pre>
@@ -104,13 +104,13 @@ const DebugExecutionTraceTree = ({
                                 )}
 
                                 {node.reason && !node.error && (
-                                    <div className='rounded-sm px-1.5 py-1.5 bg-border-secondary/8 text-border-secondary'>
+                                    <div className='rounded-md bg-foreground/4 px-1.5 py-1.5 text-muted'>
                                         <p className='text-xs'>{node.reason}</p>
                                     </div>
                                 )}
 
                                 {node.output && (
-                                    <div className='rounded-sm bg-surface-secondary/82 px-1 py-1'>
+                                    <div className='rounded-md bg-foreground/4 px-1 py-1'>
                                         <JsonTree data={node.output} defaultExpanded={false} />
                                     </div>
                                 )}
@@ -140,7 +140,7 @@ const NestedExecutionTracePanel = (props: TracePanelProps) => {
     }
 
     return (
-        <div className='flex flex-col gap-1.5 border-t border-border/80 pt-1.5'>
+        <div className='flex flex-col gap-1.5 border-t border-separator pt-1.5'>
             <p className='text-xs font-semibold'>Nested Execution</p>
             <DebugExecutionTraceTree {...props} />
         </div>
@@ -163,13 +163,10 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
     );
 
     return (
-        <Scrollable className='absolute left-1/2 top-[calc(100%+2rem)] w-[300px] max-h-[260px] -translate-x-1/2 rounded-md border border-border bg-surface-secondary p-2 nowheel' onClick={(event) => event.stopPropagation()}>
+        <Scrollable data-node-inspect className='glass-surface nowheel absolute left-1/2 top-[calc(100%+2.25rem)] z-[5] w-[300px] max-h-[260px] -translate-x-1/2 cursor-auto select-text rounded-2xl bg-overlay p-3.5 shadow-[var(--overlay-shadow)]' onClick={(event) => event.stopPropagation()}>
             {debugState.status === DebugNodeStatus.Failed && (
-                <div className='flex flex-col gap-1 rounded-lg bg-danger/8 p-2 text-xs text-danger'>
-                    <div className='flex flex-row items-center gap-1'>
-                        <AlertCircle size={12} />
-                        <p className='text-xs font-semibold'>Error</p>
-                    </div>
+                <div className='flex flex-col gap-1 rounded-xl bg-danger-soft p-3 text-xs text-danger-soft-foreground'>
+                    <p className='text-xs font-semibold'>Error</p>
                     <p className='text-xs'>{debugState.error}</p>
                     {debugState.stack && (
                         <pre className='m-0 whitespace-pre-wrap break-all font-mono text-2xs opacity-80'>{debugState.stack}</pre>
@@ -180,18 +177,15 @@ const NodeDebugOutput = ({ debugState, expandedTraceIds, onToggleTraceNode }: No
             )}
 
             {debugState.status === DebugNodeStatus.Skipped && (
-                <div className='flex flex-col gap-1.5 rounded-lg bg-border-secondary/8 p-2 text-xs text-border-secondary'>
-                    <div className='flex flex-row items-center gap-1'>
-                        <SkipForward size={12} />
-                        <p className='text-xs'>{debugState.reason || 'Skipped'}</p>
-                    </div>
+                <div className='flex flex-col gap-1.5 rounded-xl bg-foreground/4 p-3 text-xs text-muted'>
+                    <p className='text-xs'>{debugState.reason || 'Skipped'}</p>
 
                     {tracePanel}
                 </div>
             )}
 
             {debugState.status === DebugNodeStatus.Completed && (
-                <div className='flex flex-col gap-2 font-mono text-xs leading-normal'>
+                <div className='flex flex-col gap-2 font-mono text-2xs leading-relaxed'>
                     {tracePanel}
 
                     {debugState.output && (

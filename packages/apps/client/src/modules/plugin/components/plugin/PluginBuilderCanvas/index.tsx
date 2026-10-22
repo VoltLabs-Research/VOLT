@@ -9,51 +9,35 @@ import useCanvasHandlers from './use-canvas-handlers';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import useTip from '@/shared/tips/use-tip';
+import { useColorScheme } from '@/shared/ui/hooks/use-color-scheme';
 import type { SaveStatus } from '@/modules/plugin/hooks/plugin/use-workflow-save-status';
 import { Background, MiniMap, ReactFlow } from '@xyflow/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ReactFlowInstance } from '@xyflow/react';
 
-const getCSSVar = (name: string): string =>
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
-const resolveThemeColors = () => ({
-    minimapColors: {
-        [NodeType.MODIFIER]: getCSSVar('--accent'),
-        [NodeType.ARGUMENTS]: getCSSVar('--accent-indigo'),
-        [NodeType.CONTEXT]: getCSSVar('--accent-teal'),
-        [NodeType.FOREACH]: getCSSVar('--accent-purple'),
-        [NodeType.ENTRYPOINT]: getCSSVar('--success'),
-        [NodeType.PLUGIN]: getCSSVar('--accent'),
-        [NodeType.EXPOSURE]: getCSSVar('--warning'),
-        [NodeType.EXPORT]: getCSSVar('--danger'),
-        [NodeType.IF_STATEMENT]: getCSSVar('--accent-purple'),
-        [NodeType.SWITCH_STATEMENT]: getCSSVar('--warning'),
-        [NodeType.SWITCH_CASE]: getCSSVar('--accent')
-    } as Record<string, string>,
-    edgeStroke: getCSSVar('--border-secondary'),
-    canvasBg: getCSSVar('--background'),
-    gridColor: getCSSVar('--muted'),
-    minimapMask: getCSSVar('--overlay'),
-    minimapBg: getCSSVar('--surface-secondary'),
-    nodeFallback: getCSSVar('--muted')
-});
-
-const useCanvasThemeColors = () => {
-    const [colors, setColors] = useState(resolveThemeColors);
-
-    useEffect(() => {
-        const observer = new MutationObserver(() => setColors(resolveThemeColors()));
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-theme']
-        });
-        return () => observer.disconnect();
-    }, []);
-
-    return colors;
+// Each node type keeps its colour in the minimap. React Flow paints with these values through
+// inline styles and CSS variables, so the theme tokens can be passed as they are.
+const MINIMAP_NODE_COLORS: Record<string, string> = {
+    [NodeType.MODIFIER]: 'var(--accent)',
+    [NodeType.ARGUMENTS]: 'var(--accent-indigo)',
+    [NodeType.CONTEXT]: 'var(--accent-teal)',
+    [NodeType.FOREACH]: 'var(--accent-purple)',
+    [NodeType.ENTRYPOINT]: 'var(--success)',
+    [NodeType.PLUGIN]: 'var(--accent)',
+    [NodeType.EXPOSURE]: 'var(--warning)',
+    [NodeType.EXPORT]: 'var(--danger)',
+    [NodeType.IF_STATEMENT]: 'var(--accent-purple)',
+    [NodeType.SWITCH_STATEMENT]: 'var(--warning)',
+    [NodeType.SWITCH_CASE]: 'var(--accent)'
 };
+
+const MINIMAP_SIZE = {
+    width: 176,
+    height: 112
+};
+
+const minimapNodeColor = (node: { type?: string }) => MINIMAP_NODE_COLORS[node.type ?? ''] ?? 'var(--muted)';
 
 interface PluginBuilderCanvasProps {
     saveStatus: SaveStatus;
@@ -63,13 +47,9 @@ interface PluginBuilderCanvasProps {
 const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) => {
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [currentZoom, setCurrentZoom] = useState(1);
-    const themeColors = useCanvasThemeColors();
-
-    const nodeColor = useCallback(
-        (node: { type?: string }) => themeColors.minimapColors[node.type ?? ''] ?? themeColors.nodeFallback,
-        [themeColors]
-    );
-
+    // React Flow puts its colour mode on its root as a .light or .dark class, which also scopes
+    // the theme tokens: it has to follow the app's theme, or the canvas repaints in light.
+    const colorScheme = useColorScheme();
     usePluginDebugSocket();
 
     const {
@@ -112,6 +92,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     return (
         <div className='relative w-full h-full plugin-builder-canvas'>
             <ReactFlow
+                colorMode={colorScheme}
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
@@ -128,20 +109,16 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
                 fitView
                 snapToGrid
                 snapGrid={[16, 16]}
-                defaultEdgeOptions={{
-                    animated: true,
-                    style: {
-                        stroke: themeColors.edgeStroke,
-                        strokeWidth: 2
-                    }
-                }}
             >
-                <Background bgColor={themeColors.canvasBg} color={themeColors.gridColor} gap={16} size={0.8} />
+                <Background bgColor='var(--canvas)' color='color-mix(in oklab, var(--foreground) 15%, transparent)' gap={16} size={2} />
                 {!isEmpty && (
                     <MiniMap
-                        nodeColor={nodeColor}
-                        maskColor={themeColors.minimapMask}
-                        bgColor={themeColors.minimapBg}
+                        className='glass-surface'
+                        style={MINIMAP_SIZE}
+                        nodeColor={minimapNodeColor}
+                        nodeBorderRadius={2}
+                        maskColor='color-mix(in oklab, var(--canvas) 62%, transparent)'
+                        bgColor='var(--dashboard-surface)'
                     />
                 )}
             </ReactFlow>

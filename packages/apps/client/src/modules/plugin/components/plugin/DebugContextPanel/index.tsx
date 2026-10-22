@@ -1,21 +1,43 @@
 import JsonTree from '@/modules/plugin/components/plugin/JsonTree';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
-import { Braces, ChevronDown, ChevronRight, X, Repeat } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { cn } from '@heroui/react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
 type DebugContextOutput = Record<string, unknown>;
 type DebugContextEntry = [string, DebugContextOutput];
 
-interface ChevronProps {
+const ROW_CLASS_NAME = 'flex w-full cursor-pointer flex-row items-center justify-between gap-2 px-3.5 py-2 text-left transition-colors duration-150 hover:bg-foreground/4';
+
+const Chevron = ({ expanded }: { expanded: boolean }) => (
+    <ChevronRight size={12} aria-hidden='true' className={cn('shrink-0 text-muted transition-transform duration-200 ease-[var(--ease-emphasized)]', expanded && 'rotate-90')} />
+);
+
+interface ContextRowProps {
+    title: string;
+    subtitle?: string;
     expanded: boolean;
-    size?: number;
+    onToggle: () => void;
+    children: ReactNode;
 }
 
-const Chevron = ({ expanded, size = 11 }: ChevronProps) =>
-    expanded ? <ChevronDown size={size} /> : <ChevronRight size={size} />;
+const ContextRow = ({ title, subtitle, expanded, onToggle, children }: ContextRowProps) => (
+    <div className='border-t border-separator first:border-t-0'>
+        <button type='button' className={ROW_CLASS_NAME} aria-expanded={expanded} onClick={onToggle}>
+            <span className='flex min-w-0 flex-col'>
+                <span className='text-2xs font-semibold text-muted'>{title}</span>
+                {subtitle && (
+                    <span className='max-w-[200px] truncate font-mono text-2xs text-muted'>{subtitle}</span>
+                )}
+            </span>
+            <Chevron expanded={expanded} />
+        </button>
+        {expanded && children}
+    </div>
+);
 
 const splitContextEntries = (
     entries: DebugContextEntry[],
@@ -95,77 +117,62 @@ const DebugContextPanel = () => {
         return nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
     };
 
-    const renderEntry = (nodeId: string, output: DebugContextOutput) => {
-        const isExpanded = expandedKeys.has(nodeId);
-        return (
-            <div key={nodeId} className='border-b border-border/50 last:border-b-0'>
-                <div className='flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-1.5 transition-colors duration-100 hover:bg-surface-tertiary/50' onClick={() => toggleKey(nodeId)}>
-                    <div className='flex flex-col'>
-                        <p className='text-2xs font-semibold text-muted'>{getNodeLabel(nodeId)}</p>
-                        <p className='max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis font-mono text-2xs text-muted'>{nodeId}</p>
-                    </div>
-                    <Chevron expanded={isExpanded} />
-                </div>
-                {isExpanded && (
-                    <div className='px-2.5 pb-1.5 font-mono text-2xs leading-normal'>
-                        <JsonTree data={output} defaultExpanded={true} />
-                    </div>
-                )}
+    const renderEntry = (nodeId: string, output: DebugContextOutput) => (
+        <ContextRow
+            key={nodeId}
+            title={getNodeLabel(nodeId)}
+            subtitle={nodeId}
+            expanded={expandedKeys.has(nodeId)}
+            onToggle={() => toggleKey(nodeId)}
+        >
+            <div className='px-3.5 pb-2.5 font-mono text-2xs leading-relaxed'>
+                <JsonTree data={output} defaultExpanded={true} />
             </div>
-        );
-    };
+        </ContextRow>
+    );
 
     const iterationKey = `__iteration_${currentIndex}`;
     const forEachGroupKey = '__foreach_group';
     const iterationCount = Number(forEachEntry?.[1].count ?? totalIterations ?? 0);
 
     return (
-        <div className='absolute top-4 right-4 z-10 flex w-[280px] max-h-[320px] max-w-[calc(100vw-1rem)] flex-col border border-border bg-surface max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[55dvh]'>
-            <div className={cn('flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-1.5 transition-colors duration-100 hover:bg-surface-tertiary/50', 'border-b border-border px-2.5 py-2 select-none')} onClick={() => setIsOpen((v) => !v)}>
-                <Braces size={12} aria-hidden='true' />
-                <p className='flex flex-1 flex-row items-center gap-1.5 text-xs font-semibold'>
-                    Context
-                    <span className='rounded-full bg-accent/15 px-1 text-2xs font-semibold leading-[1.4] text-accent'>{entries.length}</span>
-                </p>
-                {isOpen ? <X size={12} className='text-muted' aria-hidden='true' /> : <ChevronRight size={12} aria-hidden='true' />}
-            </div>
+        <section aria-label='Debug context' className='glass-surface absolute top-4 right-4 z-10 flex w-[280px] max-h-[320px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl bg-overlay shadow-[var(--overlay-shadow)] max-[768px]:top-auto max-[768px]:right-2 max-[768px]:bottom-18 max-[768px]:left-18 max-[768px]:w-auto max-[768px]:max-h-[45dvh]'>
+            <button
+                type='button'
+                className='flex w-full shrink-0 cursor-pointer select-none flex-row items-center gap-2 px-3.5 py-2.5 text-left text-xs font-semibold'
+                aria-expanded={isOpen}
+                onClick={() => setIsOpen((v) => !v)}
+            >
+                Context
+                <span className='rounded-full bg-foreground/8 px-1.5 text-2xs leading-4.5'>{entries.length}</span>
+                <span className='ml-auto'>
+                    <Chevron expanded={isOpen} />
+                </span>
+            </button>
 
             {isOpen && (
-                <Scrollable className='nowheel min-h-0 flex-1'>
+                <Scrollable className='nowheel min-h-0 flex-1 select-text border-t border-separator'>
                     {preForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
 
                     {forEachEntry && (
-                        <div className='border-b border-border/50 last:border-b-0'>
-                            <div className='flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-1.5 transition-colors duration-100 hover:bg-surface-tertiary/50' onClick={() => toggleKey(forEachGroupKey)}>
-                                <div className='flex flex-row items-center gap-2'>
-                                    <Repeat size={10} className='text-muted' aria-hidden='true' />
-                                    <div className='flex flex-col'>
-                                        <p className='text-2xs font-semibold text-muted'>{getNodeLabel(forEachEntry[0])}</p>
-                                        <p className='max-w-[200px] overflow-hidden whitespace-nowrap text-ellipsis font-mono text-2xs text-muted'>
-                                            {iterationCount} iteration{iterationCount !== 1 ? 's' : ''}
-                                        </p>
+                        <ContextRow
+                            title={getNodeLabel(forEachEntry[0])}
+                            subtitle={`${iterationCount} iteration${iterationCount !== 1 ? 's' : ''}`}
+                            expanded={expandedKeys.has(forEachGroupKey)}
+                            onToggle={() => toggleKey(forEachGroupKey)}
+                        >
+                            <div className='ml-3.5 border-l border-separator'>
+                                <ContextRow
+                                    title={`Iteration ${currentIndex}`}
+                                    expanded={expandedKeys.has(iterationKey)}
+                                    onToggle={() => toggleKey(iterationKey)}
+                                >
+                                    <div className='ml-3.5 border-l border-separator'>
+                                        {postForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
                                     </div>
-                                </div>
-                                <Chevron expanded={expandedKeys.has(forEachGroupKey)} />
+                                </ContextRow>
                             </div>
-
-                            {expandedKeys.has(forEachGroupKey) && (
-                                <div className='ml-2.5 border-l border-border'>
-                                    <div className='border-b border-border/50 last:border-b-0'>
-                                        <div className='flex flex-row items-center justify-between gap-2 cursor-pointer px-2.5 py-1.5 transition-colors duration-100 hover:bg-surface-tertiary/50' onClick={() => toggleKey(iterationKey)}>
-                                            <p className='text-2xs font-semibold text-muted'>Iteration {currentIndex}</p>
-                                            <Chevron expanded={expandedKeys.has(iterationKey)} size={10} />
-                                        </div>
-
-                                        {expandedKeys.has(iterationKey) && (
-                                            <div className='ml-2.5 border-l border-border'>
-                                                {postForEach.map(([nodeId, output]) => renderEntry(nodeId, output))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        </ContextRow>
                     )}
 
                     {!forEachEntry && postForEach.length === 0 && entries.length > preForEach.length &&
@@ -173,7 +180,7 @@ const DebugContextPanel = () => {
                     }
                 </Scrollable>
             )}
-        </div>
+        </section>
     );
 };
 

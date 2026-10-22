@@ -13,7 +13,6 @@ interface NodeHandleDefinition {
     type: 'source' | 'target';
     label: string;
     defaultPlacement: INodeConnectorPlacement;
-    className?: string;
 }
 
 const DEFAULT_INPUT_HANDLE: NodeHandleDefinition = {
@@ -73,7 +72,6 @@ const NODE_HANDLE_DEFINITIONS: Record<NodeType, NodeHandleDefinition[]> = {
             id: 'output-true',
             type: 'source',
             label: 'True Branch',
-            className: 'if-statement-handle if-statement-handle--true',
             defaultPlacement: {
                 side: 'right',
                 offset: 35
@@ -83,7 +81,6 @@ const NODE_HANDLE_DEFINITIONS: Record<NodeType, NodeHandleDefinition[]> = {
             id: 'output-false',
             type: 'source',
             label: 'False Branch',
-            className: 'if-statement-handle if-statement-handle--false',
             defaultPlacement: {
                 side: 'right',
                 offset: 65
@@ -96,7 +93,6 @@ const NODE_HANDLE_DEFINITIONS: Record<NodeType, NodeHandleDefinition[]> = {
             id: 'cases',
             type: 'source',
             label: 'Cases Output',
-            className: 'switch-statement-handle switch-statement-handle--cases',
             defaultPlacement: {
                 side: 'right',
                 offset: 35
@@ -106,7 +102,6 @@ const NODE_HANDLE_DEFINITIONS: Record<NodeType, NodeHandleDefinition[]> = {
             id: 'continue',
             type: 'source',
             label: 'Continue Output',
-            className: 'switch-statement-handle switch-statement-handle--continue',
             defaultPlacement: {
                 side: 'right',
                 offset: 65

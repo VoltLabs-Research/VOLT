@@ -2,12 +2,9 @@ import { NodeType, PluginNodeExecutionMode } from '@volt/contracts/modules/plugi
 import type { Edge, Node, XYPosition } from '@xyflow/react';
 import type { INodeData, IWorkflow, IWorkflowNode } from '@volt/contracts/modules/plugin/workflow';
 
-export const DEFAULT_EDGE_STYLE = {
-    animated: true,
-    style: {
-        stroke: 'var(--border)',
-        strokeWidth: 2
-    }
+// The stroke comes from the canvas's --xy-edge-* variables, so a selected edge can still change colour.
+export const DEFAULT_EDGE_OPTIONS = {
+    animated: true
 };
 
 interface GraphNodeSource {
@@ -37,7 +34,7 @@ export const toBuilderNodes = (nodes: GraphNodeSource[]): Node<INodeData>[] => {
 export const toBuilderEdges = (edges: GraphEdgeSource[]): Edge[] => {
     return edges.map((edge) => ({
         ...toWorkflowEdge(edge),
-        ...DEFAULT_EDGE_STYLE
+        ...DEFAULT_EDGE_OPTIONS
     }));
 };
 

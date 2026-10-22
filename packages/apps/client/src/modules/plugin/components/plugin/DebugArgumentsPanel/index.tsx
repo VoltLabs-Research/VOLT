@@ -8,7 +8,7 @@ import {
     collectVisibleDefaultArgumentValues,
     getUserConfigurableArguments
 } from '@/modules/plugin/utils/plugin/argument-values';
-import { X, Play, Settings2 } from 'lucide-react';
+import { X, Play } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -63,14 +63,11 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
     if (configurableArgs.length === 0 || !showArgumentsPanel) return null;
 
     return (
-        <div className='absolute top-14 left-1/2 z-10 flex w-[320px] max-h-[400px] max-w-[calc(100vw-1rem)] -translate-x-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[60dvh]'>
-            <div className='flex shrink-0 flex-row items-center justify-between border-b border-border px-3 py-2.5'>
-                <div className='flex flex-row items-center gap-2'>
-                    <Settings2 size={14} aria-hidden='true' />
-                    <p className='text-sm font-semibold'>
-                        Debug Arguments
-                    </p>
-                </div>
+        <div className='glass-surface flex w-80 max-h-100 max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-3xl bg-overlay shadow-[var(--overlay-shadow)] transition-[opacity,translate,scale] duration-200 ease-[var(--ease-emphasized)] starting:translate-y-2 starting:scale-96 starting:opacity-0 max-[768px]:w-[calc(100vw-1rem)] max-[768px]:max-h-[60dvh]'>
+            <div className='flex shrink-0 flex-row items-center justify-between gap-3 pt-3.5 pr-2.5 pb-2.5 pl-5'>
+                <p className='text-base font-semibold'>
+                    Debug Arguments
+                </p>
                 <Button
                     isIconOnly
                     variant='ghost'
@@ -81,7 +78,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     <X size={14} aria-hidden='true' />
                 </Button>
             </div>
-            <Scrollable className='flex min-h-0 max-h-[280px] flex-1 flex-col gap-2 p-3 max-[768px]:max-h-[40dvh]'>
+            <Scrollable className='flex min-h-0 max-h-[280px] flex-1 flex-col gap-3 px-5 pt-1 pb-4 max-[768px]:max-h-[40dvh]'>
                 <ArgumentFieldsRenderer
                     arguments={configurableArgs}
                     values={debugConfig}
@@ -92,7 +89,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     }))}
                 />
             </Scrollable>
-            <div className='shrink-0 border-t border-border px-3 py-2.5'>
+            <div className='shrink-0 border-t border-separator px-4 pt-3 pb-4'>
                 <Button
                     variant='primary'
                     size='sm'

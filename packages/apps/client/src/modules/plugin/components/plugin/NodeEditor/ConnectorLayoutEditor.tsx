@@ -83,11 +83,11 @@ const ConnectorLayoutEditor = ({ node }: ConnectorLayoutEditorProps) => {
 
                 return (
                     <div
-                        className={cn('rounded-lg border border-border p-3', index === 0 ? 'mt-0' : 'mt-3')}
+                        className={cn('rounded-xl bg-foreground/4 px-4 py-3.5', index === 0 ? 'mt-0' : 'mt-3')}
                         key={handleDefinition.id}
                     >
                         <div className='mb-3 flex flex-row items-center justify-between gap-2'>
-                            <strong>{handleDefinition.label}</strong>
+                            <strong className='text-base font-semibold'>{handleDefinition.label}</strong>
                             <Button
                                 variant='outline'
                                 size='sm'

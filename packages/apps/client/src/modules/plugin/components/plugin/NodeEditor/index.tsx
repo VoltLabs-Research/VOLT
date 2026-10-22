@@ -1,6 +1,6 @@
-import { Alert, Button } from '@heroui/react';
-import SectionTabs from '@/modules/plugin/components/plugin/NodeEditor/SectionTabs';
+import { Alert, Button, Tabs } from '@heroui/react';
 import { useState } from 'react';
+import type { Key } from 'react';
 import type { FC } from 'react';
 import { Trash2 } from 'lucide-react';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
@@ -64,53 +64,59 @@ const NodeEditor = ({ node }: EditorProps) => {
 
     return (
         <>
-            <div className='shrink-0 px-4 pt-3 max-[768px]:px-3 max-[768px]:pt-2'>
-                <SectionTabs
-                    tabs={SECTION_TABS}
-                    activeTab={activeSection}
-                    onChange={setActiveSection}
-                    ariaLabel='Node configuration sections'
-                    layoutId={`node-editor-${node.id}`}
-                />
-            </div>
-            <Scrollable className='min-h-0 flex-1 overflow-x-hidden p-4 max-[768px]:p-3'>
-                {activeSection === 'details' && (
-                    EditorComponent ? (
-                        <>
-                            {nodeDescription && (
-                                <p className='mb-3 border-b border-border pb-3 text-xs text-muted'>
-                                    {nodeDescription}
-                                </p>
-                            )}
-                            <EditorComponent node={node} />
-                        </>
-                    ) : (
-                        <p className='text-sm text-muted'>
-                            No editor available for this node type.
-                        </p>
-                    )
-                )}
-
-                {activeSection === 'connectors' && (
-                    <ConnectorLayoutEditor node={node} />
-                )}
-            </Scrollable>
-            <div className='shrink-0 border-t border-border px-4 py-3'>
+            <Tabs
+                selectedKey={activeSection}
+                onSelectionChange={(key: Key) => setActiveSection(key as NodeEditorSection)}
+                className='min-h-0 flex-1 gap-0'
+            >
+                <Tabs.ListContainer className='mx-4 mb-1 shrink-0 max-[768px]:mx-3'>
+                    <Tabs.List aria-label='Node configuration sections'>
+                        {SECTION_TABS.map((tab) => (
+                            <Tabs.Tab key={tab.id} id={tab.id}>
+                                {tab.label}
+                                <Tabs.Indicator />
+                            </Tabs.Tab>
+                        ))}
+                    </Tabs.List>
+                </Tabs.ListContainer>
+                <Scrollable className='min-h-0 flex-1 overflow-x-hidden px-5 pt-3.5 pb-4 max-[768px]:px-4'>
+                    <Tabs.Panel id='details' className='mt-0 p-0'>
+                        {EditorComponent ? (
+                            <>
+                                {nodeDescription && (
+                                    <p className='mb-3 border-b border-separator pb-3 text-xs text-muted'>
+                                        {nodeDescription}
+                                    </p>
+                                )}
+                                <EditorComponent node={node} />
+                            </>
+                        ) : (
+                            <p className='text-sm text-muted'>
+                                No editor available for this node type.
+                            </p>
+                        )}
+                    </Tabs.Panel>
+                    <Tabs.Panel id='connectors' className='mt-0 p-0'>
+                        <ConnectorLayoutEditor node={node} />
+                    </Tabs.Panel>
+                </Scrollable>
+            </Tabs>
+            <div className='shrink-0 border-t border-separator px-4 pt-3 pb-4'>
                 <Alert
                     status='danger'
                     role='region'
                     aria-label='Delete Node'
-                    className='flex-row items-center justify-between rounded-xl border border-danger/24 bg-danger-soft p-4 shadow-none'
+                    className='flex-row items-center justify-between gap-3 rounded-xl border-0 bg-danger-soft py-3 pr-2 pl-5 shadow-none'
                 >
-                    <Alert.Content className='gap-1'>
-                        <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-sm font-semibold'>
+                    <Alert.Content className='gap-0.5'>
+                        <Alert.Title<'h2'> render={(props) => <h2 {...props} />} className='text-base font-semibold text-danger-soft-foreground'>
                             Delete Node
                         </Alert.Title>
                         <Alert.Description<'p'> render={(props) => <p {...props} />} className='text-xs text-muted'>
                             Remove this node and its connections
                         </Alert.Description>
                     </Alert.Content>
-                    <Button variant='ghost' size='sm' className='shrink-0 text-danger' onPress={handleDelete}>
+                    <Button variant='ghost' size='sm' className='shrink-0 text-danger-soft-foreground' onPress={handleDelete}>
                         <Trash2 size={14} aria-hidden='true' />
                         Delete
                     </Button>

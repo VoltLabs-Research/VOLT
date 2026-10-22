@@ -14,21 +14,18 @@ const PaletteItem = ({ config, onDragStart, onAdd }: PaletteItemProps) => {
     const isSingleton = config.inputs === 0;
     const alreadyExists = isSingleton && nodes.some(n => n.type === config.type);
 
-    const handleClick = () => {
-        if (alreadyExists) return;
-        onAdd?.(config.type);
-    };
-
     return (
-        <div className='flex flex-row items-center gap-6 cursor-pointer' draggable={!alreadyExists} onDragStart={alreadyExists ? undefined : (e) => onDragStart(e, config.type)} onClick={handleClick} style={alreadyExists ? {
-            opacity: 0.4,
-            pointerEvents: 'none'
-        } : undefined}>
-            <div className='flex flex-col gap-2'>
-                <h3>{config.label}</h3>
-                <p className='text-muted'>{config.description}</p>
-            </div>
-        </div>
+        <button
+            type='button'
+            className='flex w-full cursor-grab flex-col gap-0.5 rounded-lg px-4 py-3 text-left transition-[background-color,opacity] duration-150 hover:bg-foreground/5 disabled:pointer-events-none disabled:opacity-40'
+            draggable={!alreadyExists}
+            disabled={alreadyExists}
+            onDragStart={(event) => onDragStart(event, config.type)}
+            onClick={() => onAdd?.(config.type)}
+        >
+            <span className='text-base font-medium text-foreground'>{config.label}</span>
+            <span className='text-sm text-muted'>{config.description}</span>
+        </button>
     );
 };
 
