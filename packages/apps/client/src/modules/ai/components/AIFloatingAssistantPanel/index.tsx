@@ -1,7 +1,7 @@
 import AIConversationPanelContent from '@/modules/ai/components/AIConversationPanelContent';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import { Button, Tooltip, cn } from '@heroui/react';
+import { Button, Tooltip } from '@heroui/react';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { FOCUSABLE_BASE_SELECTOR } from '@/shared/ui/utils/focusable';
 import { useCallback, useEffect, useId, useRef } from 'react';
@@ -27,7 +27,6 @@ const getFocusableElements = (container: HTMLElement | null): HTMLElement[] => {
 
 const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssistantPanelContentProps) => {
     const panelRef = useRef<HTMLDivElement>(null);
-    const titleId = useId();
     const descriptionId = useId();
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
@@ -123,12 +122,12 @@ const AIFloatingAssistantPanelContent = ({ onClose, triggerRef }: AIFloatingAssi
     );
 
     return (
-        <div className='ai-floating-assistant fixed z-[80] flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--overlay-shadow)] h-[min(640px,calc(100dvh-6rem))] w-[min(420px,calc(100vw-2rem))] right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[max(1rem,env(safe-area-inset-bottom,0px))] origin-bottom-right animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-[180ms] ease-out-fluid max-md:h-[min(72vh,calc(100dvh-5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] max-md:w-[calc(100vw-max(1rem,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px)))] max-md:right-[max(0.5rem,env(safe-area-inset-right,0px))] max-md:bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))]' ref={panelRef} role='dialog' aria-modal='false' aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
-            <span className='sr-only' id={titleId}>Volt AI assistant</span>
+        <div className='ai-floating-assistant glass-surface fixed z-[80] flex flex-col overflow-hidden rounded-3xl bg-overlay shadow-overlay h-[min(38rem,calc(100dvh-6rem))] w-[min(26rem,calc(100vw-2rem))] right-[max(1rem,env(safe-area-inset-right,0px))] bottom-[max(1rem,env(safe-area-inset-bottom,0px))] origin-bottom-right animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2 duration-[180ms] ease-out-fluid max-md:h-[min(72vh,calc(100dvh-5rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px)))] max-md:w-[calc(100vw-max(1rem,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px)))] max-md:right-[max(0.5rem,env(safe-area-inset-right,0px))] max-md:bottom-[max(0.5rem,env(safe-area-inset-bottom,0px))]' ref={panelRef} role='dialog' aria-modal='false' aria-label='Volt AI assistant' aria-describedby={descriptionId} tabIndex={-1} onKeyDown={handlePanelKeyDown}>
             <span className='sr-only' id={descriptionId}>
                 Floating assistant dialog. Press Escape to close. Tab moves between controls inside the dialog.
             </span>
             <PanelHeader
+                title='Volt AI'
                 actions={headerActions}
                 onClose={onClose}
             />
@@ -172,7 +171,7 @@ const AIFloatingAssistantPanel = ({ compact = false }: AIFloatingAssistantPanelP
                     variant='ghost'
                     size={compact ? 'sm' : undefined}
                     aria-label={isOpen ? 'Close Volt AI assistant' : 'Open Volt AI assistant'}
-                    className={cn('dashboard-ai-trigger', isOpen && 'is-active bg-info-soft text-foreground')}
+                    className={isOpen ? 'bg-foreground/8 text-foreground' : undefined}
                     onPress={toggleWidget}
                 >
                     <Sparkles size={compact ? 14 : 18} aria-hidden='true' />

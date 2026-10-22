@@ -1,7 +1,7 @@
 import { buildSheetBlob, buildSheetTsv } from '@/modules/ai/components/AIArtifactSpreadsheetPanel/spreadsheet-export';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import useSpreadsheetEditor from '@/modules/ai/components/AIArtifactSpreadsheetPanel/use-spreadsheet-editor';
-import { Button, Separator, Tooltip, cn } from '@heroui/react';
+import { Button, Tooltip, cn } from '@heroui/react';
 import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -24,6 +24,18 @@ const SHEET_FORMAT_LABEL: Record<SheetExportFormat, string> = {
     csv: 'CSV',
     xlsx: 'Excel'
 };
+
+const TOOLBAR_BUTTON_CLASS = 'text-muted hover:text-foreground';
+
+// Each cell draws its right and bottom rule and the frame draws the outer edge, so the last column
+// and the last row leave theirs to the frame.
+const GRID_CELL_CLASS = 'border-r border-b border-foreground/8 last:border-r-0';
+
+// The header row stays over the rows as they scroll under it, so it paints over the canvas.
+const HEADER_CELL_CLASS = cn(
+    GRID_CELL_CLASS,
+    'sticky top-0 z-[1] whitespace-nowrap bg-[color-mix(in_oklab,var(--foreground)_5%,var(--canvas))] px-2.5 py-1.5 text-2xs font-medium text-muted'
+);
 
 const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpreadsheetPanelProps) => {
     const { columns, rows } = artifact;
@@ -123,7 +135,8 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 key={col}
                 ref={registerCellRef(rowIndex, colIndex)}
                 className={cn(
-                    'relative min-w-[120px] cursor-default border-b border-border p-0 text-sm text-foreground',
+                    GRID_CELL_CLASS,
+                    'relative min-w-[120px] cursor-default p-0 text-sm text-foreground',
                     isEdited && 'bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]',
                     isActive && 'outline-2 -outline-offset-2 outline-[color-mix(in_srgb,var(--accent)_32%,transparent)] bg-[color-mix(in_srgb,var(--accent)_6%,transparent)]'
                 )}
@@ -141,15 +154,15 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     <input
                         ref={inputRef}
                         type='text'
-                        className='h-full w-full rounded-none border-none bg-background px-2.5 py-1.5 text-sm leading-[1.4] text-foreground outline-2 -outline-offset-2 outline-accent focus:outline-2 focus:-outline-offset-2 focus:outline-accent'
+                        className='h-full w-full rounded-none border-none bg-canvas px-2.5 py-1.5 text-sm leading-[1.4] text-foreground outline-2 -outline-offset-2 outline-accent focus:outline-2 focus:-outline-offset-2 focus:outline-accent'
                         value={editBuffer}
                         onChange={(event) => setEditBuffer(event.target.value)}
                         onBlur={commitEdit}
                         onKeyDown={handleEditKeyDown}
-                        aria-label={`Edit flex-row ${rowIndex + 1}, ${col}`}
+                        aria-label={`Edit row ${rowIndex + 1}, ${col}`}
                     />
                 ) : (
-                    <span className={cn('block max-w-[280px] overflow-hidden text-ellipsis whitespace-nowrap px-2.5 py-2', isEdited && 'text-accent')}>
+                    <span className={cn('block max-w-[280px] overflow-hidden text-ellipsis whitespace-nowrap px-2.5 py-1.5', isEdited && 'text-accent')}>
                         {getCellValue(rowIndex, colIndex) || EMPTY_CELL_PLACEHOLDER}
                     </span>
                 )}
@@ -158,16 +171,16 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     };
 
     const toolbarActions = (
-        <div className='flex shrink-0 flex-row items-center gap-1'>
+        <>
             <Tooltip>
                 <Button
                     isIconOnly
                     variant='ghost'
                     aria-label='Copy table to clipboard'
                     onPress={handleCopyToClipboard}
-                    className='size-[1.7rem] min-h-[1.7rem] min-w-[1.7rem] rounded-lg text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
+                    className={TOOLBAR_BUTTON_CLASS}
                 >
-                    {copyFeedback ? <Check size={15} /> : <Clipboard size={15} />}
+                    {copyFeedback ? <Check size={16} /> : <Clipboard size={16} />}
                 </Button>
                 <Tooltip.Content>{copyFeedback ? 'Copied!' : 'Copy to clipboard'}</Tooltip.Content>
             </Tooltip>
@@ -177,9 +190,9 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     variant='ghost'
                     aria-label='Download CSV'
                     onPress={createDownloadHandler('csv')}
-                    className='size-[1.7rem] min-h-[1.7rem] min-w-[1.7rem] rounded-lg text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
+                    className={TOOLBAR_BUTTON_CLASS}
                 >
-                    <FileText size={15} />
+                    <FileText size={16} />
                 </Button>
                 <Tooltip.Content>Download CSV</Tooltip.Content>
             </Tooltip>
@@ -189,43 +202,38 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     variant='ghost'
                     aria-label='Download Excel'
                     onPress={createDownloadHandler('xlsx')}
-                    className='size-[1.7rem] min-h-[1.7rem] min-w-[1.7rem] rounded-lg text-muted transition-colors duration-150 hover:bg-surface-hover hover:text-foreground'
+                    className={TOOLBAR_BUTTON_CLASS}
                 >
-                    <FileSpreadsheet size={15} />
+                    <FileSpreadsheet size={16} />
                 </Button>
                 <Tooltip.Content>Download Excel</Tooltip.Content>
             </Tooltip>
-            <Separator orientation='vertical' />
-        </div>
+        </>
     );
 
     return (
-        <div className='flex min-w-[320px] max-w-[900px] flex-col border-l border-border bg-surface max-[1180px]:min-w-[280px] max-md:min-w-0 max-md:max-w-none max-md:w-full! max-md:border-l-0 max-md:border-t max-md:max-h-[calc(45vh-env(safe-area-inset-bottom,0px))]' style={panelStyle} aria-label={artifact.title}>
+        <div className='my-2 mr-2 flex min-w-[320px] max-w-[900px] flex-col overflow-hidden rounded-3xl bg-foreground/4 max-[1180px]:min-w-[280px] max-md:mx-2 max-md:mt-0 max-md:min-w-0 max-md:max-w-none max-md:w-auto! max-md:flex-1 max-md:max-h-[calc(45vh-env(safe-area-inset-bottom,0px))]' style={panelStyle} aria-label={artifact.title}>
             <PanelHeader
                 title={artifact.title}
                 actions={toolbarActions}
                 onClose={onClose}
             />
-            <div className='flex shrink-0 min-w-0 flex-col gap-1 border-b border-border bg-surface-secondary p-3'>
-                <p className='text-xs text-muted'>
+            <div className='flex shrink-0 min-w-0 flex-col gap-1 px-5 pb-3 text-xs text-muted'>
+                <p>
                     {rows.length} rows · {columns.length} columns
                     {hasEdits && ' · edited'}
                 </p>
-                <p className='text-xs text-muted' id={instructionsId}>
-                    Enter or F2 edits the selected cell. Arrow keys move between cells. Tab and Shift+Tab move while editing.
-                </p>
-                {artifact.summary && (
-                    <p className='text-xs text-muted text-ellipsis'>
-                        {artifact.summary}
-                    </p>
-                )}
+                {artifact.summary && <p>{artifact.summary}</p>}
             </div>
+            <p className='sr-only' id={instructionsId}>
+                Enter or F2 edits the selected cell. Arrow keys move between cells. Tab and Shift+Tab move while editing.
+            </p>
             <span className='sr-only' id={statusId} aria-live='polite' aria-atomic='true'>
                 {statusMessage}
             </span>
-            <div className='flex-1 overflow-x-auto overflow-y-auto'>
+            <div className='mx-5 mb-5 min-h-0 overflow-auto rounded-xl border border-foreground/8'>
                 <table
-                    className='min-w-full border-collapse'
+                    className='min-w-full border-separate border-spacing-0 tabular-nums'
                     role='grid'
                     aria-label={`${artifact.title} spreadsheet`}
                     aria-describedby={`${instructionsId} ${statusId}`}
@@ -234,9 +242,9 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                 >
                     <thead>
                         <tr role='row'>
-                            <th scope='col' className='sticky top-0 z-[1] w-12 min-w-12 max-w-12 whitespace-nowrap border-b border-border bg-surface-secondary px-2.5 py-2 text-right text-2xs font-medium uppercase tracking-[0.06em] text-muted'>#</th>
+                            <th scope='col' className={cn(HEADER_CELL_CLASS, 'w-12 min-w-12 max-w-12 text-center')}>#</th>
                             {columns.map((col) => (
-                                <th key={col} scope='col' className='sticky top-0 z-[1] whitespace-nowrap border-b border-border bg-surface-secondary px-2.5 py-2 text-left text-2xs font-medium uppercase tracking-[0.06em] text-muted'>
+                                <th key={col} scope='col' className={cn(HEADER_CELL_CLASS, 'text-left')}>
                                     {col}
                                 </th>
                             ))}
@@ -244,8 +252,8 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
                     </thead>
                     <tbody>
                         {rows.map((_, rowIndex) => (
-                            <tr key={rowIndex} role='row' className='hover:bg-surface-hover last:[&>td]:border-b-0 last:[&>th]:border-b-0'>
-                                <th scope='flex-row' className='w-12 min-w-12 max-w-12 border-b border-border bg-surface-secondary px-2.5 py-2 text-right text-2xs tabular-nums text-muted'>
+                            <tr key={rowIndex} role='row' className='hover:bg-foreground/4 last:[&>td]:border-b-0 last:[&>th]:border-b-0'>
+                                <th scope='row' className={cn(GRID_CELL_CLASS, 'w-12 min-w-12 max-w-12 bg-foreground/3 px-2.5 py-1.5 text-center text-2xs font-medium text-muted')}>
                                     {rowIndex + 1}
                                 </th>
                                 {columns.map((col, colIndex) => renderRowCell(rowIndex, col, colIndex))}
