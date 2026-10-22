@@ -17,37 +17,19 @@ requestIdleCallbackHandle(() => {
 });
 
 type VoltBridge = { on?: (channel: string, cb: (payload: { maximized: boolean }) => void) => () => void };
-const readVoltBridge = (): VoltBridge | undefined => (window as unknown as { volt?: VoltBridge }).volt;
+// The desktop app's preload exposes it before the page's scripts run.
+const voltBridge = (window as unknown as { volt?: VoltBridge }).volt;
 
-if (navigator.userAgent.includes('Electron') || readVoltBridge()) {
+if (navigator.userAgent.includes('Electron') || voltBridge) {
     document.documentElement.dataset.voltDesktop = 'true';
 
-    const applyMaximizedState = (maximized: boolean): void => {
+    voltBridge?.on?.('window:state', ({ maximized }) => {
         if (maximized) {
             document.documentElement.dataset.voltMaximized = 'true';
         } else {
             delete document.documentElement.dataset.voltMaximized;
         }
-    };
-
-    const wireWindowState = (): boolean => {
-        const volt = readVoltBridge();
-        if (!volt?.on) {
-            return false;
-        }
-
-        volt.on('window:state', ({ maximized }) => applyMaximizedState(maximized));
-        return true;
-    };
-
-    if (!wireWindowState()) {
-        const pollId = window.setInterval(() => {
-            if (wireWindowState()) {
-                window.clearInterval(pollId);
-            }
-        }, 50);
-        window.setTimeout(() => window.clearInterval(pollId), 3000);
-    }
+    });
 }
 
 const root = createRoot(document.getElementById('root')!);
