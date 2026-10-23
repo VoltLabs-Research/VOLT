@@ -3,6 +3,8 @@ import { create } from 'zustand';
 interface PendingPluginExecution {
     analysisId: string;
     trajectoryId: string;
+    // The pipeline run the analysis is a stage of.
+    runId?: string;
     pluginName: string;
     timestep?: number;
     autoSelect: boolean;

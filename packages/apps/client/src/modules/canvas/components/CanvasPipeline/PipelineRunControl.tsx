@@ -5,6 +5,8 @@ import { resolvePluginExecutionClusterId } from '@/modules/plugin/utils/plugin-t
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { usePendingPluginExecutionsStore } from '../../store/use-pending-plugin-executions-store';
+import { useEditorStore } from '../../store/editor';
+import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import { useTimelineTabRequestStore } from '../../store/use-timeline-tab-request-store';
 import { TimelineTab } from '../TimelineHeader';
 import {
@@ -84,6 +86,8 @@ const PipelineRunControl = ({
     const markStagesExecuted = useCanvasPipelineStore((s) => s.markStagesExecuted);
     // Every run brings the timeline's Log tab forward so each plugin's output can be followed live.
     const requestTimelineTab = useTimelineTabRequestStore((state) => state.requestTab);
+    const { setAnalysisId } = useCanvasUrlState();
+    const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
 
     const stages = useCanvasPipelineStore((s) =>
         (trajectoryId ? s.byTrajectory[trajectoryId] : undefined) ?? []
@@ -162,7 +166,7 @@ const PipelineRunControl = ({
         }
 
         try {
-            const { stages } = await executePipelineMutation.mutateAsync({
+            const { runId, stages } = await executePipelineMutation.mutateAsync({
                 trajectoryId,
                 teamClusterId: resolvedClusterId || undefined,
                 selectedTimesteps,
@@ -181,6 +185,7 @@ const PipelineRunControl = ({
                 pendingStore.register({
                     analysisId: stage.analysisId as string,
                     trajectoryId,
+                    runId,
                     pluginName: stage.pluginDisplayName
                         ?? (stage.pluginId ? pluginStageName(stage.pluginId) : 'Analysis'),
                     timestep: viewTimestep,
@@ -188,6 +193,12 @@ const PipelineRunControl = ({
                 });
             });
             if (computedStages.length > 0) {
+                // The run's first stage is selected here rather than on its 'running' event, which can
+                // arrive before this response, before the stage is registered, and then selects nothing.
+                if (viewTimestep !== undefined) {
+                    setCurrentTimestep(viewTimestep);
+                }
+                setAnalysisId(computedStages[0].analysisId, { replace: true });
                 requestTimelineTab(TimelineTab.Log);
             }
 
