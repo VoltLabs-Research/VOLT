@@ -23,7 +23,6 @@ import CanvasTimelineDock from './CanvasTimelineDock';
 import CanvasToolbarActions from './CanvasToolbarActions';
 import LocalViewerFrameControls from './LocalViewerFrameControls';
 
-import AnalysisExecutionOverlay from '../AnalysisExecutionOverlay';
 import CanvasAnalysisDiscoveryTour from '../CanvasAnalysisDiscoveryTour';
 import CanvasBanners from '../CanvasBanners';
 import CommandPalette from '../CommandPalette';
@@ -248,12 +247,6 @@ const CanvasPage = () => {
         showNoFramesState,
     });
 
-    const analysisOverlay = useMemo(() => (
-        showsTrajectoryScene
-            ? <AnalysisExecutionOverlay trajectory={trajectory} analysisId={analysisId} currentTimestep={currentTimestep} />
-            : undefined
-    ), [showsTrajectoryScene, trajectory, analysisId, currentTimestep]);
-
     if (accessDenied || trajectoryMissing) {
         return (
             <div className={cn('flex h-dvh w-screen bg-canvas text-foreground', CANVAS_ROOT_VARS)}>
@@ -336,7 +329,6 @@ const CanvasPage = () => {
                                 showGizmo={showGizmo}
                                 sceneRef={sceneRef}
                                 bodyContent={viewportBodyContent}
-                                analysisOverlay={analysisOverlay}
                                 renderScene={!showNoFramesState}
                             />
                         </ErrorBoundary>

@@ -19,7 +19,6 @@ interface ViewportGridProps {
     showGizmo: boolean;
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
-    analysisOverlay?: ReactNode;
     renderScene: boolean;
 }
 
@@ -45,7 +44,6 @@ const ViewportGrid = ({
     showGizmo,
     sceneRef,
     bodyContent,
-    analysisOverlay,
     renderScene
 }: ViewportGridProps) => {
     const {
@@ -124,7 +122,6 @@ const ViewportGrid = ({
                     })}
                 </div>
             )}
-            {analysisOverlay}
         </div>
     );
 };
