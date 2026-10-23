@@ -66,7 +66,6 @@ const JobQueue = ({ job, isChild }: JobQueueProps) => {
 
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
-    const hasFrameTimestep = job.timestep !== undefined && job.timestep >= 0;
 
     const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
 
@@ -93,11 +92,11 @@ const JobQueue = ({ job, isChild }: JobQueueProps) => {
                     {getJobDisplayName(job)}
                 </h3>
                 <div className='flex flex-row items-center flex-wrap gap-2'>
-                    <p className={cn('flex items-center gap-2 text-xs leading-[1.3]', statusEntry.toneClassName)}>
-                        {hasFrameTimestep && <span>Frame {job.timestep}</span>}
-                        {hasFrameTimestep && job.timestamp && <span>&middot;</span>}
-                        {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
-                    </p>
+                    {job.timestamp && (
+                        <p className={cn('text-xs leading-[1.3]', statusEntry.toneClassName)}>
+                            {formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}
+                        </p>
+                    )}
                     {job.processingTimeMs && job.status === JobStatus.Completed && (
                         <span className='text-xs text-muted opacity-70 whitespace-nowrap'>• {formatDuration(job.processingTimeMs)}</span>
                     )}
