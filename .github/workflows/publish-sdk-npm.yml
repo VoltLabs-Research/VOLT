@@ -27,17 +27,13 @@ jobs:
     # `voltsdk-node-*` publish; dispatch publishes on demand.
     if: >
       (github.event_name == 'release' && startsWith(github.event.release.tag_name, 'voltsdk-node-')) ||
-      (github.event_name == 'workflow_dispatch' && (inputs.package == 'both' || inputs.package == matrix.package))
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [voltclient, daemon-cluster-client]
-        include:
-          - package: voltclient
-            directory: packages/sdk/voltclient
-          - package: daemon-cluster-client
-            directory: packages/sdk/daemon-cluster-client
+        # A job's `if` cannot read the matrix, so a dispatch for one SDK narrows the matrix itself.
+        package: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.package != 'both' && format('["{0}"]', inputs.package) || '["voltclient", "daemon-cluster-client"]') }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -60,7 +56,7 @@ jobs:
           pnpm --filter "@voltstack/${{ matrix.package }}" build
 
       - name: Publish to npm
-        working-directory: ${{ matrix.directory }}
+        working-directory: packages/sdk/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
