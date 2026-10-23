@@ -1,31 +1,35 @@
 # Client image for the single-machine stack: static bundle behind nginx, which
 # also reverse-proxies /api and /socket.io to volt-server on the same origin.
 #
-# Build context is the workspace root, because the client compiles `@volt/contracts`
-# from source and links @voltstack/voltclient from the workspace. Contracts reads the
-# daemon's runtime types from @voltstack/daemon-cluster-client, whose dist is built here.
+# Build context is the workspace root. The client ships @volt/web-runtime, which bundles the
+# server and the cluster daemon for the browser, so it builds as Verify's client job does: the
+# whole workspace, the native toolchain the daemon's modules install with, and Emscripten,
+# which compiles their native addons to WebAssembly. emsdk has binaries for amd64 and arm64.
 #
 # Deliberately no VITE_SERVER_ENDPOINT build arg: `backend-origin.ts` falls back
 # to `window.location.origin`, and nginx proxies the API on that same origin. That
 # is what makes one prebuilt image usable by every deployment instead of one build
 # per endpoint.
 
-FROM node:22-bookworm-slim AS build
+FROM node:22-bookworm AS build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        pkg-config libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev zstd \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG EMSDK_VERSION=3.1.74
+RUN git clone --depth 1 --branch ${EMSDK_VERSION} https://github.com/emscripten-core/emsdk.git /opt/emsdk \
+    && /opt/emsdk/emsdk install ${EMSDK_VERSION} \
+    && /opt/emsdk/emsdk activate ${EMSDK_VERSION}
+ENV EMSDK=/opt/emsdk
+ENV PATH=/opt/emsdk:/opt/emsdk/upstream/emscripten:${PATH}
+
 RUN npm install -g pnpm@10
 WORKDIR /app
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY packages/apps/client/package.json packages/apps/client/
-COPY packages/shared/contracts/package.json packages/shared/contracts/
-COPY packages/sdk/voltclient/package.json packages/sdk/voltclient/
-COPY packages/sdk/daemon-cluster-client/package.json packages/sdk/daemon-cluster-client/
+COPY . .
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile --filter volt-webapp...
-
-COPY packages/shared/contracts packages/shared/contracts
-COPY packages/sdk/voltclient packages/sdk/voltclient
-COPY packages/sdk/daemon-cluster-client packages/sdk/daemon-cluster-client
-COPY packages/apps/client packages/apps/client
-RUN pnpm --filter volt-webapp... build
+RUN pnpm --filter "volt-webapp..." build
 
 
 FROM nginx:1.27-alpine AS runtime

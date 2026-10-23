@@ -18,6 +18,11 @@ on:
       - 'pnpm-workspace.yaml'
       - 'packages/infra/server/**'
       - 'packages/apps/client/**'
+      # The client ships the in-browser stack: the runtime, its provisioning and the SDK wheel.
+      - 'packages/infra/web-runtime/**'
+      - 'packages/shared/local-stack/**'
+      - 'packages/sdk/python/**'
+      - '.dockerignore'
       - 'packages/shared/contracts/**'
       - 'packages/sdk/voltclient/**'
       - 'packages/sdk/daemon-cluster-client/**'
