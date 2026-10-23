@@ -27,6 +27,8 @@ export interface BrowserStack {
     host: BackendHost;
     state: BootstrapState;
     serverOrigin: string;
+    // Settles once the default plugins, which install after the stack is up, are in.
+    plugins: Promise<void>;
 }
 
 const PORTS = { server: DEFAULT_SERVER_PORT, daemon: DEFAULT_DAEMON_PORT };
@@ -47,7 +49,7 @@ export const startBrowserStack = async (options: BrowserStackOptions): Promise<B
     };
 
     const secrets = await store.getSecrets();
-    const state = await provisionLocalStack({
+    const { state, plugins } = await provisionLocalStack({
         backends: {
             startServer: () => host.start({
                 name: 'server',
@@ -99,5 +101,5 @@ export const startBrowserStack = async (options: BrowserStackOptions): Promise<B
         phase: options.phase ?? ((_id, run) => run())
     });
 
-    return { host, state, serverOrigin };
+    return { host, state, serverOrigin, plugins };
 };

@@ -18,6 +18,7 @@ export interface LocalStackBackends{
 
 export type LocalStackPhaseId = 'server' | 'bootstrap' | 'daemon' | 'plugins';
 
+// The phases a host waits for before it serves the app. The default plugins install after it is up.
 export const LOCAL_STACK_PHASES: Array<{ id: LocalStackPhaseId; label: string }> = [
     {
         id: 'server',
@@ -30,15 +31,18 @@ export const LOCAL_STACK_PHASES: Array<{ id: LocalStackPhaseId; label: string }>
     {
         id: 'daemon',
         label: 'Start compute daemon'
-    },
-    {
-        id: 'plugins',
-        label: 'Install default plugins'
     }
 ];
 
 // Runs one phase, reporting its progress the way the host shows it.
 export type PhaseRunner = <T>(id: LocalStackPhaseId, run: () => Promise<T>) => Promise<T>;
+
+// A stack that serves requests. Its default plugins are still installing: `plugins` settles once they
+// are in, or once a failure is logged (the seeder retries what failed on the next start).
+export interface ProvisionedLocalStack{
+    state: BootstrapState;
+    plugins: Promise<void>;
+}
 
 interface ProvisionProps{
     backends: LocalStackBackends;
@@ -49,9 +53,10 @@ interface ProvisionProps{
     account?: ProvisionAccount;
 }
 
-// Brings a local stack up: the server, the workspace the bootstrap provisions on it, the daemon
-// enrolled as its cluster, and the default plugins for the platform the daemon reports.
-export const provisionLocalStack = async (props: ProvisionProps): Promise<BootstrapState> => {
+// Brings a local stack up: the server, the workspace the bootstrap provisions on it and the daemon
+// enrolled as its cluster. The default plugins for the platform the daemon reports install behind it,
+// since a workspace is usable without them.
+export const provisionLocalStack = async (props: ProvisionProps): Promise<ProvisionedLocalStack> => {
     const api = new ServerApi(props.serverOrigin);
 
     await props.phase('server', () => props.backends.startServer());
@@ -71,11 +76,13 @@ export const provisionLocalStack = async (props: ProvisionProps): Promise<Bootst
         });
     });
 
-    await props.phase('plugins', () => new PluginSeeder({
+    const plugins = props.phase('plugins', () => new PluginSeeder({
         store: props.store,
         log: props.log,
         api
-    }).ensure(state));
+    }).ensure(state)).catch((error: unknown) => {
+        props.log('stderr', `[plugins] ${error instanceof Error ? error.message : String(error)}`);
+    });
 
-    return state;
+    return { state, plugins };
 };

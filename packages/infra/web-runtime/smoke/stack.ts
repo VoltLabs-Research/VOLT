@@ -6,7 +6,7 @@ import { BrowserStackStore } from '../src/host/browser-stack-store';
 const report = (step: string, value: unknown): void => console.log(`SMOKE ${step} ${JSON.stringify(value)}`);
 
 const run = async (): Promise<void> => {
-    const { state } = await startBrowserStack({
+    const { state, plugins } = await startBrowserStack({
         runtimeUrl: new URL('../', import.meta.url),
         clientOrigin: location.origin,
         store: new BrowserStackStore('volt-smoke-stack.json'),
@@ -18,6 +18,7 @@ const run = async (): Promise<void> => {
         }
     });
     report('cluster', { teamId: state.teamId, teamClusterId: state.teamClusterId });
+    await plugins;
     report('done', true);
 };
 
