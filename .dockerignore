@@ -8,7 +8,6 @@ packages/infra/cluster/.runtime
 # Host-platform binaries; the image build fetches its own.
 packages/infra/cluster/vendor
 packages/infra/server/storage
-packages/sdk/python
 packages/apps/desktop
 **/*.tsbuildinfo
 **/npm-debug.log
