@@ -4,6 +4,7 @@ import SelectedTimestepsField from '@/modules/canvas/components/SelectedTimestep
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import type { IArgumentDefinition } from '@volt/contracts/modules/plugin/workflow';
 import type { FormFieldAutocompleteOption } from '@/shared/contracts/form-field';
+import type { ReactNode } from 'react';
 
 interface PluginExecutionConfigFieldsProps {
     argumentsDefinitions: IArgumentDefinition[];
@@ -36,15 +37,16 @@ const PluginExecutionConfigFields = ({
     noClustersMessage,
     allowTemplateReferenceMode = false
 }: PluginExecutionConfigFieldsProps) => {
-    const hasTeamClusterOptions = teamClusterOptions.length > 0;
+    // A lone cluster is the one the run goes to, so there is nothing to choose.
+    let clusterField: ReactNode = null;
 
-    let clusterField = (
-        <p className='text-xs text-muted'>
-            {noClustersMessage}
-        </p>
-    );
-
-    if (hasTeamClusterOptions) {
+    if (teamClusterOptions.length === 0) {
+        clusterField = (
+            <p className='text-xs text-muted'>
+                {noClustersMessage}
+            </p>
+        );
+    } else if (teamClusterOptions.length > 1) {
         clusterField = (
             <FormFieldRHF
                 label='Cluster'

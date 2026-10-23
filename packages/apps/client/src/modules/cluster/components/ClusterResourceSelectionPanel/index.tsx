@@ -117,24 +117,27 @@ const ClusterResourceSelectionPanel = ({
 
     return (
         <div className='grid grid-cols-1 gap-4'>
-            <div className='flex flex-col gap-4 rounded-2xl bg-foreground/4 p-5'>
-                <SettingsSectionHeader
-                    title={clusterTitle}
-                    description={clusterDescription}
-                    className='mb-4'
-                />
-                <FormFieldRHF
-                    fieldType='select'
-                    label='Cluster'
-                    name='teamCluster'
-                    value={selectedTeamClusterId || ''}
-                    onChange={(event) => onTeamClusterChange(event.target.value || null)}
-                    options={teamClusterOptions}
-                    placeholder='Select a cluster'
-                    error={clusterFieldError}
-                    disabled={!isTeamSelected || teamClusters.length === 0}
-                />
-            </div>
+            {/* A lone cluster is selected on its own, so there is nothing to choose. */}
+            {teamClusters.length !== 1 && (
+                <div className='flex flex-col gap-4 rounded-2xl bg-foreground/4 p-5'>
+                    <SettingsSectionHeader
+                        title={clusterTitle}
+                        description={clusterDescription}
+                        className='mb-4'
+                    />
+                    <FormFieldRHF
+                        fieldType='select'
+                        label='Cluster'
+                        name='teamCluster'
+                        value={selectedTeamClusterId || ''}
+                        onChange={(event) => onTeamClusterChange(event.target.value || null)}
+                        options={teamClusterOptions}
+                        placeholder='Select a cluster'
+                        error={clusterFieldError}
+                        disabled={!isTeamSelected || teamClusters.length === 0}
+                    />
+                </div>
+            )}
 
             {showResourceSelection && (
                 <div className='flex flex-col gap-4 rounded-2xl bg-foreground/4 p-5'>
