@@ -539,6 +539,11 @@ const closeOwned = (fd: number | null): void => {
     }
 };
 
+// Node's fs streams destroy themselves once done, which closes their descriptor and emits 'close'.
+// The stream module here is readable-stream 3, whose default is to do neither, so whatever waits for
+// 'close' (archiver's output, for one) would wait forever.
+const NODE_FS_STREAM_LIFECYCLE = { autoDestroy: true, emitClose: true } as const;
+
 export class ReadStream extends Readable {
     readonly path: string | null;
     bytesRead = 0;
@@ -550,7 +555,7 @@ export class ReadStream extends Readable {
     private readonly ownsDescriptor: boolean;
 
     constructor(target: unknown, options: ReadStreamOptions = {}){
-        super({ highWaterMark: options.highWaterMark ?? 64 * 1024, encoding: options.encoding });
+        super({ highWaterMark: options.highWaterMark ?? 64 * 1024, encoding: options.encoding, ...NODE_FS_STREAM_LIFECYCLE });
         this.path = target === null || target === undefined ? null : normalize(target);
         this.position = options.start ?? 0;
         this.end = options.end === undefined ? Infinity : options.end + 1;
@@ -619,7 +624,7 @@ export class WriteStream extends Writable {
     private readonly ownsDescriptor: boolean;
 
     constructor(target: unknown, options: WriteStreamOptions = {}){
-        super({ decodeStrings: true });
+        super({ decodeStrings: true, ...NODE_FS_STREAM_LIFECYCLE });
         this.path = target === null || target === undefined ? null : normalize(target);
         this.position = options.start ?? null;
         this.ownsDescriptor = options.fd === undefined && options.autoClose !== false;
