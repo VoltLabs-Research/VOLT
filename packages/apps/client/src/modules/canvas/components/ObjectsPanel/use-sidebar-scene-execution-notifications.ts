@@ -52,10 +52,13 @@ const useSidebarSceneExecutionNotifications = ({
                 const selectedPending = selectedAnalysisId
                     ? pendingStore.get(selectedAnalysisId)
                     : undefined;
+                // A run's stages start one after another, so the next one to start takes over from the
+                // one before; another run's stage stays selected until it ends.
                 const shouldAutoSelect = Boolean(pending.autoSelect)
                     && (!selectedAnalysisId
                         || selectedAnalysisId === analysisId
-                        || !selectedPending?.autoSelect);
+                        || !selectedPending?.autoSelect
+                        || (pending.runId !== undefined && selectedPending.runId === pending.runId));
 
                 if (shouldAutoSelect && selectedAnalysisId !== analysisId) {
                     autoSelectChainRef.current = analysisId;
