@@ -60,12 +60,7 @@ const LocalStackBoot = ({ onReady }: LocalStackBootProps) => {
     return (
         <main className='flex min-h-dvh items-center justify-center bg-background px-4 py-18' aria-labelledby='local-stack-title'>
             <div className='flex w-full max-w-sm flex-col gap-8'>
-                <header className='flex flex-col gap-2'>
-                    <h1 className='text-3xl font-semibold tracking-tight text-foreground sm:text-4xl' id='local-stack-title'>{inDesktopApp ? 'Starting VOLT' : 'Starting VOLT in this browser'}</h1>
-                    <p className='text-base text-muted'>{inDesktopApp
-                        ? 'The server and a compute cluster run in this app. Your work is kept on this computer.'
-                        : 'The server and a compute cluster run in this tab. Your work is kept in this browser\'s storage.'}</p>
-                </header>
+                <h1 className='text-3xl font-semibold tracking-tight text-foreground sm:text-4xl' id='local-stack-title'>{inDesktopApp ? 'Starting VOLT' : 'Starting VOLT in this browser'}</h1>
 
                 <ol className='flex flex-col gap-1' aria-label='Startup phases' aria-live='polite'>
                     {LOCAL_STACK_PHASES.map((phase) => (
