@@ -544,140 +544,185 @@ const closeOwned = (fd: number | null): void => {
 // 'close' (archiver's output, for one) would wait forever.
 const NODE_FS_STREAM_LIFECYCLE = { autoDestroy: true, emitClose: true } as const;
 
-export class ReadStream extends Readable {
+// Node's fs streams are functions over Readable and Writable, not classes. graceful-fs (under fs-extra and
+// archiver) subclasses them by calling `fs.ReadStream.apply(this, arguments)`, which a class constructor
+// refuses, so these are built the way Node builds them.
+export interface ReadStream extends Readable {
     readonly path: string | null;
-    bytesRead = 0;
-    pending = true;
-    fd: number | null = null;
-    private position: number;
-    private readonly end: number;
-    private readonly chunkSize: number;
-    private readonly ownsDescriptor: boolean;
-
-    constructor(target: unknown, options: ReadStreamOptions = {}){
-        super({ highWaterMark: options.highWaterMark ?? 64 * 1024, encoding: options.encoding, ...NODE_FS_STREAM_LIFECYCLE });
-        this.path = target === null || target === undefined ? null : normalize(target);
-        this.position = options.start ?? 0;
-        this.end = options.end === undefined ? Infinity : options.end + 1;
-        this.chunkSize = options.highWaterMark ?? 1024 * 1024;
-        this.ownsDescriptor = options.fd === undefined && options.autoClose !== false;
-        const given = options.fd instanceof FileHandle ? options.fd.fd : options.fd;
-        queueMicrotask(() => {
-            try{
-                this.fd = given ?? openSync(this.path, 'r');
-                this.pending = false;
-                this.emit('open', this.fd);
-                this.emit('ready');
-            }catch(error){
-                this.destroy(error as Error);
-            }
-        });
-    }
-
-    override _read(): void {
-        if(this.fd === null){
-            this.once('open', () => this._read());
-            return;
-        }
-        try{
-            const length = Math.min(this.chunkSize, this.end - this.position);
-            if(length <= 0){
-                this.push(null);
-                return;
-            }
-            const buffer = Buffer.alloc(length);
-            const read = readSync(this.fd, buffer, 0, length, this.position);
-            if(read === 0){
-                this.push(null);
-                return;
-            }
-            this.position += read;
-            this.bytesRead += read;
-            this.push(buffer.subarray(0, read));
-        }catch(error){
-            this.destroy(error as Error);
-        }
-    }
-
-    override _destroy(error: Error | null, callback: (error?: Error | null) => void): void {
-        if(this.ownsDescriptor){
-            closeOwned(this.fd);
-            this.fd = null;
-        }
-        callback(error);
-    }
-
-    close(callback?: (error?: Error | null) => void): void {
-        this.destroy();
-        if(callback){
-            this.once('close', () => callback(null));
-        }
-    }
+    bytesRead: number;
+    pending: boolean;
+    fd: number | null;
+    close(callback?: (error?: Error | null) => void): void;
 }
 
-export class WriteStream extends Writable {
-    readonly path: string | null;
-    bytesWritten = 0;
-    pending = true;
-    fd: number | null = null;
-    private position: number | null;
-    private readonly ownsDescriptor: boolean;
+interface ReadStreamState extends ReadStream {
+    path: string | null;
+    position: number;
+    end: number;
+    chunkSize: number;
+    ownsDescriptor: boolean;
+}
 
-    constructor(target: unknown, options: WriteStreamOptions = {}){
-        super({ decodeStrings: true, ...NODE_FS_STREAM_LIFECYCLE });
-        this.path = target === null || target === undefined ? null : normalize(target);
-        this.position = options.start ?? null;
-        this.ownsDescriptor = options.fd === undefined && options.autoClose !== false;
-        const given = options.fd instanceof FileHandle ? options.fd.fd : options.fd;
-        queueMicrotask(() => {
-            try{
-                this.fd = given ?? openSync(this.path, options.flags ?? 'w');
-                this.pending = false;
-                this.emit('open', this.fd);
-                this.emit('ready');
-            }catch(error){
-                this.destroy(error as Error);
-            }
-        });
+interface ReadStreamConstructor {
+    new (target: unknown, options?: ReadStreamOptions): ReadStream;
+    (target: unknown, options?: ReadStreamOptions): ReadStream;
+    readonly prototype: ReadStream;
+}
+
+export const ReadStream = function(this: ReadStreamState | undefined, target: unknown, options: ReadStreamOptions = {}){
+    if(!(this instanceof ReadStream)){
+        return new ReadStream(target, options);
     }
-
-    override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
-        if(this.fd === null){
-            this.once('open', () => this._write(chunk, encoding, callback));
-            return;
-        }
+    const stream = this as ReadStreamState;
+    Readable.call(stream, { highWaterMark: options.highWaterMark ?? 64 * 1024, encoding: options.encoding, ...NODE_FS_STREAM_LIFECYCLE });
+    stream.path = target === null || target === undefined ? null : normalize(target);
+    stream.bytesRead = 0;
+    stream.pending = true;
+    stream.fd = null;
+    stream.position = options.start ?? 0;
+    stream.end = options.end === undefined ? Infinity : options.end + 1;
+    stream.chunkSize = options.highWaterMark ?? 1024 * 1024;
+    stream.ownsDescriptor = options.fd === undefined && options.autoClose !== false;
+    const given = options.fd instanceof FileHandle ? options.fd.fd : options.fd;
+    queueMicrotask(() => {
         try{
-            const written = writeSync(this.fd, chunk, 0, chunk.byteLength, this.position);
-            if(this.position !== null){
-                this.position += written;
-            }
-            this.bytesWritten += written;
-            callback();
+            stream.fd = given ?? openSync(stream.path, 'r');
+            stream.pending = false;
+            stream.emit('open', stream.fd);
+            stream.emit('ready');
         }catch(error){
-            callback(error as Error);
+            stream.destroy(error as Error);
         }
-    }
+    });
+} as unknown as ReadStreamConstructor;
 
-    override _final(callback: (error?: Error | null) => void): void {
-        if(this.fd === null){
-            this.once('open', () => this._final(callback));
+Object.setPrototypeOf(ReadStream.prototype, Readable.prototype);
+Object.setPrototypeOf(ReadStream, Readable);
+
+ReadStream.prototype._read = function(this: ReadStreamState): void {
+    if(this.fd === null){
+        this.once('open', () => this._read(this.chunkSize));
+        return;
+    }
+    try{
+        const length = Math.min(this.chunkSize, this.end - this.position);
+        if(length <= 0){
+            this.push(null);
             return;
         }
+        const buffer = Buffer.alloc(length);
+        const read = readSync(this.fd, buffer, 0, length, this.position);
+        if(read === 0){
+            this.push(null);
+            return;
+        }
+        this.position += read;
+        this.bytesRead += read;
+        this.push(buffer.subarray(0, read));
+    }catch(error){
+        this.destroy(error as Error);
+    }
+};
+
+ReadStream.prototype._destroy = function(this: ReadStreamState, error: Error | null, callback: (error?: Error | null) => void): void {
+    if(this.ownsDescriptor){
+        closeOwned(this.fd);
+        this.fd = null;
+    }
+    callback(error);
+};
+
+ReadStream.prototype.close = function(this: ReadStreamState, callback?: (error?: Error | null) => void): void {
+    this.destroy();
+    if(callback){
+        this.once('close', () => callback(null));
+    }
+};
+
+export interface WriteStream extends Writable {
+    readonly path: string | null;
+    bytesWritten: number;
+    pending: boolean;
+    fd: number | null;
+    close(callback?: (error?: Error | null) => void): void;
+}
+
+interface WriteStreamState extends WriteStream {
+    path: string | null;
+    position: number | null;
+    ownsDescriptor: boolean;
+}
+
+interface WriteStreamConstructor {
+    new (target: unknown, options?: WriteStreamOptions): WriteStream;
+    (target: unknown, options?: WriteStreamOptions): WriteStream;
+    readonly prototype: WriteStream;
+}
+
+export const WriteStream = function(this: WriteStreamState | undefined, target: unknown, options: WriteStreamOptions = {}){
+    if(!(this instanceof WriteStream)){
+        return new WriteStream(target, options);
+    }
+    const stream = this as WriteStreamState;
+    Writable.call(stream, { decodeStrings: true, ...NODE_FS_STREAM_LIFECYCLE });
+    stream.path = target === null || target === undefined ? null : normalize(target);
+    stream.bytesWritten = 0;
+    stream.pending = true;
+    stream.fd = null;
+    stream.position = options.start ?? null;
+    stream.ownsDescriptor = options.fd === undefined && options.autoClose !== false;
+    const given = options.fd instanceof FileHandle ? options.fd.fd : options.fd;
+    queueMicrotask(() => {
+        try{
+            stream.fd = given ?? openSync(stream.path, options.flags ?? 'w');
+            stream.pending = false;
+            stream.emit('open', stream.fd);
+            stream.emit('ready');
+        }catch(error){
+            stream.destroy(error as Error);
+        }
+    });
+} as unknown as WriteStreamConstructor;
+
+Object.setPrototypeOf(WriteStream.prototype, Writable.prototype);
+Object.setPrototypeOf(WriteStream, Writable);
+
+WriteStream.prototype._write = function(this: WriteStreamState, chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+    if(this.fd === null){
+        this.once('open', () => this._write(chunk, encoding, callback));
+        return;
+    }
+    try{
+        const written = writeSync(this.fd, chunk, 0, chunk.byteLength, this.position);
+        if(this.position !== null){
+            this.position += written;
+        }
+        this.bytesWritten += written;
         callback();
+    }catch(error){
+        callback(error as Error);
     }
+};
 
-    override _destroy(error: Error | null, callback: (error?: Error | null) => void): void {
-        if(this.ownsDescriptor){
-            closeOwned(this.fd);
-            this.fd = null;
-        }
-        callback(error);
+WriteStream.prototype._final = function(this: WriteStreamState, callback: (error?: Error | null) => void): void {
+    if(this.fd === null){
+        this.once('open', () => this._final?.(callback));
+        return;
     }
+    callback();
+};
 
-    close(callback?: (error?: Error | null) => void): void {
-        this.end(callback);
+WriteStream.prototype._destroy = function(this: WriteStreamState, error: Error | null, callback: (error?: Error | null) => void): void {
+    if(this.ownsDescriptor){
+        closeOwned(this.fd);
+        this.fd = null;
     }
-}
+    callback(error);
+};
+
+WriteStream.prototype.close = function(this: WriteStreamState, callback?: (error?: Error | null) => void): void {
+    this.end(callback);
+};
 
 export const createReadStream = (target: unknown, options?: ReadStreamOptions | BufferEncoding): ReadStream => (
     new ReadStream(target, typeof options === 'string' ? { encoding: options } : options)
