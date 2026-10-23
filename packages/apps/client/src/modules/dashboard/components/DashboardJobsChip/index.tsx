@@ -71,7 +71,9 @@ const JobsStatus = ({ counts, onNavigate }: JobsStatusProps) => {
     const singleTenant = useSingleTenant();
     const { clusterMetrics, presence } = useWorkspaceStatus();
     const showPresence = !singleTenant && presence.total > 0;
-    const showClustersLink = !localStackMode.isEnabled();
+    // The local stack's one cluster runs in this page, whose runtime makes up the host's load and disk.
+    const isLocalStack = localStackMode.isEnabled();
+    const showClustersLink = !isLocalStack;
 
     const countItems: Array<[LucideIcon, string, number]> = [
         [Clock, 'Queued', counts.queued],
@@ -101,7 +103,7 @@ const JobsStatus = ({ counts, onNavigate }: JobsStatusProps) => {
                 <JobsHistoryViewer />
             </Scrollable>
 
-            {clusterMetrics && (
+            {!isLocalStack && clusterMetrics && (
                 <>
                     <Separator className='mx-1.5 my-1 w-auto bg-foreground/6' />
                     <section className='flex flex-col gap-2 px-2.5 py-2' aria-label='Clusters'>
