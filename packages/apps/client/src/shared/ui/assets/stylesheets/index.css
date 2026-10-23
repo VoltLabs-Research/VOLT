@@ -535,25 +535,6 @@ html[data-volt-desktop][data-volt-maximized] #root {
     -webkit-app-region: no-drag;
 }
 
-/* The one glass over the scene: brightness() washed the atoms out under it and a second blur
-   radius cost a second blur pass every frame, so it takes the shared glass like the dock. */
-.canvas-analysis-execution-overlay {
-    -webkit-backdrop-filter: var(--glass-backdrop);
-    backdrop-filter: var(--glass-backdrop);
-}
-
-.canvas-analysis-execution-overlay--completed {
-    -webkit-mask-image: linear-gradient(to bottom left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.72) 48%, rgba(0, 0, 0, 0.28) 100%);
-    mask-image: linear-gradient(to bottom left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.72) 48%, rgba(0, 0, 0, 0.28) 100%);
-    transition: mask-image 140ms ease, -webkit-mask-image 140ms ease;
-}
-
-.canvas-analysis-execution-overlay--completed:hover,
-.canvas-analysis-execution-overlay--completed:focus-within {
-    -webkit-mask-image: none;
-    mask-image: none;
-}
-
 :root,
 .light,
 [data-theme='light'] {

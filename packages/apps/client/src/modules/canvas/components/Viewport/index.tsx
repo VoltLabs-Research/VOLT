@@ -33,7 +33,6 @@ interface ViewportProps {
     showGizmo: boolean;
     sceneRef: RefObject<FractalSceneRef | null>;
     bodyContent?: ReactNode;
-    analysisOverlay?: ReactNode;
     renderScene: boolean;
     paneScenes?: SceneObjectType[];
     paneMergeGroups?: Record<string, string>;
@@ -74,7 +73,6 @@ const Viewport = ({
     showGizmo,
     sceneRef,
     bodyContent,
-    analysisOverlay,
     renderScene,
     paneScenes,
     paneMergeGroups,
@@ -250,9 +248,6 @@ const Viewport = ({
                         </FractalScene>
                     </div>
                 )}
-
-
-                {analysisOverlay}
 
                 <AIViewerActivityBadge />
             </div>
