@@ -227,7 +227,14 @@ const PipelineRunControl = ({
                 Runs the {enabledOrderedStages.length} enabled stage{enabledOrderedStages.length === 1 ? '' : 's'} as one pipeline.
             </span>
 
-            {hasTeamClusterOptions ? (
+            {!hasTeamClusterOptions && (
+                <p className='text-xs text-muted'>
+                    No compute cluster is connected to this team. Set one up to run the pipeline.
+                </p>
+            )}
+
+            {/* A lone cluster is the one the pipeline runs on, so there is nothing to choose. */}
+            {teamClusterOptions.length > 1 && (
                 <FormFieldRHF
                     label='Cluster'
                     fieldType='select'
@@ -237,10 +244,6 @@ const PipelineRunControl = ({
                     options={teamClusterOptions}
                     onFieldChange={(_, value) => setSelectedClusterId(String(value))}
                 />
-            ) : (
-                <p className='text-xs text-muted'>
-                    No compute cluster is connected to this team. Set one up to run the pipeline.
-                </p>
             )}
 
             <SelectedTimestepsField
