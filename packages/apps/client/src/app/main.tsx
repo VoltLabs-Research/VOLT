@@ -5,6 +5,7 @@ import '@/shared/ui/assets/stylesheets/index.css';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import App from './App';
+import { CornerWindowControls } from '@/shared/ui/components/WindowControls';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -38,6 +39,7 @@ const renderApp = (): void => {
     root.render(
         <StrictMode>
             <App />
+            <CornerWindowControls />
         </StrictMode>
     );
 };
@@ -45,7 +47,12 @@ const renderApp = (): void => {
 // A browser running its own VOLT starts it before the app talks to it.
 if (localStackMode.isEnabled()) {
     void import('@/modules/local-stack/components/LocalStackBoot').then(({ default: LocalStackBoot }) => {
-        root.render(<LocalStackBoot onReady={renderApp} />);
+        root.render(
+            <>
+                <LocalStackBoot onReady={renderApp} />
+                <CornerWindowControls />
+            </>
+        );
     });
 } else {
     renderApp();
