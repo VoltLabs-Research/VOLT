@@ -16,6 +16,7 @@ import AnalysisPluginStageEditor from '../CanvasPipeline/stage-editors/AnalysisP
 import ColorCodingStageEditor from '../CanvasPipeline/stage-editors/ColorCodingStageEditor';
 import ExecutionConfigSummary from '../AnalysisTreeNode/ExecutionConfigSummary';
 import AnalysisResultsSection from '../AnalysisResultsSection';
+import SavedStageParameters from './SavedStageParameters';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { describeDraftStage, describePipelineRunStage } from '../../utils/pipeline-stage-labels';
@@ -290,12 +291,21 @@ const PipelineItemEditor = ({
         const pluginId = resolveAnalysisPluginId(analysis);
         const status = analysisStatus(analysisSection, statusMap);
         const statusLine = status ? STATUS_LINE[status] : undefined;
+        const savedStage = section?.run
+            ? section.rows.find((row) => row.kind === 'analysis' && row.section.analysis._id === analysis._id)?.stage
+            : undefined;
+        const editableStage = canMutateCanvas && savedStage?.pluginId
+            ? { ...savedStage, pluginId: savedStage.pluginId }
+            : undefined;
         return (
             <>
                 <Rollout title={analysis.pluginDisplayName}>
                     {statusLine && <p className={`m-0 text-xs ${statusLine.className}`}>{statusLine.text}</p>}
-                    {/* What it ran with; changing it means duplicating the pipeline into the draft. */}
-                    <ExecutionConfigSummary config={analysis.config} plugin={pluginsById[pluginId]} pluginsById={pluginsById} compact />
+                    {editableStage ? (
+                        <SavedStageParameters pipelineKey={pipelineKey} stage={editableStage} trajectory={trajectory} />
+                    ) : (
+                        <ExecutionConfigSummary config={analysis.config} plugin={pluginsById[pluginId]} pluginsById={pluginsById} compact />
+                    )}
                 </Rollout>
                 <AnalysisResultsRollout analysisId={analysis._id} pluginId={pluginId} currentTimestep={currentTimestep} />
             </>

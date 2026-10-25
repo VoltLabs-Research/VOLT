@@ -66,6 +66,8 @@ export interface PipelineContentsProps {
     onMoveStage: (stageId: string, direction: 1 | -1) => void;
     // Puts a stage at an index of the editable stages, for drag and drop.
     onReorderStage: (stageId: string, index: number) => void;
+    // Saved stages whose parameters were changed, by stage index.
+    stageEdits?: Record<number, Record<string, unknown>>;
     onRemoveStage: (stageId: string) => void;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
     onRetryLoadExposures?: (analysisId: string) => void;
@@ -181,6 +183,7 @@ const AnalysisVisualRows = ({
 
 interface AnalysisStageRowProps {
     row: Extract<PipelineRunStageRow, { kind: 'analysis' }>;
+    isEdited: boolean;
     status?: CanvasAnalysisStatus;
     tone?: AnalysisActivityTone;
     isSelected: boolean;
@@ -190,7 +193,7 @@ interface AnalysisStageRowProps {
     tourTargetId?: string;
 }
 
-const AnalysisStageRow = ({ row, status, tone, isSelected, onSelect, onDeleteAnalysis, canMutateCanvas, tourTargetId }: AnalysisStageRowProps) => {
+const AnalysisStageRow = ({ row, isEdited, status, tone, isSelected, onSelect, onDeleteAnalysis, canMutateCanvas, tourTargetId }: AnalysisStageRowProps) => {
     const { download } = useDownloadAnalysisListings();
     const { analysis } = row.section;
     const menuOptions: MenuOption[] = [
@@ -210,7 +213,7 @@ const AnalysisStageRow = ({ row, status, tone, isSelected, onSelect, onDeleteAna
         <PanelRow
             id={`canvas-stage-${row.key}`}
             label={analysis.pluginDisplayName}
-            meta={row.cacheHit ? 'cached' : undefined}
+            meta={isEdited ? 'edited' : row.cacheHit ? 'cached' : undefined}
             tone={tone ? ANALYSIS_TONE[tone] : undefined}
             isSelected={isSelected}
             onSelect={onSelect}
@@ -239,6 +242,7 @@ const PipelineContents = ({
     onToggleStage,
     onMoveStage,
     onReorderStage,
+    stageEdits,
     onRemoveStage,
     onDeleteAnalysis,
     onRetryLoadExposures,
@@ -303,6 +307,7 @@ const PipelineContents = ({
                 <AnalysisStageRow
                     key={row.key}
                     row={row}
+                    isEdited={row.stage !== undefined && stageEdits?.[row.stage.index] !== undefined}
                     status={analysisStatus(row.section, statusMap)}
                     tone={toneByAnalysisId?.get(row.section.analysis._id)}
                     isSelected={selectedKey === itemKey}

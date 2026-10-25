@@ -15,7 +15,7 @@ import PipelineItemEditor from '../PipelinePanel/PipelineItemEditor';
 import { panelItemKey } from '../PipelinePanel/panel-items';
 import { computeRunActivityStatus } from '../../utils/analysis-status-selectors';
 import { isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
-import { pipelineRunIdOf, pipelineStoreKey, useCanvasPipelineStore, useStages } from '../../store/canvas-pipeline';
+import { pipelineRunIdOf, pipelineStoreKey, useCanvasPipelineStore, useStageEdits, useStages } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 
@@ -145,14 +145,16 @@ const ObjectsPanel = ({
         toggleStageEnabled,
         reorderStage,
         removeStage,
-        clearStages
+        clearStages,
+        clearStageEdits
     } = useCanvasPipelineStore(useShallow((s) => ({
         setActivePipeline: s.setActivePipeline,
         setActiveTrajectory: s.setActiveTrajectory,
         toggleStageEnabled: s.toggleStageEnabled,
         reorderStage: s.reorderStage,
         removeStage: s.removeStage,
-        clearStages: s.clearStages
+        clearStages: s.clearStages,
+        clearStageEdits: s.clearStageEdits
     })));
     const activeKey = useCanvasPipelineStore((s) =>
         resolvedTrajectoryId ? s.activeKeyByTrajectory[resolvedTrajectoryId] : undefined);
@@ -171,6 +173,7 @@ const ObjectsPanel = ({
     const selectedPipelineId = selectedSection?.runId ?? DRAFT_PIPELINE_ID;
     const pipelineKey = resolvedTrajectoryId ? pipelineStoreKey(resolvedTrajectoryId, selectedSection?.runId) : '';
     const editableStages = useStages(pipelineKey);
+    const stageEdits = useStageEdits(selectedSection?.run ? pipelineKey : undefined);
 
     const resolveRunStatus = useCallback((section: PipelineRunSection) =>
         computeRunActivityStatus(section.analysisSections.map((analysisSection) =>
@@ -267,8 +270,9 @@ const ObjectsPanel = ({
         if (!onDeleteRun || !resolvedTrajectoryId) return;
         if (run._id === selectedRunId) selectPipeline(DRAFT_PIPELINE_ID);
         clearStages(pipelineStoreKey(resolvedTrajectoryId, run._id));
+        clearStageEdits(pipelineStoreKey(resolvedTrajectoryId, run._id));
         onDeleteRun(run);
-    }, [clearStages, onDeleteRun, resolvedTrajectoryId, selectPipeline, selectedRunId]);
+    }, [clearStageEdits, clearStages, onDeleteRun, resolvedTrajectoryId, selectPipeline, selectedRunId]);
 
     const moveStage = useCallback((stageId: string, direction: 1 | -1) => {
         const index = editableStages.findIndex((stage) => stage.id === stageId);
@@ -330,6 +334,7 @@ const ObjectsPanel = ({
             onToggleStage={(stageId) => toggleStageEnabled(stageId, pipelineKey)}
             onMoveStage={moveStage}
             onReorderStage={(stageId, index) => reorderStage(stageId, index, pipelineKey)}
+            stageEdits={stageEdits}
             onRemoveStage={deleteStage}
             onDeleteAnalysis={onDeleteAnalysis}
             onRetryLoadExposures={onRetryLoadExposures}
