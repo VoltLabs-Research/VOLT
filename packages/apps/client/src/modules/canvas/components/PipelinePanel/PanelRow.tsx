@@ -1,7 +1,7 @@
 import { Checkbox, cn } from '@heroui/react';
 import { MaybeContextMenu } from '../CanvasTree';
 
-import type { ReactNode } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 
 export type PanelRowTone = 'queued' | 'running' | 'completed' | 'failed';
@@ -20,6 +20,15 @@ interface PanelRowCheckbox {
     ariaLabel: string;
 }
 
+export interface PanelRowDrag {
+    isDragging: boolean;
+    isDropTarget: boolean;
+    onDragStart: (event: DragEvent<HTMLDivElement>) => void;
+    onDragOver: (event: DragEvent<HTMLDivElement>) => void;
+    onDrop: (event: DragEvent<HTMLDivElement>) => void;
+    onDragEnd: () => void;
+}
+
 interface PanelRowProps {
     id: string;
     label: ReactNode;
@@ -35,6 +44,8 @@ interface PanelRowProps {
     onSelect?: () => void;
     menuOptions?: MenuOption[];
     tourTargetId?: string;
+    // Set on rows that can be dragged into another place in their list.
+    drag?: PanelRowDrag;
 }
 
 // One row of the pipeline panel's lists: transparent until hovered, a pill when selected.
@@ -50,7 +61,8 @@ const PanelRow = ({
     alignWithCheckboxes = true,
     onSelect,
     menuOptions,
-    tourTargetId
+    tourTargetId,
+    drag
 }: PanelRowProps) => {
     const row = (
         <div
@@ -59,10 +71,17 @@ const PanelRow = ({
             aria-selected={isSelected}
             data-tour-id={tourTargetId}
             onClick={onSelect}
+            draggable={Boolean(drag)}
+            onDragStart={drag?.onDragStart}
+            onDragOver={drag?.onDragOver}
+            onDrop={drag?.onDrop}
+            onDragEnd={drag?.onDragEnd}
             className={cn(
                 'flex min-h-[1.875rem] w-full min-w-0 cursor-pointer select-none items-center gap-2 rounded-full px-2.5 text-xs text-muted',
-                'transition-colors duration-[140ms] hover:bg-foreground/5',
-                isSelected && 'bg-foreground/[0.08] text-foreground hover:bg-foreground/[0.08]'
+                'transition-[background-color,color,opacity] duration-[140ms] hover:bg-foreground/5',
+                isSelected && 'bg-foreground/[0.08] text-foreground hover:bg-foreground/[0.08]',
+                drag?.isDragging && 'opacity-50',
+                drag?.isDropTarget && 'shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_18%,transparent)]'
             )}
         >
             {checkbox ? (

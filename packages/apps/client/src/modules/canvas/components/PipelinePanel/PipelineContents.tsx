@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { DragEvent } from 'react';
 import { Button } from '@heroui/react';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import PanelRow, { PanelGroupLabel } from './PanelRow';
@@ -63,6 +64,8 @@ export interface PipelineContentsProps {
     onToggleSimulationCell: () => void;
     onToggleStage: (stageId: string) => void;
     onMoveStage: (stageId: string, direction: 1 | -1) => void;
+    // Puts a stage at an index of the editable stages, for drag and drop.
+    onReorderStage: (stageId: string, index: number) => void;
     onRemoveStage: (stageId: string) => void;
     onDeleteAnalysis: (analysisId: string) => Promise<void>;
     onRetryLoadExposures?: (analysisId: string) => void;
@@ -235,6 +238,7 @@ const PipelineContents = ({
     onToggleSimulationCell,
     onToggleStage,
     onMoveStage,
+    onReorderStage,
     onRemoveStage,
     onDeleteAnalysis,
     onRetryLoadExposures,
@@ -243,6 +247,37 @@ const PipelineContents = ({
     firstExposureTourTargetId
 }: PipelineContentsProps) => {
     const analysisSections = useMemo(() => section?.analysisSections ?? [], [section]);
+    const [dragId, setDragId] = useState<string | null>(null);
+    const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+    const endDrag = () => {
+        setDragId(null);
+        setDropTargetId(null);
+    };
+
+    // Only the stages this pipeline can still edit move; what already ran is a record.
+    const stageDrag = (stageId: string) => canMutateCanvas ? {
+        isDragging: dragId === stageId,
+        isDropTarget: dropTargetId === stageId && dragId !== stageId,
+        onDragStart: (event: DragEvent<HTMLDivElement>) => {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', stageId);
+            setDragId(stageId);
+        },
+        onDragOver: (event: DragEvent<HTMLDivElement>) => {
+            if (!dragId) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            setDropTargetId(stageId);
+        },
+        onDrop: (event: DragEvent<HTMLDivElement>) => {
+            event.preventDefault();
+            const targetIndex = editableStages.findIndex((stage) => stage.id === stageId);
+            if (dragId && dragId !== stageId && targetIndex !== -1) onReorderStage(dragId, targetIndex);
+            endDrag();
+        },
+        onDragEnd: endDrag
+    } : undefined;
     const isTrajectoryInScene = isSceneInActiveScenes(TRAJECTORY_SCENE);
     const selectedStage = editableStages.find((stage) => panelItemKey.stage(stage.id) === selectedKey);
     const selectedIndex = selectedStage ? editableStages.indexOf(selectedStage) : -1;
@@ -364,6 +399,7 @@ const PipelineContents = ({
                             }}
                             onSelect={() => onSelectKey(itemKey)}
                             menuOptions={canMutateCanvas ? [{ label: 'Delete', onClick: () => onRemoveStage(stage.id), destructive: true }] : undefined}
+                            drag={stageDrag(stage.id)}
                         />
                     );
                 })}
