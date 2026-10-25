@@ -1,4 +1,15 @@
-import { Checkbox, Label } from '@heroui/react';
+import {
+    Button,
+    Checkbox,
+    ColorArea,
+    ColorField,
+    ColorPicker,
+    ColorSlider,
+    ColorSwatch,
+    Label,
+    NumberField,
+    Slider
+} from '@heroui/react';
 import SlicePlane from '../SlicePlane';
 import ExpressionSelectStageEditor from '../CanvasPipeline/stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from '../CanvasPipeline/stage-editors/AnalysisPluginStageEditor';
@@ -42,6 +53,9 @@ interface PipelineItemEditorProps {
 }
 
 const SIMULATION_CELL_SCENE_KEY = 'simulation-cell';
+
+// What a scene without a colour override is drawn in, as the tree's colour menu had it.
+const DEFAULT_SCENE_COLOR = '#4d80e6';
 
 const STATUS_LINE: Partial<Record<string, { text: string; className: string }>> = {
     [CanvasAnalysisStatusEnum.Pending]: { text: 'Queued', className: 'text-warning-soft-foreground' },
@@ -94,34 +108,51 @@ const SceneLookControls = ({
         <>
             <FieldGrid>
                 <FieldLabel>Opacity</FieldLabel>
-                <input
-                    type='range'
-                    min={0}
-                    max={100}
-                    value={Math.round(opacity * 100)}
-                    onChange={(event) => setSceneOpacity(sceneKey, Number(event.target.value) / 100)}
+                <Slider
                     aria-label={`${label} opacity`}
-                    className='h-8 w-full cursor-pointer accent-foreground'
-                />
+                    minValue={0}
+                    maxValue={1}
+                    step={0.01}
+                    value={opacity}
+                    onChange={(next) => setSceneOpacity(sceneKey, Array.isArray(next) ? next[0] : next)}
+                    className='w-full'
+                >
+                    <Slider.Track>
+                        <Slider.Fill />
+                        <Slider.Thumb />
+                    </Slider.Track>
+                </Slider>
                 {setSceneColor && (
                     <>
                         <FieldLabel>Color</FieldLabel>
                         <span className='flex min-w-0 items-center gap-2'>
-                            <input
-                                type='color'
-                                value={override?.color ?? '#9a9aa2'}
-                                onChange={(event) => setSceneColor(sceneKey, event.target.value)}
-                                aria-label={`${label} color`}
-                                className='h-8 min-w-0 flex-1 cursor-pointer rounded-lg border border-border bg-transparent p-1'
-                            />
+                            <ColorPicker
+                                value={override?.color ?? DEFAULT_SCENE_COLOR}
+                                onChange={(color) => setSceneColor(sceneKey, color.toString('hex'))}
+                            >
+                                <ColorPicker.Trigger aria-label={`${label} color`}>
+                                    <ColorSwatch size='sm' />
+                                </ColorPicker.Trigger>
+                                <ColorPicker.Popover>
+                                    <ColorArea colorSpace='hsb' xChannel='saturation' yChannel='brightness'>
+                                        <ColorArea.Thumb />
+                                    </ColorArea>
+                                    <ColorSlider colorSpace='hsb' channel='hue' aria-label='Hue'>
+                                        <ColorSlider.Track>
+                                            <ColorSlider.Thumb />
+                                        </ColorSlider.Track>
+                                    </ColorSlider>
+                                    <ColorField aria-label='Hex color'>
+                                        <ColorField.Group>
+                                            <ColorField.Input />
+                                        </ColorField.Group>
+                                    </ColorField>
+                                </ColorPicker.Popover>
+                            </ColorPicker>
                             {override?.color && (
-                                <button
-                                    type='button'
-                                    className='shrink-0 cursor-pointer border-none bg-transparent p-0 text-xs text-muted hover:text-foreground'
-                                    onClick={() => setSceneColor(sceneKey, undefined)}
-                                >
+                                <Button variant='ghost' size='sm' className='text-xs' onPress={() => setSceneColor(sceneKey, undefined)}>
                                     Reset
-                                </button>
+                                </Button>
                             )}
                         </span>
                     </>
@@ -129,27 +160,30 @@ const SceneLookControls = ({
                 {setSceneLineWidth && defaultLineWidth !== undefined && (
                     <>
                         <FieldLabel>Line width</FieldLabel>
-                        <input
-                            type='number'
-                            min={0.5}
+                        <NumberField
+                            aria-label={`${label} line width`}
+                            minValue={0.5}
                             step={0.5}
                             value={override?.lineWidth ?? defaultLineWidth}
-                            onChange={(event) => {
-                                const next = Number(event.target.value);
+                            onChange={(next) => {
                                 if (Number.isFinite(next) && next > 0) setSceneLineWidth(sceneKey, next);
                             }}
-                            aria-label={`${label} line width`}
-                            className='input h-8 text-xs tabular-nums'
-                        />
+                        >
+                            <NumberField.Group>
+                                <NumberField.DecrementButton />
+                                <NumberField.Input />
+                                <NumberField.IncrementButton />
+                            </NumberField.Group>
+                        </NumberField>
                     </>
                 )}
             </FieldGrid>
             {setSceneEdges && (
                 <Checkbox isSelected={override?.edges ?? false} onChange={(next) => setSceneEdges(sceneKey, next)}>
-                    <Checkbox.Control>
-                        <Checkbox.Indicator />
-                    </Checkbox.Control>
                     <Checkbox.Content>
+                        <Checkbox.Control>
+                            <Checkbox.Indicator />
+                        </Checkbox.Control>
                         <Label className='text-xs'>Show edges</Label>
                     </Checkbox.Content>
                 </Checkbox>

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
-import { Button } from '@heroui/react';
+import { Button, Separator } from '@heroui/react';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import PanelRow, { PanelGroupLabel } from './PanelRow';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -436,7 +436,7 @@ const PipelineContents = ({
                 >
                     <Trash2 size={13} aria-hidden='true' />
                 </Button>
-                <span className='mx-auto my-1 h-px w-4 bg-foreground/10' aria-hidden='true' />
+                <Separator className='mx-auto my-1 w-4' />
                 <Button
                     variant='ghost'
                     size='sm'
