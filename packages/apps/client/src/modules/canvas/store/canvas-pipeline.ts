@@ -103,6 +103,12 @@ interface CanvasPipelineStore {
     setActiveTrajectory: (trajectoryId: string | null) => void;
     setActivePipeline: (trajectoryId: string, runId?: string) => void;
     clearStages: (key: string) => void;
+    // Parameters changed on a saved run's stages, by stage index, under the run's key. Running them
+    // makes a new pipeline; the saved run keeps what it ran with.
+    stageEditsByKey: Record<string, Record<number, Record<string, unknown>>>;
+    setStageEdit: (key: string, stageIndex: number, config: Record<string, unknown>) => void;
+    clearStageEdit: (key: string, stageIndex: number) => void;
+    clearStageEdits: (key: string) => void;
     addStage: (type: StageType, config: StageConfig, trajectoryId?: string) => string | null;
     removeStage: (id: string, trajectoryId?: string) => void;
     reorderStage: (id: string, newIndex: number, trajectoryId?: string) => void;
@@ -139,6 +145,42 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
                             [trajectoryId]: key
                         }
                     }));
+                },
+
+                stageEditsByKey: {},
+
+                setStageEdit: (key, stageIndex, config) => {
+                    set((state) => ({
+                        stageEditsByKey: {
+                            ...state.stageEditsByKey,
+                            [key]: {
+                                ...state.stageEditsByKey[key],
+                                [stageIndex]: config
+                            }
+                        }
+                    }));
+                },
+
+                clearStageEdit: (key, stageIndex) => {
+                    set((state) => {
+                        const edits = state.stageEditsByKey[key];
+                        if (!edits || !(stageIndex in edits)) return state;
+                        const { [stageIndex]: _removed, ...rest } = edits;
+                        return {
+                            stageEditsByKey: {
+                                ...state.stageEditsByKey,
+                                [key]: rest
+                            }
+                        };
+                    });
+                },
+
+                clearStageEdits: (key) => {
+                    set((state) => {
+                        if (!(key in state.stageEditsByKey)) return state;
+                        const { [key]: _removed, ...rest } = state.stageEditsByKey;
+                        return { stageEditsByKey: rest };
+                    });
                 },
 
                 clearStages: (key) => {
@@ -269,7 +311,10 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
         },
         {
             name: 'volt-canvas-pipeline',
-            partialize: (state) => ({ byTrajectory: state.byTrajectory })
+            partialize: (state) => ({
+                byTrajectory: state.byTrajectory,
+                stageEditsByKey: state.stageEditsByKey
+            })
         }
     )
 );
@@ -314,6 +359,11 @@ export const collectEnabledSliceStages = (stages: PipelineStage[]): SliceStageEn
             id: stage.id,
             config: stage.config as SlicePlaneStageConfig
         }));
+
+const EMPTY_EDITS: Record<number, Record<string, unknown>> = {};
+
+export const useStageEdits = (key?: string): Record<number, Record<string, unknown>> =>
+    useCanvasPipelineStore((state) => (key ? state.stageEditsByKey[key] : undefined) ?? EMPTY_EDITS);
 
 // The stages of the pipeline the canvas shows for this trajectory, for what renders them.
 export const useActivePipelineStages = (trajectoryId?: string): PipelineStage[] =>
