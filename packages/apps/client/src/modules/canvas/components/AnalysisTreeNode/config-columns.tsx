@@ -17,12 +17,6 @@ import type { Plugin } from '@volt/contracts/modules/plugin/plugin';
 
 const ascending = (left: number, right: number): number => left - right;
 
-export const hasPluginWorkflowNodes = (plugin: Plugin | undefined): boolean => {
-    return plugin?.workflow?.nodes?.some((node) => {
-        return node.type === NodeType.PLUGIN || Boolean(node.data.pluginNode);
-    }) ?? false;
-};
-
 const buildScopeColumn = (config: Analysis['config']): ConfigColumn | undefined => {
     const selectedTimesteps = readAnalysisExecutionMetadata(config)?.selectedTimesteps;
     if (!selectedTimesteps?.length) return undefined;

@@ -123,13 +123,3 @@ export const buildPipelineRunSections = ({
         }
     ];
 };
-
-export const countRunStagesByKind = (rows: PipelineRunStageRow[]): {
-    analyses: number;
-    context: number;
-    cached: number;
-} => ({
-    analyses: rows.filter((row) => row.kind === 'analysis').length,
-    context: rows.filter((row) => row.kind === 'context').length,
-    cached: rows.filter((row) => row.kind === 'analysis' && row.cacheHit).length
-});
