@@ -1,4 +1,5 @@
 import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
+import type { AnalysisPluginStageConfig, ExpressionSelectStageConfig, PipelineStage, StageType } from '../store/canvas-pipeline';
 
 const KIND_LABELS: Record<PipelineRunStage['kind'], string> = {
     plugin: 'Analysis',
@@ -80,3 +81,21 @@ export const resolveRunLabel = (
     run: { name?: string | null } | undefined,
     rows: readonly { kind: string; stage?: PipelineRunStage }[]
 ): string => run?.name?.trim() || describeRunChain(rows);
+
+const DRAFT_STAGE_LABELS: Record<StageType, string> = {
+    'analysis-plugin': 'Analysis',
+    'color-coding': 'Color Coding',
+    'slice-plane': 'Slice Plane',
+    'expression-select': 'Expression Select'
+};
+
+export const describeDraftStage = (stage: PipelineStage, pluginNameById: ReadonlyMap<string, string>): string => {
+    if (stage.type === 'analysis-plugin') {
+        const { pluginId } = stage.config as AnalysisPluginStageConfig;
+        return pluginNameById.get(pluginId) ?? pluginId;
+    }
+    if (stage.type === 'expression-select') {
+        return (stage.config as ExpressionSelectStageConfig).expression.trim() || DRAFT_STAGE_LABELS[stage.type];
+    }
+    return DRAFT_STAGE_LABELS[stage.type];
+};

@@ -1,5 +1,5 @@
 import { humanizeKey } from '../components/AnalysisTreeNode/config-values';
-import { resolveRunLabel } from '../components/PipelineRunTreeNode/stage-labels';
+import { resolveRunLabel } from './pipeline-stage-labels';
 
 import type { Analysis } from '@volt/contracts/modules/analysis/domain';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';

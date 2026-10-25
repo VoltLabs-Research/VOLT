@@ -8,7 +8,7 @@ import {
 } from '../../store/canvas-pipeline';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
-import PipelineRunControl from './PipelineRunControl';
+import PipelineRunControl from '../CanvasPipeline/PipelineRunControl';
 import {
     Button,
     DropdownItem,
@@ -18,17 +18,25 @@ import {
     DropdownTrigger,
     Popover
 } from '@heroui/react';
-import { Play, Plus } from 'lucide-react';
+import { ChevronDown, Play } from 'lucide-react';
 import { useState } from 'react';
 import type { Key } from 'react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-interface PipelineHeaderActionsProps {
+interface PipelineActionsProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
+    pipelineKey: string;
+    // The saved run these stages extend; absent for the draft.
+    run?: PipelineRun;
+    isRunBusy?: boolean;
+    // Why the selected pipeline cannot take stages, when it cannot.
+    unavailableReason?: string;
     currentTimestep?: number;
     canMutateCanvas?: boolean;
+    onStageAdded?: (stageId: string) => void;
 }
 
 const STATIC_STAGE_PRESETS: { id: string; label: string; type: StageType; config: StageConfig }[] = [
@@ -52,23 +60,30 @@ const STATIC_STAGE_PRESETS: { id: string; label: string; type: StageType; config
     }
 ];
 
-const PipelineHeaderActions = ({
+const PipelineActions = ({
     trajectory,
     trajectoryId,
+    pipelineKey,
+    run,
+    isRunBusy = false,
+    unavailableReason,
     currentTimestep,
-    canMutateCanvas
-}: PipelineHeaderActionsProps) => {
+    canMutateCanvas,
+    onStageAdded
+}: PipelineActionsProps) => {
     useEnsurePluginCatalogLoaded();
     const { modifiers } = usePluginSelectors();
     const addStage = useCanvasPipelineStore((s) => s.addStage);
-    const orderedStageCount = useStages(trajectoryId).filter(isOrderedPipelineStage).length;
+    const orderedStageCount = useStages(pipelineKey).filter(isOrderedPipelineStage).length;
 
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [isRunMenuOpen, setIsRunMenuOpen] = useState(false);
     const closeRunMenu = () => setIsRunMenuOpen(false);
+    const canAdd = Boolean(canMutateCanvas && trajectoryId && !unavailableReason);
 
     const handleAdd = (type: StageType, config: StageConfig) => {
-        addStage(type, config, trajectoryId);
+        const stageId = addStage(type, config, pipelineKey);
+        if (stageId) onStageAdded?.(stageId);
     };
 
     const handleAddMenuAction = (key: Key) => {
@@ -87,18 +102,19 @@ const PipelineHeaderActions = ({
     };
 
     return (
-        <div className='flex flex-row items-center gap-1' onClick={(event) => event.stopPropagation()}>
+        <div className='flex shrink-0 flex-row items-center gap-1 px-2 pb-1.5' title={unavailableReason}>
             <DropdownRoot isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                 <DropdownTrigger
-                    isDisabled={!canMutateCanvas || !trajectoryId}
-                    aria-label='Add pipeline stage'
-                    className='button button--sm button--ghost button--icon-only'
+                    isDisabled={!canAdd}
+                    aria-label='Add modification'
+                    className='flex h-8 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border-none bg-foreground/[0.05] pl-3.5 pr-2.5 text-xs text-muted transition-colors duration-[140ms] hover:bg-foreground/[0.08] hover:text-foreground disabled:cursor-default disabled:opacity-50 aria-expanded:bg-foreground/[0.08] aria-expanded:text-foreground'
                 >
-                    <Plus size={13} aria-hidden='true' />
+                    <span className='min-w-0 flex-1 truncate text-left'>Add modification…</span>
+                    <ChevronDown size={13} aria-hidden='true' className='shrink-0' />
                 </DropdownTrigger>
                 <DropdownPopover placement='bottom start'>
                     <DropdownMenu
-                        aria-label='Add pipeline stage'
+                        aria-label='Add modification'
                         onAction={handleAddMenuAction}
                     >
                         {STATIC_STAGE_PRESETS.map((preset) => (
@@ -123,8 +139,9 @@ const PipelineHeaderActions = ({
                     variant='ghost'
                     size='sm'
                     isIconOnly
-                    isDisabled={!canMutateCanvas || !trajectoryId || orderedStageCount === 0}
-                    aria-label='Run pipeline'
+                    className='rounded-full'
+                    isDisabled={!canAdd || orderedStageCount === 0}
+                    aria-label={run ? 'Run new stages' : 'Run pipeline'}
                 >
                     <Play size={13} aria-hidden='true' />
                 </Button>
@@ -135,6 +152,9 @@ const PipelineHeaderActions = ({
                             <PipelineRunControl
                                 trajectory={trajectory}
                                 trajectoryId={trajectoryId}
+                                pipelineKey={pipelineKey}
+                                run={run}
+                                isRunBusy={isRunBusy}
                                 currentTimestep={currentTimestep}
                                 canMutateCanvas={canMutateCanvas}
                                 onClose={closeRunMenu}
@@ -147,4 +167,4 @@ const PipelineHeaderActions = ({
     );
 };
 
-export default PipelineHeaderActions;
+export default PipelineActions;
