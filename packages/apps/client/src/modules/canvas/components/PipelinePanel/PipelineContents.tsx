@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { Button } from '@heroui/react';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
@@ -249,8 +249,11 @@ const PipelineContents = ({
     const analysisSections = useMemo(() => section?.analysisSections ?? [], [section]);
     const [dragId, setDragId] = useState<string | null>(null);
     const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+    // Drag events can outrun a render, so the handlers read the dragged stage from here.
+    const dragIdRef = useRef<string | null>(null);
 
     const endDrag = () => {
+        dragIdRef.current = null;
         setDragId(null);
         setDropTargetId(null);
     };
@@ -262,18 +265,20 @@ const PipelineContents = ({
         onDragStart: (event: DragEvent<HTMLDivElement>) => {
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', stageId);
+            dragIdRef.current = stageId;
             setDragId(stageId);
         },
         onDragOver: (event: DragEvent<HTMLDivElement>) => {
-            if (!dragId) return;
+            if (!dragIdRef.current) return;
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
             setDropTargetId(stageId);
         },
         onDrop: (event: DragEvent<HTMLDivElement>) => {
             event.preventDefault();
+            const draggedId = dragIdRef.current;
             const targetIndex = editableStages.findIndex((stage) => stage.id === stageId);
-            if (dragId && dragId !== stageId && targetIndex !== -1) onReorderStage(dragId, targetIndex);
+            if (draggedId && draggedId !== stageId && targetIndex !== -1) onReorderStage(draggedId, targetIndex);
             endDrag();
         },
         onDragEnd: endDrag
