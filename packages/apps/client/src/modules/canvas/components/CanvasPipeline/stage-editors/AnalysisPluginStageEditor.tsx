@@ -3,8 +3,6 @@ import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selecto
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
 import { extractTrajectoryTimesteps } from '@/modules/canvas/utils/selected-timestep-analysis';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
-import StageEditorLayout from '../StageEditorLayout';
-import { Button } from '@heroui/react';
 import type { SelectOption } from '@/shared/contracts/form-field';
 import { useMemo } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -14,14 +12,12 @@ interface AnalysisPluginStageEditorProps {
     stageId: string;
     trajectory?: Trajectory | null;
     trajectoryId?: string;
-    onSave?: () => void;
 }
 
 const AnalysisPluginStageEditor = ({
     stageId,
     trajectory,
-    trajectoryId,
-    onSave
+    trajectoryId
 }: AnalysisPluginStageEditorProps) => {
     const { config, patch } = useStageConfig<AnalysisPluginStageConfig>(stageId, trajectoryId);
     const { modifiers, getPluginArguments } = usePluginSelectors();
@@ -52,20 +48,9 @@ const AnalysisPluginStageEditor = ({
         );
     }
 
+    // Each field writes to the stage as it changes, so there is nothing to save; the panel scrolls it.
     return (
-        <StageEditorLayout
-            footer={(
-                <Button
-                    variant='primary'
-                    size='sm'
-                    fullWidth
-                    className='text-xs'
-                    onPress={() => onSave?.()}
-                >
-                    Save
-                </Button>
-            )}
-        >
+        <div className='flex min-w-0 flex-col gap-2'>
             <ArgumentFieldsRenderer
                 arguments={getUserConfigurableArguments(getPluginArguments(pluginId))}
                 values={argValues}
@@ -78,7 +63,7 @@ const AnalysisPluginStageEditor = ({
                 frameOptions={frameOptions}
                 emptyMessage='No arguments configured.'
             />
-        </StageEditorLayout>
+        </div>
     );
 };
 
