@@ -15,7 +15,7 @@ import ApplicationError from '@shared/errors/ApplicationError';
 import type { Analysis } from '@shared/contracts/types/AnalysisProps';
 import { generateEntityId } from '@shared/persistence/entity-id';
 import logger from '@shared/logger';
-import type { ExecutePipelineInput as WireExecutePipelineInput } from '@volt/contracts/modules/plugin/http';
+import type { ExecutePipelineInput as WireExecutePipelineInput, ExecutePipelineStageInput } from '@volt/contracts/modules/plugin/http';
 import type { PipelineRunStage } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { ExecutePipelineResponse } from '@volt/contracts/modules/plugin/plugin';
 
@@ -25,6 +25,15 @@ export interface ExecutePipelineInput extends WireExecutePipelineInput {
     userId: string;
     teamId: string;
 }
+
+const toStageInput = (stage: PipelineRunStage): ExecutePipelineStageInput => ({
+    kind: stage.kind,
+    ...(stage.pluginId ? { pluginId: stage.pluginId } : {}),
+    config: stage.config
+});
+
+const savedStageAnalysisId = (stage: PipelineRunStage): string | undefined =>
+    stage.cacheHit ? stage.cachedFromAnalysisId : stage.analysisId;
 
 class PipelineExecutionPlanner {
     async executePipeline(input: ExecutePipelineInput): Promise<ExecutePipelineResponse> {
@@ -37,19 +46,26 @@ class PipelineExecutionPlanner {
             throw ApplicationError.badRequest(ErrorCodes.TRAJECTORY_NOT_FOUND, 'Trajectory not found');
         }
 
+        const extendedRun = input.pipelineRunId ? await this.#loadExtendableRun(input) : null;
+        const savedStages = extendedRun ? [...extendedRun.stages].sort((left, right) => left.index - right.index) : [];
+
         const storageClusterId = trajectory.storageClusterId;
         const computeClusterId = await teamClusterSelectionService.resolveComputeClusterId(
             input.teamId,
-            input.teamClusterId,
+            input.teamClusterId ?? extendedRun?.computeClusterId ?? undefined,
             storageClusterId
         );
 
         const trajectoryFrames = await getTrajectoryFrames(input.trajectoryId);
         const trajectoryFramePayloads = trajectoryFrames.map(toFlatTrajectoryFrame);
 
-        const selectedTimesteps = input.selectedTimesteps?.length
-            ? input.selectedTimesteps
-            : trajectoryFramePayloads.map((frame) => frame.timestep);
+        // An extended run keeps its own timesteps: they are part of every stage hash, so the saved
+        // stages only resolve to their results on the same set.
+        const selectedTimesteps = extendedRun?.selectedTimesteps.length
+            ? extendedRun.selectedTimesteps
+            : input.selectedTimesteps?.length
+                ? input.selectedTimesteps
+                : trajectoryFramePayloads.map((frame) => frame.timestep);
 
         if (selectedTimesteps.length === 0) {
             throw ApplicationError.unprocessableEntity(
@@ -62,16 +78,22 @@ class PipelineExecutionPlanner {
         const stageExecutions: PipelineStageExecutionInput[] = [];
         const createdAnalyses: Analysis[] = [];
         const runStages: PipelineRunStage[] = [];
-        const pipelineRunId = generateEntityId();
+        const pipelineRunId = extendedRun?.id ?? generateEntityId();
+        const stages = [...savedStages.map(toStageInput), ...input.stages];
 
         try {
-            for (const [stageIndex, stage] of input.stages.entries()) {
+            for (const [stageIndex, stage] of stages.entries()) {
+                // The saved stages are planned again only to feed hashes and inputs downstream; the run
+                // keeps their records as they are.
+                const isSaved = stageIndex < savedStages.length;
+
                 if (stage.kind !== 'plugin') {
                     upstreamStageHashes.push(computeDumpStageHash(stage.kind, stage.config));
                     stageExecutions.push({
                         kind: stage.kind,
                         config: stage.config
                     });
+                    if (isSaved) continue;
                     runStages.push({
                         index: stageIndex,
                         kind: stage.kind,
@@ -97,8 +119,16 @@ class PipelineExecutionPlanner {
                     stageIndex
                 });
 
+                if (planned.createdAnalysis) {
+                    createdAnalyses.push(planned.createdAnalysis);
+                }
+                if (isSaved && !planned.cacheHit) {
+                    throw cannotExecute('This pipeline changed since it ran (a plugin was updated or a result was removed). Duplicate it into the draft and run it again.');
+                }
+
                 upstreamStageHashes.push(planned.stageHash);
                 stageExecutions.push(planned.execution);
+                if (isSaved) continue;
                 runStages.push({
                     index: stageIndex,
                     kind: 'plugin',
@@ -110,21 +140,23 @@ class PipelineExecutionPlanner {
                         ? { cachedFromAnalysisId: planned.analysisId }
                         : { analysisId: planned.analysisId })
                 });
-                if (planned.createdAnalysis) {
-                    createdAnalyses.push(planned.createdAnalysis);
-                }
             }
 
-            await PipelineRunEntity.create({
-                id: pipelineRunId,
-                trajectory: input.trajectoryId,
-                team: input.teamId,
-                createdBy: input.userId,
-                computeClusterId,
-                storageClusterId: storageClusterId ?? null,
-                selectedTimesteps,
-                stages: runStages
-            }).save();
+            if (extendedRun) {
+                extendedRun.stages = [...savedStages, ...runStages];
+                await extendedRun.save();
+            } else {
+                await PipelineRunEntity.create({
+                    id: pipelineRunId,
+                    trajectory: input.trajectoryId,
+                    team: input.teamId,
+                    createdBy: input.userId,
+                    computeClusterId,
+                    storageClusterId: storageClusterId ?? null,
+                    selectedTimesteps,
+                    stages: runStages
+                }).save();
+            }
 
             await pluginExecutionRouter.routePipeline({
                 teamClusterId: computeClusterId,
@@ -142,10 +174,35 @@ class PipelineExecutionPlanner {
             throw error;
         }
 
+        // For an extended run these are only the stages it gained.
         return {
             runId: pipelineRunId,
             stages: runStages
         };
+    }
+
+    async #loadExtendableRun(input: ExecutePipelineInput): Promise<PipelineRunEntity> {
+        const run = await PipelineRunEntity.findOneBy({
+            id: input.pipelineRunId,
+            team: input.teamId,
+            trajectory: input.trajectoryId
+        });
+
+        if (!run) {
+            throw ApplicationError.notFound(ErrorCodes.RESOURCE_NOT_FOUND, 'Pipeline run not found');
+        }
+
+        // A stage still computing has no result for the new stages to build on yet.
+        const analysisIds = run.stages
+            .filter((stage) => stage.kind === 'plugin')
+            .map(savedStageAnalysisId)
+            .filter((analysisId): analysisId is string => Boolean(analysisId));
+        const analyses = await Promise.all(analysisIds.map((id) => AnalysisEntity.findOneBy({ id })));
+        if (analyses.some((analysis) => analysis?.status !== AnalysisStatus.Completed)) {
+            throw cannotExecute('Wait for this pipeline to finish before adding stages to it.');
+        }
+
+        return run;
     }
 
     async #markAnalysesFailed(analyses: Analysis[]): Promise<void> {
