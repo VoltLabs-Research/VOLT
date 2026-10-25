@@ -1,6 +1,5 @@
-import { Button, Skeleton, cn } from '@heroui/react';
+import { cn } from '@heroui/react';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { RefreshCw } from 'lucide-react';
 
 import type { ReactNode } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
@@ -16,11 +15,6 @@ const INDENT_CLASS: Record<CanvasTreeIndent, string> = {
 };
 
 export const treeIndentClass = (indent: CanvasTreeIndent): string => INDENT_CLASS[indent];
-
-export const nextTreeIndent = (indent: CanvasTreeIndent): CanvasTreeIndent => {
-    if (indent === 'base') return 'lg';
-    return 'xl';
-};
 
 interface CanvasTreeRowProps {
     label: ReactNode;
@@ -74,29 +68,6 @@ export const MaybeContextMenu = ({ enabled, id, options, children }: MaybeContex
     return <ContextMenuPopover id={id} trigger={<div>{children}</div>} options={options} size='sm' />;
 };
 
-interface CanvasTreeSkeletonRowsProps {
-    count: number;
-    compact?: boolean;
-    indent?: CanvasTreeIndent;
-}
-
-export const CanvasTreeSkeletonRows = ({ count, compact, indent = 'base' }: CanvasTreeSkeletonRowsProps) => {
-    if (count <= 0) return null;
-    return (
-        <>
-            {Array.from({ length: count }).map((_, i) => (
-                <div key={`canvas-tree-skel-${i}`} className={cn(
-                    'flex items-center gap-8 text-muted',
-                    TREE_ROW_CLASS,
-                    treeIndentClass(indent)
-                )}>
-                    <Skeleton className={compact ? 'h-2.5 w-20 rounded-md' : 'h-2.5 w-30 rounded-md'} />
-                </div>
-            ))}
-        </>
-    );
-};
-
 interface CanvasTreeEmptyRowProps {
     label: string;
     indent?: CanvasTreeIndent;
@@ -109,27 +80,5 @@ export const CanvasTreeEmptyRow = ({ label, indent = 'base' }: CanvasTreeEmptyRo
         treeIndentClass(indent)
     )}>
         <span className='text-xs text-muted'>{label}</span>
-    </div>
-);
-
-interface AnalysisTreeRetryRowProps {
-    onRetry: () => void;
-    indent?: CanvasTreeIndent;
-}
-
-export const AnalysisTreeRetryRow = ({ onRetry, indent = 'lg' }: AnalysisTreeRetryRowProps) => (
-    <div className={cn(
-        'flex items-center gap-8 text-muted',
-        TREE_ROW_CLASS,
-        treeIndentClass(indent)
-    )}>
-        <span className='text-xs text-muted'>Failed to load models</span>
-        <span className='flex-1' />
-        <Button variant='ghost' size='sm' isIconOnly onPress={onRetry} aria-label='Retry loading models'>
-            <RefreshCw style={{
-                width: 12,
-                height: 12
-            }} />
-        </Button>
     </div>
 );

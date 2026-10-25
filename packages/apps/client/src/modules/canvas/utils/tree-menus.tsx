@@ -40,17 +40,6 @@ export const buildTransparencySubmenu = (value: number, onChange: (value: number
     />
 );
 
-export const buildLineWidthSubmenu = (value: number, defaultValue: number, onChange: (value: number) => void) => (
-    <SliderSubmenu
-        label='Line Width'
-        min={Math.max(0.01, defaultValue * 0.25)}
-        max={Math.max(defaultValue * 12, defaultValue + 2)}
-        step={Math.max(0.01, defaultValue * 0.05)}
-        value={value}
-        onChange={onChange}
-    />
-);
-
 interface AddRemoveOption {
     isActive: boolean;
     onAdd: () => void;
@@ -73,16 +62,6 @@ export const buildAddRemoveOption = ({ isActive, onAdd, onRemove }: AddRemoveOpt
 export const transparencyOption = (submenuContent: React.ReactNode): MenuOption => ({
     label: 'Transparency',
     submenuContent
-});
-
-export const lineSettingsOption = (submenuContent: React.ReactNode): MenuOption => ({
-    label: 'Line Settings',
-    submenuContent
-});
-
-export const buildEdgesOption = (enabled: boolean, onToggle: () => void): MenuOption => ({
-    label: enabled ? 'Hide Feature Edges' : 'Show Feature Edges',
-    onClick: onToggle
 });
 
 interface ColorSubmenuProps {
