@@ -49,6 +49,9 @@ export interface ExecutePipelineStageInput{
 }
 
 export interface ExecutePipelineInput{
+    // Extends this saved run instead of creating one: its stages stay, `stages` holds only the
+    // new ones, and they run on the run's own timesteps so the saved stages are served from cache.
+    pipelineRunId?: string;
     teamClusterId?: string;
     selectedTimesteps?: number[];
     timestep?: number;
