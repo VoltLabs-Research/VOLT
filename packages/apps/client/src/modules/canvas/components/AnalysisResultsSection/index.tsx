@@ -10,6 +10,8 @@ interface AnalysisResultsSectionProps {
     analysisId?: string;
     pluginId?: string;
     currentTimestep?: number;
+    // Rendered bare, for a host that draws its own heading.
+    embedded?: boolean;
 }
 
 interface ResolvedPanelTable {
@@ -18,7 +20,7 @@ interface ResolvedPanelTable {
     table: IPanelTable;
 }
 
-const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: AnalysisResultsSectionProps) => {
+const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep, embedded = false }: AnalysisResultsSectionProps) => {
     const [expanded, setExpanded] = useState(true);
     const [statusByKey, setStatusByKey] = useState<Record<string, PanelResultsStatus>>({});
     const { pluginsById } = usePluginSelectors();
@@ -76,6 +78,10 @@ const AnalysisResultsSection = ({ analysisId, pluginId, currentTimestep }: Analy
 
     if (!hasResults) {
         return <div className='hidden'>{tablesNode}</div>;
+    }
+
+    if (embedded) {
+        return tablesNode;
     }
 
     return (

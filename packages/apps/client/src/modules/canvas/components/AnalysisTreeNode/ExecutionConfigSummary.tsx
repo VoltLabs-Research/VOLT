@@ -7,12 +7,36 @@ interface ExecutionConfigSummaryProps {
     config: Record<string, unknown>;
     plugin?: Plugin;
     pluginsById?: Record<string, Plugin>;
+    // One column without padding, for the pipeline panel's property editor.
+    compact?: boolean;
 }
 
-const ExecutionConfigSummary = ({ config, plugin, pluginsById }: ExecutionConfigSummaryProps) => {
+const ExecutionConfigSummary = ({ config, plugin, pluginsById, compact = false }: ExecutionConfigSummaryProps) => {
     const columns = useMemo(() => {
         return buildConfigColumns(config, plugin, pluginsById);
     }, [config, plugin, pluginsById]);
+
+    if (compact) {
+        if (columns.length === 0) {
+            return <span className='text-xs text-muted'>No parameters configured.</span>;
+        }
+
+        return (
+            <div className='flex flex-col gap-3'>
+                {columns.map((column) => (
+                    <div className='flex flex-col gap-1.5' key={column.key}>
+                        {columns.length > 1 && <span className='text-2xs font-medium text-muted'>{column.title}</span>}
+                        {column.rows.map((row, rowIndex) => (
+                            <div className='flex flex-row items-center justify-between gap-4 text-xs' key={`${row.label}:${rowIndex}`}>
+                                <span className='min-w-0 truncate text-muted'>{row.label}</span>
+                                {row.value}
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     if (columns.length === 0) {
         return (
