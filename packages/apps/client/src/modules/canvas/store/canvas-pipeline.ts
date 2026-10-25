@@ -84,10 +84,25 @@ export interface PipelineStage {
 
 const EMPTY_STAGES: PipelineStage[] = [];
 
+// Stages are kept per pipeline: the draft under the trajectory's id, and the stages added to a saved
+// run under `${trajectoryId}::${runId}` until that run executes them.
+export const pipelineStoreKey = (trajectoryId: string, runId?: string): string =>
+    runId ? `${trajectoryId}::${runId}` : trajectoryId;
+
+// The saved run a key belongs to, or undefined for the trajectory's draft.
+export const pipelineRunIdOf = (trajectoryId: string, key: string | undefined): string | undefined => {
+    const prefix = `${trajectoryId}::`;
+    return key?.startsWith(prefix) ? key.slice(prefix.length) : undefined;
+};
+
 interface CanvasPipelineStore {
+    // The key of the pipeline the canvas shows; stage calls without a key go to it.
     activeTrajectoryId: string | null;
     byTrajectory: Record<string, PipelineStage[]>;
+    activeKeyByTrajectory: Record<string, string>;
     setActiveTrajectory: (trajectoryId: string | null) => void;
+    setActivePipeline: (trajectoryId: string, runId?: string) => void;
+    clearStages: (key: string) => void;
     addStage: (type: StageType, config: StageConfig, trajectoryId?: string) => string | null;
     removeStage: (id: string, trajectoryId?: string) => void;
     reorderStage: (id: string, newIndex: number, trajectoryId?: string) => void;
@@ -111,8 +126,28 @@ export const useCanvasPipelineStore = create<CanvasPipelineStore>()(
             return {
                 activeTrajectoryId: null,
                 byTrajectory: {},
+                activeKeyByTrajectory: {},
 
                 setActiveTrajectory: (trajectoryId) => set({ activeTrajectoryId: trajectoryId }),
+
+                setActivePipeline: (trajectoryId, runId) => {
+                    const key = pipelineStoreKey(trajectoryId, runId);
+                    set((state) => ({
+                        activeTrajectoryId: key,
+                        activeKeyByTrajectory: {
+                            ...state.activeKeyByTrajectory,
+                            [trajectoryId]: key
+                        }
+                    }));
+                },
+
+                clearStages: (key) => {
+                    set((state) => {
+                        if (!(key in state.byTrajectory)) return state;
+                        const { [key]: _removed, ...rest } = state.byTrajectory;
+                        return { byTrajectory: rest };
+                    });
+                },
 
                 addStage: (type, config, trajectoryId) => {
                     const target = resolveTrajectoryId(trajectoryId);
@@ -279,6 +314,14 @@ export const collectEnabledSliceStages = (stages: PipelineStage[]): SliceStageEn
             id: stage.id,
             config: stage.config as SlicePlaneStageConfig
         }));
+
+// The stages of the pipeline the canvas shows for this trajectory, for what renders them.
+export const useActivePipelineStages = (trajectoryId?: string): PipelineStage[] =>
+    useCanvasPipelineStore((state) => {
+        if (!trajectoryId) return EMPTY_STAGES;
+        const key = state.activeKeyByTrajectory[trajectoryId] ?? trajectoryId;
+        return state.byTrajectory[key] ?? EMPTY_STAGES;
+    });
 
 export const useActiveTrajectoryStages = (): PipelineStage[] =>
     useCanvasPipelineStore((state) =>

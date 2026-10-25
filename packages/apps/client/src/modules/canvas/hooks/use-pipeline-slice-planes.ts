@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Plane } from 'three';
-import { useShallow } from 'zustand/react/shallow';
-import { useCanvasPipelineStore, collectEnabledSliceStages } from '@/modules/canvas/store/canvas-pipeline';
+import { collectEnabledSliceStages, useActivePipelineStages } from '@/modules/canvas/store/canvas-pipeline';
 import {
     DEFAULT_SLICE_PLANE_STAGE_CONFIG
 } from '@/modules/canvas/store/canvas-pipeline';
@@ -46,9 +45,7 @@ const usePipelineSlicePlanes = (
     trajectoryId: string | undefined,
     modelWorldBounds?: ModelWorldBounds | null
 ): Plane[] => {
-    const stages = useCanvasPipelineStore(
-        useShallow((state) => (trajectoryId ? state.byTrajectory[trajectoryId] : undefined))
-    );
+    const stages = useActivePipelineStages(trajectoryId);
 
     return useMemo(() => {
         if (!stages) return EMPTY_PLANES;
