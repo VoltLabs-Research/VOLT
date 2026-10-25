@@ -86,15 +86,18 @@ const PanelRow = ({
         >
             {checkbox ? (
                 <span className='inline-flex shrink-0' onClick={(event) => event.stopPropagation()}>
+                    {/* Checkbox.Content is HeroUI's pressable part; the control alone only draws the box. */}
                     <Checkbox
                         aria-label={checkbox.ariaLabel}
                         isSelected={checkbox.isSelected}
                         isDisabled={checkbox.isDisabled}
                         onChange={checkbox.onChange}
                     >
-                        <Checkbox.Control>
-                            <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                            <Checkbox.Control>
+                                <Checkbox.Indicator />
+                            </Checkbox.Control>
+                        </Checkbox.Content>
                     </Checkbox>
                 </span>
             ) : alignWithCheckboxes && <span className='w-4 shrink-0' aria-hidden='true' />}
