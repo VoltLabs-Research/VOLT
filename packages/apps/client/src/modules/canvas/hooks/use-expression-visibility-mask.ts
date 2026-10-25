@@ -1,6 +1,6 @@
 import { parse, evaluate } from '@voltstack/expressions';
 import { useMemo } from 'react';
-import { useStages } from '@/modules/canvas/store/canvas-pipeline';
+import { useActivePipelineStages } from '@/modules/canvas/store/canvas-pipeline';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { DEFAULT_EXPRESSION_SELECT_COLOR } from '@/modules/canvas/store/canvas-pipeline';
 import type { GetAtomsResponse, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
@@ -78,7 +78,7 @@ const useExpressionVisibilityMask = ({
     analysisId,
     currentTimestep
 }: UseExpressionVisibilityMaskParams): UseExpressionVisibilityMaskResult => {
-    const stages = useStages(trajectoryId);
+    const stages = useActivePipelineStages(trajectoryId);
 
     const activeStages = useMemo<ExpressionSelectStageView[]>(() => {
         return stages
