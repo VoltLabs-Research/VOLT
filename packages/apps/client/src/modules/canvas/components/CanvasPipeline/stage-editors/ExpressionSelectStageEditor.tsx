@@ -14,6 +14,8 @@ import {
 interface ExpressionSelectStageEditorProps {
     stageId: string;
     trajectoryId?: string;
+    // The stage's pipeline in the store; defaults to the trajectory's draft.
+    pipelineKey?: string;
     analysisId?: string;
     currentTimestep?: number;
     onSave?: () => void;
@@ -35,11 +37,12 @@ const ACTION_OPTIONS = [
 const ExpressionSelectStageEditor = ({
     stageId,
     trajectoryId,
+    pipelineKey = trajectoryId,
     analysisId,
     currentTimestep,
     onSave
 }: ExpressionSelectStageEditorProps) => {
-    const { config, patch } = useStageConfig<ExpressionSelectStageConfig>(stageId, trajectoryId);
+    const { config, patch } = useStageConfig<ExpressionSelectStageConfig>(stageId, pipelineKey);
 
     const action = config?.action ?? 'color';
     const color = config?.color ?? DEFAULT_EXPRESSION_SELECT_COLOR;

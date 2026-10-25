@@ -1,4 +1,4 @@
-import { useCanvasPipelineStore, isOrderedPipelineStage, stageTypeToPipelineKind } from '../../store/canvas-pipeline';
+import { useCanvasPipelineStore, useStages, isOrderedPipelineStage, stageTypeToPipelineKind } from '../../store/canvas-pipeline';
 import { useExecutePipelineMutation, usePluginTeamClustersQuery } from '@/modules/plugin/hooks/plugin/queries';
 import { usePluginExecutionClusterOptions } from '@/modules/plugin/hooks/plugin/use-plugin-execution-cluster-options';
 import { resolvePluginExecutionClusterId } from '@/modules/plugin/utils/plugin-team-clusters';
@@ -32,11 +32,18 @@ import type {
     PipelineStage
 } from '../../store/canvas-pipeline';
 import type { ExecutePipelineStageInput } from '@volt/contracts/modules/plugin/http';
+import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface PipelineRunControlProps {
     trajectory?: Trajectory | null;
     trajectoryId?: string;
+    // The pipeline's stage store key; a saved run's key holds only the stages added to it.
+    pipelineKey?: string;
+    // Set when the stages extend this saved run: they run on its timesteps and cluster.
+    run?: PipelineRun;
+    // A saved run still computing cannot take new stages yet.
+    isRunBusy?: boolean;
     currentTimestep?: number;
     canMutateCanvas?: boolean;
     onClose: () => void;
@@ -76,6 +83,9 @@ const toStagePayload = (stage: PipelineStage): ExecutePipelineStageInput | null 
 const PipelineRunControl = ({
     trajectory,
     trajectoryId,
+    pipelineKey = trajectoryId,
+    run,
+    isRunBusy = false,
     currentTimestep,
     canMutateCanvas,
     onClose
@@ -84,14 +94,13 @@ const PipelineRunControl = ({
     const { modifiers, pluginsById, getPluginArguments } = usePluginSelectors();
     const executePipelineMutation = useExecutePipelineMutation();
     const markStagesExecuted = useCanvasPipelineStore((s) => s.markStagesExecuted);
+    const clearStages = useCanvasPipelineStore((s) => s.clearStages);
     // Every run brings the timeline's Log tab forward so each plugin's output can be followed live.
     const requestTimelineTab = useTimelineTabRequestStore((state) => state.requestTab);
     const { setAnalysisId } = useCanvasUrlState();
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
 
-    const stages = useCanvasPipelineStore((s) =>
-        (trajectoryId ? s.byTrajectory[trajectoryId] : undefined) ?? []
-    );
+    const stages = useStages(pipelineKey);
 
     const { data: teamClustersResponse } = usePluginTeamClustersQuery(
         {
@@ -124,7 +133,7 @@ const PipelineRunControl = ({
         canMutateCanvas
         && trajectoryId
         && enabledOrderedStages.length > 0
-        && resolvedClusterId
+        && (run ? !isRunBusy : resolvedClusterId)
         && !executePipelineMutation.isPending
     );
 
@@ -146,14 +155,19 @@ const PipelineRunControl = ({
         }
 
         const pluginStages = enabledOrderedStages.filter((stage) => stage.type === 'analysis-plugin');
-        const prerequisiteStages: PrerequisiteStage[] = pluginStages.map((stage) => {
-            const { pluginId } = stage.config as AnalysisPluginStageConfig;
-            return {
-                pluginKey: pluginsById[pluginId]?.modifier?.key ?? '',
-                pluginName: pluginStageName(pluginId),
-                requires: collectRequiredPluginGroups(getPluginArguments(pluginId))
-            };
+        const toPrerequisiteStage = (pluginId: string): PrerequisiteStage => ({
+            pluginKey: pluginsById[pluginId]?.modifier?.key ?? '',
+            pluginName: pluginStageName(pluginId),
+            requires: collectRequiredPluginGroups(getPluginArguments(pluginId))
         });
+        // A saved run's own plugins come first, so they satisfy what the new stages need.
+        const savedPluginIds = [...(run?.stages ?? [])]
+            .sort((left, right) => left.index - right.index)
+            .flatMap((stage) => stage.kind === 'plugin' && stage.pluginId ? [stage.pluginId] : []);
+        const prerequisiteStages: PrerequisiteStage[] = [
+            ...savedPluginIds.map(toPrerequisiteStage),
+            ...pluginStages.map((stage) => toPrerequisiteStage((stage.config as AnalysisPluginStageConfig).pluginId))
+        ];
 
         const unsatisfied = findUnsatisfiedPrerequisites(prerequisiteStages);
         if (unsatisfied.length > 0) {
@@ -166,18 +180,28 @@ const PipelineRunControl = ({
         }
 
         try {
-            const { runId, stages } = await executePipelineMutation.mutateAsync({
-                trajectoryId,
-                teamClusterId: resolvedClusterId || undefined,
-                selectedTimesteps,
-                timestep: currentTimestep,
-                stages: stagePayloads
-            });
+            const { runId, stages } = await executePipelineMutation.mutateAsync(run
+                ? {
+                    trajectoryId,
+                    pipelineRunId: run._id,
+                    timestep: currentTimestep,
+                    stages: stagePayloads
+                }
+                : {
+                    trajectoryId,
+                    teamClusterId: resolvedClusterId || undefined,
+                    selectedTimesteps,
+                    timestep: currentTimestep,
+                    stages: stagePayloads
+                });
 
-            markStagesExecuted(enabledOrderedStages.map((stage) => stage.id), trajectoryId);
+            // The added stages now belong to the saved run, which lists them itself.
+            if (run && pipelineKey) clearStages(pipelineKey);
+            else markStagesExecuted(enabledOrderedStages.map((stage) => stage.id), trajectoryId);
 
             const pendingStore = usePendingPluginExecutionsStore.getState();
-            const viewTimestep = selectedTimesteps?.[0]
+            const runTimesteps = run?.selectedTimesteps ?? selectedTimesteps;
+            const viewTimestep = (runTimesteps?.includes(currentTimestep ?? Number.NaN) ? currentTimestep : runTimesteps?.[0])
                 ?? getNearestTimestep(currentTimestep, availableTimesteps);
 
             const computedStages = stages.filter((stage) => stage.analysisId !== undefined);
@@ -235,17 +259,21 @@ const PipelineRunControl = ({
             )}
         >
             <span className='text-xs text-muted'>
-                Runs the {enabledOrderedStages.length} enabled stage{enabledOrderedStages.length === 1 ? '' : 's'} as one pipeline.
+                {run
+                    ? isRunBusy
+                        ? 'Wait for this pipeline to finish before running new stages on it.'
+                        : `Runs the ${enabledOrderedStages.length} new stage${enabledOrderedStages.length === 1 ? '' : 's'}. The others reuse their saved results.`
+                    : `Runs the ${enabledOrderedStages.length} enabled stage${enabledOrderedStages.length === 1 ? '' : 's'} as one pipeline.`}
             </span>
 
-            {!hasTeamClusterOptions && (
+            {!run && !hasTeamClusterOptions && (
                 <p className='text-xs text-muted'>
                     No compute cluster is connected to this team. Set one up to run the pipeline.
                 </p>
             )}
 
             {/* A lone cluster is the one the pipeline runs on, so there is nothing to choose. */}
-            {teamClusterOptions.length > 1 && (
+            {!run && teamClusterOptions.length > 1 && (
                 <FormFieldRHF
                     label='Cluster'
                     fieldType='select'
@@ -257,11 +285,13 @@ const PipelineRunControl = ({
                 />
             )}
 
-            <SelectedTimestepsField
-                availableTimesteps={availableTimesteps}
-                selectedTimesteps={selectedTimesteps}
-                onChange={(next) => setSelectedTimesteps(normalizeSelectedTimesteps(next, availableTimesteps))}
-            />
+            {!run && (
+                <SelectedTimestepsField
+                    availableTimesteps={availableTimesteps}
+                    selectedTimesteps={selectedTimesteps}
+                    onChange={(next) => setSelectedTimesteps(normalizeSelectedTimesteps(next, availableTimesteps))}
+                />
+            )}
         </StageEditorLayout>
     );
 };

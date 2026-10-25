@@ -17,6 +17,8 @@ import type { ColorCodingStageConfig } from '@/modules/canvas/store/canvas-pipel
 interface ColorCodingStageEditorProps {
     stageId: string;
     trajectoryId?: string;
+    // The stage's pipeline in the store; defaults to the trajectory's draft.
+    pipelineKey?: string;
     analysisId?: string;
     currentTimestep?: number;
     canMutateCanvas?: boolean;
@@ -36,11 +38,12 @@ const BAKE_TOAST = createPromiseToastOptions({
 const ColorCodingStageEditor = ({
     stageId,
     trajectoryId,
+    pipelineKey = trajectoryId,
     analysisId,
     currentTimestep,
     canMutateCanvas
 }: ColorCodingStageEditorProps) => {
-    const { config, patch } = useStageConfig<ColorCodingStageConfig>(stageId, trajectoryId);
+    const { config, patch } = useStageConfig<ColorCodingStageConfig>(stageId, pipelineKey);
     const setActiveScene = useEditorStore((s) => s.setActiveScene);
 
     const gradient = config?.gradient ?? 'Viridis';
