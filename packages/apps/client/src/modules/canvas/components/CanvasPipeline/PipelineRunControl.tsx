@@ -44,6 +44,8 @@ interface PipelineRunControlProps {
     run?: PipelineRun;
     // A saved run still computing cannot take new stages yet.
     isRunBusy?: boolean;
+    // Parameters changed on the saved run's stages, by index: with any, the run makes a new pipeline.
+    stageEdits?: Record<number, Record<string, unknown>>;
     currentTimestep?: number;
     canMutateCanvas?: boolean;
     onClose: () => void;
@@ -86,6 +88,7 @@ const PipelineRunControl = ({
     pipelineKey = trajectoryId,
     run,
     isRunBusy = false,
+    stageEdits,
     currentTimestep,
     canMutateCanvas,
     onClose
@@ -95,6 +98,7 @@ const PipelineRunControl = ({
     const executePipelineMutation = useExecutePipelineMutation();
     const markStagesExecuted = useCanvasPipelineStore((s) => s.markStagesExecuted);
     const clearStages = useCanvasPipelineStore((s) => s.clearStages);
+    const clearStageEdits = useCanvasPipelineStore((s) => s.clearStageEdits);
     // Every run brings the timeline's Log tab forward so each plugin's output can be followed live.
     const requestTimelineTab = useTimelineTabRequestStore((state) => state.requestTab);
     const { setAnalysisId } = useCanvasUrlState();
@@ -129,11 +133,25 @@ const PipelineRunControl = ({
     const resolvedClusterId = resolvePluginExecutionClusterId(selectedClusterId, executionTeamClusters);
     const enabledOrderedStages = stages.filter((stage) => isOrderedPipelineStage(stage) && stage.enabled);
 
+    // A saved run with changed parameters runs again as a new pipeline, on its own timesteps so the
+    // stages left as they were are served from cache; without changes, new stages extend it in place.
+    const editedCount = Object.keys(stageEdits ?? {}).length;
+    const isFork = Boolean(run) && editedCount > 0;
+    const savedStagePayloads: ExecutePipelineStageInput[] = isFork && run
+        ? [...run.stages]
+            .sort((left, right) => left.index - right.index)
+            .map((stage) => ({
+                kind: stage.kind,
+                ...(stage.pluginId ? { pluginId: stage.pluginId } : {}),
+                config: stageEdits?.[stage.index] ?? stage.config
+            }))
+        : [];
+
     const canExecute = Boolean(
         canMutateCanvas
         && trajectoryId
-        && enabledOrderedStages.length > 0
-        && (run ? !isRunBusy : resolvedClusterId)
+        && (enabledOrderedStages.length > 0 || isFork)
+        && (run ? isFork || !isRunBusy : resolvedClusterId)
         && !executePipelineMutation.isPending
     );
 
@@ -146,7 +164,7 @@ const PipelineRunControl = ({
             .map(toStagePayload)
             .filter((payload): payload is ExecutePipelineStageInput => payload !== null);
 
-        if (stagePayloads.length === 0) {
+        if (stagePayloads.length === 0 && !isFork) {
             sileo.warning({
                 title: 'Nothing to run',
                 description: 'Enable at least one pipeline stage.'
@@ -180,8 +198,15 @@ const PipelineRunControl = ({
         }
 
         try {
-            const { runId, stages } = await executePipelineMutation.mutateAsync(run
+            const { runId, stages } = await executePipelineMutation.mutateAsync(isFork && run
                 ? {
+                    trajectoryId,
+                    teamClusterId: run.computeClusterId ?? undefined,
+                    selectedTimesteps: run.selectedTimesteps,
+                    timestep: currentTimestep,
+                    stages: [...savedStagePayloads, ...stagePayloads]
+                }
+                : run ? {
                     trajectoryId,
                     pipelineRunId: run._id,
                     timestep: currentTimestep,
@@ -195,9 +220,11 @@ const PipelineRunControl = ({
                     stages: stagePayloads
                 });
 
-            // The added stages now belong to the saved run, which lists them itself.
-            if (run && pipelineKey) clearStages(pipelineKey);
-            else markStagesExecuted(enabledOrderedStages.map((stage) => stage.id), trajectoryId);
+            // The added stages, and any changes, now belong to the run that ran them, which lists them itself.
+            if (run && pipelineKey) {
+                clearStages(pipelineKey);
+                clearStageEdits(pipelineKey);
+            } else markStagesExecuted(enabledOrderedStages.map((stage) => stage.id), trajectoryId);
 
             const pendingStore = usePendingPluginExecutionsStore.getState();
             const runTimesteps = run?.selectedTimesteps ?? selectedTimesteps;
@@ -259,7 +286,9 @@ const PipelineRunControl = ({
             )}
         >
             <span className='text-xs text-muted'>
-                {run
+                {isFork
+                    ? `Runs as a new pipeline with ${editedCount === 1 ? 'the changed stage' : `${editedCount} changed stages`}. This one stays as it ran, and unchanged stages reuse their results.`
+                    : run
                     ? isRunBusy
                         ? 'Wait for this pipeline to finish before running new stages on it.'
                         : `Runs the ${enabledOrderedStages.length} new stage${enabledOrderedStages.length === 1 ? '' : 's'}. The others reuse their saved results.`

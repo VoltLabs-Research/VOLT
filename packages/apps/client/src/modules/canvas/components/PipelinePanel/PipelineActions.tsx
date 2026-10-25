@@ -1,6 +1,7 @@
 import {
     useCanvasPipelineStore,
     useStages,
+    useStageEdits,
     isOrderedPipelineStage,
     DEFAULT_SLICE_PLANE_STAGE_CONFIG,
     DEFAULT_COLOR_CODING_STAGE_CONFIG,
@@ -75,6 +76,8 @@ const PipelineActions = ({
     const { modifiers } = usePluginSelectors();
     const addStage = useCanvasPipelineStore((s) => s.addStage);
     const orderedStageCount = useStages(pipelineKey).filter(isOrderedPipelineStage).length;
+    const stageEdits = useStageEdits(run ? pipelineKey : undefined);
+    const hasEdits = Object.keys(stageEdits).length > 0;
 
     const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [isRunMenuOpen, setIsRunMenuOpen] = useState(false);
@@ -140,8 +143,8 @@ const PipelineActions = ({
                     size='sm'
                     isIconOnly
                     className='rounded-full'
-                    isDisabled={!canAdd || orderedStageCount === 0}
-                    aria-label={run ? 'Run new stages' : 'Run pipeline'}
+                    isDisabled={!canAdd || (orderedStageCount === 0 && !hasEdits)}
+                    aria-label={run && !hasEdits ? 'Run new stages' : 'Run pipeline'}
                 >
                     <Play size={13} aria-hidden='true' />
                 </Button>
@@ -155,6 +158,7 @@ const PipelineActions = ({
                                 pipelineKey={pipelineKey}
                                 run={run}
                                 isRunBusy={isRunBusy}
+                                stageEdits={run ? stageEdits : undefined}
                                 currentTimestep={currentTimestep}
                                 canMutateCanvas={canMutateCanvas}
                                 onClose={closeRunMenu}
