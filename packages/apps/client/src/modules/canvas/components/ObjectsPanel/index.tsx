@@ -22,12 +22,15 @@ import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useEditorStore } from '@/modules/canvas/store/editor';
+import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
+import { isSameScene } from '../../utils/scene-identity';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { ArtifactSection } from './use-artifact-sections';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { PipelineRunSection } from '../../utils/pipeline-run-sections';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import type { SceneObjectType } from '@/modules/fractal/contracts/scene';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
 interface ObjectsPanelProps {
@@ -122,6 +125,17 @@ const ObjectsPanel = ({
         setSceneColor: s.setSceneColor,
         setSceneEdges: s.setSceneEdges
     })));
+
+    // A checked visual element joins what the viewport already shows, in the same place, rather than
+    // being laid out beside it: it goes into the merge group of the first scene on screen.
+    const addSceneInPlace = useCallback((scene: SceneObjectType) => {
+        const { activeScenes, mergeScenes } = useEditorStore.getState();
+        const anchor = activeScenes[0];
+        addScene(scene);
+        if (anchor && !isSameScene(anchor, scene)) {
+            mergeScenes([getSceneKey(anchor), getSceneKey(scene)]);
+        }
+    }, [addScene]);
 
     // ------------------------------------------------------------------ the selected pipeline
 
@@ -291,7 +305,7 @@ const ObjectsPanel = ({
             activeScene={activeScene}
             onSelectScene={onSelectScene}
             isSceneActive={isSceneInActiveScenes}
-            onAddScene={addScene}
+            onAddScene={addSceneInPlace}
             onRemoveScene={removeScene}
         />
     );
@@ -309,7 +323,7 @@ const ObjectsPanel = ({
             onSelectKey={setSelectedKey}
             onSelectScene={onSelectScene}
             isSceneInActiveScenes={isSceneInActiveScenes}
-            addScene={addScene}
+            addScene={addSceneInPlace}
             removeScene={removeScene}
             showSimulationCell={showSimulationCell}
             onToggleSimulationCell={() => setShowSimulationCell(!showSimulationCell)}
