@@ -315,6 +315,7 @@ const ObjectsPanel = ({
             onToggleSimulationCell={() => setShowSimulationCell(!showSimulationCell)}
             onToggleStage={(stageId) => toggleStageEnabled(stageId, pipelineKey)}
             onMoveStage={moveStage}
+            onReorderStage={(stageId, index) => reorderStage(stageId, index, pipelineKey)}
             onRemoveStage={deleteStage}
             onDeleteAnalysis={onDeleteAnalysis}
             onRetryLoadExposures={onRetryLoadExposures}
