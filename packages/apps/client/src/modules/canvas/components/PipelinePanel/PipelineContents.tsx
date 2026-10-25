@@ -343,7 +343,11 @@ const PipelineContents = ({
                             ariaLabel: `${isTrajectoryInScene ? 'Remove' : 'Add'} the trajectory ${isTrajectoryInScene ? 'from' : 'to'} the scene`,
                             onChange: (next) => (next ? addScene(TRAJECTORY_SCENE) : removeScene(TRAJECTORY_SCENE))
                         }}
-                        onSelect={() => onSelectKey(panelItemKey.trajectory)}
+                        onSelect={() => {
+                            // Like a model's row, the trajectory's shows it, keeping the current analysis.
+                            onSelectKey(panelItemKey.trajectory);
+                            onSelectScene(TRAJECTORY_SCENE, analysisSections.find((candidate) => candidate.isCurrentAnalysis)?.analysis);
+                        }}
                     />
                     <PanelRow
                         id='canvas-visual-simulation-cell'
