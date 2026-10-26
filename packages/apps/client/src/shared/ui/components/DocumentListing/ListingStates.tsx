@@ -3,8 +3,8 @@ import { Button } from '@heroui/react';
 import { CircleAlert, RefreshCw } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-// What a listing shows in place of its rows. The empty and access states are one tile where the
-// table would be; an error keeps the page around it, so it reads as a notice, not a lone state.
+// What a listing shows in place of its rows. The empty and access states fill the room where the
+// table would be, with no tile behind them; an error keeps the page around it, so it reads as a notice, not a lone state.
 
 interface ListingEmptyStateProps {
     icon?: ReactNode;
@@ -23,7 +23,7 @@ export const ListingEmptyState = ({
     isActionPending,
     onAction
 }: ListingEmptyStateProps) => (
-    <div className='rounded-3xl bg-foreground/4 px-6 py-16'>
+    <div className='flex min-h-0 flex-1 flex-col'>
         <RecoveryState
             icon={icon}
             title={title}
@@ -41,7 +41,7 @@ interface ListingAccessDeniedStateProps {
 };
 
 export const ListingAccessDeniedState = ({ description }: ListingAccessDeniedStateProps) => (
-    <div className='rounded-3xl bg-foreground/4 px-6 py-16'>
+    <div className='flex min-h-0 flex-1 flex-col'>
         <RecoveryState
             title='Access denied'
             description={description}

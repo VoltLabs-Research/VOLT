@@ -252,7 +252,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
     // A table listing is the page: the mockup's wide page body, 80rem at most. The grid view sits
     // inside a page of its own and takes no padding here.
     return (
-        <div className={cn('flex h-full flex-col isolate', view === 'table' && 'mx-auto w-full max-w-7xl px-6 pt-3 pb-8')}>
+        <div className={cn('flex h-full min-h-0 flex-1 flex-col isolate', view === 'table' && 'mx-auto w-full max-w-7xl px-6 pt-3 pb-8')}>
             <span className='sr-only' aria-live='polite' aria-atomic='true'>
                 {describeSortState(columns, sortConfig)}
             </span>

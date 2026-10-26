@@ -11,7 +11,7 @@ import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { FolderPlus, Server, Upload } from 'lucide-react';
 
-const PAGE_CLASS = 'mx-auto flex w-full max-w-[1440px] flex-col gap-6 p-4 max-[768px]:gap-3 max-[768px]:p-3';
+const PAGE_CLASS = 'mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col gap-6 p-4 max-[768px]:gap-3 max-[768px]:p-3';
 
 const DashboardPage = () => {
     usePageTitle('Dashboard');
