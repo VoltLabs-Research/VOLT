@@ -274,7 +274,7 @@ const DocumentListingTable = <T extends Identifiable>({
 
     // The frame holds to its rows and grows up to the page; past that the body scrolls under a
     // header that stays put. HeroUI's primary table finish: the header on the frame, the rows on
-    // a surface inset 4px, so its corners are the frame's minus that inset.
+    // the page's own background inset 4px, so its corners are the frame's minus that inset.
     return (
         <div
             className='flex max-h-full min-h-0 flex-col overflow-x-auto overflow-y-hidden rounded-2xl bg-surface-secondary px-1 pb-1 [-webkit-overflow-scrolling:touch]'
@@ -330,7 +330,7 @@ const DocumentListingTable = <T extends Identifiable>({
                 </div>
             )}
 
-            <div className='flex min-h-0 shrink flex-col overflow-clip rounded-xl' style={{ minWidth: minContentWidth }}>
+            <div className='flex min-h-0 shrink flex-col overflow-clip rounded-xl bg-canvas' style={{ minWidth: minContentWidth }}>
                 <Scrollable ref={scrollContainerRef} className='relative flex min-h-0 flex-col' role='rowgroup'>
                     {dragAndDrop ? (
                         <DndContext sensors={sensors} onDragEnd={dispatchDragEnd}>
