@@ -65,30 +65,6 @@
     color: var(--lp-dim);
 }
 
-.landing-heading {
-    font-size: clamp(1.7rem, 2.6vw, 2.5rem);
-    line-height: 1.14;
-    letter-spacing: -0.026em;
-    font-weight: 400;
-}
-
-.landing-dual > span {
-    display: block;
-    text-wrap: balance;
-}
-
-.landing-dual > span + span {
-    color: var(--lp-dim);
-}
-
-.landing-lead {
-    max-width: 44ch;
-    font-size: clamp(1rem, 1.15vw, 1.1875rem);
-    line-height: 1.5;
-    letter-spacing: -0.012em;
-    color: var(--lp-dim);
-}
-
 .landing-pill {
     display: inline-flex;
     align-items: center;
@@ -287,36 +263,6 @@
     margin-top: clamp(28px, 4.4vh, 44px);
 }
 
-/* Notes: a short title and a line or two under a rule, as the tour's steps and what the
-   assistant does are listed. */
-
-.landing-note {
-    position: relative;
-    display: grid;
-    align-content: start;
-    gap: 6px;
-    padding-top: 14px;
-    border-top: 1px solid var(--lp-line-mid);
-}
-
-.landing-note .landing-mono {
-    font-size: 0.75rem;
-    color: var(--lp-faint);
-}
-
-.landing-note h3 {
-    font-size: 1.0625rem;
-    font-weight: 400;
-    letter-spacing: -0.015em;
-}
-
-.landing-note p {
-    max-width: 52ch;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    color: var(--lp-dim);
-}
-
 /* Screens: the app's pages, scaled into the page from their own documents. */
 
 .landing-screen {
@@ -347,169 +293,6 @@
 
 .landing-screen[data-ready='true'] iframe {
     opacity: 1;
-}
-
-/* Pinned tracks: the tour and the showcase hold their stage under the header while the page
-   scrolls through them, four fifths of a viewport for each of their steps, with the stage's
-   own height on top (see use-pinned-track.ts). */
-
-@media (width >= 64rem) {
-    .landing-track {
-        --lp-step: 80vh;
-        position: relative;
-        height: calc(var(--landing-steps) * var(--lp-step) + 100dvh);
-    }
-
-    .landing-stage {
-        position: sticky;
-        top: var(--lp-header);
-        display: grid;
-        align-items: center;
-        height: calc(100dvh - var(--lp-header));
-    }
-
-    /* Where a link to a step lands: halfway through its stretch. */
-    .landing-track-mark {
-        position: absolute;
-        top: calc((var(--landing-step) + 0.5) * var(--lp-step));
-    }
-}
-
-/* Steps: a row of notes under what is pinned, each ruled with how far the page is through it. */
-
-.landing-steps {
-    display: grid;
-    gap: 22px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-/* The step's number beside its title, and what it shows under the title. */
-.landing-steps li {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: baseline;
-    column-gap: 12px;
-    transition: opacity 0.5s var(--lp-ease);
-}
-
-.landing-steps p {
-    grid-column: 2;
-}
-
-.landing-steps-progress {
-    position: absolute;
-    top: -1px;
-    inset-inline: 0;
-    height: 1px;
-    background: var(--lp-fg);
-    transform-origin: 0 50%;
-}
-
-@media (width >= 64rem) {
-    .landing-steps {
-        grid-auto-columns: minmax(0, 1fr);
-        grid-auto-flow: column;
-        gap: clamp(24px, 2.6vw, 48px);
-    }
-
-    .landing-steps li {
-        opacity: 0.36;
-    }
-
-    .landing-steps li[data-active='true'] {
-        opacity: 1;
-    }
-}
-
-/* Viewer tour: the canvas, pinned, while its steps go by. */
-
-.landing-tour-frame {
-    display: grid;
-    gap: 24px;
-    padding-bottom: var(--lp-section-y);
-}
-
-@media (width >= 64rem) {
-    /* As wide as the screen can be while it, the row of steps under it (two lines each) and
-       the space around them fit the viewport's height. */
-    .landing-tour-frame {
-        width: 100%;
-        max-width: calc((100dvh - var(--lp-header) - 9.5rem) * var(--lp-screen-width) / var(--lp-screen-height) + 2 * var(--lp-gutter));
-        padding-bottom: 0;
-    }
-}
-
-/* Showcase: what the platform does, a chapter at a time, beside the page of the app that
-   does it. */
-
-.landing-chapters {
-    display: grid;
-    gap: var(--lp-section-y);
-}
-
-.landing-chapter {
-    display: grid;
-    gap: clamp(32px, 4vw, 56px);
-}
-
-.landing-chapter-copy {
-    display: grid;
-    gap: clamp(18px, 2vw, 32px);
-}
-
-.landing-eyebrow {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    font-size: clamp(1rem, 1.3vw, 1.25rem);
-    letter-spacing: -0.012em;
-}
-
-.landing-eyebrow .landing-mono {
-    font-size: 0.8125rem;
-    color: var(--lp-faint);
-}
-
-@media (width >= 64rem) {
-    .landing-showcase {
-        display: grid;
-        gap: clamp(32px, 4.4vh, 56px);
-        width: 100%;
-    }
-
-    /* Pinned, the chapters stack in one place and only the one the page is in shows: what the
-       others say waits a little above or below, as far as the page has gone. */
-    .landing-chapter {
-        grid-area: 1 / 1;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-        align-items: center;
-        column-gap: clamp(32px, 4vw, 72px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.6s var(--lp-ease);
-    }
-
-    .landing-chapter[data-active='true'] {
-        opacity: 1;
-        pointer-events: auto;
-    }
-
-    .landing-chapter-copy {
-        transform: translateY(calc(var(--landing-away) * 24px));
-        transition: transform 0.6s var(--lp-ease);
-    }
-
-    /* The row of steps under the chapters names them. */
-    .landing-chapter .landing-eyebrow {
-        display: none;
-    }
-
-    /* As wide as its column, unless that leaves no room for the steps under it. */
-    .landing-chapter .landing-screen {
-        max-width: min(calc(var(--lp-screen-width) * 1px), calc((100dvh - var(--lp-header) - 12rem) * var(--lp-screen-width) / var(--lp-screen-height)));
-        margin-inline-end: 0;
-    }
 }
 
 /* Runtimes */
@@ -584,72 +367,10 @@
     }
 }
 
-/* Closing */
-
-.landing-closing {
-    display: grid;
-    justify-items: center;
-    gap: clamp(36px, 4vw, 56px);
-    padding-block: clamp(120px, 14vw, 240px);
-    text-align: center;
-}
-
-.landing-closing-title {
-    font-size: clamp(3.25rem, 9vw, 11rem);
-    font-weight: 500;
-    line-height: 0.88;
-    letter-spacing: -0.062em;
-}
-
-.landing-closing-title > span {
-    display: block;
-}
-
 /* Footer */
 
 .landing-footer {
     overflow: hidden;
-    border-top: 1px solid var(--lp-line);
-}
-
-.landing-footer-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px 20px;
-    padding-top: clamp(40px, 4vw, 64px);
-    padding-bottom: 40px;
-}
-
-.landing-footer-about {
-    grid-column: 1 / -1;
-    display: grid;
-    gap: 10px;
-    align-content: start;
-}
-
-.landing-footer-about p,
-.landing-footer nav p {
-    font-size: 0.8125rem;
-    color: var(--lp-faint);
-}
-
-.landing-footer nav {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-size: 0.875rem;
-}
-
-.landing-footer-base {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 26px;
-    border-top: 1px solid var(--lp-line);
-    font-size: 0.8125rem;
-    color: var(--lp-faint);
 }
 
 .landing-wordmark {
@@ -664,16 +385,6 @@
     -webkit-background-clip: text;
     background-clip: text;
     user-select: none;
-}
-
-@media (width >= 48rem) {
-    .landing-footer-grid {
-        grid-template-columns: 1.6fr 1fr 1fr;
-    }
-
-    .landing-footer-about {
-        grid-column: auto;
-    }
 }
 
 @media (width < 64rem) {
@@ -707,10 +418,7 @@
         animation: none;
     }
 
-    .landing-screen iframe,
-    .landing-steps li,
-    .landing-chapter,
-    .landing-chapter-copy {
+    .landing-screen iframe {
         transition: none;
     }
 
