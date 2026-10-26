@@ -131,11 +131,11 @@ const DocumentListingGrid = <T extends Identifiable,>({
     };
 
     const grid = (
-        <Scrollable ref={containerRef} className={cn('grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] content-start gap-4 max-md:grid-cols-1 max-md:p-4', className)}>
+        <Scrollable ref={containerRef} className={cn('grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4 max-md:grid-cols-1 max-md:p-4', shouldShowEmptyState || shouldShowAccessDeniedState ? 'grid-rows-1' : 'content-start', className)}>
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <div className='col-span-full'>
+                <div className='col-span-full flex min-h-0 flex-col'>
                     <ListingEmptyState
                         icon={emptyIcon}
                         title={emptyTitle}
@@ -160,7 +160,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
             )}
 
             {shouldShowAccessDeniedState && (
-                <div className='col-span-full'>
+                <div className='col-span-full flex min-h-0 flex-col'>
                     <ListingAccessDeniedState description={errorMessage ?? "You don't have permission to view these items."} />
                 </div>
             )}

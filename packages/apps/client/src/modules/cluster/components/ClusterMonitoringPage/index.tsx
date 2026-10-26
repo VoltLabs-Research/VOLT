@@ -85,15 +85,15 @@ const ClusterMonitoringPage = () => {
 
     return (
         <Scrollable className='h-full! text-foreground'>
-            <div className='flex flex-col gap-4 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
+            <div className='flex min-h-full flex-col gap-4 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
                 {vm.isLoading && !vm.hasClusters && (
-                    <div className='flex min-h-72 items-center justify-center'>
+                    <div className='flex min-h-72 flex-1 items-center justify-center'>
                         <Loader />
                     </div>
                 )}
 
                 {!vm.isLoading && !vm.hasClusters && (
-                    <div className='flex min-h-72 flex-col items-center justify-center gap-4 text-center'>
+                    <div className='flex min-h-72 flex-1 flex-col items-center justify-center gap-4 text-center'>
                         <div className='flex flex-col gap-2'>
                             <h1 className='text-base font-medium text-foreground'>No clusters connected yet</h1>
                             <p className='max-w-sm text-sm text-muted'>
@@ -118,6 +118,7 @@ const ClusterMonitoringPage = () => {
                         title={metricsUnavailableState.title}
                         description={metricsUnavailableState.description}
                         tone={metricsUnavailableState.tone}
+                        className='flex-1'
                     />
                 )}
 
