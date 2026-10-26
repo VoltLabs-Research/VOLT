@@ -65,6 +65,7 @@ export const createFolderResourceQueries = <
     const listingQueryKeys = config.listingQueryKeys ?? [];
 
     return {
+        foldersRootKey,
         foldersQueryKey,
         folderQueryKey,
         foldersQuery,
