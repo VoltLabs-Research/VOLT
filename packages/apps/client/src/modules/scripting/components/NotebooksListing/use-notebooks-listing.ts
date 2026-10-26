@@ -62,10 +62,7 @@ const DELETE_NOTEBOOK_TOAST = createCrudToastOptions({
 
 const CREATE_NOTEBOOK_TOAST = {
     loading: { title: 'Creating notebook...' },
-    success: {
-        title: 'Notebook created successfully',
-        description: 'General notebooks are added to the List tab.'
-    },
+    success: { title: 'Notebook created successfully' },
     error: { title: 'Failed to create notebook' }
 };
 
