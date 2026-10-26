@@ -1,53 +1,19 @@
 import { RENAME_SCRIPTING_NOTEBOOK_MODAL_ID } from '@/modules/scripting/contracts/modal-ids';
 import ScriptingNotebookDeploymentModal from '@/modules/scripting/components/ScriptingNotebookDeploymentModal';
 import useNotebooksListing from './use-notebooks-listing';
+import type { NotebooksListingContext } from './use-notebooks-listing';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import { clusterColumn, dateColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import DockerNeededState from '@/shared/ui/components/DockerNeededState';
 import { useContainerRuntimeAvailability } from '@/modules/cluster/hooks/use-container-runtime-availability';
-import PopulatedCellPopover from '@/shared/ui/components/PopulatedCellPopover';
 import RenameEntityModal from '@/shared/ui/components/RenameEntityModal';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
-import type { DocumentListingTab } from '@/shared/ui/components/DocumentListing/DocumentListingHeader';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import { useCallback, useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
-import type { NotebooksListingContext } from './use-notebooks-listing';
 import type { ScriptingNotebook } from '@volt/contracts/modules/scripting/domain';
 
-enum NotebooksListingTabId {
-    List = 'list',
-    Trajectory = 'trajectory'
-};
-
-interface NotebooksListingTabView {
-    columns: ColumnConfig<ScriptingNotebook>[];
-    context: NotebooksListingContext;
-    emptyTitle: string;
-    emptyMessage: string;
-    emptyButtonText: string;
-};
-
-const NOTEBOOK_TABS: DocumentListingTab[] = [
-    {
-        id: NotebooksListingTabId.List,
-        label: 'List'
-    },
-    {
-        id: NotebooksListingTabId.Trajectory,
-        label: 'Trajectory Notebooks'
-    }
-];
-
-const renderTrajectoryDetails: NonNullable<ColumnConfig<ScriptingNotebook>['render']> = (_value, row) => {
-    const trajectory = typeof row.trajectory === 'string' ? null : row.trajectory ?? null;
-
-    return (
-        <PopulatedCellPopover document={trajectory} modelName='Trajectory'>
-            <span className='truncate'>{trajectory?.name?.trim() || ''}</span>
-        </PopulatedCellPopover>
-    );
-};
+// Trajectory notebooks live in their trajectory's workspace; this page lists the general ones.
+const NOTEBOOKS_CONTEXT: NotebooksListingContext = { scope: ScriptingNotebookScope.General };
 
 const TITLE_COLUMN: ColumnConfig<ScriptingNotebook> = {
     key: 'title',
@@ -57,17 +23,6 @@ const TITLE_COLUMN: ColumnConfig<ScriptingNotebook> = {
     skeleton: {
         variant: 'text',
         width: 180
-    }
-};
-
-const TRAJECTORY_COLUMN: ColumnConfig<ScriptingNotebook> = {
-    key: 'trajectory',
-    title: 'Trajectory',
-    sortable: false,
-    render: renderTrajectoryDetails,
-    skeleton: {
-        variant: 'text',
-        width: 150
     }
 };
 
@@ -81,22 +36,7 @@ const LAST_OPENED_AT_COLUMN = dateColumn<ScriptingNotebook>('lastOpenedAt', 'Las
     fallback: '-'
 });
 
-const NOTEBOOK_TAB_VIEWS: Record<NotebooksListingTabId, NotebooksListingTabView> = {
-    [NotebooksListingTabId.List]: {
-        columns: [TITLE_COLUMN, CLUSTER_COLUMN, CREATED_BY_COLUMN, LAST_OPENED_AT_COLUMN],
-        context: { scope: ScriptingNotebookScope.General },
-        emptyTitle: 'No notebooks yet',
-        emptyMessage: 'Create a general notebook to start drafting scripts and experiments.',
-        emptyButtonText: 'Create notebook'
-    },
-    [NotebooksListingTabId.Trajectory]: {
-        columns: [TITLE_COLUMN, TRAJECTORY_COLUMN, CLUSTER_COLUMN, CREATED_BY_COLUMN, LAST_OPENED_AT_COLUMN],
-        context: { scope: ScriptingNotebookScope.Trajectory },
-        emptyTitle: 'No trajectory notebooks yet',
-        emptyMessage: 'Open a notebook from a trajectory workspace to keep it tied to a run.',
-        emptyButtonText: 'View general notebooks'
-    }
-};
+const NOTEBOOK_COLUMNS: ColumnConfig<ScriptingNotebook>[] = [TITLE_COLUMN, CLUSTER_COLUMN, CREATED_BY_COLUMN, LAST_OPENED_AT_COLUMN];
 
 const getNotebookTitle = (notebook: ScriptingNotebook): string => notebook.title;
 
@@ -117,7 +57,6 @@ const NOTEBOOK_RENAME_INPUT_PROPS: InputHTMLAttributes<HTMLInputElement> = {
 
 const NotebooksListing = () => {
     const containerRuntime = useContainerRuntimeAvailability();
-    const [activeTab, setActiveTab] = useState<NotebooksListingTabId>(NotebooksListingTabId.List);
     const {
         opensInBrowser,
         fetchData,
@@ -133,24 +72,6 @@ const NotebooksListing = () => {
         socketInvalidation
     } = useNotebooksListing();
 
-    const view = NOTEBOOK_TAB_VIEWS[activeTab];
-    const isTrajectoryTab = activeTab === NotebooksListingTabId.Trajectory;
-    const createNew = isTrajectoryTab
-        ? undefined
-        : {
-            buttonTitle: 'New Notebook',
-            onCreate: handleCreate
-        };
-
-    const handleEmptyStateAction = useCallback(() => {
-        if (activeTab === NotebooksListingTabId.Trajectory) {
-            setActiveTab(NotebooksListingTabId.List);
-            return;
-        }
-
-        handleCreate();
-    }, [activeTab, handleCreate]);
-
     // Kernels in this window need no containers.
     if(containerRuntime === 'unavailable' && !opensInBrowser) return <DockerNeededState feature='Notebooks' />;
 
@@ -158,21 +79,20 @@ const NotebooksListing = () => {
         <>
             <DocumentListing<ScriptingNotebook, NotebooksListingContext>
                 title='Notebooks'
-                description='Python notebooks that run on your clusters, next to the trajectory data.'
                 queryKey={queryKey}
-                columns={view.columns}
-                context={view.context}
-                tabs={NOTEBOOK_TABS}
-                defaultTabId={NotebooksListingTabId.List}
+                columns={NOTEBOOK_COLUMNS}
+                context={NOTEBOOKS_CONTEXT}
                 fetchData={fetchData}
                 getMenuOptions={getMenuOptions}
                 onItemClick={handleItemClick}
-                createNew={createNew}
-                emptyTitle={view.emptyTitle}
-                emptyMessage={view.emptyMessage}
-                emptyButtonText={view.emptyButtonText}
-                onEmptyButtonClick={handleEmptyStateAction}
-                onTabChange={(tabId) => setActiveTab(tabId as NotebooksListingTabId)}
+                createNew={{
+                    buttonTitle: 'New Notebook',
+                    onCreate: handleCreate
+                }}
+                emptyTitle='No notebooks yet'
+                emptyMessage='Create a general notebook to start drafting scripts and experiments.'
+                emptyButtonText='Create notebook'
+                onEmptyButtonClick={handleCreate}
                 socketInvalidation={socketInvalidation}
             />
             <RenameEntityModal
