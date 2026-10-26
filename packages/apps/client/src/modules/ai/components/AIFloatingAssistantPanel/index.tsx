@@ -6,7 +6,7 @@ import PanelHeader from '@/shared/ui/components/PanelHeader';
 import { FOCUSABLE_BASE_SELECTOR } from '@/shared/ui/utils/focusable';
 import { useCallback, useEffect, useId, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Expand, Plus, Sparkles } from 'lucide-react';
+import { Bot, Expand, Plus } from 'lucide-react';
 import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject } from 'react';
@@ -174,7 +174,7 @@ const AIFloatingAssistantPanel = ({ compact = false }: AIFloatingAssistantPanelP
                     className={isOpen ? 'bg-foreground/8 text-foreground' : undefined}
                     onPress={toggleWidget}
                 >
-                    <Sparkles size={compact ? 14 : 18} aria-hidden='true' />
+                    <Bot size={compact ? 14 : 18} aria-hidden='true' />
                 </Button>
                 <Tooltip.Content placement='bottom'>Volt AI</Tooltip.Content>
             </Tooltip>
