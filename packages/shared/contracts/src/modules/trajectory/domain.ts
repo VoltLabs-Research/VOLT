@@ -57,6 +57,8 @@ export interface TrajectoryFolder extends BaseEntity{
     title: string;
     parent: string | null;
     stats?: TrajectoryStats;
+    // The folder subtree's most recently edited trajectories that have a preview, newest first.
+    previewTrajectoryIds?: string[];
 }
 
 export const SCENE_ARTIFACT_SOURCE_TYPES = ['color-coding', 'particle-filter', 'plugin-exposure'] as const;

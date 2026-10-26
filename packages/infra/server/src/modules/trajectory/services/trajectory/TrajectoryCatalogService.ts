@@ -37,7 +37,12 @@ import type {
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
 
 export type TrajectoryFolderView = Awaited<ReturnType<CatalogFolderService['get']>>;
-export type TrajectoryFolderListingView = TrajectoryFolderView & { stats: TrajectoryStats };
+export type TrajectoryFolderListingView = TrajectoryFolderView & { stats: TrajectoryStats; previewTrajectoryIds: string[] };
+
+interface FolderSummary {
+    stats: TrajectoryStats;
+    previewTrajectoryIds: string[];
+}
 export type TrajectoryFolderQuery = NonNullable<Parameters<CatalogFolderService['list']>[1]>;
 
 const EMPTY_TRAJECTORY_STATS: TrajectoryStats = {
@@ -51,6 +56,9 @@ const addTrajectoryStats = (target: TrajectoryStats, source: TrajectoryStats | n
 });
 
 const LIST_DEFAULT_LIMIT = 20;
+
+// How many trajectory previews a folder card stacks.
+const FOLDER_PREVIEW_LIMIT = 3;
 
 const requireTrajectoryWithTeam = async (trajectoryId: string): Promise<Trajectory> => {
     const trajectory = await Trajectory.findOne({
@@ -198,18 +206,20 @@ class TrajectoryCatalogService {
 
     async listFolders(teamId: string, query: TrajectoryFolderQuery): Promise<PaginatedResult<TrajectoryFolderListingView>> {
         const result = await this.#folders.list(teamId, query);
-        const statsByFolder = await this.#aggregateFolderStats(teamId, result.data.map((folder) => folder._id));
+        const summaryByFolder = await this.#summarizeFolders(teamId, result.data.map((folder) => folder._id));
 
         return {
             ...result,
             data: result.data.map((folder) => ({
                 ...folder,
-                stats: statsByFolder.get(folder._id) ?? EMPTY_TRAJECTORY_STATS
+                stats: summaryByFolder.get(folder._id)?.stats ?? EMPTY_TRAJECTORY_STATS,
+                previewTrajectoryIds: summaryByFolder.get(folder._id)?.previewTrajectoryIds ?? []
             }))
         };
     }
 
-    async #aggregateFolderStats(teamId: string, folderIds: string[]): Promise<Map<string, TrajectoryStats>> {
+    // Totals each folder's subtree, and picks its most recently edited trajectories that have a preview.
+    async #summarizeFolders(teamId: string, folderIds: string[]): Promise<Map<string, FolderSummary>> {
         const subtrees = await this.#folders.subtreeIds(teamId, folderIds);
         const subtreeFolderIds = [...new Set([...subtrees.values()].flat())];
         if (subtreeFolderIds.length === 0) return new Map();
@@ -222,8 +232,11 @@ class TrajectoryCatalogService {
             select: {
                 id: true,
                 folder: true,
-                stats: true
-            }
+                stats: true,
+                hasPreview: true,
+                updatedAt: true
+            },
+            order: { updatedAt: 'DESC' }
         });
 
         const statsByLeafFolder = new Map<string, TrajectoryStats>();
@@ -236,18 +249,23 @@ class TrajectoryCatalogService {
             );
         }
 
-        const statsByFolder = new Map<string, TrajectoryStats>();
+        const previewed = trajectories.filter((trajectory) => trajectory.hasPreview && trajectory.folder);
+        const summaryByFolder = new Map<string, FolderSummary>();
         for (const [folderId, subtreeIds] of subtrees) {
-            statsByFolder.set(
-                folderId,
-                subtreeIds.reduce(
+            const subtree = new Set(subtreeIds);
+            summaryByFolder.set(folderId, {
+                stats: subtreeIds.reduce(
                     (total, subtreeId) => addTrajectoryStats(total, statsByLeafFolder.get(subtreeId)),
                     EMPTY_TRAJECTORY_STATS
-                )
-            );
+                ),
+                previewTrajectoryIds: previewed
+                    .filter((trajectory) => subtree.has(String(trajectory.folder)))
+                    .slice(0, FOLDER_PREVIEW_LIMIT)
+                    .map((trajectory) => trajectory.id)
+            });
         }
 
-        return statsByFolder;
+        return summaryByFolder;
     }
 
     getFolder(teamId: string, folderId: string): Promise<TrajectoryFolderView> {
