@@ -303,13 +303,11 @@ const useNotebooksListing = () => {
         }
     });
 
+    // A click opens the notebook as the menu's Open does. Its tab is opened inside this click, before any await, so it isn't blocked as a popup.
     const handleItemClick = useCallback((notebook: ScriptingNotebook): boolean => {
-        if (!opensInBrowser) {
-            return false;
-        }
-        navigate(notebookEditorPath(notebook._id));
+        void handleOpenInNewTab(notebook);
         return true;
-    }, [navigate]);
+    }, [handleOpenInNewTab]);
 
     return {
         opensInBrowser,
