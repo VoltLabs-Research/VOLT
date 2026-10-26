@@ -86,7 +86,6 @@ const JobsStatus = ({ counts, onNavigate }: JobsStatusProps) => {
         <>
             <div className='flex items-center justify-between gap-3 px-2.5 pt-2 pb-1.5'>
                 <h2 className='text-base font-medium'>Compute jobs</h2>
-                <span className='text-xs text-muted'>All trajectories</span>
             </div>
 
             <div className='flex flex-wrap items-center gap-3 px-2.5 pb-1 text-xs text-muted'>
