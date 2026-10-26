@@ -253,7 +253,8 @@ const PipelineItemEditor = ({
 
     const stage = editableStages.find((candidate) => panelItemKey.stage(candidate.id) === selectedKey);
     if (stage) {
-        const title = describeDraftStage(stage, pluginNameById);
+        // The expression is already in its own field, so its rollout is named by the modifier.
+        const title = stage.type === 'expression-select' ? 'Expression select' : describeDraftStage(stage, pluginNameById);
         return (
             <Rollout title={title}>
                 {stage.type === 'slice-plane' && <SlicePlane stageId={stage.id} trajectoryId={pipelineKey} />}

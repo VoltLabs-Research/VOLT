@@ -1,10 +1,19 @@
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import useExpressionSelect from './use-expression-select';
 import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
-import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import StageEditorLayout from '../StageEditorLayout';
-import { Button } from '@heroui/react';
-import { useState } from 'react';
+import {
+    Button,
+    ColorArea,
+    ColorField,
+    ColorPicker,
+    ColorSlider,
+    ColorSwatch,
+    ToggleButton,
+    ToggleButtonGroup,
+    cn
+} from '@heroui/react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
     type ExpressionSelectAction,
@@ -21,18 +30,13 @@ interface ExpressionSelectStageEditorProps {
     onSave?: () => void;
 }
 
-const TEXTAREA_ROWS = 3;
-
-const ACTION_OPTIONS = [
-    {
-        value: 'color',
-        title: 'Color selection'
-    },
-    {
-        value: 'delete',
-        title: 'Delete selection'
-    }
+const ACTION_OPTIONS: { value: ExpressionSelectAction; label: string }[] = [
+    { value: 'color', label: 'Color' },
+    { value: 'delete', label: 'Delete' }
 ];
+
+const isExpressionSelectAction = (value: string): value is ExpressionSelectAction =>
+    ACTION_OPTIONS.some((option) => option.value === value);
 
 const ExpressionSelectStageEditor = ({
     stageId,
@@ -46,7 +50,9 @@ const ExpressionSelectStageEditor = ({
 
     const action = config?.action ?? 'color';
     const color = config?.color ?? DEFAULT_EXPRESSION_SELECT_COLOR;
-    const [draft, setDraft] = useState(config?.expression ?? '');
+    const appliedExpression = config?.expression ?? '';
+    const [draft, setDraft] = useState(appliedExpression);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const { data: atomBuffer } = trajectoryAtomsQuery(
         {
@@ -66,96 +72,140 @@ const ExpressionSelectStageEditor = ({
         0
     );
 
+    // The field grows with the expression instead of showing a resize handle.
+    useLayoutEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+    }, [draft]);
+
+    const hasExpression = draft.trim().length > 0;
+    const isDirty = draft !== appliedExpression;
+    const canApply = hasExpression && isDirty && (autoRoute || isValid);
+    const isDelete = action === 'delete';
+
+    // The count covers the atoms loaded for preview; say so when that is not the whole frame.
+    const sampleSize = atomBuffer?.count ?? 0;
+    const isWholeFrame = Boolean(atomBuffer && atomBuffer.total <= atomBuffer.count);
+    const hasCount = hasExpression && isValid && matchCount !== null;
+
+    let status: string | null = null;
+    if (autoRoute && hasExpression) {
+        status = 'Large dataset — evaluated on the daemon';
+    } else if (hasCount) {
+        status = `${matchCount.toLocaleString()} of ${isWholeFrame ? '' : 'first '}${sampleSize.toLocaleString()} atoms`;
+    }
+
+    const applyLabel = isDelete && hasCount && isWholeFrame
+        ? `Delete ${matchCount.toLocaleString()} atoms`
+        : 'Apply';
+
     const handleApply = () => {
         patch({ expression: draft });
         onSave?.();
     };
 
-    const handleClear = () => {
-        setDraft('');
-        patch({ expression: '' });
-    };
-
-    const hasExpression = draft.trim().length > 0;
-
     return (
         <StageEditorLayout
             footer={(
-                <div className='flex flex-row items-center gap-2'>
-                    <Button
-                        variant='primary'
-                        size='sm'
-                        className='text-xs'
-                        onPress={handleApply}
-                        isDisabled={!hasExpression || (!autoRoute && !isValid)}
-                    >
-                        Apply
-                    </Button>
-                    {hasExpression && (
+                <div className='flex flex-row items-center justify-end gap-2'>
+                    {isDirty && (
                         <Button
                             variant='ghost'
                             size='sm'
                             className='text-xs'
-                            onPress={handleClear}
+                            onPress={() => setDraft(appliedExpression)}
                         >
-                            Clear
+                            Revert
                         </Button>
                     )}
+                    <Button
+                        variant={isDelete ? 'danger' : 'primary'}
+                        size='sm'
+                        className='text-xs'
+                        onPress={handleApply}
+                        isDisabled={!canApply}
+                    >
+                        {applyLabel}
+                    </Button>
                 </div>
             )}
         >
-            <span className='text-xs text-muted'>Boolean expression over atom columns</span>
-            <textarea
-                className='w-full rounded-lg border border-border bg-surface-secondary px-2 py-1.5 font-mono text-xs leading-[1.4] text-foreground w-full resize-y'
-                rows={TEXTAREA_ROWS}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder='e.g. Position.X > 10 && StructureType == 2'
-                aria-label='Expression formula'
-                spellCheck={false}
-            />
+            <div
+                className={cn(
+                    'flex flex-col rounded-xl bg-surface-secondary transition-shadow focus-within:ring-2 focus-within:ring-foreground/20',
+                    hasExpression && !isValid && !autoRoute && error && 'ring-1 ring-danger/70 focus-within:ring-danger/70'
+                )}
+            >
+                <textarea
+                    ref={textareaRef}
+                    // Its container draws the focus ring; this slot opts out of the global outline.
+                    data-slot='expression-textarea'
+                    className='w-full resize-none overflow-hidden bg-transparent px-2.5 pb-1 pt-2 font-mono text-xs leading-[1.5] text-foreground outline-none'
+                    rows={2}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder='e.g. Position.X > 10 && StructureType == 2'
+                    aria-label='Expression formula'
+                    spellCheck={false}
+                />
+                <div className='flex min-h-5 flex-row items-center justify-between gap-2 px-2.5 pb-1.5 text-2xs tabular-nums text-muted'>
+                    <span className='min-w-0 truncate text-danger'>
+                        {hasExpression && !isValid && !autoRoute ? error : null}
+                    </span>
+                    {status && <span className='shrink-0'>{status}</span>}
+                </div>
+            </div>
 
-            <FormFieldRHF
-                fieldKey='expression-select-action'
-                fieldType='select'
-                label='With selection'
-                fieldValue={action}
-                onFieldChange={(_, value) => patch({ action: String(value) as ExpressionSelectAction })}
-                options={ACTION_OPTIONS}
-                variant='canvas'
-            />
+            <ToggleButtonGroup
+                aria-label='With selection'
+                selectionMode='single'
+                disallowEmptySelection
+                selectedKeys={[action]}
+                onSelectionChange={(keys) => {
+                    for (const key of keys) {
+                        const next = String(key);
+                        if (isExpressionSelectAction(next)) patch({ action: next });
+                    }
+                }}
+                size='sm'
+                className='w-full'
+            >
+                {ACTION_OPTIONS.map((option) => (
+                    <ToggleButton key={option.value} id={option.value} className='flex-1 text-xs'>
+                        {option.label}
+                    </ToggleButton>
+                ))}
+            </ToggleButtonGroup>
 
             {action === 'color' && (
-                <div className='flex flex-row items-center gap-2'>
-                    <span className='text-xs text-muted'>Highlight color</span>
-                    <input
-                        type='color'
-                        className='h-5 w-7 cursor-pointer rounded-sm border border-border bg-transparent p-0'
+                <div className='flex flex-row items-center justify-between gap-2 text-xs'>
+                    <span className='text-muted'>Highlight</span>
+                    <ColorPicker
                         value={color}
-                        onChange={(e) => patch({ color: e.target.value })}
-                        aria-label='Selection highlight color'
-                    />
+                        onChange={(next) => patch({ color: next.toString('hex') })}
+                    >
+                        <ColorPicker.Trigger aria-label='Selection highlight color'>
+                            <ColorSwatch size='sm' />
+                        </ColorPicker.Trigger>
+                        <ColorPicker.Popover>
+                            <ColorArea colorSpace='hsb' xChannel='saturation' yChannel='brightness'>
+                                <ColorArea.Thumb />
+                            </ColorArea>
+                            <ColorSlider colorSpace='hsb' channel='hue' aria-label='Hue'>
+                                <ColorSlider.Track>
+                                    <ColorSlider.Thumb />
+                                </ColorSlider.Track>
+                            </ColorSlider>
+                            <ColorField aria-label='Hex color'>
+                                <ColorField.Group>
+                                    <ColorField.Input />
+                                </ColorField.Group>
+                            </ColorField>
+                        </ColorPicker.Popover>
+                    </ColorPicker>
                 </div>
-            )}
-
-            {hasExpression && !autoRoute && (
-                <div className='flex flex-row items-center gap-2'>
-                    {isValid && matchCount !== null && (
-                        <span className='text-xs text-muted ml-auto'>
-                            {matchCount} atoms {action === 'delete' ? 'will be deleted' : 'selected'}
-                        </span>
-                    )}
-                    {!isValid && error && (
-                        <span className='text-xs text-danger'>
-                            {error}
-                        </span>
-                    )}
-                </div>
-            )}
-            {autoRoute && (
-                <span className='text-xs text-muted'>
-                    Large dataset — route to daemon on apply
-                </span>
             )}
         </StageEditorLayout>
     );
