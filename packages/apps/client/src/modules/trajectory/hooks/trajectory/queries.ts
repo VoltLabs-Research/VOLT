@@ -143,6 +143,8 @@ const trajectoryFolderQueries = createFolderResourceQueries<
 });
 
 export const trajectoryFoldersQuery = trajectoryFolderQueries.foldersQuery;
+// Folder rows carry their trajectories' stats and previews, so they go stale whenever a trajectory changes.
+export const TRAJECTORY_FOLDERS_QUERY_KEY = trajectoryFolderQueries.foldersRootKey;
 export const trajectoryFolderQuery = trajectoryFolderQueries.folderQuery;
 export const useCreateTrajectoryFolderMutation = trajectoryFolderQueries.useCreateFolderMutation;
 export const useUpdateTrajectoryFolderMutation = trajectoryFolderQueries.useUpdateFolderMutation;
@@ -150,7 +152,7 @@ export const useDeleteTrajectoryFolderMutation = trajectoryFolderQueries.useDele
 
 export const useMoveTrajectoryMutation = createInvalidatingMutation<void, MoveTrajectoryParams>(
     trajectoryService.move,
-    [trajectoryQuery.QUERY_KEYS.lists()]
+    [TRAJECTORY_FOLDERS_QUERY_KEY, trajectoryQuery.QUERY_KEYS.lists()]
 );
 
 export const useTrajectoriesInfiniteQuery = createInfiniteQuery<GetTrajectoriesInput, Trajectory>(

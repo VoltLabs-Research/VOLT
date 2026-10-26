@@ -27,6 +27,7 @@ import { useCallback } from 'react';
 import useTrajectoryFilePicker from './use-trajectory-file-picker';
 import useDownloadTrajectory from './use-download-trajectory';
 import {
+    TRAJECTORY_FOLDERS_QUERY_KEY,
     trajectoryFolderQuery,
     trajectoryFoldersQuery,
     trajectoryQuery,
@@ -50,15 +51,15 @@ export const trajectoriesListingResource = createFolderedListingResource({
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
     {
         event: SOCKET_TRAJECTORY_EVENTS.CREATED,
-        queryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
+        queryKeys: [TRAJECTORY_FOLDERS_QUERY_KEY, trajectoryQuery.QUERY_KEYS.lists()]
     },
     {
         event: SOCKET_TRAJECTORY_EVENTS.UPDATED,
-        queryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
+        queryKeys: [TRAJECTORY_FOLDERS_QUERY_KEY, trajectoryQuery.QUERY_KEYS.lists()]
     },
     {
         event: SOCKET_TRAJECTORY_EVENTS.DELETED,
-        queryKeys: [trajectoryQuery.QUERY_KEYS.lists()]
+        queryKeys: [TRAJECTORY_FOLDERS_QUERY_KEY, trajectoryQuery.QUERY_KEYS.lists()]
     }
 ];
 
