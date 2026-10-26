@@ -7,9 +7,9 @@ import {
     ColorSlider,
     ColorSwatch,
     Label,
-    NumberField,
-    Slider
+    NumberField
 } from '@heroui/react';
+import { useEditorStore } from '@/modules/canvas/store/editor';
 import SlicePlane from '../SlicePlane';
 import ExpressionSelectStageEditor from '../CanvasPipeline/stage-editors/ExpressionSelectStageEditor';
 import AnalysisPluginStageEditor from '../CanvasPipeline/stage-editors/AnalysisPluginStageEditor';
@@ -89,7 +89,37 @@ interface SceneLookControlsProps {
     setSceneLineWidth?: (sceneKey: string, lineWidth: number) => void;
     setSceneEdges?: (sceneKey: string, edges: boolean) => void;
     defaultLineWidth?: number;
+    showParticleSize?: boolean;
 }
+
+// Particle size is one multiplier for every point cloud, the same one Ctrl + / Ctrl - step.
+const ParticleSizeField = ({ label }: { label: string }) => {
+    const pointSizeMultiplier = useEditorStore((s) => s.pointSizeMultiplier);
+    const setPointSizeMultiplier = useEditorStore((s) => s.setPointSizeMultiplier);
+
+    return (
+        <>
+            <FieldLabel>Particle size</FieldLabel>
+            <NumberField
+                aria-label={`${label} particle size`}
+                minValue={0.1}
+                maxValue={5}
+                step={0.1}
+                formatOptions={{ maximumFractionDigits: 1 }}
+                value={pointSizeMultiplier}
+                onChange={(next) => {
+                    if (Number.isFinite(next)) setPointSizeMultiplier(next);
+                }}
+            >
+                <NumberField.Group>
+                    <NumberField.DecrementButton />
+                    <NumberField.Input />
+                    <NumberField.IncrementButton />
+                </NumberField.Group>
+            </NumberField>
+        </>
+    );
+};
 
 // The scene overrides the tree's context menus offered, as fields.
 const SceneLookControls = ({
@@ -100,7 +130,8 @@ const SceneLookControls = ({
     setSceneColor,
     setSceneLineWidth,
     setSceneEdges,
-    defaultLineWidth
+    defaultLineWidth,
+    showParticleSize
 }: SceneLookControlsProps) => {
     const override = overrides[sceneKey];
     const opacity = override?.opacity ?? 1;
@@ -109,20 +140,23 @@ const SceneLookControls = ({
         <>
             <FieldGrid>
                 <FieldLabel>Opacity</FieldLabel>
-                <Slider
+                <NumberField
                     aria-label={`${label} opacity`}
                     minValue={0}
                     maxValue={1}
                     step={0.01}
+                    formatOptions={{ style: 'percent' }}
                     value={opacity}
-                    onChange={(next) => setSceneOpacity(sceneKey, Array.isArray(next) ? next[0] : next)}
-                    className='w-full'
+                    onChange={(next) => {
+                        if (Number.isFinite(next)) setSceneOpacity(sceneKey, next);
+                    }}
                 >
-                    <Slider.Track>
-                        <Slider.Fill />
-                        <Slider.Thumb />
-                    </Slider.Track>
-                </Slider>
+                    <NumberField.Group>
+                        <NumberField.DecrementButton />
+                        <NumberField.Input />
+                        <NumberField.IncrementButton />
+                    </NumberField.Group>
+                </NumberField>
                 {setSceneColor && (
                     <>
                         <FieldLabel>Color</FieldLabel>
@@ -158,6 +192,7 @@ const SceneLookControls = ({
                         </span>
                     </>
                 )}
+                {showParticleSize && <ParticleSizeField label={label} />}
                 {setSceneLineWidth && defaultLineWidth !== undefined && (
                     <>
                         <FieldLabel>Line width</FieldLabel>
@@ -319,7 +354,7 @@ const PipelineItemEditor = ({
         if (!exposure) continue;
 
         const pluginId = resolveAnalysisPluginId(candidate.analysis);
-        const { sceneKey, isLine, isMesh, defaultLineWidth } = resolveExposureScene(exposure, pluginId, pluginsById);
+        const { sceneKey, isLine, isMesh, isAtomistic, defaultLineWidth } = resolveExposureScene(exposure, pluginId, pluginsById);
         return (
             <Rollout title={exposure.name}>
                 <SceneLookControls
@@ -330,6 +365,7 @@ const PipelineItemEditor = ({
                     setSceneLineWidth={isLine ? setSceneLineWidth : undefined}
                     setSceneEdges={isMesh ? setSceneEdges : undefined}
                     defaultLineWidth={isLine ? defaultLineWidth : undefined}
+                    showParticleSize={isAtomistic}
                 />
             </Rollout>
         );

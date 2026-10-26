@@ -16,6 +16,7 @@ export interface ExposureScene {
     sceneKey: string;
     isLine: boolean;
     isMesh: boolean;
+    isAtomistic: boolean;
     defaultLineWidth: number;
 }
 
@@ -38,6 +39,7 @@ export const resolveExposureScene = (
         sceneKey: getSceneKey(scene),
         isLine: sceneRenderMetadata?.exporter === Exporter.LINE,
         isMesh: sceneRenderMetadata?.exporter === Exporter.MESH,
+        isAtomistic: sceneRenderMetadata?.exporter === Exporter.ATOMISTIC,
         defaultLineWidth: sceneRenderMetadata?.defaultLineWidth ?? DEFAULT_LINE_WIDTH
     };
 };
