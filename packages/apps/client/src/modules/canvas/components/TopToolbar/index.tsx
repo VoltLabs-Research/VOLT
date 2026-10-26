@@ -1,11 +1,8 @@
 import CanvasPluginSearch from '../CanvasPluginSearch';
-import TrajectorySharePanelPopover from '../TrajectorySharePanelPopover';
 import WorkspacePeerAvatars from '../WorkspacePeerAvatars';
 
 import EditableTrajectoryName from '@/modules/trajectory/components/EditableTrajectoryName';
 import WindowControls from '@/shared/ui/components/WindowControls';
-import ThemeToggleButton from '@/shared/ui/components/ThemeToggleButton';
-import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { memo, useCallback } from 'react';
 import { ChevronLeft } from 'lucide-react';
@@ -17,19 +14,12 @@ import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { useNavigate } from 'react-router-dom';
 import { dashboardPathForFolder } from '@/shared/ui/hooks/use-folder-search-param';
 
-interface TopToolbarShareInfo {
-    trajectoryId: string;
-    isPublic: boolean;
-    canManageVisibility: boolean;
-}
-
 interface TopToolbarProps {
     trajectory?: Trajectory | null;
     canMutateCanvas: boolean;
     workspacePeers?: WorkspacePresenceUser[];
     workspaceActiveOwnerId?: string;
     onSelectWorkspacePeer?: (peerId: string) => void;
-    share?: TopToolbarShareInfo;
     contextualActions?: ReactNode;
 }
 
@@ -39,11 +29,9 @@ const TopToolbar = ({
     workspacePeers,
     workspaceActiveOwnerId,
     onSelectWorkspacePeer,
-    share,
     contextualActions
 }: TopToolbarProps) => {
     const navigate = useNavigate();
-    const user = useCurrentUser();
 
     const folderId = trajectory?.folder ?? null;
     const handleBack = useCallback(() => navigate(dashboardPathForFolder(folderId)), [navigate, folderId]);
@@ -84,19 +72,11 @@ const TopToolbar = ({
 
                 <div className='flex min-w-0 flex-row items-center justify-end gap-0.5 max-md:hidden'>
                     {contextualActions}
-                    <ThemeToggleButton />
                     {canShowPeers && onSelectWorkspacePeer && (
                         <WorkspacePeerAvatars
                             peers={workspacePeers ?? []}
                             activeOwnerId={workspaceActiveOwnerId}
                             onSelectPeer={onSelectWorkspacePeer}
-                        />
-                    )}
-                    {share && user && (
-                        <TrajectorySharePanelPopover
-                            trajectoryId={share.trajectoryId}
-                            isPublic={share.isPublic}
-                            canManageVisibility={share.canManageVisibility}
                         />
                     )}
                     <WindowControls />
