@@ -27,6 +27,7 @@ const SettingsNav = ({ active, collapsed }: SettingsNavProps) => {
         <SectionNav
             name='settings'
             title='Settings'
+            showTitle={false}
             backLabel='Back to app'
             backTo='/dashboard'
             links={links}

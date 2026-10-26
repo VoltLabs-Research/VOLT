@@ -18,6 +18,7 @@ const SecretKeysNav = ({ active, collapsed }: SecretKeysNavProps) => {
         <SectionNav
             name='secret-keys'
             title='Secret keys'
+            showTitle={false}
             backTo={settingsPath}
             links={[
                 {
