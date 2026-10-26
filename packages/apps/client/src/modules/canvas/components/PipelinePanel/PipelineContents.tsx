@@ -45,7 +45,6 @@ const ANALYSIS_TONE: Record<AnalysisActivityTone, PanelRowTone> = {
 };
 
 export interface PipelineContentsProps {
-    trajectoryName?: string;
     // The saved run on screen; absent for the draft.
     section?: PipelineRunSection;
     // The stages this pipeline can still edit: the draft's, or those added to the saved run.
@@ -224,7 +223,6 @@ const AnalysisStageRow = ({ row, isEdited, status, tone, isSelected, onSelect, o
 };
 
 const PipelineContents = ({
-    trajectoryName,
     section,
     editableStages,
     pluginNameById,
@@ -418,14 +416,6 @@ const PipelineContents = ({
                     );
                 })}
                 {savedRowsTopDown.map((row) => renderSavedRow(row, row.key === firstAnalysisRowKey))}
-
-                <PanelGroupLabel>Data source</PanelGroupLabel>
-                <PanelRow
-                    id='canvas-data-source'
-                    label={trajectoryName ?? 'Trajectory'}
-                    isSelected={selectedKey === panelItemKey.source}
-                    onSelect={() => onSelectKey(panelItemKey.source)}
-                />
             </Scrollable>
 
             {/* Only stages this pipeline can still edit move or go; what ran is a record. */}

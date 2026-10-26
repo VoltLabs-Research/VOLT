@@ -316,7 +316,6 @@ const ObjectsPanel = ({
 
     const contents = (
         <PipelineContents
-            trajectoryName={trajectory?.name}
             section={selectedSection}
             editableStages={editableStages}
             pluginNameById={pluginNameById}
