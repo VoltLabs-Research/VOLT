@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Button } from '@heroui/react';
 import ArgumentFieldsRenderer from '@/modules/plugin/components/plugin/ArgumentFieldsRenderer';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { getUserConfigurableArguments } from '@/modules/plugin/utils/plugin/argument-values';
@@ -22,7 +21,6 @@ const SavedStageParameters = ({ pipelineKey, stage, trajectory }: SavedStagePara
     const { getPluginArguments } = usePluginSelectors();
     const edit = useStageEdits(pipelineKey)[stage.index];
     const setStageEdit = useCanvasPipelineStore((s) => s.setStageEdit);
-    const clearStageEdit = useCanvasPipelineStore((s) => s.clearStageEdit);
     const values = edit ?? stage.config;
 
     const frameOptions: SelectOption[] = useMemo(
@@ -45,11 +43,6 @@ const SavedStageParameters = ({ pipelineKey, stage, trajectory }: SavedStagePara
                 frameOptions={frameOptions}
                 emptyMessage='No arguments configured.'
             />
-            {edit && (
-                <Button variant='ghost' size='sm' className='self-start text-xs' onPress={() => clearStageEdit(pipelineKey, stage.index)}>
-                    Revert to the values it ran with
-                </Button>
-            )}
         </div>
     );
 };
