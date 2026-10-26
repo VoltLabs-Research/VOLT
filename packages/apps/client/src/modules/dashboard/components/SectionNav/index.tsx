@@ -18,6 +18,8 @@ export interface SectionNavLink {
 interface SectionNavProps {
     name: SidebarPanelName;
     title: string;
+    // The title always labels the nav for assistive tech; this only toggles the visible caption.
+    showTitle?: boolean;
     backLabel?: string;
     backTo: string;
     links: SectionNavLink[];
@@ -36,13 +38,13 @@ const renderRow = (key: string, tooltip: string, isTooltipDisabled: boolean, row
 
 // A section with pages of its own takes over the sidebar, under a way back to where it opened
 // from: one sidebar, never a second column.
-const SectionNav = ({ name, title, backLabel = 'Go back', backTo, links, active, collapsed }: SectionNavProps) => (
+const SectionNav = ({ name, title, showTitle = true, backLabel = 'Go back', backTo, links, active, collapsed }: SectionNavProps) => (
     <SidebarPanel name={name} label={`${title} navigation`} active={active}>
         {renderRow('back', backLabel, !collapsed, (
             <NavItem label={backLabel} icon={ArrowLeft} to={backTo} collapsed={collapsed} />
         ))}
 
-        {!collapsed && <SidebarPanelTitle>{title}</SidebarPanelTitle>}
+        {showTitle && !collapsed && <SidebarPanelTitle>{title}</SidebarPanelTitle>}
 
         {links.map((link) => renderRow(
             link.label,
