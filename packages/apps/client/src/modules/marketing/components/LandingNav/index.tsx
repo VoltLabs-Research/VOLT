@@ -4,12 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const SECTIONS = [
-    { href: '#anywhere', label: 'Get started' },
-    { href: '#viewer', label: 'Viewer' },
-    { href: '#together', label: 'Together' },
-    { href: '#plugins', label: 'Plugins' },
-    { href: '#build', label: 'Build' },
-    { href: '#assistant', label: 'VOLT AI' }
+    { href: '#anywhere', label: 'Get started' }
 ];
 
 const LandingNav = () => {
