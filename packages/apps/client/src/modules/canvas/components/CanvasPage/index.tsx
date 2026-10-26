@@ -235,8 +235,9 @@ const CanvasPage = () => {
         <CanvasToolbarActions
             analysisId={analysisId}
             canDownloadAnalysis={canDownloadAnalysisListing}
+            share={shareInfo}
         />
-    ), [analysisId, canDownloadAnalysisListing]);
+    ), [analysisId, canDownloadAnalysisListing, shareInfo]);
 
     const viewportBodyContent = useViewportBodyContent({
         trajectory,
@@ -294,7 +295,6 @@ const CanvasPage = () => {
                     workspacePeers={peersInLobby}
                     workspaceActiveOwnerId={workspaceOwnerId}
                     onSelectWorkspacePeer={navigateToWorkspace}
-                    share={shareInfo}
                     contextualActions={toolbarContextualActions}
                 />
 
