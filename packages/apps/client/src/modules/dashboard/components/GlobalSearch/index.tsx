@@ -1,5 +1,5 @@
 import Loader from '@/shared/ui/components/Loader';
-import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, Kbd, SearchField, cn } from '@heroui/react';
+import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, SearchField, cn } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from './use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
@@ -33,9 +33,6 @@ const SECTIONS: SectionConfig[] = [
         title: 'Teams'
     }
 ];
-
-const IS_APPLE_PLATFORM = /Mac|iPhone|iPad/u.test(navigator.userAgent);
-const SHORTCUT_LABEL = IS_APPLE_PLATFORM ? '⌘K' : 'Ctrl K';
 
 const isEditableTarget = (target: EventTarget | null): boolean => (
     target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
@@ -215,11 +212,6 @@ const GlobalSearch = ({ contextBreadcrumb = null, autoFocus = false, onDismiss }
                             onKeyDown={handleInputKeyDown}
                         />
                     </div>
-                    {!isFocused && query.length === 0 && (
-                        <Kbd className='h-5 shrink-0 rounded-sm bg-foreground/6 px-1.5 text-2xs [word-spacing:normal]' aria-hidden='true'>
-                            <Kbd.Content>{SHORTCUT_LABEL}</Kbd.Content>
-                        </Kbd>
-                    )}
                 </SearchField.Group>
             </SearchField>
 
