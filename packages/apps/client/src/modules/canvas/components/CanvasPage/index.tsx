@@ -115,12 +115,10 @@ const CanvasPage = () => {
         }
     }, [currentScope, setCurrentScope]);
 
-    const { isModelLoading, didPreload, isPlaying, isPreloading, preloadProgress } = useEditorStore(useShallow((s) => ({
+    const { isModelLoading, didPreload, isPlaying } = useEditorStore(useShallow((s) => ({
         isModelLoading: s.isModelLoading,
         didPreload: s.didPreload,
-        isPlaying: s.isPlaying,
-        isPreloading: s.isPreloading,
-        preloadProgress: s.preloadProgress
+        isPlaying: s.isPlaying
     })));
 
     const sceneConfig = useFractalSceneConfig();
@@ -194,10 +192,11 @@ const CanvasPage = () => {
     const isTrajectoryLoading = trajectoryLoading
         || !trajectory
         || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined));
+    // Caching frames for playback no longer covers the viewport; the transport and the timeline show it.
     const overlayActive = Boolean(
         !isLocalGlbViewer
         && !showNoFramesState
-        && (isTrajectoryLoading || isPreloading)
+        && isTrajectoryLoading
         && !analysisDiscoveryTourActive
     );
 
@@ -265,11 +264,7 @@ const CanvasPage = () => {
 
     return (
         <div className={cn('relative flex h-dvh w-screen overflow-hidden bg-canvas text-foreground', CANVAS_ROOT_VARS)}>
-            <PreloadingOverlay
-                active={overlayActive}
-                title={isPreloading ? 'Setting up your scene…' : 'Loading trajectory…'}
-                progress={isPreloading ? preloadProgress : undefined}
-            />
+            <PreloadingOverlay active={overlayActive} />
 
             {isNarrowViewport && rightDrawerOpen && (
                 <button

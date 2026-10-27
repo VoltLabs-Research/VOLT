@@ -8,6 +8,8 @@ interface TimelineRulerTick {
     major: boolean;
     tone?: TimelineTickTone;
     dimmed?: boolean;
+    // Cached by the preload Play runs; side by side, cached ticks read as one buffered band.
+    cached?: boolean;
 }
 
 const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
@@ -26,7 +28,8 @@ const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
     return (
         <>
             {ticks.map((tick) => (
-                <div key={tick.frame} className={cn('canvas-ruler-tick flex h-full shrink-0 cursor-pointer flex-col items-center px-3 max-md:px-2', tick.dimmed && 'opacity-35 transition-opacity duration-[180ms] ease-out')}>
+                <div key={tick.frame} className={cn('canvas-ruler-tick relative flex h-full shrink-0 cursor-pointer flex-col items-center px-3 max-md:px-2', tick.dimmed && 'opacity-35 transition-opacity duration-[180ms] ease-out')}>
+                    {tick.cached && <span className='absolute inset-x-0 bottom-0 h-[3px] bg-foreground/30' aria-hidden='true' />}
                     {tick.major && (
                         <span className={cn('whitespace-nowrap text-xs leading-none text-muted transition-[color,text-shadow] duration-[180ms] max-md:text-2xs', tick.tone && labelToneClass[tick.tone])}>
                             {tick.frame}

@@ -48,14 +48,16 @@ const Timeline = ({
         rangeStart,
         rangeEnd,
         setRangeStart,
-        setRangeEnd
+        setRangeEnd,
+        preloadedTimesteps
     } = useEditorStore(useShallow((state) => ({
         playSpeed: state.playSpeed,
         setPlaySpeed: state.setPlaySpeed,
         rangeStart: state.rangeStart,
         rangeEnd: state.rangeEnd,
         setRangeStart: state.setRangeStart,
-        setRangeEnd: state.setRangeEnd
+        setRangeEnd: state.setRangeEnd,
+        preloadedTimesteps: state.preloadedTimesteps
     })));
 
     useEffect(() => {
@@ -85,14 +87,16 @@ const Timeline = ({
         }
 
         const scopedTimesteps = selectedAnalysisTimesteps ? new Set(selectedAnalysisTimesteps) : undefined;
+        const cachedTimesteps = new Set(preloadedTimesteps);
 
         return rangedTimesteps.map((frame) => ({
             frame,
             major: true,
             tone: getTickTone(frame),
-            dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false
+            dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false,
+            cached: cachedTimesteps.has(frame)
         }));
-    }, [rangedTimesteps, getTickTone, selectedAnalysisTimesteps]);
+    }, [rangedTimesteps, getTickTone, selectedAnalysisTimesteps, preloadedTimesteps]);
 
     const startFrame = rangeStart ?? availableTimesteps[0];
     const endFrame = rangeEnd ?? availableTimesteps[availableTimesteps.length - 1];

@@ -38,6 +38,8 @@ const createInitialState = (): PlaybackState => ({
     isPreloading: false,
     didPreload: false,
     preloadProgress: 0,
+    preloadedTimesteps: [],
+    preloadTotal: 0,
     rangeStart: undefined,
     rangeEnd: undefined,
     targetFps: DEFAULT_TARGET_FPS
@@ -84,7 +86,9 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
         set({
             isPlaying: false,
             isPreloading: false,
-            preloadProgress: 0
+            preloadProgress: 0,
+            preloadedTimesteps: [],
+            preloadTotal: 0
         });
     },
 
@@ -114,7 +118,9 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                 _preloadAbortController = preloadAbortController;
                 set({
                     isPreloading: true,
-                    preloadProgress: 0
+                    preloadProgress: 0,
+                    preloadedTimesteps: [],
+                    preloadTotal: 0
                 });
 
                 try {
@@ -127,12 +133,16 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
                     await get().loadModels({
                         trajectoryId,
                         timesteps,
-                        onProgress: (progress: number) => {
+                        onProgress: ({ loaded, total, timestep, failed }) => {
                             if (_runtime.generation !== playbackGeneration) {
                                 return;
                             }
 
-                            set({ preloadProgress: progress });
+                            set((state) => ({
+                                preloadProgress: loaded / total,
+                                preloadTotal: total,
+                                preloadedTimesteps: failed ? state.preloadedTimesteps : [...state.preloadedTimesteps, timestep]
+                            }));
                         },
                         maxFramesToPreload,
                         currentFrameIndex,
@@ -156,7 +166,9 @@ export const createPlaybackSlice: StateCreator<EditorStore, [], [], PlaybackStor
 
                 set({
                     isPreloading: false,
-                    didPreload: shouldMarkPreloadComplete
+                    didPreload: shouldMarkPreloadComplete,
+                    preloadedTimesteps: [],
+                    preloadTotal: 0
                 });
 
                 if (preloadAborted) {
