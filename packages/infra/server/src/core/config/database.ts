@@ -13,8 +13,6 @@ const getDatabaseUrl = (): string => {
     return url;
 };
 
-const shouldSynchronize = (): boolean => process.env.NODE_ENV !== 'production';
-
 const buildOptions = (url: string, entities: DatabaseEntities): DataSourceOptions => {
     if(resolveDatabaseDialect(url) === 'sqlite'){
         return {
@@ -25,10 +23,11 @@ const buildOptions = (url: string, entities: DatabaseEntities): DataSourceOption
         };
     }
 
+    // There are no migrations: the entities are the schema, in production too, as on the daemon.
     return {
         type: 'postgres',
         url,
-        synchronize: shouldSynchronize(),
+        synchronize: true,
         entities,
         applicationName: 'volt',
         poolSize: 100
