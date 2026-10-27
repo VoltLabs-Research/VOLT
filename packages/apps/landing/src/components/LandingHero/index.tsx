@@ -1,7 +1,5 @@
-import { SIGN_IN_PATH } from '@/modules/marketing/contracts/links';
-import { runLocalStack } from '@/modules/auth/services/endpoint-session';
-import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { GITHUB_URL } from '@/contracts/links';
+import { ArrowUpRight } from 'lucide-react';
 
 const LandingHero = () => (
     <section className='landing-wrap landing-hero' aria-labelledby='landing-hero-title'>
@@ -13,13 +11,10 @@ const LandingHero = () => (
             Collaborative visualization and analysis for particle-based simulations, with state-of-the-art algorithms that run at any scale.
         </p>
         <div className='landing-hero-actions landing-intro'>
-            <Link to={SIGN_IN_PATH} className='landing-pill landing-pill--lg'>
-                Open VOLT
-                <ArrowRight aria-hidden='true' className='size-4' />
-            </Link>
-            <button type='button' className='landing-pill landing-pill--lg landing-pill--ghost' onClick={runLocalStack}>
-                Run in this browser
-            </button>
+            <a href={GITHUB_URL} className='landing-pill landing-pill--lg landing-pill--ghost'>
+                View on GitHub
+                <ArrowUpRight aria-hidden='true' size={16} />
+            </a>
         </div>
     </section>
 );

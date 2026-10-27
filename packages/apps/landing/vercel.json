@@ -1,0 +1,5 @@
+{
+    "installCommand": "pnpm install --frozen-lockfile --filter volt-landing...",
+    "buildCommand": "pnpm run build",
+    "outputDirectory": "dist"
+}

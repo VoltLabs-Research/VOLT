@@ -1,4 +1,4 @@
-import type { CpuArch, DesktopOs } from '@/modules/marketing/contracts/release';
+import type { CpuArch, DesktopOs } from '@/contracts/release';
 
 interface NavigatorUAData {
     platform?: string;

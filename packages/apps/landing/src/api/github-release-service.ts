@@ -1,7 +1,7 @@
-import type { GitHubRelease } from '@/modules/marketing/contracts/release';
-import { GITHUB_RELEASES_API } from '@/modules/marketing/contracts/release';
+import type { GitHubRelease } from '@/contracts/release';
+import { GITHUB_RELEASES_API } from '@/contracts/release';
 
-const getLatestRelease = async (): Promise<GitHubRelease> => {
+export const getLatestRelease = async (): Promise<GitHubRelease> => {
     const response = await fetch(GITHUB_RELEASES_API, {
         headers: {
             Accept: 'application/vnd.github+json'
@@ -13,8 +13,4 @@ const getLatestRelease = async (): Promise<GitHubRelease> => {
     }
 
     return response.json() as Promise<GitHubRelease>;
-};
-
-export default {
-    getLatestRelease
 };

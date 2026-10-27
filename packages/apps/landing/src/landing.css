@@ -1,38 +1,42 @@
-.landing {
+/* The page has no framework reset under it: the few defaults its elements would otherwise keep. */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body,
+h1,
+h3,
+p,
+pre {
+    margin: 0;
+}
+
+:root {
     --lp-ground: #070708;
-    --lp-raised: #0e0e10;
     --lp-inset: #121214;
     --lp-line: rgba(255, 255, 255, 0.07);
     --lp-line-mid: rgba(255, 255, 255, 0.14);
     --lp-line-strong: rgba(255, 255, 255, 0.22);
     --lp-fg: #ffffff;
     --lp-dim: #8b8b8b;
-    --lp-faint: #5f5f5f;
     --lp-header: 64px;
     --lp-gutter: clamp(20px, 2.6vw, 48px);
     --lp-section-y: clamp(96px, 10vw, 180px);
     --lp-card-pad: clamp(22px, 2.2vw, 36px);
     --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
-    /* SCREEN_WIDTH and SCREEN_HEIGHT (contracts/screens.ts). */
-    --lp-screen-width: 1600;
-    --lp-screen-height: 900;
     /* The two lights that glow behind what a section leads with, as RGB channels. */
     --lp-glow-cool: 77 107 179;
     --lp-glow-warm: 250 176 64;
-    --lp-shadow:
-        0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-        0 60px 160px -40px rgba(0, 0, 0, 0.95),
-        0 30px 60px -30px rgba(0, 0, 0, 0.7);
 
-    /* The page scrolls itself: the app's route wrapper (ErrorBoundary) clips with overflow
-       hidden, which would make it the scroll container every sticky element sticks to.
-       Scroll-linked motion measures against it, which needs it positioned. */
-    position: relative;
-    height: 100dvh;
-    overflow-x: clip;
-    overflow-y: auto;
+    color-scheme: dark;
     scroll-behavior: smooth;
     background: var(--lp-ground);
+}
+
+.landing {
+    overflow-x: clip;
     color: var(--lp-fg);
     font-family: 'Geist Variable', Geist, 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 16px;
@@ -54,11 +58,6 @@
     max-width: 1800px;
     margin-inline: auto;
     padding-inline: var(--lp-gutter);
-}
-
-.landing-mono {
-    font-family: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
-    font-variant-numeric: tabular-nums;
 }
 
 .landing-dim {
@@ -263,38 +262,6 @@
     margin-top: clamp(28px, 4.4vh, 44px);
 }
 
-/* Screens: the app's pages, scaled into the page from their own documents. */
-
-.landing-screen {
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-    /* Never shown larger than laid out. */
-    max-width: calc(var(--lp-screen-width) * 1px);
-    aspect-ratio: var(--lp-screen-width) / var(--lp-screen-height);
-    margin-inline: auto;
-    border: 1px solid var(--lp-line-mid);
-    border-radius: clamp(10px, 1vw, 16px);
-    background: var(--background);
-    box-shadow: var(--lp-shadow);
-}
-
-.landing-screen iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    border: 0;
-    transform: scale(var(--landing-screen-scale));
-    transform-origin: 0 0;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.8s var(--lp-ease);
-}
-
-.landing-screen[data-ready='true'] iframe {
-    opacity: 1;
-}
-
 /* Runtimes */
 
 .landing-code {
@@ -409,17 +376,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .landing {
+    :root {
         scroll-behavior: auto;
     }
 
     .landing-line > span,
     .landing-intro {
         animation: none;
-    }
-
-    .landing-screen iframe {
-        transition: none;
     }
 
     .landing[data-animate='true'] .landing-rise,
