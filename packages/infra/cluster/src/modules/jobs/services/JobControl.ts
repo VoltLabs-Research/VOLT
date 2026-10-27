@@ -14,6 +14,12 @@ import type {
 const REMOVED_ANALYSIS_JOB_TOMBSTONE_PREFIX = 'analysis:removed-job:';
 const REMOVED_ANALYSIS_JOB_TOMBSTONE_TTL_SECONDS = 86_400;
 
+// A pipeline reports each analysis stage of a frame as `<pipeline job>:<analysis id>`, and the queue
+// holds only the pipeline job, which runs the frame's stages again.
+const resolveQueueJobId = (jobId: string): string => (
+    jobId.startsWith('pipeline-') ? jobId.split(':')[0] : jobId
+);
+
 export class JobControl {
     constructor(
         private readonly queueService: QueueService,
@@ -22,11 +28,16 @@ export class JobControl {
 
     retryJobs = async (input: RetryJobsRequest): Promise<JobsActionResponse> => {
         const affectedJobIds: string[] = [];
+        const retriedQueueJobIds = new Set<string>();
 
         for (const jobId of input.jobIds) {
-            const retried = await this.queueService.retryJobById(jobId);
-            if (!retried) {
-                continue;
+            const queueJobId = resolveQueueJobId(jobId);
+            if (!retriedQueueJobIds.has(queueJobId)) {
+                const retried = await this.queueService.retryJobById(queueJobId);
+                if (!retried) {
+                    continue;
+                }
+                retriedQueueJobIds.add(queueJobId);
             }
             affectedJobIds.push(jobId);
         }
