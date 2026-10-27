@@ -209,13 +209,11 @@ const ObjectsPanel = ({
         setSelectedKey(defaultItemKey(isDraft ? undefined : runSections.find((section) => section.runId === pipelineId)));
     }, [defaultItemKey, resolvedTrajectoryId, runSections, setActivePipeline]);
 
-    // First visit: the draft when it holds stages, else the newest run.
+    // First visit: the draft; the saved runs are in the selector, and a link to an analysis opens its run.
     useEffect(() => {
         if (!resolvedTrajectoryId || activeKey) return;
-        const newest = runSections.find((section) => !section.isUngrouped);
-        if (draftStages.length === 0 && !newest) return;
-        selectPipeline(draftStages.length > 0 || !newest ? DRAFT_PIPELINE_ID : newest.runId);
-    }, [activeKey, draftStages.length, resolvedTrajectoryId, runSections, selectPipeline]);
+        selectPipeline(DRAFT_PIPELINE_ID);
+    }, [activeKey, resolvedTrajectoryId, selectPipeline]);
 
     // Stage calls without a key (search, assistant) go to the pipeline on screen.
     useEffect(() => {
