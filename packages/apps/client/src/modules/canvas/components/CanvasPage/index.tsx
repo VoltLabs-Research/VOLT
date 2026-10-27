@@ -199,6 +199,11 @@ const CanvasPage = () => {
         && isTrajectoryLoading
         && !analysisDiscoveryTourActive
     );
+    const loadingFrame = currentTimestep !== undefined
+        ? trajectory?.frames.find((frame) => frame.timestep === currentTimestep)
+        : undefined;
+    const overlayTitle = loadingFrame ? `Loading timestep ${loadingFrame.timestep}` : 'Loading trajectory…';
+    const overlayDetail = loadingFrame ? `${loadingFrame.natoms.toLocaleString()} atoms` : undefined;
 
     const rightPanel = useResizable({
         direction: ResizeDirection.Horizontal,
@@ -264,8 +269,6 @@ const CanvasPage = () => {
 
     return (
         <div className={cn('relative flex h-dvh w-screen overflow-hidden bg-canvas text-foreground', CANVAS_ROOT_VARS)}>
-            <PreloadingOverlay active={overlayActive} />
-
             {isNarrowViewport && rightDrawerOpen && (
                 <button
                     type='button'
@@ -332,6 +335,14 @@ const CanvasPage = () => {
                             containerRef={viewportContainerRef}
                         />
                     </div>
+
+                    {!isLocalGlbViewer && !showNoFramesState && (
+                        <PreloadingOverlay
+                            active={overlayActive}
+                            title={overlayTitle}
+                            detail={overlayDetail}
+                        />
+                    )}
 
                     {!isLocalGlbViewer && (
                         <CanvasTimelineDock

@@ -40,7 +40,8 @@ const StatusBar = ({ trajectory }: StatusBarProps) => {
     const size = trajectory?.stats?.totalSize !== undefined ? formatSize(trajectory.stats.totalSize) : '—';
     const cached = Math.round(preloadProgress * preloadTotal);
 
-    const items: StatusItem[] = [
+    // Until the trajectory arrives there is nothing to count, so the bar stays empty instead of reading 0.
+    const items: StatusItem[] = trajectory ? [
         ...(isPreloading ? [{
             key: 'caching',
             label: '',
@@ -63,7 +64,7 @@ const StatusBar = ({ trajectory }: StatusBarProps) => {
             label: 'Size',
             value: size
         }
-    ];
+    ] : [];
 
     return (
         <Scrollable orientation='horizontal' className='flex h-7 w-full flex-row items-center gap-3 px-3 max-md:pointer-events-auto max-md:order-4 max-md:h-5 max-md:px-1.5'>

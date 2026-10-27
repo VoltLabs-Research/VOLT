@@ -79,10 +79,11 @@ const Timeline = ({
     }, [availableTimesteps, rangeStart, rangeEnd]);
 
     const ticks = useMemo(() => {
+        // Unlabelled while the trajectory loads, so the ruler never shows timesteps it does not have.
         if (rangedTimesteps.length === 0) {
             return Array.from({ length: PLACEHOLDER_TICK_COUNT }, (_, index) => ({
                 frame: index,
-                major: index % 10 === 0
+                major: false
             }));
         }
 
