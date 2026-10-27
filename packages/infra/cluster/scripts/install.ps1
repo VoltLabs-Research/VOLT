@@ -297,7 +297,7 @@ function Get-FreePort {
 function Get-UniquePortMap {
     $portMap = [ordered]@{}
     $allocatedPorts = [System.Collections.Generic.HashSet[int]]::new()
-    $serviceNames = @('minio', 'redis', 'mongodb', 'daemon')
+    $serviceNames = @('postgres', 'daemon')
 
     foreach ($serviceName in $serviceNames) {
         do {
@@ -400,9 +400,8 @@ function Print-Summary {
 
     Write-InstallLog 'Provisioning assets installed'
     Write-InstallLog "Install root: $ResolvedInstallRoot"
-    Write-InstallLog "MinIO port: $($Ports.minio)"
-    Write-InstallLog "Redis port: $($Ports.redis)"
-    Write-InstallLog "MongoDB port: $($Ports.mongodb)"
+    Write-InstallLog "PostgreSQL port: $($Ports.postgres)"
+    Write-InstallLog "Daemon port: $($Ports.daemon)"
 }
 
 try {
