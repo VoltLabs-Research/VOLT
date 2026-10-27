@@ -23,6 +23,9 @@ import type {
 
 interface EnsureContainerResult {
     containerId: string;
+    // The notebook file an existing container of this notebook held, or null when there was none.
+    savedNotebook: string | null;
+    reused: boolean;
 }
 
 const NOTEBOOK_LABEL_KIND_KEY = 'volt.runtime.kind';
@@ -30,6 +33,17 @@ const NOTEBOOK_LABEL_KIND_VALUE = 'jupyter';
 const NOTEBOOK_ID_LABEL_KEY = 'volt.notebook.id';
 const RUNTIME_FINGERPRINT_ENV_KEY = 'VOLT_RUNTIME_FINGERPRINT';
 const PUBLIC_BASE_PATH_ENV_KEY = 'VOLT_PUBLIC_BASE_PATH';
+
+const parseNotebookContents = (contents: string | null): NotebookSessionSnapshot['content'] => {
+    try {
+        const notebook: unknown = JSON.parse(contents ?? '');
+        return typeof notebook === 'object' && notebook !== null && Array.isArray((notebook as { cells?: unknown }).cells)
+            ? notebook as Record<string, unknown>
+            : undefined;
+    } catch {
+        return undefined;
+    }
+};
 
 export class JupyterRuntime {
     constructor(
@@ -47,8 +61,13 @@ export class JupyterRuntime {
             }
         };
 
-        const { containerId } = await this.ensureContainer(normalizedInput);
-        await this.syncNotebookContents(containerId, notebookPath, input.notebook.content);
+        // JupyterLab saves into the container, so its notebook is newer than VOLT's copy: a reused
+        // container keeps it, a new one gets it, and VOLT stores it.
+        const { containerId, savedNotebook, reused } = await this.ensureContainer(normalizedInput);
+        const savedContent = parseNotebookContents(savedNotebook);
+        if (!reused || savedNotebook === null) {
+            await this.syncNotebookContents(containerId, notebookPath, savedContent ?? input.notebook.content);
+        }
 
         const internalPath = path.posix.join(
             this.config.jupyter.uiPath,
@@ -62,23 +81,30 @@ export class JupyterRuntime {
                 url: internalPath,
                 ready: false,
                 containerStage: 'creating'
-            }
+            },
+            ...(savedContent ? { content: savedContent } : {})
         };
     }
 
     private async ensureContainer(input: CreateNotebookSessionRequest): Promise<EnsureContainerResult> {
         const existingContainerId = await this.findRuntimeContainerId(input.notebook._id);
+        let savedNotebook: string | null = null;
         if (existingContainerId) {
-            if (await this.shouldRecreateContainer(existingContainerId, input)) {
-                await this.dockerRuntime.deleteContainer(existingContainerId);
-            } else {
-                const container = await this.dockerRuntime.getContainer(existingContainerId);
-                if (!container.State.Running) {
-                    await this.dockerRuntime.startContainer(existingContainerId);
-                }
-
-                return { containerId: existingContainerId };
+            const container = await this.dockerRuntime.getContainer(existingContainerId);
+            if (!container.State.Running) {
+                await this.dockerRuntime.startContainer(existingContainerId);
             }
+
+            savedNotebook = await this.readNotebookFile(existingContainerId, input.notebook.notebookPath);
+            if (!(await this.shouldRecreateContainer(existingContainerId, input))) {
+                return {
+                    containerId: existingContainerId,
+                    savedNotebook,
+                    reused: true
+                };
+            }
+
+            await this.dockerRuntime.deleteContainer(existingContainerId);
         }
 
         const containerResources = this.resolveNotebookContainerResources();
@@ -150,7 +176,11 @@ export class JupyterRuntime {
             networkMode: resolveComposeDefaultNetworkName(this.config.composeProjectName)
         });
 
-        return { containerId: container.Id };
+        return {
+            containerId: container.Id,
+            savedNotebook,
+            reused: false
+        };
     }
 
     private async syncNotebookContents(
@@ -170,6 +200,21 @@ export class JupyterRuntime {
                 timeoutMs: this.config.jupyter.execTimeoutMs
             }
         );
+    }
+
+    private async readNotebookFile(containerId: string, notebookPath: string): Promise<string | null> {
+        try {
+            return await this.dockerRuntime.readContainerFile(
+                containerId,
+                path.posix.join(this.config.jupyter.notebookRoot, notebookPath),
+                {
+                    operationName: 'jupyter-read-notebook',
+                    timeoutMs: this.config.jupyter.execTimeoutMs
+                }
+            );
+        } catch {
+            return null;
+        }
     }
 
     private async findRuntimeContainerId(notebookId: string): Promise<string | null> {
