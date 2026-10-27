@@ -57,17 +57,19 @@ export const createTimestepSlice: StateCreator<EditorStore, [], [], TimestepStor
                 mode: useCanvasAccessStore.getState().mode
             };
 
+            let failed = false;
             try {
                 await preloadFractalSceneAsset(assetParams, { signal });
             } catch (error) {
                 if (isAbortError(error)) return;
+                failed = true;
                 failedCount++;
             }
 
             if (signal?.aborted) return;
 
             loadedCount++;
-            onProgress?.(loadedCount / total);
+            onProgress?.({ loaded: loadedCount, total, timestep, failed });
         });
 
         await Promise.all(promises);

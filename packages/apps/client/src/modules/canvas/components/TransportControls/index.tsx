@@ -4,7 +4,8 @@ import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Button, Tooltip } from '@heroui/react';
+import { Button, ProgressCircle, Tooltip } from '@heroui/react';
+import type { LucideIcon } from 'lucide-react';
 
 interface TransportControlsProps {
     trajectoryId?: string;
@@ -12,15 +13,40 @@ interface TransportControlsProps {
     availableTimesteps: number[];
 }
 
+const ICON_STYLE = { width: 13, height: 13 };
+
+// While Play caches frames, its button rings with the share cached and pressing it cancels.
+const CachingIcon = ({ Icon, progress }: { Icon: LucideIcon; progress: number }) => (
+    <span className='relative flex size-5 items-center justify-center'>
+        <ProgressCircle
+            aria-hidden='true'
+            value={progress * 100}
+            size='sm'
+            color='default'
+            className='absolute inset-0 [--progress-circle-track-stroke:color-mix(in_oklab,var(--foreground)_10%,transparent)]'
+        >
+            <ProgressCircle.Track>
+                <ProgressCircle.TrackCircle />
+                <ProgressCircle.FillCircle />
+            </ProgressCircle.Track>
+        </ProgressCircle>
+        <Icon style={{ width: 10, height: 10 }} />
+    </span>
+);
+
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
         isPlaying,
+        isPreloading,
+        preloadProgress,
         togglePlay,
         setCurrentTimestep,
         rangeStart,
         rangeEnd
     } = useEditorStore(useShallow((state) => ({
         isPlaying: state.isPlaying,
+        isPreloading: Boolean(state.isPreloading),
+        preloadProgress: state.preloadProgress ?? 0,
         togglePlay: state.togglePlay,
         setCurrentTimestep: state.setCurrentTimestep,
         rangeStart: state.rangeStart,
@@ -96,8 +122,8 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
         },
         {
             action: 'play',
-            Icon: isPlaying ? Pause : Play,
-            label: isPlaying ? 'Pause' : 'Play',
+            Icon: isPlaying || isPreloading ? Pause : Play,
+            label: isPreloading ? 'Cancel caching' : isPlaying ? 'Pause' : 'Play',
             onPress: handleTogglePlay
         },
         {
@@ -118,7 +144,7 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             label: 'Jump to end',
             onPress: jumpToEnd
         }
-    ]), [isPlaying, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
+    ]), [isPlaying, isPreloading, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
 
     const renderButton = (btn: typeof buttons[number]) => (
         <Tooltip key={btn.action}>
@@ -130,10 +156,9 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
                 data-transport-action={btn.action}
                 onPress={btn.onPress}
             >
-                <btn.Icon style={{
-                    width: 13,
-                    height: 13
-                }} />
+                {btn.action === 'play' && isPreloading
+                    ? <CachingIcon Icon={btn.Icon} progress={preloadProgress} />
+                    : <btn.Icon style={ICON_STYLE} />}
             </Button>
             <Tooltip.Content placement='top'>{btn.label}</Tooltip.Content>
         </Tooltip>

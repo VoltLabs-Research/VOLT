@@ -105,6 +105,9 @@ export interface PlaybackState {
     isPreloading?: boolean;
     didPreload?: boolean;
     preloadProgress?: number;
+    // The timesteps the preload in progress has cached, and how many it is caching in all.
+    preloadedTimesteps: number[];
+    preloadTotal: number;
     rangeStart?: number;
     rangeEnd?: number;
     targetFps: number;
@@ -135,10 +138,17 @@ interface TimestepActions {
     loadModels: (params: LoadTimelineModelsParams) => Promise<TimelineGLBMap>;
 }
 
+export interface TimelineModelsProgress {
+    loaded: number;
+    total: number;
+    timestep: number;
+    failed: boolean;
+}
+
 interface LoadTimelineModelsParams {
     trajectoryId: string;
     timesteps: number[];
-    onProgress?: (p: number) => void;
+    onProgress?: (progress: TimelineModelsProgress) => void;
     maxFramesToPreload?: number;
     currentFrameIndex?: number;
     signal?: AbortSignal;
