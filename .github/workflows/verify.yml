@@ -167,6 +167,35 @@ jobs:
       - name: Build
         run: pnpm --filter volt-webapp build
 
+  # The public landing page, deployed apart from the client: it has no workspace dependencies.
+  landing:
+    name: Landing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter volt-landing...
+
+      - name: Lint
+        run: pnpm --filter volt-landing lint
+
+      # `tsc -b` then `vite build`, as Vercel builds it.
+      - name: Build
+        run: pnpm --filter volt-landing build
+
   desktop:
     name: Desktop
     runs-on: ubuntu-latest
