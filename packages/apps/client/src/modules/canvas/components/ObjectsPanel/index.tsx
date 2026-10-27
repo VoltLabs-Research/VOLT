@@ -12,7 +12,7 @@ import PipelinesSection, { DRAFT_PIPELINE_ID } from '../PipelinePanel/PipelinesS
 import PipelineActions from '../PipelinePanel/PipelineActions';
 import PipelineContents, { TRAJECTORY_SCENE } from '../PipelinePanel/PipelineContents';
 import PipelineItemEditor from '../PipelinePanel/PipelineItemEditor';
-import { panelItemKey } from '../PipelinePanel/panel-items';
+import { isModifierKey, panelItemKey } from '../PipelinePanel/panel-items';
 import { computeRunActivityStatus } from '../../utils/analysis-status-selectors';
 import { isCanvasAnalysisInProgress, normalizeCanvasAnalysisStatus } from '../../utils/analysis-status';
 import { pipelineRunIdOf, pipelineStoreKey, useCanvasPipelineStore, useStageEdits, useStages } from '../../store/canvas-pipeline';
@@ -45,6 +45,9 @@ interface ObjectsPanelProps {
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
 
 const UNGROUPED_REASON = 'These analyses ran outside a pipeline, so they cannot take new stages.';
+
+// How much the list grows into the settings while a modification is selected.
+const MODIFIER_LIST_EXTRA = 48;
 
 /*
  * The canvas panel as OVITO's pipeline editor: the pipelines (the draft and every saved run), the
@@ -297,6 +300,8 @@ const ObjectsPanel = ({
         growPositive: true,
         storageKey: 'volt:canvas:pipeline-list-size'
     });
+    // A modification's settings sit a little lower than the rest; the remembered size is left alone.
+    const listHeight = listPanel.size + (isModifierKey(selectedKey) ? MODIFIER_LIST_EXTRA : 0);
 
     const populatedSections = artifactSections.filter((section) => section.timesteps.length > 0);
     const renderArtifactSection = (section: ArtifactSection) => (
@@ -411,7 +416,11 @@ const ObjectsPanel = ({
     return (
         <div className={cn('canvas-objects-panel flex h-full min-h-0 flex-col overflow-hidden')}>
             {head}
-            <div className='flex min-h-0 shrink-0 flex-col' style={{ height: listPanel.size }} id='canvas-pipeline-list'>
+            <div
+                className={cn('flex min-h-0 shrink-0 flex-col', !listPanel.isDragging && 'transition-[height] duration-[180ms] ease-out')}
+                style={{ height: listHeight }}
+                id='canvas-pipeline-list'
+            >
                 {contents}
             </div>
             <ResizeHandle
