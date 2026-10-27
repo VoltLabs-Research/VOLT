@@ -25,4 +25,6 @@ export interface CreateNotebookSessionResponse{
         ready: boolean;
         containerStage: NotebookContainerStage;
     };
+    // The notebook as the session's existing container had it, with what JupyterLab saved there.
+    content?: Record<string, unknown>;
 }

@@ -3,7 +3,7 @@ import { getEventBroker } from '@shared/events/RuntimeEventBroker';
 import { getConfig } from '@core/config/daemon';
 import { createDockerClient } from '@shared/runtime/docker-client';
 import { ensureDockerImage } from '@shared/runtime/docker-image-pull';
-import { writeContainerFile } from '@shared/runtime/docker-container-filesystem';
+import { readContainerFile, writeContainerFile } from '@shared/runtime/docker-container-filesystem';
 import { TEAM_CLUSTER_ID_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_KEY, VOLT_MANAGED_CONTAINER_LABEL_VALUE } from '@shared/contracts/types/runtime-container';
 import { OrchestrationAction } from '@shared/contracts/types/http-runtime';
 import { ProgressStageType } from '@voltstack/daemon-cluster-client';
@@ -130,6 +130,15 @@ export class DockerRuntime {
             force: true,
             v: true
         });
+    };
+
+    readonly readContainerFile = async (
+        containerId: string,
+        filePath: string,
+        options?: DockerExecOptions
+    ): Promise<string> => {
+        await this.getContainer(containerId);
+        return readContainerFile(this.docker, containerId, filePath, options);
     };
 
     readonly writeContainerFile = async (
