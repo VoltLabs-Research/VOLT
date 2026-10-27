@@ -67,7 +67,7 @@ const JobQueue = ({ job, isChild }: JobQueueProps) => {
     const isFailed = job.status === JobStatus.Failed;
     const isAnalysisJob = job.queueType === 'analysis_processing';
 
-    const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
+    const analysisId = job.analysisId;
 
     const handleRetry = async () => {
         if (!analysisId) {
