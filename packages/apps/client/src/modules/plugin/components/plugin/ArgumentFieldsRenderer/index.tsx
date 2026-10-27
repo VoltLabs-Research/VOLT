@@ -1,6 +1,7 @@
 import { Button, cn } from '@heroui/react';
 import CollapsibleSection from '@/modules/plugin/components/plugin/CollapsibleSection';
 import {
+    COMPACT_FIELD_CONTROL_COLUMN,
     COMPACT_FIELD_LABEL_COLUMN,
     COMPACT_FIELD_ROW,
     COMPACT_FIELD_TRIGGER,
@@ -138,7 +139,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
+                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)} title={argumentLabel}>
                         {argumentLabel}
                     </p>
                     <ArgumentFieldsRenderer
@@ -164,7 +165,7 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className='flex flex-col gap-2' key={fieldKey}>
-                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
+                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)} title={argumentLabel}>
                         {argumentLabel}
                     </p>
                     {items.length > 0 ? items.map(renderListItem(argument, items, fieldKey)) : (
@@ -195,10 +196,10 @@ const ArgumentFieldsRenderer = ({
 
             return (
                 <div className={cn('form-field-canvas', COMPACT_FIELD_ROW)} key={fieldKey}>
-                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
+                    <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)} title={argumentLabel}>
                         {argumentLabel}
                     </p>
-                    <div className='render-input-container flex items-center justify-end relative w-full min-w-0 max-w-[150px]'>
+                    <div className={cn('render-input-container flex items-center justify-end relative', COMPACT_FIELD_CONTROL_COLUMN)}>
                         <PluginMultiSelect
                             id={`${fieldKey}-multi-select`}
                             options={selectOptions}

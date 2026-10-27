@@ -67,7 +67,9 @@ const STATUS_LINE: Partial<Record<string, { text: string; className: string }>> 
 // OVITO's rollouts: a heading and the selected item's settings, stacked.
 const Rollout = ({ title, children }: { title: string; children: ReactNode }) => (
     <section className='flex flex-col border-foreground/[0.06] [&+&]:mt-1 [&+&]:border-t'>
-        <h3 className='m-0 flex min-h-9 items-center truncate px-4 text-sm font-medium text-foreground'>{title}</h3>
+        <h3 className='m-0 flex min-h-9 items-center px-4 text-sm font-medium text-foreground' title={title}>
+            <span className='min-w-0 truncate'>{title}</span>
+        </h3>
         <div className='flex flex-col gap-3.5 px-4 pb-3.5'>{children}</div>
     </section>
 );

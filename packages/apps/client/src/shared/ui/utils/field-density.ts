@@ -8,7 +8,10 @@ export const COMPACT_FIELD_TEXTAREA = 'input min-h-14 rounded-md border border-b
 
 export const COMPACT_FIELD_LABEL = 'text-xs text-muted leading-6 whitespace-nowrap overflow-hidden text-ellipsis';
 
-export const COMPACT_FIELD_LABEL_COLUMN = 'min-w-32 shrink-0 text-xs text-muted leading-6 whitespace-nowrap overflow-hidden text-ellipsis';
+export const COMPACT_FIELD_LABEL_COLUMN = 'min-w-0 text-xs text-muted leading-6 whitespace-nowrap overflow-hidden text-ellipsis';
+
+// The control gives way first, down to min-w-24, so the label is truncated only when it cannot fit beside it.
+export const COMPACT_FIELD_CONTROL_COLUMN = 'w-full min-w-24 max-w-[150px] shrink-[999]';
 
 export const COMPACT_FIELD_ROW = 'flex flex-row items-center justify-between gap-2 min-h-7';
 
