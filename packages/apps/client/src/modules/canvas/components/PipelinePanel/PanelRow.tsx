@@ -6,7 +6,7 @@ import type { MenuOption } from '@/shared/contracts/menu';
 
 export type PanelRowTone = 'queued' | 'running' | 'completed' | 'failed';
 
-const TONE_CLASS: Record<PanelRowTone, string> = {
+export const TONE_CLASS: Record<PanelRowTone, string> = {
     queued: 'text-warning-soft-foreground',
     running: 'text-info-soft-foreground',
     completed: 'text-success-soft-foreground',
