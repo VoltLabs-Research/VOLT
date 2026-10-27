@@ -61,13 +61,14 @@ class DaemonScriptingSessionOrchestrator {
             request,
             { timeoutMs: NOTEBOOK_SESSION_CREATE_TIMEOUT_MS }
         );
-        await ScriptingNotebook.update(
-            { id: input.notebookId },
-            {
-                runtimeNotebookId,
-                teamCluster: input.teamClusterId
-            }
-        );
+        const notebook = await ScriptingNotebook.findOneByOrFail({ id: input.notebookId });
+        notebook.runtimeNotebookId = runtimeNotebookId;
+        notebook.teamCluster = input.teamClusterId;
+        if (response.content) {
+            // What JupyterLab saved in the notebook's container is newer than the stored copy.
+            notebook.content = response.content as unknown as ScriptingNotebook['content'];
+        }
+        await notebook.save();
 
         const jupyter = response.jupyter;
         const accessGrant = await this.accessTokenService.createAccessGrant({
