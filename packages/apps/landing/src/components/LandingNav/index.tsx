@@ -1,7 +1,6 @@
-import { DOCS_URL, SIGN_IN_PATH } from '@/modules/marketing/contracts/links';
-import { useScrolledPast } from '@/modules/marketing/hooks/use-scroll-progress';
+import { DOCS_URL, SIGN_IN_URL, VOLT_APP_URL } from '@/contracts/links';
+import { useScrolledPast } from '@/hooks/use-scrolled-past';
 import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 const SECTIONS = [
     { href: '#anywhere', label: 'Get started' }
@@ -21,11 +20,11 @@ const LandingNav = () => {
                     <a href={DOCS_URL} className='landing-quiet'>Docs</a>
                 </nav>
                 <div className='landing-header-actions'>
-                    <Link to={SIGN_IN_PATH} className='landing-header-sign-in'>Sign in</Link>
-                    <Link to={SIGN_IN_PATH} className='landing-pill'>
+                    <a href={SIGN_IN_URL} className='landing-header-sign-in'>Sign in</a>
+                    <a href={VOLT_APP_URL} className='landing-pill'>
                         Open VOLT
-                        <ArrowRight aria-hidden='true' className='size-3.5' />
-                    </Link>
+                        <ArrowRight aria-hidden='true' size={14} />
+                    </a>
                 </div>
             </div>
         </header>

@@ -3,7 +3,6 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import { cssBaseline } from './eslint.css-baseline.js';
 import { classNameBaseline } from './eslint.classname-baseline.js';
 import { overflowBaseline } from './eslint.overflow-baseline.js';
 
@@ -142,7 +141,7 @@ export default tseslint.config(
     },
     {
         files: ['src/**/*.{ts,tsx}'],
-        ignores: ['src/app/**', ...cssBaseline],
+        ignores: ['src/app/**'],
         rules: {
             'no-restricted-imports': ['error', {
                 patterns: [cssImportPattern]
@@ -151,19 +150,10 @@ export default tseslint.config(
     },
     {
         files: ['src/modules/*/components/**/*.tsx'],
-        ignores: ['**/use-*.tsx', ...cssBaseline],
-        rules: {
-            'no-restricted-imports': ['error', {
-                patterns: [cssImportPattern, serviceLayerPattern]
-            }]
-        }
-    },
-    {
-        files: cssBaseline.filter((file) => /^src\/modules\/[^/]+\/components\/.*\.tsx$/.test(file)),
         ignores: ['**/use-*.tsx'],
         rules: {
             'no-restricted-imports': ['error', {
-                patterns: [serviceLayerPattern]
+                patterns: [cssImportPattern, serviceLayerPattern]
             }]
         }
     },
