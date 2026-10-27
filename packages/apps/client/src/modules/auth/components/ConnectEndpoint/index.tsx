@@ -6,15 +6,25 @@ import {
     describeEndpointFailure,
     probeEndpointHealth
 } from '@/modules/auth/services/endpoint-health';
+import { hasResolvedBackendEndpoint } from '@/app/core/http/utils/backend-origin';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import { Button } from '@heroui/react';
 import { sileo } from 'sileo';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import type { FormEvent } from 'react';
 
 const ConnectEndpointTemplate = () => {
     const [isVerifying, setIsVerifying] = useState(false);
+    const [searchParams] = useSearchParams();
+    // The landing's "Run in this browser" arrives as ?run=browser. It starts the in-browser stack
+    // only for a browser with no server yet, so a link never takes anyone off the server they use.
+    const runsInBrowser = searchParams.get('run') === 'browser' && !hasResolvedBackendEndpoint();
+
+    useEffect(() => {
+        if (runsInBrowser) runLocalStack();
+    }, [runsInBrowser]);
 
     const { control, getValues, trigger } = useForm<{ endpoint: string }>({
         defaultValues: {
@@ -52,6 +62,9 @@ const ConnectEndpointTemplate = () => {
             setIsVerifying(false);
         }
     };
+
+    // The page reloads into the in-browser stack; the form would only flash in between.
+    if (runsInBrowser) return null;
 
     return (
         <main className='flex min-h-dvh items-center justify-center bg-background px-4 py-18' aria-labelledby='connect-form-title'>
