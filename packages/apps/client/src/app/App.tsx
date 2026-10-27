@@ -28,7 +28,7 @@ ensureApplicationStoreCleanupsRegistered();
 
 
 const shouldMountWorkspaceGlobals = (pathname: string): boolean => {
-    return pathname !== '/' && pathname !== '/error' && pathname !== '/connect' && pathname !== '/home' && !pathname.startsWith('/auth/');
+    return pathname !== '/' && pathname !== '/error' && pathname !== '/connect' && !pathname.startsWith('/auth/');
 };
 
 const AppChrome = () => {
