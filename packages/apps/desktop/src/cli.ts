@@ -63,9 +63,7 @@ const printSummary = (env: Record<string, string>, withCluster: boolean, email: 
             `Server    ${env.SERVER_ENDPOINT}`,
             `Cluster   ${withCluster ? 'daemon running' : 'server only'}`,
             '',
-            'Connect from any device:',
-            '  Desktop app  https://github.com/VoltLabs-Research/VOLT/releases/latest',
-            `  When asked for the server address, enter ${env.SERVER_ENDPOINT}`
+            `Open ${env.CLIENT_HOST} in a browser on any device to sign in.`
         ].join('\n'),
         'VOLT is up'
     );
