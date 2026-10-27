@@ -537,7 +537,7 @@ PY
 import json
 import socket
 
-services = ['minio', 'redis', 'mongodb', 'daemon']
+services = ['postgres', 'daemon']
 ports = {}
 sockets = []
 
@@ -725,9 +725,8 @@ ports = json.loads(sys.argv[1])
 install_root = sys.argv[2]
 print('[install] Provisioning assets installed')
 print(f'[install] Install root: {install_root}')
-print(f"[install] MinIO port: {ports['minio']}")
-print(f"[install] Redis port: {ports['redis']}")
-print(f"[install] MongoDB port: {ports['mongodb']}")
+print(f"[install] PostgreSQL port: {ports['postgres']}")
+print(f"[install] Daemon port: {ports['daemon']}")
 PY
     }
 
