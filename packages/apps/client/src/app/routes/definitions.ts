@@ -5,12 +5,7 @@ export const publicRoutes: RouteConfig[] = [
     {
         path: '/',
         title: 'VOLT',
-        loader: () => import('@/modules/marketing/components/LandingPage')
-    },
-    {
-        path: '/home',
-        title: 'VOLT',
-        loader: () => import('@/modules/marketing/components/LandingPage')
+        loader: () => import('@/app/routes/HomeRedirect')
     },
     {
         path: '/error',
