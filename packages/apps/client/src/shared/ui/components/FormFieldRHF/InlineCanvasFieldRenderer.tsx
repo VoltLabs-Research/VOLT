@@ -12,6 +12,7 @@ import type { FieldTextElement } from './use-field-autocomplete';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import {
+    COMPACT_FIELD_CONTROL_COLUMN,
     COMPACT_FIELD_INPUT,
     COMPACT_FIELD_LABEL,
     COMPACT_FIELD_TEXTAREA,
@@ -251,16 +252,12 @@ const InlineCanvasFieldRenderer = ({
             isLoading && 'is-loading form-field-loading opacity-70 pointer-events-none'
         )}>
             {label && (
-                <label id={labelId} htmlFor={labelTargetId} className={cn(
+                <label id={labelId} htmlFor={labelTargetId} title={isCanvasVariant ? label : undefined} className={cn(
                     isCanvasVariant ? 'canvas-form-label' : 'form-field-inline-label labeled-input-label',
-                    isCheckbox ? {
+                    {
                         inline: 'shrink-0 text-base font-normal',
                         section: 'shrink-0 text-sm font-normal text-foreground',
-                        canvas: cn('w-auto min-w-0 flex-1', COMPACT_FIELD_LABEL)
-                    }[surface] : {
-                        inline: 'shrink-0 text-base font-normal',
-                        section: 'shrink-0 text-sm font-normal text-foreground',
-                        canvas: cn('min-w-32 shrink-0', COMPACT_FIELD_LABEL)
+                        canvas: cn('min-w-0', COMPACT_FIELD_LABEL)
                     }[surface]
                 )}>
                     {label}
@@ -269,7 +266,9 @@ const InlineCanvasFieldRenderer = ({
             <div ref={tokenAutocomplete.refs.setReference} className={cn('render-input-container', {
                 inline: 'flex items-center justify-end relative w-full min-w-0',
                 section: 'flex items-center justify-end relative w-full min-w-0',
-                canvas: 'flex items-center justify-end relative w-full min-w-0 max-w-[150px]'
+                canvas: isCheckbox
+                    ? 'flex items-center justify-end relative shrink-0'
+                    : cn('flex items-center justify-end relative', COMPACT_FIELD_CONTROL_COLUMN)
             }[surface])}>
                 {renderInlineField()}
             </div>

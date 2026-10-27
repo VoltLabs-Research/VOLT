@@ -10,6 +10,7 @@ import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-op
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
 import { cn } from '@heroui/react';
 import {
+    COMPACT_FIELD_CONTROL_COLUMN,
     COMPACT_FIELD_LABEL_COLUMN,
     COMPACT_FIELD_ROW,
     COMPACT_FIELD_TRIGGER,
@@ -147,10 +148,10 @@ const PluginConfigField = ({
     return (
         <div className='flex flex-col gap-2'>
             <div className={cn('form-field-canvas', COMPACT_FIELD_ROW)}>
-                <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)}>
+                <p className={cn('canvas-form-label', COMPACT_FIELD_LABEL_COLUMN)} title={argument.label || argument.argument}>
                     {argument.label || argument.argument}
                 </p>
-                <div className='render-input-container flex items-center justify-end relative w-full min-w-0 max-w-[150px]'>
+                <div className={cn('render-input-container flex items-center justify-end relative', COMPACT_FIELD_CONTROL_COLUMN)}>
                     {argument.multipleSelection ? (
                         <PluginMultiSelect
                             id={`${fieldKey}-plugins-select`}

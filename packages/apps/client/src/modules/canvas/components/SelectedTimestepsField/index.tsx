@@ -2,6 +2,7 @@ import { Autocomplete, ListBox, SearchField, cn } from '@heroui/react';
 import { useMemo, useCallback } from 'react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import {
+    COMPACT_FIELD_CONTROL_COLUMN,
     COMPACT_FIELD_LABEL,
     COMPACT_FIELD_TRIGGER,
     COMPACT_FIELD_VALUE
@@ -63,10 +64,10 @@ const SelectedTimestepsField = ({
 
     return (
         <div className='form-field-canvas flex min-h-7 flex-row items-center justify-between gap-2'>
-            <span className={cn('canvas-form-label min-w-32 shrink-0', COMPACT_FIELD_LABEL)}>
+            <span className={cn('canvas-form-label min-w-0', COMPACT_FIELD_LABEL)}>
                 Selected Timesteps
             </span>
-            <div className='render-input-container relative flex w-full min-w-0 max-w-[150px] items-center justify-end'>
+            <div className={cn('render-input-container relative flex items-center justify-end', COMPACT_FIELD_CONTROL_COLUMN)}>
                 <Autocomplete
                     className='min-w-0 flex-1'
                     selectionMode='multiple'
