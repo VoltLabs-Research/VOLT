@@ -527,11 +527,13 @@ html[data-volt-desktop][data-volt-maximized] #root {
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-[data-volt-desktop] .canvas-top-toolbar {
+/* The desktop window has no frame, so its headers are what drags it. A drag region swallows
+   clicks, so everything a header holds that takes input opts back out. */
+[data-volt-desktop] :is(.canvas-top-toolbar, .volt-drag-region) {
     -webkit-app-region: drag;
 }
 
-[data-volt-desktop] .canvas-top-toolbar :is(button, input, a, [role='button'], .volt-window-controls) {
+[data-volt-desktop] :is(.canvas-top-toolbar, .volt-drag-region) :is(button, input, textarea, select, a, label, [role='button'], [role='combobox'], [role='searchbox'], [contenteditable='true'], .volt-window-controls, .volt-no-drag) {
     -webkit-app-region: no-drag;
 }
 

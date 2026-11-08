@@ -68,7 +68,7 @@ const DashboardHeader = ({
     }
 
     return (
-        <header className='relative flex h-14 shrink-0 flex-row items-center gap-2 px-4 lg:px-6'>
+        <header className='volt-drag-region relative flex h-14 shrink-0 flex-row items-center gap-2 px-4 lg:px-6'>
             {/* The team keeps its name and the search gives way; only a phone, without the search, truncates it. */}
             <div className='flex min-w-0 flex-1 flex-row items-center gap-0.5 sm:min-w-max'>
                 <Button
