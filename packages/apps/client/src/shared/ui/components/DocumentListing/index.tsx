@@ -52,6 +52,7 @@ interface DocumentListingProps<T extends Identifiable, TContext = Record<string,
     renderGridItem?: (item: T, index: number) => ReactNode;
     renderGridSkeleton?: () => ReactNode;
     gridBeforeContent?: ReactNode;
+    gridLeadingContent?: ReactNode;
     gridClassName?: string;
     emptyIcon?: ReactNode;
     emptyTitle?: string;
@@ -99,6 +100,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
     renderGridItem,
     renderGridSkeleton,
     gridBeforeContent,
+    gridLeadingContent,
     gridClassName = '',
     emptyIcon,
     emptyTitle,
@@ -211,6 +213,7 @@ const DocumentListing = <T extends Identifiable, TContext = Record<string, never
                     emptyTitle={emptyTitle}
                     emptyButtonIsLoading={emptyButtonIsLoading}
                     beforeContent={gridBeforeContent}
+                    leadingContent={gridLeadingContent}
                     className={gridClassName}
                 />
             );
