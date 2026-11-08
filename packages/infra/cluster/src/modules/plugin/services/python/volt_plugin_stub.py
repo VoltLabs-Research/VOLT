@@ -308,7 +308,7 @@ class _ProgressLines:
     """Writes a generator plugin's yields as the @volt: lines the host reads from stderr."""
 
     def __init__(self) -> None:
-        self._last_written_at = 0.0
+        self._last_written_at: Optional[float] = None
         self._last_fraction: Optional[float] = None
 
     def fraction(self, value: float) -> None:
@@ -317,7 +317,11 @@ class _ProgressLines:
             return
         now = time.monotonic()
         # Every yield may report; only some of them are written, but always the one that finishes.
-        if fraction < 1.0 and now - self._last_written_at < _PROGRESS_LINE_INTERVAL_S:
+        if (
+            fraction < 1.0
+            and self._last_written_at is not None
+            and now - self._last_written_at < _PROGRESS_LINE_INTERVAL_S
+        ):
             return
         self._last_written_at = now
         self._last_fraction = fraction
