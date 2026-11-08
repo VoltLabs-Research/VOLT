@@ -1,4 +1,4 @@
-import { Chip, cn } from '@heroui/react';
+import { Chip, Skeleton, cn } from '@heroui/react';
 import { resolveInstallState } from '@/modules/plugin/components/marketplace/registry-version';
 
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
@@ -40,5 +40,17 @@ const MarketplaceRow = ({ item, installedVersion, isSelected, isInstalling, onSe
         </button>
     );
 };
+
+// A row's name over its publisher and version, on the row's line heights (text-base, text-xs).
+export const MarketplaceRowSkeleton = ({ nameWidth }: { nameWidth: string }) => (
+    <div className='flex w-full flex-col px-3 py-2.5' aria-hidden='true'>
+        <span className='flex h-6 items-center'>
+            <Skeleton className='h-3.5 rounded-md' style={{ width: nameWidth }} />
+        </span>
+        <span className='flex h-4 items-center'>
+            <Skeleton className='h-2.5 w-[38%] rounded-md' />
+        </span>
+    </div>
+);
 
 export default MarketplaceRow;

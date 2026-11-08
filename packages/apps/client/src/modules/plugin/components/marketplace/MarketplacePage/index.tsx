@@ -1,7 +1,6 @@
 import useDebouncedValue from '@/shared/ui/hooks/use-debounced-value';
-import Loader from '@/shared/ui/components/Loader';
 import MarketplaceDetail from '@/modules/plugin/components/marketplace/MarketplaceDetail';
-import MarketplaceRow from '@/modules/plugin/components/marketplace/MarketplaceRow';
+import MarketplaceRow, { MarketplaceRowSkeleton } from '@/modules/plugin/components/marketplace/MarketplaceRow';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { SearchField, cn } from '@heroui/react';
 import { buildInstalledVersionIndex } from '@/modules/plugin/components/marketplace/registry-version';
@@ -26,6 +25,8 @@ const RESULTS_PER_PAGE = 30;
 const INSTALLED_LOOKUP_LIMIT = 200;
 
 const SELECTED_PACKAGE_PARAM = 'package';
+// Plugin names of a few typical lengths, for the rows shown while the registry answers.
+const ROW_SKELETON_NAME_WIDTHS = ['62%', '48%', '70%', '55%', '40%', '66%', '52%', '45%'];
 
 const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Installing plugin onto a cluster...',
@@ -119,9 +120,10 @@ const MarketplacePage = () => {
 
         if (isFetching && items.length === 0) {
             return (
-                <div className='flex flex-row items-center justify-center py-10' role='status'>
-                    <Loader />
-                    <span className='sr-only'>Loading registry results</span>
+                <div className='flex flex-col gap-0.5' role='status' aria-label='Loading registry results'>
+                    {ROW_SKELETON_NAME_WIDTHS.map((width, index) => (
+                        <MarketplaceRowSkeleton key={index} nameWidth={width} />
+                    ))}
                 </div>
             );
         }

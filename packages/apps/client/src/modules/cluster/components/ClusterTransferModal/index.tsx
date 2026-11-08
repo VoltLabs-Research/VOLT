@@ -15,9 +15,13 @@ import {
     isClusterTransferJobOpen
 } from '@/modules/cluster/utils/team-cluster-transfer';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import { Skeleton } from '@heroui/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { CreateTeamClusterTransferRequestResponse } from '@volt/contracts/modules/cluster/domain';
 import type { TeamCluster } from '@volt/contracts/modules/cluster/domain';
+
+// Transfer job cards while they load: a state badge and scope, the clusters, then the stats.
+const TRANSFER_JOB_SKELETON_KEYS = [0, 1];
 
 interface ClusterTransferModalProps {
     teamCluster: TeamCluster | null;
@@ -158,7 +162,22 @@ const ClusterTransferModal = ({
                 <div className='flex flex-col gap-3'>
                     <h3 className='text-base font-medium text-foreground'>Recent transfer jobs</h3>
                     {transferJobsQuery.isLoading ? (
-                        <p className='text-xs text-muted'>Loading transfer jobs...</p>
+                        <div className='flex flex-col gap-3' role='status' aria-label='Loading transfer jobs'>
+                            {TRANSFER_JOB_SKELETON_KEYS.map((index) => (
+                                <div className='flex flex-col gap-2 p-4 rounded-xl bg-foreground/4' key={index}>
+                                    <div className='flex flex-row items-center gap-2'>
+                                        <Skeleton className='h-5 w-20 rounded-md' />
+                                        <Skeleton className='h-2.5 w-36 rounded-md' />
+                                    </div>
+                                    <span className='flex h-4 items-center'>
+                                        <Skeleton className='h-2.5 w-[48%] rounded-md' />
+                                    </span>
+                                    <span className='flex h-4 items-center'>
+                                        <Skeleton className='h-2.5 w-[78%] rounded-md' />
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     ) : transferJobs.length > 0 ? (
                         transferJobs.map((job) => (
                             <div className='flex flex-col gap-2 p-4 rounded-xl bg-foreground/4' key={job._id}>

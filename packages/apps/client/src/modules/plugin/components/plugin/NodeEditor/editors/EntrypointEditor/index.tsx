@@ -1,4 +1,4 @@
-import { Button } from '@heroui/react';
+import { Button, Skeleton } from '@heroui/react';
 import FormSection from '@/shared/ui/components/FormSection';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import useNodeEditorForm from '@/modules/plugin/components/plugin/NodeEditor/hooks/use-node-editor-form';
@@ -40,6 +40,19 @@ const MONACO_OPTIONS = {
         bottom: 12
     }
 };
+
+// Lines of a requirements file while Monaco loads, on the editor's padding and 19px lines.
+const REQUIREMENT_LINE_WIDTHS = ['22%', '34%', '18%', '28%'];
+
+const RequirementsEditorSkeleton = () => (
+    <div className='flex h-full w-full flex-col px-3 pt-3' role='status' aria-label='Loading editor'>
+        {REQUIREMENT_LINE_WIDTHS.map((width) => (
+            <span className='flex h-[19px] items-center' key={width}>
+                <Skeleton className='h-2.5 rounded-md' style={{ width }} />
+            </span>
+        ))}
+    </div>
+);
 
 const EntrypointEditor = ({ node }: EditorProps) => {
     const form = useNodeEditorForm<EntrypointEditorFormValues>(node, 'entrypoint', ENTRYPOINT_EDITOR_DEFAULT_VALUES);
@@ -191,7 +204,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                                 language='plaintext'
                                 value={watchedRequirementsFile}
                                 theme={monacoTheme}
-                                loading={<div className='p-4 text-muted'>Loading editor...</div>}
+                                loading={<RequirementsEditorSkeleton />}
                                 options={MONACO_OPTIONS}
                                 onChange={(value) => {
                                     form.setValue('requirementsFile', value ?? '', { shouldDirty: true });

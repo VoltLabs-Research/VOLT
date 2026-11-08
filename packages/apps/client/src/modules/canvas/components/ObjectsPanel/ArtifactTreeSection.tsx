@@ -18,7 +18,7 @@ import {
 } from '../../utils/tree-menus';
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { cn } from '@heroui/react';
+import { Skeleton, cn } from '@heroui/react';
 import { useShallow } from 'zustand/react/shallow';
 
 import type { ArtifactSection } from './use-artifact-sections';
@@ -31,6 +31,9 @@ const CHEVRON_STYLE = {
     width: 13,
     height: 13
 } as const;
+
+// Timestep groups while the models load: a chevron, the timestep, and its model count.
+const TIMESTEP_SKELETON_WIDTHS = ['34%', '42%', '28%'];
 
 interface ArtifactTreeSectionProps {
     section: ArtifactSection;
@@ -146,8 +149,20 @@ const ArtifactTreeSection = ({
             onExpandedChange={section.setOpen}
         >
             <Scrollable className='canvas-tree-container flex flex-col gap-1 px-2 pb-2.5 pt-1.5' role='tree' aria-label={section.ariaLabel}>
-                {timesteps.length === 0 ? (
-                    <CanvasTreeEmptyRow label={isLoading ? 'Loading...' : 'No models generated'} />
+                {timesteps.length === 0 && isLoading ? (
+                    <div role='status' aria-label='Loading models'>
+                        {TIMESTEP_SKELETON_WIDTHS.map((width) => (
+                            <div className='mt-1 flex items-center gap-2 px-2.5 py-1.5' key={width}>
+                                <Skeleton className='size-[13px] shrink-0 rounded-sm' />
+                                <span className='flex h-4 flex-1 items-center'>
+                                    <Skeleton className='h-2.5 rounded-md' style={{ width }} />
+                                </span>
+                                <Skeleton className='h-2.5 w-3 rounded-md' />
+                            </div>
+                        ))}
+                    </div>
+                ) : timesteps.length === 0 ? (
+                    <CanvasTreeEmptyRow label='No models generated' />
                 ) : (
                     timesteps.slice(0, visibleCount).map(renderTimestepGroup)
                 )}
