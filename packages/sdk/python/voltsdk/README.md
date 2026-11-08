@@ -209,7 +209,9 @@ included:
 A line has to start with the directive; anything else stays in the log. VOLT
 shows about one value a second, so there is no need to write one per iteration.
 A `@volt:status` is also kept in the log as a `[Volt]` line, so a failed run's
-log says what it was doing.
+log says what it was doing. VOLT sets `VOLT_PROGRESS=1` in the environment of
+the plugins it runs; CoreToolkit plugins and `report_progress` write nothing
+without it, so a run by hand logs what it always did.
 
 A persistent Python plugin can write `process(frame, config)` as a generator,
 the way OVITO's `modify()` reports progress: each yielded number is how far it

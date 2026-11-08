@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -15,9 +16,23 @@ class ReportProgressTest(unittest.TestCase):
         progress._last_written_at = None
         progress._last_fraction = None
         self.stream = io.StringIO()
+        self.previous_flag = os.environ.get("VOLT_PROGRESS")
+        os.environ["VOLT_PROGRESS"] = "1"
+
+    def tearDown(self) -> None:
+        if self.previous_flag is None:
+            os.environ.pop("VOLT_PROGRESS", None)
+        else:
+            os.environ["VOLT_PROGRESS"] = self.previous_flag
 
     def lines(self) -> list[str]:
         return self.stream.getvalue().splitlines()
+
+    def test_writes_nothing_outside_volt(self) -> None:
+        os.environ.pop("VOLT_PROGRESS", None)
+        progress.report_progress(1, 2, "Meshing", stream=self.stream)
+        progress.report_status("Writing", stream=self.stream)
+        self.assertEqual(self.lines(), [])
 
     def test_writes_done_of_total_as_a_fraction_with_its_text(self) -> None:
         progress.report_progress(340, 1000, "Meshing cells", stream=self.stream)
