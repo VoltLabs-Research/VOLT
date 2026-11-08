@@ -1,6 +1,6 @@
 import useStageConfig from '@/modules/canvas/hooks/use-stage-config';
 import useExpressionSelect from './use-expression-select';
-import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import useExpressionFrameAtoms from '@/modules/canvas/hooks/use-expression-frame-atoms';
 import StageEditorLayout from '../StageEditorLayout';
 import {
     Button,
@@ -13,7 +13,7 @@ import {
     ToggleButtonGroup,
     cn
 } from '@heroui/react';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useDeferredValue, useLayoutEffect, useRef, useState } from 'react';
 import {
     DEFAULT_EXPRESSION_SELECT_COLOR,
     type ExpressionSelectAction,
@@ -54,19 +54,16 @@ const ExpressionSelectStageEditor = ({
     const [draft, setDraft] = useState(appliedExpression);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const { data: atomBuffer } = trajectoryAtomsQuery(
-        {
-            trajectoryId: trajectoryId ?? '',
-            analysisId,
-            timestep: currentTimestep ?? 0,
-            page: 1,
-            limit: 1000
-        },
-        { enabled: Boolean(trajectoryId && currentTimestep !== undefined) }
-    );
+    const { data: atomBuffer, isLoading: isLoadingAtoms } = useExpressionFrameAtoms({
+        trajectoryId,
+        analysisId,
+        timestep: currentTimestep
+    });
 
+    // Typing stays responsive on large frames: the count follows the draft as soon as it can.
+    const deferredDraft = useDeferredValue(draft);
     const { matchCount, isValid, error, autoRoute } = useExpressionSelect(
-        draft,
+        deferredDraft,
         atomBuffer,
         currentTimestep,
         0
@@ -82,22 +79,23 @@ const ExpressionSelectStageEditor = ({
 
     const hasExpression = draft.trim().length > 0;
     const isDirty = draft !== appliedExpression;
-    const canApply = hasExpression && isDirty && (autoRoute || isValid);
+    const isEvaluatingDraft = deferredDraft !== draft;
+    const canApply = hasExpression && isDirty && !isEvaluatingDraft && (autoRoute || isValid);
     const isDelete = action === 'delete';
 
-    // The count covers the atoms loaded for preview; say so when that is not the whole frame.
-    const sampleSize = atomBuffer?.count ?? 0;
-    const isWholeFrame = Boolean(atomBuffer && atomBuffer.total <= atomBuffer.count);
+    const atomCount = atomBuffer?.count ?? 0;
     const hasCount = hasExpression && isValid && matchCount !== null;
 
     let status: string | null = null;
     if (autoRoute && hasExpression) {
         status = 'Large dataset — evaluated on the daemon';
+    } else if (hasExpression && isLoadingAtoms) {
+        status = 'Loading atoms…';
     } else if (hasCount) {
-        status = `${matchCount.toLocaleString()} of ${isWholeFrame ? '' : 'first '}${sampleSize.toLocaleString()} atoms`;
+        status = `${matchCount.toLocaleString()} of ${atomCount.toLocaleString()} atoms`;
     }
 
-    const applyLabel = isDelete && hasCount && isWholeFrame
+    const applyLabel = isDelete && hasCount
         ? `Delete ${matchCount.toLocaleString()} atoms`
         : 'Apply';
 

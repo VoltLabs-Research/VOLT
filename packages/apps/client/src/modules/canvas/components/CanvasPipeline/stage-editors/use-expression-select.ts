@@ -1,4 +1,7 @@
-import useExpressionEvaluator from './use-expression-evaluator';
+import { ExpressionError, parse } from '@voltstack/expressions';
+import { useMemo } from 'react';
+import { compileExpression } from '@/modules/canvas/utils/compile-expression';
+import { createExpressionAtomContext } from '@/modules/canvas/utils/expression-atom-context';
 import type { GetAtomsResponse } from '@/modules/trajectory/api/services/trajectory-service';
 
 interface UseExpressionSelectResult {
@@ -8,38 +11,58 @@ interface UseExpressionSelectResult {
     autoRoute: boolean;
 }
 
+const toMessage = (error: unknown): string => (
+    error instanceof ExpressionError ? error.message : String(error)
+);
+
 const useExpressionSelect = (
     expression: string,
     atomBuffer: GetAtomsResponse | null | undefined,
-    frameIndex?: number,
-    cellVolume?: number
-): UseExpressionSelectResult => {
-    const { isValid, error, evaluatedColumn, autoRoute } = useExpressionEvaluator(
-        expression,
-        atomBuffer,
-        frameIndex,
-        cellVolume
-    );
-
-    if (!isValid || !evaluatedColumn) {
+    frameIndex = 0,
+    cellVolume = 0
+): UseExpressionSelectResult => useMemo(() => {
+    if (!expression.trim() || !atomBuffer) {
         return {
             matchCount: null,
-            isValid,
-            error,
-            autoRoute
+            isValid: false,
+            autoRoute: false
         };
     }
 
-    let matchCount = 0;
-    for (let i = 0; i < evaluatedColumn.length; i++) {
-        matchCount += evaluatedColumn[i] !== 0 ? 1 : 0;
+    // The frame has more atoms than the browser reads; only the syntax can be checked here.
+    if (atomBuffer.total > atomBuffer.count) {
+        try {
+            parse(expression);
+        } catch (error) {
+            return {
+                matchCount: null,
+                isValid: false,
+                error: toMessage(error),
+                autoRoute: false
+            };
+        }
+        return {
+            matchCount: null,
+            isValid: true,
+            autoRoute: true
+        };
     }
 
-    return {
-        matchCount,
-        isValid: true,
-        autoRoute: false
-    };
-};
+    try {
+        const context = createExpressionAtomContext(atomBuffer, frameIndex, cellVolume);
+        return {
+            matchCount: compileExpression(expression, context).select().count,
+            isValid: true,
+            autoRoute: false
+        };
+    } catch (error) {
+        return {
+            matchCount: null,
+            isValid: false,
+            error: toMessage(error),
+            autoRoute: false
+        };
+    }
+}, [expression, atomBuffer, frameIndex, cellVolume]);
 
 export default useExpressionSelect;
