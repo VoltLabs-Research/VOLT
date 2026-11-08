@@ -108,9 +108,10 @@ export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<
         limit: 1000
     });
 
+    // The listing carries a frame summary, not the frames themselves: those come from the trajectory detail.
     return result.data.filter(
         (trajectory: Trajectory) => isTrajectoryCompleted(trajectory.status)
-            && trajectory.frames.length > 0
+            && (trajectory.framesCount ?? 0) > 0
     );
 });
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);

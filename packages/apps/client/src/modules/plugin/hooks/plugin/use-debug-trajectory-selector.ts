@@ -1,4 +1,4 @@
-import { debugTrajectoriesQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { debugTrajectoriesQuery, useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -25,6 +25,11 @@ const useDebugTrajectorySelector = () => {
     const trajectoriesData = trajectoryQuery.data;
     const trajectories = useMemo(() => trajectoriesData ?? [], [trajectoriesData]);
 
+    // The listing has no frames, so the selected trajectory's frames come from its detail.
+    const trajectoryDetailQuery = useTrajectoryByIdQuery(selectedTrajectoryId ?? '', {
+        enabled: Boolean(selectedTrajectoryId)
+    });
+
     const updateSearchParams = useCallback((updates: Record<string, string | number | boolean | null | undefined>, replace = false) => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), { replace });
     }, [setSearchParams]);
@@ -33,9 +38,14 @@ const useDebugTrajectorySelector = () => {
         return trajectories.find((trajectory) => trajectory._id === selectedTrajectoryId) || null;
     }, [trajectories, selectedTrajectoryId]);
 
+    const trajectoryDetail = trajectoryDetailQuery.data;
     const frames = useMemo(() => {
-        return selectedTrajectory?.frames || [];
-    }, [selectedTrajectory]);
+        if (!selectedTrajectory || trajectoryDetail?._id !== selectedTrajectory._id) {
+            return [];
+        }
+
+        return trajectoryDetail.frames ?? [];
+    }, [selectedTrajectory, trajectoryDetail]);
 
     const setSelectedTrajectory = useCallback((trajectoryId: string | null) => {
         updateSearchParams({
@@ -50,8 +60,10 @@ const useDebugTrajectorySelector = () => {
         });
     }, [updateSearchParams]);
 
+    // Drop a trajectory from the URL only once the listing has loaded without it.
+    const isTrajectoryListReady = trajectoryQuery.isSuccess;
     useEffect(() => {
-        if (!selectedTrajectoryId) {
+        if (!selectedTrajectoryId || !isTrajectoryListReady) {
             return;
         }
 
@@ -61,8 +73,10 @@ const useDebugTrajectorySelector = () => {
                 [DEBUG_TIMESTEP_PARAM]: null
             }, true);
         }
-    }, [selectedTrajectory, selectedTrajectoryId, updateSearchParams]);
+    }, [isTrajectoryListReady, selectedTrajectory, selectedTrajectoryId, updateSearchParams]);
 
+    // Likewise, drop a timestep only once the selected trajectory's frames have loaded without it.
+    const areFramesReady = trajectoryDetailQuery.isSuccess && trajectoryDetail?._id === selectedTrajectoryId;
     useEffect(() => {
         if (!selectedTimestepParam) {
             return;
@@ -73,11 +87,15 @@ const useDebugTrajectorySelector = () => {
             return;
         }
 
+        if (!areFramesReady) {
+            return;
+        }
+
         const hasSelectedFrame = frames.some((frame) => frame.timestep === selectedTimestep);
         if (!hasSelectedFrame) {
             updateSearchParams({ [DEBUG_TIMESTEP_PARAM]: null }, true);
         }
-    }, [frames, selectedTimestep, selectedTimestepParam, updateSearchParams]);
+    }, [areFramesReady, frames, selectedTimestep, selectedTimestepParam, updateSearchParams]);
 
     return {
         trajectories,
@@ -87,7 +105,8 @@ const useDebugTrajectorySelector = () => {
         selectedTimestep,
         setSelectedTrajectory,
         setSelectedTimestep,
-        isLoading: trajectoryQuery.isLoading
+        isLoading: trajectoryQuery.isLoading,
+        areFramesLoading: trajectoryDetailQuery.isLoading
     };
 };
 
