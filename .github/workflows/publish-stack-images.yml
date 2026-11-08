@@ -28,7 +28,8 @@ on:
       - 'packages/sdk/daemon-cluster-client/**'
       # The server image carries the daemon sources it ships in build distribution mode.
       - 'packages/infra/cluster/**'
-      # What the cloud deployment runs these images with.
+      # app.voltcloud.dev: the landing plus the client, built on the client stack image.
+      - 'packages/apps/landing/**'
       - 'compose.quantum.yml'
   workflow_dispatch:
 
@@ -167,13 +168,61 @@ jobs:
             echo '- Platforms: `linux/amd64`, `linux/arm64`'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # Redeploys the cloud stack Quantum runs from compose.quantum.yml. Quantum's own
-  # GitHub webhook would fire on push, before these images exist, so the workflow
-  # sends Quantum the push event itself once both manifests are published, signed
-  # with that stack's webhook secret the way GitHub signs it.
-  deploy:
-    name: Redeploy the cloud stack
+  # app.voltcloud.dev serves the landing and a client with no server of its own, so a
+  # visitor connects to a server or runs VOLT in the browser. The image reuses the client
+  # bundle published above rather than building Emscripten again. amd64 only: it runs on
+  # the deployment's host, not on users' machines.
+  web:
+    name: Publish web image
     needs: manifest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Resolve image names
+        id: inputs
+        run: |
+          set -euo pipefail
+          owner="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "client=${{ env.REGISTRY }}/${owner}/volt-client-stack:sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          echo "image=${{ env.REGISTRY }}/${owner}/volt-web" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/apps/client/Dockerfile.web
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          build-args: CLIENT_IMAGE=${{ steps.inputs.outputs.client }}
+          tags: |
+            ${{ steps.inputs.outputs.image }}:main
+            ${{ steps.inputs.outputs.image }}:sha-${{ github.sha }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  # Redeploys app.voltcloud.dev, which Quantum runs from compose.quantum.yml. Quantum's
+  # own GitHub webhook would fire on push, before the image exists, so the workflow
+  # sends Quantum the push event itself once the web image is published, signed with
+  # that stack's webhook secret the way GitHub signs it.
+  deploy:
+    name: Redeploy app.voltcloud.dev
+    needs: web
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
