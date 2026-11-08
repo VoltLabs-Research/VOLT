@@ -13,6 +13,8 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Network::Timeout': 'Request timeout - Check your connection',
     'Network::ConnectionError': 'Network connection error - Check your internet connection',
     'Internal::Server::Error': 'An unexpected error occurred',
+
+    'Registry::PlatformBuildMissing': 'This plugin has no build for this cluster\'s platform',
 };
 
 export const getErrorMessage = (code: string, fallback: string = 'Unknown error'): string => {
