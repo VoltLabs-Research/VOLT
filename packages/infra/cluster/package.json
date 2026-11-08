@@ -65,7 +65,7 @@
   },
   "coreToolkitTools": {
     "repository": "VoltLabs-Research/CoreToolkit",
-    "release": "v2.6.1"
+    "release": "v2.7.0"
   },
   "voltZstd": {
     "release": "v1.5.7"
