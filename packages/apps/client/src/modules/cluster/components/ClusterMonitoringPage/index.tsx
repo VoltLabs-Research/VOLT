@@ -1,6 +1,5 @@
-import Loader from '@/shared/ui/components/Loader';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
-import { buttonVariants } from '@heroui/react';
+import { Skeleton, buttonVariants } from '@heroui/react';
 import useClusterMonitoringPage from './use-cluster-monitoring-page';
 import { getClusterMetricsRecoveryState } from '@/modules/cluster/utils/cluster-live-metrics-status';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
@@ -18,16 +17,42 @@ const NetworkChart = lazy(() => import('@/shared/ui/components/NetworkChart'));
 
 const DEFERRED_VISUALIZATIONS_IDLE_TIMEOUT_MS = 200;
 
-const renderDeferredVisualizationsFallback = () => (
-    <div
-        className='flex min-h-72 items-center justify-center p-8'
-        role='status'
-        aria-live='polite'
-        aria-atomic='true'
-    >
-        <div className='flex flex-col items-center gap-3'>
-            <Loader size='sm' />
-            <span className='text-sm text-muted text-center leading-normal'>Loading live charts</span>
+// A chart card (ChartContainer) while it loads: its title above the chart area.
+const ChartCardSkeleton = () => (
+    <section className='flex min-w-0 flex-col gap-6 rounded-2xl bg-foreground/4 p-6 max-sm:p-5'>
+        <span className='flex h-6 items-center'>
+            <Skeleton className='h-3.5 w-32 rounded-md' />
+        </span>
+        <Skeleton className='h-70 w-full rounded-2xl' />
+    </section>
+);
+
+const RESOURCE_ROW_KEYS = ['cpu', 'memory', 'disk', 'network'];
+
+// The page while its metrics or charts load, in the order it renders them: the resource readout
+// (CPU, memory, disk, network), the CPU distribution, then network traffic beside disk operations.
+const renderMonitoringSkeleton = () => (
+    <div className='flex flex-col gap-4' role='status' aria-label='Loading live charts'>
+        <div className='divide-y divide-foreground/6 rounded-2xl bg-foreground/4'>
+            {RESOURCE_ROW_KEYS.map((key) => (
+                <div className='flex flex-row items-center gap-6 px-5 py-4' key={key}>
+                    <div className='flex flex-col gap-0.5 md:w-64 md:shrink-0'>
+                        <span className='flex h-6 items-center'>
+                            <Skeleton className='h-3.5 w-20 rounded-md' />
+                        </span>
+                        <span className='flex h-5 items-center'>
+                            <Skeleton className='h-2.5 w-44 rounded-md' />
+                        </span>
+                    </div>
+                    <Skeleton className='h-8 min-w-24 flex-1 rounded-md max-md:hidden' />
+                    <Skeleton className='ms-auto h-5 w-16 shrink-0 rounded-md' />
+                </div>
+            ))}
+        </div>
+        <ChartCardSkeleton />
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+            <ChartCardSkeleton />
+            <ChartCardSkeleton />
         </div>
     </div>
 );
@@ -86,11 +111,7 @@ const ClusterMonitoringPage = () => {
     return (
         <Scrollable className='h-full! text-foreground'>
             <div className='flex min-h-full flex-col gap-4 w-full max-w-[1600px] mx-auto p-4 md:px-8 min-[1440px]:px-12'>
-                {vm.isLoading && !vm.hasClusters && (
-                    <div className='flex min-h-72 flex-1 items-center justify-center'>
-                        <Loader />
-                    </div>
-                )}
+                {vm.isLoading && !vm.hasClusters && renderMonitoringSkeleton()}
 
                 {!vm.isLoading && !vm.hasClusters && (
                     <div className='flex min-h-72 flex-1 flex-col items-center justify-center gap-4 text-center'>
@@ -124,10 +145,10 @@ const ClusterMonitoringPage = () => {
 
                 {vm.hasClusters && vm.metrics && (
                     <>
-                        {shouldShowProgressiveVisualizationLoader && renderDeferredVisualizationsFallback()}
+                        {shouldShowProgressiveVisualizationLoader && renderMonitoringSkeleton()}
 
                         {shouldRenderVisualizations && (
-                            <Suspense fallback={renderDeferredVisualizationsFallback()}>
+                            <Suspense fallback={renderMonitoringSkeleton()}>
                                 <ClusterResourceReadout metrics={vm.metrics} history={vm.history} />
 
                                 <CpuDistribution history={vm.history} metrics={vm.metrics} />

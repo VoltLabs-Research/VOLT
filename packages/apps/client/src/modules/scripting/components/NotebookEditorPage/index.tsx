@@ -1,4 +1,5 @@
 import NotebookCellView from './NotebookCellView';
+import NotebookEditorSkeleton from './NotebookEditorSkeleton';
 import type { CellRunMode } from './CellEditor';
 import useNotebookEditor from '@/modules/scripting/hooks/use-notebook-editor';
 import type { KernelStatus, SaveStatus } from '@/modules/scripting/hooks/use-notebook-editor';
@@ -7,7 +8,6 @@ import { localStackMode } from '@/modules/local-stack/services/local-stack-mode'
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import type { NotebookCellType } from '@/modules/scripting/utils/notebook-document';
-import Loader from '@/shared/ui/components/Loader';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import StatusPill from '@/shared/ui/components/StatusPill';
@@ -150,11 +150,7 @@ const NotebookEditorPage = () => {
     }
 
     if(!notebook || !editor.isLoaded || !isMonacoReady){
-        return (
-            <div className='flex h-full w-full items-center justify-center' role='status' aria-label='Opening the notebook'>
-                <Loader size='lg' />
-            </div>
-        );
+        return <NotebookEditorSkeleton />;
     }
 
     const canRun = editor.kernelStatus !== 'unavailable' && editor.kernelStatus !== 'dead' && editor.kernelStatus !== 'connecting';

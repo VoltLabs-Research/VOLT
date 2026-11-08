@@ -1,5 +1,4 @@
-import Loader from '@/shared/ui/components/Loader';
-import { Autocomplete, ListBox, SearchField, Select, cn } from '@heroui/react';
+import { Autocomplete, ListBox, SearchField, Select, Skeleton, cn } from '@heroui/react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { getMultiSelectTriggerLabel } from '@/modules/plugin/contracts/select-option';
 import type { SelectOption } from '@/modules/plugin/contracts/select-option';
@@ -42,9 +41,16 @@ const SelectOptionList = ({ options, ariaLabel, onScrollEnd }: SelectOptionListP
     );
 };
 
+// The options still on their way, as list box items (min-h-9, px-2) holding a title.
+const PENDING_OPTION_WIDTHS = ['64%', '48%'];
+
 const PendingRow = () => (
-    <div className='flex flex-row items-center justify-center p-2'>
-        <Loader size='sm' />
+    <div className='flex flex-col' role='status' aria-label='Loading more options'>
+        {PENDING_OPTION_WIDTHS.map((width) => (
+            <div className='flex min-h-9 items-center px-2 py-1.5' key={width}>
+                <Skeleton className='h-3.5 rounded-md' style={{ width }} />
+            </div>
+        ))}
     </div>
 );
 
