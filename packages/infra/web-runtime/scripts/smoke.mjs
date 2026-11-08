@@ -32,7 +32,7 @@ const server = http.createServer((request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
     const file = url.pathname === '/'
         ? null
-        : path.join(distDir, path.normalize(url.pathname));
+        : path.join(distDir, path.normalize(decodeURIComponent(url.pathname)));
     // COOP/COEP as the client will be served with, so the workers get the same capabilities.
     const headers = { 'cross-origin-opener-policy': 'same-origin', 'cross-origin-embedder-policy': 'require-corp' };
     if(!file){
