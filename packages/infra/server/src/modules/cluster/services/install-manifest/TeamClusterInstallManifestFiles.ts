@@ -4,6 +4,7 @@ import type {
     TeamClusterInstallManifestPortsView
 } from '@modules/cluster/services/install-manifest/TeamClusterInstallManifest';
 import type { DecryptedTeamClusterServiceCredentials } from '@modules/cluster/services/daemon/DaemonCredentialGuard';
+import { getServerVersion } from '@modules/system/services/server-version';
 
 export const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';
 
@@ -105,6 +106,7 @@ const buildDaemonEnvFile = (
     credentials: DecryptedTeamClusterServiceCredentials,
     cloudUrl: string
 ): string => {
+    const serverVersion = getServerVersion();
     return [
         `TEAM_ID=${teamId}`,
         `TEAM_CLUSTER_ID=${teamClusterId}`,
@@ -114,7 +116,9 @@ const buildDaemonEnvFile = (
         `TEAM_CLUSTER_DAEMON_PASSWORD=${credentials.daemonPassword}`,
         'DAEMON_DATA_DIR=/var/lib/volt-daemon',
         `DATABASE_URL=postgres://${credentials.postgresUsername}:${credentials.postgresPassword}@postgres:5432/volt-cluster`,
-        'PORT=8080'
+        'PORT=8080',
+        // The daemon reports it, so the server knows when this cluster is behind its own release.
+        ...(serverVersion ? [`VOLT_VERSION=${serverVersion}`] : [])
     ].join('\n');
 };
 

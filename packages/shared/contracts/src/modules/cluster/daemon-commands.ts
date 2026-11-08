@@ -32,6 +32,7 @@ export const DaemonCommand = Object.freeze({
     RuntimeQueueConcurrencyApply: 'runtime.queue-concurrency.apply',
     RuntimeQueuesSnapshot: 'runtime.queues.snapshot',
     RuntimeUninstall: 'runtime.uninstall',
+    RuntimeUpdate: 'runtime.update',
 
     RemoteExplorerList: 'remote.explorer.list',
     RemoteExplorerNode: 'remote.explorer.node',
