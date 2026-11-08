@@ -262,6 +262,13 @@ pre {
     margin-top: clamp(28px, 4.4vh, 44px);
 }
 
+.landing-hero-or {
+    margin-top: clamp(20px, 3vh, 32px);
+    font-size: 0.9375rem;
+    letter-spacing: -0.008em;
+    color: var(--lp-dim);
+}
+
 /* Runtimes */
 
 .landing-code {

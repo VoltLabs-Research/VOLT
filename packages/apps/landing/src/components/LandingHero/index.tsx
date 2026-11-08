@@ -1,5 +1,5 @@
-import { GITHUB_URL } from '@/contracts/links';
-import { ArrowUpRight } from 'lucide-react';
+import { RUN_IN_BROWSER_URL } from '@/contracts/links';
+import { ChevronRight } from 'lucide-react';
 
 const LandingHero = () => (
     <section className='landing-wrap landing-hero' aria-labelledby='landing-hero-title'>
@@ -11,11 +11,13 @@ const LandingHero = () => (
             Collaborative visualization and analysis for particle-based simulations, with state-of-the-art algorithms that run at any scale.
         </p>
         <div className='landing-hero-actions landing-intro'>
-            <a href={GITHUB_URL} className='landing-pill landing-pill--lg landing-pill--ghost'>
-                View on GitHub
-                <ArrowUpRight aria-hidden='true' size={16} />
+            <a href={RUN_IN_BROWSER_URL} className='landing-pill landing-pill--lg'>
+                Run in this browser
+                <ChevronRight aria-hidden='true' size={16} />
             </a>
         </div>
+        {/* Leads into the runtime cards below, the other ways to get VOLT. */}
+        <p className='landing-hero-or landing-intro' aria-hidden='true'>or</p>
     </section>
 );
 
