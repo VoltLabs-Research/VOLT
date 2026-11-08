@@ -113,6 +113,7 @@ export const ErrorCodes = createErrorCodes({
     ANALYSIS_PROVENANCE_NOT_FOUND: 'AnalysisProvenance::NotFound',
     REGISTRY_PACKAGE_NAME_REQUIRED: 'Registry::PackageNameRequired',
     REGISTRY_PLATFORM_UNAVAILABLE: 'Registry::PlatformUnavailable',
+    REGISTRY_PLATFORM_BUILD_MISSING: 'Registry::PlatformBuildMissing',
     REGISTRY_PACKAGE_NOT_FOUND: 'Registry::PackageNotFound',
 
     TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',
