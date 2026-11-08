@@ -17,7 +17,7 @@ import type { FilesystemObjectStore } from '@shared/storage/FilesystemObjectStor
 import type { QueueService } from '@shared/queues/QueueService';
 import { TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME, toTrajectoryFrameJobKey } from '@core/constants/queue-names';
 import type { FrameProcessingQueueJobPayload } from '@shared/contracts/types/queue-trajectory';
-import { scanTrajectoryFrames, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
+import { readTrajectoryFrameMetadata, scanTrajectoryFrames, type ParsedFrameMetadata } from '@modules/trajectory/services/parsing/TrajectoryParserFactory';
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import { mapLimited } from '@shared/utilities/map-limited';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
@@ -241,14 +241,13 @@ export class TrajectoryIngestCommand {
         const frames = scanTrajectoryFrames(localPath);
 
         if (frames.length === 1 && reusable) {
-            return [toIngestFrame(frames[0].metadata, reusable.size, reusable.objectKey)];
+            return [toIngestFrame(readTrajectoryFrameMetadata(localPath), reusable.size, reusable.objectKey)];
         }
 
         const promoted: TrajectoryIngestFrame[] = [];
 
         for (const frame of frames) {
             const framePath = `${localPath}.frame-${frame.index}`;
-            const objectKey = `${expandedKeyPrefix}-${frame.metadata.timestep}.dump`;
 
             await pipeline(
                 createReadStream(localPath, {
@@ -258,6 +257,10 @@ export class TrajectoryIngestCommand {
                 createWriteStream(framePath)
             );
 
+            // Read from the frame's own file: reading it out of the whole trajectory rescans all of it.
+            const metadata = readTrajectoryFrameMetadata(framePath);
+            const objectKey = `${expandedKeyPrefix}-${metadata.timestep}.dump`;
+
             await this.objectStore.putObjectStream({
                 bucket: INGEST_BUCKET,
                 objectKey,
@@ -266,7 +269,7 @@ export class TrajectoryIngestCommand {
             });
 
             await fs.unlink(framePath).catch(() => {});
-            promoted.push(toIngestFrame(frame.metadata, frame.byteLength, objectKey));
+            promoted.push(toIngestFrame(metadata, frame.byteLength, objectKey));
         }
 
         return promoted;
