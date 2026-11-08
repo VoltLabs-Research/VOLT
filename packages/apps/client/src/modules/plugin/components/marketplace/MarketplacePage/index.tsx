@@ -142,6 +142,7 @@ const MarketplacePage = () => {
                         item={item}
                         installedVersion={installedVersionByKey.get(item.name)}
                         isSelected={item.fullName === selectedFullName}
+                        isInstalling={installingNames.has(item.fullName)}
                         onSelect={selectPackage}
                     />
                 ))}

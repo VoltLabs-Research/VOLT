@@ -7,10 +7,11 @@ interface MarketplaceRowProps {
     item: RegistryPackageSummary;
     installedVersion?: string;
     isSelected: boolean;
+    isInstalling: boolean;
     onSelect: (item: RegistryPackageSummary) => void;
 }
 
-const MarketplaceRow = ({ item, installedVersion, isSelected, onSelect }: MarketplaceRowProps) => {
+const MarketplaceRow = ({ item, installedVersion, isSelected, isInstalling, onSelect }: MarketplaceRowProps) => {
     const state = resolveInstallState(item.latest, installedVersion);
 
     return (
@@ -33,8 +34,9 @@ const MarketplaceRow = ({ item, installedVersion, isSelected, onSelect }: Market
                 </span>
             </span>
 
-            {state === 'installed' && <Chip size='sm' variant='soft' className='px-2'>Installed</Chip>}
-            {state === 'update' && <Chip size='sm' variant='soft' color='warning' className='px-2'>Update</Chip>}
+            {isInstalling && <Chip size='sm' variant='soft' color='accent' className='px-2'>Installing…</Chip>}
+            {!isInstalling && state === 'installed' && <Chip size='sm' variant='soft' className='px-2'>Installed</Chip>}
+            {!isInstalling && state === 'update' && <Chip size='sm' variant='soft' color='warning' className='px-2'>Update</Chip>}
         </button>
     );
 };
