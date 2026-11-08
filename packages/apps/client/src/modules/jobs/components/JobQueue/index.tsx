@@ -1,5 +1,7 @@
 import { Button, cn } from '@heroui/react';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
+import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
+import { formatProgressPercent, readJobProgress } from '@/modules/jobs/utils/job-progress';
 import useRetryJobAnalysis from './use-retry-job-analysis';
 import { formatDistanceToNow } from 'date-fns';
 import { sileo } from 'sileo';
@@ -79,6 +81,10 @@ const JobQueue = ({ job, isChild }: JobQueueProps) => {
     };
 
     const showRetryAction = isFailed && isAnalysisJob && Boolean(analysisId);
+    const progress = readJobProgress(job);
+    const progressLabel = progress
+        ? [progress.value !== undefined ? formatProgressPercent(progress.value) : undefined, progress.text].filter(Boolean).join(' · ')
+        : '';
 
     return (
         <div
@@ -103,6 +109,12 @@ const JobQueue = ({ job, isChild }: JobQueueProps) => {
                 </div>
                 {job.error && (
                     <p className='text-xs text-danger leading-[1.3] mt-1'>{job.error}</p>
+                )}
+                {progress && (
+                    <div className='mt-0.5 flex flex-col gap-1'>
+                        <JobProgressBar value={progress.value} label={`${getJobDisplayName(job)} progress`} />
+                        <p className='truncate text-xs leading-[1.3] text-muted' title={progressLabel}>{progressLabel}</p>
+                    </div>
                 )}
             </div>
             <div className='flex flex-row items-center gap-3'>

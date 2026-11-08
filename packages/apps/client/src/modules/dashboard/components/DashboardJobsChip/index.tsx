@@ -154,12 +154,13 @@ const JobsStatus = ({ counts, onNavigate }: JobsStatusProps) => {
     );
 };
 
-// The compute jobs in the header: a ring of how many are done, and the jobs and clusters behind it.
+// The compute jobs in the header: a ring of how much of their work is done, and the jobs and clusters behind it.
 const DashboardJobsChip = () => {
     const [isOpen, setIsOpen] = useState(false);
     const counts = useJobStatusCounts();
     const total = counts.queued + counts.running + counts.completed + counts.failed;
-    const donePercent = total === 0 ? 0 : Math.round((counts.completed / total) * 100);
+    // Running jobs add what their plugins reported, so the ring moves while a frame runs too.
+    const donePercent = total === 0 ? 0 : Math.round(((counts.completed + counts.runningProgress) / total) * 100);
 
     let label = 'Jobs';
     if (counts.running > 0) {

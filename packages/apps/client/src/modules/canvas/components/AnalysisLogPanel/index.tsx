@@ -1,4 +1,7 @@
 import useAnalysisFrameLog from './use-analysis-frame-log';
+import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
+import { useFrameJobProgress } from '@/modules/jobs/hooks/use-job-progress';
+import { formatProgressPercent } from '@/modules/jobs/utils/job-progress';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -51,6 +54,12 @@ const AnalysisLogPanel = ({
     });
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const [autoFollow, setAutoFollow] = useState(true);
+    // What the frame's plugin says about how far it is, while it runs.
+    const reportedProgress = useFrameJobProgress(analysisId, timestep);
+    const progress = activityStatus === 'running' ? reportedProgress : null;
+    const progressLabel = progress
+        ? [progress.value !== undefined ? formatProgressPercent(progress.value) : undefined, progress.text].filter(Boolean).join(' · ')
+        : '';
 
     useEffect(() => {
         const element = scrollRef.current;
@@ -118,6 +127,12 @@ const AnalysisLogPanel = ({
                     </span>
                     {activityStatus && <span className='sr-only'>{activityStatus}</span>}
                     {timestep !== undefined && <span className='shrink-0 text-muted'>Frame {timestep}</span>}
+                    {progress && (
+                        <span className='ml-auto flex min-w-0 items-center gap-2 text-muted'>
+                            <span className='truncate tabular-nums'>{progressLabel}</span>
+                            <JobProgressBar className='w-16 shrink-0' value={progress.value} label={`${title} progress`} />
+                        </span>
+                    )}
                 </div>
             )}
             <Scrollable className='min-h-0 flex-1' ref={scrollRef}>
