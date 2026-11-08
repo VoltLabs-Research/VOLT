@@ -641,6 +641,15 @@ html[data-volt-desktop][data-volt-maximized] #root {
     .toggle-button-group .toggle-button-group__separator {
         display: none;
     }
+
+    /* Select triggers take the colour of whatever they sit on (table rows, panels, cards): only
+       the border draws them, and hovering tints them 4% of the foreground. HeroUI computes its
+       hover and focus fills from --field-background at the root, so each is set here. */
+    .select__trigger {
+        --field-background: transparent;
+        --field-hover: color-mix(in oklab, var(--foreground) 4%, transparent);
+        --field-focus: transparent;
+    }
 }
 
 /* Toasts are sileo's, themed by the Toaster: an opaque fill inverted against the page. Pollium's
