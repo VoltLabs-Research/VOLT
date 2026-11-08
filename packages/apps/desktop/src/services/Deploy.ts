@@ -11,6 +11,7 @@ import { AppEvents, PhaseSpec } from '@/types/events';
 import { isUp, PROBE_PATH, webProbeUrl } from '@/shared/health';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import path from 'node:path';
 import pWaitFor from 'p-wait-for';
 
 const imagesOverlayFile = (composeFile: string): string =>
@@ -20,6 +21,9 @@ const PREBUILT_SERVICES = ['volt-server', 'volt-client', 'cluster-daemon'];
 
 interface DeployProps{
     composeFile: string;
+    // Where deploy.sh keeps this deployment on the host. The server is told about it, with the
+    // compose file, so it can run this same update for an owner who asks from the app.
+    dataDir?: string;
     appConfig: AppConfig;
     sources: SourceResolver;
     account?: ProvisionAccount;
@@ -349,7 +353,11 @@ export default class Deploy{
         const userEnv = await this.props.appConfig.getStackEnv();
         return {
             ...userEnv,
-            ...sources
+            ...sources,
+            ...(this.props.dataDir ? {
+                VOLT_DEPLOY_DATA: this.props.dataDir,
+                VOLT_COMPOSE_FILE: path.resolve(this.props.composeFile)
+            } : {})
         };
     }
 };

@@ -150,6 +150,7 @@ const main = async () => {
     const runUpdate = async (withCluster: boolean, email: string) => {
         const deploy = new Deploy({
             composeFile,
+            dataDir: path.resolve(dataDir),
             appConfig,
             sources,
             withCluster
@@ -313,6 +314,7 @@ const main = async () => {
 
     const deploy = new Deploy({
         composeFile,
+        dataDir: path.resolve(dataDir),
         appConfig,
         sources,
         account: {

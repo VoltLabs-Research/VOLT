@@ -1,4 +1,5 @@
 import { Octokit } from 'octokit';
+import { pickLatestVoltRelease } from '@volt/contracts/modules/system/releases';
 
 export interface RepositoryRelease{
     tag: string;
@@ -7,23 +8,28 @@ export interface RepositoryRelease{
 
 const octokit = new Octokit(process.env.GITHUB_TOKEN ? { auth: process.env.GITHUB_TOKEN } : {});
 
+// The newest VOLT release. GitHub's own "latest release" can be another product's (the repository
+// also publishes `voltsdk-*`), so this picks among the `v*` tags.
 export const fetchLatestRelease = async (owner: string, repo: string): Promise<RepositoryRelease> => {
     const id = `${owner}/${repo}`;
 
     try{
         const { data } = await octokit.request(
-            'GET /repos/{owner}/{repo}/releases/latest',
+            'GET /repos/{owner}/{repo}/releases',
             {
                 owner,
-                repo
+                repo,
+                per_page: 30
             }
         );
 
-        if(!data.zipball_url || !data.tag_name) throw new Error('Invalid HTTP response');
+        const latest = pickLatestVoltRelease(data);
+        if(!latest) throw Object.assign(new Error('No VOLT release'), { status: 404 });
+        if(!latest.zipball_url) throw new Error('Invalid HTTP response');
 
         return {
-            tag: data.tag_name,
-            zipballUrl: data.zipball_url
+            tag: latest.tag_name,
+            zipballUrl: latest.zipball_url
         };
     }catch(err){
         const status = (err as { status?: number })?.status;
