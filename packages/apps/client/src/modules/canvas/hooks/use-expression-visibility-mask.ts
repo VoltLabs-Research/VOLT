@@ -1,13 +1,11 @@
-import { parse, evaluate } from '@voltstack/expressions';
 import { useMemo } from 'react';
 import { useActivePipelineStages } from '@/modules/canvas/store/canvas-pipeline';
-import { trajectoryAtomsQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { DEFAULT_EXPRESSION_SELECT_COLOR } from '@/modules/canvas/store/canvas-pipeline';
-import type { GetAtomsResponse, AtomColumnView } from '@/modules/trajectory/api/services/trajectory-service';
-import type { AtomContext, ColumnView, DType, Expr } from '@voltstack/expressions';
+import useExpressionFrameAtoms from '@/modules/canvas/hooks/use-expression-frame-atoms';
+import { compileExpression } from '@/modules/canvas/utils/compile-expression';
+import { createExpressionAtomContext } from '@/modules/canvas/utils/expression-atom-context';
+import type { AtomContext } from '@voltstack/expressions';
 import type { ExpressionSelectStageConfig } from '@/modules/canvas/store/canvas-pipeline';
-
-const CLIENT_EVAL_ATOM_LIMIT = 1_000_000;
 
 interface UseExpressionVisibilityMaskParams {
     trajectoryId?: string;
@@ -16,16 +14,12 @@ interface UseExpressionVisibilityMaskParams {
 }
 
 interface UseExpressionVisibilityMaskResult {
-    
-    
+    // Atoms a Delete stage keeps, or null when no stage deletes.
     mask: Uint8Array | null;
-    
-    
+    // Atoms a Color stage selected, or null when no stage colours.
     highlightMask: Uint8Array | null;
-    
     highlightColor: string | null;
-    
-    
+    // The frame is too large to select in the browser.
     autoRoute: boolean;
 }
 
@@ -35,42 +29,20 @@ interface ExpressionSelectStageView {
     color: string;
 }
 
-const toDType = (d: AtomColumnView['dtype']): DType => {
-    if (d === 'f32') return 'f32';
-    if (d === 'i32') return 'i32';
-    if (d === 'u32') return 'u32';
-    if (d === 'u16') return 'u16';
-    return 'str';
-};
-
-const toColumnView = (col: AtomColumnView): ColumnView => ({
-    values: col.values,
-    dtype: toDType(col.dtype)
-});
-
-const buildContext = (atomBuffer: GetAtomsResponse, frameIndex: number): AtomContext => {
-    const columnCache = new Map<string, ColumnView | undefined>();
-    return {
-        N: atomBuffer.count,
-        Frame: frameIndex,
-        CellVolume: 0,
-        getColumn: (name: string) => {
-            if (columnCache.has(name)) {
-                return columnCache.get(name);
-            }
-            const col = atomBuffer.getColumn(name);
-            const view = col ? toColumnView(col) : undefined;
-            columnCache.set(name, view);
-            return view;
-        }
-    };
-};
-
 const EMPTY: UseExpressionVisibilityMaskResult = {
     mask: null,
     highlightMask: null,
     highlightColor: null,
     autoRoute: false
+};
+
+// A stage whose expression does not compile, or fails on this frame, selects nothing.
+const selectStage = (stage: ExpressionSelectStageView, context: AtomContext): Uint8Array | null => {
+    try {
+        return compileExpression(stage.expression, context).select().mask;
+    } catch {
+        return null;
+    }
 };
 
 const useExpressionVisibilityMask = ({
@@ -94,77 +66,33 @@ const useExpressionVisibilityMask = ({
             .filter((s) => s.expression.trim().length > 0);
     }, [stages]);
 
-    const queryEnabled = activeStages.length > 0
-        && Boolean(trajectoryId)
-        && currentTimestep !== undefined;
-
-    const { data: frameSize } = trajectoryAtomsQuery(
-        {
-            trajectoryId: trajectoryId ?? '',
-            analysisId,
-            timestep: currentTimestep ?? 0,
-            page: 1,
-            limit: 1
-        },
-        { enabled: queryEnabled }
-    );
-
-    const evaluableAtomCount = frameSize?.total;
-    const canEvaluateOnClient = evaluableAtomCount !== undefined
-        && evaluableAtomCount <= CLIENT_EVAL_ATOM_LIMIT;
-
-    const { data: atomBuffer } = trajectoryAtomsQuery(
-        {
-            trajectoryId: trajectoryId ?? '',
-            analysisId,
-            timestep: currentTimestep ?? 0,
-            page: 1,
-            limit: CLIENT_EVAL_ATOM_LIMIT
-        },
-        { enabled: queryEnabled && canEvaluateOnClient }
-    );
+    const { data: atomBuffer } = useExpressionFrameAtoms({
+        trajectoryId,
+        analysisId,
+        timestep: currentTimestep,
+        enabled: activeStages.length > 0
+    });
 
     return useMemo<UseExpressionVisibilityMaskResult>(() => {
-        if (activeStages.length === 0) {
+        if (activeStages.length === 0 || !atomBuffer) {
             return EMPTY;
         }
-        if (evaluableAtomCount !== undefined && !canEvaluateOnClient) {
+        if (atomBuffer.total > atomBuffer.count) {
             return {
                 ...EMPTY,
                 autoRoute: true
             };
         }
-        if (!atomBuffer) {
-            return EMPTY;
-        }
 
-        const context = buildContext(atomBuffer, currentTimestep ?? 0);
+        const context = createExpressionAtomContext(atomBuffer, currentTimestep ?? 0);
         const count = atomBuffer.count;
 
         let deleteMask: Uint8Array | null = null;
         let highlightMask: Uint8Array | null = null;
         let highlightColor: string | null = null;
 
-        const evalStage = (stage: ExpressionSelectStageView): Uint8Array | null => {
-            let ast: Expr;
-            try {
-                ast = parse(stage.expression);
-            } catch {
-                return null;
-            }
-            const matched = new Uint8Array(count);
-            try {
-                for (let i = 0; i < count; i += 1) {
-                    matched[i] = evaluate(ast, context, i) !== 0 ? 1 : 0;
-                }
-            } catch {
-                return null;
-            }
-            return matched;
-        };
-
         for (const stage of activeStages) {
-            const matched = evalStage(stage);
+            const matched = selectStage(stage, context);
             if (!matched) continue;
 
             if (stage.action === 'delete') {
@@ -187,7 +115,7 @@ const useExpressionVisibilityMask = ({
             highlightColor,
             autoRoute: false
         };
-    }, [activeStages, atomBuffer, canEvaluateOnClient, currentTimestep, evaluableAtomCount]);
+    }, [activeStages, atomBuffer, currentTimestep]);
 };
 
 export default useExpressionVisibilityMask;
