@@ -22,9 +22,7 @@ const DEFAULT_PLUGINS = [
     '@voltlabs/ilda',
     '@voltlabs/kmeans-clustering',
     '@voltlabs/multisom',
-    '@voltlabs/line-reconstruction-dxa',
-    '@voltlabs/reference-crystal-matching',
-    '@voltlabs/generalized-template-matching'
+    '@voltlabs/line-reconstruction-dxa'
 ] as const;
 
 interface PluginSeederProps{
