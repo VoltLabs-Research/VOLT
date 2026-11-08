@@ -2,6 +2,7 @@ import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import SimulationSkeletonCard from '../SimulationSkeletonCard';
 import SimulationCard from '../SimulationCard';
 import SimulationFolderCard from '../SimulationFolderCard';
+import SimulationFolderDraftCard from '../SimulationFolderCard/SimulationFolderDraftCard';
 import SimulationBreadcrumbs from './SimulationBreadcrumbs';
 import useDeleteSelectedTrajectories from './use-delete-selected-trajectories';
 import useDownloadSamples from './use-download-samples';
@@ -10,11 +11,15 @@ import { isTrajectoryFolderRow } from '@/modules/trajectory/utils/listing';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import { FolderedListingModals } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
+import { discardFolderDraft, useFolderDraftId } from '@/shared/ui/hooks/use-folder-draft-store';
 import { Atom, Upload } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
 
 const DELETE_SHORTCUT_KEYS = ['Backspace', 'Delete'];
+
+// The dashboard's "New folder" names the folder in place, as a card at the head of the grid.
+export const TRAJECTORY_FOLDER_DRAFT_KEY = trajectoriesListingResource.modalIds.newFolder;
 
 const renderGridSkeleton = () => <SimulationSkeletonCard />;
 
@@ -32,6 +37,7 @@ const DashboardSimulationGrid = () => {
         fileInputRef,
         getMenuOptions,
         handleCreate,
+        handleCreateFolder,
         handleMoveOpen,
         handlePickerChange,
         isUploading,
@@ -45,6 +51,12 @@ const DashboardSimulationGrid = () => {
         ...dragAndDrop,
         showDragAffordance: false
     }) : undefined, [dragAndDrop]);
+
+    const folderDraftId = useFolderDraftId(TRAJECTORY_FOLDER_DRAFT_KEY);
+    const discardDraft = useCallback(() => discardFolderDraft(TRAJECTORY_FOLDER_DRAFT_KEY), []);
+
+    // A draft belongs to the folder it was started in, and to this page.
+    useEffect(() => discardDraft, [currentFolderId, discardDraft]);
 
     const handleDeleteShortcut = useCallback(() => {
         void (async () => {
@@ -124,6 +136,13 @@ const DashboardSimulationGrid = () => {
                 fetchData={fetchData}
                 context={context}
                 renderGridItem={renderGridItem}
+                gridLeadingContent={folderDraftId !== null ? (
+                    <SimulationFolderDraftCard
+                        key={folderDraftId}
+                        onCreate={handleCreateFolder}
+                        onDiscard={() => discardFolderDraft(TRAJECTORY_FOLDER_DRAFT_KEY, folderDraftId)}
+                    />
+                ) : null}
                 gridBeforeContent={breadcrumbs.length > 1 ? (
                     <SimulationBreadcrumbs
                         items={breadcrumbs}

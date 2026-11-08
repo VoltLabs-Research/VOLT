@@ -1,11 +1,11 @@
-import { trajectoriesListingResource } from '@/modules/trajectory/hooks/trajectory/use-trajectories-listing';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
+import { TRAJECTORY_FOLDER_DRAFT_KEY } from '@/modules/trajectory/components/SimulationGrid/DashboardSimulationGrid';
+import { startFolderDraft } from '@/shared/ui/hooks/use-folder-draft-store';
 import { Button } from '@heroui/react';
-import { openModal } from '@/shared/ui/modal/use-modal-store';
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
@@ -49,7 +49,7 @@ const DashboardPage = () => {
                         <Button
                             variant='secondary'
                             className='shrink-0'
-                            onPress={() => openModal(trajectoriesListingResource.modalIds.newFolder)}
+                            onPress={() => startFolderDraft(TRAJECTORY_FOLDER_DRAFT_KEY)}
                         >
                             <FolderPlus size={18} aria-hidden='true' />
                             New folder
