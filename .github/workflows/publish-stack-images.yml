@@ -28,6 +28,8 @@ on:
       - 'packages/sdk/daemon-cluster-client/**'
       # The server image carries the daemon sources it ships in build distribution mode.
       - 'packages/infra/cluster/**'
+      # What the cloud deployment runs these images with.
+      - 'compose.quantum.yml'
   workflow_dispatch:
 
 env:
@@ -164,3 +166,41 @@ jobs:
             echo '- Tags: `main`, `sha-${{ github.sha }}`'
             echo '- Platforms: `linux/amd64`, `linux/arm64`'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Redeploys the cloud stack Quantum runs from compose.quantum.yml. Quantum's own
+  # GitHub webhook would fire on push, before these images exist, so the workflow
+  # sends Quantum the push event itself once both manifests are published, signed
+  # with that stack's webhook secret the way GitHub signs it.
+  deploy:
+    name: Redeploy the cloud stack
+    needs: manifest
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: quantum-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Notify Quantum
+        env:
+          HOOK_URL: ${{ secrets.QUANTUM_VOLT_HOOK_URL }}
+          HOOK_SECRET: ${{ secrets.QUANTUM_VOLT_HOOK_SECRET }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          if [ -z "$HOOK_URL" ] || [ -z "$HOOK_SECRET" ]; then
+            echo "::notice::QUANTUM_VOLT_HOOK_URL or QUANTUM_VOLT_HOOK_SECRET is not set; skipping the redeploy."
+            exit 0
+          fi
+          payload="$(jq -cn \
+            --arg ref "$GITHUB_REF" \
+            --arg pusher "$GITHUB_ACTOR" \
+            --arg message "${COMMIT_MESSAGE:-$GITHUB_SHA}" \
+            '{ref: $ref, pusher: {name: $pusher}, head_commit: {message: $message}}')"
+          signature="sha256=$(printf '%s' "$payload" | openssl dgst -sha256 -hmac "$HOOK_SECRET" -r | cut -d' ' -f1)"
+          status="$(curl -sS -o /tmp/response -w '%{http_code}' -X POST "$HOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -H 'X-GitHub-Event: push' \
+            -H "X-Hub-Signature-256: $signature" \
+            --data "$payload")"
+          cat /tmp/response; echo
+          [ "$status" = 202 ] || { echo "::error::Quantum answered $status"; exit 1; }
