@@ -6,6 +6,7 @@ import { toTeamClusterLike } from '@modules/cluster/contracts/team-cluster';
 import clusterDaemonLifecycleService from '@modules/cluster/services/daemon/ClusterDaemonLifecycleService';
 import daemonSceneArtifactIngestService from '@modules/cluster/services/daemon/DaemonSceneArtifactIngestService';
 import teamClusterReverseChannelService from '@modules/cluster/services/reverse-channel/TeamClusterReverseChannelService';
+import clusterUpdateService from '@modules/cluster/services/updates/ClusterUpdateService';
 import type { TeamClusterDaemonInboundStreamPayload } from '@modules/cluster/services/reverse-channel/reverse-channel-protocol';
 import type { TeamClusterDaemonMessage } from '@modules/cluster/socket/TeamClusterSocketProtocol';
 import type ApplicationError from '@shared/errors/ApplicationError';
@@ -120,6 +121,8 @@ export default class TeamClusterDaemonFrameRouter {
                 this.#onHeartbeat(payload.teamClusterId);
                 try {
                     await clusterDaemonLifecycleService.recordHeartbeat(payload);
+                    // A daemon on another release than this server is asked to update, once per release.
+                    void clusterUpdateService.reconcile(payload.teamClusterId).catch(() => undefined);
                 } catch (error: unknown) {
                     const appError = error as ApplicationError;
                     logger.warn(`Failed to record daemon heartbeat teamClusterId=${payload.teamClusterId} statusCode=${appError.statusCode} message=${appError.message}`);

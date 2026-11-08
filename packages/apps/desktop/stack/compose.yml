@@ -38,6 +38,11 @@ services:
       SERVER_HOST: 0.0.0.0
       SECRET_KEY: ${SECRET_KEY:-volt-local-secret}
       SSH_ENCRYPTION_KEY: ${SSH_KEY:-volt-local-ssh}
+      # The release this stack runs, and where deploy.sh keeps it on the host, so the server can
+      # tell when a newer release is out and run the same update for the deployment's owner.
+      VOLT_VERSION: ${VOLT_VERSION:-}
+      VOLT_DEPLOY_DATA: ${VOLT_DEPLOY_DATA:-}
+      VOLT_COMPOSE_FILE: ${VOLT_COMPOSE_FILE:-}
     depends_on:
       volt-postgres: { condition: service_healthy }
     volumes:
@@ -77,6 +82,7 @@ services:
       DAEMON_DATA_DIR: /var/lib/volt-daemon
       BUCKET_PREFIX: cluster-
       OBJECT_GATEWAY_PUBLIC_BASE_URL: http://cluster-daemon:${DAEMON_PORT:-18080}
+      VOLT_VERSION: ${VOLT_VERSION:-}
     depends_on:
       volt-postgres: { condition: service_healthy }
       volt-server:   { condition: service_healthy }
