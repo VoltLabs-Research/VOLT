@@ -12,6 +12,7 @@ yield numbers from 0 to 1 and strings, the way OVITO's ``modify()`` reports prog
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 from typing import Optional, TextIO
@@ -31,6 +32,11 @@ def _one_line(text: str) -> str:
     return " ".join(str(text).split())
 
 
+def is_progress_read() -> bool:
+    """Whether VOLT reads these lines: it sets VOLT_PROGRESS=1 for the plugins it runs."""
+    return os.environ.get("VOLT_PROGRESS") == "1"
+
+
 def _write(line: str, stream: Optional[TextIO]) -> None:
     target = stream if stream is not None else sys.stderr
     target.write(line + "\n")
@@ -47,7 +53,7 @@ def report_progress(
     """Report how far the plugin is: ``done`` of ``total``, or ``done`` alone as a fraction 0..1.
 
     Call it as often as is convenient: lines closer together than VOLT can show are skipped,
-    except the one that reaches the end.
+    except the one that reaches the end. Outside VOLT (no VOLT_PROGRESS=1) nothing is written.
     """
     global _last_written_at, _last_fraction
 
@@ -58,6 +64,8 @@ def report_progress(
     else:
         fraction = float(done)
     fraction = min(1.0, max(0.0, fraction))
+    if not is_progress_read():
+        return
 
     now = time.monotonic()
     if fraction == _last_fraction and text is None:
@@ -76,5 +84,5 @@ def report_progress(
 def report_status(text: str, *, stream: Optional[TextIO] = None) -> None:
     """Say what the plugin is doing now, without a value. It is also kept in the run's log."""
     line = _one_line(text)
-    if line:
+    if line and is_progress_read():
         _write(f"{STATUS_DIRECTIVE} {line}", stream)
