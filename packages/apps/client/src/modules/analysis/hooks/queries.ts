@@ -78,3 +78,8 @@ export const useRetryFailedFramesMutation = createInvalidatingMutation<RetryFail
     service.retryFailedFrames,
     [analysisQuery.QUERY_KEYS.lists(), KEYS.byTrajectory()]
 );
+
+export const useAnalysisByIdQuery = createQuery(
+    (analysisId: string) => KEYS.detail(analysisId),
+    (analysisId: string) => service.getById({ analysisId })
+);
