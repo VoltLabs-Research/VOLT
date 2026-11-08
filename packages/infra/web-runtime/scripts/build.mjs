@@ -36,8 +36,12 @@ const BACKENDS = [
         entry: 'dist/infra/server/src/server.js',
         vendor: [],
         globalPackages: [],
-        // Files it reads next to its modules, which its build leaves in src/.
-        assets: [{ source: 'src/modules/scripting/services/templates', installed: 'dist/infra/server/src/modules/scripting/services/templates' }],
+        // Files it reads next to its modules, which its build leaves in src/, and the sample
+        // simulations it serves from static/ (STATIC_ROOT resolves to /app/server/static).
+        assets: [
+            { source: 'src/modules/scripting/services/templates', installed: 'dist/infra/server/src/modules/scripting/services/templates' },
+            { source: 'static/default/simulations' }
+        ],
         python: false,
         programs: []
     },
