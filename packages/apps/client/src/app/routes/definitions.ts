@@ -148,10 +148,17 @@ export const protectedRoutes: RouteConfig[] = [
         requiredPermissions: ['trajectory:read']
     },
     {
-        path: '/dashboard/analysis-configs/list',
-        title: 'Analysis Configurations',
-        loader: () => import('@/modules/analysis/components/AnalysesListing'),
+        path: '/dashboard/analysis',
+        title: 'Analysis',
+        loader: () => import('@/modules/analysis/components/AnalysisPage'),
         requiredPermissions: ['analysis:read']
+    },
+    {
+        path: '/dashboard/analysis/:analysisId',
+        title: 'Analysis Report',
+        loader: () => import('@/modules/analysis/components/AnalysisReportPage'),
+        requiredPermissions: ['analysis:read', 'plugin:read'],
+        permissionMode: RoutePermissionMode.All
     },
     {
         path: '/dashboard/simulation-cells/list',

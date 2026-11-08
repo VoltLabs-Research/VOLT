@@ -14,6 +14,8 @@ export interface GetAnalysesParams {
     page: number;
     limit: number;
     search?: string;
+    // The server answers a trajectory filter on its own and ignores search with it.
+    trajectoryId?: string;
 }
 
 type AnalysisLogStream = 'stdout' | 'stderr' | 'system';
@@ -54,8 +56,13 @@ interface DeleteAnalysisParams {
     analysisId: string;
 };
 
+export interface GetAnalysisParams {
+    analysisId: string;
+}
+
 const endpoints = {
     getAll: paginated<GetAnalysesParams, PaginatedResponse<Analysis>>('/analyses'),
+    getById: get<GetAnalysisParams, Analysis>('/analyses/:analysisId'),
     getByTrajectoryId: paginated<GetAnalysesByTrajectoryParams, PaginatedResponse<Analysis>>('/analyses'),
     delete: del<DeleteAnalysisParams>('/analyses/:analysisId'),
     retryFailedFrames: post<RetryFailedFramesParams, RetryFailedFramesResponse>('/analyses/:analysisId/failed-frames/retries'),
