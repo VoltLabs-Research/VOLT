@@ -4,7 +4,8 @@ Volt Plugin Host — persistent Python worker.
 
 Protocol (stdin/stdout are binary):
     [u32 opId LE][u32 payloadLen LE][json bytes]
-Each request maps to a single response with the same opId.
+Each request maps to a single response with the same opId. stdout carries only
+these frames: whatever the plugin prints goes to stderr, the run's log.
 
 The stub imports a user-provided module (path passed via --plugin-root and
 --entrypoint) and invokes either `process(frame, config)` or
@@ -336,11 +337,34 @@ def _invoke(
     raise ValueError(f"Unsupported opcode '{opcode}'")
 
 
+def _claim_protocol_stdout() -> io.BufferedWriter:
+    """Keeps stdout for the protocol's frames and sends what the plugin prints to stderr.
+
+    A print() in the plugin would otherwise land between two frames, and the host would read
+    its text as a frame header. Natively, fd 1 itself is moved to stderr, which also covers
+    compiled libraries and child processes that write to it. Pyodide only rebinds sys.stdout.
+    """
+    sys.stdout.flush()
+    if sys.platform != "emscripten":
+        try:
+            protocol_fd = os.dup(1)
+            os.dup2(2, 1)
+            sys.stdout = sys.stderr
+            return os.fdopen(protocol_fd, "wb")
+        except OSError:
+            pass
+    protocol = sys.stdout.buffer
+    sys.stdout = sys.stderr
+    return protocol
+
+
 def _main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--plugin-root", required=True)
     parser.add_argument("--entrypoint", required=True)
     args = parser.parse_args()
+
+    stdout = _claim_protocol_stdout()
 
     try:
         module = _load_user_module(args.plugin_root, args.entrypoint)
@@ -360,7 +384,6 @@ def _main() -> int:
             sys.stderr.flush()
 
     stdin = sys.stdin.buffer
-    stdout = sys.stdout.buffer
     try:
         while True:
             request = _read_request(stdin)
