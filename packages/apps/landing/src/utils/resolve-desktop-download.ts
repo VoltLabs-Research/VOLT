@@ -1,7 +1,7 @@
 import type { CpuArch, DesktopOs, GitHubRelease, GitHubReleaseAsset, ResolvedDesktopDownload } from '@/contracts/release';
 import { GITHUB_RELEASES_LATEST } from '@/contracts/release';
 
-const INSTALLER_EXTENSIONS: Record<Exclude<DesktopOs, 'unknown'>, string[]> = {
+export const INSTALLER_EXTENSIONS: Record<Exclude<DesktopOs, 'unknown'>, string[]> = {
     windows: ['.exe'],
     macos: ['.dmg'],
     linux: ['.appimage', '.deb']

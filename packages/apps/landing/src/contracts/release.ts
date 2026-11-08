@@ -22,3 +22,12 @@ export interface ResolvedDesktopDownload {
     assetName: string | null;
     version: string | null;
 };
+
+// One row of the hero's download menu: an installer from the release, or the release page when it has none for that OS.
+export interface DesktopInstaller {
+    os: Exclude<DesktopOs, 'unknown'>;
+    name: string;
+    detail: string | null;
+    href: string;
+    size: number | null;
+};
