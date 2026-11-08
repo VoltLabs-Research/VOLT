@@ -128,7 +128,6 @@ const SimulationCellsListing = () => {
             columns={COLUMNS}
             fetchData={simulationCellsQuery.fetch}
             defaultLimit={20}
-            description='The simulation box of every processed frame, in ångströms, with its boundary conditions.'
             emptyTitle='No simulation cells yet'
             emptyMessage='Simulation cell geometry appears here after trajectory processing extracts dimensions and boundary conditions for each timestep.'
             emptyIcon={<Box size={28} strokeWidth={1.6} />}

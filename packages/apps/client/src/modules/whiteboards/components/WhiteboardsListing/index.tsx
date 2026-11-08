@@ -63,7 +63,6 @@ const WhiteboardsListing = () => {
         <>
             <FolderedDocumentListing<WhiteboardListingRow, { folderId: string | null }>
                 title='Whiteboards'
-                description={currentFolder ? undefined : 'Sketches the team draws together, live, next to the trajectories they explain.'}
                 columns={COLUMNS}
                 listing={listing}
                 createButtonTitle='New Whiteboard'

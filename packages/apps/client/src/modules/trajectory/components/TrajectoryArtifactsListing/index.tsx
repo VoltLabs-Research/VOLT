@@ -63,7 +63,6 @@ const TrajectoryArtifactsListing = () => {
     return (
         <DocumentListing<SceneArtifact>
             title='Trajectory Artifacts'
-            description='Scenes that color coding, particle filters and plugin exposures saved, one per timestep.'
             queryKey={['trajectory', 'team-scene-artifacts', teamId]}
             columns={COLUMNS}
             fetchData={fetchArtifacts}

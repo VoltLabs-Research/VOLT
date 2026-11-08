@@ -10,7 +10,6 @@ import {
 } from '@/shared/ui/components/DocumentListing/foldered-listing';
 import { clusterColumn, dateColumn } from '@/shared/ui/utils/column-presets';
 import StatusPill from '@/shared/ui/components/StatusPill';
-import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
 import useTip from '@/shared/tips/use-tip';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import { useMemo } from 'react';
@@ -89,7 +88,6 @@ const COLUMNS: ColumnConfig<TrajectoryListingRow>[] = [
 export default function TrajectoriesListing() {
     useTip('trajectories-organization');
 
-    const team = useSelectedTeam();
     const listing = useTrajectoriesListing();
     const {
         breadcrumbs,
@@ -116,7 +114,6 @@ export default function TrajectoriesListing() {
         <>
             <FolderedDocumentListing<TrajectoryListingRow, { folderId: string | null }>
                 title='Trajectories'
-                description={team ? `Every trajectory ${team.name} uploaded, and the cluster that holds its frames.` : undefined}
                 columns={COLUMNS}
                 listing={listing}
                 defaultLimit={20}
