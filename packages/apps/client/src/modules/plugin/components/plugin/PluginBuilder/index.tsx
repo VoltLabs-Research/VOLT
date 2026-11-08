@@ -7,13 +7,14 @@ import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import Sidebar from '@/shared/ui/components/Sidebar';
+import type { SidebarBottomContent } from '@/shared/ui/components/SidebarBottom';
 import { confirm } from '@/shared/ui/hooks/use-confirm';
 import { useKeyboardShortcut } from '@/shared/ui/hooks/use-keyboard-shortcut';
 import useTip from '@/shared/tips/use-tip';
 import { ArrowLeft } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { DragEvent, ReactNode } from 'react';
+import type { DragEvent } from 'react';
 import '@xyflow/react/dist/style.css';
 import Scrollable from '@/shared/ui/components/Scrollable';
 
@@ -21,7 +22,7 @@ const nodeTypesList = Object.values(NODE_CONFIGS);
 
 interface PluginBuilderProps {
     onBack: () => void;
-    bottomSidebarContent?: ReactNode;
+    bottomSidebarContent?: SidebarBottomContent;
 }
 
 const PluginBuilder = ({ onBack, bottomSidebarContent }: PluginBuilderProps) => {

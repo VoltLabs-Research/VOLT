@@ -18,11 +18,12 @@ const SidebarHeader = ({ collapsed, isMobile = false, onToggle, controlsId, chil
             className={cn(
                 'flex',
                 !collapsed && 'items-center justify-between gap-1.5 pt-3.5 pr-3.5 pb-2 pl-2.5',
-                collapsed && !isMobile && 'justify-start p-4 text-center',
-                collapsed && isMobile && 'justify-start p-3 text-center'
+                collapsed && !isMobile && 'justify-center p-4',
+                collapsed && isMobile && 'justify-center p-3'
             )}
         >
-            <div className={collapsed && isMobile ? 'hidden' : 'flex flex-col gap-2'}>
+            {/* The rail is too narrow for the slot's content; only the toggle stays, so the sidebar can always be reopened. */}
+            <div className={collapsed ? 'hidden' : 'flex min-w-0 flex-col gap-2'}>
                 {children}
             </div>
             <Button
