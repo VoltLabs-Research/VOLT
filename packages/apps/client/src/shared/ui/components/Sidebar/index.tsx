@@ -86,6 +86,7 @@ const Sidebar = ({
 
     const bottomElement = bottom
         ? React.cloneElement(bottom as React.ReactElement<React.ComponentProps<typeof SidebarBottom>>, {
+            collapsed,
             isHidden: isCollapsedOnMobile
         })
         : null;
@@ -107,67 +108,75 @@ const Sidebar = ({
                 <div id={`${sidebarId}-content`} className='flex min-h-0 flex-1 flex-col overflow-hidden'>
                     {headerElement}
 
-                    {overrideContent ? (
-                        <div>{overrideContent}</div>
-                    ) : (
-                        <>
-                            {tags.length > 1 && (
-                                <div className={isCollapsedOnMobile ? 'hidden' : 'p-6'}>
-                                    <div className='relative overflow-hidden rounded-full'>
-                                            <Scrollable orientation='horizontal' size={40} className={cn('flex justify-between flex-nowrap overflow-y-hidden rounded-full p-2', collapsed && 'gap-1')} role='tablist' aria-label='Sidebar sections'>
-                                                {tags.map((tag) => {
-                                                    const isSelected = tag.id === activeTagId;
+                    {/* The content keeps its expanded width while the rail animates, so it is clipped instead of
+                        reflowing word by word, and it fades out because the collapsed rail has no room for it. */}
+                    <div
+                        className={cn('flex min-h-0 flex-1 flex-col transition-[opacity,visibility] duration-200 ease-smooth', collapsed && 'invisible opacity-0')}
+                        style={{ minWidth: expandedWidth }}
+                        inert={collapsed}
+                    >
+                        {overrideContent ? (
+                            <div>{overrideContent}</div>
+                        ) : (
+                            <>
+                                {tags.length > 1 && (
+                                    <div className='p-6'>
+                                        <div className='relative overflow-hidden rounded-full'>
+                                                <Scrollable orientation='horizontal' size={40} className='flex justify-between flex-nowrap overflow-y-hidden rounded-full p-2' role='tablist' aria-label='Sidebar sections'>
+                                                    {tags.map((tag) => {
+                                                        const isSelected = tag.id === activeTagId;
 
-                                                    return (
-                                                        <button
-                                                            key={tag.id}
-                                                            id={`${sidebarId}-tab-${tag.id}`}
-                                                            type='button'
-                                                            role='tab'
-                                                            aria-selected={isSelected}
-                                                            aria-controls={`${sidebarId}-panel-${tag.id}`}
-                                                            tabIndex={isSelected ? 0 : -1}
-                                                            className={cn('flex items-center justify-center flex-[1_0_auto] cursor-pointer whitespace-nowrap rounded-full border border-transparent transition-colors duration-150 ease-smooth focus-visible:border-border', collapsed ? 'grid place-items-center h-10 w-10 min-h-10 min-w-10 rounded-xl p-0' : 'min-h-11 min-w-[130px] px-4', isSelected ? 'bg-surface-tertiary inset-ring-1 inset-ring-border' : 'hover:bg-surface-hover')}
-                                                            onClick={() => onTagChange?.(tag.id)}
-                                                        >
-                                                            <span className={collapsed ? 'sr-only' : 'text-sm font-medium'}>
-                                                                {tag.name}
-                                                            </span>
-                                                        </button>
-                                                    );
-                                                })}
-                                            </Scrollable>
+                                                        return (
+                                                            <button
+                                                                key={tag.id}
+                                                                id={`${sidebarId}-tab-${tag.id}`}
+                                                                type='button'
+                                                                role='tab'
+                                                                aria-selected={isSelected}
+                                                                aria-controls={`${sidebarId}-panel-${tag.id}`}
+                                                                tabIndex={isSelected ? 0 : -1}
+                                                                className={cn('flex min-h-11 min-w-[130px] flex-[1_0_auto] cursor-pointer items-center justify-center whitespace-nowrap rounded-full border border-transparent px-4 transition-colors duration-150 ease-smooth focus-visible:border-border', isSelected ? 'bg-surface-tertiary inset-ring-1 inset-ring-border' : 'hover:bg-surface-hover')}
+                                                                onClick={() => onTagChange?.(tag.id)}
+                                                            >
+                                                                <span className='text-sm font-medium'>
+                                                                    {tag.name}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </Scrollable>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {keepMounted ? (
-                                tags.map((tag) => (
-                                    <Scrollable
-                                        key={tag.id}
-                                        className={isCollapsedOnMobile ? 'hidden' : 'min-h-0 flex-1 overflow-x-hidden'}
-                                        id={`${sidebarId}-panel-${tag.id}`}
-                                        role='tabpanel'
-                                        aria-labelledby={`${sidebarId}-tab-${tag.id}`}
-                                        hidden={tag.id !== activeTagId}
-                                    >
-                                        <tag.Component />
-                                    </Scrollable>
-                                ))
-                            ) : (
-                                activeTagConfig && (
-                                    <Scrollable
-                                        className={isCollapsedOnMobile ? 'hidden' : 'min-h-0 flex-1 overflow-x-hidden'}
-                                        id={tags.length > 1 ? `${sidebarId}-panel-${activeTagConfig.id}` : undefined}
-                                        role={tags.length > 1 ? 'tabpanel' : undefined}
-                                        aria-labelledby={tags.length > 1 ? `${sidebarId}-tab-${activeTagConfig.id}` : undefined}
-                                    >
-                                        <activeTagConfig.Component />
-                                    </Scrollable>
-                                )
-                            )}
-                        </>
-                    )}
+                                {keepMounted ? (
+                                    tags.map((tag) => (
+                                        <Scrollable
+                                            key={tag.id}
+                                            className='min-h-0 flex-1 overflow-x-hidden'
+                                            id={`${sidebarId}-panel-${tag.id}`}
+                                            role='tabpanel'
+                                            aria-labelledby={`${sidebarId}-tab-${tag.id}`}
+                                            hidden={tag.id !== activeTagId}
+                                        >
+                                            <tag.Component />
+                                        </Scrollable>
+                                    ))
+                                ) : (
+                                    activeTagConfig && (
+                                        <Scrollable
+                                            className='min-h-0 flex-1 overflow-x-hidden'
+                                            id={tags.length > 1 ? `${sidebarId}-panel-${activeTagConfig.id}` : undefined}
+                                            role={tags.length > 1 ? 'tabpanel' : undefined}
+                                            aria-labelledby={tags.length > 1 ? `${sidebarId}-tab-${activeTagConfig.id}` : undefined}
+                                        >
+                                            <activeTagConfig.Component />
+                                        </Scrollable>
+                                    )
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {bottomElement}
@@ -176,7 +185,7 @@ const Sidebar = ({
     );
 };
 
-const SidebarWithSlots = Sidebar as typeof Sidebar & Record<'Header' | 'Bottom', typeof SidebarHeader | typeof SidebarBottom>;
+const SidebarWithSlots = Sidebar as typeof Sidebar & { Header: typeof SidebarHeader; Bottom: typeof SidebarBottom };
 SidebarWithSlots.Header = SidebarHeader;
 SidebarWithSlots.Bottom = SidebarBottom;
 

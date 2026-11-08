@@ -41,12 +41,13 @@ const PluginBuilderPage = () => {
     }, [clearWorkflow]);
 
     const singleTenant = useSingleTenant();
-    const bottomSidebarContent = singleTenant ? undefined : (
-        <div className='px-2.5 pt-1.5 pb-2.5'>
+    const bottomSidebarContent = singleTenant ? undefined : ({ collapsed }: { collapsed: boolean }) => (
+        <div className={collapsed ? 'flex justify-center pt-1.5 pb-2.5' : 'px-2.5 pt-1.5 pb-2.5'}>
             <UserMenuPopover
                 onSettingsClick={handleSettingsClick}
                 onSignOut={handleSignOut}
                 isSigningOut={isSigningOut}
+                collapsed={collapsed}
             />
         </div>
     );

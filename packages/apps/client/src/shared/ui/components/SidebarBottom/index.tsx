@@ -1,15 +1,22 @@
 import type { ReactNode } from 'react';
 
-interface SidebarBottomProps {
-    children: ReactNode;
+interface SidebarBottomState {
+    collapsed: boolean;
+}
 
+export type SidebarBottomContent = ReactNode | ((state: SidebarBottomState) => ReactNode);
+
+interface SidebarBottomProps {
+    children: SidebarBottomContent;
+
+    collapsed?: boolean;
     isHidden?: boolean;
 };
 
-const SidebarBottom = ({ children, isHidden = false }: SidebarBottomProps) => {
+const SidebarBottom = ({ children, collapsed = false, isHidden = false }: SidebarBottomProps) => {
     return (
         <footer className={isHidden ? 'hidden' : undefined}>
-            {children}
+            {typeof children === 'function' ? children({ collapsed }) : children}
         </footer>
     );
 };
