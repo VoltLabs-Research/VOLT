@@ -117,6 +117,18 @@ export default class TeamClusterDaemonFrameRouter {
                 }
                 return true;
 
+            case 'analysis-job-progress':
+                try {
+                    await clusterDaemonLifecycleService.processDaemonJobProgress(
+                        payload,
+                        registeredTeamClusterId === payload.teamClusterId
+                    );
+                } catch (error: unknown) {
+                    const appError = error as ApplicationError;
+                    logger.warn(`Failed to process daemon job progress jobId=${payload.jobId} statusCode=${appError.statusCode} message=${appError.message}`);
+                }
+                return true;
+
             case 'runtime-heartbeat':
                 this.#onHeartbeat(payload.teamClusterId);
                 try {
