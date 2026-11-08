@@ -1,3 +1,4 @@
+import LandingDownloadMenu from '@/components/LandingDownloadMenu';
 import { RUN_IN_BROWSER_URL } from '@/contracts/links';
 import { ChevronRight } from 'lucide-react';
 
@@ -15,6 +16,7 @@ const LandingHero = () => (
                 Run in this browser
                 <ChevronRight aria-hidden='true' size={16} />
             </a>
+            <LandingDownloadMenu />
         </div>
         {/* Leads into the runtime cards below, the other ways to get VOLT. */}
         <p className='landing-hero-or landing-intro' aria-hidden='true'>or</p>
