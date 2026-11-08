@@ -31,6 +31,9 @@ interface DocumentListingGridProps<T extends Identifiable> {
     emptyButtonIsLoading?: boolean;
     onEmptyButtonClick?: () => void;
     beforeContent?: ReactNode;
+    // Rendered as the grid's first cell, such as a folder being named before it exists.
+    // While it is there, the grid shows it instead of its empty state.
+    leadingContent?: ReactNode;
     getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     dragAndDrop?: DocumentListingDragAndDropConfig<T>;
     className?: string;
@@ -68,6 +71,7 @@ const DocumentListingGrid = <T extends Identifiable,>({
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
     beforeContent,
+    leadingContent,
     getMenuOptions,
     dragAndDrop,
     className = '',
@@ -106,6 +110,9 @@ const DocumentListingGrid = <T extends Identifiable,>({
         isAccessDenied
     });
 
+    const shouldShowLeadingContent = Boolean(leadingContent) && !isInitialLoading && !shouldShowErrorState && !shouldShowAccessDeniedState;
+    const shouldShowEmpty = shouldShowEmptyState && !shouldShowLeadingContent;
+
     const activeDragItem = activeDragId ? getDraggableItem(activeDragId) : null;
     const showDragAffordance = dragAndDrop?.showDragAffordance ?? true;
 
@@ -131,10 +138,10 @@ const DocumentListingGrid = <T extends Identifiable,>({
     };
 
     const grid = (
-        <Scrollable ref={containerRef} className={cn('grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4 max-md:grid-cols-1 max-md:p-4', shouldShowEmptyState || shouldShowAccessDeniedState ? 'grid-rows-1' : 'content-start', className)}>
+        <Scrollable ref={containerRef} className={cn('grid flex-1 auto-rows-auto grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4 max-md:grid-cols-1 max-md:p-4', shouldShowEmpty || shouldShowAccessDeniedState ? 'grid-rows-1' : 'content-start', className)}>
             {isInitialLoading && renderSkeleton?.()}
 
-            {shouldShowEmptyState && (
+            {shouldShowEmpty && (
                 <div className='col-span-full flex min-h-0 flex-col'>
                     <ListingEmptyState
                         icon={emptyIcon}
@@ -164,6 +171,8 @@ const DocumentListingGrid = <T extends Identifiable,>({
                     <ListingAccessDeniedState description={errorMessage ?? "You don't have permission to view these items."} />
                 </div>
             )}
+
+            {shouldShowLeadingContent && leadingContent}
 
             {shouldShowContent && data.map((item, index) => (
                 <GridItem
