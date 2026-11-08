@@ -48,7 +48,8 @@ const DebugToolbar = () => {
         selectedTimestep,
         setSelectedTrajectory,
         setSelectedTimestep,
-        isLoading: trajLoading
+        isLoading: trajLoading,
+        areFramesLoading
     } = useDebugTrajectorySelector();
 
     const { startDebug, step, continueAll, stop, isDebugging } = usePluginDebugSocket({
@@ -125,9 +126,10 @@ const DebugToolbar = () => {
                     }))}
                     value={selectedTimestep !== null ? String(selectedTimestep) : null}
                     onChange={(value: string) => setSelectedTimestep(value ? Number(value) : null)}
-                    placeholder='Frame'
+                    placeholder={areFramesLoading ? 'Loading...' : 'Frame'}
                     ariaLabel='Frame'
                     isDisabled={!selectedTrajectoryId || isDebugging || isStarting}
+                    isPending={areFramesLoading}
                     className={SELECT_CLASS_NAME}
                     triggerClassName={SELECT_TRIGGER_CLASS_NAME}
                 />

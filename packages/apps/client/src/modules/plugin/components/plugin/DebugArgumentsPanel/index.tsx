@@ -29,7 +29,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
         isStarting
     } = usePluginDebugStore();
 
-    const { selectedTrajectory } = useDebugTrajectorySelector();
+    const { frames } = useDebugTrajectorySelector();
 
     const configurableArgs = useMemo(() => {
         const argsDefinitions = nodes.find((n) => n.type === NodeType.ARGUMENTS)?.data.arguments?.arguments;
@@ -83,7 +83,7 @@ const DebugArgumentsPanel = ({ onStart, canStart }: DebugArgumentsPanelProps) =>
                     arguments={configurableArgs}
                     values={debugConfig}
                     onChange={setDebugConfigField}
-                    frameOptions={(selectedTrajectory?.frames ?? []).map((frame, index) => ({
+                    frameOptions={frames.map((frame, index) => ({
                         value: String(frame.timestep),
                         title: `Frame ${index + 1} (t=${frame.timestep})`
                     }))}
