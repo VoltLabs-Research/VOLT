@@ -172,7 +172,8 @@ const GlobalSearch = ({ contextBreadcrumb = null, autoFocus = false, onDismiss }
     };
 
     return (
-        <div className='w-full max-w-100 min-w-0' ref={refs.setReference} {...getReferenceProps()}>
+        // volt-no-drag: in the desktop app's header, the whole field takes clicks, not just its input.
+        <div className='volt-no-drag w-full max-w-100 min-w-0' ref={refs.setReference} {...getReferenceProps()}>
             <SearchField
                 fullWidth
                 variant='secondary'
