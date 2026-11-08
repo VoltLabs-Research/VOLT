@@ -1,0 +1,51 @@
+# VOLT cloud deployment, run by Quantum as a stack sourced from this repository.
+#
+# Quantum builds through the Docker API without BuildKit, which the client image
+# needs, so this runs the images "Publish Stack Images" pushes to GHCR. That
+# workflow notifies Quantum once the images are pushed, which is what redeploys
+# the stack on each commit to main; a GitHub push webhook would arrive before the
+# new images exist.
+#
+# Quantum reads services, image, environment, ports, volumes and depends_on;
+# healthchecks, restart policies and profiles are not part of what it runs.
+services:
+  volt-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: volt
+      POSTGRES_PASSWORD: ${POSTGRES_PASS}
+      POSTGRES_DB: volt
+    volumes:
+      - volt-postgres-data:/var/lib/postgresql/data
+
+  volt-server:
+    image: ghcr.io/voltlabs-research/volt-server-stack:${VOLT_IMAGE_TAG:-main}
+    environment:
+      NODE_ENV: production
+      DEPLOYMENT_MODE: cloud
+      CLIENT_HOST: ${CLIENT_HOST:-https://app.voltcloud.dev}
+      SERVER_ENDPOINT: ${SERVER_ENDPOINT:-https://server.voltcloud.dev}
+      DATABASE_URL: postgres://volt:${POSTGRES_PASS}@volt-postgres:5432/volt
+      SERVER_DATA_DIR: /var/lib/volt-server
+      SERVER_PORT: 8000
+      SERVER_HOST: 0.0.0.0
+      SECRET_KEY: ${SECRET_KEY}
+      SSH_ENCRYPTION_KEY: ${SSH_ENCRYPTION_KEY}
+    depends_on:
+      - volt-postgres
+    volumes:
+      - volt-server-data:/var/lib/volt-server
+    ports:
+      - "8000"
+
+  # Serves the bundle and proxies /api and /socket.io to volt-server on the same origin.
+  volt-client:
+    image: ghcr.io/voltlabs-research/volt-client-stack:${VOLT_IMAGE_TAG:-main}
+    depends_on:
+      - volt-server
+    ports:
+      - "5173"
+
+volumes:
+  volt-postgres-data:
+  volt-server-data:
