@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/logger';
 import { resolveDatabaseDialect, sqliteDatabasePath } from '@shared/persistence/dialect';
+import { serializeSqliteTransactions } from '@shared/persistence/sqlite-transactions';
 
 const SQLITE_IN_MEMORY_PATH = ':memory:';
 const SQLITE_BUSY_TIMEOUT_MS = 10_000;
@@ -88,6 +89,9 @@ export const connectDaemonDataSource = async (entities: Function[]): Promise<Dat
     }
 
     await dataSource.initialize();
+    if (dialect === 'sqlite') {
+        serializeSqliteTransactions(dataSource);
+    }
     logger.info(`@daemon-datasource: connected (${dialect}) and schema synchronized`);
     return dataSource;
 };

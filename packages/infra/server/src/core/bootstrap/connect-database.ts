@@ -3,6 +3,7 @@ import type { DataSource } from 'typeorm';
 import { createDataSource } from '@core/config/database';
 import { getEntities } from '@core/bootstrap/entities';
 import { dropRetiredTables } from '@core/bootstrap/drop-retired-tables';
+import { serializeSqliteTransactions } from '@shared/persistence/sqlite-transactions';
 import logger from '@shared/logger';
 
 let dataSource: DataSource | null = null;
@@ -13,6 +14,9 @@ export const connectDatabase = async (): Promise<void> => {
 
     dataSource = createDataSource(getEntities());
     await dataSource.initialize();
+    if(dataSource.options.type === 'better-sqlite3'){
+        serializeSqliteTransactions(dataSource);
+    }
     BaseEntity.useDataSource(dataSource);
     await dropRetiredTables(dataSource);
 
