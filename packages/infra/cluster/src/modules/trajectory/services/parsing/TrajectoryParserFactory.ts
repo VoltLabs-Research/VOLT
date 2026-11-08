@@ -19,7 +19,6 @@ export interface ScannedFrame {
     index: number;
     byteOffset: number;
     byteLength: number;
-    metadata: ParsedFrameMetadata;
 }
 
 const toFrameMetadata = (header: ReturnType<typeof readHeader>): ParsedFrameMetadata => {
@@ -48,14 +47,16 @@ const toFrameMetadata = (header: ReturnType<typeof readHeader>): ParsedFrameMeta
     };
 };
 
-const parseTrajectoryMetadata = (filePath: string, frame = 0): ParsedFrameMetadata =>
-    toFrameMetadata(readHeader(filePath, { frame }));
+// The header of a file's first frame. readHeader maps the whole file and scans every frame of it to
+// find the one asked for, so the frames of a trajectory are read from files of their own.
+export const readTrajectoryFrameMetadata = (filePath: string): ParsedFrameMetadata =>
+    toFrameMetadata(readHeader(filePath, { frame: 0 }));
 
+// Where each frame of a file is, from a single scan of it.
 export const scanTrajectoryFrames = (filePath: string): ScannedFrame[] => (
     scanFrames(filePath).frames.map((frame) => ({
         index: frame.index,
         byteOffset: frame.byteOffset,
-        byteLength: frame.byteLength,
-        metadata: parseTrajectoryMetadata(filePath, frame.index)
+        byteLength: frame.byteLength
     }))
 );
