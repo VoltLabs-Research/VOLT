@@ -1,6 +1,8 @@
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type {
     AnalysisJobCompletionEvent,
+    AnalysisJobProgressEvent,
+    AnalysisJobProgressReport,
     AnalysisJobReport,
     AnalysisJobStatusEvent,
     AnalysisLogChunk,
@@ -66,6 +68,15 @@ export const createAnalysisStageStatusDedupeKey = (
 ): string => {
     return `analysis.stage-status:${payload.jobId}:${payload.stageKey}:${payload.stageStatus}:${payload.timestep ?? 'none'}`;
 };
+
+export const createAnalysisJobProgressMessage = (
+    context: DaemonIdentity,
+    payload: AnalysisJobProgressReport
+): AnalysisJobProgressEvent => ({
+    type: 'analysis-job-progress',
+    ...context,
+    ...payload
+});
 
 export const createAnalysisJobCompletionDedupeKey = (
     payload: Pick<AnalysisJobReport, 'jobId' | 'timestep'> & { error?: string }

@@ -15,8 +15,8 @@ import {
     encodePluginProcessFrame
 } from '@modules/plugin/services/runtime/plugin-process-framing';
 import {
-    flushLogSink,
-    forwardLogChunk
+    createStderrDemuxer,
+    flushLogSink
 } from '@modules/plugin/services/runtime/process-log-sink';
 
 
@@ -77,12 +77,23 @@ export class PluginProcessChannel {
             this.reader.push(chunk, (opId, payload) => this.completeRequest(opId, payload));
         });
 
+        // The plugin's @volt: lines go to the request being served as progress; the rest is its log.
+        const stderrDemuxer = createStderrDemuxer(
+            () => this.activeLogSink,
+            (text) => {
+                if (this.stderrBytes < MAX_STDERR_BYTES) {
+                    this.stderrBuffer += text;
+                    this.stderrBytes += Buffer.byteLength(text, 'utf-8');
+                }
+            },
+            { pluginId: this.pluginId }
+        );
+
         this.child.stderr.on('data', (chunk: Buffer) => {
-            forwardLogChunk(this.activeLogSink, 'stderr', chunk.toString('utf-8'), { pluginId: this.pluginId });
-            if (this.stderrBytes < MAX_STDERR_BYTES) {
-                this.stderrBuffer += chunk.toString('utf-8');
-                this.stderrBytes += chunk.byteLength;
-            }
+            stderrDemuxer.push(chunk);
+        });
+        this.child.stderr.on('end', () => {
+            stderrDemuxer.end();
         });
 
         this.child.on('error', (error) => {

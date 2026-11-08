@@ -6,6 +6,7 @@ import {
     AnalysisCompletedEvent,
     AnalysisFailedEvent,
     AnalysisLogChunkReportedEvent,
+    AnalysisProgressReportedEvent,
     AnalysisStageStatusReportedEvent,
     AnalysisStartedEvent,
     DebugLogChunkReportedEvent
@@ -41,6 +42,7 @@ const REPORT_MAP = {
     AnalysisCompleted: AnalysisCompletedEvent,
     AnalysisFailed: AnalysisFailedEvent,
     AnalysisStageStatus: AnalysisStageStatusReportedEvent,
+    AnalysisProgress: AnalysisProgressReportedEvent,
     AnalysisLogChunk: {
         event: AnalysisLogChunkReportedEvent,
         skipIf: (input: PayloadOf<typeof AnalysisLogChunkReportedEvent>) => input.segments.length === 0

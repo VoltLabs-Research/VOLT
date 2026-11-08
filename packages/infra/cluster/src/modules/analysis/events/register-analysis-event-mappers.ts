@@ -3,6 +3,7 @@ import { registerStatusTriple } from '@shared/events/register-status-triple';
 import {
     createAnalysisJobCompletionDedupeKey,
     createAnalysisJobCompletionMessage,
+    createAnalysisJobProgressMessage,
     createAnalysisJobStatusDedupeKey,
     createAnalysisJobStatusMessage,
     createAnalysisLogChunkMessage,
@@ -15,6 +16,7 @@ import {
     AnalysisCompletedEvent,
     AnalysisFailedEvent,
     AnalysisLogChunkReportedEvent,
+    AnalysisProgressReportedEvent,
     AnalysisStageStatusReportedEvent,
     AnalysisStartedEvent,
     AnalysisProvenanceRecordedEvent,
@@ -49,6 +51,13 @@ export const registerAnalysisEventMappers: EventMapperSet = (bridge: DomainEvent
         kind: 'buffered',
         message: createAnalysisStageStatusMessage(messageContext, payload),
         options: { dedupeKey: createAnalysisStageStatusDedupeKey(payload) }
+    }));
+
+    // Progress is only worth its latest value: sent as it comes, and lost rather than replayed
+    // stale while the server is unreachable.
+    bridge.register(AnalysisProgressReportedEvent, (payload, { messageContext }) => ({
+        kind: 'immediate',
+        message: createAnalysisJobProgressMessage(messageContext, payload)
     }));
 
     bridge.register(DebugLogChunkReportedEvent, (payload, { messageContext }) => ({

@@ -5,6 +5,7 @@ import type {
     ProcessExecutionLogSink
 } from '@shared/contracts/types/execution-log';
 import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
+import type { PluginProgressDirective } from '@volt/contracts/modules/plugin/progress';
 
 interface AnalysisExecutionLogReporter {
     reportAnalysisLogChunk(input: AnalysisExecutionLogChunkReport): Promise<void>;
@@ -24,6 +25,7 @@ interface BufferedExecutionLogSinkOptions {
     metadata?: ExecutionLogSegmentMetadata;
     flushIntervalMs?: number;
     maxBufferedBytes?: number;
+    onProgress?: (directive: PluginProgressDirective) => void;
 }
 
 interface AnalysisExecutionLogSinkOptions {
@@ -36,6 +38,7 @@ interface AnalysisExecutionLogSinkOptions {
     metadata?: ExecutionLogSegmentMetadata;
     flushIntervalMs?: number;
     maxBufferedBytes?: number;
+    onProgress?: (directive: PluginProgressDirective) => void;
 }
 
 const DEFAULT_FLUSH_INTERVAL_MS = 250;
@@ -103,39 +106,53 @@ const createBufferedExecutionLogSink = (
         await flushQueue;
     };
 
+    const handleChunk = (chunk: ProcessExecutionLogChunk): void => {
+        if (!chunk.text) return;
+
+        const segment: ExecutionLogSegment = {
+            stream: chunk.stream,
+            text: chunk.text,
+            occurredAt: chunk.occurredAt,
+            nodeId: metadata?.nodeId,
+            nodeType: metadata?.nodeType,
+            nodeLabel: metadata?.nodeLabel,
+            pluginId: metadata?.pluginId,
+            executionPath: metadata?.executionPath ? [...metadata.executionPath] : undefined
+        };
+
+        buffer.push(segment);
+        bufferedBytes += Buffer.byteLength(segment.text, 'utf8');
+
+        if (bufferedBytes >= maxBufferedBytes) {
+            enqueueFlush();
+            return;
+        }
+
+        if (flushTimer) {
+            return;
+        }
+
+        flushTimer = setTimeout(() => {
+            flushTimer = null;
+            enqueueFlush();
+        }, flushIntervalMs);
+
+        flushTimer.unref();
+    };
+
     return {
-        handleChunk(chunk: ProcessExecutionLogChunk): void {
-            if (!chunk.text) return;
-
-            const segment: ExecutionLogSegment = {
-                stream: chunk.stream,
-                text: chunk.text,
-                occurredAt: chunk.occurredAt,
-                nodeId: metadata?.nodeId,
-                nodeType: metadata?.nodeType,
-                nodeLabel: metadata?.nodeLabel,
-                pluginId: metadata?.pluginId,
-                executionPath: metadata?.executionPath ? [...metadata.executionPath] : undefined
-            };
-
-            buffer.push(segment);
-            bufferedBytes += Buffer.byteLength(segment.text, 'utf8');
-
-            if (bufferedBytes >= maxBufferedBytes) {
-                enqueueFlush();
-                return;
+        handleChunk,
+        handleProgress(directive: PluginProgressDirective): void {
+            // A status says where the plugin is, which is worth keeping in its log; a progress
+            // text tends to change with every step, so only the job's progress shows it.
+            if (directive.progress === undefined && directive.text) {
+                handleChunk({
+                    stream: 'system',
+                    text: `[Volt] ${directive.text}\n`,
+                    occurredAt: new Date().toISOString()
+                });
             }
-
-            if (flushTimer) {
-                return;
-            }
-
-            flushTimer = setTimeout(() => {
-                flushTimer = null;
-                enqueueFlush();
-            }, flushIntervalMs);
-
-            flushTimer.unref();
+            options.onProgress?.(directive);
         },
         flush: enqueueFlush
     };
@@ -150,6 +167,7 @@ export const createAnalysisExecutionLogSink = (
         metadata: options.metadata,
         flushIntervalMs: options.flushIntervalMs,
         maxBufferedBytes: options.maxBufferedBytes,
+        onProgress: options.onProgress,
         flushSegments: async (segments) => {
             if (!timesteps.length || segments.length === 0) {
                 return;
