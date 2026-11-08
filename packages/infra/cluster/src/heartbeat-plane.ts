@@ -74,6 +74,7 @@ const sendHeartbeat = async (): Promise<void> => {
     emitHeartbeatEvent({
         teamClusterId: config.teamClusterId,
         daemonPassword: config.daemonPassword,
+        installedVersion: config.version,
         runtime: runtimeConfig,
         metrics,
         hostCapabilities: {

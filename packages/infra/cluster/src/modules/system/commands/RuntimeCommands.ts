@@ -19,6 +19,8 @@ import type {
     TeamClusterDaemonRoleApplyResult
 } from '@voltstack/daemon-cluster-client';
 import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
+import type { DaemonRuntimeUpdatePayload } from '@volt/contracts/modules/system/domain';
+import { resolveInstallDir, startDaemonSelfUpdate } from '@modules/system/services/daemon-self-update';
 
 const DEFERRED_RUNTIME_COMMAND_DELAY_MS = 250;
 
@@ -103,6 +105,28 @@ export class RuntimeCommands {
         }, DEFERRED_RUNTIME_COMMAND_DELAY_MS);
 
         return { accepted: true };
+    }
+
+    // Moves this cluster to the server's release. The update recreates this daemon's container, so
+    // the command answers first and the new daemon reports the new version on its next heartbeat.
+    @Command(DaemonCommand.RuntimeUpdate)
+    async update(payload: DaemonRuntimeUpdatePayload) {
+        if (!resolveInstallDir(this.config)) {
+            return {
+                accepted: false,
+                reason: 'This cluster was not installed with install.sh, so it updates with the stack it belongs to.'
+            };
+        }
+
+        try {
+            await startDaemonSelfUpdate(this.config, payload);
+            return { accepted: true };
+        } catch (error) {
+            return {
+                accepted: false,
+                reason: `Could not update to ${payload.version}: ${errorMessage(error)}`
+            };
+        }
     }
 }
 

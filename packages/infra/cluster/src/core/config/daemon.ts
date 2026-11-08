@@ -23,6 +23,8 @@ export interface DaemonConfig {
     metricsIntervalMs: number;
     composeProjectName?: string;
     installRoot?: string;
+    // The VOLT release this daemon belongs to, as the install manifest or the stack set it.
+    version?: string;
     databaseUrl: string;
     jupyter: JupyterConfig;
     allowedBuckets: TeamClusterObjectStoreBucket[];
@@ -103,6 +105,7 @@ export const loadConfig = (): DaemonConfig => {
         metricsIntervalMs: readNumberWithDefault('TEAM_CLUSTER_METRICS_INTERVAL_MS', DEFAULT_METRICS_INTERVAL_MS),
         composeProjectName: readOptionalString('COMPOSE_PROJECT_NAME'),
         installRoot: readOptionalString('TEAM_CLUSTER_INSTALL_ROOT'),
+        version: readOptionalString('VOLT_VERSION'),
         databaseUrl: resolveDatabaseUrl(),
         jupyter,
         allowedBuckets,
