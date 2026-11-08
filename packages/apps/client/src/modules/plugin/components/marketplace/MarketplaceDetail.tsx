@@ -21,7 +21,6 @@ interface MarketplaceDetailProps {
     item: RegistryPackageSummary;
     installedVersion?: string;
     isInstalling: boolean;
-    isAnyInstalling: boolean;
     canInstall: boolean;
     onInstall: (item: RegistryPackageSummary) => void;
     onBack: () => void;
@@ -31,7 +30,6 @@ const MarketplaceDetail = ({
     item,
     installedVersion,
     isInstalling,
-    isAnyInstalling,
     canInstall,
     onInstall,
     onBack
@@ -57,7 +55,7 @@ const MarketplaceDetail = ({
     ].filter((fact): fact is DetailFact => fact !== undefined);
 
     const installDisabledReason = canInstall
-        ? (isAnyInstalling && !isInstalling ? 'Another install is running' : undefined)
+        ? undefined
         : 'You do not have permission to install plugins.';
 
     return (
@@ -87,7 +85,7 @@ const MarketplaceDetail = ({
                                 variant='primary'
                                 onPress={() => onInstall(item)}
                                 isPending={isInstalling}
-                                isDisabled={!canInstall || isAnyInstalling}
+                                isDisabled={!canInstall || isInstalling}
                             >
                                 {state === 'update' ? 'Update' : 'Install'}
                             </Button>

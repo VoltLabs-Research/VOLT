@@ -44,7 +44,8 @@ const MarketplacePage = () => {
 
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS);
-    const [installingName, setInstallingName] = useState<string | null>(null);
+    // Tracked per package so one install only locks its own button.
+    const [installingNames, setInstallingNames] = useState<ReadonlySet<string>>(() => new Set());
     const installRegistryPlugin = useInstallRegistryPluginMutation();
 
     const { data, isFetching, error } = useRegistrySearchQuery({
@@ -87,16 +88,23 @@ const MarketplacePage = () => {
     }, [setSearchParams]);
 
     const handleInstall = useCallback(async (item: RegistryPackageSummary) => {
-        setInstallingName(item.fullName);
+        const name = item.fullName;
+        if (installingNames.has(name)) return;
+
+        setInstallingNames((current) => new Set(current).add(name));
         try {
             await runAction({
-                action: () => installRegistryPlugin.mutateAsync({ name: item.fullName }),
+                action: () => installRegistryPlugin.mutateAsync({ name }),
                 toast: INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS
             });
         } finally {
-            setInstallingName(null);
+            setInstallingNames((current) => {
+                const next = new Set(current);
+                next.delete(name);
+                return next;
+            });
         }
-    }, [installRegistryPlugin]);
+    }, [installRegistryPlugin, installingNames]);
 
     const renderListBody = () => {
         if (error) {
@@ -179,8 +187,7 @@ const MarketplacePage = () => {
                     <MarketplaceDetail
                         item={selectedItem}
                         installedVersion={installedVersionByKey.get(selectedItem.name)}
-                        isInstalling={installingName === selectedItem.fullName}
-                        isAnyInstalling={installingName !== null}
+                        isInstalling={installingNames.has(selectedItem.fullName)}
                         canInstall={canInstall}
                         onInstall={handleInstall}
                         onBack={clearSelection}
