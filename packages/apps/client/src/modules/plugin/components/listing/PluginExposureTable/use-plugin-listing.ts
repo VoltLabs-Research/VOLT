@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { fetchPluginListing, usePluginListingQuery } from '@/modules/plugin/hooks/listing/queries';
 import useDeletePluginListingAnalyses from '@/modules/plugin/hooks/listing/use-delete-plugin-listing-analyses';
+import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { normalizeListingColumns } from '@/modules/plugin/utils/listing/normalize-listing-columns';
 import { buildListingRowMenuOptions } from '@/modules/plugin/utils/listing/listing-row-menu-options';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +32,7 @@ const usePluginListing = ({
 }: UsePluginListingParams) => {
     const navigate = useNavigate();
     const deleteRows = useDeletePluginListingAnalyses();
+    const { pluginsById } = usePluginSelectors();
 
     const context: PluginListingContext = useMemo(() => ({
         pluginId,
@@ -93,7 +95,10 @@ const usePluginListing = ({
         columns,
         context,
         isEnabled,
-        resolvedExposureName: listingMeta?.exposureName ?? exposureName,
+        // Rows stored without a name fall back to the plugin's own name for the exposure, never its id.
+        resolvedExposureName: listingMeta?.exposureName
+            || exposureName
+            || pluginsById[pluginId]?.exposures?.find((exposure) => exposure._id === exposureId)?.name,
         fetchData,
         getMenuOptions
     };
