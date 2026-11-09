@@ -1,6 +1,7 @@
 import { createDomainEvent } from '@shared/events/create-domain-event';
 import type { Failed } from '@shared/contracts/types/job-identity';
 import type {
+    AnalysisJobProgressReport,
     AnalysisJobReport,
     AnalysisLogChunk,
     AnalysisStageStatusReport,
@@ -16,6 +17,7 @@ export const AnalysisStartedEvent = createDomainEvent<BaseAnalysisEventData>('an
 export const AnalysisCompletedEvent = createDomainEvent<BaseAnalysisEventData>('analysis.completed');
 export const AnalysisFailedEvent = createDomainEvent<AnalysisFailedEventData>('analysis.failed');
 export const AnalysisStageStatusReportedEvent = createDomainEvent<AnalysisStageStatusReport>('analysis.stage-status-reported');
+export const AnalysisProgressReportedEvent = createDomainEvent<AnalysisJobProgressReport>('analysis.progress-reported');
 export const AnalysisLogChunkReportedEvent = createDomainEvent<AnalysisLogChunk>('analysis.log-chunk-reported');
 export const DebugLogChunkReportedEvent = createDomainEvent<DebugLogChunk>('analysis.debug-log-chunk-reported');
 export const AnalysisProvenanceRecordedEvent = createDomainEvent<AnalysisProvenance>('analysis.provenance-recorded');

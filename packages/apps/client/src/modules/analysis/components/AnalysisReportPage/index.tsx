@@ -19,6 +19,9 @@ import {
 } from '@/modules/analysis/utils/run-results';
 import useDownloadAnalysisListings from '@/modules/canvas/hooks/use-download-analysis-listings';
 import { AnalysisStatus } from '@/modules/fractal/contracts';
+import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
+import { useAnalysisRunProgress } from '@/modules/jobs/hooks/use-job-progress';
+import { formatProgressPercent } from '@/modules/jobs/utils/job-progress';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import StatusPill from '@/shared/ui/components/StatusPill';
@@ -68,6 +71,11 @@ const AnalysisReportPage = () => {
     const analysis = analysisQuery.data;
     const plugin = analysis ? pluginsById[resolveAnalysisPluginId(analysis)] : undefined;
     const { rows, isLoading: rowsLoading } = useRunAllRows(analysisId || undefined);
+    const runProgress = useAnalysisRunProgress(
+        analysisId,
+        analysis?.totalFrames,
+        analysis?.status === AnalysisStatus.Running || analysis?.status === AnalysisStatus.Pending
+    );
 
     const rawSeries = useMemo(() => buildRunSeries(rows), [rows]);
     const timesteps = useMemo(() => resolveRunTimesteps(analysis, rawSeries), [analysis, rawSeries]);
@@ -165,8 +173,14 @@ const AnalysisReportPage = () => {
                     <h1 className='truncate text-2xl font-semibold tracking-[-0.01em] text-foreground'>{methodName}</h1>
                     <div className='mt-1 flex flex-wrap items-center gap-2 text-sm text-muted'>
                         {!isCompleted && <StatusPill status={analysis.status} />}
-                        <span>{frameCount} frame{frameCount === 1 ? '' : 's'}{when ? ` · ${formatDistanceToNowStrict(new Date(when), { addSuffix: true })}` : ''}</span>
+                        {runProgress
+                            ? <span className='tabular-nums'>{formatProgressPercent(runProgress.fraction)} · {runProgress.finishedFrames} of {runProgress.totalFrames} frames</span>
+                            : <span>{frameCount} frame{frameCount === 1 ? '' : 's'}{when ? ` · ${formatDistanceToNowStrict(new Date(when), { addSuffix: true })}` : ''}</span>}
+                        {runProgress?.text && <span className='min-w-0 truncate'>{runProgress.text}</span>}
                     </div>
+                    {runProgress && (
+                        <JobProgressBar className='mt-2.5 max-w-xs' value={runProgress.fraction} label={`${methodName} progress`} />
+                    )}
                 </div>
                 <div className='flex shrink-0 items-center gap-0.5'>
                     <IconAction label='Download listings' onPress={() => void downloadListings({ analysisId })}>
