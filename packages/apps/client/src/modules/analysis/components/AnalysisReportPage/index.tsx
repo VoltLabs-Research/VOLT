@@ -139,6 +139,7 @@ const AnalysisReportPage = () => {
     const tileSpan = tileMetrics.length ? 12 / tileMetrics.length : 12;
     const panelRowSpan = panels.length === 1 ? 2 : 1;
     const dataSpan = (panels.length + 2) % 2 ? 12 : 6;
+    const columnList = series ? ['Timestep', ...series.metrics.map((metric) => metric.label)].join(', ') : '';
     const failedList = [...failedTimesteps].sort((left, right) => left - right);
     const methodName = analysis.pluginDisplayName || plugin?.modifier?.name || 'analysis';
     const runsPath = trajectoryId ? `/dashboard/analysis?trajectory=${trajectoryId}` : '/dashboard/analysis';
@@ -263,20 +264,22 @@ const AnalysisReportPage = () => {
                     </Tile>
                 )}
                 {series && (
+                    // items-stretch: Electron's Chromium starts a button's children at flex-start, so the
+                    // column list would size to its text and never reach its ellipsis.
                     <button
                         type='button'
                         aria-expanded={showAll}
                         onClick={() => setShowAll((current) => !current)}
-                        className='relative flex min-w-0 cursor-pointer flex-col gap-3 rounded-2xl border border-border bg-transparent px-4 pb-4 pt-4 text-left transition-colors duration-150 hover:bg-foreground/[0.04]'
+                        className='relative flex min-w-0 cursor-pointer flex-col items-stretch gap-3 rounded-2xl border border-border bg-transparent px-4 pb-4 pt-4 text-left transition-colors duration-150 hover:bg-foreground/[0.04]'
                         style={{ gridColumn: `span ${settings.length > 0 ? dataSpan : 12}` }}
                     >
                         <span className='text-xs font-medium text-muted'>All data</span>
                         <ChevronDown size={16} className={cn('absolute right-4 top-4 text-muted transition-transform', showAll && 'rotate-180')} aria-hidden='true' />
                         <span className='mt-auto text-3xl font-light leading-[1.1] tracking-[-0.02em] tabular-nums text-foreground'>
                             {series.timesteps.length}
-                            <small className='ml-1 text-sm font-normal tracking-normal text-muted'>rows</small>
+                            <small className='ml-1 text-sm font-normal tracking-normal text-muted'>{series.timesteps.length === 1 ? 'row' : 'rows'}</small>
                         </span>
-                        <span className='truncate text-xs text-muted'>Timestep, {series.metrics.map((metric) => metric.label).join(', ')}</span>
+                        <span className='truncate text-xs text-muted' title={columnList}>{columnList}</span>
                     </button>
                 )}
                 {series && showAll && (
