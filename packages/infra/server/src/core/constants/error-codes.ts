@@ -42,6 +42,9 @@ export const ErrorCodes = createErrorCodes({
     TEAM_CLUSTER_REMOTE_UNINSTALL_REQUEST_FAILED: 'TeamCluster::RemoteUninstallRequestFailed',
     TEAM_CLUSTER_SOCKET_LIFECYCLE_ONLY: 'TeamCluster::SocketLifecycleOnly',
 
+    SYSTEM_UPDATE_FORBIDDEN: 'System::UpdateForbidden',
+    SYSTEM_UPDATE_UNAVAILABLE: 'System::UpdateUnavailable',
+
     CLUSTER_TRANSFER_DESTINATION_CLUSTER_UNAVAILABLE: 'ClusterTransfer::DestinationClusterUnavailable',
     CLUSTER_TRANSFER_DESTINATION_MUST_DIFFER: 'ClusterTransfer::DestinationMustDiffer',
     CLUSTER_TRANSFER_NO_PLACEMENTS: 'ClusterTransfer::NoPlacements',
@@ -110,6 +113,7 @@ export const ErrorCodes = createErrorCodes({
     ANALYSIS_PROVENANCE_NOT_FOUND: 'AnalysisProvenance::NotFound',
     REGISTRY_PACKAGE_NAME_REQUIRED: 'Registry::PackageNameRequired',
     REGISTRY_PLATFORM_UNAVAILABLE: 'Registry::PlatformUnavailable',
+    REGISTRY_PLATFORM_BUILD_MISSING: 'Registry::PlatformBuildMissing',
     REGISTRY_PACKAGE_NOT_FOUND: 'Registry::PackageNotFound',
 
     TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',

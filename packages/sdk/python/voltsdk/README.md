@@ -190,3 +190,58 @@ GET <registry>/-/search?kind=engine&page=...      -> Search results
 Each bundle is a tar+gzip archive containing `bin/<binary>` and optional
 `lib/`, `scripts/`, and `share/` directories. The registry returns a 307
 redirect to a signed RustFS URL for the actual tarball download.
+
+## Reporting progress from a plugin
+
+A plugin tells VOLT how far it is with lines of its own on **stderr**. VOLT
+takes them out of the run's log and shows them as the job's progress: in the
+jobs panel, the canvas log, the run's row and its report. Any language can write
+them, and stderr is the one channel every runtime gives a plugin, the browser's
+included:
+
+```
+@volt:progress 0.42                  a fraction, 0..1
+@volt:progress 42%                   a percentage
+@volt:progress 340/1000 Meshing      done/total, then what it is doing
+@volt:status Indexing neighbours     what it is doing, without a value
+```
+
+A line has to start with the directive; anything else stays in the log. VOLT
+shows about one value a second, so there is no need to write one per iteration.
+A `@volt:status` is also kept in the log as a `[Volt]` line, so a failed run's
+log says what it was doing. VOLT sets `VOLT_PROGRESS=1` in the environment of
+the plugins it runs; CoreToolkit plugins and `report_progress` write nothing
+without it, so a run by hand logs what it always did.
+
+A persistent Python plugin can write `process(frame, config)` as a generator,
+the way OVITO's `modify()` reports progress: each yielded number is how far it
+is, each yielded string what it is doing, and what it returns is its result.
+
+```python
+def process(frame, config):
+    yield "Meshing cells"
+    for index, cell in enumerate(cells):
+        ...
+        yield (index + 1) / len(cells)
+    return result
+```
+
+From a Python script that runs as a process of its own, `report_progress` and
+`report_status` write the lines and skip the ones closer together than VOLT
+shows:
+
+```python
+from voltsdk import report_progress, report_status
+
+report_status("Meshing cells")
+for index, cell in enumerate(cells):
+    ...
+    report_progress(index + 1, len(cells))
+```
+
+From C or C++, write the line and flush it:
+
+```cpp
+std::fprintf(stderr, "@volt:progress %zu/%zu Meshing\n", done, total);
+std::fflush(stderr);
+```

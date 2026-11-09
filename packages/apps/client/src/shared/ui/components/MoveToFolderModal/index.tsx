@@ -1,6 +1,6 @@
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
-import { BreadcrumbsItem, BreadcrumbsRoot, Button } from '@heroui/react';
+import { BreadcrumbsItem, BreadcrumbsRoot, Button, Skeleton } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal } from '@/shared/ui/modal/use-modal-store';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
@@ -9,6 +9,9 @@ import useFolderBreadcrumbs from '@/shared/ui/hooks/use-folder-breadcrumbs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ModalFooterAction } from '@/shared/ui/components/ModalFooterActions';
 import type { FolderBreadcrumbEntity } from '@/shared/ui/hooks/use-folder-breadcrumbs';
+
+// The folder rows' titles, at the widths of a few typical names.
+const FOLDER_SKELETON_WIDTHS = ['42%', '58%', '34%'];
 
 interface MoveToFolderModalProps<TFolder extends FolderBreadcrumbEntity> {
     id: string;
@@ -210,7 +213,13 @@ function MoveToFolderModal<TFolder extends FolderBreadcrumbEntity>({
                     </Button>
 
                     {isLoading && (
-                        <p className='text-sm text-muted'>Loading folders...</p>
+                        <div className='flex flex-col gap-3' role='status' aria-label='Loading folders'>
+                            {FOLDER_SKELETON_WIDTHS.map((width) => (
+                                <div className='flex h-9 items-center px-3' key={width}>
+                                    <Skeleton className='h-3.5 rounded-md' style={{ width }} />
+                                </div>
+                            ))}
+                        </div>
                     )}
 
                     {!isLoading && error && (

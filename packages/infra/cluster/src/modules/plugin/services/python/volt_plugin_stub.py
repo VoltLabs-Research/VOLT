@@ -4,11 +4,16 @@ Volt Plugin Host — persistent Python worker.
 
 Protocol (stdin/stdout are binary):
     [u32 opId LE][u32 payloadLen LE][json bytes]
-Each request maps to a single response with the same opId.
+Each request maps to a single response with the same opId. stdout carries only
+these frames: whatever the plugin prints goes to stderr, the run's log.
 
 The stub imports a user-provided module (path passed via --plugin-root and
 --entrypoint) and invokes either `process(frame, config)` or
 `process_batch(frames, config)` depending on opcode.
+
+`process` may be a generator, as OVITO's modify() may: each yielded number from
+0 to 1 reports how far it is, each yielded string what it is doing, and the value
+it returns is the result. Both become @volt:progress / @volt:status lines on stderr.
 
 When a frame descriptor carries mmap bindings, the stub exposes the columns as
 zero-copy numpy arrays when numpy is available, or raw bytes otherwise.
@@ -21,11 +26,14 @@ import contextlib
 import gc
 import importlib
 import importlib.util
+import inspect
 import io
+import numbers
 import os
 import subprocess
 import struct
 import sys
+import time
 import traceback
 import json
 import types
@@ -292,6 +300,68 @@ def _mirror_subprocess_output_to_stderr():
         subprocess.run = original_run
 
 
+# The host shows at most one progress value a second; a few more lines than that are enough.
+_PROGRESS_LINE_INTERVAL_S = 0.2
+
+
+class _ProgressLines:
+    """Writes a generator plugin's yields as the @volt: lines the host reads from stderr."""
+
+    def __init__(self) -> None:
+        self._last_written_at: Optional[float] = None
+        self._last_fraction: Optional[float] = None
+
+    def fraction(self, value: float) -> None:
+        fraction = min(1.0, max(0.0, float(value)))
+        if fraction == self._last_fraction:
+            return
+        now = time.monotonic()
+        # Every yield may report; only some of them are written, but always the one that finishes.
+        if (
+            fraction < 1.0
+            and self._last_written_at is not None
+            and now - self._last_written_at < _PROGRESS_LINE_INTERVAL_S
+        ):
+            return
+        self._last_written_at = now
+        self._last_fraction = fraction
+        _write_directive(f"@volt:progress {fraction:.4f}")
+
+    def status(self, text: str) -> None:
+        # One line: a line break inside it would end the directive there.
+        line = " ".join(text.split())
+        if line:
+            _write_directive(f"@volt:status {line}")
+
+
+def _write_directive(line: str) -> None:
+    sys.stderr.write(line + "\n")
+    sys.stderr.flush()
+
+
+def _run_reporting_progress(result: Any) -> Any:
+    """Runs a process() written as a generator, the way OVITO runs a modify() that yields.
+
+    A yielded number from 0 to 1 is how far it is, a yielded string what it is doing, and what the
+    generator returns is its result. A process() that returns a value directly is left as it is.
+    """
+    if not inspect.isgenerator(result):
+        return result
+
+    lines = _ProgressLines()
+    while True:
+        try:
+            item = next(result)
+        except StopIteration as stop:
+            return stop.value
+        if isinstance(item, bool) or item is None:
+            continue
+        if isinstance(item, numbers.Real):
+            lines.fraction(item)
+        elif isinstance(item, str):
+            lines.status(item)
+
+
 def _invoke(
     callables: Dict[str, Callable[..., Any]],
     opcode: str,
@@ -323,17 +393,38 @@ def _invoke(
                 return {"ok": True, "results": list(batch_result) if batch_result is not None else []}
 
             single = callables["process"]
-            results = [single(frame, config) for frame in materialized_frames]
+            results = [_run_reporting_progress(single(frame, config)) for frame in materialized_frames]
             return {"ok": True, "results": results}
 
     if opcode == "process":
         process = callables["process"]
         frame = _materialize_frame(request.get("frame"), mmap_cache)
         with _mirror_subprocess_output_to_stderr():
-            result = process(frame, config)
+            result = _run_reporting_progress(process(frame, config))
         return {"ok": True, "result": result}
 
     raise ValueError(f"Unsupported opcode '{opcode}'")
+
+
+def _claim_protocol_stdout() -> io.BufferedWriter:
+    """Keeps stdout for the protocol's frames and sends what the plugin prints to stderr.
+
+    A print() in the plugin would otherwise land between two frames, and the host would read
+    its text as a frame header. Natively, fd 1 itself is moved to stderr, which also covers
+    compiled libraries and child processes that write to it. Pyodide only rebinds sys.stdout.
+    """
+    sys.stdout.flush()
+    if sys.platform != "emscripten":
+        try:
+            protocol_fd = os.dup(1)
+            os.dup2(2, 1)
+            sys.stdout = sys.stderr
+            return os.fdopen(protocol_fd, "wb")
+        except OSError:
+            pass
+    protocol = sys.stdout.buffer
+    sys.stdout = sys.stderr
+    return protocol
 
 
 def _main() -> int:
@@ -341,6 +432,8 @@ def _main() -> int:
     parser.add_argument("--plugin-root", required=True)
     parser.add_argument("--entrypoint", required=True)
     args = parser.parse_args()
+
+    stdout = _claim_protocol_stdout()
 
     try:
         module = _load_user_module(args.plugin_root, args.entrypoint)
@@ -360,7 +453,6 @@ def _main() -> int:
             sys.stderr.flush()
 
     stdin = sys.stdin.buffer
-    stdout = sys.stdout.buffer
     try:
         while True:
             request = _read_request(stdin)

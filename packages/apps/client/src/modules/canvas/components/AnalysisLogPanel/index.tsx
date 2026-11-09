@@ -1,4 +1,7 @@
 import useAnalysisFrameLog from './use-analysis-frame-log';
+import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
+import { useFrameJobProgress } from '@/modules/jobs/hooks/use-job-progress';
+import { formatProgressPercent } from '@/modules/jobs/utils/job-progress';
 import { format, isValid } from 'date-fns';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -51,6 +54,14 @@ const AnalysisLogPanel = ({
     });
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const [autoFollow, setAutoFollow] = useState(true);
+    // What the frame's plugin says about how far it is, while it runs.
+    const reportedProgress = useFrameJobProgress(analysisId, timestep);
+    const progress = activityStatus === 'running' ? reportedProgress : null;
+    const progressLabel = progress
+        ? [progress.value !== undefined ? formatProgressPercent(progress.value) : undefined, progress.text].filter(Boolean).join(' · ')
+        : '';
+    // A run whose analysis the trajectory does not list yet has no title, and still shows how far it is.
+    const showHeader = Boolean(title) || progress !== null;
 
     useEffect(() => {
         const element = scrollRef.current;
@@ -111,13 +122,21 @@ const AnalysisLogPanel = ({
 
     return (
         <div className='relative flex h-full min-h-0 flex-1 flex-col'>
-            {title && (
+            {showHeader && (
                 <div className='pointer-events-none absolute inset-x-0 top-0 z-[1] flex h-8 flex-row items-center gap-2 bg-canvas/[0.88] px-4 text-xs'>
-                    <span className={cn('truncate font-medium', activityStatus ? TITLE_TONE[activityStatus] : 'text-foreground')}>
-                        {title}
-                    </span>
-                    {activityStatus && <span className='sr-only'>{activityStatus}</span>}
-                    {timestep !== undefined && <span className='shrink-0 text-muted'>Frame {timestep}</span>}
+                    {title && (
+                        <span className={cn('truncate font-medium', activityStatus ? TITLE_TONE[activityStatus] : 'text-foreground')}>
+                            {title}
+                        </span>
+                    )}
+                    {title && activityStatus && <span className='sr-only'>{activityStatus}</span>}
+                    {title && timestep !== undefined && <span className='shrink-0 text-muted'>Frame {timestep}</span>}
+                    {progress && (
+                        <span className='ml-auto flex min-w-0 items-center gap-2 text-muted'>
+                            <span className='truncate tabular-nums'>{progressLabel}</span>
+                            <JobProgressBar className='w-16 shrink-0' value={progress.value} label={`${title ?? 'Analysis'} progress`} />
+                        </span>
+                    )}
                 </div>
             )}
             <Scrollable className='min-h-0 flex-1' ref={scrollRef}>
@@ -128,7 +147,7 @@ const AnalysisLogPanel = ({
                 ) : (
                     <pre className={cn(
                         'm-0 whitespace-pre-wrap break-words px-4 pb-4 font-mono text-xs leading-[1.55] text-foreground',
-                        title ? 'pt-9' : 'pt-3.5'
+                        showHeader ? 'pt-9' : 'pt-3.5'
                     )}>
                         {segments.map((segment, index) => (
                             <span

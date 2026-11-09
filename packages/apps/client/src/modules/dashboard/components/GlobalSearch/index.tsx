@@ -1,5 +1,4 @@
-import Loader from '@/shared/ui/components/Loader';
-import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, SearchField, cn } from '@heroui/react';
+import { BreadcrumbsItem, BreadcrumbsRoot, EmptyStateRoot, SearchField, Skeleton, cn } from '@heroui/react';
 import { useFloatingRoot } from '@/shared/ui/contexts/FloatingRootContext';
 import useDashboardGlobalSearch from './use-dashboard-global-search';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
@@ -9,6 +8,9 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
 import type { GlobalSearchSectionKey } from '@/modules/dashboard/api/service';
 import Scrollable from '@/shared/ui/components/Scrollable';
+
+// Two sections of results while the search answers: each a label over titles and subtitles.
+const RESULT_SKELETON_SECTIONS = [['54%', '38%', '62%'], ['46%', '58%']];
 
 type SectionConfig = {
     key: GlobalSearchSectionKey;
@@ -224,8 +226,26 @@ const GlobalSearch = ({ contextBreadcrumb = null, autoFocus = false, onDismiss }
                         </p>
 
                         {isLoading && (
-                            <div className='flex items-center justify-center p-8'>
-                                <Loader size='md' aria-label='Loading' />
+                            <div className='flex flex-col' aria-hidden='true'>
+                                {RESULT_SKELETON_SECTIONS.map((titleWidths, sectionIndex) => (
+                                    <div className='py-1 border-b border-foreground/[0.06] last:border-b-0' key={sectionIndex}>
+                                        <div className='flex h-7 items-center px-2.5 pt-0.5'>
+                                            <Skeleton className='h-2.5 w-16 rounded-md' />
+                                        </div>
+                                        <div className='flex flex-col gap-0.5'>
+                                            {titleWidths.map((width, index) => (
+                                                <div className='flex w-full flex-col px-2.5 py-1.5' key={index}>
+                                                    <span className='flex h-6 items-center'>
+                                                        <Skeleton className='h-3.5 rounded-md' style={{ width }} />
+                                                    </span>
+                                                    <span className='flex h-[1.1rem] items-center'>
+                                                        <Skeleton className='h-2.5 w-[30%] rounded-md' />
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
 

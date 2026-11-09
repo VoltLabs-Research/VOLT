@@ -20,6 +20,7 @@ import AINav from '@/modules/ai/components/AINav';
 import AIPageExitWidgetBridge from '@/modules/ai/components/AIPageExitWidgetBridge';
 import useGlobalSocketCacheSync from './use-global-socket-cache-sync';
 import TrajectoryUploaderContainer from '@/modules/trajectory/components/TrajectoryUploaderContainer';
+import UpdateNoticeBar from '@/modules/system/components/UpdateNoticeBar';
 import {
     DASHBOARD_LAYOUT_EVENTS,
     getDashboardWorkspaceChromeState,
@@ -126,104 +127,108 @@ const DashboardLayout = () => {
     return (
         <>
             <AIPageExitWidgetBridge />
-            {/* Pollium's chrome: the navigation sits on the canvas and the page on one surface,
-                inset 8px with a 16px corner from 64rem up, and edge to edge below. */}
-            <main className='flex h-dvh flex-row bg-background'>
-                <TeamCreatorModal isRequired={teams.length === 0} />
-                <JoinTeamModal />
-
-                <div
-                    className={cn(
-                        'fixed inset-0 z-[99] hidden bg-canvas/80',
-                        sidebarOpen && 'max-lg:block'
-                    )}
-                    onClick={() => setSidebarOpen(false)}
-                />
-
-                <aside
-                    data-rail={rail}
-                    inert={railHidden || (!isRailViewport && !sidebarOpen)}
-                    className={cn(
-                        'app-sidebar relative z-[100] flex h-dvh shrink-0 flex-col overflow-hidden pt-5 transition-[width] duration-[420ms] ease-out-fluid',
-                        'max-lg:fixed max-lg:top-0 max-lg:left-0 max-lg:w-68 max-lg:max-w-[85vw] max-lg:bg-dashboard-surface max-lg:pt-3 max-lg:transition-transform max-lg:[backdrop-filter:var(--glass-backdrop)]',
-                        {
-                            expanded: 'lg:w-60',
-                            collapsed: 'lg:w-16',
-                            hidden: 'lg:w-0'
-                        }[rail],
-                        sidebarOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
-                    )}
-                >
-                    <div className='hidden shrink-0 justify-end px-3 pb-1 max-lg:flex'>
-                        <Tooltip>
-                            <Button
-                                isIconOnly
-                                variant='ghost'
-                                className='rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground'
-                                aria-label='Close navigation'
-                                onPress={() => setSidebarOpen(false)}
-                            >
-                                <X size={18} />
-                            </Button>
-                            <Tooltip.Content placement='bottom'>Close navigation</Tooltip.Content>
-                        </Tooltip>
-                    </div>
-
-                    <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pb-3'>
-                        <AppNav
-                            active={panel === 'app'}
-                            collapsed={collapsed}
-                            setSidebarOpen={setSidebarOpen}
-                            onExpandSidebar={expandSidebar}
-                        />
-                        <SettingsNav active={panel === 'settings'} collapsed={collapsed} />
-                        <SecretKeysNav active={panel === 'secret-keys'} collapsed={collapsed} />
-                        <TrajectoriesNav active={panel === 'trajectories'} collapsed={collapsed} />
-                        <AINav active={panel === 'ai'} collapsed={collapsed} />
-                    </div>
+            {/* The update notice spans the window above everything, as Pollium's notice bar does. */}
+            <div className='flex h-dvh flex-col bg-background'>
+                <UpdateNoticeBar />
+                {/* Pollium's chrome: the navigation sits on the canvas and the page on one surface,
+                    inset 8px with a 16px corner from 64rem up, and edge to edge below. */}
+                <main className='flex min-h-0 flex-1 flex-row'>
+                    <TeamCreatorModal isRequired={teams.length === 0} />
+                    <JoinTeamModal />
 
                     <div
                         className={cn(
-                            'flex flex-col gap-2 px-3 pb-3 empty:hidden',
-                            collapsed && 'items-center'
+                            'fixed inset-0 z-[99] hidden bg-canvas/80',
+                            sidebarOpen && 'max-lg:block'
+                        )}
+                        onClick={() => setSidebarOpen(false)}
+                    />
+
+                    <aside
+                        data-rail={rail}
+                        inert={railHidden || (!isRailViewport && !sidebarOpen)}
+                        className={cn(
+                            'app-sidebar relative z-[100] flex h-full shrink-0 flex-col overflow-hidden pt-5 transition-[width] duration-[420ms] ease-out-fluid',
+                            'max-lg:fixed max-lg:top-0 max-lg:left-0 max-lg:h-dvh max-lg:w-68 max-lg:max-w-[85vw] max-lg:bg-dashboard-surface max-lg:pt-3 max-lg:transition-transform max-lg:[backdrop-filter:var(--glass-backdrop)]',
+                            {
+                                expanded: 'lg:w-60',
+                                collapsed: 'lg:w-16',
+                                hidden: 'lg:w-0'
+                            }[rail],
+                            sidebarOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
                         )}
                     >
-                        <UserMenuPopover
-                            onSettingsClick={handleSettingsClick}
-                            onSignOut={handleSignOut}
-                            isSigningOut={isSigningOut}
-                            collapsed={collapsed}
-                        />
-                    </div>
-                </aside>
+                        <div className='hidden shrink-0 justify-end px-3 pb-1 max-lg:flex'>
+                            <Tooltip>
+                                <Button
+                                    isIconOnly
+                                    variant='ghost'
+                                    className='rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground'
+                                    aria-label='Close navigation'
+                                    onPress={() => setSidebarOpen(false)}
+                                >
+                                    <X size={18} />
+                                </Button>
+                                <Tooltip.Content placement='bottom'>Close navigation</Tooltip.Content>
+                            </Tooltip>
+                        </div>
 
-                <div className='flex min-w-0 flex-1 lg:p-2'>
-                    <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden lg:rounded-2xl dark:bg-background'>
-                        {!headerHidden && (
-                            <DashboardHeader
+                        <div className='grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] px-3 pb-3'>
+                            <AppNav
+                                active={panel === 'app'}
+                                collapsed={collapsed}
                                 setSidebarOpen={setSidebarOpen}
-                                isSidebarCollapsed={collapsed}
-                                onToggleSidebar={toggleSidebar}
-                                globalSearchBreadcrumb={globalSearchBreadcrumb}
+                                onExpandSidebar={expandSidebar}
                             />
-                        )}
+                            <SettingsNav active={panel === 'settings'} collapsed={collapsed} />
+                            <SecretKeysNav active={panel === 'secret-keys'} collapsed={collapsed} />
+                            <TrajectoriesNav active={panel === 'trajectories'} collapsed={collapsed} />
+                            <AINav active={panel === 'ai'} collapsed={collapsed} />
+                        </div>
 
-                        <Scrollable className='page-view relative min-h-0 flex-1'>
-                            <TrajectoryUploaderContainer>
-                                {/* A new page is a new outlet, as it was under the old fade: its state starts over. */}
-                                <div key={dashboardPageKey(location.pathname)} className='h-full'>
-                                    <Outlet context={outletContext} />
-                                </div>
-                            </TrajectoryUploaderContainer>
-                        </Scrollable>
+                        <div
+                            className={cn(
+                                'flex flex-col gap-2 px-3 pb-3 empty:hidden',
+                                collapsed && 'items-center'
+                            )}
+                        >
+                            <UserMenuPopover
+                                onSettingsClick={handleSettingsClick}
+                                onSignOut={handleSignOut}
+                                isSigningOut={isSigningOut}
+                                collapsed={collapsed}
+                            />
+                        </div>
+                    </aside>
 
-                        {!headerHidden && <DashboardTabBar />}
+                    <div className='flex min-w-0 flex-1 lg:p-2'>
+                        <div className='relative flex min-w-0 flex-1 flex-col overflow-hidden lg:rounded-2xl dark:bg-background'>
+                            {!headerHidden && (
+                                <DashboardHeader
+                                    setSidebarOpen={setSidebarOpen}
+                                    isSidebarCollapsed={collapsed}
+                                    onToggleSidebar={toggleSidebar}
+                                    globalSearchBreadcrumb={globalSearchBreadcrumb}
+                                />
+                            )}
+
+                            <Scrollable className='page-view relative min-h-0 flex-1'>
+                                <TrajectoryUploaderContainer>
+                                    {/* A new page is a new outlet, as it was under the old fade: its state starts over. */}
+                                    <div key={dashboardPageKey(location.pathname)} className='h-full'>
+                                        <Outlet context={outletContext} />
+                                    </div>
+                                </TrajectoryUploaderContainer>
+                            </Scrollable>
+
+                            {!headerHidden && <DashboardTabBar />}
+                        </div>
                     </div>
-                </div>
 
-                <DashboardSidePanel />
+                    <DashboardSidePanel />
 
-            </main>
+                </main>
+            </div>
         </>
     );
 };

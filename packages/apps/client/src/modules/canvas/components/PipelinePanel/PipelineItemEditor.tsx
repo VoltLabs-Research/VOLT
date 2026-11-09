@@ -17,6 +17,9 @@ import ColorCodingStageEditor from '../CanvasPipeline/stage-editors/ColorCodingS
 import ExecutionConfigSummary from '../AnalysisTreeNode/ExecutionConfigSummary';
 import AnalysisResultsSection from '../AnalysisResultsSection';
 import SavedStageParameters from './SavedStageParameters';
+import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
+import { useAnalysisRunProgress } from '@/modules/jobs/hooks/use-job-progress';
+import { formatProgressPercent } from '@/modules/jobs/utils/job-progress';
 import { resolveAnalysisPluginId } from '@/modules/analysis/utils/resolve-plugin-id';
 import { getSceneKey } from '@/modules/fractal/utils/scene-utils';
 import { describeDraftStage, describePipelineRunStage } from '../../utils/pipeline-stage-labels';
@@ -62,6 +65,27 @@ const STATUS_LINE: Partial<Record<string, { text: string; className: string }>> 
     [CanvasAnalysisStatusEnum.Pending]: { text: 'Queued', className: 'text-warning-soft-foreground' },
     [CanvasAnalysisStatusEnum.Running]: { text: 'Running', className: 'text-info-soft-foreground' },
     [CanvasAnalysisStatusEnum.Failed]: { text: 'Failed', className: 'text-danger-soft-foreground' }
+};
+
+// How far a running analysis is, from what its frames' plugins report: a moving bar until one
+// gives a value (an older plugin or daemon never does), then the share done and what it is doing.
+const RunningAnalysisProgress = ({ analysisId, title, totalFrames }: { analysisId: string; title: string; totalFrames?: number }) => {
+    const progress = useAnalysisRunProgress(analysisId, totalFrames, true);
+    if (!progress) return null;
+
+    const known = progress.reported || progress.finishedFrames > 0;
+    return (
+        <div className='flex flex-col gap-1.5'>
+            <JobProgressBar value={known ? progress.fraction : undefined} label={`${title} progress`} />
+            <div className='flex min-w-0 flex-row items-center gap-2 text-xs text-muted'>
+                {known && <span className='shrink-0 tabular-nums text-foreground'>{formatProgressPercent(progress.fraction)}</span>}
+                {progress.text && <span className='min-w-0 truncate' title={progress.text}>{progress.text}</span>}
+                {progress.totalFrames > 1 && (
+                    <span className='ml-auto shrink-0 tabular-nums'>{progress.finishedFrames} of {progress.totalFrames} frames</span>
+                )}
+            </div>
+        </div>
+    );
 };
 
 // OVITO's rollouts: a heading and the selected item's settings, stacked.
@@ -339,6 +363,13 @@ const PipelineItemEditor = ({
             <>
                 <Rollout title={analysis.pluginDisplayName}>
                     {statusLine && <p className={`m-0 text-xs ${statusLine.className}`}>{statusLine.text}</p>}
+                    {status === CanvasAnalysisStatusEnum.Running && (
+                        <RunningAnalysisProgress
+                            analysisId={analysis._id}
+                            title={analysis.pluginDisplayName}
+                            totalFrames={analysis.totalFrames}
+                        />
+                    )}
                     {editableStage ? (
                         <SavedStageParameters pipelineKey={pipelineKey} stage={editableStage} trajectory={trajectory} />
                     ) : (

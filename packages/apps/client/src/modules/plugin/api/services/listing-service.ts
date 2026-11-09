@@ -4,7 +4,7 @@ import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
 import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
-import type { ListingRow } from '@volt/contracts/modules/plugin/listing';
+import type { ListingRow, ListingRowByAnalysisData } from '@volt/contracts/modules/plugin/listing';
 import type { RawListingResponse } from './listing-response';
 import type { SubListingColumn } from '@volt/contracts/modules/plugin/listing';
 
@@ -66,6 +66,40 @@ export interface GetSubListingResponse {
     limit: number;
 }
 
+export interface GetListingRowsByAnalysisInput {
+    analysisId: string;
+    page?: number;
+    limit?: number;
+}
+
+interface RawListingRowsByAnalysisResponse {
+    status: string;
+    data: {
+        data: ListingRowByAnalysisData[];
+        total: number;
+        page: number;
+        totalPages: number;
+        limit: number;
+    };
+}
+
+// One row per exposure and timestep, newest timestep first.
+const mapListingRowsByAnalysis = (result: RawListingRowsByAnalysisResponse): PaginatedResponse<ListingRowByAnalysisData> => {
+    const inner = result.data;
+
+    return {
+        status: 'success',
+        data: inner.data,
+        pagination: {
+            page: inner.page,
+            limit: inner.limit,
+            total: inner.total,
+            totalPages: inner.totalPages,
+            hasMore: inner.page < inner.totalPages
+        }
+    };
+};
+
 const routes = serviceRoutes('/teams', { rbac: true });
 
 const endpoints = {
@@ -76,6 +110,13 @@ const endpoints = {
     }),
     getSubListing: routes.route<GetSubListingInput, GetSubListingResponse>(
         pluginRoutes.getSubListing
+    ),
+    getListingRowsByAnalysis: routes.route<GetListingRowsByAnalysisInput, PaginatedResponse<ListingRowByAnalysisData>, RawListingRowsByAnalysisResponse>(
+        pluginRoutes.getListingRowsByAnalysisId,
+        {
+            unwrap: 'raw',
+            map: mapListingRowsByAnalysis
+        }
     ),
     exportListing: download<ExportPluginListingInput>('GET',
         routes.path(pluginRoutes.exportPluginListingDocuments),

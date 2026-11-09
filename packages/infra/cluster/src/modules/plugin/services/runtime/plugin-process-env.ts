@@ -34,5 +34,9 @@ export const buildPluginProcessEnv = (
         env.VOLT_DUCKDB_MEMORY_LIMIT_MB = String(resolveDuckDbMemoryLimitMb());
     }
 
+    // Tells the plugin its @volt:progress lines are read: CoreToolkit only writes them when set,
+    // so a plugin run by hand, or by a daemon older than this, logs what it always did.
+    env.VOLT_PROGRESS = '1';
+
     return env;
 };

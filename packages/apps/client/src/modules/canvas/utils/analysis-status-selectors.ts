@@ -6,6 +6,7 @@ import {
     isQueuedJobStatus,
     isRunningJobStatus
 } from '@/modules/jobs/utils/job-status-semantics';
+import { readJobProgress } from '@/modules/jobs/utils/job-progress';
 import { deriveAnalysisStatusFromJobs, resolveJobAnalysisId } from './analysis-job-status';
 import { AnalysisStatus, normalizeCanvasAnalysisStatus } from './analysis-status';
 
@@ -23,6 +24,8 @@ export interface JobStatusCounts {
     running: number;
     completed: number;
     failed: number;
+    // How many jobs' worth of work the running ones have reported done, summed from their plugins.
+    runningProgress: number;
 }
 
 export interface LiveLogTarget {
@@ -249,12 +252,14 @@ export const buildJobStatusCounts = (
     groups: readonly TrajectoryJobGroup[],
     trajectoryId: string | undefined
 ): JobStatusCounts => {
-    const counts: JobStatusCounts = { queued: 0, running: 0, completed: 0, failed: 0 };
+    const counts: JobStatusCounts = { queued: 0, running: 0, completed: 0, failed: 0, runningProgress: 0 };
 
     forEachFrame(groups, trajectoryId, (_timestep, jobs) => {
         for (const job of jobs) {
-            if (isRunningJobStatus(job.status)) counts.running += 1;
-            else if (isQueuedJobStatus(job.status)) counts.queued += 1;
+            if (isRunningJobStatus(job.status)) {
+                counts.running += 1;
+                counts.runningProgress += readJobProgress(job)?.value ?? 0;
+            } else if (isQueuedJobStatus(job.status)) counts.queued += 1;
             else if (isCompletedJobStatus(job.status)) counts.completed += 1;
             else if (isFailedJobStatus(job.status)) counts.failed += 1;
         }
