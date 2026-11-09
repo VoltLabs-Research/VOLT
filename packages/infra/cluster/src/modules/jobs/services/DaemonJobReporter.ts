@@ -1,4 +1,5 @@
 import { singleton } from '@shared/utilities/singleton';
+import { isCurrentJobCancelled, isTrajectoryPurged } from '@shared/queues/job-cancellation';
 import { getEventDispatcher, type EventDispatcher } from '@shared/events/EventDispatcher';
 import type { DomainEventClass, PayloadOf } from '@shared/events/create-domain-event';
 import type { IDomainEvent } from '@shared/events/IDomainEvent';
@@ -75,7 +76,10 @@ const createDaemonJobReporterService = (eventDispatcher: EventDispatcher): Daemo
     const entries = Object.entries(REPORT_MAP).map(([key, spec]) => {
         const { event: EventClass, skipIf } = entry(spec as ReporterSpec<DomainEventClass<object>>);
         const method = (input: object): Promise<void> => {
-            if (skipIf?.(input)) {
+            // A cancelled job's trajectory or analysis is being deleted; reporting on it only resurrects state.
+            if (isCurrentJobCancelled()
+                || isTrajectoryPurged((input as { trajectoryId?: string }).trajectoryId)
+                || skipIf?.(input)) {
                 return Promise.resolve();
             }
             return eventDispatcher.publish(new EventClass(input));

@@ -1,4 +1,5 @@
 import { singleton } from '@shared/utilities/singleton';
+import { JobCancelledError, assertObjectWritable, onJobCancelled } from '@shared/queues/job-cancellation';
 import { getConfig } from '@core/config/daemon';
 import { getFilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
 import { getRemoteClient } from '@shared/storage/DirectObjectStoreClient';
@@ -127,6 +128,7 @@ const createClusterObjectStore = (
                 return;
             }
 
+            assertObjectWritable(input.objectKey);
             await remoteClient.putBuffer(input.ownerClusterId, {
                 bucket: input.bucket,
                 objectKey: input.objectKey,
@@ -151,15 +153,23 @@ const createClusterObjectStore = (
                 return;
             }
 
-            await remoteClient.putStream(input.ownerClusterId, {
-                bucket: input.bucket,
-                objectKey: input.objectKey,
-                stream: input.stream,
-                contentLength: input.size,
-                contentType: metadata.contentType,
-                contentEncoding: metadata.contentEncoding,
-                metadata: metadata.remoteMetadata
+            assertObjectWritable(input.objectKey);
+            const detach = onJobCancelled(() => {
+                input.stream.destroy(new JobCancelledError(`Write of ${input.objectKey} was cancelled`));
             });
+            try {
+                await remoteClient.putStream(input.ownerClusterId, {
+                    bucket: input.bucket,
+                    objectKey: input.objectKey,
+                    stream: input.stream,
+                    contentLength: input.size,
+                    contentType: metadata.contentType,
+                    contentEncoding: metadata.contentEncoding,
+                    metadata: metadata.remoteMetadata
+                });
+            } finally {
+                detach();
+            }
         },
 
         list: (ownerClusterId, request) => {

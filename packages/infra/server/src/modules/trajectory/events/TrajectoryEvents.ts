@@ -67,8 +67,9 @@ export default class TrajectoryEvents {
         });
     }
 
+    // Jobs first: a job still running could write into the storage deleted right after it.
     @Event('trajectory.deleted')
-    async cleanupJobs(payload: EventMap['trajectory.deleted']) {
+    async cleanupDeletedTrajectory(payload: EventMap['trajectory.deleted']) {
         try {
             await teamJobMaintenanceService.cleanupDeletedTrajectory(payload);
         } catch (error) {
@@ -77,10 +78,11 @@ export default class TrajectoryEvents {
                 `[TrajectoryEvents] Failed to purge runtime state for trajectory ${payload.trajectoryId}`
             );
         }
+
+        await this.#cleanupStorage(payload);
     }
 
-    @Event('trajectory.deleted')
-    async cleanupStorage({ trajectoryId, storageClusterId }: EventMap['trajectory.deleted']) {
+    async #cleanupStorage({ trajectoryId, storageClusterId }: EventMap['trajectory.deleted']): Promise<void> {
         const targets = getTrajectoryStorageCleanupTargets(trajectoryId);
 
         if (!storageClusterId) {

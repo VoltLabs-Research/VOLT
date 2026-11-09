@@ -1,4 +1,4 @@
-import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
+import teamClusterDaemonClient, { type TeamClusterDaemonCommandOptions } from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
 import type { RemoveTeamJobsResult, RetryTeamJobsResult, TeamClusterFailureDetail } from '@volt/contracts/modules/jobs/domain';
 import teamJobsService, { type TeamJobSummary } from '@modules/team/socket/team/TeamJobsService';
@@ -32,6 +32,12 @@ interface PurgedJobScope {
     daemonClusterIds: string[];
 }
 
+interface TrajectoryRuntimeCleanupResult {
+    removedJobs?: number;
+    cancelledJobs?: number;
+    unsettledJobs?: number;
+}
+
 class TeamJobMaintenanceService {
     async removeJobsForAnalysis(teamId: string, analysisId: string): Promise<RemoveTeamJobsResult> {
         return this.removeResolvedJobs(teamId, await this.collectJobsMatching(
@@ -59,6 +65,8 @@ class TeamJobMaintenanceService {
         ));
     }
 
+    // Resolves once every reachable daemon has removed the trajectory's queued jobs and stopped its
+    // running ones, so storage deleted afterwards cannot be written to again by a job of it.
     async cleanupDeletedTrajectory(
         input: Pick<
             TrajectoryDeletedEventPayload,
@@ -77,15 +85,24 @@ class TeamJobMaintenanceService {
             input.storageClusterId,
             input.analysisComputeClusterIds ?? [],
             purged.daemonClusterIds
-        ).map((teamClusterId) => this.cleanupRemoteRuntimeState(
-            teamClusterId,
-            DaemonCommand.TrajectoryCleanupRuntimeState,
-            {
-                trajectoryId: input.trajectoryId,
-                analysisIds,
-                jobIds: purged.jobIds
+        ).map(async (teamClusterId) => {
+            const result = await this.cleanupRemoteRuntimeState<TrajectoryRuntimeCleanupResult>(
+                teamClusterId,
+                DaemonCommand.TrajectoryCleanupRuntimeState,
+                {
+                    trajectoryId: input.trajectoryId,
+                    analysisIds,
+                    jobIds: purged.jobIds
+                },
+                'long-running-control-plane'
+            );
+
+            if (result?.unsettledJobs) {
+                logger.warn(
+                    `[TeamJobMaintenanceService] ${result.unsettledJobs} cancelled job(s) of deleted trajectory ${input.trajectoryId} were still running on cluster ${teamClusterId}`
+                );
             }
-        )));
+        }));
     }
 
     async cleanupDeletedAnalysis(
@@ -206,18 +223,20 @@ class TeamJobMaintenanceService {
         return [...grouped.keys()];
     }
 
-    private async cleanupRemoteRuntimeState(
+    private async cleanupRemoteRuntimeState<T = unknown>(
         teamClusterId: string,
         command: DaemonCommand,
-        payload: Record<string, unknown>
-    ): Promise<void> {
+        payload: Record<string, unknown>,
+        timeoutClass?: TeamClusterDaemonCommandOptions['timeoutClass']
+    ): Promise<T | null> {
         try {
-            await teamClusterDaemonClient.command(teamClusterId, command, payload);
+            return await teamClusterDaemonClient.command<T>(teamClusterId, command, payload, { timeoutClass });
         } catch (error) {
             logger.warn(
                 error,
                 `[TeamJobMaintenanceService] Failed to purge runtime state on cluster ${teamClusterId} command=${command}`
             );
+            return null;
         }
     }
 }

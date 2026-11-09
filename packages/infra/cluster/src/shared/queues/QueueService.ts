@@ -5,6 +5,7 @@ import { QueueWorker } from '@shared/queues/QueueWorker';
 import { getQueueNotifier } from '@shared/queues/QueueNotifier';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { getQueueJobStore } from '@shared/queues/queue-job-store';
+import { getJobCancellationRegistry, throwIfJobCancelled } from '@shared/queues/job-cancellation';
 import type { EnqueueRequest, QueueJobCounts } from '@shared/queues/queue-job-store-contract';
 import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 import type { JsonObject } from '@shared/contracts/types/json';
@@ -16,6 +17,13 @@ interface CreateWorkerOptions {
 export interface QueuePayload {
     jobId?: string;
 }
+
+// A purged trajectory takes no new jobs: whatever is still running for it must not queue follow-ups.
+const belongsToPurgedTrajectory = (payload: QueuePayload): boolean => {
+    const trajectoryId = (payload as { trajectoryId?: unknown }).trajectoryId;
+    return typeof trajectoryId === 'string'
+        && getJobCancellationRegistry().isTrajectoryPurged(trajectoryId);
+};
 
 interface EnqueueBackoff {
     type: string;
@@ -78,6 +86,10 @@ export class QueueService {
         options: EnqueueOptions = {}
     ): Promise<boolean> {
         assertKnownQueue(queueName);
+        throwIfJobCancelled();
+        if (belongsToPurgedTrajectory(payload)) {
+            return false;
+        }
 
         const request = toEnqueueRequest(queueName, payload, options);
 
@@ -103,8 +115,12 @@ export class QueueService {
         if (payloads.length === 0) return;
 
         assertKnownQueue(queueName);
+        throwIfJobCancelled();
 
-        const requests = payloads.map((payload) => toEnqueueRequest(queueName, payload, options));
+        const admitted = payloads.filter((payload) => !belongsToPurgedTrajectory(payload));
+        if (admitted.length === 0) return;
+
+        const requests = admitted.map((payload) => toEnqueueRequest(queueName, payload, options));
         const inserted = await getQueueJobStore().insertJobs(queueName, requests);
 
         if (inserted > 0) {
@@ -135,6 +151,16 @@ export class QueueService {
 
     removeJobById(jobId: string): Promise<boolean> {
         return getQueueJobStore().removeJobByKey(jobId);
+    }
+
+    removeJobsForTrajectory(trajectoryId: string): Promise<number> {
+        return getQueueJobStore().removeJobsByTrajectory(trajectoryId);
+    }
+
+    async findLivePayload<T extends QueuePayload>(queueName: string, jobId: string): Promise<T | null> {
+        assertKnownQueue(queueName);
+        const job = await getQueueJobStore().findLiveJob(queueName, jobId);
+        return job ? job.payload as unknown as T : null;
     }
 
     getJobCounts(queueName: string): Promise<QueueJobCounts> {

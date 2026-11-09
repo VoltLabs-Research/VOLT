@@ -23,6 +23,8 @@ export interface ProcessExecutionInput {
 }
 
 export interface PersistentPluginInvocationInput {
+    // The job the invocation runs for, so cancelling that job stops its plugin process.
+    jobId?: string;
     pluginId: string;
     pythonCommandPath: string;
     pluginRoot: string;
