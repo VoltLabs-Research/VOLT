@@ -146,7 +146,7 @@ app.whenReady().then(async () => {
     });
 
     registerIpc(win);
-    startAppUpdater();
+    startAppUpdater(win);
     app.on('second-instance', () => {
         if(win.isMinimized()) win.restore();
         win.focus();

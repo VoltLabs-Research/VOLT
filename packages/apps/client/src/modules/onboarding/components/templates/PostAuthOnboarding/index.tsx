@@ -1,4 +1,3 @@
-import Loader from '@/shared/ui/components/Loader';
 import {
     getClusterOnboardingRedirectPath,
     resolvePostAuthDestination
@@ -14,7 +13,7 @@ import { switchSelectedTeam } from '@/modules/team/store/team/use-team-store';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
-import { Button } from '@heroui/react';
+import { Button, Skeleton } from '@heroui/react';
 import { sileo } from 'sileo';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -96,16 +95,28 @@ const PostAuthOnboarding = () => {
             isSigningOut={isSigningOut}
         >
             {isLoading ? (
-                <div
-                    className='flex w-full max-w-sm flex-col items-center justify-center gap-4'
-                    role='status'
-                    aria-live='polite'
-                    aria-atomic='true'
-                >
-                    <Loader size='md' color='current' className='text-muted' />
-                    <span className='text-center text-sm text-muted'>
-                        Loading onboarding
-                    </span>
+                // The team step as it loads: its heading and description over the name field and the button.
+                <div className='flex w-full max-w-sm flex-col gap-8' role='status' aria-label='Loading onboarding'>
+                    <div className='flex flex-col gap-2'>
+                        <span className='flex h-9 items-center'>
+                            <Skeleton className='h-7 w-[86%] rounded-md' />
+                        </span>
+                        <span className='flex h-6 items-center'>
+                            <Skeleton className='h-3.5 w-full rounded-md' />
+                        </span>
+                        <span className='flex h-6 items-center'>
+                            <Skeleton className='h-3.5 w-[64%] rounded-md' />
+                        </span>
+                    </div>
+                    <div className='flex flex-col gap-4'>
+                        <div className='flex flex-col gap-2'>
+                            <span className='flex h-5 items-center'>
+                                <Skeleton className='h-3 w-20 rounded-md' />
+                            </span>
+                            <Skeleton className='h-10 w-full rounded-xl' />
+                        </div>
+                        <Skeleton className='h-11 w-full rounded-full' />
+                    </div>
                 </div>
             ) : (
                 <div className='flex w-full max-w-sm flex-col gap-8'>

@@ -2,6 +2,7 @@ import AppConfig from '@/services/AppConfig';
 import { fetchLatestRelease } from '@/services/Repository';
 import { installRelease, resolveExtractedPath } from '@/services/SoftwareUpdater';
 import { assertDevPaths } from '@/services/devPaths';
+import { normalizeVersion } from '@volt/contracts/modules/system/releases';
 
 interface SourceResolverProps{
     downloadDir: string;
@@ -67,6 +68,8 @@ export default class SourceResolver{
             }else{
                 env[envKey] = await resolveExtractedPath(this.props.downloadDir, repoId);
             }
+            // The release the stack runs, which the server reports and compares against newer ones.
+            env.VOLT_VERSION = normalizeVersion(latest.tag);
         }
 
         const commit = async () => {
@@ -113,7 +116,10 @@ export default class SourceResolver{
 
         const sources: Record<string, string> = {};
         for(const { owner, repo, envKey } of REPOS){
-            sources[envKey] = await resolveExtractedPath(this.props.downloadDir, `${owner}/${repo}`);
+            const repoId = `${owner}/${repo}`;
+            sources[envKey] = await resolveExtractedPath(this.props.downloadDir, repoId);
+            const installed = await this.props.appConfig.getInstalledReleaseTag(repoId);
+            if(installed) sources.VOLT_VERSION = normalizeVersion(installed);
         }
         return sources;
     }

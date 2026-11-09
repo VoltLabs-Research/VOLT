@@ -8,12 +8,14 @@ import { DAEMON_PATHS } from '@core/config/paths';
 import { createLifecycleStatusReporter } from '@shared/queues/create-status-reporter';
 import { withJobLifecycle } from '@shared/queues/with-job-lifecycle';
 import { createAnalysisExecutionLogSink } from '@shared/runtime/execution-log-streaming';
+import { createAnalysisJobProgressTracker } from '@shared/runtime/execution-progress';
 import type { ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import { logAndSwallow } from '@shared/utilities/error-message';
 import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import { downloadCompressedDump } from '@modules/analysis/services/workflow/dump-download';
 import { AnalysisEnvironment, type AnalysisSeedMetadata } from '@modules/analysis/services/workflow/AnalysisEnvironment';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
+import { countEntrypointSteps } from '@modules/analysis/services/workflow/entrypoint-steps';
 import type { WorkflowRuntime } from '@modules/analysis/services/workflow/WorkflowRuntime';
 import { createWorkflowExposureOutputFilePath } from '@modules/analysis/services/workflow/exposure-payload-reader';
 import {
@@ -320,49 +322,61 @@ const runComputeStage = async (
             }
         },
         async () => {
-            const runtime = await deps.analysisEnvironment.prepareWithDump(
-                executionData,
-                metadata,
-                payload.timestep,
-                run.workingDump,
-                stageDir
-            );
-
-            await deps.workflowRuntime.execute({
-                jobId: stageJobId,
-                executionData,
-                outputs: runtime.outputs,
-                dumpTarget: runtime.dumpTarget,
-                outputDir: runtime.outputDir,
-                timestep: payload.timestep,
-                artifactUploadBatch,
-                stageReporter,
-                pipelineContext: context,
-                logSinkFactory: (logContext) => createAnalysisExecutionLogSink({
-                    reporter,
-                    jobId: stageJobId,
-                    analysisId,
-                    teamId: payload.teamId,
-                    trajectoryId: payload.trajectoryId,
-                    timesteps: logContext.timesteps,
-                    metadata: {
-                        nodeId: logContext.nodeId,
-                        nodeType: logContext.nodeType,
-                        pluginId: logContext.pluginId,
-                        executionPath: logContext.executionPath
-                    }
-                })
+            // Closed before the job reports how it ended, so no progress arrives after that.
+            const progressTracker = createAnalysisJobProgressTracker({
+                reporter,
+                job: statusPayload,
+                expectedSteps: countEntrypointSteps(executionData)
             });
 
-            if (!isDiscarded() && await isStageRemoved(run, analysisId)) {
-                run.removedAnalysisIds.add(analysisId);
-                run.reportedAnalysisIds.add(analysisId);
-            }
+            try {
+                const runtime = await deps.analysisEnvironment.prepareWithDump(
+                    executionData,
+                    metadata,
+                    payload.timestep,
+                    run.workingDump,
+                    stageDir
+                );
 
-            throwIfAborted(run.signal);
-            await registerStageExposures(run, executionData, analysisId, runtime.outputDir, !isDiscarded());
-            if (!isDiscarded()) {
-                await artifactUploadBatch.enqueue();
+                await deps.workflowRuntime.execute({
+                    jobId: stageJobId,
+                    executionData,
+                    outputs: runtime.outputs,
+                    dumpTarget: runtime.dumpTarget,
+                    outputDir: runtime.outputDir,
+                    timestep: payload.timestep,
+                    artifactUploadBatch,
+                    stageReporter,
+                    pipelineContext: context,
+                    logSinkFactory: (logContext) => createAnalysisExecutionLogSink({
+                        reporter,
+                        jobId: stageJobId,
+                        analysisId,
+                        teamId: payload.teamId,
+                        trajectoryId: payload.trajectoryId,
+                        timesteps: logContext.timesteps,
+                        metadata: {
+                            nodeId: logContext.nodeId,
+                            nodeType: logContext.nodeType,
+                            pluginId: logContext.pluginId,
+                            executionPath: logContext.executionPath
+                        },
+                        onProgress: progressTracker.beginStep()
+                    })
+                });
+
+                if (!isDiscarded() && await isStageRemoved(run, analysisId)) {
+                    run.removedAnalysisIds.add(analysisId);
+                    run.reportedAnalysisIds.add(analysisId);
+                }
+
+                throwIfAborted(run.signal);
+                await registerStageExposures(run, executionData, analysisId, runtime.outputDir, !isDiscarded());
+                if (!isDiscarded()) {
+                    await artifactUploadBatch.enqueue();
+                }
+            } finally {
+                progressTracker.close();
             }
         }
     );

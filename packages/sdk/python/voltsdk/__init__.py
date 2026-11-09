@@ -24,6 +24,7 @@ from .plugins import (
     PluginYankedError,
 )
 from .native import root as native_root
+from .progress import report_progress, report_status
 
 _LAZY = {
     "VoltClient": (".client", "VoltClient"),
@@ -63,6 +64,8 @@ __all__ = [
     "PluginYankedError",
     "NetworkError",
     "native_root",
+    "report_progress",
+    "report_status",
 ]
 
 def __getattr__(name: str):

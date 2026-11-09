@@ -259,7 +259,82 @@ pre {
 }
 
 .landing-hero .landing-hero-actions {
+    /* Above the runtime cards, so the download menu opens over them. */
+    position: relative;
+    z-index: 20;
     margin-top: clamp(28px, 4.4vh, 44px);
+}
+
+.landing-download {
+    position: relative;
+}
+
+.landing-pill.landing-download-trigger:hover svg {
+    transform: none;
+}
+
+.landing-pill.landing-download-trigger[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+
+.landing-download-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 288px;
+    padding: 6px;
+    border: 1px solid var(--lp-line-mid);
+    border-radius: 20px;
+    background: rgba(18, 18, 20, 0.72);
+    box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.7);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    backdrop-filter: blur(24px) saturate(1.4);
+    text-align: start;
+    transform: translateX(-50%);
+    transform-origin: top center;
+    animation: landing-download-in 0.22s var(--lp-ease);
+}
+
+@keyframes landing-download-in {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-4px) scale(0.98);
+    }
+}
+
+.landing-download-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    height: 44px;
+    padding-inline: 14px;
+    border-radius: 14px;
+    font-size: 0.9375rem;
+    letter-spacing: -0.008em;
+    color: var(--lp-fg);
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.landing-download-item:hover,
+.landing-download-item:focus-visible {
+    outline: none;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.landing-download-detail {
+    margin-inline-start: 8px;
+    color: var(--lp-dim);
+}
+
+.landing-download-size {
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--lp-dim);
 }
 
 .landing-hero-or {
@@ -388,7 +463,8 @@ pre {
     }
 
     .landing-line > span,
-    .landing-intro {
+    .landing-intro,
+    .landing-download-menu {
         animation: none;
     }
 

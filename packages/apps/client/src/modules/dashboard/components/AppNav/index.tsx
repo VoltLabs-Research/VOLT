@@ -3,7 +3,6 @@ import { DASHBOARD_NAVIGATION_ICONS } from '@/app/routes/navigation-icons';
 import { DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
 import NavTreeSection from '@/modules/dashboard/components/AppNav/NavTreeSection';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
-import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
 import useDefaultSettingsPath from '@/modules/dashboard/hooks/use-default-settings-path';
@@ -11,11 +10,10 @@ import { TRAJECTORIES_LIST_PATH } from '@/modules/dashboard/utils/sidebar-panels
 import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import NavItem from '@/shared/ui/components/NavItem';
 import SidebarPanel from '@/shared/ui/components/SidebarPanel';
-import { getListingRelevantExposures } from '@/modules/plugin/utils/listing/listing-exposures';
 import { Tooltip } from '@heroui/react';
 import { BarChart3, BookOpen, Box as CubeIcon, Server, Settings, Workflow } from 'lucide-react';
 import { useMemo } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { DashboardNavigationItem } from '@/app/routes/metadata';
 import type { NavTreeNode } from '@/modules/dashboard/components/AppNav/NavTreeSection';
@@ -30,19 +28,13 @@ interface AppNavProps {
 const MAIN_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Main);
 const SECONDARY_NAVIGATION_ITEMS = getDashboardNavigationItems(DashboardNavigationSection.Secondary);
 
-const PLUGIN_NAVIGATION_LABEL_COLLATOR = new Intl.Collator(undefined, {
-    numeric: true,
-    sensitivity: 'base'
-});
-
 const DEFAULT_PERMISSION_DENIED_REASON = 'You do not have permission to access this section.';
 const DOCS_URL = 'https://docs.voltcloud.dev';
+const ANALYSIS_PATH = '/dashboard/analysis';
 
 const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavProps) => {
-    const [searchParams] = useSearchParams();
     const { pathname } = useLocation();
     const { canAccess: canAccessPermissions } = useTeamPermissions();
-    const { plugins } = usePluginSelectors();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
     const visibleNavigationItems = useVisibleNavigationItems();
     const defaultSettingsPath = useDefaultSettingsPath();
@@ -61,38 +53,6 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
 
         return canAccessPermissions(item.requiredPermissions, permissionMode);
     };
-
-    const analysisItems = useMemo<NavTreeNode[]>(() => [
-        {
-            label: 'View all',
-            to: '/dashboard/analysis-configs/list',
-            isSelected: pathname === '/dashboard/analysis-configs/list' && !searchParams.get('plugin')
-        },
-        ...plugins
-            .map((plugin) => {
-                const exposures = getListingRelevantExposures(plugin.exposures);
-                const pluginLabel = plugin.listingExposures?.pluginName || plugin.modifier?.name || plugin._id;
-
-                return {
-                    plugin,
-                    exposures,
-                    pluginLabel
-                };
-            })
-            .filter(({ exposures }) => exposures.length > 0)
-            .sort((left, right) => PLUGIN_NAVIGATION_LABEL_COLLATOR.compare(left.pluginLabel, right.pluginLabel))
-            .map(({ plugin, exposures, pluginLabel }) => ({
-                label: pluginLabel,
-                isSelected: exposures.some((exposure) =>
-                    pathname.includes(`/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`)
-                ),
-                children: exposures.map((exposure) => ({
-                    label: exposure.name,
-                    to: `/dashboard/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`,
-                    isSelected: pathname.includes(`/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`)
-                }))
-            }))
-    ], [pathname, searchParams, plugins]);
 
     const clustersItems = useMemo<NavTreeNode[]>(() => [
         {
@@ -129,7 +89,8 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
     const canAccessAnalysis = canAccessPermissions(['analysis:read']);
     const canAccessPlugins = canAccessPermissions(['plugin:read']);
 
-    const analysisActive = pathname.includes('/analysis-configs') || isAnalysisPluginListingRoute;
+    // Analysis is one page; the run reports and the older listing pages keep it selected.
+    const analysisActive = pathname.startsWith('/dashboard/analysis') || isAnalysisPluginListingRoute;
     const clustersActive = pathname.includes('/dashboard/clusters');
     const pluginsActive = (pathname.startsWith('/dashboard/plugins') && !isAnalysisPluginListingRoute)
         || pathname.startsWith('/plugins/builder');
@@ -190,17 +151,21 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
                 )
             )}
 
-            <NavTreeSection
-                label='Analysis'
-                icon={BarChart3}
-                isActive={analysisActive}
-                items={analysisItems}
-                collapsed={collapsed}
-                isDisabled={!canAccessAnalysis}
-                tooltip={canAccessAnalysis ? 'Analysis' : 'You do not have permission to view analysis.'}
-                isTooltipDisabled={canAccessAnalysis && !collapsed}
-                onRequestExpand={onExpandSidebar}
-            />
+            {renderRow(
+                'analysis',
+                canAccessAnalysis ? 'Analysis' : 'You do not have permission to view analysis.',
+                canAccessAnalysis && !collapsed,
+                (
+                    <NavItem
+                        label='Analysis'
+                        icon={BarChart3}
+                        collapsed={collapsed}
+                        to={canAccessAnalysis ? ANALYSIS_PATH : undefined}
+                        isActive={analysisActive}
+                        isDisabled={!canAccessAnalysis}
+                    />
+                )
+            )}
 
             <NavTreeSection
                 label='Plugins'

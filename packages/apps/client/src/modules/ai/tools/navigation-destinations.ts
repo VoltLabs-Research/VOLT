@@ -39,10 +39,15 @@ const NAVIGATION_DESTINATIONS = {
         requiredParams: [],
         description: 'Simulation cells list'
     },
-    analysis_configs: {
-        pathTemplate: '/dashboard/analysis-configs/list',
+    analysis: {
+        pathTemplate: '/dashboard/analysis',
         requiredParams: [],
-        description: 'Analysis configurations'
+        description: 'Analysis runs grouped by trajectory; query trajectory=<trajectoryId> or method=<pluginId> filters them'
+    },
+    analysis_report: {
+        pathTemplate: '/dashboard/analysis/:analysisId',
+        requiredParams: ['analysisId'],
+        description: 'Report of one analysis run: its values by frame, panel tables and settings'
     },
     analysis_sub_listings: {
         pathTemplate: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/sub-listings',

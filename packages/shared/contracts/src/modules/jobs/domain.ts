@@ -40,6 +40,9 @@ export interface Job{
     processingTimeMs?: number;
     error?: string;
     revision?: number;
+    // While running, what the plugin last reported: 0..1 done, and what it is doing.
+    progress?: number;
+    progressText?: string;
     [key: string]: JobMetadataValue;
 }
 

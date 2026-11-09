@@ -10,7 +10,7 @@ const populatedModelRoutes: Record<string, string> = {
     User: '/dashboard/my-team',
     TeamCluster: '/dashboard/clusters',
     Trajectory: '/dashboard/trajectories/list',
-    Analysis: '/dashboard/analysis-configs/list',
+    Analysis: '/dashboard/analysis',
     Plugin: '/dashboard/plugins/list',
     ScriptingNotebook: '/dashboard/notebooks',
     Whiteboard: '/dashboard/whiteboards',

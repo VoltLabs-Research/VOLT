@@ -1,4 +1,5 @@
 import { getKeyValueStore } from '@shared/keyvalue/KeyValueStore';
+import type { JobProgressChangedEventPayload } from '@shared/events/JobProgressChangedPayload';
 import type { JobStatusChangedEventPayload } from '@shared/events/JobStatusChangedPayload';
 import type { TeamJobSnapshot } from '@shared/contracts/types/TeamJobSnapshot';
 import { JobStatus } from '@volt/contracts/modules/jobs/domain';
@@ -111,7 +112,10 @@ class TeamJobProjectionService {
                 teamClusterId: teamClusterId ?? previousSnapshot?.teamClusterId,
                 source: source ?? previousSnapshot?.source ?? 'projected',
                 backingSource: backingSource ?? previousSnapshot?.backingSource ?? 'local',
-                cleanupScope: cleanupScope ?? previousSnapshot?.cleanupScope
+                cleanupScope: cleanupScope ?? previousSnapshot?.cleanupScope,
+                // A plugin's progress describes the run it reported it in, and only while it runs.
+                progress: resolvedStatus.status === JobStatus.Running ? previousSnapshot?.progress : undefined,
+                progressText: resolvedStatus.status === JobStatus.Running ? previousSnapshot?.progressText : undefined
             };
 
             await store.set(jobStatusKey, JSON.stringify(nextSnapshot), { ttlMs: STATUS_TTL_MS });
@@ -121,6 +125,44 @@ class TeamJobProjectionService {
                 await store.setAdd(projectedAnalysisJobsKey(nextSnapshot.analysisId), [jobId], { ttlMs: STATUS_TTL_MS });
             }
 
+            return nextSnapshot;
+        });
+    }
+
+    /*
+     * The progress a running job's plugin reported, on the snapshot its status events projected.
+     * That snapshot came from the cluster's authenticated status events, so it is what the report is
+     * checked against: a job that is not running, or that belongs to another team, cluster or
+     * analysis, is left alone and gives null.
+     */
+    async mergeProgress(payload: JobProgressChangedEventPayload): Promise<TeamJobSnapshot | null> {
+        const jobStatusKey = buildJobStatusKey(payload.jobId);
+
+        return getKeyValueStore().withLock(jobStatusKey, async (store) => {
+            const previousSnapshot = this.parseSnapshot(await store.get(jobStatusKey));
+            if (
+                !previousSnapshot
+                || previousSnapshot.status !== JobStatus.Running
+                || previousSnapshot.teamId !== payload.teamId
+                || previousSnapshot.teamClusterId !== payload.teamClusterId
+                || previousSnapshot.analysisId !== payload.analysisId
+            ) {
+                return null;
+            }
+
+            if (previousSnapshot.progress === payload.progress && previousSnapshot.progressText === payload.progressText) {
+                return null;
+            }
+
+            const revision = await store.adjust(projectedTeamJobsRevisionKey(payload.teamId), 1);
+            const nextSnapshot: TeamJobSnapshot = {
+                ...previousSnapshot,
+                revision,
+                progress: payload.progress,
+                progressText: payload.progressText
+            };
+
+            await store.set(jobStatusKey, JSON.stringify(nextSnapshot), { ttlMs: STATUS_TTL_MS });
             return nextSnapshot;
         });
     }

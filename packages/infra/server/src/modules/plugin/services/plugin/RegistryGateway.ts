@@ -68,6 +68,13 @@ class RegistryGateway {
         const path = `/packages/${encodeURIComponent(username)}/${encodeURIComponent(name)}/${encodeURIComponent(resolvedVersion)}/-/${encodeURIComponent(platform)}.tgz`;
 
         const response = await this.fetch(path, { headers: { accept: 'application/json' } });
+        if (response.status === 404) {
+            // The version exists (its packument named it), but it was published without a build for this platform.
+            throw ApplicationError.unprocessableEntity(
+                ErrorCodes.REGISTRY_PLATFORM_BUILD_MISSING,
+                `${fullName}@${resolvedVersion} has no ${platform} build in the registry`
+            );
+        }
         if (!response.ok) {
             throw this.unavailable(`tarball resolution failed with status ${response.status}`);
         }

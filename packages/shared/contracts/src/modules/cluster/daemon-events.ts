@@ -45,6 +45,13 @@ export interface AnalysisStageStatusReport extends AnalysisJobReport{
     producedArtifacts?: boolean;
 }
 
+// How far a running analysis job is, as its plugin reported it with @volt:progress / @volt:status lines.
+export interface AnalysisJobProgressReport extends AnalysisJobReport{
+    // 0..1 once the plugin has reported a value; absent while it has only said what it is doing.
+    progress?: number;
+    progressText?: string;
+}
+
 export interface AnalysisProvenance{
     pluginName: string;
     pluginVersion: string;
@@ -76,6 +83,7 @@ export interface ArtifactUploadJobStatusReport extends TrajectoryJobStatusReport
 export type AnalysisJobStatusEvent = DaemonEvent<'analysis-job-status', AnalysisJobReport & { status: JobStatus.Running }>;
 export type AnalysisJobCompletionEvent = DaemonEvent<'analysis-job-completion', AnalysisJobReport & { success: boolean; error?: string }>;
 export type AnalysisStageStatusEvent = DaemonEvent<'analysis-stage-status', AnalysisStageStatusReport>;
+export type AnalysisJobProgressEvent = DaemonEvent<'analysis-job-progress', AnalysisJobProgressReport>;
 export type AnalysisProvenanceEvent = DaemonEvent<'analysis-provenance', AnalysisProvenance>;
 export type RasterJobStatusEvent = DaemonEvent<'trajectory-raster-job-status', TrajectoryJobStatusReport>;
 export type GlbJobStatusEvent = DaemonEvent<'trajectory-glb-job-status', TrajectoryJobStatusReport>;
@@ -85,6 +93,7 @@ export type DaemonJobEvent =
     | AnalysisJobStatusEvent
     | AnalysisJobCompletionEvent
     | AnalysisStageStatusEvent
+    | AnalysisJobProgressEvent
     | AnalysisProvenanceEvent
     | RasterJobStatusEvent
     | GlbJobStatusEvent

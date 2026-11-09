@@ -9,17 +9,22 @@ import type {
 import type { TeamClusterView } from '@modules/cluster/services/team-cluster/TeamClusterView';
 import type { ProcessDaemonJobCompletionOutput } from '@modules/cluster/contracts/daemon-job-completion';
 import ApplicationError from '@shared/errors/ApplicationError';
+import eventBus from '@shared/events/PostgresEventBus';
 import { TeamClusterStatus } from '@volt/contracts/modules/cluster/domain';
+import { PLUGIN_PROGRESS_TEXT_MAX_LENGTH } from '@volt/contracts/modules/plugin/progress';
 import type {
     TeamClusterDaemonDeleteCompletedCommand,
     TeamClusterDaemonHeartbeatCommand,
     TeamClusterDaemonLifecycleCommand
 } from '@voltstack/daemon-cluster-client';
-import type { DaemonJobEvent } from '@volt/contracts/modules/cluster/daemon-events';
+import type { AnalysisJobProgressEvent, DaemonJobEvent } from '@volt/contracts/modules/cluster/daemon-events';
 
 const TEAM_CLUSTER_STATUSES = new Set<string>(Object.values(TeamClusterStatus));
 
 const isTeamClusterStatus = (status: string): status is TeamClusterStatus => TEAM_CLUSTER_STATUSES.has(status);
+
+const isFraction = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 
 export interface ProcessHealthcheckInput {
     teamClusterId: string;
@@ -137,6 +142,26 @@ class ClusterDaemonLifecycleService {
         }
 
         return { acknowledged: true };
+    }
+
+    /*
+     * A plugin's progress comes every second for every running job, so it is not given a password
+     * check and two lookups each time: a socket registered to the reporting cluster is already that
+     * cluster, and the job's snapshot it is merged into is checked to be that cluster's running job.
+     */
+    async processDaemonJobProgress(input: AnalysisJobProgressEvent, fromRegisteredSocket: boolean): Promise<void> {
+        if (!fromRegisteredSocket) {
+            await teamClusterLifecycleService.authenticateDaemonConnection(input.teamClusterId, input.daemonPassword);
+        }
+
+        await eventBus.emit('job.progress.changed', {
+            jobId: input.jobId,
+            teamId: input.teamId,
+            teamClusterId: input.teamClusterId,
+            analysisId: input.analysisId,
+            ...(isFraction(input.progress) ? { progress: input.progress } : {}),
+            ...(typeof input.progressText === 'string' && input.progressText ? { progressText: input.progressText.slice(0, PLUGIN_PROGRESS_TEXT_MAX_LENGTH) } : {})
+        });
     }
 }
 

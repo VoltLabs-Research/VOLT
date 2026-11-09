@@ -1,5 +1,4 @@
-import Loader from '@/shared/ui/components/Loader';
-import { cn } from '@heroui/react';
+import { Skeleton, cn } from '@heroui/react';
 import type { ReactNode } from 'react';
 
 type TeamInvitationCardProps = {
@@ -66,11 +65,42 @@ export const TeamInvitationStateCard = ({
     );
 };
 
+// The invitation's details while they load: email, invited and expiry dates.
+const DETAIL_SKELETON_WIDTHS = ['68%', '34%', '40%'];
+
+// The invitation as it loads, in its own layout: the heading (eyebrow, team, inviter), the details
+// and the accept and reject actions.
 export const TeamInvitationLoader = () => {
     return (
-        <div className='flex items-center justify-center w-full min-h-dvh bg-background'>
-            <Loader aria-label='Loading invitation' />
-        </div>
+        <TeamInvitationCard>
+            <div className='flex flex-col gap-2' role='status' aria-label='Loading invitation'>
+                <span className='flex h-5 items-center'>
+                    <Skeleton className='h-3 w-36 rounded-md' />
+                </span>
+                <span className='flex h-8 items-center'>
+                    <Skeleton className='h-6 w-56 rounded-md' />
+                </span>
+                <span className='flex h-5 items-center'>
+                    <Skeleton className='h-3 w-[82%] rounded-md' />
+                </span>
+            </div>
+            <div className='grid gap-2' aria-hidden='true'>
+                {DETAIL_SKELETON_WIDTHS.map((width, index) => (
+                    <div className='grid grid-cols-[6rem_minmax(0,1fr)] gap-4' key={index}>
+                        <span className='flex h-6 items-center'>
+                            <Skeleton className='h-3.5 w-14 rounded-md' />
+                        </span>
+                        <span className='flex h-6 items-center'>
+                            <Skeleton className='h-3.5 rounded-md' style={{ width }} />
+                        </span>
+                    </div>
+                ))}
+            </div>
+            <div className='grid grid-cols-1 gap-2 min-[30rem]:grid-cols-2' aria-hidden='true'>
+                <Skeleton className='h-10 w-full rounded-full' />
+                <Skeleton className='h-10 w-full rounded-full' />
+            </div>
+        </TeamInvitationCard>
     );
 };
 
