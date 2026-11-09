@@ -21,6 +21,7 @@ import type { QueueService } from '@shared/queues/QueueService';
 import type { QueueScopeKey, QueueScopeLimitsRegistry } from '@shared/queues/QueueScopeLimitsRegistry';
 import { isFinalAttempt, withJobLifecycle } from '@shared/queues/with-job-lifecycle';
 import { getQueueJobStore } from '@shared/queues/queue-job-store';
+import { throwIfAborted } from '@shared/queues/job-cancellation';
 import {
     TRAJECTORY_FRAME_PROCESSING_QUEUE_NAME,
     toTrajectoryFrameJobKey,
@@ -93,8 +94,8 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
                 () => this.processFrame(payload, job)
             );
         } catch (error) {
-            if (isFinalAttempt(job)) {
-                await this.drainWhenFramesSettled(payload, { selfAbandoned: true }).catch((drainError: unknown) => {
+            if (isFinalAttempt(job) && !job.signal.aborted) {
+                await this.drainWhenFramesSettled(payload, job.signal, { selfAbandoned: true }).catch((drainError: unknown) => {
                     logger.error(
                         `@trajectory-frame-processing: drain check after terminal failure failed trajectoryId=${payload.trajectoryId}: ${String(drainError)}`
                     );
@@ -137,6 +138,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
                 logger.debug(`@trajectory-frame-processing: staging cleanup failed ${stagingObjectKey}: ${String(err)}`);
             });
 
+            throwIfAborted(job.signal);
             try {
                 await this.trajectoryRasterQueue.queueRasterizationJobs({
                     trajectoryId,
@@ -154,13 +156,15 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             }
         });
 
-        await this.drainWhenFramesSettled(payload);
+        await this.drainWhenFramesSettled(payload, job.signal);
     }
 
     private async drainWhenFramesSettled(
         payload: FrameProcessingQueueJobPayload,
+        signal: AbortSignal,
         { selfAbandoned = false }: { selfAbandoned?: boolean } = {}
     ): Promise<void> {
+        throwIfAborted(signal);
         const { trajectoryId, ownerClusterId } = payload;
         const jobKeyPrefix = toTrajectoryFrameJobKeyPrefix(trajectoryId);
         const selfJobKey = toTrajectoryFrameJobKey(trajectoryId, payload.timestep);
@@ -206,6 +210,9 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
             logger.info(`@trajectory-frame-processing: parquet ingest complete trajectoryId=${trajectoryId} frameCount=${dumps.length}`);
         } catch (error) {
             await this.stateStore.deleteKey(toParquetDrainClaimKey(trajectoryId)).catch(() => {});
+            if (signal.aborted) {
+                throw error;
+            }
             logger.error(`@trajectory-frame-processing: parquet ingest failed trajectoryId=${trajectoryId}: ${String(error)}`);
         }
     }

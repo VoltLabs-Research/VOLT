@@ -52,6 +52,10 @@ export interface QueueJobStore {
     purgeExpiredTerminalJobs(): Promise<number>;
     retryFailedJobByKey(jobKey: string): Promise<boolean>;
     removeJobByKey(jobKey: string): Promise<boolean>;
+    discardJob(jobId: string): Promise<void>;
+    // Deletes every row, in any state and any queue, whose payload belongs to the trajectory.
+    removeJobsByTrajectory(trajectoryId: string): Promise<number>;
+    findLiveJob(queue: string, jobKey: string): Promise<QueueJob | null>;
     listLiveJobsByKeyPrefix(queue: string, jobKeyPrefix: string): Promise<LiveQueueJobRef[]>;
     countJobsByState(queue: string): Promise<QueueJobCounts>;
 }

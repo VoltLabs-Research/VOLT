@@ -8,6 +8,8 @@ import { getWorkflowRuntime } from '@modules/analysis/services/workflow/Workflow
 import { getDumpTransformService } from '@modules/analysis/services/dump-transform';
 import { getPipelineSharedExposureStore } from '@modules/analysis/services/PipelineSharedExposureStore';
 import { getObjectStore } from '@shared/storage/ClusterObjectStore';
+import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/queues/BaseWorker';
@@ -39,7 +41,8 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
         private readonly workflowRuntime: WorkflowRuntime,
         private readonly dumpTransformService: DumpTransformService,
         private readonly pipelineSharedExposureStore: PipelineSharedExposureStore,
-        private readonly objectStore: ClusterObjectStore
+        private readonly objectStore: ClusterObjectStore,
+        private readonly stateStore: DaemonStateStore
     ) {
         super({
             queueService,
@@ -56,8 +59,9 @@ export class PipelineWorker extends BaseWorker<PipelineQueueJobPayload> {
             workflowRuntime: this.workflowRuntime,
             dumpTransformService: this.dumpTransformService,
             pipelineSharedExposureStore: this.pipelineSharedExposureStore,
-            objectStore: this.objectStore
-        });
+            objectStore: this.objectStore,
+            stateStore: this.stateStore
+        }, job.signal);
     }
 }
 
@@ -66,5 +70,5 @@ export const pipelineWorker: WorkerBinding = {
     scope: 'compute',
     concurrencyKey: 'analysis',
     tracksConcurrencyWhileRunning: true,
-    resolve: singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore()))
+    resolve: singleton((): PipelineWorker => new PipelineWorker(getQueueService(), getQueueScopeLimitsRegistry(), getAnalysisDataStore(), getAnalysisEnvironment(), getArtifactUploadQueue(), getDaemonJobReporter(), getWorkflowRuntime(), getDumpTransformService(), getPipelineSharedExposureStore(), getObjectStore(), getDaemonStateStore()))
 };
