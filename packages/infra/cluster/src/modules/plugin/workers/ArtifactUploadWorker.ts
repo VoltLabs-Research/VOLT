@@ -7,6 +7,7 @@ import { getDaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import { DeferJobError } from '@shared/queues/queue-job-handle';
+import { throwIfAborted } from '@shared/queues/job-cancellation';
 import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 
 import { BaseWorker } from '@shared/queues/BaseWorker';
@@ -122,12 +123,13 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
             },
             async () => {
                 await mapLimited(payload.uploads, DEFAULT_PER_JOB_UPLOAD_CONCURRENCY, (upload) =>
-                    this.uploadOne(upload));
+                    this.uploadOne(upload, job.signal));
             }
         );
     }
 
-    private async uploadOne(upload: ArtifactUploadBatchJobPayload['uploads'][number]): Promise<void> {
+    private async uploadOne(upload: ArtifactUploadBatchJobPayload['uploads'][number], signal: AbortSignal): Promise<void> {
+        throwIfAborted(signal);
         const compressed = this.shouldCompress(upload.contentType);
         const sourcePath = compressed ? `${upload.sourcePath}.zst` : upload.sourcePath;
         if (compressed) {

@@ -15,6 +15,8 @@ export interface QueueJobHandle<TPayload> {
     data: TPayload;
     attemptsMade: number;
     opts: QueueJobAttemptOptions;
+    // Aborts when the job is cancelled: its trajectory or analysis was deleted, or it was removed.
+    signal: AbortSignal;
     moveToDelayed(untilEpochMs: number): Promise<void>;
 }
 
@@ -24,6 +26,7 @@ interface QueueJobHandleContext<TPayload> {
     payload: TPayload;
     attemptsMade: number;
     maxAttempts: number;
+    signal: AbortSignal;
     onDefer: (runAt: Date) => Promise<void>;
 }
 
@@ -35,5 +38,6 @@ export const createQueueJobHandle = <TPayload>(
     data: context.payload,
     attemptsMade: context.attemptsMade,
     opts: { attempts: context.maxAttempts },
+    signal: context.signal,
     moveToDelayed: (untilEpochMs) => context.onDefer(new Date(untilEpochMs))
 });
