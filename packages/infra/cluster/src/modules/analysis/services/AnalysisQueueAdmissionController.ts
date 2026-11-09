@@ -6,10 +6,10 @@ import { getDaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
 import type { AnalysisQueueJobPayload } from '@shared/contracts/types/http-analysis';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
+import { toRemovedJobTombstoneKey } from '@shared/persistence/daemon-state-keys';
 
 const ANALYSIS_QUEUE_ADMISSION_TTL_SECONDS = 86_400;
 const DEFAULT_ANALYSIS_QUEUE_ADMISSION_WINDOW = readPositiveIntegerEnv('ANALYSIS_QUEUE_ADMISSION_WINDOW') ?? 64;
-const REMOVED_ANALYSIS_JOB_TOMBSTONE_PREFIX = 'analysis:removed-job:';
 
 interface QueueAdmissionResult {
     queuedJobs: AnalysisQueueJobPayload[];
@@ -88,7 +88,7 @@ export class AnalysisQueueAdmissionController {
     }
 
     private async isRemovedJob(jobId: string): Promise<boolean> {
-        return (await this.stateStore.getValue(`${REMOVED_ANALYSIS_JOB_TOMBSTONE_PREFIX}${jobId}`)) === '1';
+        return (await this.stateStore.getValue(toRemovedJobTombstoneKey(jobId))) === '1';
     }
 }
 

@@ -34,6 +34,10 @@ import type { AnalysisDataStore } from '@modules/analysis/services/AnalysisDataS
 import type { ArtifactUploadQueue } from '@modules/plugin/services/artifacts/ArtifactUploadQueue';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
 import type { BaseAnalysisEventData } from '@modules/analysis/events/analysis-events';
+import type { DaemonStateStore } from '@shared/persistence/DaemonStateStore';
+import { throwIfAborted } from '@shared/queues/job-cancellation';
+import { toRemovedJobTombstoneKey } from '@shared/persistence/daemon-state-keys';
+import { isComputeStage, toPipelineStageJobId } from '@shared/queues/pipeline-stage-jobs';
 
 interface ProcessPipelineJobDependencies {
     analysisDataStore: AnalysisDataStore;
@@ -44,6 +48,7 @@ interface ProcessPipelineJobDependencies {
     dumpTransformService: DumpTransformService;
     pipelineSharedExposureStore: PipelineSharedExposureStore;
     objectStore: ClusterObjectStore;
+    stateStore: DaemonStateStore;
 }
 
 interface PipelineStageRun {
@@ -53,6 +58,9 @@ interface PipelineStageRun {
     storageClusterId: string;
     workingDump: string;
     reportedAnalysisIds: Set<string>;
+    // Analyses the server removed while this pipeline job was queued or running.
+    removedAnalysisIds: Set<string>;
+    signal: AbortSignal;
 }
 
 const ATOMS_PARQUET_SUFFIX = 'atoms.parquet';
@@ -63,7 +71,8 @@ const WORKING_DUMP_EXPOSURE_ID = '__working_dump__';
 
 export const processPipelineJob = async (
     payload: PipelineQueueJobPayload,
-    deps: ProcessPipelineJobDependencies
+    deps: ProcessPipelineJobDependencies,
+    signal: AbortSignal
 ): Promise<void> => {
     const { timestep, storageClusterId } = payload;
     if (!storageClusterId) {
@@ -83,7 +92,9 @@ export const processPipelineJob = async (
         context: createPipelineContext(pipelineTempPath),
         storageClusterId,
         workingDump: path.join(pipelineTempPath, 'working.dump'),
-        reportedAnalysisIds: new Set<string>()
+        reportedAnalysisIds: new Set<string>(),
+        removedAnalysisIds: new Set<string>(),
+        signal
     };
 
     try {
@@ -97,6 +108,17 @@ export const processPipelineJob = async (
         await safeRemovePath(downloadedDump);
 
         for (let index = 0; index < payload.stages.length; index += 1) {
+            throwIfAborted(signal);
+            await refreshRemovedStages(run);
+            if (run.removedAnalysisIds.size > 0 && !hasLiveComputeStageFrom(run, index)) {
+                logger.info({
+                    jobId: payload.jobId,
+                    trajectoryId: payload.trajectoryId,
+                    timestep
+                }, 'Pipeline job stops early: every remaining analysis stage was removed');
+                break;
+            }
+
             const stage = payload.stages[index];
             const stageDir = path.join(pipelineTempPath, `stage-${index}`);
 
@@ -120,7 +142,7 @@ export const processPipelineJob = async (
         await Promise.all(payload.stages.map(async (stage) => {
             const analysisId = stage.analysisId;
             if (stage.kind !== 'plugin' || stage.cacheHit || analysisId === undefined
-                || run.reportedAnalysisIds.has(analysisId)) {
+                || run.reportedAnalysisIds.has(analysisId) || run.removedAnalysisIds.has(analysisId)) {
                 return;
             }
 
@@ -139,6 +161,31 @@ export const processPipelineJob = async (
         );
     }
 };
+
+const isStageRemoved = async (run: PipelineStageRun, analysisId: string): Promise<boolean> =>
+    (await run.deps.stateStore.getValue(
+        toRemovedJobTombstoneKey(toPipelineStageJobId(run.payload.jobId, analysisId))
+    )) === '1';
+
+const refreshRemovedStages = async (run: PipelineStageRun): Promise<void> => {
+    await Promise.all(run.payload.stages.filter(isComputeStage).map(async (stage) => {
+        if (!run.removedAnalysisIds.has(stage.analysisId) && await isStageRemoved(run, stage.analysisId)) {
+            run.removedAnalysisIds.add(stage.analysisId);
+        }
+    }));
+};
+
+const hasLiveComputeStageFrom = (run: PipelineStageRun, fromIndex: number): boolean =>
+    run.payload.stages
+        .slice(fromIndex)
+        .some((stage) => isComputeStage(stage) && !run.removedAnalysisIds.has(stage.analysisId));
+
+// Forwards to the reporter until `isMuted` turns true, then drops every report.
+const muteReporterWhen = (reporter: DaemonJobReporter, isMuted: () => boolean): DaemonJobReporter =>
+    Object.fromEntries(Object.entries(reporter).map(([name, report]) => [
+        name,
+        (input: never) => (isMuted() ? Promise.resolve() : (report as (input: never) => Promise<void>)(input))
+    ])) as DaemonJobReporter;
 
 const readExpression = (config: AnalysisValueMap | undefined): string => {
     const expression = config?.expression;
@@ -218,19 +265,27 @@ const runComputeStage = async (
     const analysisId = stage.analysisId;
 
     const executionData = await deps.analysisDataStore.get(stage.executionDataReference, payload.jobId);
-    const stageJobId = `${payload.jobId}:${analysisId}`;
+    const stageJobId = toPipelineStageJobId(payload.jobId, analysisId);
     const statusPayload = buildStatusPayload(payload, analysisId, stageJobId, stage.pluginDisplayName);
+
+    // A removed stage still runs when a later live stage reads the working dump it leaves behind,
+    // but none of its reports, artifacts or exposures may reach the server or storage.
+    const isDiscarded = (): boolean => run.removedAnalysisIds.has(analysisId);
+    const reporter = muteReporterWhen(deps.daemonJobReporter, isDiscarded);
+    if (isDiscarded()) {
+        run.reportedAnalysisIds.add(analysisId);
+    }
 
     const buildStatusReporter = createLifecycleStatusReporter<BaseAnalysisEventData>(
         {
-            started: deps.daemonJobReporter.reportAnalysisStarted,
-            completed: deps.daemonJobReporter.reportAnalysisCompleted,
-            failed: deps.daemonJobReporter.reportAnalysisFailed
+            started: reporter.reportAnalysisStarted,
+            completed: reporter.reportAnalysisCompleted,
+            failed: reporter.reportAnalysisFailed
         },
         'analysis'
     );
     const reportAnalysisStatus = buildStatusReporter(statusPayload);
-    const stageReporter = createAnalysisStageReporter(deps.daemonJobReporter, statusPayload);
+    const stageReporter = createAnalysisStageReporter(reporter, statusPayload);
 
     const artifactUploadBatch = deps.artifactUploadQueue.createBatch({
         analysisId,
@@ -284,7 +339,7 @@ const runComputeStage = async (
                 stageReporter,
                 pipelineContext: context,
                 logSinkFactory: (logContext) => createAnalysisExecutionLogSink({
-                    reporter: deps.daemonJobReporter,
+                    reporter,
                     jobId: stageJobId,
                     analysisId,
                     teamId: payload.teamId,
@@ -299,8 +354,16 @@ const runComputeStage = async (
                 })
             });
 
-            await registerStageExposures(run, executionData, analysisId, runtime.outputDir);
-            await artifactUploadBatch.enqueue();
+            if (!isDiscarded() && await isStageRemoved(run, analysisId)) {
+                run.removedAnalysisIds.add(analysisId);
+                run.reportedAnalysisIds.add(analysisId);
+            }
+
+            throwIfAborted(run.signal);
+            await registerStageExposures(run, executionData, analysisId, runtime.outputDir, !isDiscarded());
+            if (!isDiscarded()) {
+                await artifactUploadBatch.enqueue();
+            }
         }
     );
 };
@@ -309,13 +372,14 @@ const registerStageExposures = async (
     run: PipelineStageRun,
     executionData: AnalysisJobExecutionData,
     analysisId: string,
-    outputDir: string
+    outputDir: string,
+    persist: boolean
 ): Promise<void> => {
     const { payload, deps, context, workingDump } = run;
     const { exposures } = executionData.workflow;
     const { storageClusterId, trajectoryId } = executionData.identity;
     const persistShared = (exposureId: string, sourcePath: string): Promise<void> | undefined =>
-        storageClusterId === undefined
+        !persist || storageClusterId === undefined
             ? undefined
             : deps.pipelineSharedExposureStore.persist({
                 ownerClusterId: storageClusterId,
