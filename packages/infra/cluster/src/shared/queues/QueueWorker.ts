@@ -3,12 +3,19 @@ import { logger } from '@shared/logger';
 import { getQueueNotifier } from '@shared/queues/QueueNotifier';
 import { DeferJobError, createQueueJobHandle } from '@shared/queues/queue-job-handle';
 import { getQueueJobStore } from '@shared/queues/queue-job-store';
+import { JobCancelledError, getJobCancellationRegistry } from '@shared/queues/job-cancellation';
 import type { QueueJobHandle } from '@shared/queues/queue-job-handle';
 import type { QueueJob, QueueJobState } from '@shared/queues/queue-job-model';
+import type { JsonObject } from '@shared/contracts/types/json';
 
 type QueueJobProcessor<TPayload> = (payload: TPayload, job: QueueJobHandle<TPayload>) => Promise<void>;
 
 type QueueWorkerFailedListener = (job: QueueJobHandle<unknown> | null, error: Error) => void;
+
+const readTrajectoryId = (payload: JsonObject): string | undefined =>
+    typeof payload.trajectoryId === 'string' && payload.trajectoryId.length > 0
+        ? payload.trajectoryId
+        : undefined;
 
 interface QueueWorkerOptions {
     concurrency: number;
@@ -118,18 +125,7 @@ export class QueueWorker<TPayload> {
 
     private async runClaimedJob(slot: Slot, claimed: QueueJob): Promise<void> {
         let deferred = false;
-
-        const handle = createQueueJobHandle<TPayload>({
-            id: claimed.id,
-            queue: this.queue,
-            payload: claimed.payload as TPayload,
-            attemptsMade: claimed.attemptsMade,
-            maxAttempts: claimed.maxAttempts,
-            onDefer: async (runAt) => {
-                deferred = true;
-                await getQueueJobStore().deferJob(claimed.id, runAt);
-            }
-        });
+        let handle: QueueJobHandle<TPayload> | null = null;
 
         const renewal = setInterval(() => {
             void getQueueJobStore().renewLease(claimed.id, slot.id, this.options.leaseDurationMs).then((held) => {
@@ -149,14 +145,51 @@ export class QueueWorker<TPayload> {
         }, Math.max(1_000, Math.floor(this.options.leaseDurationMs / LEASE_RENEWAL_DIVISOR)));
         renewal.unref();
 
+        let cancelled = false;
         try {
-            await this.processor(claimed.payload as TPayload, handle);
+            await getJobCancellationRegistry().run(
+                {
+                    queue: this.queue,
+                    jobKey: claimed.jobKey,
+                    trajectoryId: readTrajectoryId(claimed.payload)
+                },
+                async (signal) => {
+                    handle = createQueueJobHandle<TPayload>({
+                        id: claimed.id,
+                        queue: this.queue,
+                        payload: claimed.payload as TPayload,
+                        attemptsMade: claimed.attemptsMade,
+                        maxAttempts: claimed.maxAttempts,
+                        signal,
+                        onDefer: async (runAt) => {
+                            deferred = true;
+                            await getQueueJobStore().deferJob(claimed.id, runAt);
+                        }
+                    });
+
+                    try {
+                        await this.processor(claimed.payload as TPayload, handle);
+                    } finally {
+                        cancelled = signal.aborted;
+                    }
+                }
+            );
+
+            if (cancelled) {
+                await this.discardCancelledJob(claimed);
+                return;
+            }
 
             if (!deferred) {
                 await getQueueJobStore().completeJob(claimed.id);
             }
         } catch (error) {
             if (deferred || error instanceof DeferJobError) {
+                return;
+            }
+
+            if (cancelled || error instanceof JobCancelledError) {
+                await this.discardCancelledJob(claimed);
                 return;
             }
 
@@ -174,7 +207,7 @@ export class QueueWorker<TPayload> {
 
             for (const listener of this.failedListeners) {
                 try {
-                    listener(handle as QueueJobHandle<unknown>, failure);
+                    listener(handle as QueueJobHandle<unknown> | null, failure);
                 } catch (listenerError) {
                     logger.error({ err: listenerError }, '@queue-worker: failed listener threw');
                 }
@@ -189,6 +222,26 @@ export class QueueWorker<TPayload> {
             }
         } finally {
             clearInterval(renewal);
+        }
+    }
+
+    // Whoever cancelled the job normally removed its row already; this covers the rest,
+    // so a cancelled job is never retried or reported as failed.
+    private async discardCancelledJob(claimed: QueueJob): Promise<void> {
+        logger.info({
+            queue: this.queue,
+            jobId: claimed.id,
+            jobKey: claimed.jobKey
+        }, '@queue-worker: job cancelled');
+
+        try {
+            await getQueueJobStore().discardJob(claimed.id);
+        } catch (error) {
+            logger.error({
+                err: error,
+                queue: this.queue,
+                jobId: claimed.id
+            }, '@queue-worker: could not discard cancelled job');
         }
     }
 

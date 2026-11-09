@@ -161,6 +161,7 @@ export const runPersistentEntrypoint = async (
     });
 
     const invocationInput: PersistentPluginInvocationInput = {
+        jobId: execution.jobId,
         pluginId: context.pluginId,
         pythonCommandPath: executionRuntime.commandPath,
         pluginRoot,

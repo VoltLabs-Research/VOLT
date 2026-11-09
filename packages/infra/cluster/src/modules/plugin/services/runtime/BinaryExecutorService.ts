@@ -11,6 +11,7 @@ import {
     forwardLogChunk
 } from '@modules/plugin/services/runtime/process-log-sink';
 import { registerProcess, unregisterProcess } from '@shared/runtime/process-tracker';
+import { onJobCancelled, throwIfJobCancelled } from '@shared/queues/job-cancellation';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { PluginProcessPool, getPluginProcessPool } from '@modules/plugin/services/runtime/PluginProcessPool';
 import type { PooledProcessSpawnInput } from '@modules/plugin/services/runtime/PluginProcessChannel';
@@ -52,7 +53,9 @@ export class BinaryExecutorService {
         let outcome: SingleRunOutcome | undefined;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            throwIfJobCancelled(input.jobId);
             outcome = await this.runProcessOnce(input, timeoutMs, stallTimeoutMs);
+            throwIfJobCancelled(input.jobId);
             if (!outcome.timedOut) {
                 return {
                     code: outcome.code,
@@ -143,7 +146,15 @@ export class BinaryExecutorService {
                 } catch { }
             };
 
+            const detachCancellation = onJobCancelled(() => {
+                if (settled) return;
+                signalTree('SIGTERM');
+                forceKillTimeout = setTimeout(() => signalTree('SIGKILL'), PROCESS_KILL_GRACE_PERIOD_MS);
+                forceKillTimeout.unref();
+            }, jobId);
+
             const cleanupProcess = (): void => {
+                detachCancellation();
                 clearTimeout(absoluteTimeout);
                 if (stallTimeout) {
                     clearTimeout(stallTimeout);
@@ -276,15 +287,22 @@ export class BinaryExecutorService {
 
         const channel = await this.pluginProcessPool.acquire(spawnInput);
         const releaseables: Array<() => Promise<void>> = [];
+        // A pooled process is reused across jobs, so a cancelled job takes its process down with it.
+        const detachCancellation = onJobCancelled(() => {
+            void channel.destroy();
+        }, input.jobId);
 
         try {
+            throwIfJobCancelled(input.jobId);
             const request = await this.buildProcessRequest(input, releaseables);
             const response = await channel.send(request, {
                 timeoutMs: input.timeoutMs,
                 logSink: input.logSink
             });
+            throwIfJobCancelled(input.jobId);
             return { response };
         } finally {
+            detachCancellation();
             this.pluginProcessPool.release(channel);
             for (const release of releaseables) {
                 try {

@@ -282,6 +282,30 @@ export class SqliteQueueJobStore implements QueueJobStore {
         return rows.length > 0;
     }
 
+    async discardJob(jobId: string): Promise<void> {
+        await manager().query('DELETE FROM queue_jobs WHERE id = ?', [jobId]);
+    }
+
+    async removeJobsByTrajectory(trajectoryId: string): Promise<number> {
+        const rows = await manager().query<{ id: string }[]>(
+            `DELETE FROM queue_jobs WHERE json_extract(payload, '$.trajectoryId') = ? RETURNING id`,
+            [trajectoryId]
+        );
+
+        return rows.length;
+    }
+
+    async findLiveJob(queue: string, jobKey: string): Promise<QueueJob | null> {
+        const rows = await manager().query<SqliteQueueJobRow[]>(
+            `SELECT * FROM queue_jobs
+             WHERE queue = ? AND "jobKey" = ? AND state IN ${LIVE_STATES}
+             LIMIT 1`,
+            [queue, jobKey]
+        );
+
+        return rows[0] ? toQueueJob(rows[0]) : null;
+    }
+
     listLiveJobsByKeyPrefix(queue: string, jobKeyPrefix: string): Promise<LiveQueueJobRef[]> {
         return manager().query<LiveQueueJobRef[]>(
             `SELECT "jobKey", state FROM queue_jobs

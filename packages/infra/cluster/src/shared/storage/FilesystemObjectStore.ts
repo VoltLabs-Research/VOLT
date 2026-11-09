@@ -3,6 +3,7 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { finished, pipeline } from 'node:stream/promises';
 import { randomUUID } from 'node:crypto';
 import { singleton } from '@shared/utilities/singleton';
+import { assertObjectWritable, currentJobSignal } from '@shared/queues/job-cancellation';
 import { getConfig } from '@core/config/daemon';
 import { logger } from '@shared/logger';
 import fs from 'node:fs/promises';
@@ -137,7 +138,12 @@ export class FilesystemObjectStore {
         await this.write(input.bucket, input.objectKey, input.metadata, async (destination) => {
             const hash = createHash('md5');
             input.stream.on('data', (chunk: Buffer) => hash.update(chunk));
-            await pipeline(input.stream, createWriteStream(destination));
+            const signal = currentJobSignal();
+            if (signal) {
+                await pipeline(input.stream, createWriteStream(destination), { signal });
+            } else {
+                await pipeline(input.stream, createWriteStream(destination));
+            }
             return hash.digest('hex');
         });
     }
@@ -180,7 +186,10 @@ export class FilesystemObjectStore {
         const temporaryPath = `${finalPath}.${randomUUID()}.partial`;
 
         try {
+            // A cancelled job must not land objects: their owner may already be deleting them.
+            assertObjectWritable(objectKey);
             const etag = await writeBytes(temporaryPath);
+            assertObjectWritable(objectKey);
             await fs.rename(temporaryPath, finalPath);
 
             const stored: StoredMetadata = {

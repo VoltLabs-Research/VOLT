@@ -126,6 +126,13 @@ export interface RuntimeStateCleanupResponse {
     deletedKeys: number;
 }
 
+export interface TrajectoryRuntimeCleanupResponse extends RuntimeStateCleanupResponse {
+    removedJobs: number;
+    cancelledJobs: number;
+    // Cancelled jobs that had not stopped by the time the daemon answered.
+    unsettledJobs: number;
+}
+
 export interface JobsActionResponse {
     affectedJobs: number;
     affectedJobIds: string[];
