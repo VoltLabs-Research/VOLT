@@ -41,6 +41,8 @@ export interface AnalysisRunProgress {
     // 0..1: finished frames whole, running ones by what their plugin reported.
     fraction: number;
     runningFrames: number;
+    // Whether a running frame's plugin has given a value yet; until then the fraction only counts finished frames.
+    reported: boolean;
     // What a running frame's plugin is doing, when one said.
     text?: string;
 }
@@ -73,6 +75,7 @@ export const computeAnalysisRunProgress = (
         totalFrames: total,
         fraction: clampFraction((finishedFrames + sumReportedProgress(runningJobs)) / total),
         runningFrames: runningJobs.length,
+        reported: runningJobs.some((job) => readJobProgress(job)?.value !== undefined),
         ...(text !== undefined ? { text } : {})
     };
 };
