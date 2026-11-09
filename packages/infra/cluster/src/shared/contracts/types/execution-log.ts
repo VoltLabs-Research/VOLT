@@ -1,4 +1,5 @@
 import type { ExecutionLogSegment } from '@volt/contracts/modules/cluster/daemon-events';
+import type { PluginProgressDirective } from '@volt/contracts/modules/plugin/progress';
 
 type ExecutionLogStream = ExecutionLogSegment['stream'];
 
@@ -12,6 +13,8 @@ export interface ProcessExecutionLogChunk {
 
 export interface ProcessExecutionLogSink {
     handleChunk(chunk: ProcessExecutionLogChunk): void | Promise<void>;
+    // A @volt:progress or @volt:status line the plugin wrote; it is not part of the log text.
+    handleProgress?(directive: PluginProgressDirective): void;
     flush?(): Promise<void>;
 }
 

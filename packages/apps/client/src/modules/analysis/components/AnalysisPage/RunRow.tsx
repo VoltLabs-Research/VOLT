@@ -3,6 +3,9 @@ import CompositionBar from '@/modules/analysis/components/charts/CompositionBar'
 import useRunHeadline from '@/modules/analysis/components/AnalysisPage/use-run-headline';
 import { formatMetric } from '@/modules/analysis/utils/run-results';
 import { AnalysisStatus } from '@/modules/fractal/contracts';
+import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
+import { useAnalysisRunProgress } from '@/modules/jobs/hooks/use-job-progress';
+import { formatProgressPercent } from '@/modules/jobs/utils/job-progress';
 import StatusPill from '@/shared/ui/components/StatusPill';
 import { ChevronRight } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -44,11 +47,22 @@ const RunRow = ({ analysis, plugin, onOpen }: RunRowProps) => {
     const { ref, isNear } = useNearViewport<HTMLButtonElement>();
     const headline = useRunHeadline(analysis, plugin, isNear);
     const isCompleted = analysis.status === AnalysisStatus.Completed;
+    const isWorking = analysis.status === AnalysisStatus.Running || analysis.status === AnalysisStatus.Pending;
+    const runProgress = useAnalysisRunProgress(analysis._id, analysis.totalFrames, isWorking);
     const methodName = analysis.pluginDisplayName || plugin?.modifier?.name || 'Analysis';
 
     let chart = null;
     let value = null;
-    if (headline.kind === 'composition') {
+    if (runProgress) {
+        // While it runs, how far it is stands where its result will.
+        chart = <JobProgressBar value={runProgress.fraction} label={`${methodName} progress`} />;
+        value = (
+            <>
+                <b className='text-sm font-medium tabular-nums text-foreground'>{formatProgressPercent(runProgress.fraction)}</b>
+                <span className='truncate text-muted'>{runProgress.finishedFrames} of {runProgress.totalFrames} frames</span>
+            </>
+        );
+    } else if (headline.kind === 'composition') {
         chart = <CompositionBar parts={headline.parts} />;
         value = (
             <>

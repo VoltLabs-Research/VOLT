@@ -7,6 +7,7 @@ import type {
 } from '@shared/contracts/types/plugin-execution';
 import { logger } from '@shared/logger';
 import {
+    createStderrDemuxer,
     flushLogSink,
     forwardLogChunk
 } from '@modules/plugin/services/runtime/process-log-sink';
@@ -129,6 +130,15 @@ export class BinaryExecutorService {
             let stallTimeout: NodeJS.Timeout | undefined;
             let forceKillTimeout: NodeJS.Timeout | undefined;
             let abandonTimeout: NodeJS.Timeout | undefined;
+            // The plugin's @volt: lines become progress; the rest of stderr is its log, and the
+            // text a failure is reported with.
+            const stderrDemuxer = createStderrDemuxer(
+                () => logSink,
+                (text) => {
+                    stderrBytes = this.appendOutputChunk(stderrChunks, stderrBytes, Buffer.from(text, 'utf-8'));
+                },
+                { jobId }
+            );
 
             const signalTree = (signal: NodeJS.Signals): void => {
                 try {
@@ -161,6 +171,7 @@ export class BinaryExecutorService {
                 if (settled) return;
                 settled = true;
                 cleanupProcess();
+                stderrDemuxer.end();
                 await flushLogSink(logSink);
                 resolve({
                     code: code ?? 1,
@@ -236,14 +247,14 @@ export class BinaryExecutorService {
 
             child.stderr.on('data', (chunk: Buffer) => {
                 armStallTimer();
-                stderrBytes = this.appendOutputChunk(stderrChunks, stderrBytes, chunk);
-                forwardLogChunk(logSink, 'stderr', chunk.toString('utf-8'));
+                stderrDemuxer.push(chunk);
             });
 
             child.on('error', async (error) => {
                 if (settled) return;
                 settled = true;
                 cleanupProcess();
+                stderrDemuxer.end();
                 logger.error(
                     {
                         jobId,

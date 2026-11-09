@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "predev": "node scripts/fetch-dump-transform.mjs && node scripts/fetch-zstd.mjs",
     "start": "node scripts/start.js",
+    "test": "LOG_LEVEL=silent node --import tsx --test 'src/**/*.test.ts'",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
