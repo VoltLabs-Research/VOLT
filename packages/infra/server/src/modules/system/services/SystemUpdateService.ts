@@ -4,7 +4,7 @@ import path from 'node:path';
 import User from '@modules/auth/models/User';
 import clusterUpdateService from '@modules/cluster/services/updates/ClusterUpdateService';
 import releaseCheckService from '@modules/system/services/ReleaseCheckService';
-import { getServerVersion } from '@modules/system/services/server-version';
+import { getServerVersion } from '@core/config/server-version';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import logger from '@shared/logger';
