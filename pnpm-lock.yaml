@@ -84,9 +84,6 @@ importers:
       framer-motion:
         specifier: ^12.23.26
         version: 12.43.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      fzstd:
-        specifier: ^0.1.1
-        version: 0.1.1
       invokers-polyfill:
         specifier: ^0.5.7
         version: 0.5.7
@@ -352,14 +349,14 @@ importers:
         specifier: workspace:*
         version: link:../../sdk/daemon-cluster-client
       '@voltstack/headless-rasterizer':
-        specifier: ^1.0.0
-        version: 1.1.1
+        specifier: ^2.0.0
+        version: 2.0.0
       '@voltstack/lammps-io':
         specifier: ^2.1.0
         version: 2.2.1
       '@voltstack/spatial-assembler':
-        specifier: ^1.0.0
-        version: 1.1.1
+        specifier: ^2.0.0
+        version: 2.0.0
       archiver:
         specifier: ^8.0.0
         version: 8.0.0
@@ -811,7 +808,7 @@ importers:
         version: 7.0.129(zod@4.6.7)
       typia:
         specifier: 12.1.1
-        version: 12.1.1(@types/node@25.9.9)(typescript@5.9.3)
+        version: 12.1.1(typescript@5.9.3)
 
   packages/shared/local-stack:
     dependencies:
@@ -3467,14 +3464,14 @@ packages:
   '@voltstack/expressions@1.0.0':
     resolution: {integrity: sha512-jP1AlMvAIJgsxld1n6uxcOPlqG1LxE0WwsP9yUdof+EpQjSobYzS+OYu2axBFTdVOq+R3D8m5Kz9w3SW92Aa3Q==}
 
-  '@voltstack/headless-rasterizer@1.1.1':
-    resolution: {integrity: sha512-/bfQzj+LSKldha7kc4t5Xnu3Jmq+AsdO/quOzKgva+gaOrxKvDCoSj+yLSoQoGFmUq5Lll9vN+v0pTvw/pKIuA==}
+  '@voltstack/headless-rasterizer@2.0.0':
+    resolution: {integrity: sha512-GxjT7eyjc5Qp4t7YbzENKsX1O6Md07Rcz86Zab68pkTnAUDdQulmC+uIHqUyQ/lNEl5fLF/mHhWp7jGPidnU+Q==}
 
   '@voltstack/lammps-io@2.2.1':
     resolution: {integrity: sha512-mTm2v4xrh3g2E554YArppeURzimpbKgtQyjAjXZswnTrOTy8sswbDFlIvksPL2JWW/Azxh9UxezxpOQn8VND/A==}
 
-  '@voltstack/spatial-assembler@1.1.1':
-    resolution: {integrity: sha512-MZMusQCsJLHGPcCV87aDpK10UPO80l7FXjIqMggCOtPQETl31DVEkOqb862eLGnQuI7ut7dALZwXLNqYXavoVQ==}
+  '@voltstack/spatial-assembler@2.0.0':
+    resolution: {integrity: sha512-/c/d8vOdwjoU67Uu8MMMlYCbNkspvhf9so4KL0x86qnZ8FptK+u2tt8f/sjW/zVIy8ebZr0KO1dmBaBMwA3CtQ==}
 
   '@workflow/serde@4.1.0':
     resolution: {integrity: sha512-pav4F2BoirECWR7Nf1TKt+2eETcBj7jj4cBefQ8VXQCA6NPkaKeLfj/zMgi+3zYV5ZIBT4GuUiphsj0/b9hPQQ==}
@@ -9278,6 +9275,11 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
+  '@inquirer/external-editor@1.0.3':
+    dependencies:
+      chardet: 2.2.0
+      iconv-lite: 0.7.3
+
   '@inquirer/external-editor@1.0.3(@types/node@22.20.5)':
     dependencies:
       chardet: 2.2.0
@@ -10952,7 +10954,7 @@ snapshots:
 
   '@voltstack/expressions@1.0.0': {}
 
-  '@voltstack/headless-rasterizer@1.1.1':
+  '@voltstack/headless-rasterizer@2.0.0':
     dependencies:
       node-gyp-build: 4.8.4
 
@@ -10960,7 +10962,7 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  '@voltstack/spatial-assembler@1.1.1':
+  '@voltstack/spatial-assembler@2.0.0':
     dependencies:
       node-gyp-build: 4.8.4
 
@@ -13215,6 +13217,26 @@ snapshots:
     dependencies:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
+
+  inquirer@8.2.7:
+    dependencies:
+      '@inquirer/external-editor': 1.0.3
+      ansi-escapes: 4.3.2
+      chalk: 4.1.2
+      cli-cursor: 3.1.0
+      cli-width: 3.0.0
+      figures: 3.2.0
+      lodash: 4.18.1
+      mute-stream: 0.0.8
+      ora: 5.4.1
+      run-async: 2.4.1
+      rxjs: 7.8.2
+      string-width: 4.2.3
+      strip-ansi: 6.0.1
+      through: 2.3.8
+      wrap-ansi: 6.2.0
+    transitivePeerDependencies:
+      - '@types/node'
 
   inquirer@8.2.7(@types/node@22.20.5):
     dependencies:
@@ -16069,6 +16091,22 @@ snapshots:
       commander: 10.0.1
       comment-json: 4.6.2
       inquirer: 8.2.7(@types/node@25.9.9)
+      package-manager-detector: 0.2.11
+      randexp: 0.5.3
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - '@types/node'
+
+  typia@12.1.1(typescript@5.9.3):
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@typia/core': 12.1.1(typescript@5.9.3)
+      '@typia/interface': 12.2.1
+      '@typia/transform': 12.1.1(typescript@5.9.3)
+      '@typia/utils': 12.2.1
+      commander: 10.0.1
+      comment-json: 4.6.2
+      inquirer: 8.2.7
       package-manager-detector: 0.2.11
       randexp: 0.5.3
       typescript: 5.9.3
