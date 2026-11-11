@@ -17,7 +17,8 @@ import {
     toModelFormat
 } from '@shared/storage/model-objects';
 import { encodeFrameModel } from '@modules/trajectory/services/glb/frame-model';
-import { getTrajectoryParser, type TrajectoryParser } from '@modules/trajectory/services/parsing/TrajectoryParser';
+import type { TrajectoryFrameLookupInput } from '@shared/contracts/types/trajectory-frame-store';
+import { getTrajectoryParser, type ParsedTrajectory } from '@modules/trajectory/services/parsing/TrajectoryParser';
 
 // Models stored before the current format were float32 glTF compressed with zstd, under keys ending
 // in .glb.zst. Each one is converted once into the current format under the same name ending in
@@ -35,12 +36,15 @@ const toLegacyKey = (objectKey: string): string =>
 const toCurrentKey = (legacyKey: string): string =>
     `${legacyKey.slice(0, -LEGACY_MODEL_SUFFIX.length)}${MODEL_OBJECT_SUFFIX}`;
 
+type ModelStore = Pick<FilesystemObjectStore, 'statObject' | 'getObjectStream' | 'putObject' | 'removeObject' | 'listObjects'>;
+type FrameSource = { readFrame(input: TrajectoryFrameLookupInput): Promise<Pick<ParsedTrajectory, 'positions' | 'types'>> };
+
 export class LegacyModelMigration implements MissingObjectResolver {
     private readonly inFlight = new Map<string, Promise<boolean>>();
 
     constructor(
-        private readonly objectStore: FilesystemObjectStore,
-        private readonly trajectoryParser: TrajectoryParser,
+        private readonly objectStore: ModelStore,
+        private readonly trajectoryParser: FrameSource,
         private readonly ownClusterId: string
     ) {}
 
