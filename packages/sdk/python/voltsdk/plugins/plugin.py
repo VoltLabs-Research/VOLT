@@ -444,7 +444,7 @@ def _canonical_artifact_name(prefix: str, filename: str) -> str:
 
 def _is_glb_artifact(path: Path) -> bool:
     suffix = path.suffix.lower()
-    return suffix in {'.glb', '.gltf'} or path.name.lower().endswith('.glb.zst')
+    return suffix in {'.glb', '.gltf'} or path.name.lower().endswith('.glb.gz')
 
 def _default_glb_output_path(path: Path) -> Path:
     suffix = path.suffix.lower()

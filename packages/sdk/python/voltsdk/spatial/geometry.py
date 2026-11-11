@@ -287,19 +287,6 @@ def _compute_normals(positions: Sequence[float], indices: Sequence[int]) -> list
         normals[index + 2] = nz / length
     return normals
 
-def _compute_bounds(positions: Sequence[float]) -> tuple[list[float], list[float]]:
-    min_bound = [math.inf, math.inf, math.inf]
-    max_bound = [-math.inf, -math.inf, -math.inf]
-    for index in range(0, len(positions), 3):
-        x, y, z = positions[index], positions[index + 1], positions[index + 2]
-        min_bound[0] = min(min_bound[0], x)
-        min_bound[1] = min(min_bound[1], y)
-        min_bound[2] = min(min_bound[2], z)
-        max_bound[0] = max(max_bound[0], x)
-        max_bound[1] = max(max_bound[1], y)
-        max_bound[2] = max(max_bound[2], z)
-    return min_bound, max_bound
-
 def _cross(left: Sequence[float], right: Sequence[float]) -> list[float]:
     return [
         left[1] * right[2] - left[2] * right[1],
