@@ -16,8 +16,8 @@ import type { ChatChunkFrame, ChatJoined, ChatJoinPayload, ChatLeavePayload, Cha
 import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamAccess, TeamArea, canAccessTeamArea } from '@volt/contracts/modules/team/access';
 
-const READ_PERMISSION = 'ai-conversation:read';
 
 const isJoinPayload = typia.createIs<ChatJoinPayload>();
 const isLeavePayload = typia.createIs<ChatLeavePayload>();
@@ -60,8 +60,8 @@ class AIChatSocketModule extends BaseSocketModule {
             if (!isJoinPayload(payload)) return ackError(ErrorCodes.AI_TURN_MALFORMED);
 
             const conversation = await conversationService.ownedBy(userId, payload.conversationId);
-            const permissions = await chatStreamService.permissionsOf(conversation);
-            if (!permissions.includes('*') && !permissions.includes(READ_PERMISSION)) {
+            const role = await chatStreamService.roleOf(conversation);
+            if (!canAccessTeamArea(role, TeamArea.AIConversation, TeamAccess.Read)) {
                 return ackError(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS);
             }
 

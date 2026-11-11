@@ -32,6 +32,7 @@ import type {
     SwitchTeamInput,
     UpdateConversationInput
 } from '@volt/contracts/modules/ai/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 export default class AiAIToolController extends AIToolController {
     @AITool({
@@ -40,7 +41,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListConversationsInput>(),
         validate: typia.createValidate<ListConversationsInput>(),
         access: AIToolAccess.Read,
-        permission: 'ai-conversation:read'
+        area: TeamArea.AIConversation
     })
     async listConversations(input: ListConversationsInput & AIToolScope) {
         const { total, data } = await conversationService.list(input);
@@ -57,7 +58,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<UpdateConversationInput>(),
         validate: typia.createValidate<UpdateConversationInput>(),
         access: AIToolAccess.Write,
-        permission: 'ai-conversation:update',
+        area: TeamArea.AIConversation,
         approval: false
     })
     async updateConversation(input: UpdateConversationInput & AIToolScope) {
@@ -70,7 +71,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<DeleteConversationInput>(),
         validate: typia.createValidate<DeleteConversationInput>(),
         access: AIToolAccess.Write,
-        permission: 'ai-conversation:delete'
+        area: TeamArea.AIConversation
     })
     async deleteConversation(input: DeleteConversationInput & AIToolScope) {
         if (input.conversationId === input.currentConversationId) {
@@ -91,7 +92,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<CompactContextInput>(),
         validate: typia.createValidate<CompactContextInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     async contextCompact(input: CompactContextInput & AIToolScope) {
         const conversation = await conversationService.owned({
@@ -112,7 +113,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<NavigateToInput>(),
         validate: typia.createValidate<NavigateToInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     navigateTo(): void {}
 
@@ -124,7 +125,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<OpenInViewerInput>(),
         validate: typia.createValidate<OpenInViewerInput>(),
         access: AIToolAccess.Read,
-        permission: 'trajectory:read'
+        area: TeamArea.Trajectory
     })
     openInViewer(): void {}
 
@@ -135,7 +136,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SwitchTeamInput>(),
         validate: typia.createValidate<SwitchTeamInput>(),
         access: AIToolAccess.Write,
-        permission: null
+        area: null
     })
     switchTeam(): void {}
 
@@ -145,7 +146,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<OpenCommandPaletteInput>(),
         validate: typia.createValidate<OpenCommandPaletteInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     openCommandPalette(): void {}
 
@@ -156,7 +157,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<OpenPanelInput>(),
         validate: typia.createValidate<OpenPanelInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     openPanel(): void {}
 
@@ -167,7 +168,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetChatSurfaceInput>(),
         validate: typia.createValidate<SetChatSurfaceInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setChatSurface(): void {}
 
@@ -178,7 +179,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<FocusResultInput>(),
         validate: typia.createValidate<FocusResultInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     focusResult(): void {}
 
@@ -191,7 +192,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<NoParamsInput>(),
         validate: typia.createValidate<NoParamsInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     getViewerState(): void {}
 
@@ -203,7 +204,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetCameraViewInput>(),
         validate: typia.createValidate<SetCameraViewInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setCameraView(): void {}
 
@@ -215,7 +216,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<NoParamsInput>(),
         validate: typia.createValidate<NoParamsInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     resetCamera(): void {}
 
@@ -227,7 +228,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetPlaybackInput>(),
         validate: typia.createValidate<SetPlaybackInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setPlayback(): void {}
 
@@ -239,7 +240,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ControlPlaybackInput>(),
         validate: typia.createValidate<ControlPlaybackInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     controlPlayback(): void {}
 
@@ -251,7 +252,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SeekFrameInput>(),
         validate: typia.createValidate<SeekFrameInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     seekFrame(): void {}
 
@@ -263,7 +264,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetAppearanceInput>(),
         validate: typia.createValidate<SetAppearanceInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setAppearance(): void {}
 
@@ -274,7 +275,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetEnvironmentInput>(),
         validate: typia.createValidate<SetEnvironmentInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setEnvironment(): void {}
 
@@ -286,7 +287,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetVisibleLayersInput>(),
         validate: typia.createValidate<SetVisibleLayersInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setVisibleLayers(): void {}
 
@@ -296,7 +297,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SetThemeInput>(),
         validate: typia.createValidate<SetThemeInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     setTheme(): void {}
 
@@ -308,7 +309,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ResetViewSettingsInput>(),
         validate: typia.createValidate<ResetViewSettingsInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     resetViewSettings(): void {}
 
@@ -319,7 +320,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ConfigureColorCodingInput>(),
         validate: typia.createValidate<ConfigureColorCodingInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     configureColorCoding(): void {}
 
@@ -330,7 +331,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<PushExpressionSelectInput>(),
         validate: typia.createValidate<PushExpressionSelectInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     pushExpressionSelect(): void {}
 
@@ -341,7 +342,7 @@ export default class AiAIToolController extends AIToolController {
         parameters: typia.llm.parameters<LaunchGrainSegmentationAnalysisInput>(),
         validate: typia.createValidate<LaunchGrainSegmentationAnalysisInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     launchGrainSegmentation(): void {}
 }

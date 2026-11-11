@@ -5,7 +5,7 @@ import { Route, Status } from '@shared/http/route';
 import { Body, schemaBody, Param, Query, CurrentUser, Req, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import scriptingService from '@modules/scripting/services/ScriptingService';
 import scriptingSessionService from '@modules/scripting/services/ScriptingSessionService';
 import notebookKernelService from '@modules/scripting/services/NotebookKernelService';
@@ -27,7 +27,7 @@ const notebookDocumentBody = express.json({
     limit: '64mb'
 });
 
-@Middleware(protect, teamScoped(Resource.SCRIPTING))
+@Middleware(protect, teamScoped(TeamArea.Scripting))
 export default class ScriptingController extends Controller {
     @Route(scriptingRoutes.listNotebooks)
     listNotebooks(

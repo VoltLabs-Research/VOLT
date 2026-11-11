@@ -1,6 +1,7 @@
 
 
 import type { EnabledModel } from './domain';
+import type { TeamRole } from './access';
 
 export interface CreateTeamInput{
     name: string;
@@ -22,28 +23,17 @@ export interface SetDefaultTeamInput{
 }
 
 export interface UpdateTeamMemberInput{
-    role?: string;
-}
-
-export interface CreateTeamRoleInput{
-    name: string;
-    permissions?: string[];
-    isSystem?: boolean;
-}
-
-export interface UpdateTeamRoleInput{
-    name?: string;
-    permissions?: string[];
+    role: TeamRole;
 }
 
 export interface SendTeamInvitationInput{
     email: string;
-    roleId?: string;
+    role?: TeamRole;
 }
 
 export interface UpdateTeamInvitationInput{
     status?: string;
-    role?: string;
+    role?: TeamRole;
     email?: string;
 }
 
@@ -52,7 +42,7 @@ export interface TeamInvitationStatusInput{
 }
 
 export interface CreateSecretKeyInput{
-    roleId: string;
+    role: TeamRole;
     name: string;
 }
 

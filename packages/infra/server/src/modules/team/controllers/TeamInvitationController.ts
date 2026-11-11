@@ -1,10 +1,10 @@
 import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser, CurrentTeamRole } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea, type TeamRole } from '@volt/contracts/modules/team/access';
 import teamInvitationService from '@modules/team/services/TeamInvitationService';
 import { teamInvitationRoutes } from '@volt/contracts/modules/team/routes';
 import type { SendTeamInvitationInput, UpdateTeamInvitationInput, TeamInvitationStatusInput } from '@volt/contracts/modules/team/http';
@@ -13,17 +13,18 @@ import type { SendTeamInvitationInput, UpdateTeamInvitationInput, TeamInvitation
 export default class TeamInvitationController extends Controller {
     @Route(teamInvitationRoutes.send)
     @Status(201)
-    @Middleware(teamScoped(Resource.TEAM_INVITATION))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     send(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
+        @CurrentTeamRole() actorRole: TeamRole | undefined,
         @Body(schemaBody(typia.createValidate<SendTeamInvitationInput>())) body: SendTeamInvitationInput
     ){
-        return teamInvitationService.send(teamId, userId, body);
+        return teamInvitationService.send(teamId, userId, actorRole, body);
     }
 
     @Route(teamInvitationRoutes.list)
-    @Middleware(teamScoped(Resource.TEAM_INVITATION))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     listByTeamId(
         @Param('teamId') teamId: string,
         @Query('page') page?: string,
@@ -33,7 +34,7 @@ export default class TeamInvitationController extends Controller {
     }
 
     @Route(teamInvitationRoutes.remove)
-    @Middleware(teamScoped(Resource.TEAM_INVITATION))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     async deleteById(
         @Param('teamId') teamId: string,
         @Param('invitationId') invitationId: string
@@ -42,17 +43,18 @@ export default class TeamInvitationController extends Controller {
     }
 
     @Route(teamInvitationRoutes.update)
-    @Middleware(teamScoped(Resource.TEAM_INVITATION))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     updateById(
         @Param('teamId') teamId: string,
         @Param('invitationId') invitationId: string,
+        @CurrentTeamRole() actorRole: TeamRole | undefined,
         @Body(schemaBody(typia.createValidate<UpdateTeamInvitationInput>())) body: UpdateTeamInvitationInput
     ){
-        return teamInvitationService.updateById(teamId, invitationId, body);
+        return teamInvitationService.updateById(teamId, invitationId, actorRole, body);
     }
 
     @Route(teamInvitationRoutes.updateStatus)
-    @Middleware(teamScoped(Resource.TEAM_INVITATION))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     updateStatus(
         @Param('teamId') teamId: string,
         @Param('invitationId') invitationId: string,

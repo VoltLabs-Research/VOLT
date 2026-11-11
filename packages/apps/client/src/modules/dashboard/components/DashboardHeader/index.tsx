@@ -4,7 +4,7 @@ import { TeamInvitePanelPopover } from '@/modules/team/components/TeamInvitePane
 import TeamSelector from '@/modules/team/components/TeamSelector';
 import AIFloatingAssistantPanel from '@/modules/ai/components/AIFloatingAssistantPanel';
 import NotificationsPopover from '@/modules/notification/components/NotificationsPopover';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
 import type { DashboardGlobalSearchBreadcrumb } from '@/modules/dashboard/hooks/use-dashboard-header-context';
@@ -23,6 +23,7 @@ import WindowControls from '@/shared/ui/components/WindowControls';
 import { Menu, PanelLeft, Plus, Search, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 // The header's icon buttons: 36px, muted until hovered.
 const HEADER_ICON_BUTTON_CLASS = 'rounded-lg text-muted hover:bg-foreground/6 hover:text-foreground';
@@ -41,9 +42,9 @@ const DashboardHeader = ({
     globalSearchBreadcrumb
 }: DashboardHeaderProps) => {
     const { pathname } = useLocation();
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
     const singleTenant = useSingleTenant();
-    const canInvite = canAccess(['team-invitation:create']);
+    const canInvite = can(TeamArea.TeamInvitation, TeamAccess.Write);
     // On a phone the search is a button that opens the field over the header.
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const sidebarToggleLabel = isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar';

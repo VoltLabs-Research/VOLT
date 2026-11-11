@@ -12,7 +12,7 @@ export default class NotificationAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetNotificationsInput>(),
         validate: typia.createValidate<GetNotificationsInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     async getNotifications(input: GetNotificationsInput & AIToolScope) {
         const { data, total, page, limit, totalPages } = await notificationService.getMyNotifications({

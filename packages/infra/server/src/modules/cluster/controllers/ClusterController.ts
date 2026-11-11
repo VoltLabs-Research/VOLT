@@ -3,7 +3,7 @@ import { Route } from '@shared/http/route';
 import { Req, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import ClusterControllerBase from '@modules/cluster/controllers/ClusterControllerBase';
 import clusterService from '@modules/cluster/services/core/ClusterService';
 import clusterRemoteExplorerService from '@modules/cluster/services/remote-explorer/ClusterRemoteExplorerService';
@@ -17,7 +17,7 @@ import type { AuthenticatedRequest } from '@shared/contracts/types/Authenticated
 import type { Response } from 'express';
 import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
 
-@Middleware(protect, teamScoped(Resource.TEAM))
+@Middleware(protect, teamScoped(TeamArea.Cluster))
 export default class ClusterController extends ClusterControllerBase {
     @Route(teamClusterRoutes.list)
     async listByTeamId(
@@ -108,6 +108,8 @@ export default class ClusterController extends ClusterControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
+    // Browsing the cluster machine's files is for members, not for viewers.
+    @Middleware(teamScoped(TeamArea.Team))
     @Route(teamClusterRoutes.listRemoteExplorerEntries)
     async listRemoteExplorerEntries(
         @Req() req: AuthenticatedRequest,
@@ -117,6 +119,7 @@ export default class ClusterController extends ClusterControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
+    @Middleware(teamScoped(TeamArea.Team))
     @Route(teamClusterRoutes.getRemoteExplorerNode)
     async getRemoteExplorerNode(
         @Req() req: AuthenticatedRequest,
@@ -126,6 +129,7 @@ export default class ClusterController extends ClusterControllerBase {
         BaseResponse.success(res, value, HttpStatus.OK);
     }
 
+    @Middleware(teamScoped(TeamArea.Team))
     @Route(teamClusterRoutes.downloadRemoteExplorerObject)
     async downloadRemoteExplorerObject(
         @Req() req: AuthenticatedRequest,

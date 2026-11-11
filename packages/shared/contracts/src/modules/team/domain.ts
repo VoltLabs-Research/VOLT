@@ -1,19 +1,13 @@
 import type { BaseEntity, Ref } from '../../shared/base';
 import type { User } from '../auth/domain';
 import type { AIProvider } from '../ai/domain';
+import type { TeamRole } from './access';
 
 export interface Team extends BaseEntity{
     name: string;
     description?: string;
     owner: User;
     inviteCode?: string;
-}
-
-export interface TeamRole extends BaseEntity{
-    team: string;
-    name: string;
-    permissions: string[];
-    isSystem: boolean;
 }
 
 export interface TeamMember extends BaseEntity{
@@ -37,7 +31,7 @@ export interface TeamInvitation extends BaseEntity{
     invitedBy: User;
     email: string;
     token: string;
-    role: string;
+    role: TeamRole;
     expiresAt: string;
     status: TeamInvitationStatus;
 }
@@ -59,16 +53,12 @@ export interface CheckInvitePermissionResponse{
     canInvite: boolean;
 }
 
-export interface GetMyTeamPermissionsResponse{
-    permissions: string[];
+export interface GetMyTeamRoleResponse{
+    role: TeamRole;
 }
 
 export interface DeleteInviteCodeResponse{
     message: string;
-}
-
-export interface DeleteTeamRoleResponse{
-    success: boolean;
 }
 
 export interface TeamInvitationActionResponse{
@@ -77,8 +67,7 @@ export interface TeamInvitationActionResponse{
 
 export interface SecretKey extends BaseEntity{
     teamId: string;
-    roleId: string;
-    roleName: string;
+    role: TeamRole;
     name: string;
     keyPrefix: string;
     createdBy?: Ref<User>;
@@ -89,7 +78,7 @@ export interface SecretKey extends BaseEntity{
 export interface CreateSecretKeyResponse{
     secretKeyId: string;
     teamId: string;
-    roleId: string;
+    role: TeamRole;
     name: string;
     keyPrefix: string;
     secretKey: string;
@@ -107,7 +96,7 @@ export interface RevokeSecretKeyResponse{
 export interface CurrentSecretKeyResponse{
     _id: string;
     team: string;
-    role: string;
+    role: TeamRole;
     createdBy: string;
     name: string;
     keyPrefix: string;
@@ -134,7 +123,7 @@ export interface SecretKeyPerKeyMetric{
     secretKeyId: string;
     name: string;
     keyPrefix: string;
-    roleName: string;
+    role: TeamRole;
     isActive: boolean;
     totalRequests: number;
     avgResponseTime: number;
@@ -166,7 +155,7 @@ export interface KeyUsageMetricsKeySummary{
     _id: string;
     name: string;
     keyPrefix: string;
-    roleName: string;
+    role: TeamRole;
     isActive: boolean;
     createdAt: string;
     lastUsedAt: string | null;

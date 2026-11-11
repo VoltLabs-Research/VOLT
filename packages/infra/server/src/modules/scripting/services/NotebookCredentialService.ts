@@ -11,10 +11,11 @@ class NotebookCredentialService {
         }
 
         const teamId = notebook.team;
-        const roleId = await this.resolveLauncherRoleId(teamId, userId);
+        // The kernel acts for whoever launched it, with their role.
+        const { role } = await requireTeamMembership(teamId, userId);
 
-        const { secretKeyId, secretKey } = await secretKeyService.create(teamId, userId, {
-            roleId,
+        const { secretKeyId, secretKey } = await secretKeyService.create(teamId, userId, role, {
+            role,
             name: `notebook:${notebook.id}`
         });
         await ScriptingNotebook.update(
@@ -50,11 +51,6 @@ class NotebookCredentialService {
                 '[Scripting] Failed to revoke notebook secret key'
             );
         }
-    }
-
-    private async resolveLauncherRoleId(teamId: string, userId: string): Promise<string> {
-        const member = await requireTeamMembership(teamId, userId);
-        return member.role;
     }
 }
 

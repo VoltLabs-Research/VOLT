@@ -4,12 +4,12 @@ import { Route, Status } from '@shared/http/route';
 import { Body, schemaBody, Param, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import teamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import { teamAIIntegrationRoutes } from '@volt/contracts/modules/team/routes';
 import type { TeamAIIntegrationMutationInput } from '@volt/contracts/modules/team/http';
 
-@Middleware(protect, teamScoped(Resource.TEAM))
+@Middleware(protect, teamScoped(TeamArea.Team))
 export default class TeamAIIntegrationController extends Controller {
     @Route(teamAIIntegrationRoutes.listModels)
     listModels(@Param('teamId') teamId: string) {

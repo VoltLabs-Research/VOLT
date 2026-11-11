@@ -3,12 +3,13 @@ import { useCallback } from 'react';
 import service from '@/modules/ai/api/service';
 import { conversationsQuery, forgetMessages, invalidateConversations } from '@/modules/ai/hooks/queries';
 import { useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { ErrorSurface } from '@/shared/contracts/errors';
 import { reportError } from '@/shared/errors/core/report-error';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const TITLE_LENGTH = 80;
 
@@ -19,9 +20,10 @@ const titleOf = (text: string): string => {
 
 const useConversations = () => {
     const teamId = useSelectedTeamId();
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
     const queueTurn = useChatSurfaceStore((state) => state.queueTurn);
-    const list = conversationsQuery(teamId ?? '', { enabled: Boolean(teamId) });
+    const canRead = can(TeamArea.AIConversation, TeamAccess.Read);
+    const list = conversationsQuery(teamId ?? '', { enabled: Boolean(teamId) && canRead });
 
     const create = useMutation({
         mutationFn: (title: string) => service.createConversation({
@@ -103,9 +105,9 @@ const useConversations = () => {
         isLoading: list.isLoading,
         error: list.error,
         reload: list.refetch,
-        canCreate: canAccess(['ai-conversation:create']),
-        canUpdate: canAccess(['ai-conversation:update']),
-        canDelete: canAccess(['ai-conversation:delete']),
+        canCreate: can(TeamArea.AIConversation, TeamAccess.Write),
+        canUpdate: can(TeamArea.AIConversation, TeamAccess.Write),
+        canDelete: can(TeamArea.AIConversation, TeamAccess.Write),
         isStarting: create.isPending,
         start,
         renameConversation,

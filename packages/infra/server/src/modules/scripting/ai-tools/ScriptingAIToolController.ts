@@ -11,6 +11,7 @@ import type {
     StartScriptingJupyterSessionInput,
     UpdateScriptingNotebookInput
 } from '@volt/contracts/modules/scripting/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 export default class ScriptingAIToolController extends AIToolController {
     @AITool({
@@ -19,7 +20,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<CreateScriptingNotebookInput>(),
         validate: typia.createValidate<CreateScriptingNotebookInput>(),
         access: AIToolAccess.Write,
-        permission: 'scripting:create',
+        area: TeamArea.Scripting,
         approval: false
     })
     createScriptingNotebook(input: CreateScriptingNotebookInput & AIToolScope) {
@@ -32,7 +33,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListScriptingNotebooksInput>(),
         validate: typia.createValidate<ListScriptingNotebooksInput>(),
         access: AIToolAccess.Read,
-        permission: 'scripting:read'
+        area: TeamArea.Scripting
     })
     async listScriptingNotebooks(input: ListScriptingNotebooksInput & AIToolScope) {
         const { total, data } = await scriptingService.listNotebooks(input);
@@ -48,7 +49,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<UpdateScriptingNotebookInput>(),
         validate: typia.createValidate<UpdateScriptingNotebookInput>(),
         access: AIToolAccess.Write,
-        permission: 'scripting:update'
+        area: TeamArea.Scripting
     })
     updateScriptingNotebook(input: UpdateScriptingNotebookInput & AIToolScope) {
         return scriptingService.updateNotebook(input);
@@ -60,7 +61,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<NotebookRefInput>(),
         validate: typia.createValidate<NotebookRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'scripting:delete'
+        area: TeamArea.Scripting
     })
     deleteScriptingNotebook(input: NotebookRefInput & AIToolScope) {
         return scriptingService.deleteNotebook(input);
@@ -72,7 +73,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<StartScriptingJupyterSessionInput>(),
         validate: typia.createValidate<StartScriptingJupyterSessionInput>(),
         access: AIToolAccess.Write,
-        permission: 'scripting:create'
+        area: TeamArea.Scripting
     })
     async startScriptingJupyterSession(input: StartScriptingJupyterSessionInput & AIToolScope) {
         const session = await scriptingSessionService.createJupyterSession(input);
@@ -88,7 +89,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<NotebookRefInput>(),
         validate: typia.createValidate<NotebookRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'scripting:read'
+        area: TeamArea.Scripting
     })
     async getScriptingSessionStatus(input: NotebookRefInput & AIToolScope) {
         const session = await scriptingSessionService.getSessionStatus(input);
@@ -104,7 +105,7 @@ export default class ScriptingAIToolController extends AIToolController {
         parameters: typia.llm.parameters<NotebookRefInput>(),
         validate: typia.createValidate<NotebookRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'scripting:update'
+        area: TeamArea.Scripting
     })
     async stopScriptingSession(input: NotebookRefInput & AIToolScope) {
         const session = await scriptingSessionService.deleteSession(input);

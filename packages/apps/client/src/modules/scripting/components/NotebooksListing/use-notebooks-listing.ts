@@ -42,6 +42,8 @@ import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import type { ScriptingNotebookDeploymentModalRequest } from '@/modules/scripting/contracts/notebook-deployment';
 import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import { useNavigate } from 'react-router-dom';
+import { TeamArea } from '@volt/contracts/modules/team/access';
+import { readAccess, writeAccess } from '@/modules/team/utils/team/team-access';
 export interface NotebooksListingContext {
     scope: ScriptingNotebookScope;
 };
@@ -308,7 +310,7 @@ const useNotebooksListing = () => {
                 handler: async ({ item: notebook }) => {
                     await handleOpenInNewTab(notebook);
                 },
-                requiredPermission: 'plugin:read'
+                requiredAccess: readAccess(TeamArea.Scripting)
             },
             rename: {
                 label: 'Rename',
@@ -316,7 +318,7 @@ const useNotebooksListing = () => {
                 handler: ({ item: notebook }) => {
                     handleRenameOpen(notebook);
                 },
-                requiredPermission: 'plugin:update'
+                requiredAccess: writeAccess(TeamArea.Scripting)
             },
             delete: {
                 variant: 'danger',
@@ -327,7 +329,7 @@ const useNotebooksListing = () => {
                     );
                 },
                 confirm: ({ selectedItems }) => getDeleteConfirmationMessage(selectedItems),
-                requiredPermission: 'plugin:delete'
+                requiredAccess: writeAccess(TeamArea.Scripting)
             }
         }
     });

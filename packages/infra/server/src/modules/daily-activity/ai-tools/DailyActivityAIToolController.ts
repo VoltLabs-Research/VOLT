@@ -4,6 +4,7 @@ import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import dailyActivityService from '@modules/daily-activity/services/DailyActivityService';
 import type { GetActivitySummaryInput } from '@volt/contracts/modules/daily-activity/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 export default class DailyActivityAIToolController extends AIToolController {
     @AITool({
@@ -13,7 +14,7 @@ export default class DailyActivityAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetActivitySummaryInput>(),
         validate: typia.createValidate<GetActivitySummaryInput>(),
         access: AIToolAccess.Read,
-        permission: 'daily-activity:read'
+        area: TeamArea.DailyActivity
     })
     async getActivitySummary(input: GetActivitySummaryInput & AIToolScope) {
         const { range, records } = await dailyActivityService.getTeamActivitySummary({

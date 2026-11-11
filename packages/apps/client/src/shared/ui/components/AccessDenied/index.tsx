@@ -3,6 +3,7 @@ import { ShieldOff } from 'lucide-react';
 import { useId } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { teamRoleLabel, type TeamRole } from '@volt/contracts/modules/team/access';
 interface AccessDeniedProps {
     title?: string;
     description?: string;
@@ -10,7 +11,8 @@ interface AccessDeniedProps {
     className?: string;
     headingLevel?: 'h1' | 'h2' | 'h3';
 
-    requiredPermissions?: string[];
+    // The lowest team role that would be let in, to tell the user what to ask for.
+    requiredRole?: TeamRole;
 
     contactHint?: string;
 
@@ -23,14 +25,13 @@ const AccessDenied = ({
     showBack = true,
     className,
     headingLevel = 'h2',
-    requiredPermissions,
+    requiredRole,
     contactHint,
     actions
 }: AccessDeniedProps) => {
     const navigate = useNavigate();
     const headingId = useId();
     const HeadingTag = headingLevel;
-    const hasPermissionHint = Boolean(requiredPermissions && requiredPermissions.length > 0);
 
     return (
         <EmptyStateRoot<'section'>
@@ -46,10 +47,10 @@ const AccessDenied = ({
                         {title}
                     </HeadingTag>
                     <p className='text-sm text-muted text-pretty'>{description}</p>
-                    {hasPermissionHint && (
+                    {requiredRole && (
                         <p className='text-xs text-muted text-pretty'>
-                            {`Permission${requiredPermissions!.length > 1 ? 's' : ''} needed: ${requiredPermissions!.join(', ')}.`}
-                            {` Ask ${contactHint ?? 'a team administrator'} to grant access.`}
+                            {`This needs the ${teamRoleLabel(requiredRole)} role or higher.`}
+                            {contactHint ? ` Ask ${contactHint} to give it to you.` : null}
                         </p>
                     )}
                 </div>

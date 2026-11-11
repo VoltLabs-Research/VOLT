@@ -6,8 +6,9 @@ import useDailyActivityData from '@/modules/daily-activity/hooks/use-daily-activ
 import { teamMembersResource } from '@/modules/team/hooks/member/queries';
 import useTeamMemberListingActions from './use-team-member-listing-actions';
 import type { GetTeamMembersParams } from '@/modules/team/api/services/member-service';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
-import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
+import { grantableTeamRoleOptions } from '@/modules/team/utils/team/role-options';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 import DocumentListing from '@/shared/ui/components/DocumentListing';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import { createTeamMemberColumns } from './member-columns';
@@ -54,10 +55,9 @@ const buildTimeSpentByUser = (activityData: DailyActivity[]): Map<string, number
 export default function MyTeamTemplate() {
     const currentUser = useCurrentUser();
     const selectedTeam = useSelectedTeam()!;
-    const { canAccess } = useTeamPermissions();
-    const canInvite = canAccess(['team-invitation:create']);
-
-    const { roles } = useTeamRoleData({ teamId: selectedTeam._id });
+    const { role, can } = useTeamAccess();
+    const canManageMembers = can(TeamArea.TeamMember, TeamAccess.Write);
+    const canRenameTeam = can(TeamArea.Team, TeamAccess.Write);
     const { queryKey, fetchData } = useMemo(
         () => teamMembersResource.createListingAccessors<GetTeamMembersParams>(selectedTeam._id),
         [selectedTeam._id]
@@ -80,32 +80,27 @@ export default function MyTeamTemplate() {
     } = useTeamMemberListingActions({
         selectedTeam,
         currentUserId: currentUser?._id,
-        canInvite
+        actorRole: role,
+        canManageMembers
     });
 
-    const roleOptions = useMemo(() => {
-        return roles.map((role) => ({
-            value: role._id,
-            title: role.name,
-            description: role.isSystem ? 'System role' : `${role.permissions.length} permissions`
-        }));
-    }, [roles]);
+    const roleOptions = useMemo(() => grantableTeamRoleOptions(role), [role]);
 
     const columns = useMemo(() => createTeamMemberColumns({
-        selectedTeam,
         currentUserId: currentUser?._id,
-        canInvite,
+        actorRole: role,
+        canManageMembers,
         roleOptions,
         onRoleChange: handleRoleChange,
         onlineUserIds,
         hasPresenceSnapshot,
         timeSpentByUser
-    }), [canInvite, currentUser?._id, selectedTeam, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot, timeSpentByUser]);
+    }), [canManageMembers, currentUser?._id, role, roleOptions, handleRoleChange, onlineUserIds, hasPresenceSnapshot, timeSpentByUser]);
 
     return (
         <div className='h-full'>
             <DocumentListing<TeamMemberStats>
-                title={canInvite ? (
+                title={canRenameTeam ? (
                     <EditableTag
                         as='h1'
                         className='text-2xl font-semibold tracking-[-0.01em] text-foreground'

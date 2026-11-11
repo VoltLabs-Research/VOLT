@@ -1,7 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SystemRoles } from '@core/constants/system-roles';
 import TeamMember from '@modules/team/models/TeamMember';
-import type TeamRole from '@modules/team/models/TeamRole';
 import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
@@ -15,28 +13,12 @@ import logger from '@shared/logger';
 import { isRecord } from '@shared/utilities/type-guards';
 import type { NextFunction, Response } from 'express';
 
-const getRequestTeamPermissions = (role?: TeamRole | null): string[] => {
-    if(!role){
-        return [];
-    }
-
-    if(!role.isSystem || !role.name){
-        return role.permissions ?? [];
-    }
-
-    const canonicalSystemRole = Object.values(SystemRoles).find((systemRole) => systemRole.name === role.name);
-
-    if(!canonicalSystemRole){
-        return role.permissions ?? [];
-    }
-
-    return canonicalSystemRole.permissions;
-};
-
 const setRequestTeamContext = (
     request: AuthenticatedRequest,
     teamContext: HttpRequestTeamContext
 ): void => {
+    request.teamRole = teamContext.role;
+
     if (request.requestContext) {
         request.requestContext.team = teamContext;
     }
@@ -44,22 +26,22 @@ const setRequestTeamContext = (
     setHttpRequestContextTeam(teamContext);
 };
 
-const canReuseTeamMembershipContext = (
+const reusableTeamContext = (
     request: AuthenticatedRequest,
     teamId: string,
     userId?: string
-): boolean => {
+): HttpRequestTeamContext | null => {
     const requestTeamContext = request.requestContext?.team;
 
     if (!requestTeamContext || requestTeamContext.teamId !== teamId) {
-        return false;
+        return null;
     }
 
-    if (request.authType === AuthenticationType.SecretKey) {
-        return true;
+    if (request.authType === AuthenticationType.SecretKey || requestTeamContext.userId === userId) {
+        return requestTeamContext;
     }
 
-    return requestTeamContext.userId === userId;
+    return null;
 };
 
 const readRequestTeamId = (req: AuthenticatedRequest): string | undefined => {
@@ -89,8 +71,9 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    if (canReuseTeamMembershipContext(req, teamId, userId)) {
-        req.teamPermissions = req.requestContext?.team?.permissions || [];
+    const reusable = reusableTeamContext(req, teamId, userId);
+    if (reusable) {
+        req.teamRole = reusable.role;
 
         logger.debug(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} userId=${userId} durationMs=${Date.now() - startedAt}`);
         next();
@@ -98,7 +81,8 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     }
 
     if (req.authType === AuthenticationType.SecretKey) {
-        if (req.secretKeyTeamId !== teamId) {
+        // authentication set the key's role; a key only ever speaks for the team it was made in.
+        if (req.secretKeyTeamId !== teamId || !req.teamRole) {
             return BaseResponse.error(
                 res,
                 ErrorCodes.TEAM_ACCESS_DENIED,
@@ -113,11 +97,11 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
             durationMs: Date.now() - startedAt,
             cached: false,
             source: HttpRequestTeamContextSource.SecretKey,
-            permissions: req.teamPermissions || []
+            role: req.teamRole
         };
 
         setRequestTeamContext(req, teamContext);
-        logger.info(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} source=${teamContext.source} durationMs=${teamContext.durationMs}`);
+        logger.info(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} source=${teamContext.source} role=${teamContext.role} durationMs=${teamContext.durationMs}`);
 
         next();
         return;
@@ -137,7 +121,9 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
             user: userId,
             team: teamId
         },
-        relations: { roleRef: true }
+        select: {
+ id: true, role: true 
+}
     });
 
     if (!member) {
@@ -149,19 +135,17 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         );
     }
 
-    req.teamPermissions = getRequestTeamPermissions(member.roleRef);
-
     const teamContext: HttpRequestTeamContext = {
         teamId,
         userId,
         durationMs: Date.now() - startedAt,
         cached: false,
         source: HttpRequestTeamContextSource.Repository,
-        permissions: req.teamPermissions
+        role: member.role
     };
 
     setRequestTeamContext(req, teamContext);
-    logger.info(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} userId=${userId} permissionsCount=${req.teamPermissions.length}`);
+    logger.info(`@check-team-membership traceId=${req.requestContext?.traceId} teamId=${teamId} userId=${userId} role=${member.role}`);
 
     next();
 };

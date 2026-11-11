@@ -12,7 +12,7 @@ export default class AuthAIToolController extends AIToolController {
         parameters: typia.llm.parameters<UpdateProfileInput>(),
         validate: typia.createValidate<UpdateProfileInput>(),
         access: AIToolAccess.Write,
-        permission: null
+        area: null
     })
     async updateProfile(input: UpdateProfileInput & AIToolScope) {
         const account = await authService.updateAccount(input.userId, input);

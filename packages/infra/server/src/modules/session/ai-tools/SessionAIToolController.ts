@@ -12,7 +12,7 @@ export default class SessionAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ManageSessionsInput>(),
         validate: typia.createValidate<ManageSessionsInput>(),
         access: AIToolAccess.Write,
-        permission: null,
+        area: null,
         approval: (input) => input.action !== 'list'
     })
     async manageSessions(input: ManageSessionsInput & AIToolScope) {

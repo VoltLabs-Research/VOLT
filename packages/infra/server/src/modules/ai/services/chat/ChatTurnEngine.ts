@@ -15,6 +15,7 @@ import { AIMessageRole } from '@volt/contracts/modules/ai/domain';
 import type { ChatMessagePart, ChatUIMessage } from '@volt/contracts/modules/ai/chat';
 import { generateEntityId } from '@shared/persistence/entity-id';
 import logger from '@shared/logger';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 // A safety net against a loop that never ends, far above what an analysis needs.
 const MAX_STEPS = 48;
@@ -27,7 +28,7 @@ export interface TurnOptions {
     context: ChatToolContext;
     conversation: AIConversation;
     resolved: ResolvedModel;
-    permissions: readonly string[];
+    role: TeamRole;
     history: ChatHistory;
     note?: string;
     signal: AbortSignal;
@@ -63,8 +64,8 @@ const kept = (part: ChatMessagePart): ChatMessagePart[] => {
 
 class ChatTurnEngine {
     async *turn(options: TurnOptions): AsyncIterable<ChatFrame> {
-        const { context, conversation, resolved, permissions, signal } = options;
-        const { tools, approvals } = toolRegistry.offered(permissions, context);
+        const { context, conversation, resolved, role, signal } = options;
+        const { tools, approvals } = toolRegistry.offered(role, context);
         const failed = (error: unknown): string => {
             logger.error(`@ai-chat: turn of conversation ${conversation.id} failed: ${describe(error)}`);
             return TURN_FAILED;

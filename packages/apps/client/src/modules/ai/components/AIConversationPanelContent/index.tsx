@@ -8,7 +8,7 @@ import useTranscript from '@/modules/ai/hooks/use-transcript';
 import { NEW_CONVERSATION_DRAFT, useChatSurfaceStore } from '@/modules/ai/store/use-chat-surface-store';
 import { chatErrorCopy } from '@/modules/ai/utils/chat-errors';
 import { toAIModelSelectOptions } from '@/modules/ai/utils/model-options';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
 import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ import type { AITableArtifact } from '@/modules/ai/contracts/artifacts';
 import type { ActiveConversation } from '@/modules/ai/store/use-chat-surface-store';
 import type { SelectOption } from '@/shared/contracts/form-field';
 import type { AIConversation } from '@volt/contracts/modules/ai/domain';
+import { TeamAccess, TeamArea, requiredTeamRole } from '@volt/contracts/modules/team/access';
 
 type ModelSelection = ReturnType<typeof useAIModelSelection>;
 
@@ -162,18 +163,18 @@ interface AIConversationPanelContentProps {
 
 const AIConversationPanelContent = ({ conversation, teamId, onStarted, onOpenTableArtifact }: AIConversationPanelContentProps) => {
     const navigate = useNavigate();
-    const { canAccess, isScopeReady } = useTeamPermissions();
+    const { can, isScopeReady } = useTeamAccess();
     const selection = useAIModelSelection(conversation?.teamId ?? teamId);
     const options = useMemo(() => toAIModelSelectOptions(selection.availableModelsForProvider), [selection.availableModelsForProvider]);
 
-    if (isScopeReady && !canAccess(['ai-conversation:read'])) {
+    if (isScopeReady && !can(TeamArea.AIConversation, TeamAccess.Read)) {
         return (
             <div className='flex flex-1 items-center justify-center'>
                 <RecoveryState
                     title='Access denied'
                     description='Your role in this team cannot use Volt AI.'
                     tone={RecoveryStateTone.AccessDenied}
-                    requiredPermissions={['ai-conversation:read']}
+                    requiredRole={requiredTeamRole(TeamArea.AIConversation, TeamAccess.Read)}
                 />
             </div>
         );
@@ -223,7 +224,7 @@ const AIConversationPanelContent = ({ conversation, teamId, onStarted, onOpenTab
         options,
         selection
     };
-    const canSend = isScopeReady && canAccess(['ai-conversation:create']) && !selection.isProviderCatalogLoading;
+    const canSend = isScopeReady && can(TeamArea.AIConversation, TeamAccess.Write) && !selection.isProviderCatalogLoading;
 
     if (conversation === null) {
         return <ConversationStarter model={model} canSend={canSend} onStarted={onStarted} />;

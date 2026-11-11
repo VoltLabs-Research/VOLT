@@ -1,12 +1,10 @@
 import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SystemRoleNames } from '@core/constants/system-roles';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
-import TeamRole from '@modules/team/models/TeamRole';
 import { addTeamToUser, removeTeamFromUser } from '@modules/team/services/team/user-team-links';
-import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
+import { TeamRole } from '@volt/contracts/modules/team/access';
 
 interface RemoveMemberOutcome{
     warningCode?: string;
@@ -15,21 +13,16 @@ interface RemoveMemberOutcome{
 
 class TeamMembershipService{
 
-    async addMemberToTeam(userId: string, teamId: string, roleName: string = SystemRoleNames.MEMBER): Promise<void>{
+    async addMemberToTeam(userId: string, teamId: string, role: TeamRole = TeamRole.Member): Promise<void>{
         const existing = await TeamMember.findOneBy({
             team: teamId,
             user: userId
         });
         if(existing) return;
-        const role = await TeamRole.findOneBy({
-            name: roleName,
-            team: teamId
-        });
-        if(!role) throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Role not found');
         await TeamMember.create({
             team: teamId,
             user: userId,
-            role: role.id,
+            role,
             joinedAt: new Date()
         }).save();
         await addTeamToUser(userId, teamId);
@@ -59,20 +52,9 @@ class TeamMembershipService{
                 return { teamDeleted: true };
             }
 
-            const ownerRole = await manager.findOneBy(TeamRole, {
-                team: team.id,
-                name: 'Owner',
-                isSystem: true
-            });
-
-            if(!ownerRole){
-                return {
-                    warningCode: ErrorCodes.TEAM_ROLE_NOT_FOUND,
-                    teamDeleted: false
-                };
-            }
-
-            const ownersCount = await manager.countBy(TeamMember, { role: ownerRole.id });
+            const ownersCount = await manager.countBy(TeamMember, {
+ team: team.id, role: TeamRole.Owner 
+});
             if(ownersCount !== 0){
                 return { teamDeleted: false };
             }
@@ -85,7 +67,7 @@ class TeamMembershipService{
                 };
             }
 
-            await manager.save(Object.assign(randomMember, { role: ownerRole.id }));
+            await manager.save(Object.assign(randomMember, { role: TeamRole.Owner }));
 
             return { teamDeleted: false };
         });

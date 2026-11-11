@@ -4,12 +4,10 @@ import service from '../api/service';
 import type { SystemUpdateStatus } from '@volt/contracts/modules/system/domain';
 
 const KEYS = buildKeys<{
-    rbacConfig: void;
     deploymentConfig: void;
     updateStatus: void;
 }>('system');
 
-export const rbacConfigQuery = createQuery(KEYS.rbacConfig, () => service.getRBACConfig({}));
 export const deploymentConfigQuery = createQuery(KEYS.deploymentConfig, () => service.getDeploymentConfig({}));
 export const updateStatusQuery = createQuery(KEYS.updateStatus, () => service.getUpdateStatus({}));
 

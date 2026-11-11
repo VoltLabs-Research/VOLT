@@ -3,6 +3,7 @@ import { teamInvitationRoutes } from '@volt/contracts/modules/team/routes';
 
 import type { PaginatedResponse } from '@voltstack/voltclient';
 import type { TeamInvitation } from '@volt/contracts/modules/team/domain';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 export interface InvitationStatusInput {
     invitationId: string;
@@ -25,7 +26,7 @@ interface GetPendingInvitationsInput {
 export interface SendInvitationInput {
     teamId: string;
     email: string;
-    roleId?: string;
+    role?: TeamRole;
 }
 
 const routes = {

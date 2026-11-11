@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 export enum HttpRequestAuthType {
     User = 'user',
@@ -23,7 +24,7 @@ export interface HttpRequestTeamContext {
     durationMs: number;
     cached: boolean;
     source: HttpRequestTeamContextSource;
-    permissions: string[];
+    role: TeamRole;
 }
 
 export interface HttpRequestContext {

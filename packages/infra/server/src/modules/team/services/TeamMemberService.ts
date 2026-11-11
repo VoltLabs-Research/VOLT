@@ -11,6 +11,8 @@ import analysisMemberContentCounter from '@modules/analysis/services/AnalysisMem
 import trajectoryMemberContentCounter from '@modules/trajectory/services/TrajectoryMemberContentCounter';
 import whiteboardMemberContentCounter from '@modules/whiteboards/services/WhiteboardMemberContentCounter';
 import type { UpdateTeamMemberInput } from '@volt/contracts/modules/team/http';
+import { TeamRole } from '@volt/contracts/modules/team/access';
+import { assertCanGrantTeamRole, assertCanManageTeamMember } from '@modules/team/services/team/team-role-grants';
 
 const DEFAULT_MEMBER_LIMIT = 100;
 
@@ -30,10 +32,7 @@ class TeamMemberService{
             where: { team: teamId },
             skip: skipFor(pageRequest),
             take: pageRequest.limit,
-            relations: {
-                roleRef: true,
-                userRef: true
-            }
+            relations: { userRef: true }
         });
 
         const userIds = members.map((member) => member.user);
@@ -47,7 +46,7 @@ class TeamMemberService{
         const onlineUserIdSet = new Set(onlineUserIds);
 
         const data = members.map((member) => {
-            const { roleRef, userRef } = member;
+            const { userRef } = member;
 
             return {
                 _id: member.id,
@@ -64,14 +63,7 @@ class TeamMemberService{
                         isOnline: onlineUserIdSet.has(member.user),
                         lastSeenAt: userRef.lastSeenAt
                     },
-                role: !roleRef
-                    ? member.role
-                    : {
-                        _id: roleRef.id,
-                        name: roleRef.name,
-                        permissions: roleRef.permissions ?? [],
-                        isSystem: roleRef.isSystem
-                    },
+                role: member.role,
                 joinedAt: member.joinedAt,
                 createdAt: member.createdAt,
                 updatedAt: member.updatedAt,
@@ -84,24 +76,36 @@ class TeamMemberService{
         return paginate([data, total], pageRequest);
     }
 
-    async getById(teamMemberId: string): Promise<TeamMember>{
-        const member = await TeamMember.findOneBy({ id: teamMemberId });
+    async getById(teamId: string, teamMemberId: string): Promise<TeamMember>{
+        const member = await TeamMember.findOneBy({
+ id: teamMemberId, team: teamId 
+});
         if(!member){
             throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'TeamMember not found');
         }
         return member;
     }
 
-    async updateById(teamMemberId: string, data: UpdateTeamMemberInput): Promise<TeamMember>{
-        const member = await this.getById(teamMemberId);
-        return Object.assign(member, data).save();
+    async updateById(teamId: string, teamMemberId: string, actorRole: TeamRole | undefined, data: UpdateTeamMemberInput): Promise<TeamMember>{
+        const member = await this.getById(teamId, teamMemberId);
+        assertCanManageTeamMember(actorRole, member.role);
+        assertCanGrantTeamRole(actorRole, data.role);
+
+        if(member.role === TeamRole.Owner && data.role !== TeamRole.Owner){
+            const owners = await TeamMember.countBy({
+ team: teamId, role: TeamRole.Owner 
+});
+            if(owners <= 1){
+                throw ApplicationError.badRequest(ErrorCodes.TEAM_LAST_OWNER, 'A team needs at least one Owner');
+            }
+        }
+
+        return Object.assign(member, { role: data.role }).save();
     }
 
-    async deleteById(teamId: string, teamMemberId: string): Promise<void>{
-        const teamMember = await TeamMember.findOneBy({ id: teamMemberId });
-        if(!teamMember){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_MEMBER_NOT_FOUND, 'Team member not found');
-        }
+    async deleteById(teamId: string, teamMemberId: string, actorRole: TeamRole | undefined): Promise<void>{
+        const teamMember = await this.getById(teamId, teamMemberId);
+        assertCanManageTeamMember(actorRole, teamMember.role);
         await teamMembershipService.removeMemberFromTeam(teamMemberId, teamId);
         await eventBus.emit('team-member.deleted', {
             teamMemberId,

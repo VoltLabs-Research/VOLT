@@ -5,7 +5,7 @@ import { Body, schemaBody, Param, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import teamService from '@modules/team/services/TeamService';
 import { teamRoutes } from '@volt/contracts/modules/team/routes';
 import type {
@@ -47,13 +47,13 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.getById)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(teamScoped(TeamArea.Team))
     getById(@Param('teamId') teamId: string) {
         return teamService.getById(teamId);
     }
 
     @Route(teamRoutes.updateById)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(teamScoped(TeamArea.Team))
     updateById(
         @Param('teamId') teamId: string,
         @Body(schemaBody(typia.createValidate<UpdateTeamInput>())) body: UpdateTeamInput
@@ -62,7 +62,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.remove)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(teamScoped(TeamArea.Team))
     async deleteById(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
@@ -71,7 +71,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.setDefaultForNewUsers)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(teamScoped(TeamArea.Team))
     setDefaultForNewUsers(
         @Param('teamId') teamId: string,
         @Body(schemaBody(typia.createValidate<SetDefaultTeamInput>())) body: SetDefaultTeamInput
@@ -80,7 +80,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.checkInvitePermission)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(checkTeamMembership)
     checkInvitePermission(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
@@ -89,7 +89,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.generateInviteCode)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     generateInviteCode(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
@@ -98,7 +98,7 @@ export default class TeamController extends Controller {
     }
 
     @Route(teamRoutes.deleteInviteCode)
-    @Middleware(teamScoped(Resource.TEAM))
+    @Middleware(teamScoped(TeamArea.TeamInvitation))
     deleteInviteCode(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
@@ -106,13 +106,13 @@ export default class TeamController extends Controller {
         return teamService.deleteInviteCode(teamId, userId);
     }
 
-    @Route(teamRoutes.getMyPermissions)
+    @Route(teamRoutes.getMyRole)
     @Middleware(checkTeamMembership)
-    getMyPermissions(
+    getMyRole(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string
     ){
-        return teamService.getMyPermissions(teamId, userId);
+        return teamService.getMyRole(teamId, userId);
     }
 
     @Route(teamRoutes.leave)

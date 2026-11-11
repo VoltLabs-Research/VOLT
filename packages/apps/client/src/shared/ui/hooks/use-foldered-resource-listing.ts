@@ -11,11 +11,8 @@ import type { MenuOption } from '@/shared/contracts/menu';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
+import type { TeamAccessRequirement } from '@/modules/team/utils/team/team-access';
 
-interface FolderActionPermissions {
-    rename?: string;
-    delete?: string;
-}
 
 interface FolderedMoveEntity extends Identifiable {
     folder: string | null;
@@ -50,7 +47,8 @@ interface UseFolderedResourceListingOptions<
     moveItem: (itemId: string, folderId: string | null) => Promise<unknown>;
     getMoveFolderIdFromDroppableId?: (droppableId: string) => string | null | undefined;
     moveToast: PromiseToastOptions<unknown>;
-    folderPermissions: FolderActionPermissions;
+    // What renaming or deleting a folder needs.
+    folderAccess: TeamAccessRequirement;
     getItemActions: (helpers: FolderedItemActionHelpers<TItemRow>) => Record<string, ActionConfig<TItemRow>>;
     mapItemMenuOptions?: (options: MenuOption[], payload: FolderedItemMenuPayload<TItemRow>) => MenuOption[];
     onOpenItem: (item: TItemRow) => void;
@@ -76,7 +74,7 @@ const useFolderedResourceListing = <
     moveItem,
     getMoveFolderIdFromDroppableId,
     moveToast,
-    folderPermissions,
+    folderAccess,
     getItemActions,
     mapItemMenuOptions,
     onOpenItem,
@@ -170,7 +168,7 @@ const useFolderedResourceListing = <
                 label: 'Rename Folder',
                 icon: Pencil,
                 handler: ({ item }) => handleRenameFolderOpen(item as unknown as TFolder),
-                requiredPermission: folderPermissions.rename
+                requiredAccess: folderAccess
             },
             delete: {
                 label: 'Delete Folder',
@@ -179,7 +177,7 @@ const useFolderedResourceListing = <
                 handler: async ({ item }) => {
                     await listing.handleDeleteFolder(item as unknown as TFolder);
                 },
-                requiredPermission: folderPermissions.delete
+                requiredAccess: folderAccess
             }
         }
     });
