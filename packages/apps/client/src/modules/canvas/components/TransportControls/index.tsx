@@ -1,11 +1,10 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
-import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause } from 'lucide-react';
+import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause, Square } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Button, ProgressCircle, Tooltip } from '@heroui/react';
-import type { LucideIcon } from 'lucide-react';
+import { Button, Tooltip } from '@heroui/react';
 
 interface TransportControlsProps {
     trajectoryId?: string;
@@ -15,30 +14,10 @@ interface TransportControlsProps {
 
 const ICON_STYLE = { width: 13, height: 13 };
 
-// While Play caches frames, its button rings with the share cached and pressing it cancels.
-const CachingIcon = ({ Icon, progress }: { Icon: LucideIcon; progress: number }) => (
-    <span className='relative flex size-5 items-center justify-center'>
-        <ProgressCircle
-            aria-hidden='true'
-            value={progress * 100}
-            size='sm'
-            color='default'
-            className='absolute inset-0 [--progress-circle-track-stroke:color-mix(in_oklab,var(--foreground)_10%,transparent)]'
-        >
-            <ProgressCircle.Track>
-                <ProgressCircle.TrackCircle />
-                <ProgressCircle.FillCircle />
-            </ProgressCircle.Track>
-        </ProgressCircle>
-        <Icon style={{ width: 10, height: 10 }} />
-    </span>
-);
-
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
         isPlaying,
         isPreloading,
-        preloadProgress,
         togglePlay,
         setCurrentTimestep,
         rangeStart,
@@ -46,7 +25,6 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
     } = useEditorStore(useShallow((state) => ({
         isPlaying: state.isPlaying,
         isPreloading: Boolean(state.isPreloading),
-        preloadProgress: state.preloadProgress ?? 0,
         togglePlay: state.togglePlay,
         setCurrentTimestep: state.setCurrentTimestep,
         rangeStart: state.rangeStart,
@@ -120,9 +98,11 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             label: 'Previous timestep',
             onPress: prevTimestep
         },
+        // While Play caches frames, PlaybackCachingIsland shows the progress; the button only turns
+        // into Stop, drawn like its neighbours, and pressing it cancels.
         {
             action: 'play',
-            Icon: isPlaying || isPreloading ? Pause : Play,
+            Icon: isPreloading ? Square : isPlaying ? Pause : Play,
             label: isPreloading ? 'Cancel caching' : isPlaying ? 'Pause' : 'Play',
             onPress: handleTogglePlay
         },
@@ -156,9 +136,7 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
                 data-transport-action={btn.action}
                 onPress={btn.onPress}
             >
-                {btn.action === 'play' && isPreloading
-                    ? <CachingIcon Icon={btn.Icon} progress={preloadProgress} />
-                    : <btn.Icon style={ICON_STYLE} />}
+                <btn.Icon style={ICON_STYLE} />
             </Button>
             <Tooltip.Content placement='top'>{btn.label}</Tooltip.Content>
         </Tooltip>

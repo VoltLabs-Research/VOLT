@@ -1,7 +1,5 @@
 import { Separator } from '@heroui/react';
 import { formatSize } from '@/shared/utils/format';
-import { useEditorStore } from '@/modules/canvas/store/editor';
-import { useShallow } from 'zustand/react/shallow';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -30,25 +28,13 @@ const StatusGroup = ({ items }: { items: StatusItem[] }) => (
 );
 
 const StatusBar = ({ trajectory }: StatusBarProps) => {
-    const { isPreloading, preloadProgress, preloadTotal } = useEditorStore(useShallow((state) => ({
-        isPreloading: Boolean(state.isPreloading),
-        preloadProgress: state.preloadProgress ?? 0,
-        preloadTotal: state.preloadTotal
-    })));
     const atoms = trajectory?.frames?.[0]?.natoms ?? 0;
     const frames = trajectory?.frames?.length ?? 0;
     const size = trajectory?.stats?.totalSize !== undefined ? formatSize(trajectory.stats.totalSize) : '—';
-    const cached = Math.round(preloadProgress * preloadTotal);
 
     // Until the trajectory arrives there is nothing to count, so the bar stays empty instead of reading 0.
+    // Caching for playback is shown by PlaybackCachingIsland, not here.
     const items: StatusItem[] = trajectory ? [
-        ...(isPreloading ? [{
-            key: 'caching',
-            label: '',
-            value: preloadTotal > 0
-                ? `Caching timesteps for playback · ${cached} of ${preloadTotal}`
-                : 'Caching timesteps for playback'
-        }] : []),
         {
             key: 'atoms',
             label: 'Atoms',
