@@ -106,6 +106,12 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     const manualSelectionRef = useRef<string | null>(null);
 
+    // An analysis picked in the pipeline list becomes current without touching what the scene shows.
+    const sceneKeptForAnalysisIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (sceneKeptForAnalysisIdRef.current !== analysisConfigId) sceneKeptForAnalysisIdRef.current = null;
+    }, [analysisConfigId]);
+
     const analysesQuery = useAnalysesByTrajectoryQuery(
         {
             trajectoryId: trajectoryId ?? '',
@@ -214,6 +220,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
     useEffect(() => {
         if (!analysisConfigId) return;
+        if (sceneKeptForAnalysisIdRef.current === analysisConfigId) return;
         if (useScreenshotStore.getState().isFigureBatchActive) return;
         if (useEditorStore.getState().activeScenes.length === 0) return;
 
@@ -337,6 +344,13 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         setAnalysisId(analysis?._id, { replace: true });
     }, [clearAutoSelectChain, currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 
+    // The timestep effect above moves to one the analysis has data for once it is current.
+    const onSelectAnalysis = useCallback((analysis: Analysis) => {
+        clearAutoSelectChain();
+        sceneKeptForAnalysisIdRef.current = analysis._id;
+        setAnalysisId(analysis._id, { replace: true });
+    }, [clearAutoSelectChain, setAnalysisId]);
+
     return {
         searchQuery,
         expandedSections,
@@ -350,6 +364,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         addScene,
         removeScene,
         onSelectScene,
+        onSelectAnalysis,
         isSceneInActiveScenes,
 
         toggleSection,
