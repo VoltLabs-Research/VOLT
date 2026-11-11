@@ -1,6 +1,6 @@
 import TeamClusterEntity from '@modules/cluster/models/TeamCluster';
 import teamClusterDaemonClient from '@modules/cluster/services/team-cluster/TeamClusterDaemonClient';
-import { getServerVersion } from '@modules/system/services/server-version';
+import { getServerVersion } from '@core/config/server-version';
 import logger from '@shared/logger';
 import { DaemonCommand } from '@volt/contracts/modules/cluster/daemon-commands';
 import { normalizeVersion } from '@volt/contracts/modules/system/releases';
