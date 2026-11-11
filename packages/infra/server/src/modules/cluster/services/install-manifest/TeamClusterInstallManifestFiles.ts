@@ -4,7 +4,7 @@ import type {
     TeamClusterInstallManifestPortsView
 } from '@modules/cluster/services/install-manifest/TeamClusterInstallManifest';
 import type { DecryptedTeamClusterServiceCredentials } from '@modules/cluster/services/daemon/DaemonCredentialGuard';
-import { getServerVersion } from '@modules/system/services/server-version';
+import { getServerVersion } from '@core/config/server-version';
 
 export const TEAM_CLUSTER_INSTALL_MANIFEST_VERSION = '1.0.0';
 
