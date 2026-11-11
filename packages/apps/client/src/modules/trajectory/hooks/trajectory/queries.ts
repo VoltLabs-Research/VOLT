@@ -1,7 +1,6 @@
 import discoverService from '../../api/services/discover-service';
 import trajectoryService from '../../api/services/trajectory-service';
 import canvasService from '@/modules/canvas/api/services/canvas-service';
-import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
 import { buildKeys } from '@/shared/query/query-keys';
 import { createInfiniteQuery } from '@/shared/query/create-infinite-query';
 import { createFolderResourceQueries } from '@/shared/query/create-folder-resource-queries';
@@ -38,7 +37,6 @@ interface TrajectoryAtomsInfiniteParams extends Omit<GetAtomsInput, 'page'> {
 
 const KEYS = buildKeys<{
     detail: string;
-    debug: void;
     simulationGrid: void;
     preview: GetPreviewInput;
     publicPreview: GetPreviewInput;
@@ -102,18 +100,6 @@ export const createTrajectoryUploadSessionMutation = createMutation<
 });
 
 export const useTrajectoryByIdQuery = createQuery(KEYS.detail, (trajectoryId) => trajectoryService.getById({ trajectoryId }));
-export const debugTrajectoriesQuery = createQuery(KEYS.debug, async (): Promise<Trajectory[]> => {
-    const result = await trajectoryService.getAll({
-        page: 1,
-        limit: 1000
-    });
-
-    // The listing carries a frame summary, not the frames themselves: those come from the trajectory detail.
-    return result.data.filter(
-        (trajectory: Trajectory) => isTrajectoryCompleted(trajectory.status)
-            && (trajectory.framesCount ?? 0) > 0
-    );
-});
 export const trajectoryPreviewQuery = createQuery(KEYS.preview, trajectoryService.getPreview);
 export const publicTrajectoryPreviewQuery = createQuery(KEYS.publicPreview, canvasService.getPreview);
 const getAtomsWithAccess = (params: GetAtomsInput) => {

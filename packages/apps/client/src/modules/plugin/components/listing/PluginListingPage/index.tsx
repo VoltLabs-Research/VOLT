@@ -1,8 +1,8 @@
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import { LISTING_QUERY_KEYS } from '@/modules/plugin/hooks/listing/queries';
-import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useTrajectorySelector from '@/modules/trajectory/hooks/trajectory/use-trajectory-selector';
+import TrajectoryPicker from '@/modules/trajectory/components/TrajectoryPicker';
+import { useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -21,10 +21,7 @@ const PluginListingPage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const team = useSelectedTeam()!;
-    const { options, isLoading, loadMore } = useTrajectorySelector({
-        allowEmpty: true,
-        emptyLabel: 'All Trajectories'
-    });
+    const trajectoryQuery = useTrajectoryByIdQuery(trajectoryId ?? '', { enabled: Boolean(trajectoryId) });
 
     useEffect(() => {
         return () => {
@@ -35,7 +32,7 @@ const PluginListingPage = () => {
         };
     }, [queryClient]);
 
-    const handleTrajectorySelect = useCallback((value: string) => {
+    const handleTrajectorySelect = useCallback((value: string | null) => {
         if(!exposureId && !exposureName){
             return;
         }
@@ -58,14 +55,10 @@ const PluginListingPage = () => {
             teamId={team._id}
             showTrajectoryColumn={!trajectoryId}
             headerActions={
-                <PluginSelect
-                    options={options}
+                <TrajectoryPicker
                     value={trajectoryId ?? null}
+                    valueLabel={trajectoryQuery.data?._id === trajectoryId ? trajectoryQuery.data?.name : undefined}
                     onChange={handleTrajectorySelect}
-                    placeholder='All Trajectories'
-                    ariaLabel='Trajectory'
-                    isPending={isLoading}
-                    onScrollEnd={loadMore}
                 />
             }
         />
