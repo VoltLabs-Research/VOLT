@@ -176,18 +176,6 @@ const DEFAULT_LINE_OPTIONS: Required<LineExportOptions> = {
     propertyColors: {}
 };
 
-const EMPTY_LINE_GEOMETRY: ProcessedLineGeometry = {
-    positions: new Float32Array(0),
-    normals: new Float32Array(0),
-    indices: new Uint32Array(0),
-    vertexCount: 0,
-    entityRanges: [],
-    bounds: {
-        min: [0, 0, 0],
-        max: [0, 0, 0]
-    }
-};
-
 export const resolveLineOptions = (options: LineExportOptions): Required<LineExportOptions> => ({
     ...DEFAULT_LINE_OPTIONS,
     ...options,
@@ -200,36 +188,16 @@ export const resolveLineOptions = (options: LineExportOptions): Required<LineExp
 export const buildLineGlb = (
     geometry: ProcessedLineGeometry,
     material: Required<LineExportOptions>['material']
-): Buffer => {
-    const indexBuffer = geometry.vertexCount > 0 && geometry.vertexCount <= 65535
-        ? new Uint16Array(geometry.indices)
-        : geometry.indices;
-    return spatialAssembler.generateMeshGLB(
-        geometry.positions,
-        geometry.normals,
-        indexBuffer,
-        Boolean(geometry.colors),
-        geometry.colors || undefined,
-        {
-            minX: geometry.bounds.min[0],
-            minY: geometry.bounds.min[1],
-            minZ: geometry.bounds.min[2],
-            maxX: geometry.bounds.max[0],
-            maxY: geometry.bounds.max[1],
-            maxZ: geometry.bounds.max[2]
-        },
-        {
-            baseColor: material.baseColor,
-            metallic: material.metallic,
-            roughness: material.roughness,
-            emissive: material.emissive,
-            doubleSided: true
-        }
-    );
-};
-
-export const generateEmptyLineGLB = (material: Required<LineExportOptions>['material']): Buffer =>
-    buildLineGlb(EMPTY_LINE_GEOMETRY, material);
+): Buffer => spatialAssembler.encodeMesh(
+    geometry.positions,
+    geometry.normals,
+    geometry.indices,
+    geometry.colors ?? null,
+    {
+        ...material,
+        doubleSided: true
+    }
+);
 
 export const encodeLineRangesSidecar = (entityRanges: LineEntityRange[]): Buffer => {
     const sidecar: LineEntityRangesSidecar = {

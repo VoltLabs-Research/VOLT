@@ -48,7 +48,8 @@ import {
 } from '@shared/storage/storage-codec';
 import { withNativeProcessingTempDir } from '@shared/utilities/native-temp-dir';
 import { readFrame } from '@voltstack/lammps-io';
-import spatialAssembler from '@voltstack/spatial-assembler';
+import { encodeFrameModel } from '@modules/trajectory/services/glb/frame-model';
+import { putModel } from '@shared/storage/model-objects';
 import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 
 const DRAIN_CLAIM_TTL_SECONDS = 30 * 60;
@@ -131,7 +132,7 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
 
             await fs.unlink(localCompressedPath).catch(() => {});
 
-            await this.generateGlb(trajectoryId, timestep, ownerClusterId, localRawPath, tempDirectory);
+            await this.generateGlb(trajectoryId, timestep, ownerClusterId, localRawPath);
 
 
             await this.localObjectStore.removeObject(bucket, stagingObjectKey).catch((err) => {
@@ -262,41 +263,15 @@ export class TrajectoryFrameProcessingWorker extends BaseWorker<FrameProcessingQ
         trajectoryId: string,
         timestep: number,
         ownerClusterId: string,
-        localRawPath: string,
-        tempDirectory: string
+        localRawPath: string
     ): Promise<void> {
         const parsed = readFrame(localRawPath);
-
-        const glbPath = path.join(tempDirectory, `${timestep}.glb`);
-        const glbCompressedPath = `${glbPath}.zst`;
-
-        const exported = spatialAssembler.generateGLBToFile(
-            parsed.positions,
-            parsed.types,
-            parsed.min,
-            parsed.max,
-            glbPath
-        );
-
-        if (!exported) {
-            throw new Error(`GLB export failed for trajectoryId=${trajectoryId} timestep=${timestep}`);
-        }
-
-        await compressFileWithZstd(glbPath, glbCompressedPath);
-        const glbStats = await fs.stat(glbCompressedPath);
-
-        const modelObjectKey = toTrajectoryFrameModelObjectKey(trajectoryId, timestep);
-        await this.objectStore.putObjectStream({
+        await putModel(
+            this.objectStore,
             ownerClusterId,
-            bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
-            objectKey: modelObjectKey,
-            stream: createReadStream(glbCompressedPath),
-            size: glbStats.size,
-            metadata: {
-                'Content-Type': 'model/gltf-binary',
-                'Content-Encoding': 'zstd'
-            }
-        });
+            toTrajectoryFrameModelObjectKey(trajectoryId, timestep),
+            encodeFrameModel(parsed.positions, parsed.types)
+        );
     }
 }
 
