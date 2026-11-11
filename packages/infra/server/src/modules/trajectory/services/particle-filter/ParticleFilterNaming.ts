@@ -1,6 +1,7 @@
 import type { ParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
 import { formatValueForPath } from '@shared/utilities/format-value';
 import { createHash } from 'node:crypto';
+import { MODEL_OBJECT_SUFFIX } from '@shared/utilities/model-stream';
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
@@ -28,7 +29,7 @@ const buildSingleConditionObjectName = ({
     const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
     const formattedValue = typeof value === 'number' ? formatValueForPath(value) : value;
     const exposurePart = exposureId || 'dump';
-    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${action}.glb.zst`;
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${action}${MODEL_OBJECT_SUFFIX}`;
 };
 
 export const buildParticleFilterObjectName = (
@@ -55,7 +56,7 @@ export const buildParticleFilterObjectName = (
     const filterHash = createHash('sha1').update(JSON.stringify(request)).digest('hex').slice(0, 12);
     const segment = analysisId || DEFAULT_ANALYSIS_ID;
 
-    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${request.combinator.toLowerCase()}-${filterHash}-${action}.glb.zst`;
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/particle-filter/composite/${request.combinator.toLowerCase()}-${filterHash}-${action}${MODEL_OBJECT_SUFFIX}`;
 };
 
 export const buildParticleFilterArtifactParams = (

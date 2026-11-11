@@ -1,6 +1,5 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import type { SceneArtifactParams } from '@volt/contracts/modules/trajectory/domain';
-import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
     buildClusterRequiredError,
     recordSceneArtifact,
@@ -22,7 +21,8 @@ import type {
     GetColorCodingStatsInput,
     TrajectoryExposureScope
 } from '@modules/trajectory/services/TrajectoryServiceTypes';
-import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { MODEL_OBJECT_SUFFIX } from '@shared/utilities/model-stream';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 const DEFAULT_ANALYSIS_ID = 'default';
 
@@ -50,7 +50,7 @@ const buildColorCodingObjectName = ({
     const segment = analysisSegment || DEFAULT_ANALYSIS_ID;
     const formattedStart = formatValueForPath(startValue);
     const formattedEnd = formatValueForPath(endValue);
-    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb.zst`;
+    return `trajectory-${trajectoryId}/analysis-${segment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}${MODEL_OBJECT_SUFFIX}`;
 };
 
 class ColorCodingService {
@@ -247,7 +247,7 @@ class ColorCodingService {
         return objectName;
     }
 
-    async getModelStreamResponse(input: CreateColoredModelInput): Promise<TrajectoryNativeObjectStreamResponse> {
+    async getModelStreamResponse(input: CreateColoredModelInput): Promise<DownloadStreamOutput> {
         const { trajectoryId, timestep, property, startValue, endValue, gradient, analysisId, exposureId } = input;
         const trajectory = await Trajectory.findOneBy({ id: trajectoryId });
 
@@ -266,11 +266,7 @@ class ColorCodingService {
             gradient
         });
 
-        return trajectoryNativeDaemonService.getObjectStreamResponse(
-            trajectory.storageClusterId,
-            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
-            objectName
-        );
+        return trajectoryNativeDaemonService.getModelStream(trajectory.storageClusterId, objectName);
     }
 }
 
