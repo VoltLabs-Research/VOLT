@@ -15,6 +15,13 @@ interface TrajectoryPickerProps {
     // Trajectories that have results, for the "With results" scope; leave out to hide it.
     withResultsIds?: ReadonlySet<string>;
     label?: string;
+    // Without it a trajectory must be picked: no "All trajectories" option and no clear button.
+    allowAll?: boolean;
+    // Why a trajectory can't be picked here; it stays listed, greyed out, with the reason under its name.
+    disabledReason?: (trajectory: Trajectory) => string | undefined;
+    isDisabled?: boolean;
+    className?: string;
+    triggerClassName?: string;
 }
 
 const PAGE_LIMIT = 50;
@@ -41,10 +48,21 @@ type PickerItem =
     | { kind: 'trajectory'; trajectory: Trajectory };
 
 /*
- * Trajectory filter: opens on the search, groups by folder, tells same-named trajectories apart by date and
- * keeps a fixed width so long names wrap instead of stretching the panel.
+ * Picks a trajectory, or filters by one: opens on the search, groups by folder, tells same-named trajectories
+ * apart by date and keeps a fixed width so long names wrap instead of stretching the panel.
  */
-const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label = 'Trajectory' }: TrajectoryPickerProps) => {
+const TrajectoryPicker = ({
+    value,
+    valueLabel,
+    onChange,
+    withResultsIds,
+    label = 'Trajectory',
+    allowAll = true,
+    disabledReason,
+    isDisabled = false,
+    className,
+    triggerClassName
+}: TrajectoryPickerProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [scope, setScope] = useState<'all' | 'results'>('all');
@@ -87,7 +105,7 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
             groups.set(key, [...(groups.get(key) ?? []), trajectory]);
         });
 
-        const result: PickerItem[] = [{ kind: 'all' }];
+        const result: PickerItem[] = allowAll ? [{ kind: 'all' }] : [];
         const ordered = [...groups.entries()].sort(([left], [right]) => Number(left === NO_FOLDER) - Number(right === NO_FOLDER));
         ordered.forEach(([id, list]) => {
             const open = !closedFolders.has(id);
@@ -97,9 +115,10 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
         });
 
         return result;
-    }, [trajectories, debouncedSearch, closedFolders, folderTitles]);
+    }, [trajectories, debouncedSearch, closedFolders, folderTitles, allowAll]);
 
-    const selectable = useMemo(() => items.filter((item) => item.kind !== 'folder'), [items]);
+    const selectable = useMemo(() => items.filter((item) => item.kind === 'all'
+        || (item.kind === 'trajectory' && !disabledReason?.(item.trajectory))), [items, disabledReason]);
 
     useEffect(() => {
         setHighlight(0);
@@ -147,18 +166,26 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
 
     let optionIndex = -1;
 
+    const canClear = allowAll && Boolean(value);
+    const valueText = value ? valueLabel ?? 'Selected' : allowAll ? 'All' : undefined;
+
     return (
-        <div className='inline-flex items-center'>
+        <div className={cn('inline-flex items-center', className)}>
             <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
                 <Button
                     variant='outline'
                     size='sm'
-                    className={cn('h-8 max-w-80 gap-1.5 rounded-lg border-border px-2.5 text-sm font-normal', value && 'rounded-r-none border-r-0')}
-                    aria-label={`${label}: ${value ? valueLabel ?? 'selected' : 'All'}`}
+                    isDisabled={isDisabled}
+                    className={cn(
+                        'h-8 max-w-80 gap-1.5 rounded-lg border-border px-2.5 text-sm font-normal',
+                        triggerClassName,
+                        canClear && 'rounded-r-none border-r-0'
+                    )}
+                    aria-label={`${label}: ${valueText ?? 'none'}`}
                 >
                     <span className='text-muted'>{label}</span>
-                    <span className='truncate font-medium text-foreground'>{value ? valueLabel ?? 'Selected' : 'All'}</span>
-                    {!value && <ChevronDown size={14} className='shrink-0 text-muted' aria-hidden='true' />}
+                    {valueText && <span className='truncate font-medium text-foreground'>{valueText}</span>}
+                    {!canClear && <ChevronDown size={14} className='shrink-0 text-muted' aria-hidden='true' />}
                 </Button>
                 <Popover.Content placement='bottom start'>
                     <Popover.Dialog aria-label='Choose a trajectory' className='flex w-[388px] max-w-[calc(100vw-2rem)] flex-col p-0'>
@@ -212,9 +239,11 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
                                     );
                                 }
 
-                                optionIndex += 1;
-                                const index = optionIndex;
                                 const isAll = item.kind === 'all';
+                                const reason = isAll ? undefined : disabledReason?.(item.trajectory);
+                                // Only the options that can be picked take part in the arrow keys.
+                                if (!reason) optionIndex += 1;
+                                const index = reason ? -1 : optionIndex;
                                 const id = isAll ? null : item.trajectory._id;
                                 const selected = value === id;
                                 const duplicate = !isAll && (nameCounts.get(item.trajectory.name) ?? 0) > 1;
@@ -224,11 +253,13 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
                                         key={isAll ? 'all' : item.trajectory._id}
                                         role='option'
                                         aria-selected={selected}
-                                        data-option-index={index}
-                                        onMouseEnter={() => setHighlight(index)}
-                                        onClick={() => choose(id, isAll ? undefined : item.trajectory.name)}
+                                        aria-disabled={reason ? true : undefined}
+                                        data-option-index={reason ? undefined : index}
+                                        onMouseEnter={reason ? undefined : () => setHighlight(index)}
+                                        onClick={reason ? undefined : () => choose(id, isAll ? undefined : item.trajectory.name)}
                                         className={cn(
-                                            'grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 rounded-2xl px-2.5 py-2',
+                                            'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 rounded-2xl px-2.5 py-2',
+                                            reason ? 'cursor-default opacity-50' : 'cursor-pointer',
                                             selected ? 'bg-foreground/[0.09]' : index === highlight && 'bg-foreground/[0.06]'
                                         )}
                                     >
@@ -241,7 +272,7 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
                                                     {duplicate && item.trajectory.createdAt && (
                                                         <span className='font-medium text-info'>{format(new Date(item.trajectory.createdAt), 'MMM d')}</span>
                                                     )}
-                                                    <span>{describe(item.trajectory)}</span>
+                                                    <span>{reason ?? describe(item.trajectory)}</span>
                                                 </span>
                                             )}
                                         </span>
@@ -262,7 +293,7 @@ const TrajectoryPicker = ({ value, valueLabel, onChange, withResultsIds, label =
                     </Popover.Dialog>
                 </Popover.Content>
             </Popover>
-            {value && (
+            {canClear && (
                 <Button
                     variant='outline'
                     size='sm'

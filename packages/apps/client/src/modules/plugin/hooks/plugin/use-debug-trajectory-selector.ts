@@ -1,7 +1,10 @@
-import { debugTrajectoriesQuery, useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { useTrajectoryByIdQuery } from '@/modules/trajectory/hooks/trajectory/queries';
+import { isTrajectoryCompleted } from '@/modules/trajectory/utils/trajectory-status';
+import { isApiError } from '@/shared/errors/core/report-error';
 import { applySearchParamUpdates } from '@/shared/ui/hooks/use-search-params';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 const DEBUG_TRAJECTORY_PARAM = 'debugTrajectory';
 const DEBUG_TIMESTEP_PARAM = 'debugTimestep';
@@ -15,17 +18,22 @@ const readSelectedTimestep = (value: string | null): number | null => {
     return Number.isFinite(parsedValue) ? parsedValue : null;
 };
 
+// A debug session steps through one frame, so the trajectory must be processed and have frames.
+export const debugUnavailableReason = (trajectory: Trajectory): string | undefined => {
+    if (trajectory.status === 'failed') return 'Processing failed';
+    if (!isTrajectoryCompleted(trajectory.status)) return 'Still processing';
+    if (!(trajectory.framesCount ?? trajectory.frames?.length)) return 'No frames';
+    return undefined;
+};
+
 const useDebugTrajectorySelector = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const trajectoryQuery = debugTrajectoriesQuery(undefined);
 
     const selectedTrajectoryId = searchParams.get(DEBUG_TRAJECTORY_PARAM) || null;
     const selectedTimestepParam = searchParams.get(DEBUG_TIMESTEP_PARAM);
     const selectedTimestep = readSelectedTimestep(selectedTimestepParam);
-    const trajectoriesData = trajectoryQuery.data;
-    const trajectories = useMemo(() => trajectoriesData ?? [], [trajectoriesData]);
 
-    // The listing has no frames, so the selected trajectory's frames come from its detail.
+    // The listing has no frames, so the selected trajectory and its frames come from its detail.
     const trajectoryDetailQuery = useTrajectoryByIdQuery(selectedTrajectoryId ?? '', {
         enabled: Boolean(selectedTrajectoryId)
     });
@@ -34,18 +42,13 @@ const useDebugTrajectorySelector = () => {
         setSearchParams((prev) => applySearchParamUpdates(prev, updates), { replace });
     }, [setSearchParams]);
 
-    const selectedTrajectory = useMemo(() => {
-        return trajectories.find((trajectory) => trajectory._id === selectedTrajectoryId) || null;
-    }, [trajectories, selectedTrajectoryId]);
-
     const trajectoryDetail = trajectoryDetailQuery.data;
-    const frames = useMemo(() => {
-        if (!selectedTrajectory || trajectoryDetail?._id !== selectedTrajectory._id) {
-            return [];
-        }
+    const isDetailOfSelected = Boolean(selectedTrajectoryId) && trajectoryDetail?._id === selectedTrajectoryId;
+    const selectedTrajectory = isDetailOfSelected && trajectoryDetail && !debugUnavailableReason(trajectoryDetail)
+        ? trajectoryDetail
+        : null;
 
-        return trajectoryDetail.frames ?? [];
-    }, [selectedTrajectory, trajectoryDetail]);
+    const frames = useMemo(() => selectedTrajectory?.frames ?? [], [selectedTrajectory]);
 
     const setSelectedTrajectory = useCallback((trajectoryId: string | null) => {
         updateSearchParams({
@@ -60,23 +63,22 @@ const useDebugTrajectorySelector = () => {
         });
     }, [updateSearchParams]);
 
-    // Drop a trajectory from the URL only once the listing has loaded without it.
-    const isTrajectoryListReady = trajectoryQuery.isSuccess;
+    // Drop a trajectory from the URL once its detail says it is gone or can't be debugged.
+    const isSelectedGone = isApiError(trajectoryDetailQuery.error) && trajectoryDetailQuery.error.status === 404;
+    const isSelectedUnusable = isDetailOfSelected && !selectedTrajectory;
     useEffect(() => {
-        if (!selectedTrajectoryId || !isTrajectoryListReady) {
+        if (!isSelectedGone && !isSelectedUnusable) {
             return;
         }
 
-        if (!selectedTrajectory) {
-            updateSearchParams({
-                [DEBUG_TRAJECTORY_PARAM]: null,
-                [DEBUG_TIMESTEP_PARAM]: null
-            }, true);
-        }
-    }, [isTrajectoryListReady, selectedTrajectory, selectedTrajectoryId, updateSearchParams]);
+        updateSearchParams({
+            [DEBUG_TRAJECTORY_PARAM]: null,
+            [DEBUG_TIMESTEP_PARAM]: null
+        }, true);
+    }, [isSelectedGone, isSelectedUnusable, updateSearchParams]);
 
     // Likewise, drop a timestep only once the selected trajectory's frames have loaded without it.
-    const areFramesReady = trajectoryDetailQuery.isSuccess && trajectoryDetail?._id === selectedTrajectoryId;
+    const areFramesReady = selectedTrajectory !== null;
     useEffect(() => {
         if (!selectedTimestepParam) {
             return;
@@ -98,14 +100,12 @@ const useDebugTrajectorySelector = () => {
     }, [areFramesReady, frames, selectedTimestep, selectedTimestepParam, updateSearchParams]);
 
     return {
-        trajectories,
         frames,
         selectedTrajectory,
         selectedTrajectoryId,
         selectedTimestep,
         setSelectedTrajectory,
         setSelectedTimestep,
-        isLoading: trajectoryQuery.isLoading,
         areFramesLoading: trajectoryDetailQuery.isLoading
     };
 };
