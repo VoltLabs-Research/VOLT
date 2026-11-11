@@ -112,6 +112,8 @@ export interface IModifierData{
     version?: string;
     homepage?: string;
     description?: string;
+    // The section the canvas's plugin picker files it under, e.g. "Structure identification".
+    category?: string;
 }
 
 export interface IArgumentsData{
