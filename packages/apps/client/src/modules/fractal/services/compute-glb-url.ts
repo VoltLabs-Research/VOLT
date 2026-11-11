@@ -21,6 +21,16 @@ interface ResolvedGlbResource {
     resourceKey: string | null;
 }
 
+// Models are served immutable, so a browser keeps reusing what it cached. This names the
+// encoding in every model URL, so copies cached before models were stored quantized and gzipped
+// are never read again. Change it only if that encoding changes.
+const MODEL_ENCODING = 'qgz';
+
+const withModelEncoding = (url: string | null): string | null => {
+    if (!url) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}encoding=${MODEL_ENCODING}`;
+};
+
 const buildPluginUrl = (
     mode: CanvasAccessMode,
     teamId: string,
@@ -131,21 +141,21 @@ export const resolveGlbResource = ({
 
     switch (activeScene?.source) {
         case 'plugin': {
-            const url = buildPluginUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            const url = withModelEncoding(buildPluginUrl(mode, teamId, trajectoryId, activeScene, currentTimestep));
             return {
                 url,
                 resourceKey: url
             };
         }
         case 'color-coding': {
-            const url = buildColorCodingUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            const url = withModelEncoding(buildColorCodingUrl(mode, teamId, trajectoryId, activeScene, currentTimestep));
             return {
                 url,
                 resourceKey: url
             };
         }
         case 'particle-filter': {
-            const url = buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep);
+            const url = withModelEncoding(buildParticleFilterUrl(mode, teamId, trajectoryId, activeScene, currentTimestep));
             return {
                 url,
                 resourceKey: url
@@ -154,7 +164,7 @@ export const resolveGlbResource = ({
         default: {
             const query = analysisId ? `?${new URLSearchParams({ analysisId }).toString()}` : '';
             return {
-                url: buildBackendUrl(`/api/public/trajectories/${trajectoryId}/frames/${currentTimestep}/glb${query}`),
+                url: withModelEncoding(buildBackendUrl(`/api/public/trajectories/${trajectoryId}/frames/${currentTimestep}/glb${query}`)),
                 resourceKey: `trajectory:${trajectoryId}:${currentTimestep}`
             };
         }

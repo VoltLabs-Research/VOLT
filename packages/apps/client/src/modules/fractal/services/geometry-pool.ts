@@ -26,27 +26,17 @@ const computeCapacityBytes = (): number => {
     return Math.min(2 * 1024 * 1024 * 1024, Math.floor(memoryGb * 1024 * 1024 * 1024 * 0.2));
 };
 
-const OPFS_DIR_NAME = 'volt-glb-cache';
-
-const getOpfsRoot = async (): Promise<FileSystemDirectoryHandle | null> => {
-    const storage = navigator.storage;
-    if (!storage || typeof storage.getDirectory !== 'function') return null;
+// Models were once kept decompressed in the origin private file system, a copy per frame that
+// nothing evicted; the browser's HTTP cache holds them now, so that directory only takes space.
+const RETIRED_OPFS_DIRECTORY = 'volt-glb-cache';
+void (async () => {
     try {
-        const root = await storage.getDirectory();
-        return root.getDirectoryHandle(OPFS_DIR_NAME, { create: true });
+        const root = await navigator.storage?.getDirectory?.();
+        await root?.removeEntry(RETIRED_OPFS_DIRECTORY, { recursive: true });
     } catch {
-        return null;
+        // Nothing to remove, or no origin private file system.
     }
-};
-
-const resourceKeyToFileName = (resourceKey: string): string => {
-    let hash = 2166136261;
-    for (let i = 0; i < resourceKey.length; i += 1) {
-        hash ^= resourceKey.charCodeAt(i);
-        hash = Math.imul(hash, 16777619);
-    }
-    return `glb-${(hash >>> 0).toString(36)}.bin`;
-};
+})();
 
 class GeometryPool {
     private pool = new Map<string, PoolEntry>();
@@ -94,30 +84,6 @@ class GeometryPool {
         this.pool.forEach((entry) => entry.geometry.dispose());
         this.pool.clear();
         this.currentBytes = 0;
-    }
-
-    async readFromOpfs(resourceKey: string): Promise<ArrayBuffer | null> {
-        const root = await getOpfsRoot();
-        if (!root) return null;
-        try {
-            const handle = await root.getFileHandle(resourceKeyToFileName(resourceKey));
-            const file = await handle.getFile();
-            return await file.arrayBuffer();
-        } catch {
-            return null;
-        }
-    }
-
-    async writeToOpfs(resourceKey: string, buffer: ArrayBuffer): Promise<void> {
-        const root = await getOpfsRoot();
-        if (!root) return;
-        try {
-            const handle = await root.getFileHandle(resourceKeyToFileName(resourceKey), { create: true });
-            const writable = await handle.createWritable();
-            await writable.write(buffer);
-            await writable.close();
-        } catch {
-        }
     }
 }
 

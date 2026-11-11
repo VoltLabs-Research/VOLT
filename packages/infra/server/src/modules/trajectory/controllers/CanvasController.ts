@@ -68,16 +68,8 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await publicCanvasService.glb(this.params(req, this.withGlbRequestContext));
-
-        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders({
-            contentEncoding: output.contentEncoding,
-            negotiatedContentEncoding: output.negotiatedContentEncoding,
-            contentLength: output.size,
-            objectName: output.objectName,
-            etag: output.etag,
-            lastModified: output.lastModified
-        }));
+        const output = await publicCanvasService.glb(this.params(req, this.withOptionalUserId));
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasAtoms)
@@ -137,7 +129,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await publicCanvasService.coloredModelStream(this.params(req, this.withOptionalUserId));
-        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders());
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasParticleFilterProperties)
@@ -173,7 +165,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await publicCanvasService.filteredModelStream(this.params(req, this.withOptionalUserId));
-        await pipeStreamToResponse(res, output.stream, this.passthroughModelHeaders());
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.canvasPlugin)
@@ -220,7 +212,7 @@ export default class CanvasController extends TrajectoryControllerBase {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const output = await publicCanvasService.pluginExposureGLB(this.params(req, this.withGlbRequestContext));
+        const output = await publicCanvasService.pluginExposureGLB(this.params(req, this.withOptionalUserId));
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);
     }

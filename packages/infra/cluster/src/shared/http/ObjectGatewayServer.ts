@@ -8,7 +8,7 @@ import type {
     LocalClusterObjectStat
 } from '@shared/contracts/types/cluster-object-store';
 import { isObjectNotFoundError } from '@shared/contracts/types/cluster-object-store';
-import type { ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@shared/contracts/types/object-gateway';
+import type { MissingObjectResolver, ObjectGatewayDirectAccessClaims, ObjectGatewaySecurity } from '@shared/contracts/types/object-gateway';
 import { logger } from '@shared/logger';
 import type { DaemonConfig } from '@core/config/daemon';
 import ApplicationError from '@shared/errors/ApplicationError';
@@ -56,6 +56,7 @@ export class ObjectGatewayServer {
     private server: Server | null = null;
     private exposure: TeamClusterServiceExposure | null = null;
     private readonly allowedBuckets: Set<string>;
+    private missingObjects: MissingObjectResolver | null = null;
 
     constructor(
         private readonly config: DaemonConfig,
@@ -64,6 +65,11 @@ export class ObjectGatewayServer {
     ) {
         this.allowedBuckets = new Set(this.objectStore.listBuckets());
         this.configureRoutes();
+    }
+
+    /** Lets reads and deletes of a missing object first ask whether it can be brought into existence. */
+    resolveMissingObjectsWith(resolver: MissingObjectResolver): void {
+        this.missingObjects = resolver;
     }
 
     async start(): Promise<void> {
@@ -353,6 +359,10 @@ export class ObjectGatewayServer {
     }
 
     private async handleDeleteObject(bucket: string, objectKey: string, response: Response): Promise<void> {
+        if (await this.missingObjects?.removeMissing(bucket, objectKey)) {
+            response.status(204).end();
+            return;
+        }
         await this.readObjectStat(bucket, objectKey);
         await this.objectStore.removeObject(bucket, objectKey);
         response.status(204).end();
@@ -372,6 +382,9 @@ export class ObjectGatewayServer {
         try {
             return await read();
         } catch (error) {
+            if (isObjectNotFoundError(error) && await this.missingObjects?.convertMissing(bucket, objectKey)) {
+                return read();
+            }
             if (isObjectNotFoundError(error)) {
                 throw new ApplicationError(ErrorCodes.OBJECT_GATEWAY_OBJECT_NOT_FOUND, `Object not found: ${bucket}/${objectKey}`, 404);
             }

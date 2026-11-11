@@ -7,12 +7,6 @@ const readUserAgent = (req: AuthenticatedRequest): string => {
     return Array.isArray(userAgent) ? userAgent[0] ?? '' : userAgent ?? '';
 };
 
-export const readAcceptEncoding = (req: AuthenticatedRequest): string | undefined => {
-    const header = req.headers['accept-encoding'];
-
-    return Array.isArray(header) ? header.join(',') : header;
-};
-
 const NUMERIC_REQUEST_KEYS = [
     'page',
     'limit',

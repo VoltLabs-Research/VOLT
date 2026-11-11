@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import array
 import json
 import struct
 import tempfile
@@ -8,6 +9,8 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import volt_spatial_assembler
 
 from voltsdk.plugins.plugin import PluginRun
 from voltsdk.spatial import SpatialAssembler
@@ -69,9 +72,16 @@ class SpatialAssemblerTests(unittest.TestCase):
             self.assertEqual(material['baseColorFactor'], [1.0, 0.5, 0.0, 1.0])
             self.assertEqual(material['metallicFactor'], 0.0)
             self.assertEqual(material['roughnessFactor'], 0.8)
-            position_accessor = document['accessors'][0]
-            self.assertAlmostEqual(position_accessor['min'][2], -0.4)
-            self.assertAlmostEqual(position_accessor['max'][2], 0.4)
+            self.assertIn('EXT_meshopt_compression', document['extensionsRequired'])
+
+            # The tube around the line spans its width (0.8) across z, within one grid step.
+            [mesh] = volt_spatial_assembler.decode_glb(output_path.read_bytes())
+            positions = array.array('f')
+            positions.frombytes(mesh['positions'])
+            z = positions[2::3]
+            step = volt_spatial_assembler.POSITION_STEP
+            self.assertAlmostEqual(min(z), -0.4, delta=step)
+            self.assertAlmostEqual(max(z), 0.4, delta=step)
 
     def test_plugin_run_glb_writes_sibling_glb(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

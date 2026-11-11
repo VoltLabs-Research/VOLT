@@ -6,9 +6,3 @@ export interface FractalSurface {
     gl: THREE.WebGLRenderer;
     invalidate: () => void;
 }
-
-export interface MortonAttributePayload {
-    name: string;
-    itemSize: number;
-    array: Float32Array;
-}

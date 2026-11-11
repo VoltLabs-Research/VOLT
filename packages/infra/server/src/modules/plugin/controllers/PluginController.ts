@@ -21,7 +21,7 @@ import type { ListPluginsInput, UpdatePluginByIdInput } from '@modules/plugin/se
 import { pluginRoutes } from '@volt/contracts/modules/plugin/routes';
 
 import { ErrorCodes } from '@core/constants/error-codes';
-import { buildControllerParams, readAcceptEncoding } from '@shared/http/controllers/controller-internals';
+import { buildControllerParams } from '@shared/http/controllers/controller-internals';
 import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import BaseResponse from '@shared/http/responses/BaseResponse';
 import multer from 'multer';
@@ -192,10 +192,7 @@ export default class PluginController extends Controller {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response
     ): Promise<void>{
-        const input = {
-            ...buildControllerParams(req) as unknown as GetPluginExposureGLBInput,
-            acceptEncoding: readAcceptEncoding(req)
-        };
+        const input = buildControllerParams(req) as unknown as GetPluginExposureGLBInput;
         const output = await pluginExposureArtifactService.getExposureGLB(input);
         await output.prepare?.();
         await pipeStreamToResponse(res, output.stream, output.headers);

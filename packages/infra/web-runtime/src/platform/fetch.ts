@@ -39,6 +39,18 @@ export const bodyLength = (body: BodyInit | null | undefined): number | undefine
     return undefined;
 };
 
+// What a network fetch does with a content-coded body, which a Response built here would not: hand
+// it over decoded. Models, for one, are stored and served gzipped.
+const decodeContent = (headers: Headers, body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> => {
+    const coding = headers.get('content-encoding')?.trim().toLowerCase();
+    if(coding !== 'gzip' && coding !== 'deflate'){
+        return body;
+    }
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+    return body.pipeThrough(new DecompressionStream(coding) as unknown as ReadableWritablePair<Uint8Array, Uint8Array>);
+};
+
 export const loopbackFetch = (request: Request, connect: LoopbackConnector = connectLoopback, length?: number): Promise<Response> => {
     const url = new URL(request.url);
     const headers: Record<string, string> = { host: url.host };
@@ -88,7 +100,7 @@ export const loopbackFetch = (request: Request, connect: LoopbackConnector = con
                     }
                 }
                 const hasBody = request.method !== 'HEAD' && ![101, 204, 205, 304].includes(message.status);
-                resolve(new Response(hasBody ? body : null, {
+                resolve(new Response(hasBody ? decodeContent(responseHeaders, body) : null, {
                     status: message.status,
                     statusText: message.statusMessage,
                     headers: responseHeaders

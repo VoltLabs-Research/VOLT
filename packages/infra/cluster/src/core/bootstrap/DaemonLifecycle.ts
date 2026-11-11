@@ -19,6 +19,7 @@ import { getPluginProcessPool } from '@modules/plugin/services/runtime/PluginPro
 import { connectDaemonDataSource, disconnectDaemonDataSource } from '@shared/persistence/DataSource';
 import { getDaemonEntities } from '@core/bootstrap/entities';
 import { logger } from '@shared/logger';
+import { getLegacyModelMigration } from '@modules/trajectory/services/glb/LegacyModelMigration';
 
 export class DaemonLifecycle {
     private async connectInfrastructure(): Promise<void> {
@@ -39,6 +40,7 @@ export class DaemonLifecycle {
         const objectGatewayServer = getObjectGatewayServer();
 
         mountCommands(reverseChannelBridge);
+        objectGatewayServer.resolveMissingObjectsWith(getLegacyModelMigration());
 
         reverseChannelBridge.bindToClient(voltCloudConnection);
         reverseChannelBridge.bindObjectGatewayConnection(getVoltObjectGatewayConnection());
@@ -67,6 +69,10 @@ export class DaemonLifecycle {
         getHeartbeatPlaneProcess().publishRuntimeSnapshot();
 
         logger.info(`cluster-daemon started for team cluster ${config.teamClusterId}`);
+
+        void getLegacyModelMigration().sweep().catch((error) => {
+            logger.warn(`@legacy-models: conversion pass stopped: ${errorMessage(error)}`);
+        });
     }
 
     async stop(): Promise<void> {

@@ -318,12 +318,7 @@ export const exportAtomisticArtifact = async (
         return false;
     }
 
-    const buffer = spatialAssembler.generatePointCloudGLB(
-        pointCloud.positions,
-        pointCloud.colors,
-        pointCloud.min,
-        pointCloud.max
-    );
+    const buffer = spatialAssembler.encodePointCloud(pointCloud.positions, pointCloud.colors);
 
     await stageExportBufferUpload(input, {
         exporter: Exporter.ATOMISTIC,

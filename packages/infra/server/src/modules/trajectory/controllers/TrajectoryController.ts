@@ -272,7 +272,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await colorCodingService.getModelStreamResponse(this.params(req));
-        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.colorCodingCreate)
@@ -317,7 +317,7 @@ export default class TrajectoryController extends TrajectoryControllerBase {
         @Res() res: Response
     ): Promise<void>{
         const output = await particleFilterService.getModelStreamResponse(this.params(req));
-        await pipeStreamToResponse(res, output.stream, this.defaultStreamHeaders());
+        await pipeStreamToResponse(res, output.stream, output.headers);
     }
 
     @Route(trajectoryRoutes.particleFilterApply)

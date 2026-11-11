@@ -7,7 +7,6 @@ from typing import Any
 from .colors import _DEFAULT_LINE_MATERIAL
 from .geometry import (
     _build_point_cloud_data,
-    _compute_bounds,
     _compute_normals,
     _process_lines,
     _process_mesh_export,
@@ -46,11 +45,7 @@ class SpatialAssembler:
         if point_cloud is None:
             return write_output(empty_glb(), output_path)
 
-        payload = self.generate_point_cloud_glb(
-            point_cloud['positions'],
-            point_cloud['colors'],
-            bounds=(point_cloud['min'], point_cloud['max']),
-        )
+        payload = self.generate_point_cloud_glb(point_cloud['positions'], point_cloud['colors'])
         return write_output(payload, output_path)
 
     def mesh_glb(
@@ -69,12 +64,10 @@ class SpatialAssembler:
         positions = processed['positions']
         indices = processed['indices']
         normals = _compute_normals(positions, indices)
-        bounds = _compute_bounds(positions)
         payload = self.generate_mesh_glb(
             positions,
             normals,
             indices,
-            bounds=bounds,
             material={**(material or {}), 'doubleSided': enable_double_sided},
         )
         return write_output(payload, output_path)
@@ -108,7 +101,6 @@ class SpatialAssembler:
             geometry['normals'],
             geometry['indices'],
             colors=geometry['colors'],
-            bounds=(geometry['min'], geometry['max']),
             material={**_DEFAULT_LINE_MATERIAL, **(material or {})},
         )
         return write_output(payload, output_path)
@@ -120,6 +112,9 @@ class SpatialAssembler:
         *,
         bounds: tuple[Sequence[float], Sequence[float]] | None = None,
     ) -> bytes:
+        """Point cloud model; points keep their order. ``bounds`` is accepted for compatibility:
+        the model's extent always comes from its points."""
+        del bounds
         flat_positions = _flatten_vector_data(positions, 3)
         if not flat_positions:
             return empty_glb()
@@ -129,8 +124,7 @@ class SpatialAssembler:
         if len(flat_colors) != vertex_count * 3:
             raise ValueError('Point cloud colors must contain exactly 3 values per vertex.')
 
-        min_bound, max_bound = bounds or _compute_bounds(flat_positions)
-        return encode_point_cloud(flat_positions, flat_colors, (min_bound, max_bound))
+        return encode_point_cloud(flat_positions, flat_colors)
 
     def generate_mesh_glb(
         self,
@@ -142,6 +136,9 @@ class SpatialAssembler:
         bounds: tuple[Sequence[float], Sequence[float]] | None = None,
         material: Mapping[str, Any] | None = None,
     ) -> bytes:
+        """Triangle mesh model; triangles keep their order. ``bounds`` is accepted for
+        compatibility: the model's extent always comes from its vertices."""
+        del bounds
         flat_positions = _flatten_vector_data(positions, 3)
         flat_normals = _flatten_vector_data(normals, 3)
         flat_indices = _flatten_index_data(indices)
@@ -154,12 +151,10 @@ class SpatialAssembler:
         if colors is not None:
             flat_colors = _flatten_color_data(colors)
 
-        min_bound, max_bound = bounds or _compute_bounds(flat_positions)
         return encode_mesh(
             flat_positions,
             flat_normals,
             flat_indices,
-            bounds=(min_bound, max_bound),
             material=material,
             colors=flat_colors,
         )

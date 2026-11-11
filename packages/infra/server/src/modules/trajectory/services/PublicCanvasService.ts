@@ -28,7 +28,7 @@ import { createPreviewOutput } from '@modules/trajectory/services/trajectory/Tra
 import { buildTrajectoryGlbObjectName } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
 
 import ApplicationError from '@shared/errors/ApplicationError';
-import { getClusterGlbStream } from '@shared/utilities/glb-stream-resolution';
+import { getModelStream } from '@shared/utilities/model-stream';
 import { createDownloadStreamResponse } from '@shared/http/responses/download-response';
 
 import type Trajectory from '@modules/trajectory/models/Trajectory';
@@ -151,11 +151,10 @@ class PublicCanvasService{
         try{
             const trajectory = await trajectoryAccessGuard.assertReadable(input.trajectoryId, input.userId);
 
-            return await getClusterGlbStream(
+            return await getModelStream(
                 objectGatewayClient,
                 trajectory.storageClusterId,
-                buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep),
-                { acceptEncoding: input.acceptEncoding }
+                buildTrajectoryGlbObjectName(input.trajectoryId, input.timestep)
             );
         }catch(error){
             return notFound(error, 'GLB model not found');
@@ -212,7 +211,7 @@ class PublicCanvasService{
         return colorCodingService.getStats(input);
     }
 
-    async coloredModelStream(input: Guest<CreateColoredModelInput>): Promise<StreamableOutput>{
+    async coloredModelStream(input: Guest<CreateColoredModelInput>): Promise<DownloadStreamOutput>{
         await trajectoryAccessGuard.assertReadable(input.trajectoryId, input.userId);
         return colorCodingService.getModelStreamResponse(input);
     }
@@ -234,7 +233,7 @@ class PublicCanvasService{
         return particleFilterService.preview(input);
     }
 
-    async filteredModelStream(input: Guest<GetFilteredModelStreamInput>): Promise<StreamableOutput>{
+    async filteredModelStream(input: Guest<GetFilteredModelStreamInput>): Promise<DownloadStreamOutput>{
         await trajectoryAccessGuard.assertReadable(input.trajectoryId, input.userId);
         return particleFilterService.getModelStreamResponse(input);
     }
@@ -322,7 +321,6 @@ class PublicCanvasService{
     async pluginExposureGLB(input: AnalysisScopedRequest & {
         exposureId: string;
         timestep: string;
-        acceptEncoding?: string;
     }): Promise<GetPluginExposureGLBOutput>{
         await trajectoryAccessGuard.assertReadable(input.trajectoryId, input.userId);
         const analysis = await this.#requireOwnedAnalysis(input.analysisId, input.trajectoryId);
@@ -332,8 +330,7 @@ class PublicCanvasService{
             trajectoryId: input.trajectoryId,
             analysisId: input.analysisId,
             exposureId: input.exposureId,
-            timestep: input.timestep,
-            acceptEncoding: input.acceptEncoding
+            timestep: input.timestep
         });
     }
 

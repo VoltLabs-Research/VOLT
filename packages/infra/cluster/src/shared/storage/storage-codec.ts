@@ -2,6 +2,7 @@ import { PassThrough, Readable } from 'node:stream';
 import { spawn } from 'node:child_process';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
 import { firstExistingPath, vendorBinaryCandidates, vendorBinaryName } from '@shared/utilities/vendor-binaries';
+import { MODEL_OBJECT_SUFFIX } from '@shared/storage/model-objects';
 
 interface ZstdStreamResult {
     stream: Readable;
@@ -131,7 +132,7 @@ export const parseTrajectoryFrameDumpTimestep = (objectKey: string): number | nu
 };
 
 export const toTrajectoryFrameModelObjectKey = (trajectoryId: string, timestep: number): string =>
-    `trajectory-${trajectoryId}/timestep-${timestep}.glb.zst`;
+    `trajectory-${trajectoryId}/timestep-${timestep}${MODEL_OBJECT_SUFFIX}`;
 
 export const toTrajectoryParquetObjectKey = (trajectoryId: string): string =>
     `trajectory-${trajectoryId}/trajectory.parquet`;
