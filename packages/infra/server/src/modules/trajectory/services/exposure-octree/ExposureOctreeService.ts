@@ -1,6 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import { buildClusterRequiredError } from '@modules/trajectory/services/SceneArtifactService';
-import { stripTrailingZstdExtension } from '@modules/trajectory/services/trajectory/TrajectoryStoragePaths';
+import { stripModelEncoding } from '@shared/utilities/model-stream';
 import ApplicationError from '@shared/errors/ApplicationError';
 
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
@@ -24,7 +24,7 @@ class ExposureOctreeService {
         const timestep = requireTimestep(input.timestep);
         const objectName = await this.resolveExposureGlbObjectName(trajectoryId, analysisId, timestep, exposureId);
 
-        return this.streamModelObject(trajectoryId, `${stripTrailingZstdExtension(objectName)}.octree.json`);
+        return this.streamModelObject(trajectoryId, `${stripModelEncoding(objectName)}.octree.json`);
     }
 
     private async resolveExposureGlbObjectName(

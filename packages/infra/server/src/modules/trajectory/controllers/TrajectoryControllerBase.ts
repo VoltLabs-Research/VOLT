@@ -1,5 +1,5 @@
 import Controller from '@shared/http/Controller';
-import { buildControllerParams, readAcceptEncoding } from '@shared/http/controllers/controller-internals';
+import { buildControllerParams } from '@shared/http/controllers/controller-internals';
 import { encodeAtomsBinary } from '@modules/trajectory/controllers/atoms-binary-format';
 import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import { AuthenticationType } from '@shared/contracts/types/AuthenticatedRequest';
@@ -41,14 +41,6 @@ export default abstract class TrajectoryControllerBase extends Controller {
         userId: req.authType === AuthenticationType.User ? req.userId : undefined
     });
 
-    protected withGlbRequestContext = (
-        req: AuthenticatedRequest,
-        params: Record<string, unknown>
-    ): Record<string, unknown> => ({
-        ...this.withOptionalUserId(req, params),
-        acceptEncoding: readAcceptEncoding(req)
-    });
-
     protected sendPaginated(res: Response, value: PaginatedResult<unknown>): void {
         BaseResponse.paginated(res, value, value._meta);
     }
@@ -58,47 +50,6 @@ export default abstract class TrajectoryControllerBase extends Controller {
             'Content-Type': 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000'
         };
-    }
-
-    protected passthroughModelHeaders(value: {
-        contentEncoding?: string;
-        negotiatedContentEncoding?: string | null;
-        contentLength?: number;
-        objectName?: string;
-        etag?: string;
-        lastModified?: Date;
-    } = {}): Record<string, string> {
-        const headers: Record<string, string> = {
-            'Content-Type': 'model/gltf-binary',
-            'Cache-Control': 'public, max-age=31536000, immutable'
-        };
-
-        if (value.objectName) {
-            headers['Content-Disposition'] = `attachment; filename="${value.objectName}"`;
-        }
-
-        if (value.contentEncoding && value.contentEncoding !== 'identity') {
-            headers['X-Volt-Resource-Encoding'] = value.contentEncoding;
-        }
-
-        if (value.negotiatedContentEncoding) {
-            headers['Content-Encoding'] = value.negotiatedContentEncoding;
-            headers['Vary'] = 'Accept-Encoding';
-        }
-
-        if ((value.contentLength ?? 0) > 0) {
-            headers['Content-Length'] = String(value.contentLength);
-        }
-
-        if (value.etag) {
-            headers['ETag'] = value.etag;
-        }
-
-        if (value.lastModified) {
-            headers['Last-Modified'] = value.lastModified.toUTCString();
-        }
-
-        return headers;
     }
 
     protected validateAtomsRequest(req: AuthenticatedRequest, res: Response): boolean {

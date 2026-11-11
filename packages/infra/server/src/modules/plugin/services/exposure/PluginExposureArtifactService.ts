@@ -6,7 +6,7 @@ import { toPluginLike } from '@modules/plugin/services/plugin/PluginQueries';
 import SceneArtifactEntity from '@modules/trajectory/models/SceneArtifact';
 import TrajectoryEntity from '@modules/trajectory/models/Trajectory';
 import ApplicationError from '@shared/errors/ApplicationError';
-import { getClusterGlbStream } from '@shared/utilities/glb-stream-resolution';
+import { getModelStream } from '@shared/utilities/model-stream';
 import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { GetPluginExposureExportInput } from '@shared/contracts/operations/GetPluginExposureExport';
 import type {
@@ -75,36 +75,7 @@ class PluginExposureArtifactService {
         }
 
         try {
-            const response = await getClusterGlbStream(
-                objectGatewayClient,
-                artifact.storageClusterId,
-                artifact.objectName,
-                { acceptEncoding: input.acceptEncoding }
-            );
-
-            return createDownloadStreamResponse({
-                stream: response.stream,
-                contentType: 'model/gltf-binary',
-                contentLength: response.size,
-                disposition: 'inline',
-                filename: response.objectName,
-                cacheControl: IMMUTABLE_CACHE_CONTROL,
-                extraHeaders: {
-                    ...(response.contentEncoding === 'identity'
-                        ? {}
-                        : { 'X-Volt-Resource-Encoding': response.contentEncoding }),
-                    ...(response.negotiatedContentEncoding
-                        ? {
-                            'Content-Encoding': response.negotiatedContentEncoding,
-                            Vary: 'Accept-Encoding'
-                        }
-                        : {}),
-                    ...(response.etag ? { ETag: response.etag } : {}),
-                    ...(response.lastModified
-                        ? { 'Last-Modified': response.lastModified.toUTCString() }
-                        : {})
-                }
-            });
+            return await getModelStream(objectGatewayClient, artifact.storageClusterId, artifact.objectName);
         } catch (error) {
             if (error instanceof ApplicationError && error.statusCode === 404) {
                 throw ApplicationError.notFound(

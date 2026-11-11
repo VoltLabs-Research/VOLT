@@ -1,7 +1,7 @@
 import { DuckDBConnection } from '@duckdb/node-api';
 import { logger } from '@shared/logger';
 import { stageExportBufferUpload, YIELD_INTERVAL, yieldToEventLoop } from '@modules/plugin/services/exports/export-node-processor-shared';
-import { generateEmptyLineGLB as generateEmptyGlb } from '@modules/plugin/services/exports/line-exporter';
+import { encodeEmptyModel } from '@shared/storage/model-objects';
 import { readMeshParquetSource } from '@modules/plugin/services/exports/export-node-processor-types';
 import { dropEnclosingComponent } from '@modules/plugin/services/exports/mesh-component-filter';
 import { clipMeshToPeriodicCell } from '@modules/plugin/services/exports/mesh-periodic-clipping';
@@ -416,7 +416,7 @@ export const exportMeshArtifact = async (
         await stageExportBufferUpload(input, {
             exporter: Exporter.MESH,
             bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
-            buffer: generateEmptyGlb(material),
+            buffer: encodeEmptyModel(),
             contentType: 'model/gltf-binary',
             objectPath,
             ownerClusterId
@@ -424,13 +424,11 @@ export const exportMeshArtifact = async (
         return true;
     }
 
-    const buffer = spatialAssembler.generateMeshGLB(
+    const buffer = spatialAssembler.encodeMesh(
         processed.positions,
         processed.normals,
         processed.indices,
-        Boolean(processed.colors),
-        processed.colors,
-        processed.bounds,
+        processed.colors ?? null,
         {
             ...material,
             doubleSided: options.enableDoubleSided ?? true

@@ -10,6 +10,7 @@ import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStrea
 import objectGatewayClient from '@modules/cluster/services/object-gateway/TeamClusterObjectGatewayClient';
 import clusterObjectArchiveService from '@modules/cluster/services/object-store/ClusterObjectArchiveService';
 import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import { MODEL_OBJECT_SUFFIX } from '@shared/utilities/model-stream';
 
 type AnalysisFileType = 'data' | 'chart' | 'model';
 
@@ -90,7 +91,7 @@ class PluginExposureExportService {
                 prefix: `trajectory-${trajectoryId}/analysis-${analysisId}/glb/`,
                 type: 'model',
                 timestepRegex: /\/glb\/(\d+)\//,
-                extensionFilter: '.glb.zst'
+                extensionFilter: MODEL_OBJECT_SUFFIX
             }
         ];
     }

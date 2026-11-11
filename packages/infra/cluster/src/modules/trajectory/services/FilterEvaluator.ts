@@ -15,7 +15,8 @@ import {
 } from '@modules/trajectory/services/particle-filter-kernels';
 import { resolvePerAtomValues } from '@modules/trajectory/services/per-atom-value-resolver';
 import { resolveGradientCode } from '@modules/trajectory/services/gradient-codes';
-import { uploadGlbBuffer } from '@modules/trajectory/services/glb/upload-glb-buffer';
+import { putModel } from '@shared/storage/model-objects';
+import { encodeFrameModel } from '@modules/trajectory/services/glb/frame-model';
 import { getObjectStore } from '@shared/storage/ClusterObjectStore';
 import { type ClusterObjectStore } from '@shared/contracts/types/cluster-object-store';
 import type { ComparisonOperator } from '@modules/trajectory/services/particle-filter-kernels';
@@ -89,22 +90,16 @@ export class FilterEvaluator {
     async exportColoredModel(input: ExportColoredModelInput): Promise<ExportColoredModelResult> {
         const resolved = await resolvePerAtomValues(this.trajectoryParser, this.pluginPropertyStore, input);
         const { parsed } = resolved;
-        const colors: Float32Array = resolved.valueType === 'string'
+        const colors: Float32Array | Uint8Array = resolved.valueType === 'string'
             ? buildCategoricalColors(resolved.values, parsed.positions.length / 3)
-            : spatialAssembler.applyPropertyColors(
+            : spatialAssembler.propertyColors(
                 resolved.values,
                 input.startValue,
                 input.endValue,
                 resolveGradientCode(input.gradient)
             );
-        const buffer: Buffer = spatialAssembler.generatePointCloudGLB(
-            parsed.positions,
-            colors,
-            parsed.min,
-            parsed.max
-        );
 
-        await uploadGlbBuffer(this.objectStore, buffer, input.objectKey, input.ownerClusterId);
+        await putModel(this.objectStore, input.ownerClusterId, input.objectKey, spatialAssembler.encodePointCloud(parsed.positions, colors));
 
         return { objectKey: input.objectKey };
     }
@@ -128,7 +123,7 @@ export class FilterEvaluator {
             ? this.buildDeletedAtomsModel(parsed, mask)
             : this.buildHighlightedAtomsModel(parsed, mask, atomCount);
 
-        await uploadGlbBuffer(this.objectStore, buffer, input.objectKey, input.ownerClusterId);
+        await putModel(this.objectStore, input.ownerClusterId, input.objectKey, buffer);
 
         return {
             objectKey: input.objectKey,
@@ -149,12 +144,7 @@ export class FilterEvaluator {
             );
         }
 
-        const buffer: Buffer = spatialAssembler.generateGLB(
-            retained.positions,
-            retained.types,
-            parsed.min,
-            parsed.max
-        );
+        const buffer = encodeFrameModel(retained.positions, retained.types);
 
         return {
             buffer,
@@ -168,12 +158,7 @@ export class FilterEvaluator {
         atomCount: number
     ): { buffer: Buffer; atomsResult: number } {
         const { colors, highlightedCount } = buildHighlightColors(mask, atomCount);
-        const buffer: Buffer = spatialAssembler.generatePointCloudGLB(
-            parsed.positions,
-            colors,
-            parsed.min,
-            parsed.max
-        );
+        const buffer = spatialAssembler.encodePointCloud(parsed.positions, colors);
 
         return {
             buffer,

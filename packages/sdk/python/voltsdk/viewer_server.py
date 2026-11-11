@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 import argparse
+import os
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 class ViewerRequestHandler(SimpleHTTPRequestHandler):
+    # Models VOLT stores are gzipped glTF; the browser decodes them when told how they are encoded.
+    def guess_type(self, path: str | os.PathLike[str]) -> str:
+        if str(path).lower().endswith('.glb.gz'):
+            return 'model/gltf-binary'
+        return super().guess_type(path)
+
     def end_headers(self) -> None:
+        if self.path.split('?', 1)[0].lower().endswith('.glb.gz'):
+            self.send_header('Content-Encoding', 'gzip')
         origin = self.headers.get('Origin')
         self.send_header('Access-Control-Allow-Origin', origin or '*')
         if origin:

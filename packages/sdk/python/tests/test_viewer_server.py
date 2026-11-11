@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+import gzip
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 import sys
@@ -47,6 +48,25 @@ class ViewerServerTests(unittest.TestCase):
                         response.headers.get('Access-Control-Allow-Headers'),
                         'authorization,x-trace-id',
                     )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+    def test_stored_models_are_sent_gzip_encoded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / 'frame.glb.gz').write_bytes(gzip.compress(b'glTF-model'))
+            handler = partial(ViewerRequestHandler, directory=tmp)
+            server = ThreadingHTTPServer(('127.0.0.1', 0), handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+
+            try:
+                port = server.server_address[1]
+                with urlopen(f'http://127.0.0.1:{port}/frame.glb.gz', timeout=5) as response:
+                    self.assertEqual(response.headers.get('Content-Encoding'), 'gzip')
+                    self.assertEqual(response.headers.get('Content-Type'), 'model/gltf-binary')
+                    self.assertEqual(gzip.decompress(response.read()), b'glTF-model')
             finally:
                 server.shutdown()
                 server.server_close()

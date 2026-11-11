@@ -9,7 +9,6 @@ import {
 import {
     buildLineGlb,
     encodeLineRangesSidecar,
-    generateEmptyLineGLB,
     processLines,
     resolveLineOptions
 } from '@modules/plugin/services/exports/line-exporter';
@@ -25,6 +24,7 @@ import type {
 } from '@modules/plugin/services/exports/export-node-processor-types';
 import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
 import { Exporter } from '@volt/contracts/modules/plugin/enums';
+import { encodeEmptyModel } from '@shared/storage/model-objects';
 
 
 const DEFAULT_BOND_RADIUS = 0.15;
@@ -89,7 +89,7 @@ const exportTubeArtifact = async (
         bucket: TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
         buffer: geometry
             ? buildLineGlb(geometry, options.material)
-            : generateEmptyLineGLB(options.material),
+            : encodeEmptyModel(),
         contentType: 'model/gltf-binary',
         objectPath,
         ownerClusterId
