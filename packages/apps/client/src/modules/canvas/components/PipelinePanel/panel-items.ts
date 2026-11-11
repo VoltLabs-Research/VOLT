@@ -14,7 +14,7 @@ export const panelItemKey = {
     stage: (stageId: string): string => `stage:${stageId}`
 } as const;
 
-// Draft stages, a run's analyses and its other stages: the modifications, as opposed to visual elements and the source.
+// Draft stages, a run's analyses and its other stages: the plugins, as opposed to visual elements and the source.
 export const isModifierKey = (key: string): boolean =>
     key.startsWith('stage:') || key.startsWith('analysis:') || key.startsWith('context:');
 
