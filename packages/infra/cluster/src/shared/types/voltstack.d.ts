@@ -70,5 +70,3 @@ declare module '@voltstack/lammps-io' {
     export function readHeader(filePath: string, options?: Pick<ReadOptions, 'frame'>): FrameHeader;
     export function readFrame(filePath: string, options?: ReadOptions): ParsedFrame;
 }
-declare module '@voltstack/spatial-assembler';
-declare module '@voltstack/headless-rasterizer';

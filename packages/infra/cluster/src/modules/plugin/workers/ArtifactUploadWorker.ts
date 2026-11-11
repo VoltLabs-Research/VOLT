@@ -22,7 +22,7 @@ import { safeRemovePath } from '@shared/utilities/safe-remove-path';
 import type { ArtifactUploadBatchJobPayload } from '@shared/contracts/types/artifact-upload';
 import type { BaseArtifactUploadEventData } from '@modules/plugin/events/plugin-events';
 import { readPositiveIntegerEnv } from '@shared/utilities/env';
-import { compressFileWithZstd } from '@shared/storage/storage-codec';
+import { compressModel, MODEL_CONTENT_TYPE, MODEL_OBJECT_METADATA, toModelFormat, toModelObjectKey } from '@shared/storage/model-objects';
 import { mapLimited } from '@shared/utilities/map-limited';
 import { createAnalysisStageReporter } from '@modules/analysis/services/workflow/AnalysisStageReporter';
 import type { DaemonJobReporter } from '@modules/jobs/services/DaemonJobReporter';
@@ -130,63 +130,54 @@ export class ArtifactUploadWorker extends BaseWorker<ArtifactUploadBatchJobPaylo
 
     private async uploadOne(upload: ArtifactUploadBatchJobPayload['uploads'][number], signal: AbortSignal): Promise<void> {
         throwIfAborted(signal);
-        const compressed = this.shouldCompress(upload.contentType);
-        const sourcePath = compressed ? `${upload.sourcePath}.zst` : upload.sourcePath;
-        if (compressed) {
-            await compressFileWithZstd(upload.sourcePath, sourcePath);
-        }
+        const objectKey = upload.contentType === MODEL_CONTENT_TYPE
+            ? await this.uploadModel(upload)
+            : await this.uploadFile(upload);
 
-        const objectKey = this.resolveObjectKey(upload.objectKey, upload.contentType, compressed);
-        const contentEncoding = compressed ? 'zstd' : upload.contentEncoding;
-
-        try {
-            const stat = await fs.stat(sourcePath);
-            await this.objectStore.putObjectStream({
-                ownerClusterId: upload.ownerClusterId,
-                bucket: upload.bucket,
-                objectKey,
-                stream: createReadStream(sourcePath),
-                size: stat.size,
-                metadata: {
-                    ...(upload.contentType ? { 'Content-Type': upload.contentType } : {}),
-                    ...(contentEncoding ? { 'Content-Encoding': contentEncoding } : {}),
-                    ...upload.metadata
-                }
+        if (upload.reportArtifact) {
+            await this.daemonArtifactReporter.reportArtifact({
+                ...upload.reportArtifact,
+                objectName: objectKey
             });
-
-            if (upload.reportArtifact) {
-                await this.daemonArtifactReporter.reportArtifact({
-                    ...upload.reportArtifact,
-                    objectName: objectKey,
-                    metadata: {
-                        ...upload.reportArtifact.metadata,
-                        compressionCodec: contentEncoding === 'zstd' ? 'zstd' : undefined
-                    }
-                });
-            }
-        } finally {
-            if (compressed) {
-                await safeRemovePath(sourcePath);
-            }
         }
+    }
+
+    // Models go through the one model format (plugins and older SDKs may write plain glTF).
+    private async uploadModel(upload: ArtifactUploadBatchJobPayload['uploads'][number]): Promise<string> {
+        const objectKey = toModelObjectKey(upload.objectKey);
+        const glb = toModelFormat(await fs.readFile(upload.sourcePath));
+        await this.objectStore.putObject({
+            ownerClusterId: upload.ownerClusterId,
+            bucket: upload.bucket,
+            objectKey,
+            body: await compressModel(glb),
+            metadata: {
+                ...upload.metadata,
+                ...MODEL_OBJECT_METADATA
+            }
+        });
+        return objectKey;
+    }
+
+    private async uploadFile(upload: ArtifactUploadBatchJobPayload['uploads'][number]): Promise<string> {
+        const stat = await fs.stat(upload.sourcePath);
+        await this.objectStore.putObjectStream({
+            ownerClusterId: upload.ownerClusterId,
+            bucket: upload.bucket,
+            objectKey: upload.objectKey,
+            stream: createReadStream(upload.sourcePath),
+            size: stat.size,
+            metadata: {
+                ...(upload.contentType ? { 'Content-Type': upload.contentType } : {}),
+                ...(upload.contentEncoding ? { 'Content-Encoding': upload.contentEncoding } : {}),
+                ...upload.metadata
+            }
+        });
+        return upload.objectKey;
     }
 
     private async cleanupBatchDirectory(batchDirectory: string): Promise<void> {
         await safeRemovePath(batchDirectory, { recursive: true });
-    }
-
-    private shouldCompress(contentType: string | undefined): boolean {
-        return contentType === 'model/gltf-binary';
-    }
-
-    private resolveObjectKey(objectKey: string, contentType: string | undefined, compressed: boolean): string {
-        if (!compressed) {
-            return objectKey;
-        }
-        if (contentType === 'model/gltf-binary' && !objectKey.endsWith('.glb.zst')) {
-            return `${objectKey}.zst`;
-        }
-        return objectKey;
     }
 }
 
