@@ -46,13 +46,13 @@ const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
 
 const UNGROUPED_REASON = 'These analyses ran outside a pipeline, so they cannot take new stages.';
 
-// How much the list grows into the settings while a modification is selected.
+// How much the list grows into the settings while a plugin is selected.
 const MODIFIER_LIST_EXTRA = 48;
 
 /*
  * The canvas panel as OVITO's pipeline editor: the pipelines (the draft and every saved run), the
- * selected one's visual elements, modifications and data source over a seam, and the selected item's
- * settings below it. Every pipeline takes new modifications; in a saved run they extend it in place.
+ * selected one's visual elements, plugins and data source over a seam, and the selected item's
+ * settings below it. Every pipeline takes new plugins; in a saved run they extend it in place.
  */
 const ObjectsPanel = ({
     trajectory,
@@ -300,7 +300,7 @@ const ObjectsPanel = ({
         growPositive: true,
         storageKey: 'volt:canvas:pipeline-list-size'
     });
-    // A modification's settings sit a little lower than the rest; the remembered size is left alone.
+    // A plugin's settings sit a little lower than the rest; the remembered size is left alone.
     const listHeight = listPanel.size + (isModifierKey(selectedKey) ? MODIFIER_LIST_EXTRA : 0);
 
     const populatedSections = artifactSections.filter((section) => section.timesteps.length > 0);

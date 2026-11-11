@@ -109,15 +109,15 @@ const PipelineActions = ({
             <DropdownRoot isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                 <DropdownTrigger
                     isDisabled={!canAdd}
-                    aria-label='Add modification'
+                    aria-label='Add plugin'
                     className='flex h-8 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border-none bg-foreground/[0.05] pl-3.5 pr-2.5 text-xs text-muted transition-colors duration-[140ms] hover:bg-foreground/[0.08] hover:text-foreground disabled:cursor-default disabled:opacity-50 aria-expanded:bg-foreground/[0.08] aria-expanded:text-foreground'
                 >
-                    <span className='min-w-0 flex-1 truncate text-left'>Add modification…</span>
+                    <span className='min-w-0 flex-1 truncate text-left'>Add plugin…</span>
                     <ChevronDown size={13} aria-hidden='true' className='shrink-0' />
                 </DropdownTrigger>
                 <DropdownPopover placement='bottom start'>
                     <DropdownMenu
-                        aria-label='Add modification'
+                        aria-label='Add plugin'
                         onAction={handleAddMenuAction}
                     >
                         {STATIC_STAGE_PRESETS.map((preset) => (
