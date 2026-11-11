@@ -6,15 +6,9 @@ import { autoUpdate, flip, FloatingPortal, offset, shift, size, useDismiss, useF
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
+import { isTypingInField } from '../../utils/keyboard-target';
 
 const MAX_RESULTS = 12;
-
-const isEditableTarget = (target: EventTarget | null): boolean => {
-    if (!target || !(target instanceof HTMLElement)) return false;
-    if (target.isContentEditable) return true;
-    const tag = target.tagName;
-    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-};
 
 const CanvasPluginSearch = () => {
     const { modifiers } = usePluginSelectors();
@@ -61,7 +55,7 @@ const CanvasPluginSearch = () => {
 
     useEffect(() => {
         const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
-            if (isEditableTarget(event.target)) return;
+            if (isTypingInField(event)) return;
             if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'a') {
                 event.preventDefault();
                 const input = inputRef.current;

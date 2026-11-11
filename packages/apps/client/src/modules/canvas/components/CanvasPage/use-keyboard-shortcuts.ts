@@ -4,6 +4,7 @@ import { useCommandPaletteStore } from '../../store/use-command-palette-store';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { clearShortcutActions, registerShortcutAction } from '../../utils/shortcut-actions';
+import { isTypingInField } from '../../utils/keyboard-target';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 
 import { useEffect, useRef } from 'react';
@@ -259,14 +260,11 @@ const useKeyboardShortcuts = ({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as Element;
-            if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
-                if (e.key !== 'Escape') return;
-            }
+            // Escape only closes the command palette; otherwise it belongs to whatever is open
+            // (a menu, a popover, a search field), which never sees it if it is taken here.
+            if (e.key === 'Escape' && !useCommandPaletteStore.getState().isOpen) return;
 
-            if (target.getAttribute('contenteditable') === 'true') {
-                if (e.key !== 'Escape') return;
-            }
+            if (isTypingInField(e) && e.key !== 'Escape') return;
 
             const normalizedKey = normalizeKey(e.key);
             const isLetter = /^[a-z]$/.test(normalizedKey);
