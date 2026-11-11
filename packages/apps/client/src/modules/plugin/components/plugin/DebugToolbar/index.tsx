@@ -4,18 +4,21 @@ import { NodeType } from '@volt/contracts/modules/plugin/enums';
 import DebugArgumentsPanel from '@/modules/plugin/components/plugin/DebugArgumentsPanel';
 import { PluginSelect } from '@/modules/plugin/components/plugin/PluginSelect';
 import { formatTraceDuration } from '@/modules/plugin/components/plugin/BaseNode/use-node-debug-view';
-import useDebugTrajectorySelector from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
+import useDebugTrajectorySelector, { debugUnavailableReason } from '@/modules/plugin/hooks/plugin/use-debug-trajectory-selector';
+import TrajectoryPicker from '@/modules/trajectory/components/TrajectoryPicker';
 import usePluginDebugSocket from '@/modules/plugin/hooks/plugin/use-plugin-debug-socket';
 import { usePluginBuilderStore } from '@/modules/plugin/store/plugin/use-plugin-builder-store';
 import { DebugNodeStatus, usePluginDebugStore } from '@/modules/plugin/store/plugin/use-plugin-debug-store';
 import { isUserConfigurableArgument } from '@/modules/plugin/utils/plugin/argument-values';
 import { NODE_CONFIGS } from '@/modules/plugin/utils/plugin/node-registry';
 import { FastForward, Play, Square, StepForward } from 'lucide-react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 
 // Pills inside the pill toolbar, as tall as its icon buttons. On a phone they share a second row.
 const SELECT_CLASS_NAME = 'max-[768px]:order-2 max-[768px]:min-w-0 max-[768px]:flex-[1_1_40%]';
 const SELECT_TRIGGER_CLASS_NAME = 'h-8 min-h-8 items-center rounded-full py-0 text-xs disabled:cursor-not-allowed disabled:opacity-50 max-[768px]:w-full';
+const TRAJECTORY_TRIGGER_CLASS_NAME = 'max-w-56 rounded-full text-xs max-[768px]:w-full max-[768px]:max-w-none';
 
 interface DebugControlButtonProps {
     tooltip: string;
@@ -42,15 +45,15 @@ const DebugControlButton = ({ tooltip, onPress, isDisabled, children }: DebugCon
 
 const DebugToolbar = () => {
     const {
-        trajectories,
         frames,
+        selectedTrajectory,
         selectedTrajectoryId,
         selectedTimestep,
         setSelectedTrajectory,
         setSelectedTimestep,
-        isLoading: trajLoading,
         areFramesLoading
     } = useDebugTrajectorySelector();
+    const [pickedName, setPickedName] = useState<string>();
 
     const { startDebug, step, continueAll, stop, isDebugging } = usePluginDebugSocket({
         subscribe: false
@@ -105,19 +108,18 @@ const DebugToolbar = () => {
             <div role='toolbar' aria-label='Debug' className='glass-surface flex flex-row items-center gap-1 whitespace-nowrap rounded-full bg-dashboard-surface p-1 shadow-[var(--overlay-shadow)] max-[768px]:flex-wrap max-[768px]:justify-between max-[768px]:rounded-3xl'>
                 <p className='pr-2 pl-3 text-xs font-semibold text-muted'>Debug</p>
                 <Separator orientation='vertical' className='mx-1 h-5 bg-foreground/10 max-[768px]:hidden' />
-                <PluginSelect
-                    options={trajectories.map((trajectory) => ({
-                        value: trajectory._id,
-                        title: trajectory.name
-                    }))}
-                    value={selectedTrajectoryId || null}
-                    onChange={(value: string) => setSelectedTrajectory(value || null)}
-                    placeholder={trajLoading ? 'Loading...' : 'Trajectory'}
-                    ariaLabel='Trajectory'
+                <TrajectoryPicker
+                    value={selectedTrajectoryId}
+                    valueLabel={selectedTrajectory?.name ?? pickedName}
+                    onChange={(trajectoryId, name) => {
+                        setPickedName(name);
+                        setSelectedTrajectory(trajectoryId);
+                    }}
+                    allowAll={false}
+                    disabledReason={debugUnavailableReason}
                     isDisabled={isDebugging || isStarting}
-                    isPending={trajLoading}
                     className={SELECT_CLASS_NAME}
-                    triggerClassName={SELECT_TRIGGER_CLASS_NAME}
+                    triggerClassName={TRAJECTORY_TRIGGER_CLASS_NAME}
                 />
                 <PluginSelect
                     options={frames.map((frame) => ({
