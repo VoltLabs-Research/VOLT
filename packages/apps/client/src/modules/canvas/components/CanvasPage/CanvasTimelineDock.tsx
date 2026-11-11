@@ -1,3 +1,4 @@
+import PlaybackCachingIsland from '../PlaybackCachingIsland';
 import ResizeHandle from '../ResizeHandle';
 import Timeline from '../Timeline';
 import { ResizeDirection } from '../../hooks/use-resizable';
@@ -36,6 +37,8 @@ const CanvasTimelineDock = ({ panel, isNarrowViewport, statusBar, ...timelinePro
                 />
             </div>
         )}
+        {/* Above the dock, centred over the viewport, while Play caches frames. */}
+        <PlaybackCachingIsland />
         <Timeline {...timelineProps} />
         {statusBar}
     </div>

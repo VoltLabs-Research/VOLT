@@ -714,6 +714,62 @@ html [data-sileo-viewport][data-theme='light'] [data-sileo-description] {
     }
 }
 
+/* PlaybackCachingIsland: while Play caches frames, one dark capsule over the scene, in both themes.
+   It rises on the iOS sheet curve, fades faster than it moves, and stays visible until it has moved
+   away. The hairline is half a pixel, so it reads as an edge, not a border. */
+:root,
+.light,
+[data-theme='light'] {
+    --island: rgba(10, 10, 12, 0.9);
+    --island-edge: rgba(255, 255, 255, 0.06);
+    --island-shadow: 0 0.875rem 2.25rem -0.75rem rgba(0, 0, 0, 0.2), 0 0.125rem 0.375rem rgba(0, 0, 0, 0.05);
+}
+
+.dark,
+[data-theme='dark'] {
+    --island: rgba(30, 30, 32, 0.92);
+    --island-edge: rgba(255, 255, 255, 0.14);
+    --island-shadow: 0 0.875rem 2.5rem -0.5rem rgba(0, 0, 0, 0.7), 0 0.125rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+@layer components {
+    .playback-island {
+        --island-foreground: #f5f5f7;
+        --island-muted: rgba(235, 235, 245, 0.6);
+        --island-fill: rgba(255, 255, 255, 0.14);
+        --island-fill-hover: rgba(255, 255, 255, 0.22);
+        background: var(--island);
+        box-shadow: inset 0 0 0 0.5px var(--island-edge), var(--island-shadow);
+        color: var(--island-foreground);
+        transform-origin: 50% 100%;
+        transition:
+            opacity 240ms ease,
+            translate 480ms cubic-bezier(0.32, 0.72, 0, 1),
+            scale 480ms cubic-bezier(0.32, 0.72, 0, 1),
+            visibility 0s linear 480ms;
+
+        &[data-open] {
+            transition-delay: 0s;
+        }
+
+        .progress-circle {
+            --progress-circle-stroke: var(--island-foreground);
+            --progress-circle-track-stroke: rgba(255, 255, 255, 0.18);
+        }
+    }
+
+    .playback-island__close {
+        background: var(--island-fill);
+        color: rgba(235, 235, 245, 0.72);
+
+        &:hover,
+        &[data-hovered='true'] {
+            background: var(--island-fill-hover);
+            color: var(--island-foreground);
+        }
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
