@@ -5,8 +5,6 @@ export enum ActivityType{
     AnalysisDeletion = 'analysis-deletion',
     WhiteboardCreation = 'whiteboard-creation',
     WhiteboardDeletion = 'whiteboard-deletion',
-    RoleCreation = 'role-creation',
-    RoleDeletion = 'role-deletion',
     SecretKeyCreation = 'secret-key-creation',
     SecretKeyDeletion = 'secret-key-deletion'
 }

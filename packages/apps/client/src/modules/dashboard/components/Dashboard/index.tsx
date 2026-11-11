@@ -1,7 +1,7 @@
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import SimulationGrid from '@/modules/trajectory/components/SimulationGrid';
 import { TRAJECTORY_FOLDER_DRAFT_KEY } from '@/modules/trajectory/components/SimulationGrid/DashboardSimulationGrid';
 import { startFolderDraft } from '@/shared/ui/hooks/use-folder-draft-store';
@@ -10,6 +10,7 @@ import RecoveryState from '@/shared/ui/components/RecoveryState';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTip from '@/shared/tips/use-tip';
 import { FolderPlus, Server, Upload } from 'lucide-react';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const PAGE_CLASS = 'mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col gap-6 p-4 max-[768px]:gap-3 max-[768px]:p-3';
 
@@ -17,8 +18,8 @@ const DashboardPage = () => {
     usePageTitle('Dashboard');
 
     const selectedTeam = useSelectedTeam();
-    const { canAccess } = useTeamPermissions();
-    const canCreateTrajectoryFolders = canAccess(['trajectory:create']);
+    const { can } = useTeamAccess();
+    const canCreateTrajectoryFolders = can(TeamArea.Trajectory, TeamAccess.Write);
     const { currentFolderId } = useFolderSearchParam();
     const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(undefined, currentFolderId);
 

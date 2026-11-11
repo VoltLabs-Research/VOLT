@@ -1,17 +1,14 @@
 import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Action } from '@core/constants/permissions';
-import { Resource } from '@core/constants/resources';
-import { SystemRoleNames, SystemRoles } from '@core/constants/system-roles';
 import Team from '@modules/team/models/Team';
 import TeamMember from '@modules/team/models/TeamMember';
-import TeamRole from '@modules/team/models/TeamRole';
 import teamMembershipService from '@modules/team/services/team/TeamMembershipService';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import ApplicationError from '@shared/errors/ApplicationError';
 import deploymentSettingsService from '@modules/system/services/DeploymentSettingsService';
 import { In } from 'typeorm';
 import type { FindOptionsWhere } from 'typeorm';
+import { TeamAccess, TeamArea, TeamRole, canAccessTeamArea } from '@volt/contracts/modules/team/access';
 import type {
     CreateTeamInput,
     UpdateTeamInput
@@ -20,7 +17,6 @@ import type {
 const INVITE_CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const INVITE_CODE_LENGTH = 5;
 const MANAGE_INVITE_CODES_MESSAGE = 'You do not have permission to manage invite codes';
-const MANAGE_INVITE_CODES_PERMISSION = `${Resource.TEAM_INVITATION}:${Action.CREATE}`;
 
 const generateCode = (): string => {
     let code = '';
@@ -43,21 +39,10 @@ class TeamService{
                 owner: userId
             }));
 
-            const roleIdsByName = new Map<string, string>();
-            for(const definition of Object.values(SystemRoles)){
-                const role = await manager.save(manager.create(TeamRole, {
-                    team: createdTeam.id,
-                    name: definition.name,
-                    permissions: definition.permissions,
-                    isSystem: definition.isSystem
-                }));
-                roleIdsByName.set(definition.name, role.id);
-            }
-
             await manager.save(manager.create(TeamMember, {
                 user: userId,
                 team: createdTeam.id,
-                role: roleIdsByName.get(SystemRoleNames.OWNER),
+                role: TeamRole.Owner,
                 joinedAt: new Date()
             }));
 
@@ -158,18 +143,28 @@ class TeamService{
         return { message: 'Invite code deleted successfully' };
     }
 
-    async getMyPermissions(teamId: string, userId: string): Promise<{ permissions: string[] }>{
+    // The user's role in the team, or null when they are not a member of it.
+    async roleOf(teamId: string, userId: string): Promise<TeamRole | null>{
         const member = await TeamMember.findOne({
             where: {
                 team: teamId,
                 user: userId
             },
-            relations: { roleRef: true }
+            select: {
+ id: true, role: true 
+}
         });
-        const role = member?.roleRef;
-        const systemPermissions = role?.isSystem ? SystemRoles[role.name]?.permissions : undefined;
 
-        return { permissions: Array.from(new Set(systemPermissions ?? role?.permissions ?? [])) };
+        return member?.role ?? null;
+    }
+
+    async getMyRole(teamId: string, userId: string): Promise<{ role: TeamRole }>{
+        const role = await this.roleOf(teamId, userId);
+        if(!role){
+            throw ApplicationError.forbidden(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 'You are not a member of this team');
+        }
+
+        return { role };
     }
 
     async leave(teamId: string, userId: string): Promise<void>{
@@ -201,7 +196,7 @@ class TeamService{
             throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITE_CODE_ALREADY_MEMBER, 'You are already a member of this team');
         }
 
-        await teamMembershipService.addMemberToTeam(userId, team.id, SystemRoleNames.OWNER);
+        await teamMembershipService.addMemberToTeam(userId, team.id, TeamRole.Member);
 
         return {
             message: 'Successfully joined team',
@@ -245,17 +240,9 @@ class TeamService{
         return ApplicationError.notFound(ErrorCodes.TEAM_INVITE_CODE_NOT_FOUND, 'Invalid invite code');
     }
 
+    // An invite code is an open invitation, so whoever may send invitations may manage it.
     async #canManageInviteCodes(teamId: string, userId: string): Promise<boolean>{
-        const member = await TeamMember.findOne({
-            where: {
-                team: teamId,
-                user: userId
-            },
-            relations: { roleRef: true }
-        });
-        const permissions = member?.roleRef?.permissions ?? [];
-
-        return permissions.includes('*') || permissions.includes(MANAGE_INVITE_CODES_PERMISSION);
+        return canAccessTeamArea(await this.roleOf(teamId, userId), TeamArea.TeamInvitation, TeamAccess.Write);
     }
 
     async #assertCanManageInviteCodes(teamId: string, userId: string): Promise<void>{

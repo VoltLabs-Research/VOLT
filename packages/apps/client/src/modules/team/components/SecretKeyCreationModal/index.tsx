@@ -8,7 +8,9 @@ import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 import ModalFooterActions from '@/shared/ui/components/ModalFooterActions';
 import { useCreateSecretKeyMutation } from '@/modules/team/hooks/secret-key/queries';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamRoleData from '@/modules/team/hooks/role/use-team-role-data';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
+import { grantableTeamRoleOptions } from '@/modules/team/utils/team/role-options';
+import { isTeamRole, type TeamRole } from '@volt/contracts/modules/team/access';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -17,7 +19,7 @@ const SECRET_KEY_CREATION_FORM_ID = 'secret-key-creation-form';
 
 interface SecretKeyFormErrors {
     name?: string;
-    roleId?: string;
+    role?: string;
 }
 
 const SECRET_KEY_CREATION_TOAST_OPTIONS = createPromiseToastOptions({
@@ -28,21 +30,21 @@ const SECRET_KEY_CREATION_TOAST_OPTIONS = createPromiseToastOptions({
 
 export const SecretKeyCreationModal = () => {
     const selectedTeam = useSelectedTeam();
-    const { roles } = useTeamRoleData({ teamId: selectedTeam?._id });
+    const { role: actorRole } = useTeamAccess();
     const createSecretKeyMutation = useCreateSecretKeyMutation();
 
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
     const [hasConfirmedCopy, setHasConfirmedCopy] = useState(false);
 
     const [name, setName] = useState('');
-    const [roleId, setRoleId] = useState('');
+    const [role, setRole] = useState<TeamRole | ''>('');
     const [errors, setErrors] = useState<SecretKeyFormErrors>({});
 
     const resetState = () => {
         setGeneratedKey(null);
         setHasConfirmedCopy(false);
         setName('');
-        setRoleId('');
+        setRole('');
         setErrors({});
     };
 
@@ -57,7 +59,7 @@ export const SecretKeyCreationModal = () => {
     const handleSubmit = async () => {
         const newErrors: SecretKeyFormErrors = {};
         if (!name.trim()) newErrors.name = 'Name is required';
-        if (!roleId) newErrors.roleId = 'Role is required';
+        if (!role) newErrors.role = 'Role is required';
 
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
@@ -65,7 +67,7 @@ export const SecretKeyCreationModal = () => {
         }
 
         const teamId = selectedTeam?._id;
-        if (!teamId) {
+        if (!teamId || !role) {
             return;
         }
 
@@ -73,7 +75,7 @@ export const SecretKeyCreationModal = () => {
             action: () => createSecretKeyMutation.mutateAsync({
                 teamId,
                 name,
-                roleId
+                role
             }),
             toast: SECRET_KEY_CREATION_TOAST_OPTIONS,
             afterSuccess: (result) => {
@@ -87,10 +89,8 @@ export const SecretKeyCreationModal = () => {
         await handleSubmit();
     };
 
-    const roleOptions = roles.map((role) => ({
-        title: role.name,
-        value: role._id
-    }));
+    // A key acts with its role, so it gets no role above its creator's.
+    const roleOptions = grantableTeamRoleOptions(actorRole);
 
     return (
         <Modal
@@ -166,14 +166,15 @@ export const SecretKeyCreationModal = () => {
                             variant='inline'
                             label='Role'
                             options={roleOptions}
-                            placeholder={roleOptions.length ? 'Select a role...' : 'No roles for selected team'}
-                            error={errors.roleId}
-                            value={roleId}
+                            placeholder='Select a role...'
+                            error={errors.role}
+                            value={role}
                             onChange={(e) => {
-                                setRoleId(e.target.value);
-                                if (errors.roleId) setErrors({
+                                const next = e.target.value;
+                                setRole(isTeamRole(next) ? next : '');
+                                if (errors.role) setErrors({
                                     ...errors,
-                                    roleId: undefined
+                                    role: undefined
                                 });
                             }}
                         />

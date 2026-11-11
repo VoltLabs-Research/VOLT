@@ -1,4 +1,5 @@
 import type { HttpRequestContext } from '@shared/http/request-context';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 import type { Request } from 'express';
 
 export enum AuthenticationType {
@@ -13,7 +14,7 @@ export interface AuthenticatedRequest extends Request {
     authType?: AuthenticationType;
     secretKeyId?: string;
     secretKeyTeamId?: string;
-    secretKeyRoleId?: string;
-    teamPermissions?: string[];
+    // The caller's role in the team the request is scoped to, set by checkTeamMembership.
+    teamRole?: TeamRole;
     requestContext?: HttpRequestContext;
 }

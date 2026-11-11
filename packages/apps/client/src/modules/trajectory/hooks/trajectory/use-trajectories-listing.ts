@@ -13,7 +13,7 @@ import type { TrajectoryItemRow } from '@/modules/trajectory/contracts/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
 import { isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
 import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import { runAction } from '@/shared/ui/actions/run-action';
@@ -37,12 +37,14 @@ import {
     useUpdateTrajectoryFolderMutation
 } from './queries';
 import { useNavigate } from 'react-router-dom';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
+import { readAccess, writeAccess } from '@/modules/team/utils/team/team-access';
 
 export const trajectoriesListingResource = createFolderedListingResource({
     subject: 'Trajectory',
     singularName: 'trajectory',
     pluralName: 'trajectories',
-    permissionPrefix: 'trajectory',
+    area: TeamArea.Trajectory,
     listItems: trajectoryQuery.useListQuery.fetch,
     listFolders: trajectoryFoldersQuery.fetch,
     getFolder: trajectoryFolderQuery.fetch
@@ -80,10 +82,10 @@ const buildDeleteTrajectoryMenuOption = (
 const useTrajectoriesListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
-    const { canAccess } = useTeamPermissions();
-    const canCreate = canAccess(['trajectory:create']);
-    const canDeleteTrajectories = canAccess(['trajectory:delete']);
-    const canMoveTrajectories = canAccess(['trajectory:update']);
+    const { can } = useTeamAccess();
+    const canCreate = can(TeamArea.Trajectory, TeamAccess.Write);
+    const canDeleteTrajectories = can(TeamArea.Trajectory, TeamAccess.Write);
+    const canMoveTrajectories = can(TeamArea.Trajectory, TeamAccess.Write);
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const { mutateAsync: createFolder } = useCreateTrajectoryFolderMutation();
     const { mutateAsync: updateFolder } = useUpdateTrajectoryFolderMutation();
@@ -133,7 +135,7 @@ const useTrajectoriesListing = () => {
         view: {
             label: 'View Scene',
             handler: ({ item: trajectory }) => openTrajectory(trajectory),
-            requiredPermission: 'trajectory:read'
+            requiredAccess: readAccess(TeamArea.Trajectory)
         },
         viewAtoms: {
             label: 'Inspect Atoms',
@@ -148,7 +150,7 @@ const useTrajectoriesListing = () => {
                     timestep: firstTimestep
                 }));
             },
-            requiredPermission: 'trajectory:read'
+            requiredAccess: readAccess(TeamArea.Trajectory)
         },
         export: {
             label: 'Export',
@@ -158,13 +160,13 @@ const useTrajectoriesListing = () => {
                 filename: trajectory.name || trajectory._id,
                 archive: true
             }),
-            requiredPermission: 'trajectory:read'
+            requiredAccess: readAccess(TeamArea.Trajectory)
         },
         move: {
             label: 'Move to Folder',
             icon: FolderInput,
             handler: ({ item: trajectory }) => openMove(trajectory),
-            requiredPermission: 'trajectory:update'
+            requiredAccess: writeAccess(TeamArea.Trajectory)
         }
     }), [downloadTrajectory, navigate, openTrajectory]);
 

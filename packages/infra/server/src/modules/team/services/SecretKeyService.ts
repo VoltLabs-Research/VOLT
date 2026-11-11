@@ -1,7 +1,7 @@
 import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
 import SecretKey from '@modules/team/models/SecretKey';
-import TeamRole from '@modules/team/models/TeamRole';
+import { assertCanGrantTeamRole } from '@modules/team/services/team/team-role-grants';
 import {
     getTeamUsageAnalytics,
     getKeyUsageAnalytics
@@ -13,37 +13,32 @@ import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate
 import type { PaginatedResult } from '@shared/persistence/persistence';
 import crypto from 'node:crypto';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 const MAX_KEYS_PER_TEAM = 500;
 const DEFAULT_SECRET_KEY_LIMIT = 50;
 const MAX_SECRET_KEY_LIMIT = 200;
 const DEFAULT_METRICS_DAYS = 30;
-const UNKNOWN_ROLE_NAME = 'Unknown';
-
-const roleNameOf = (secretKey: SecretKey): string => secretKey.roleRef?.name ?? UNKNOWN_ROLE_NAME;
 
 class SecretKeyService{
-    async create(teamId: string, userId: string, input: CreateSecretKeyInput): Promise<{
+    // A key acts with the role it is given, so it gets no role above its creator's.
+    async create(teamId: string, userId: string, actorRole: TeamRole | undefined, input: CreateSecretKeyInput): Promise<{
         secretKeyId: string;
         teamId: string;
-        roleId: string;
+        role: TeamRole;
         name: string;
         keyPrefix: string;
         secretKey: string;
         isActive: boolean;
         createdAt: Date;
     }>{
-        const { roleId, name } = input;
-
-        const role = await TeamRole.findOneBy({ id: roleId });
-        if(!role || role.team !== teamId){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
-        }
+        const { role, name } = input;
+        assertCanGrantTeamRole(actorRole, role);
 
         const secretKey = `vsk_${crypto.randomBytes(32).toString('hex')}`;
         const created = await SecretKey.create({
             team: teamId,
-            role: roleId,
+            role,
             name,
             keyPrefix: secretKey.slice(0, 14),
             keyHash: crypto.createHash('sha256').update(secretKey).digest('hex'),
@@ -61,7 +56,7 @@ class SecretKeyService{
         return {
             secretKeyId: created.id,
             teamId,
-            roleId,
+            role,
             name: created.name,
             keyPrefix: created.keyPrefix,
             secretKey,
@@ -94,17 +89,13 @@ class SecretKeyService{
             order: { createdAt: 'DESC' },
             skip: skipFor(pageRequest),
             take: pageRequest.limit,
-            relations: {
-                roleRef: true,
-                createdByRef: true
-            }
+            relations: { createdByRef: true }
         });
 
         const data = secretKeys.map((secretKey) => ({
             _id: secretKey.id,
             teamId: secretKey.team,
-            roleId: secretKey.role,
-            roleName: roleNameOf(secretKey),
+            role: secretKey.role,
             name: secretKey.name,
             keyPrefix: secretKey.keyPrefix,
             createdBy: !secretKey.createdByRef
@@ -165,8 +156,7 @@ class SecretKeyService{
 
         const allKeys = await SecretKey.find({
             where: { team: teamId },
-            take: MAX_KEYS_PER_TEAM,
-            relations: { roleRef: true }
+            take: MAX_KEYS_PER_TEAM
         });
 
         const activeKeys = allKeys.filter((key) => key.isActive).length;
@@ -178,7 +168,7 @@ class SecretKeyService{
                 secretKeyId: key.id,
                 name: key.name,
                 keyPrefix: key.keyPrefix,
-                roleName: roleNameOf(key),
+                role: key.role,
                 isActive: key.isActive,
                 totalRequests: usage?.totalRequests || 0,
                 successRequests: usage?.successRequests || 0,
@@ -199,10 +189,7 @@ class SecretKeyService{
     }
 
     async keyUsage(teamId: string, secretKeyId: string, days?: number): Promise<Record<string, unknown>>{
-        const secretKey = await SecretKey.findOne({
-            where: { id: secretKeyId },
-            relations: { roleRef: true }
-        });
+        const secretKey = await SecretKey.findOneBy({ id: secretKeyId });
         if(!secretKey || secretKey.team !== teamId){
             throw ApplicationError.notFound(ErrorCodes.SECRET_KEY_NOT_FOUND, 'Secret key not found');
         }
@@ -212,7 +199,7 @@ class SecretKeyService{
                 _id: secretKey.id,
                 name: secretKey.name,
                 keyPrefix: secretKey.keyPrefix,
-                roleName: roleNameOf(secretKey),
+                role: secretKey.role,
                 isActive: secretKey.isActive,
                 createdAt: secretKey.createdAt,
                 lastUsedAt: secretKey.lastUsedAt || null

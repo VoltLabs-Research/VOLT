@@ -53,8 +53,7 @@ const authenticateWithSecretKey = async (
         where: {
             keyHash,
             isActive: true
-        },
-        relations: { roleRef: true }
+        }
     });
 
     if (!secretKey) {
@@ -62,7 +61,6 @@ const authenticateWithSecretKey = async (
         return false;
     }
 
-    const role = secretKey.roleRef;
     const createdById = secretKey.createdBy;
     const secretKeyId = secretKey.id;
 
@@ -70,8 +68,7 @@ const authenticateWithSecretKey = async (
     req.token = token;
     req.secretKeyId = secretKeyId;
     req.secretKeyTeamId = secretKey.team;
-    req.secretKeyRoleId = role?.id || secretKey.role;
-    req.teamPermissions = role?.permissions ?? [];
+    req.teamRole = secretKey.role;
     req.userId = createdById;
 
     await SecretKey.update({ id: secretKeyId }, { lastUsedAt: new Date() });

@@ -117,14 +117,6 @@ const CONTEXTUAL_TIPS = {
         delay: 1400,
         position: 'top-center'
     },
-    'team-roles-permissions': {
-        dismissMode: 'manual',
-        title: 'Roles control access granularly',
-        description: 'Assign permissions per resource type to control what each team member can see and do.',
-        buttonLabel: 'Got it',
-        delay: 1600,
-        position: 'top-center'
-    },
     'team-integrations': {
         dismissMode: 'manual',
         title: 'Connect AI providers here',

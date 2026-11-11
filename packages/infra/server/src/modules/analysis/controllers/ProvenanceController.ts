@@ -3,11 +3,11 @@ import { Route } from '@shared/http/route';
 import { Param, Query } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import { ProvenanceService } from '@modules/analysis/services/ProvenanceService';
 import { provenanceRoutes } from '@volt/contracts/modules/analysis/routes';
 
-@Middleware(protect, teamScoped(Resource.ANALYSIS))
+@Middleware(protect, teamScoped(TeamArea.Analysis))
 export default class ProvenanceController extends Controller {
     #service = new ProvenanceService();
 

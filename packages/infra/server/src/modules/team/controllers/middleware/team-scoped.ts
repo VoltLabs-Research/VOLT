@@ -1,35 +1,35 @@
-import { Action } from '@core/constants/permissions';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { checkTeamMembership } from '@modules/team/controllers/middleware/check-team-membership';
 import { HttpStatus } from '@shared/http/constants/HttpStatus';
 import BaseResponse from '@shared/http/responses/BaseResponse';
+import {
+    TeamAccess,
+    hasTeamRole,
+    requiredTeamRole,
+    teamRoleLabel,
+    type TeamArea
+} from '@volt/contracts/modules/team/access';
 import type { RequestHandler, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
 
-const METHOD_ACTION: Record<string, Action> = {
-    GET: Action.READ,
-    HEAD: Action.READ,
-    POST: Action.CREATE,
-    PUT: Action.UPDATE,
-    PATCH: Action.UPDATE,
-    DELETE: Action.DELETE
-};
+const READ_METHODS = new Set(['GET', 'HEAD']);
 
-export const teamScoped = (resource: string): RequestHandler =>
+// Lets a team member through when their role may read (GET, HEAD) or change (anything else) the
+// area. Which role that is comes from the table in @volt/contracts/modules/team/access.
+export const teamScoped = (area: TeamArea): RequestHandler =>
     (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
         checkTeamMembership(req, res, () => {
-            const action = METHOD_ACTION[req.method] ?? Action.READ;
-            const permission = `${resource}:${action}`;
-            const permissions = req.teamPermissions ?? [];
+            const access = READ_METHODS.has(req.method) ? TeamAccess.Read : TeamAccess.Write;
+            const required = requiredTeamRole(area, access);
 
-            if (permissions.includes('*') || permissions.includes(permission)) {
+            if (hasTeamRole(req.teamRole, required)) {
                 next();
                 return;
             }
 
             BaseResponse.error(
                 res,
-                `Missing permission: ${permission}`,
+                `This needs the ${teamRoleLabel(required)} role or higher`,
                 HttpStatus.Forbidden,
                 ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS
             );

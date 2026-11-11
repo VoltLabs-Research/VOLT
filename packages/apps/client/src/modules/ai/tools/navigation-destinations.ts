@@ -1,4 +1,6 @@
 import { resolveConfiguredRouteTitle } from '@/app/routes/metadata';
+import { TeamArea } from '@volt/contracts/modules/team/access';
+import { readAccess, type TeamAccessRequirement } from '@/modules/team/utils/team/team-access';
 
 interface NavigationDestination {
     
@@ -8,7 +10,7 @@ interface NavigationDestination {
     
     optionalParams?: string[];
     
-    requiredPermissions?: string[];
+    requiredAccess?: TeamAccessRequirement[];
     
     description: string;
 }
@@ -113,19 +115,13 @@ const NAVIGATION_DESTINATIONS = {
     my_team: {
         pathTemplate: '/dashboard/my-team',
         requiredParams: [],
-        requiredPermissions: ['team:read'],
+        requiredAccess: [readAccess(TeamArea.Team)],
         description: 'My team'
-    },
-    manage_roles: {
-        pathTemplate: '/dashboard/manage-roles',
-        requiredParams: [],
-        requiredPermissions: ['team-role:read'],
-        description: 'Manage roles'
     },
     secret_keys: {
         pathTemplate: '/dashboard/settings/secret-keys',
         requiredParams: [],
-        requiredPermissions: ['team-secret-key:read'],
+        requiredAccess: [readAccess(TeamArea.TeamSecretKey)],
         description: 'Secret keys'
     },
     secret_key_metrics: {

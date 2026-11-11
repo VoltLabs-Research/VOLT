@@ -4,7 +4,7 @@ import { Route } from '@shared/http/route';
 import { Body, CurrentUser, Param, Req, Res, schemaBody } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import pluginCrudService from '@modules/plugin/services/plugin/PluginCrudService';
 import pluginArchiveService, { type RegistryInstallPluginInput } from '@modules/plugin/services/plugin/PluginArchiveService';
 import pluginBinaryStorageService from '@modules/plugin/services/plugin/PluginBinaryStorageService';
@@ -130,7 +130,7 @@ const importUploadSingleFile = (fieldName: string) => (
     });
 };
 
-@Middleware(protect, teamScoped(Resource.PLUGIN))
+@Middleware(protect, teamScoped(TeamArea.Plugin))
 export default class PluginController extends Controller {
 
     @Route(pluginRoutes.getListingRowsByAnalysisId)

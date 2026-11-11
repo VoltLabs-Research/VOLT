@@ -27,10 +27,6 @@ export const DASHBOARD_NAVIGATION_ICONS: Record<DashboardNavigationIconKey, Icon
         inactive: LayoutGrid,
         active: LayoutGrid
     },
-    [DashboardNavigationIconKey.ManageRoles]: {
-        inactive: KeyRound,
-        active: KeyRound
-    },
     [DashboardNavigationIconKey.MyTeam]: {
         inactive: Users,
         active: Users

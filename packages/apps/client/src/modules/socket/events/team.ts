@@ -23,12 +23,6 @@ export const SOCKET_TEAM_MEMBER_EVENTS = {
     LEFT: 'team-member.left'
 } as const;
 
-export const SOCKET_TEAM_ROLE_EVENTS = {
-    CREATED: 'team-role.created',
-    DELETED: 'team-role.deleted',
-    UPDATED: 'team-role.updated'
-} as const;
-
 export const SOCKET_SECRET_KEY_EVENTS = {
     CREATED: 'secret-key.created',
     DELETED: 'secret-key.deleted'

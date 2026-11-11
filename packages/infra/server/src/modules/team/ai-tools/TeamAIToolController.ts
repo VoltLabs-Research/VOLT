@@ -6,6 +6,7 @@ import teamService from '@modules/team/services/TeamService';
 import teamMemberService from '@modules/team/services/TeamMemberService';
 import teamAIIntegrationService from '@modules/team/services/TeamAIIntegrationService';
 import type { GetTeamContextInput } from '@volt/contracts/modules/team/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 export default class TeamAIToolController extends AIToolController {
     @AITool({
@@ -14,7 +15,7 @@ export default class TeamAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetTeamContextInput>(),
         validate: typia.createValidate<GetTeamContextInput>(),
         access: AIToolAccess.Read,
-        permission: 'team:read'
+        area: TeamArea.Team
     })
     async getTeamContext(input: GetTeamContextInput & AIToolScope) {
         const team = await teamService.getById(input.teamId);

@@ -53,6 +53,7 @@ export const ErrorCodes = createErrorCodes({
     STORAGE_PLACEMENT_NOT_FOUND: 'StoragePlacement::NotFound',
 
     RBAC_INSUFFICIENT_PERMISSIONS: 'RBAC::InsufficientPermissions',
+    TEAM_LAST_OWNER: 'Team::LastOwner',
     TEAM_MEMBERSHIP_FORBIDDEN: 'Team::Membership::Forbidden',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
 
@@ -116,8 +117,6 @@ export const ErrorCodes = createErrorCodes({
     REGISTRY_PLATFORM_BUILD_MISSING: 'Registry::PlatformBuildMissing',
     REGISTRY_PACKAGE_NOT_FOUND: 'Registry::PackageNotFound',
 
-    TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',
-    TEAM_ROLE_IS_SYSTEM: 'TeamRole::IsSystem',
 
     TEAM_MEMBER_NOT_FOUND: 'TeamMember::NotFound',
 

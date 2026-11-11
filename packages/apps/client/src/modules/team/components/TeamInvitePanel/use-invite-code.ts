@@ -1,11 +1,12 @@
 import { useGenerateInviteCodeMutation, useDeleteInviteCodeMutation } from '@/modules/team/hooks/team/queries';
 import { useSelectedTeam, useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
 import { useCallback } from 'react';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const GENERATE_INVITE_CODE_TOAST_OPTIONS = createPromiseToastOptions({
     loading: 'Generating invite code...',
@@ -27,11 +28,11 @@ const getTeamInviteLink = (inviteCode: string): string => {
 
 export default function useInviteCode() {
     const teamId = useSelectedTeamId();
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
 
     const selectedTeam = useSelectedTeam();
 
-    const canManageCode = canAccess(['team-invitation:create']);
+    const canManageCode = can(TeamArea.TeamInvitation, TeamAccess.Write);
 
     const generateMutation = useGenerateInviteCodeMutation();
     const deleteMutation = useDeleteInviteCodeMutation();

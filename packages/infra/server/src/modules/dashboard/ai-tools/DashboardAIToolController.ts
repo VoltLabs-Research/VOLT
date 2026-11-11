@@ -18,7 +18,7 @@ export default class DashboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetDashboardMetricsInput>(),
         validate: typia.createValidate<GetDashboardMetricsInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     async getDashboardMetrics(input: GetDashboardMetricsInput & AIToolScope) {
         const metrics = await teamMetricsQueryService.getTeamMetrics({ teamId: input.teamId });
@@ -38,7 +38,7 @@ export default class DashboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GlobalSearchInput>(),
         validate: typia.createValidate<GlobalSearchInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     async globalSearch(input: GlobalSearchInput & AIToolScope) {
         const { analyses, trajectories, teams, plugins } = await dashboardService.getGlobalSearch(input);

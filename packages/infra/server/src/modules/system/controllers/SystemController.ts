@@ -13,12 +13,6 @@ export default class SystemController extends Controller {
         return systemService.getConfig();
     }
 
-    @Route(systemRoutes.rbac)
-    @Middleware(protect)
-    getRbac() {
-        return systemService.getRbac();
-    }
-
     @Route(systemRoutes.update)
     @Middleware(protect)
     getUpdate(@CurrentUser() user: User) {

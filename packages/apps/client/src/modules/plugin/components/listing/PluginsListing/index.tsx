@@ -3,7 +3,7 @@ import { Ban, Check, Copy, Download, FilePen, Pencil, Upload } from 'lucide-reac
 import { fetchPlugins, PLUGIN_QUERY_KEYS, useClonePluginMutation, useDeletePluginMutation, useImportPluginMutation, useUpdatePluginMutation } from '@/modules/plugin/hooks/plugin/queries';
 import useExportPlugin from './use-export-plugin';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { PluginStatus } from '@volt/contracts/modules/plugin/enums';
 import { SOCKET_PLUGIN_EVENTS } from '@/modules/socket/events/plugin';
 import { runAction } from '@/shared/ui/actions/run-action';
@@ -20,6 +20,8 @@ import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentLi
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
 import { useNavigate } from 'react-router-dom';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
+import { readAccess, writeAccess } from '@/modules/team/utils/team/team-access';
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [SOCKET_PLUGIN_EVENTS.CREATED, SOCKET_PLUGIN_EVENTS.DELETED].map((event) => ({
     event,
@@ -127,9 +129,9 @@ const PluginsListing = () => {
     const navigate = useNavigate();
     const importInputRef = useRef<HTMLInputElement>(null);
     const selectedTeam = useSelectedTeam()!;
-    const { canAccess } = useTeamPermissions();
-    const canCreate = canAccess(['plugin:create']);
-    const canUpdate = canAccess(['plugin:update']);
+    const { can } = useTeamAccess();
+    const canCreate = can(TeamArea.Plugin, TeamAccess.Write);
+    const canUpdate = can(TeamArea.Plugin, TeamAccess.Write);
 
     const clonePluginMutation = useClonePluginMutation();
     const updatePluginMutation = useUpdatePluginMutation();
@@ -171,7 +173,7 @@ const PluginsListing = () => {
                 label: 'Edit',
                 icon: Pencil,
                 handler: ({ item }) => navigate(`/plugins/builder?id=${item._id}`),
-                requiredPermission: 'plugin:update'
+                requiredAccess: writeAccess(TeamArea.Plugin)
             },
             clone: {
                 label: 'Clone',
@@ -186,7 +188,7 @@ const PluginsListing = () => {
                         afterSuccess: (plugin) => navigate(`/plugins/builder?id=${plugin._id}`)
                     });
                 },
-                requiredPermission: 'plugin:create'
+                requiredAccess: writeAccess(TeamArea.Plugin)
             },
             export: {
                 label: 'Export',
@@ -195,7 +197,7 @@ const PluginsListing = () => {
                     pluginId: item._id,
                     filename: `${item.modifier?.name || item._id}.zip`
                 }),
-                requiredPermission: 'plugin:read'
+                requiredAccess: readAccess(TeamArea.Plugin)
             },
             delete: {
                 handler: async ({ item }) => {
@@ -210,7 +212,7 @@ const PluginsListing = () => {
                     untitledLabel: 'Untitled Plugin',
                     getTitle: (plugin) => plugin.modifier?.name ?? plugin._id
                 })(selectedItems),
-                requiredPermission: 'plugin:delete'
+                requiredAccess: writeAccess(TeamArea.Plugin)
             }
         }
     });

@@ -1,12 +1,12 @@
 import eventBus from '@shared/events/PostgresEventBus';
 import { ErrorCodes } from '@core/constants/error-codes';
-import { SystemRoleNames } from '@core/constants/system-roles';
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
 import TeamInvitation from '@modules/team/models/TeamInvitation';
 import TeamMember from '@modules/team/models/TeamMember';
-import TeamRole from '@modules/team/models/TeamRole';
 import { TeamInvitationStatus } from '@volt/contracts/modules/team/domain';
+import { TeamRole } from '@volt/contracts/modules/team/access';
+import { assertCanGrantTeamRole } from '@modules/team/services/team/team-role-grants';
 import { addTeamToUser } from '@modules/team/services/team/user-team-links';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { paginate, readPageRequest, skipFor } from '@shared/persistence/paginate';
@@ -28,8 +28,10 @@ const assertInvitedUser = (invitation: TeamInvitation, userId: string): void => 
 };
 
 class TeamInvitationService{
-    async send(teamId: string, userId: string, input: SendTeamInvitationInput): Promise<TeamInvitation>{
+    async send(teamId: string, userId: string, actorRole: TeamRole | undefined, input: SendTeamInvitationInput): Promise<TeamInvitation>{
         const normalizedEmail = input.email.trim().toLowerCase();
+        const role = input.role ?? TeamRole.Member;
+        assertCanGrantTeamRole(actorRole, role);
 
         const team = await Team.findOneBy({ id: teamId });
         if(!team){
@@ -58,23 +60,13 @@ class TeamInvitationService{
             throw ApplicationError.badRequest(ErrorCodes.TEAM_INVITATION_ALREADY_SENT, 'Invitation already sent to this email');
         }
 
-        const role = input.roleId
-            ? await TeamRole.findOneBy({ id: input.roleId })
-            : await TeamRole.findOneBy({
-                name: 'Member',
-                team: teamId
-            });
-        if(!role){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Team role not found');
-        }
-
         const invitation = await TeamInvitation.create({
             team: teamId,
             invitedBy: userId,
             invitedUser: user.id,
             email: normalizedEmail,
             token: crypto.randomBytes(32).toString('hex'),
-            role: role.id,
+            role,
             expiresAt: new Date(Date.now() + INVITATION_TTL_MS),
             status: TeamInvitationStatus.Pending
         }).save();
@@ -109,8 +101,11 @@ class TeamInvitationService{
         await invitation.remove();
     }
 
-    async updateById(teamId: string, invitationId: string, data: UpdateTeamInvitationInput): Promise<TeamInvitation>{
+    async updateById(teamId: string, invitationId: string, actorRole: TeamRole | undefined, data: UpdateTeamInvitationInput): Promise<TeamInvitation>{
         const invitation = await this.#requireInvitation(teamId, invitationId);
+        if(data.role !== undefined){
+            assertCanGrantTeamRole(actorRole, data.role);
+        }
         return Object.assign(invitation, data as Partial<TeamInvitation>).save();
     }
 
@@ -175,18 +170,10 @@ class TeamInvitationService{
         }
         assertInvitedUser(invitation, userId);
 
-        const ownerRole = await TeamRole.findOneBy({
-            name: SystemRoleNames.OWNER,
-            team: invitation.team
-        });
-        if(!ownerRole){
-            throw ApplicationError.notFound(ErrorCodes.TEAM_ROLE_NOT_FOUND, 'Owner role not found');
-        }
-
         await TeamMember.create({
             team: invitation.team,
             user: userId,
-            role: ownerRole.id,
+            role: invitation.role,
             joinedAt: new Date()
         }).save();
         await addTeamToUser(userId, invitation.team);

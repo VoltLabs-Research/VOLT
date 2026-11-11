@@ -1,9 +1,10 @@
 import { getDashboardNavigationItems } from '@/app/routes/metadata';
 import { DASHBOARD_NAVIGATION_ICONS } from '@/app/routes/navigation-icons';
-import { DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
+import { DashboardNavigationSection } from '@/app/routes/types';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 import NavTreeSection from '@/modules/dashboard/components/AppNav/NavTreeSection';
 import useSidebarClusters from '@/modules/cluster/hooks/use-sidebar-clusters';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import useVisibleNavigationItems from '@/modules/dashboard/hooks/use-visible-navigation-items';
 import useDefaultSettingsPath from '@/modules/dashboard/hooks/use-default-settings-path';
 import { TRAJECTORIES_LIST_PATH } from '@/modules/dashboard/utils/sidebar-panels';
@@ -34,7 +35,7 @@ const ANALYSIS_PATH = '/dashboard/analysis';
 
 const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavProps) => {
     const { pathname } = useLocation();
-    const { canAccess: canAccessPermissions } = useTeamPermissions();
+    const { can, meets } = useTeamAccess();
     const sidebarClusters = useSidebarClusters(setSidebarOpen);
     const visibleNavigationItems = useVisibleNavigationItems();
     const defaultSettingsPath = useDefaultSettingsPath();
@@ -49,9 +50,8 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
     };
 
     const canAccess = (item: DashboardNavigationItem): boolean => {
-        const permissionMode = item.permissionMode === RoutePermissionMode.All ? 'all' : 'any';
 
-        return canAccessPermissions(item.requiredPermissions, permissionMode);
+        return meets(item.requiredAccess);
     };
 
     const clustersItems = useMemo<NavTreeNode[]>(() => [
@@ -85,9 +85,9 @@ const AppNav = ({ active, collapsed, setSidebarOpen, onExpandSidebar }: AppNavPr
         }
     ], [pathname]);
 
-    const canAccessTrajectories = canAccessPermissions(['trajectory:read']);
-    const canAccessAnalysis = canAccessPermissions(['analysis:read']);
-    const canAccessPlugins = canAccessPermissions(['plugin:read']);
+    const canAccessTrajectories = can(TeamArea.Trajectory, TeamAccess.Read);
+    const canAccessAnalysis = can(TeamArea.Analysis, TeamAccess.Read);
+    const canAccessPlugins = can(TeamArea.Plugin, TeamAccess.Read);
 
     // Analysis is one page; the run reports and the older listing pages keep it selected.
     const analysisActive = pathname.startsWith('/dashboard/analysis') || isAnalysisPluginListingRoute;

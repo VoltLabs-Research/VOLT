@@ -11,6 +11,7 @@ import type { ChatFrame } from '@modules/ai/contracts/chat';
 import { AIProvider } from '@volt/contracts/modules/ai/domain';
 import type { ChatTurnPayload } from '@volt/contracts/modules/ai/socket';
 import { generateEntityId } from '@shared/persistence/entity-id';
+import { TeamRole } from '@volt/contracts/modules/team/access';
 
 type LanguageModelV4StreamPart = Awaited<ReturnType<MockLanguageModelV4['doStream']>>['stream'] extends ReadableStream<infer Part> ? Part : never;
 
@@ -85,7 +86,7 @@ export const scriptedModel = (steps: LanguageModelV4StreamPart[][]): MockLanguag
 export interface Harness {
     userId: string;
     teamId: string;
-    permissions: string[];
+    role: TeamRole;
     useModel: (model: MockLanguageModelV4) => void;
     conversation: () => Promise<AIConversation>;
     turn: (payload: ChatTurnPayload, origin?: string) => Promise<ChatFrame[]>;
@@ -113,7 +114,7 @@ export const startHarness = async (): Promise<Harness> => {
     const harness: Harness = {
         userId: user.id,
         teamId: team.id,
-        permissions: ['*'],
+        role: TeamRole.Owner,
         useModel: (model) => {
             modelResolver.resolve = async () => ({
                 model,
@@ -135,7 +136,7 @@ export const startHarness = async (): Promise<Harness> => {
         close: () => disconnectDatabase()
     };
 
-    teamService.getMyPermissions = async () => ({ permissions: harness.permissions });
+    teamService.roleOf = async () => harness.role;
 
     return harness;
 };

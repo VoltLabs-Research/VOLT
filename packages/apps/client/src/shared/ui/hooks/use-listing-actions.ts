@@ -1,10 +1,11 @@
 import { confirm, confirmDelete } from './use-confirm';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { useCallback } from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import type { Identifiable } from '@/shared/contracts/entity';
 import type { MenuIconProps, MenuOption } from '@/shared/contracts/menu';
+import type { TeamAccessRequirement } from '@/modules/team/utils/team/team-access';
 
 interface NamedEntity {
     name: string;
@@ -17,7 +18,7 @@ export interface ActionConfig<T = unknown> {
     confirm?: boolean | string | ((payload: { item: T; selectedItems: T[] }) => string);
     variant?: 'default' | 'danger';
     scope?: 'item' | 'selection';
-    requiredPermission?: string;
+    requiredAccess?: TeamAccessRequirement;
 };
 
 interface UseListingActionsConfig<T = unknown> {
@@ -101,15 +102,15 @@ const shouldConfirm = async <T,>(actionConfig: ActionConfig<T>, item: T, selecte
 const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): UseListingActionsReturn<T> => {
     const { actions } = config;
 
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
 
-    const hasPermission = useCallback((permission?: string): boolean => {
-        return !permission || canAccess([permission]);
-    }, [canAccess]);
+    const isAllowed = useCallback((requirement?: TeamAccessRequirement): boolean => {
+        return !requirement || can(requirement.area, requirement.access);
+    }, [can]);
 
     const executeAction = useCallback(async (actionKey: string, item: T, selectedItems: T[]): Promise<void> => {
         const actionConfig = actions[actionKey];
-        if (!actionConfig || !hasPermission(actionConfig.requiredPermission)) {
+        if (!actionConfig || !isAllowed(actionConfig.requiredAccess)) {
             return;
         }
 
@@ -135,13 +136,13 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
             item: primaryItem,
             selectedItems: targets
         });
-    }, [actions, hasPermission]);
+    }, [actions, isAllowed]);
 
     const getMenuOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {
         const actionEntries = Object.entries(actions);
 
         return actionEntries
-            .filter(([, actionConfig]) => hasPermission(actionConfig.requiredPermission))
+            .filter(([, actionConfig]) => isAllowed(actionConfig.requiredAccess))
             .map(([actionKey, actionConfig]) => {
                 const label = getActionLabel(actionKey, actionConfig);
                 const icon = getActionIcon(actionKey, actionConfig);
@@ -155,7 +156,7 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
                     destructive
                 };
             });
-    }, [actions, hasPermission, executeAction]);
+    }, [actions, isAllowed, executeAction]);
 
     const getSelectionActionOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {
         if (selectedItems.length <= 1) {

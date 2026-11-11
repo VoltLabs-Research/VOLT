@@ -3,6 +3,7 @@ import { DashboardNavigationSection } from '@/app/routes/types';
 import { registerRouteLoader } from '@/shared/utils/route-prefetch';
 import { matchPath } from 'react-router-dom';
 import type { RouteConfig, RouteNavigationConfig } from '@/app/routes/types';
+import type { TeamAccessRequirement } from '@/modules/team/utils/team/team-access';
 
 interface RouteManifestEntry {
     order: number;
@@ -15,8 +16,7 @@ export interface DashboardNavigationItem {
     label: string;
     path: string;
     icon: RouteNavigationConfig['icon'];
-    requiredPermissions?: string[];
-    permissionMode?: RouteConfig['permissionMode'];
+    requiredAccess?: TeamAccessRequirement[];
     disabledReason?: string;
     multiTenantOnly?: boolean;
     requiresMachine?: boolean;
@@ -110,8 +110,7 @@ routeManifestEntries.forEach((entry) => {
         label: entry.route.navigation.label,
         path: resolveDashboardNavigationPath(entry.path),
         icon: entry.route.navigation.icon,
-        requiredPermissions: entry.route.requiredPermissions,
-        permissionMode: entry.route.permissionMode,
+        requiredAccess: entry.route.requiredAccess,
         disabledReason: entry.route.navigation.disabledReason,
         multiTenantOnly: entry.route.navigation.multiTenantOnly,
         requiresMachine: entry.route.requiresMachine

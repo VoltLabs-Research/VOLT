@@ -16,16 +16,6 @@ export default class DailyActivityEvents {
         await dailyActivityService.recordActivity(teamId, userId, ActivityType.AnalysisPerformed, `started analysis on ${pluginName} for trajectory ${trajectoryName}`);
     }
 
-    @Event('team-role.created')
-    async teamRoleCreated({ teamId, userId, name }: EventMap['team-role.created']) {
-        await dailyActivityService.recordActivity(teamId, userId, ActivityType.RoleCreation, `Created role "${name}"`);
-    }
-
-    @Event('team-role.deleted')
-    async teamRoleDeleted({ teamId, userId, roleName }: EventMap['team-role.deleted']) {
-        await dailyActivityService.recordActivity(teamId, userId, ActivityType.RoleDeletion, `Deleted role "${roleName}"`);
-    }
-
     @Event('secret-key.created')
     async secretKeyCreated({ teamId, userId, name }: EventMap['secret-key.created']) {
         await dailyActivityService.recordActivity(teamId, userId, ActivityType.SecretKeyCreation, `Created secret key "${name}"`);

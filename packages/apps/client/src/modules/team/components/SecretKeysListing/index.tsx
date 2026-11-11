@@ -2,7 +2,7 @@ import { SECRET_KEY_CREATION_MODAL_ID } from '@/modules/team/contracts/modal-ids
 import { Button, Chip } from '@heroui/react';
 import { openModal } from '@/shared/ui/modal/use-modal-store';
 import { useSelectedTeam } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { runAction } from '@/shared/ui/actions/run-action';
 import { dateColumn, statusColumn, userColumn } from '@/shared/ui/utils/column-presets';
 import { copyTextToClipboard } from '@/shared/ui/utils/copy-to-clipboard';
@@ -21,6 +21,8 @@ import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentLi
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 import { SOCKET_SECRET_KEY_EVENTS } from '@/modules/socket/events/team';
 import { useNavigate } from 'react-router-dom';
+import { TeamAccess, TeamArea, teamRoleLabel } from '@volt/contracts/modules/team/access';
+import { readAccess, writeAccess } from '@/modules/team/utils/team/team-access';
 const SECRET_KEYS_QUERY_KEY = ['secret-keys'] as const;
 
 const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
@@ -64,9 +66,9 @@ const COLUMNS: ColumnConfig<SecretKey>[] = [
         }
     },
     {
-        key: 'roleName',
+        key: 'role',
         title: 'Role',
-        render: (_value, key) => key.roleName || 'Unknown Role',
+        render: (_value, key) => teamRoleLabel(key.role),
         skeleton: {
             variant: 'text',
             width: 100
@@ -89,8 +91,8 @@ export default function SecretKeysListing() {
     useTip('secret-keys-quick-create');
 
     const navigate = useNavigate();
-    const { canAccess } = useTeamPermissions();
-    const canCreate = canAccess(['team-secret-key:create']);
+    const { can } = useTeamAccess();
+    const canCreate = can(TeamArea.TeamSecretKey, TeamAccess.Write);
     const selectedTeam = useSelectedTeam();
     const { queryKey, fetchData } = useSecretKeysListing(selectedTeam?._id);
     const revokeSecretKeyMutation = useRevokeSecretKeyMutation();
@@ -109,13 +111,13 @@ export default function SecretKeysListing() {
                 label: 'View Usage',
                 icon: ChartLine,
                 handler: ({ item: key }) => navigate(`/dashboard/settings/secret-keys/${key._id}`),
-                requiredPermission: 'team-secret-key:read'
+                requiredAccess: readAccess(TeamArea.TeamSecretKey)
             },
             copy: {
                 label: 'Copy Prefix',
                 icon: Copy,
                 handler: ({ item: key }) => copySecretKeyPrefix(key),
-                requiredPermission: 'team-secret-key:read'
+                requiredAccess: readAccess(TeamArea.TeamSecretKey)
             },
             revoke: {
                 label: 'Revoke Key',
@@ -132,7 +134,7 @@ export default function SecretKeysListing() {
                         ? `Are you sure you want to revoke the secret key "${selectedItems[0].name}"? Any applications using this key will immediately lose access.`
                         : `Are you sure you want to revoke ${selectedItems.length} secret keys? Any applications using these keys will immediately lose access.`
                 ),
-                requiredPermission: 'team-secret-key:update'
+                requiredAccess: writeAccess(TeamArea.TeamSecretKey)
             },
             delete: {
                 label: 'Delete',
@@ -153,7 +155,7 @@ export default function SecretKeysListing() {
                         ? `Are you sure you want to permanently delete the secret key "${selectedItems[0].name}"? This action cannot be undone.`
                         : `Are you sure you want to permanently delete ${selectedItems.length} secret keys? This action cannot be undone.`
                 ),
-                requiredPermission: 'team-secret-key:delete'
+                requiredAccess: writeAccess(TeamArea.TeamSecretKey)
             }
         }
     });

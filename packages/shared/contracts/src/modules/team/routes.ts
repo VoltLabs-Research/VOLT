@@ -4,8 +4,6 @@ import type {
     UpdateTeamInput,
     SetDefaultTeamInput,
     UpdateTeamMemberInput,
-    CreateTeamRoleInput,
-    UpdateTeamRoleInput,
     SendTeamInvitationInput,
     UpdateTeamInvitationInput,
     TeamInvitationStatusInput,
@@ -17,11 +15,9 @@ import type {
     JoinTeamResponse,
     PreviewJoinTeamResponse,
     CheckInvitePermissionResponse,
-    GetMyTeamPermissionsResponse,
+    GetMyTeamRoleResponse,
     DeleteInviteCodeResponse,
     TeamMember,
-    TeamRole,
-    DeleteTeamRoleResponse,
     TeamInvitation,
     TeamInvitationActionResponse,
     CreateSecretKeyResponse,
@@ -52,7 +48,7 @@ export const teamRoutes = {
     deleteInviteCode: del<DeleteInviteCodeResponse>('/api/teams/:teamId/invite-codes'),
 
     
-    getMyPermissions: get<GetMyTeamPermissionsResponse>('/api/teams/:teamId/self/permissions'),
+    getMyRole: get<GetMyTeamRoleResponse>('/api/teams/:teamId/self/role'),
     leave: del('/api/teams/:teamId/self/membership')
 } as const;
 
@@ -61,14 +57,6 @@ export const teamMemberRoutes = {
     get: get<TeamMember>('/api/teams/:teamId/members/:teamMemberId'),
     update: patch<UpdateTeamMemberInput, TeamMember>('/api/teams/:teamId/members/:teamMemberId'),
     remove: del('/api/teams/:teamId/members/:memberId')
-} as const;
-
-export const teamRoleRoutes = {
-    list: get<TeamRole>('/api/teams/:teamId/roles'),
-    create: post<CreateTeamRoleInput, TeamRole>('/api/teams/:teamId/roles'),
-    remove: del<DeleteTeamRoleResponse>('/api/teams/:teamId/roles/:roleId'),
-    get: get<TeamRole>('/api/teams/:teamId/roles/:roleId'),
-    update: patch<UpdateTeamRoleInput, TeamRole>('/api/teams/:teamId/roles/:roleId')
 } as const;
 
 export const teamInvitationRoutes = {

@@ -2,7 +2,7 @@ import { jsonSchema, tool } from 'ai';
 import type { Tool, ToolSet } from 'ai';
 import type AIToolController from '@shared/ai/AIToolController';
 import type { AIToolBinding } from '@shared/ai/AIToolController';
-import { AIToolRunner } from '@shared/ai/tool';
+import { AIToolAccess, AIToolRunner } from '@shared/ai/tool';
 import type { AIToolDefinition } from '@shared/ai/tool';
 import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
@@ -11,6 +11,7 @@ import browserToolBridge from '@modules/ai/services/tools/BrowserToolBridge';
 import { withoutRefs } from '@modules/ai/services/tools/schema-refs';
 import { complaintOf } from '@modules/ai/services/tools/validation-complaint';
 import type { ChatToolContext } from '@modules/ai/contracts/chat';
+import { TeamAccess, canAccessTeamArea, type TeamRole } from '@volt/contracts/modules/team/access';
 
 type AIToolControllerConstructor = new () => AIToolController;
 
@@ -23,8 +24,10 @@ export interface OfferedTools {
     approvals: Record<string, ApprovalRule>;
 }
 
-const isPermitted = (definition: AIToolDefinition, permissions: readonly string[]): boolean =>
-    definition.permission === null || permissions.includes('*') || permissions.includes(definition.permission);
+// A tool is offered to whoever may read or change, as its access says, the area it touches.
+const isPermitted = (definition: AIToolDefinition, role: TeamRole): boolean =>
+    definition.area === null
+    || canAccessTeamArea(role, definition.area, definition.access === AIToolAccess.Read ? TeamAccess.Read : TeamAccess.Write);
 
 class ToolRegistry {
     #bindings = new Map<string, AIToolBinding>();
@@ -44,8 +47,8 @@ class ToolRegistry {
         }
     }
 
-    offered(permissions: readonly string[], context: ChatToolContext): OfferedTools {
-        const permitted = [...this.#bindings.values()].filter((binding) => isPermitted(binding.definition, permissions));
+    offered(role: TeamRole, context: ChatToolContext): OfferedTools {
+        const permitted = [...this.#bindings.values()].filter((binding) => isPermitted(binding.definition, role));
 
         return {
             tools: Object.fromEntries(permitted.map((binding) => [binding.definition.name, this.#sdkTool(binding, context)])),
@@ -58,9 +61,9 @@ class ToolRegistry {
 
     // An approved card runs here rather than through the model's loop, after checking again that
     // the caller may use it and that its stored input still validates.
-    async run(name: string, context: ChatToolContext, permissions: readonly string[], input: unknown, toolCallId: string, signal?: AbortSignal): Promise<unknown> {
+    async run(name: string, context: ChatToolContext, role: TeamRole, input: unknown, toolCallId: string, signal?: AbortSignal): Promise<unknown> {
         const binding = this.#bindings.get(name);
-        if (binding === undefined || !isPermitted(binding.definition, permissions)) {
+        if (binding === undefined || !isPermitted(binding.definition, role)) {
             throw ApplicationError.notFound(ErrorCodes.AI_TOOL_NOT_FOUND, `${name} is not available to this conversation`);
         }
 
