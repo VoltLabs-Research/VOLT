@@ -78,7 +78,6 @@ export const buildControllerParams = (
 
     if (baseParams.secretKeyId === undefined) baseParams.secretKeyId = req.secretKeyId;
     if (baseParams.secretKeyTeamId === undefined) baseParams.secretKeyTeamId = req.secretKeyTeamId;
-    if (baseParams.secretKeyRoleId === undefined) baseParams.secretKeyRoleId = req.secretKeyRoleId;
 
     if (!extendParams) {
         return baseParams;

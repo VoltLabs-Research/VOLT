@@ -12,13 +12,14 @@ import {
 import { runAction } from '@/shared/ui/actions/run-action';
 import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { Package } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { RegistryPackageSummary } from '@volt/contracts/modules/plugin/registry';
 import Scrollable from '@/shared/ui/components/Scrollable';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const SEARCH_DEBOUNCE_MS = 400;
 const RESULTS_PER_PAGE = 30;
@@ -37,8 +38,8 @@ const INSTALL_REGISTRY_PLUGIN_TOAST_OPTIONS = createPromiseToastOptions({
 const MarketplacePage = () => {
     usePageTitle('Marketplace');
 
-    const { canAccess } = useTeamPermissions();
-    const canInstall = canAccess(['plugin:create']);
+    const { can } = useTeamAccess();
+    const canInstall = can(TeamArea.Plugin, TeamAccess.Write);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedFullName = searchParams.get(SELECTED_PACKAGE_PARAM);

@@ -4,7 +4,7 @@ import { Route, Status } from '@shared/http/route';
 import { Body, schemaBody, Param, Query, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/errors/ApplicationError';
 import conversationService from '@modules/ai/services/ConversationService';
@@ -14,7 +14,7 @@ import chatStreamService from '@modules/ai/services/chat/ChatStreamService';
 import { aiRoutes } from '@volt/contracts/modules/ai/routes';
 import type { CreateAIConversationInput, UpdateAIConversationInput } from '@volt/contracts/modules/ai/http';
 
-@Middleware(protect, teamScoped(Resource.AI_CONVERSATION))
+@Middleware(protect, teamScoped(TeamArea.AIConversation))
 export default class AiController extends Controller {
     @Route(aiRoutes.listConversations)
     listConversations(

@@ -3,7 +3,7 @@ import logger from '@shared/logger';
 
 // Tables no entity maps any more. synchronize never drops a table, so their rows would outlive
 // the feature that wrote them. Ordered so that a table goes before the tables it references.
-const RETIRED_TABLES = ['ai_messages', 'ai_conversations'];
+const RETIRED_TABLES = ['ai_messages', 'ai_conversations', 'team_roles'];
 
 export const dropRetiredTables = async (dataSource: DataSource): Promise<void> => {
     const runner = dataSource.createQueryRunner();

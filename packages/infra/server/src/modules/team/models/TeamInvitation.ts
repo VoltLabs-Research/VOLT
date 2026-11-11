@@ -3,7 +3,8 @@ import BaseModel from '@shared/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
-import TeamRole from '@modules/team/models/TeamRole';
+import { TeamRoleColumn } from '@modules/team/models/team-role-column';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 import { TeamInvitationStatus } from '@volt/contracts/modules/team/domain';
 
 @Entity('team_invitations')
@@ -42,12 +43,8 @@ export default class TeamInvitation extends BaseModel{
     })
     token!: string;
 
-    @ManyToOne(() => TeamRole, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'role' })
-    roleRef?: TeamRole;
-
-    @ReferenceColumn()
-    role!: string;
+    @TeamRoleColumn()
+    role!: TeamRole;
 
     @Column({ type: Date })
     expiresAt!: Date;

@@ -4,7 +4,7 @@ import { Route } from '@shared/http/route';
 import { Req, Res, Param, Query, Body, schemaBody, CurrentUser } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import TrajectoryControllerBase from '@modules/trajectory/controllers/TrajectoryControllerBase';
 import { respondWithTrajectoryPreview } from '@modules/trajectory/controllers/trajectory-preview-response';
 import { HttpStatus } from '@shared/http/constants/HttpStatus';
@@ -26,7 +26,7 @@ import colorCodingService from '@modules/trajectory/services/color-coding/ColorC
 import particleFilterService from '@modules/trajectory/services/particle-filter/ParticleFilterService';
 import exposureOctreeService from '@modules/trajectory/services/exposure-octree/ExposureOctreeService';
 
-@Middleware(protect, teamScoped(Resource.TRAJECTORY))
+@Middleware(protect, teamScoped(TeamArea.Trajectory))
 export default class TrajectoryController extends TrajectoryControllerBase {
     @Route(trajectoryRoutes.listSamples)
     async listSamples(@Res() res: Response): Promise<void> {

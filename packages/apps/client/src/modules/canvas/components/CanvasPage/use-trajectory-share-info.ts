@@ -1,12 +1,13 @@
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { useMemo } from 'react';
 
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const useTrajectoryShareInfo = (trajectory: Trajectory | null) => {
     const selectedTeamId = useSelectedTeamId();
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
 
     return useMemo(() => {
         if (!trajectory?._id) {
@@ -19,9 +20,9 @@ const useTrajectoryShareInfo = (trajectory: Trajectory | null) => {
         return {
             trajectoryId: trajectory._id,
             isPublic: Boolean(trajectory.isPublic),
-            canManageVisibility: isTeamOwner && canAccess(['trajectory:update'])
+            canManageVisibility: isTeamOwner && can(TeamArea.Trajectory, TeamAccess.Write)
         };
-    }, [canAccess, selectedTeamId, trajectory?._id, trajectory?.isPublic, trajectory?.team]);
+    }, [can, selectedTeamId, trajectory?._id, trajectory?.isPublic, trajectory?.team]);
 };
 
 export default useTrajectoryShareInfo;

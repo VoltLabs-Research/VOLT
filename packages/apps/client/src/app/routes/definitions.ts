@@ -1,5 +1,7 @@
-import { DashboardNavigationIconKey, DashboardNavigationSection, RoutePermissionMode } from '@/app/routes/types';
+import { DashboardNavigationIconKey, DashboardNavigationSection } from '@/app/routes/types';
 import type { RouteConfig } from '@/app/routes/types';
+import { TeamArea } from '@volt/contracts/modules/team/access';
+import { readAccess, writeAccess } from '@/modules/team/utils/team/team-access';
 
 export const publicRoutes: RouteConfig[] = [
     {
@@ -77,7 +79,7 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/my-team',
         title: 'My Team',
         loader: () => import('@/modules/team/components/MyTeam'),
-        requiredPermissions: ['team:read'],
+        requiredAccess: [readAccess(TeamArea.Team)],
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'My Team',
@@ -87,23 +89,10 @@ export const protectedRoutes: RouteConfig[] = [
         }
     },
     {
-        path: '/dashboard/manage-roles',
-        title: 'Manage Roles',
-        loader: () => import('@/modules/team/components/ManageRoles'),
-        requiredPermissions: ['team-role:read'],
-        navigation: {
-            section: DashboardNavigationSection.Secondary,
-            label: 'Manage Roles',
-            icon: DashboardNavigationIconKey.ManageRoles,
-            disabledReason: 'You do not have permission to view role management.',
-            multiTenantOnly: true
-        }
-    },
-    {
         path: '/dashboard/settings/secret-keys',
         title: 'Secret Keys',
         loader: () => import('@/modules/team/components/SecretKeysListing'),
-        requiredPermissions: ['team-secret-key:read'],
+        requiredAccess: [readAccess(TeamArea.TeamSecretKey)],
 
         navigation: {
             section: DashboardNavigationSection.Settings,
@@ -115,94 +104,91 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/settings/secret-keys/metrics',
         title: 'Secret Key Metrics',
         loader: () => import('@/modules/team/components/SecretKeyMetrics'),
-        requiredPermissions: ['team-secret-key:read']
+        requiredAccess: [readAccess(TeamArea.TeamSecretKey)]
     },
     {
         path: '/dashboard/settings/secret-keys/:secretKeyId',
         title: 'Secret Key',
         loader: () => import('@/modules/team/components/SecretKeyUsage'),
-        requiredPermissions: ['team-secret-key:read']
+        requiredAccess: [readAccess(TeamArea.TeamSecretKey)]
     },
     {
         path: '/dashboard/trajectories/list',
         title: 'Trajectories',
         loader: () => import('@/modules/trajectory/components/TrajectoriesListing'),
-        requiredPermissions: ['trajectory:read']
+        requiredAccess: [readAccess(TeamArea.Trajectory)]
     },
     {
         path: '/dashboard/trajectories/artifacts',
         title: 'Trajectory Artifacts',
         loader: () => import('@/modules/trajectory/components/TrajectoryArtifactsListing'),
-        requiredPermissions: ['trajectory:read']
+        requiredAccess: [readAccess(TeamArea.Trajectory)]
     },
     {
         path: '/dashboard/whiteboard/:whiteboardId',
         title: 'Whiteboard',
         loader: () => import('@/modules/whiteboards/components/WhiteboardEditorPage'),
-        requiredPermissions: ['whiteboard:read']
+        requiredAccess: [readAccess(TeamArea.Whiteboard)]
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/atoms',
         title: 'Trajectory Atoms',
         loader: () => import('@/modules/trajectory/components/PerAtomViewer'),
-        requiredPermissions: ['trajectory:read']
+        requiredAccess: [readAccess(TeamArea.Trajectory)]
     },
     {
         path: '/dashboard/analysis',
         title: 'Analysis',
         loader: () => import('@/modules/analysis/components/AnalysisPage'),
-        requiredPermissions: ['analysis:read']
+        requiredAccess: [readAccess(TeamArea.Analysis)]
     },
     {
         path: '/dashboard/analysis/:analysisId',
         title: 'Analysis Report',
         loader: () => import('@/modules/analysis/components/AnalysisReportPage'),
-        requiredPermissions: ['analysis:read', 'plugin:read'],
-        permissionMode: RoutePermissionMode.All
+        requiredAccess: [readAccess(TeamArea.Analysis), readAccess(TeamArea.Plugin)]
     },
     {
         path: '/dashboard/simulation-cells/list',
         title: 'Simulation Cells',
         loader: () => import('@/modules/simulation-cell/components/SimulationCellsListing'),
-        requiredPermissions: ['simulation-cell:read']
+        requiredAccess: [readAccess(TeamArea.SimulationCell)]
     },
     {
         path: '/dashboard/plugins/list',
         title: 'Plugins',
         loader: () => import('@/modules/plugin/components/listing/PluginsListing'),
-        requiredPermissions: ['plugin:read']
+        requiredAccess: [readAccess(TeamArea.Plugin)]
     },
     {
         path: '/dashboard/plugins/marketplace',
         title: 'Marketplace',
         loader: () => import('@/modules/plugin/components/marketplace/MarketplacePage'),
-        requiredPermissions: ['plugin:read']
+        requiredAccess: [readAccess(TeamArea.Plugin)]
     },
     {
         path: '/plugins/builder',
         title: 'Plugin Builder',
         loader: () => import('@/modules/plugin/components/plugin/PluginBuilderPage'),
-        requiredPermissions: ['plugin:create']
+        requiredAccess: [writeAccess(TeamArea.Plugin)]
     },
     {
         path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
         title: 'Plugin Listing',
         loader: () => import('@/modules/plugin/components/listing/PluginListingPage'),
-        requiredPermissions: ['plugin:read']
+        requiredAccess: [readAccess(TeamArea.Plugin)]
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginId/exposure/:exposureId/listing',
         title: 'Plugin Listing',
         loader: () => import('@/modules/plugin/components/listing/PluginListingPage'),
-        requiredPermissions: ['plugin:read', 'trajectory:read'],
-        permissionMode: RoutePermissionMode.All
+        requiredAccess: [readAccess(TeamArea.Plugin), readAccess(TeamArea.Trajectory)]
     },
     {
         path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/sub-listings',
         title: 'Sub-Listings',
         loader: () => import('@/modules/plugin/components/listing/SubListingsPage'),
-        requiredPermissions: ['plugin:read', 'trajectory:read'],
-        permissionMode: RoutePermissionMode.All
+        requiredAccess: [readAccess(TeamArea.Plugin), readAccess(TeamArea.Trajectory)]
     },
     {
         path: '/onboarding',
@@ -231,7 +217,7 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/ai/:conversationId?',
         title: 'AI',
         loader: () => import('@/modules/ai/components/AIPage'),
-        requiredPermissions: ['ai-conversation:read'],
+        requiredAccess: [readAccess(TeamArea.AIConversation)],
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'VOLT AI',
@@ -243,7 +229,7 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/notebooks',
         title: 'Notebooks',
         loader: () => import('@/modules/scripting/components/NotebooksListing'),
-        requiredPermissions: ['plugin:read'],
+        requiredAccess: [readAccess(TeamArea.Plugin)],
         navigation: {
             section: DashboardNavigationSection.Main,
             label: 'Notebooks',
@@ -255,13 +241,13 @@ export const protectedRoutes: RouteConfig[] = [
         path: '/dashboard/notebooks/:notebookId',
         title: 'Notebook',
         loader: () => import('@/modules/scripting/components/NotebookEditorPage'),
-        requiredPermissions: ['plugin:read']
+        requiredAccess: [readAccess(TeamArea.Plugin)]
     },
     {
         path: '/dashboard/whiteboards',
         title: 'Whiteboards',
         loader: () => import('@/modules/whiteboards/components/WhiteboardsListing'),
-        requiredPermissions: ['whiteboard:read'],
+        requiredAccess: [readAccess(TeamArea.Whiteboard)],
         navigation: {
             section: DashboardNavigationSection.Secondary,
             label: 'Whiteboards',

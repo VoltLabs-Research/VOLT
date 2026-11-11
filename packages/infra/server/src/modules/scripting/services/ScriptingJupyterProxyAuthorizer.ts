@@ -1,6 +1,4 @@
 import { ErrorCodes } from '@core/constants/error-codes';
-import { Action } from '@core/constants/permissions';
-import { Resource } from '@core/constants/resources';
 import ScriptingNotebook from '@modules/scripting/models/ScriptingNotebook';
 import { ScriptingJupyterAccessTokenService } from '@modules/scripting/services/ScriptingJupyterAccessTokenService';
 import {
@@ -13,6 +11,7 @@ import { requireTeamMembership } from '@modules/team/services/team/team-membersh
 import ApplicationError from '@shared/errors/ApplicationError';
 import logger from '@shared/logger';
 import { parse as parseCookie } from 'cookie';
+import { TeamAccess, TeamArea, canAccessTeamArea } from '@volt/contracts/modules/team/access';
 
 export interface AuthorizedProxyContext {
     teamId: string;
@@ -27,7 +26,6 @@ interface AuthorizedProxyCacheEntry {
 }
 
 const AUTHORIZED_PROXY_CONTEXT_CACHE_TTL_MS = 30_000;
-const REQUIRED_PROXY_PERMISSION = `${Resource.SCRIPTING}:${Action.READ}`;
 
 const readProxyAccessToken = (requestUrl: string, cookieHeader: string | undefined): string | undefined => {
     const url = new URL(requestUrl, PROXY_URL_ORIGIN);
@@ -46,9 +44,9 @@ const resolveAuthorizedProxyContext = async (
 ): Promise<AuthorizedProxyContext> => {
     const member = await requireTeamMembership(teamId, userId);
 
-    const permissions = member.roleRef?.permissions ?? [];
-    if (!permissions.includes('*') && !permissions.includes(REQUIRED_PROXY_PERMISSION)) {
-        throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, `Missing permission: ${REQUIRED_PROXY_PERMISSION}`);
+    // Jupyter runs code with the key of whoever launched the kernel, so reaching it is a write.
+    if (!canAccessTeamArea(member.role, TeamArea.Scripting, TeamAccess.Write)) {
+        throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, 'Running notebook code needs the Member role or higher');
     }
 
     const notebook = await ScriptingNotebook.findOneBy({

@@ -13,6 +13,7 @@ import type {
     ListAnalysesInput,
     ListTrajectoryAnalysesInput
 } from '@volt/contracts/modules/analysis/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 interface ConfigDelta {
     added: Record<string, unknown>;
@@ -28,7 +29,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListAnalysesInput>(),
         validate: typia.createValidate<ListAnalysesInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async listAnalyses(input: ListAnalysesInput & AIToolScope) {
         const { total, data } = await analysisService.getAnalysesByTeamId({
@@ -48,7 +49,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListTrajectoryAnalysesInput>(),
         validate: typia.createValidate<ListTrajectoryAnalysesInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async listTrajectoryAnalyses(input: ListTrajectoryAnalysesInput & AIToolScope) {
         const { total, data } = await analysisService.getAnalysesByTrajectoryId({
@@ -68,7 +69,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListAnalysesByConfigInput>(),
         validate: typia.createValidate<ListAnalysesByConfigInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async listAnalysesByConfig(input: ListAnalysesByConfigInput & AIToolScope) {
         const { total, data } = await analysisService.getAnalysesByTrajectoryId({
@@ -105,7 +106,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<AnalysisRefInput>(),
         validate: typia.createValidate<AnalysisRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async getAnalysis(input: AnalysisRefInput & AIToolScope) {
         const analysis = await analysisService.getAnalysisById(input);
@@ -121,7 +122,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<AnalysisRefInput>(),
         validate: typia.createValidate<AnalysisRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async getAnalysisArtifacts(input: AnalysisRefInput & AIToolScope) {
         const { expectedArtifacts } = await analysisService.getAnalysisById(input);
@@ -149,7 +150,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetAnalysisFrameLogInput>(),
         validate: typia.createValidate<GetAnalysisFrameLogInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async getAnalysisFrameLog(input: GetAnalysisFrameLogInput & AIToolScope) {
         return analysisService.getAnalysisFrameLog(input);
@@ -161,7 +162,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<AnalysisRefInput>(),
         validate: typia.createValidate<AnalysisRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async summarizeAnalysisRun(input: AnalysisRefInput & AIToolScope) {
         const analysis = await analysisService.getAnalysisById(input);
@@ -220,7 +221,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<CompareAnalysesInput>(),
         validate: typia.createValidate<CompareAnalysesInput>(),
         access: AIToolAccess.Read,
-        permission: 'analysis:read'
+        area: TeamArea.Analysis
     })
     async compareAnalyses(input: CompareAnalysesInput & AIToolScope) {
         const [a, b] = await Promise.all([
@@ -270,7 +271,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<AnalysisRefInput>(),
         validate: typia.createValidate<AnalysisRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'analysis:update'
+        area: TeamArea.Analysis
     })
     async retryFailedAnalysisFrames(input: AnalysisRefInput & AIToolScope) {
         return analysisService.retryFailedFrames(input);
@@ -282,7 +283,7 @@ export default class AnalysisAIToolController extends AIToolController {
         parameters: typia.llm.parameters<DeleteAnalysisInput>(),
         validate: typia.createValidate<DeleteAnalysisInput>(),
         access: AIToolAccess.Write,
-        permission: 'analysis:delete'
+        area: TeamArea.Analysis
     })
     async deleteAnalysis(input: DeleteAnalysisInput & AIToolScope) {
         return analysisService.deleteAnalysisById(input);

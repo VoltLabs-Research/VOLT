@@ -14,12 +14,11 @@ import type { ChatUIMessageChunk } from '@volt/contracts/modules/ai/chat';
 import type { ChatTurnPayload } from '@volt/contracts/modules/ai/socket';
 import ApplicationError from '@shared/errors/ApplicationError';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { TeamAccess, TeamArea, canAccessTeamArea, type TeamRole } from '@volt/contracts/modules/team/access';
 
 const APPROVED = 'The user just approved the card on screen, so the tool behind it has run and its result is the last thing in this conversation. Say what it means in a sentence or two and carry on with the work; never end the turn without saying anything.';
 
 const DECLINED = 'The user just rejected the card on screen, so nothing ran. Say so in one sentence, without arguing for it, and ask what they would rather do.';
-
-const SEND_PERMISSION = 'ai-conversation:create';
 
 interface LiveTurn {
     controller: AbortController;
@@ -29,30 +28,27 @@ interface LiveTurn {
 export interface PreparedTurn {
     conversation: AIConversation;
     resolved: ResolvedModel;
-    permissions: string[];
+    role: TeamRole;
     context: ChatToolContext;
     turn: LiveTurn;
 }
-
-const can = (permissions: readonly string[], permission: string): boolean =>
-    permissions.includes('*') || permissions.includes(permission);
 
 // One turn at a time per conversation, detached from the socket that asked for it: a tab that
 // leaves or reloads does not stop it, and a tab that joins while it runs is replayed what it said.
 class ChatStreamService {
     #turns = new Map<string, LiveTurn>();
 
-    async permissionsOf(conversation: AIConversation): Promise<string[]> {
-        const { permissions } = await teamService.getMyPermissions(conversation.teamId, conversation.userId);
-        return permissions;
+    // The role its owner holds in the conversation's team today, or null once they have left it.
+    roleOf(conversation: AIConversation): Promise<TeamRole | null> {
+        return teamService.roleOf(conversation.teamId, conversation.userId);
     }
 
     // Everything that can refuse a turn is checked here, so the caller answers before it starts.
     async prepare(userId: string, payload: ChatTurnPayload, origin: string): Promise<PreparedTurn> {
         const conversation = await conversationService.ownedBy(userId, payload.conversationId);
-        const permissions = await this.permissionsOf(conversation);
-        if (!can(permissions, SEND_PERMISSION)) {
-            throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, `Missing permission: ${SEND_PERMISSION}`);
+        const role = await this.roleOf(conversation);
+        if (!role || !canAccessTeamArea(role, TeamArea.AIConversation, TeamAccess.Write)) {
+            throw ApplicationError.forbidden(ErrorCodes.RBAC_INSUFFICIENT_PERMISSIONS, 'Talking to Volt AI needs the Member role or higher');
         }
 
         const choice = payload.model ?? (conversation.provider !== null && conversation.model !== null
@@ -76,7 +72,7 @@ class ChatStreamService {
         return {
             conversation,
             resolved,
-            permissions,
+            role,
             context: {
                 teamId: conversation.teamId,
                 userId,
@@ -88,7 +84,7 @@ class ChatStreamService {
     }
 
     async *respond(prepared: PreparedTurn, payload: ChatTurnPayload): AsyncIterable<ChatFrame> {
-        const { conversation, resolved, permissions, context, turn } = prepared;
+        const { conversation, resolved, role, context, turn } = prepared;
         const { signal } = turn.controller;
 
         try {
@@ -109,7 +105,7 @@ class ChatStreamService {
                 };
             }
 
-            for await (const frame of chatApprovalService.decide(context, permissions, payload.approvals ?? [], signal)) {
+            for await (const frame of chatApprovalService.decide(context, role, payload.approvals ?? [], signal)) {
                 this.#remember(turn, frame);
                 yield frame;
             }
@@ -119,7 +115,7 @@ class ChatStreamService {
                 context,
                 conversation: fresh,
                 resolved,
-                permissions,
+                role,
                 history: await chatCompactionService.load(fresh),
                 note: this.#note(payload),
                 signal

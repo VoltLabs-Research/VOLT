@@ -1,14 +1,13 @@
 import Loader from '@/shared/ui/components/Loader';
-import { canAccessByPermissions } from '@/modules/team/utils/team/permission-evaluator';
+import { roleNeededFor } from '@/modules/team/utils/team/team-access';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import { useTeamStore } from '@/modules/team/store/team/use-team-store';
 import AccessDenied from '@/shared/ui/components/AccessDenied';
 
 import RecoveryState, { RecoveryStateTone } from '@/shared/ui/components/RecoveryState';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { guestRoutes, optionalAuthRoutes, protectedRoutes, publicRoutes } from '@/app/routes/definitions';
 import ProtectedRoute, { RouteMode } from '@/app/routes/ProtectedRoute';
-import { RoutePermissionMode } from '@/app/routes/types';
 import { localStackMode } from '@/modules/local-stack/services/local-stack-mode';
 import { Navigate, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
@@ -64,16 +63,15 @@ const resolveRouteComponent = (route: RouteConfig): ComponentType => {
 const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) => {
     const selectedTeamId = useSelectedTeamId();
     const hasHydratedSelection = useTeamStore((state) => state.hasHydratedSelection);
-    const { scopedPermissions, isScopeReady, isLoading: isPermissionsLoading } = useTeamPermissions();
-    const permissions = route.requiredPermissions ?? [];
-    const mode = route.permissionMode ?? RoutePermissionMode.Any;
+    const { meets, isScopeReady, isLoading: isRoleLoading } = useTeamAccess();
+    const requirements = route.requiredAccess ?? [];
     const isDashboardRoute = route.path.startsWith(DASHBOARD_ROUTE_PREFIX);
 
     if (route.requiresMachine && localStackMode.isEnabled()) {
         return <Navigate to={DASHBOARD_ROUTE_PREFIX} replace />;
     }
 
-    if (permissions.length === 0) {
+    if (requirements.length === 0) {
         return <>{children}</>;
     }
 
@@ -91,7 +89,7 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
         );
     }
 
-    if (isPermissionsLoading) {
+    if (isRoleLoading) {
         return renderRouteLoader('Checking access…', isDashboardRoute);
     }
 
@@ -99,16 +97,14 @@ const RoutePermissionGuard = ({ route, children }: RoutePermissionGuardProps) =>
         return (
             <RecoveryState
                 title='Preparing workspace access'
-                description='We are still loading the permissions for this team. Please wait a moment.'
+                description='We are still loading your role in this team. Please wait a moment.'
                 tone={RecoveryStateTone.Info}
             />
         );
     }
 
-    const isAllowed = canAccessByPermissions(scopedPermissions, permissions, mode);
-
-    if (!isAllowed) {
-        return <AccessDenied />;
+    if (!meets(requirements)) {
+        return <AccessDenied requiredRole={roleNeededFor(requirements)} />;
     }
 
     return <>{children}</>;

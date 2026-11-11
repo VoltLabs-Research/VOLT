@@ -23,7 +23,7 @@ import JobProgressBar from '@/modules/jobs/components/JobProgressBar';
 import { useAnalysisRunProgress } from '@/modules/jobs/hooks/use-job-progress';
 import { formatProgressPercent } from '@/modules/jobs/utils/job-progress';
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import StatusPill from '@/shared/ui/components/StatusPill';
 import { confirmDelete } from '@/shared/ui/hooks/use-confirm';
 import { showPromise } from '@/shared/ui/hooks/toast';
@@ -33,6 +33,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { CSSProperties, ReactNode } from 'react';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const MAX_TILES = 4;
 const MAX_HERO_METRICS = 3;
@@ -61,7 +62,7 @@ const AnalysisReportPage = () => {
     const { pluginsById } = usePluginSelectors();
     const retryFailedFrames = useRetryFailedFrames();
     const { download: downloadListings } = useDownloadAnalysisListings();
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
     const deleteAnalysisMutation = analysesQuery.useDeleteMutation();
 
     const analysisQuery = useAnalysisByIdQuery(analysisId, {
@@ -187,7 +188,7 @@ const AnalysisReportPage = () => {
                     <IconAction label='Download listings' onPress={() => void downloadListings({ analysisId })}>
                         <Download size={15} aria-hidden='true' />
                     </IconAction>
-                    {canAccess(['analysis:delete']) && (
+                    {can(TeamArea.Analysis, TeamAccess.Write) && (
                         <IconAction label='Delete run' onPress={() => void deleteRun()}>
                             <Trash2 size={15} aria-hidden='true' />
                         </IconAction>
@@ -207,7 +208,7 @@ const AnalysisReportPage = () => {
                     <span className='flex-1'>
                         {failedList.length === 1 ? 'Timestep' : 'Timesteps'} {failedList.slice(0, 6).map((value) => value.toLocaleString('en-US')).join(', ')}{failedList.length > 6 ? '…' : ''} failed
                     </span>
-                    {canAccess(['analysis:update']) && (
+                    {can(TeamArea.Analysis, TeamAccess.Write) && (
                         <Button variant='outline' size='sm' onPress={() => void retryFailedFrames(analysisId)}>
                             <RotateCw size={13} aria-hidden='true' />
                             Retry failed frames

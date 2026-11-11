@@ -12,7 +12,7 @@ import {
     whiteboardsQuery,
     whiteboardsQueryKey
 } from '@/modules/whiteboards/hooks/queries';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 import type { SocketInvalidationConfig } from '@/shared/ui/components/DocumentListing';
 import { SOCKET_WHITEBOARD_EVENTS } from '@/modules/socket/events/whiteboards';
@@ -34,13 +34,15 @@ import {
 import type { WhiteboardItemRow } from '@/modules/whiteboards/contracts/listing';
 import type { Whiteboard } from '@volt/contracts/modules/whiteboards/domain';
 import { useNavigate } from 'react-router-dom';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
+import { readAccess, writeAccess } from '@/modules/team/utils/team/team-access';
 
 
 export const whiteboardsListingResource = createFolderedListingResource({
     subject: 'Whiteboard',
     singularName: 'whiteboard',
     pluralName: 'whiteboards',
-    permissionPrefix: 'whiteboard',
+    area: TeamArea.Whiteboard,
     listItems: whiteboardsQuery.fetch,
     listFolders: whiteboardFoldersQuery.fetch,
     getFolder: whiteboardFolderQuery.fetch,
@@ -57,8 +59,8 @@ const SOCKET_INVALIDATION: SocketInvalidationConfig[] = [
 const useWhiteboardsListing = () => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
-    const { canAccess } = useTeamPermissions();
-    const canMoveWhiteboards = canAccess(['whiteboard:update']);
+    const { can } = useTeamAccess();
+    const canMoveWhiteboards = can(TeamArea.Whiteboard, TeamAccess.Write);
     const { mutateAsync: deleteWhiteboard } = useDeleteWhiteboardMutation();
     const { mutateAsync: createWhiteboard } = useCreateWhiteboardMutation();
     const { mutateAsync: updateWhiteboard } = useUpdateWhiteboardMutation();
@@ -98,7 +100,7 @@ const useWhiteboardsListing = () => {
             label: 'Open Whiteboard',
             icon: SquarePen,
             handler: ({ item: whiteboard }) => openWhiteboard(whiteboard),
-            requiredPermission: 'whiteboard:read'
+            requiredAccess: readAccess(TeamArea.Whiteboard)
         },
         rename: {
             label: 'Rename',
@@ -106,7 +108,7 @@ const useWhiteboardsListing = () => {
             handler: ({ item: whiteboard }) => {
                 handleRenameWhiteboardOpen(whiteboard);
             },
-            requiredPermission: 'whiteboard:update'
+            requiredAccess: writeAccess(TeamArea.Whiteboard)
         },
         move: {
             label: 'Move to Folder',
@@ -114,7 +116,7 @@ const useWhiteboardsListing = () => {
             handler: ({ item: whiteboard }) => {
                 openMove(whiteboard);
             },
-            requiredPermission: 'whiteboard:update'
+            requiredAccess: writeAccess(TeamArea.Whiteboard)
         },
         delete: {
             variant: 'danger',
@@ -125,7 +127,7 @@ const useWhiteboardsListing = () => {
                 );
             },
             confirm: ({ selectedItems }) => whiteboardsListingResource.getDeleteConfirmationMessage(selectedItems),
-            requiredPermission: 'whiteboard:delete'
+            requiredAccess: writeAccess(TeamArea.Whiteboard)
         }
     }), [deleteWhiteboard, handleRenameWhiteboardOpen, openWhiteboard]);
 

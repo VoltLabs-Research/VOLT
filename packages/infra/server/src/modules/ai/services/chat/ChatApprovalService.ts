@@ -4,6 +4,7 @@ import toolRegistry from '@modules/ai/services/tools/ToolRegistry';
 import type { ChatFrame, ChatToolContext } from '@modules/ai/contracts/chat';
 import type { ChatMessagePart } from '@volt/contracts/modules/ai/chat';
 import type { ToolApprovalDecision } from '@volt/contracts/modules/ai/socket';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 export const DECLINED_BY_USER = 'The user declined this, so it never ran.';
 
@@ -14,7 +15,7 @@ const errorTextOf = (error: unknown): string => error instanceof Error ? error.m
 class ChatApprovalService {
     async *decide(
         context: ChatToolContext,
-        permissions: readonly string[],
+        role: TeamRole,
         decisions: ToolApprovalDecision[],
         signal: AbortSignal
     ): AsyncGenerator<ChatFrame> {
@@ -22,7 +23,7 @@ class ChatApprovalService {
             const message = await chatMessageService.holding(context.conversationId, decision.approvalId);
             const parts: ChatMessagePart[] = [];
             for (const part of message.parts) {
-                parts.push(await this.#settled(part, decision, context, permissions, signal));
+                parts.push(await this.#settled(part, decision, context, role, signal));
             }
 
             const settled = await chatMessageService.replaceParts(message, parts);
@@ -38,7 +39,7 @@ class ChatApprovalService {
         part: ChatMessagePart,
         decision: ToolApprovalDecision,
         context: ChatToolContext,
-        permissions: readonly string[],
+        role: TeamRole,
         signal: AbortSignal
     ): Promise<ChatMessagePart> {
         if (!isAwaitingApproval(part) || part.approval.id !== decision.approvalId) return part;
@@ -61,7 +62,7 @@ class ChatApprovalService {
         };
 
         try {
-            const output = await toolRegistry.run(toolNameOf(part), context, permissions, part.input, part.toolCallId, signal);
+            const output = await toolRegistry.run(toolNameOf(part), context, role, part.input, part.toolCallId, signal);
 
             return {
                 ...part,

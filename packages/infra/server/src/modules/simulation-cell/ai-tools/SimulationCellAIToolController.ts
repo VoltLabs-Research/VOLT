@@ -4,6 +4,7 @@ import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import simulationCellService from '@modules/simulation-cell/services/SimulationCellService';
 import type { GetSimulationCellInput } from '@volt/contracts/modules/simulation-cell/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 export default class SimulationCellAIToolController extends AIToolController {
     @AITool({
@@ -12,7 +13,7 @@ export default class SimulationCellAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetSimulationCellInput>(),
         validate: typia.createValidate<GetSimulationCellInput>(),
         access: AIToolAccess.Read,
-        permission: 'simulation-cell:read'
+        area: TeamArea.SimulationCell
     })
     async getSimulationCell(input: GetSimulationCellInput & AIToolScope) {
         const value = await simulationCellService.getByTrajectory(input);

@@ -4,6 +4,7 @@ import { Button, EmptyStateRoot, cn } from '@heroui/react';
 import { AlertTriangle, CircleHelp, FileText } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 export enum RecoveryStateTone {
     Empty = 'empty',
@@ -23,7 +24,7 @@ interface RecoveryStateProps {
     showBack?: boolean;
     className?: string;
 
-    requiredPermissions?: string[];
+    requiredRole?: TeamRole;
 
     contactHint?: string;
 };
@@ -38,7 +39,7 @@ const RecoveryState = ({
     onRetry,
     showBack = false,
     className,
-    requiredPermissions,
+    requiredRole,
     contactHint
 }: RecoveryStateProps) => {
     const headingId = useId();
@@ -50,7 +51,7 @@ const RecoveryState = ({
                 description={description}
                 showBack={showBack}
                 className={className}
-                requiredPermissions={requiredPermissions}
+                requiredRole={requiredRole}
                 contactHint={contactHint}
             />
         );

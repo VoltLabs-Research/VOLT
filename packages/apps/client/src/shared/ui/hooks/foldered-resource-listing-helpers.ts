@@ -5,6 +5,8 @@ import type { FolderedListingContext } from '@/shared/ui/hooks/use-foldered-list
 import type { PaginationParams } from '@/shared/ui/hooks/use-pagination-params';
 import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
 import { createListingDeleteConfirmation } from '@/shared/ui/utils/listing-messages';
+import type { TeamArea } from '@volt/contracts/modules/team/access';
+import { writeAccess } from '@/modules/team/utils/team/team-access';
 
 const FOLDER_LIST_LIMIT = 500;
 const ROOT_FOLDER_ID = 'root';
@@ -132,7 +134,7 @@ interface CreateFolderedListingResourceOptions<TItem, TFolder> extends CreateFol
     subject: string;
     singularName: string;
     pluralName: string;
-    permissionPrefix: string;
+    area: TeamArea;
     folderLabel?: string;
     folderTitle?: string;
     pluralLabel?: string;
@@ -146,7 +148,7 @@ export const createFolderedListingResource = <TItem, TFolder extends FolderBread
     subject,
     singularName,
     pluralName,
-    permissionPrefix,
+    area,
     folderLabel = singularName,
     folderTitle = subject,
     pluralLabel = pluralName,
@@ -203,10 +205,7 @@ export const createFolderedListingResource = <TItem, TFolder extends FolderBread
         renameFolderModalId: modalIds.renameFolder,
         moveModalId: modalIds.move,
         moveToast: toasts.move,
-        folderPermissions: {
-            rename: `${permissionPrefix}:update`,
-            delete: `${permissionPrefix}:delete`
-        },
+        folderAccess: writeAccess(area),
         getMoveTarget: pickFolderedMoveTarget,
         activationDistance: 6
     };

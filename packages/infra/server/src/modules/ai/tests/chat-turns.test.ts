@@ -18,6 +18,7 @@ import type { ChatMessagePart } from '@volt/contracts/modules/ai/chat';
 import { AI_CHAT_EVENTS } from '@volt/contracts/modules/ai/socket';
 import { scriptedModel, startHarness, textStep, toolStep } from './harness';
 import type { Harness } from './harness';
+import { TeamArea, TeamRole } from '@volt/contracts/modules/team/access';
 
 interface ProbeInput {
     value: string;
@@ -32,7 +33,7 @@ class ProbeTools extends AIToolController {
         parameters: typia.llm.parameters<ProbeInput>(),
         validate: typia.createValidate<ProbeInput>(),
         access: AIToolAccess.Read,
-        permission: 'trajectory:read'
+        area: TeamArea.Trajectory
     })
     probeRead(input: ProbeInput & AIToolScope) {
         return {
@@ -47,7 +48,7 @@ class ProbeTools extends AIToolController {
         parameters: typia.llm.parameters<ProbeInput>(),
         validate: typia.createValidate<ProbeInput>(),
         access: AIToolAccess.Write,
-        permission: 'trajectory:delete'
+        area: TeamArea.TeamMember
     })
     probeWrite(input: ProbeInput & AIToolScope) {
         written.push(input.value);
@@ -60,7 +61,7 @@ class ProbeTools extends AIToolController {
         parameters: typia.llm.parameters<ProbeInput>(),
         validate: typia.createValidate<ProbeInput>(),
         access: AIToolAccess.Read,
-        permission: null
+        area: null
     })
     probeBrowser(): void {}
 }
@@ -89,7 +90,7 @@ describe('AI chat turns', () => {
 
     beforeEach(() => {
         written.length = 0;
-        harness.permissions = ['*'];
+        harness.role = TeamRole.Owner;
     });
 
     test('stores the user message under its own id and the reply as the parts it streamed', async () => {
@@ -230,7 +231,7 @@ describe('AI chat turns', () => {
         assert.equal(denied.approval?.approved, false);
     });
 
-    test('checks the permission again when the card is approved', async () => {
+    test('checks the role again when the card is approved', async () => {
         harness.useModel(scriptedModel([toolStep('call-write', 'probe_write', { value: 'frame-3' }), textStep('Could not.')]));
         const conversation = await harness.conversation();
         await harness.turn(say(conversation.id, 'delete it'));
@@ -242,7 +243,7 @@ describe('AI chat turns', () => {
         const [card] = toolParts(held.parts);
         const approvalId = card.state === 'approval-requested' ? card.approval.id : '';
 
-        harness.permissions = ['ai-conversation:create', 'trajectory:read'];
+        harness.role = TeamRole.Member;
         await harness.turn({
             conversationId: conversation.id,
             approvals: [{
@@ -271,7 +272,7 @@ describe('AI chat turns', () => {
     });
 
     test('offers the model only the tools the user may use', async () => {
-        harness.permissions = ['ai-conversation:create', 'trajectory:read'];
+        harness.role = TeamRole.Member;
         const model = scriptedModel([textStep('ok')]);
         harness.useModel(model);
         const conversation = await harness.conversation();

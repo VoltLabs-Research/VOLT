@@ -1,7 +1,6 @@
 import { ErrorCodes } from '@core/constants/error-codes';
 import TeamMember from '@modules/team/models/TeamMember';
 import ApplicationError from '@shared/errors/ApplicationError';
-import type TeamRole from '@modules/team/models/TeamRole';
 
 
 export const isTeamMember = async (teamId: string, userId?: string | null): Promise<boolean> => {
@@ -27,15 +26,14 @@ export const assertTeamMembership = async (teamId: string, userId?: string | nul
 export const requireTeamMembership = async (
     teamId: string,
     userId?: string | null
-): Promise<TeamMember & { roleRef?: TeamRole | null }> => {
+): Promise<TeamMember> => {
     if (!userId) throw membershipForbidden();
 
     const member = await TeamMember.findOne({
         where: {
             user: userId,
             team: teamId
-        },
-        relations: { roleRef: true }
+        }
     });
 
     if (!member) throw membershipForbidden();
