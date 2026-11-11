@@ -10,18 +10,11 @@ import {
 import usePluginSelectors from '@/modules/plugin/hooks/plugin/use-plugin-selectors';
 import { useEnsurePluginCatalogLoaded } from '@/modules/plugin/hooks/plugin/use-plugin-catalog';
 import PipelineRunControl from '../CanvasPipeline/PipelineRunControl';
-import {
-    Button,
-    DropdownItem,
-    DropdownMenu,
-    DropdownPopover,
-    DropdownRoot,
-    DropdownTrigger,
-    Popover
-} from '@heroui/react';
-import { ChevronDown, Play } from 'lucide-react';
-import { useState } from 'react';
-import type { Key } from 'react';
+import AddPluginMenu from './AddPluginMenu';
+import { buildPluginPickerSections } from '../../utils/plugin-picker-sections';
+import { Button, Popover } from '@heroui/react';
+import { Play } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import type { StageType, StageConfig } from '../../store/canvas-pipeline';
 import type { PipelineRun } from '@volt/contracts/modules/plugin/pipeline-run';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
@@ -79,7 +72,6 @@ const PipelineActions = ({
     const stageEdits = useStageEdits(run ? pipelineKey : undefined);
     const hasEdits = Object.keys(stageEdits).length > 0;
 
-    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [isRunMenuOpen, setIsRunMenuOpen] = useState(false);
     const closeRunMenu = () => setIsRunMenuOpen(false);
     const canAdd = Boolean(canMutateCanvas && trajectoryId && !unavailableReason);
@@ -89,8 +81,16 @@ const PipelineActions = ({
         if (stageId) onStageAdded?.(stageId);
     };
 
-    const handleAddMenuAction = (key: Key) => {
-        const id = String(key);
+    const pickerSections = useMemo(() => buildPluginPickerSections(
+        STATIC_STAGE_PRESETS.map((preset) => ({ id: preset.id, label: preset.label })),
+        modifiers.map((modifier) => ({
+            id: modifier.pluginId,
+            label: modifier.name,
+            category: modifier.plugin.modifier?.category
+        }))
+    ), [modifiers]);
+
+    const handleAddMenuAction = (id: string) => {
         const preset = STATIC_STAGE_PRESETS.find((entry) => entry.id === id);
 
         if (preset) {
@@ -106,37 +106,7 @@ const PipelineActions = ({
 
     return (
         <div className='flex shrink-0 flex-row items-center gap-1 px-2 pb-1.5' title={unavailableReason}>
-            <DropdownRoot isOpen={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
-                <DropdownTrigger
-                    isDisabled={!canAdd}
-                    aria-label='Add plugin'
-                    className='flex h-8 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border-none bg-foreground/[0.05] pl-3.5 pr-2.5 text-xs text-muted transition-colors duration-[140ms] hover:bg-foreground/[0.08] hover:text-foreground disabled:cursor-default disabled:opacity-50 aria-expanded:bg-foreground/[0.08] aria-expanded:text-foreground'
-                >
-                    <span className='min-w-0 flex-1 truncate text-left'>Add plugin…</span>
-                    <ChevronDown size={13} aria-hidden='true' className='shrink-0' />
-                </DropdownTrigger>
-                <DropdownPopover placement='bottom start'>
-                    <DropdownMenu
-                        aria-label='Add plugin'
-                        onAction={handleAddMenuAction}
-                    >
-                        {STATIC_STAGE_PRESETS.map((preset) => (
-                            <DropdownItem key={preset.id} id={preset.id} textValue={preset.label}>
-                                {preset.label}
-                            </DropdownItem>
-                        ))}
-                        {modifiers.map((modifier) => (
-                            <DropdownItem
-                                key={modifier.pluginId}
-                                id={modifier.pluginId}
-                                textValue={modifier.name}
-                            >
-                                {modifier.name}
-                            </DropdownItem>
-                        ))}
-                    </DropdownMenu>
-                </DropdownPopover>
-            </DropdownRoot>
+            <AddPluginMenu sections={pickerSections} isDisabled={!canAdd} onAdd={handleAddMenuAction} />
             <Popover isOpen={isRunMenuOpen} onOpenChange={setIsRunMenuOpen}>
                 <Button
                     variant='ghost'
