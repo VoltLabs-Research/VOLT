@@ -55,7 +55,8 @@ export interface PipelineContentsProps {
     toneByAnalysisId?: Map<string, AnalysisActivityTone>;
     selectedKey: string;
     onSelectKey: (key: string) => void;
-    onSelectScene: (scene: SceneObjectType, analysis?: Analysis) => void;
+    // Picking an analysis's row makes it current; no row's title changes what the scene shows.
+    onSelectAnalysis: (analysis: Analysis) => void;
     isSceneInActiveScenes: (scene: SceneObjectType) => boolean;
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;
@@ -80,7 +81,7 @@ const canToggleStage = (stage: PipelineStage): boolean =>
     stage.type === 'color-coding' || stage.type === 'expression-select' || Boolean(stage.executed);
 
 interface VisualRowsProps extends Pick<PipelineContentsProps,
-    'pluginsById' | 'selectedKey' | 'onSelectKey' | 'onSelectScene' | 'isSceneInActiveScenes' | 'addScene' | 'removeScene' | 'onRetryLoadExposures'> {
+    'pluginsById' | 'selectedKey' | 'onSelectKey' | 'isSceneInActiveScenes' | 'addScene' | 'removeScene' | 'onRetryLoadExposures'> {
     section: AnalysisSectionData;
     status?: CanvasAnalysisStatus;
     firstExposureTourTargetId?: string;
@@ -93,7 +94,6 @@ const AnalysisVisualRows = ({
     pluginsById,
     selectedKey,
     onSelectKey,
-    onSelectScene,
     isSceneInActiveScenes,
     addScene,
     removeScene,
@@ -167,10 +167,7 @@ const AnalysisVisualRows = ({
                             ariaLabel: `${isInScene ? 'Remove' : 'Add'} ${exposure.name} ${isInScene ? 'from' : 'to'} the scene`,
                             onChange: (next) => (next ? addScene(scene) : removeScene(scene))
                         }}
-                        onSelect={() => {
-                            onSelectKey(itemKey);
-                            onSelectScene(scene, analysis);
-                        }}
+                        onSelect={() => onSelectKey(itemKey)}
                         menuOptions={menuOptions}
                         tourTargetId={key === firstExposureKey ? firstExposureTourTargetId : undefined}
                     />
@@ -231,7 +228,7 @@ const PipelineContents = ({
     toneByAnalysisId,
     selectedKey,
     onSelectKey,
-    onSelectScene,
+    onSelectAnalysis,
     isSceneInActiveScenes,
     addScene,
     removeScene,
@@ -294,7 +291,7 @@ const PipelineContents = ({
     const selectAnalysis = (analysisSection: AnalysisSectionData) => {
         onSelectKey(panelItemKey.analysis(analysisSection.analysis._id));
         if (!analysisSection.isCurrentAnalysis) {
-            onSelectScene(TRAJECTORY_SCENE, analysisSection.analysis);
+            onSelectAnalysis(analysisSection.analysis);
         }
     };
 
@@ -351,11 +348,7 @@ const PipelineContents = ({
                             ariaLabel: `${isTrajectoryInScene ? 'Remove' : 'Add'} the trajectory ${isTrajectoryInScene ? 'from' : 'to'} the scene`,
                             onChange: (next) => (next ? addScene(TRAJECTORY_SCENE) : removeScene(TRAJECTORY_SCENE))
                         }}
-                        onSelect={() => {
-                            // Like a model's row, the trajectory's shows it, keeping the current analysis.
-                            onSelectKey(panelItemKey.trajectory);
-                            onSelectScene(TRAJECTORY_SCENE, analysisSections.find((candidate) => candidate.isCurrentAnalysis)?.analysis);
-                        }}
+                        onSelect={() => onSelectKey(panelItemKey.trajectory)}
                     />
                     <PanelRow
                         id='canvas-visual-simulation-cell'
@@ -376,7 +369,6 @@ const PipelineContents = ({
                             pluginsById={pluginsById}
                             selectedKey={selectedKey}
                             onSelectKey={onSelectKey}
-                            onSelectScene={onSelectScene}
                             isSceneInActiveScenes={isSceneInActiveScenes}
                             addScene={addScene}
                             removeScene={removeScene}

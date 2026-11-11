@@ -74,6 +74,7 @@ const ObjectsPanel = ({
         expandSection,
         activeScene,
         onSelectScene,
+        onSelectAnalysis,
         isSceneInActiveScenes,
         addScene,
         removeScene,
@@ -327,7 +328,7 @@ const ObjectsPanel = ({
             toneByAnalysisId={toneByAnalysisId}
             selectedKey={selectedKey}
             onSelectKey={setSelectedKey}
-            onSelectScene={onSelectScene}
+            onSelectAnalysis={onSelectAnalysis}
             isSceneInActiveScenes={isSceneInActiveScenes}
             addScene={addSceneInPlace}
             removeScene={removeScene}
