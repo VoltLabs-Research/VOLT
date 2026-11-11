@@ -1,5 +1,4 @@
 import teamClusterSelectionService from '@modules/cluster/services/team-cluster/TeamClusterSelectionService';
-import type { TrajectoryNativeObjectStreamResponse } from '@modules/trajectory/services/native/TrajectoryNativeTypes';
 import {
     buildClusterRequiredError,
     recordSceneArtifact,
@@ -37,7 +36,7 @@ import type {
 
 export { ParticleFilterCombinator };
 import { buildParticleFilterRequest } from '@modules/trajectory/services/particle-filter/ParticleFilterRequest';
-import { TEAM_CLUSTER_OBJECT_STORE_BUCKET } from '@voltstack/daemon-cluster-client';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 interface ParticleFilterResult {
     mask: Uint8Array;
@@ -235,7 +234,7 @@ class ParticleFilterService {
         };
     }
 
-    async getModelStreamResponse(input: GetFilteredModelStreamInput): Promise<TrajectoryNativeObjectStreamResponse> {
+    async getModelStreamResponse(input: GetFilteredModelStreamInput): Promise<DownloadStreamOutput> {
         const { trajectoryId, action, analysisId } = input;
         const timestep = requireTimestep(input.timestep);
         const request = buildParticleFilterRequest(input);
@@ -253,11 +252,7 @@ class ParticleFilterService {
             action || 'delete'
         );
 
-        return trajectoryNativeDaemonService.getObjectStreamResponse(
-            trajectory.storageClusterId,
-            TEAM_CLUSTER_OBJECT_STORE_BUCKET.Models,
-            objectName
-        );
+        return trajectoryNativeDaemonService.getModelStream(trajectory.storageClusterId, objectName);
     }
 
     private async getRemoteFilterResult(

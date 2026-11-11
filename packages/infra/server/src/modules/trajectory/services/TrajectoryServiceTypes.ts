@@ -1,6 +1,6 @@
 import type { TrajectoryProps } from '@shared/contracts/types/Trajectory';
 import type { SceneArtifactProps } from '@shared/contracts/types/SceneArtifact';
-import type { GlbContentEncoding } from '@shared/utilities/glb-stream-resolution';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 import type { PaginatedResult } from '@shared/persistence/persistence';
 import type { ParticleFilterCombinator } from '@volt/contracts/modules/trajectory/http';
 import type { Readable } from 'node:stream';
@@ -261,18 +261,9 @@ export interface GetPublicCanvasGLBInput {
     trajectoryId: string;
     timestep: string;
     userId?: string;
-    acceptEncoding?: string;
 }
 
-export interface GetPublicCanvasGLBOutput {
-    stream: Readable;
-    size?: number;
-    objectName: string;
-    contentEncoding: GlbContentEncoding;
-    negotiatedContentEncoding: 'zstd' | null;
-    etag?: string;
-    lastModified?: Date;
-}
+export type GetPublicCanvasGLBOutput = DownloadStreamOutput;
 
 
 export interface GetAtomsColumnarInput {

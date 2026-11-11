@@ -10,6 +10,8 @@ import type {
     NativeFrameMetadata,
     NativeFilterPreview
 } from '@volt/contracts/modules/trajectory/daemon';
+import { getModelStream } from '@shared/utilities/model-stream';
+import type { DownloadStreamOutput } from '@shared/contracts/types/DownloadStream';
 
 interface TrajectoryNativeRequest {
     teamClusterId: string;
@@ -178,11 +180,15 @@ class TrajectoryNativeDaemonService {
         };
     }
 
+    getModelStream(teamClusterId: string, objectName: string): Promise<DownloadStreamOutput> {
+        return getModelStream(objectGatewayClient, teamClusterId, objectName);
+    }
+
     async getObjectStreamResponse(teamClusterId: string, bucket: string, objectKey: string): Promise<TrajectoryNativeObjectStreamResponse> {
         const response = await objectGatewayClient.getStream(teamClusterId, bucket, objectKey);
         return {
             stream: response.stream,
-            contentEncoding: response.contentEncoding || (objectKey.endsWith('.zst') ? 'zstd' : undefined),
+            contentEncoding: response.contentEncoding,
             contentLength: response.contentLength
         };
     }
