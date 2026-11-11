@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import array
-import json
 import os
-import struct
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -14,71 +12,37 @@ from .colors import _DEFAULT_MESH_MATERIAL
 
 Pathish = str | os.PathLike[str]
 
-def encode_point_cloud(
-    positions: list[float],
-    colors: list[float],
-    bounds: tuple[Sequence[float], Sequence[float]],
-) -> bytes:
-    if not positions:
-        return empty_glb()
-    pos = array.array('f', positions)
-    col = array.array('f', colors)
-    return _native.point_cloud_glb(pos, col, _doubles(bounds[0]), _doubles(bounds[1]))
+# The glTF binaries VOLT stores: positions on a uniform grid of POSITION_STEP angstrom, RGBA8
+# colours, meshopt-compressed. Points keep the order they are given in.
+POSITION_STEP: float = _native.POSITION_STEP
+
+def encode_point_cloud(positions: list[float], colors: list[float] | None) -> bytes:
+    """Point cloud; colors are RGB or RGBA in [0, 1], one per point, or None for white points."""
+    return _native.encode_point_cloud(
+        array.array('f', positions),
+        array.array('f', colors) if colors else None,
+    )
 
 def encode_mesh(
     positions: list[float],
     normals: list[float],
     indices: list[int],
     *,
-    bounds: tuple[Sequence[float], Sequence[float]],
     material: Mapping[str, Any] | None,
     colors: list[float] | None = None,
 ) -> bytes:
-    if not positions or not indices:
-        return empty_glb()
-
-    mat = {**_DEFAULT_MESH_MATERIAL, **(material or {})}
-    vertex_count = len(positions) // 3
-
-    native_colors = None
-    if colors:
-        native_colors = array.array('f', _ensure_vec4(colors, vertex_count))
-
-    flat_bounds = _doubles(bounds[0]) + _doubles(bounds[1])
-    return _native.mesh_glb(
+    """Indexed triangle mesh; triangles keep their order. colors: RGB or RGBA in [0, 1] per vertex."""
+    return _native.encode_mesh(
         array.array('f', positions),
         array.array('f', normals),
         array.array('I', indices),
-        flat_bounds,
-        _doubles(mat['baseColor']),
-        float(mat['metallic']),
-        float(mat['roughness']),
-        _doubles(mat['emissive']),
-        bool(mat['doubleSided']),
-        native_colors,
+        array.array('f', colors) if colors else None,
+        {**_DEFAULT_MESH_MATERIAL, **(material or {})},
     )
 
 def empty_glb() -> bytes:
-    document = {
-        'asset': {'version': '2.0'},
-        'scene': 0,
-        'scenes': [{'nodes': []}],
-        'nodes': [],
-        'meshes': [],
-        'buffers': [{'byteLength': 0}],
-        'bufferViews': [],
-        'accessors': [],
-        'materials': [],
-    }
-    json_chunk = json.dumps(document, separators=(',', ':'), ensure_ascii=True).encode('utf-8')
-    padding = (-len(json_chunk)) % 4
-    json_chunk += b' ' * padding
-    total_length = 12 + 8 + len(json_chunk)
-    return b''.join([
-        struct.pack('<III', 0x46546C67, 2, total_length),
-        struct.pack('<I4s', len(json_chunk), b'JSON'),
-        json_chunk,
-    ])
+    """A valid model with nothing in it."""
+    return _native.encode_point_cloud(array.array('f'))
 
 def write_output(payload: bytes, output_path: Pathish | None) -> bytes | Path:
     if output_path is None:
@@ -88,17 +52,3 @@ def write_output(payload: bytes, output_path: Pathish | None) -> bytes | Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
     return path
-
-def _doubles(values: Sequence[float]) -> list[float]:
-    return [float(value) for value in values]
-
-def _ensure_vec4(colors: list[float], vertex_count: int) -> list[float]:
-    if len(colors) == vertex_count * 4:
-        return colors
-    if len(colors) == vertex_count * 3:
-        out: list[float] = []
-        for index in range(vertex_count):
-            base = index * 3
-            out.extend((colors[base], colors[base + 1], colors[base + 2], 1.0))
-        return out
-    raise ValueError('Vertex color count does not match vertex count.')
