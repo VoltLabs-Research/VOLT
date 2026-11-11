@@ -289,7 +289,7 @@ const PipelineContents = ({
     const selectedStage = editableStages.find((stage) => panelItemKey.stage(stage.id) === selectedKey);
     const selectedIndex = selectedStage ? editableStages.indexOf(selectedStage) : -1;
     const savedRows = section?.rows ?? [];
-    const hasModifications = savedRows.length > 0 || editableStages.length > 0;
+    const hasPlugins = savedRows.length > 0 || editableStages.length > 0;
 
     const selectAnalysis = (analysisSection: AnalysisSectionData) => {
         onSelectKey(panelItemKey.analysis(analysisSection.analysis._id));
@@ -386,9 +386,9 @@ const PipelineContents = ({
                     ))}
                 </div>
 
-                <PanelGroupLabel>Modifications</PanelGroupLabel>
-                {!hasModifications && (
-                    <span className='px-2.5 py-1.5 text-xs text-muted'>No modifications yet. Add one above.</span>
+                <PanelGroupLabel>Plugins</PanelGroupLabel>
+                {!hasPlugins && (
+                    <span className='px-2.5 py-1.5 text-xs text-muted'>No plugins yet. Add one above.</span>
                 )}
                 {[...editableStages].reverse().map((stage) => {
                     const label = describeDraftStage(stage, pluginNameById);
@@ -419,7 +419,7 @@ const PipelineContents = ({
             </Scrollable>
 
             {/* Only stages this pipeline can still edit move or go; what ran is a record. */}
-            <div className='flex shrink-0 flex-col gap-0.5' role='toolbar' aria-orientation='vertical' aria-label='Modification actions'>
+            <div className='flex shrink-0 flex-col gap-0.5' role='toolbar' aria-orientation='vertical' aria-label='Plugin actions'>
                 <Button
                     variant='ghost'
                     size='sm'
@@ -427,7 +427,7 @@ const PipelineContents = ({
                     className='size-7 min-w-7 rounded-full'
                     isDisabled={!selectedStage || !canMutateCanvas}
                     onPress={() => selectedStage && onRemoveStage(selectedStage.id)}
-                    aria-label='Delete modification'
+                    aria-label='Delete plugin'
                 >
                     <Trash2 size={13} aria-hidden='true' />
                 </Button>
@@ -439,7 +439,7 @@ const PipelineContents = ({
                     className='size-7 min-w-7 rounded-full'
                     isDisabled={!selectedStage || !canMutateCanvas || selectedIndex === editableStages.length - 1}
                     onPress={() => selectedStage && onMoveStage(selectedStage.id, 1)}
-                    aria-label='Move modification up'
+                    aria-label='Move plugin up'
                 >
                     <ChevronUp size={13} aria-hidden='true' />
                 </Button>
@@ -450,7 +450,7 @@ const PipelineContents = ({
                     className='size-7 min-w-7 rounded-full'
                     isDisabled={!selectedStage || !canMutateCanvas || selectedIndex <= 0}
                     onPress={() => selectedStage && onMoveStage(selectedStage.id, -1)}
-                    aria-label='Move modification down'
+                    aria-label='Move plugin down'
                 >
                     <ChevronDown size={13} aria-hidden='true' />
                 </Button>
