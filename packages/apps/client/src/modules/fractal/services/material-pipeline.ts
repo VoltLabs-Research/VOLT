@@ -34,17 +34,6 @@ const readMaterialColor = (material: THREE.Material): THREE.Color => {
         : new THREE.Color(1, 1, 1);
 };
 
-const TYPE_COLOR_PALETTE: ReadonlyArray<readonly [number, number, number]> = [
-    [0.5, 0.5, 0.5],
-    [1.0, 0.267, 0.267],
-    [0.267, 1.0, 0.267],
-    [0.267, 0.267, 1.0],
-    [1.0, 1.0, 0.267],
-    [1.0, 0.267, 1.0],
-    [0.267, 1.0, 1.0],
-    [0.6, 0.6, 0.6]
-];
-
 const createPointCloudUniforms = (pointScale: number): Record<string, THREE.IUniform> => ({
     cameraPosition: { value: new THREE.Vector3() },
     ambientFactor: { value: 0.7 },
@@ -60,91 +49,55 @@ const createPointCloudUniforms = (pointScale: number): Record<string, THREE.IUni
     opacity: { value: 1.0 }
 });
 
+// One byte per point, read by the shader as 0 (deleted by a mask) or 1.
 const ensurePointCloudVisibilityAttribute = (geometry: THREE.BufferGeometry): void => {
     const existing = geometry.getAttribute('aVisible');
     const pointCount = geometry.getAttribute('position')?.count ?? 0;
     if (existing instanceof THREE.BufferAttribute && existing.count === pointCount) {
         return;
     }
-    geometry.setAttribute('aVisible', new THREE.BufferAttribute(new Float32Array(pointCount).fill(1), 1));
+    geometry.setAttribute('aVisible', new THREE.BufferAttribute(new Uint8Array(pointCount).fill(255), 1, true));
 };
 
+const FALLBACK_POINT_COLOR = [0.31, 0.64, 1.0] as const;
+
+// VOLT models carry their colours; a glTF from elsewhere may have none, or all black ones.
 const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCloudColorInfo => {
-    const colorAttribute = geometry.getAttribute('color');
-    const paletteIndexAttribute = geometry.getAttribute('_color_index');
     const pointCount = geometry.getAttribute('position')?.count ?? 0;
-    const buildFallbackColors = () => {
-        const fallbackColors = new Float32Array(pointCount * 3);
+    const applyFallbackColors = () => {
+        const colors = new Float32Array(pointCount * 3);
         for (let index = 0; index < pointCount; index += 1) {
-            const colorOffset = index * 3;
-            fallbackColors[colorOffset] = 0.31;
-            fallbackColors[colorOffset + 1] = 0.64;
-            fallbackColors[colorOffset + 2] = 1.0;
+            colors.set(FALLBACK_POINT_COLOR, index * 3);
         }
-        geometry.setAttribute('color', new THREE.BufferAttribute(fallbackColors, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     };
 
-    const buildPaletteColors = () => {
-        if (!paletteIndexAttribute || paletteIndexAttribute.count === 0) {
-            return false;
-        }
-        const paletteColors = new Float32Array(pointCount * 3);
-        for (let index = 0; index < pointCount; index += 1) {
-            const colorOffset = index * 3;
-            const paletteIndex = Math.max(
-                0,
-                Math.min(TYPE_COLOR_PALETTE.length - 1, Math.round(paletteIndexAttribute.getX(index)))
-            );
-            const color = TYPE_COLOR_PALETTE[paletteIndex];
-            paletteColors[colorOffset] = color[0];
-            paletteColors[colorOffset + 1] = color[1];
-            paletteColors[colorOffset + 2] = color[2];
-        }
-        geometry.setAttribute('color', new THREE.BufferAttribute(paletteColors, 3));
-        geometry.deleteAttribute('_color_index');
-        return true;
-    };
-
-    if ((!colorAttribute || colorAttribute.count === 0) && !buildPaletteColors()) {
-        buildFallbackColors();
+    const attribute = geometry.getAttribute('color');
+    if (!(attribute instanceof THREE.BufferAttribute) || attribute.count === 0) {
+        applyFallbackColors();
         return {
             hasColorAttribute: false,
             injectedFallbackColor: true
         };
     }
 
-    const attribute = geometry.getAttribute('color');
-    const colorArray = attribute instanceof THREE.BufferAttribute && !attribute.normalized
-        ? attribute.array
-        : null;
+    const array = attribute.array;
     const stride = attribute.itemSize;
-
-    let sumR = 0; let sumG = 0; let sumB = 0;
-    let maxChannelRunning = Number.NEGATIVE_INFINITY;
+    const scale = !attribute.normalized ? 1 : array instanceof Uint8Array ? 1 / 255 : array instanceof Uint16Array ? 1 / 65535 : 1;
+    let maxChannel = 0;
     let hasFiniteColor = false;
-
-    for (let index = 0; index < attribute.count; index += 1) {
-        let r: number; let g: number; let b: number;
-        if (colorArray) {
-            const offset = index * stride;
-            r = colorArray[offset]; g = colorArray[offset + 1]; b = colorArray[offset + 2];
-        } else {
-            r = attribute.getX(index); g = attribute.getY(index); b = attribute.getZ(index);
+    for (let offset = 0; offset < array.length && maxChannel <= 0.02; offset += stride) {
+        for (let channel = 0; channel < 3; channel += 1) {
+            const value = array[offset + channel] * scale;
+            if (!Number.isFinite(value)) continue;
+            hasFiniteColor = true;
+            if (value > maxChannel) maxChannel = value;
         }
-        if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) continue;
-        hasFiniteColor = true;
-        sumR += r; sumG += g; sumB += b;
-        if (r > maxChannelRunning) maxChannelRunning = r;
-        if (g > maxChannelRunning) maxChannelRunning = g;
-        if (b > maxChannelRunning) maxChannelRunning = b;
     }
 
-    const avgLuma = hasFiniteColor
-        ? ((sumR * 0.2126) + (sumG * 0.7152) + (sumB * 0.0722)) / attribute.count
-        : 0;
-    const shouldReplaceDarkColors = !hasFiniteColor || (maxChannelRunning <= 0.02 && avgLuma <= 0.02);
+    const shouldReplaceDarkColors = !hasFiniteColor || maxChannel <= 0.02;
     if (shouldReplaceDarkColors) {
-        buildFallbackColors();
+        applyFallbackColors();
     }
 
     return {

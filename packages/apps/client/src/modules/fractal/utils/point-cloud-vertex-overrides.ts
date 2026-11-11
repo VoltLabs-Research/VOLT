@@ -22,16 +22,15 @@ const restoreHighlightColors = (pointCloud: THREE.Points): void => {
 
 export const applyPointCloudVisibilityMask = (
     pointClouds: ReadonlyArray<THREE.Points>,
-    mask: Uint8Array | null,
-    permutation: Uint32Array | null
+    mask: Uint8Array | null
 ): void => {
     pointClouds.forEach((pointCloud) => {
         const attribute = pointCloud.geometry.getAttribute('aVisible');
         if (!(attribute instanceof THREE.BufferAttribute)) return;
-        const target = attribute.array as Float32Array;
+        const target = attribute.array as Uint8Array;
 
         if (mask === null) {
-            target.fill(1);
+            target.fill(255);
             attribute.needsUpdate = true;
             return;
         }
@@ -44,9 +43,9 @@ export const applyPointCloudVisibilityMask = (
             return;
         }
 
-        const permuted = permutation?.length === mask.length ? permutation : null;
+        // Point i of a model is atom i of its frame, so the mask applies as it is.
         for (let index = 0; index < mask.length; index += 1) {
-            target[index] = mask[permuted ? permuted[index] : index] ? 1 : 0;
+            target[index] = mask[index] ? 255 : 0;
         }
         attribute.needsUpdate = true;
     });
@@ -55,8 +54,7 @@ export const applyPointCloudVisibilityMask = (
 export const applyPointCloudSelectionHighlight = (
     pointClouds: ReadonlyArray<THREE.Points>,
     mask: Uint8Array | null,
-    color: string | null,
-    permutation: Uint32Array | null
+    color: string | null
 ): void => {
     if (!mask || !color) {
         pointClouds.forEach(restoreHighlightColors);
@@ -85,9 +83,8 @@ export const applyPointCloudSelectionHighlight = (
 
         const [red, green, blue] = toChannelValues(array, override);
         const stride = attribute.itemSize;
-        const permuted = permutation?.length === attribute.count ? permutation : null;
         for (let index = 0; index < attribute.count; index += 1) {
-            if (!mask[permuted ? permuted[index] : index]) continue;
+            if (!mask[index]) continue;
             const offset = index * stride;
             array[offset] = red;
             array[offset + 1] = green;
