@@ -3,11 +3,11 @@ import { Route } from '@shared/http/route';
 import { Param, Query } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import simulationCellService from '@modules/simulation-cell/services/SimulationCellService';
 import { simulationCellRoutes } from '@volt/contracts/modules/simulation-cell/routes';
 
-@Middleware(protect, teamScoped(Resource.SIMULATION_CELL))
+@Middleware(protect, teamScoped(TeamArea.SimulationCell))
 export default class SimulationCellController extends Controller {
     @Route(simulationCellRoutes.list)
     list(

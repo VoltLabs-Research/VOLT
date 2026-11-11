@@ -4,6 +4,7 @@ import { AITool, AIToolAccess } from '@shared/ai/tool';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 import jobsService from '@modules/jobs/services/JobsService';
 import type { TrajectoryRefInput } from '@volt/contracts/modules/jobs/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 export default class JobsAIToolController extends AIToolController {
     @AITool({
@@ -12,7 +13,7 @@ export default class JobsAIToolController extends AIToolController {
         parameters: typia.llm.parameters<TrajectoryRefInput>(),
         validate: typia.createValidate<TrajectoryRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'trajectory:update'
+        area: TeamArea.Trajectory
     })
     async retryTeamFailedJobs(input: TrajectoryRefInput & AIToolScope) {
         const value = await jobsService.retryFailedJobs(input);
@@ -28,7 +29,7 @@ export default class JobsAIToolController extends AIToolController {
         parameters: typia.llm.parameters<TrajectoryRefInput>(),
         validate: typia.createValidate<TrajectoryRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'trajectory:delete'
+        area: TeamArea.Trajectory
     })
     async removeTeamRunningJobs(input: TrajectoryRefInput & AIToolScope) {
         const value = await jobsService.removeRunningJobs(input);

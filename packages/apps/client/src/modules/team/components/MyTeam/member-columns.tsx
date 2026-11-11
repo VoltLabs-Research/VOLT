@@ -7,30 +7,26 @@ import { dateColumn } from '@/shared/ui/utils/column-presets';
 import { formatDuration } from '@/shared/utils/format';
 import { formatDistanceToNow } from 'date-fns';
 import type { Key } from '@heroui/react';
-import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
+import type { TeamMemberStats } from '@volt/contracts/modules/team/domain';
+import { hasTeamRole, teamRoleLabel, type TeamRole } from '@volt/contracts/modules/team/access';
+import type { TeamRoleOption } from '@/modules/team/utils/team/role-options';
 import type { ColumnConfig } from '@/shared/ui/components/DocumentListingTable';
 
-interface TeamRoleSelectOption {
-    value: string;
-    title: string;
-    description?: string;
-}
-
 interface TeamMemberColumnsConfig {
-    selectedTeam: Team;
     currentUserId?: string;
-    canInvite: boolean;
-    roleOptions: TeamRoleSelectOption[];
-    onRoleChange: (memberId: string, roleId: string) => void;
+    actorRole: TeamRole | null;
+    canManageMembers: boolean;
+    roleOptions: TeamRoleOption[];
+    onRoleChange: (memberId: string, role: TeamRole) => void;
     onlineUserIds: Set<string>;
     hasPresenceSnapshot: boolean;
     timeSpentByUser: Map<string, number>;
 }
 
 export const createTeamMemberColumns = ({
-    selectedTeam,
     currentUserId,
-    canInvite,
+    actorRole,
+    canManageMembers,
     roleOptions,
     onRoleChange,
     onlineUserIds,
@@ -52,25 +48,23 @@ export const createTeamMemberColumns = ({
         key: 'role',
         title: 'Role',
         render: (_value, member) => {
-            if (selectedTeam.owner._id === member.user._id) {
-                return (
-                    <Chip color='default' variant='soft' size='sm'>
-                        <Chip.Label>Owner</Chip.Label>
-                    </Chip>
-                );
-            }
+            // Nobody changes their own role or the role of someone who ranks above them.
+            const canChangeRole = canManageMembers
+                && currentUserId !== member.user._id
+                && hasTeamRole(actorRole, member.role);
 
-            if (canInvite && currentUserId !== member.user._id && roleOptions.length > 0) {
+            if (canChangeRole) {
                 const handleSelectionChange = (key: Key | null) => {
-                    if (key === null) return;
+                    const next = roleOptions.find((option) => option.value === key);
+                    if (!next || next.value === member.role) return;
 
-                    onRoleChange(member._id, String(key));
+                    onRoleChange(member._id, next.value);
                 };
 
                 return (
                     <Select
                         className='min-w-[120px]'
-                        selectedKey={member.role._id}
+                        selectedKey={member.role}
                         onSelectionChange={handleSelectionChange}
                         placeholder='Select role...'
                         aria-label={`Role for ${member.user.email}`}
@@ -96,7 +90,7 @@ export const createTeamMemberColumns = ({
 
             return (
                 <Chip color='default' variant='soft' size='sm'>
-                    <Chip.Label>{member.role.name}</Chip.Label>
+                    <Chip.Label>{teamRoleLabel(member.role)}</Chip.Label>
                 </Chip>
             );
         }

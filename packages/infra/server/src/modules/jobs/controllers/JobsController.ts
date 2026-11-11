@@ -4,12 +4,12 @@ import { Route } from '@shared/http/route';
 import { Param, Query, Body, schemaBody } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import jobsService from '@modules/jobs/services/JobsService';
 import { jobsRoutes } from '@volt/contracts/modules/jobs/routes';
 import type { RetryTeamFailedJobsInput } from '@volt/contracts/modules/jobs/http';
 
-@Middleware(protect, teamScoped(Resource.TRAJECTORY))
+@Middleware(protect, teamScoped(TeamArea.Trajectory))
 export default class JobsController extends Controller {
     @Route(jobsRoutes.removeRunningJobs)
     removeRunningJobs(

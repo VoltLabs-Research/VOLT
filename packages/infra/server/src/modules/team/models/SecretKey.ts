@@ -4,11 +4,11 @@ import { Hidden } from '@shared/persistence/Hidden';
 import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
-import TeamRole from '@modules/team/models/TeamRole';
+import { TeamRoleColumn } from '@modules/team/models/team-role-column';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 @Entity('secret_keys')
 @Index(['team', 'isActive', 'createdAt'])
-@Index(['team', 'role'])
 @Index(['team', 'keyPrefix'])
 export default class SecretKey extends BaseModel{
     @ManyToOne(() => Team, { onDelete: 'CASCADE' })
@@ -18,12 +18,8 @@ export default class SecretKey extends BaseModel{
     @ReferenceColumn()
     team!: string;
 
-    @ManyToOne(() => TeamRole, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'role' })
-    roleRef?: TeamRole;
-
-    @ReferenceColumn()
-    role!: string;
+    @TeamRoleColumn()
+    role!: TeamRole;
 
     @Column('varchar')
     name!: string;

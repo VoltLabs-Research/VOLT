@@ -1,7 +1,6 @@
 import { TEAM_INVITATION_QUERY_KEYS } from '@/modules/team/hooks/invitation/queries';
 import { TEAM_MEMBER_QUERY_KEYS } from '@/modules/team/hooks/member/queries';
 import { TEAM_QUERY_KEYS } from '@/modules/team/hooks/team/queries';
-import { TEAM_ROLE_QUERY_KEYS } from '@/modules/team/hooks/role/queries';
 import teamStorage from '@/modules/team/services/team/team-storage';
 import { useTeamPresenceStore } from '@/modules/team/store/team/use-team-presence-store';
 import { resetTeamScopedStores } from '@/shared/utils/application-store-cleanups';
@@ -74,9 +73,8 @@ export const useTeamStore = create<TeamStore>((set) => ({
 }));
 
 const resetTeamDependentStores = (): void => {
-    queryClient.removeQueries({ queryKey: TEAM_QUERY_KEYS.permissions() });
+    queryClient.removeQueries({ queryKey: TEAM_QUERY_KEYS.role() });
     queryClient.removeQueries({ queryKey: TEAM_MEMBER_QUERY_KEYS.members() });
-    queryClient.removeQueries({ queryKey: TEAM_ROLE_QUERY_KEYS.roles() });
     queryClient.removeQueries({ queryKey: TEAM_INVITATION_QUERY_KEYS.invitations() });
     useTeamPresenceStore.getState().reset();
 };

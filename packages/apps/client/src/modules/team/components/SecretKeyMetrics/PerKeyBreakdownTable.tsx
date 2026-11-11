@@ -1,6 +1,7 @@
 import { cn } from '@heroui/react';
 import type { SecretKeyPerKeyMetric } from '@volt/contracts/modules/team/domain';
 import Scrollable from '@/shared/ui/components/Scrollable';
+import { teamRoleLabel } from '@volt/contracts/modules/team/access';
 
 interface PerKeyBreakdownTableProps {
     perKey: SecretKeyPerKeyMetric[];
@@ -34,7 +35,7 @@ const PerKeyBreakdownTable = ({ perKey }: PerKeyBreakdownTableProps) => (
                                     <span className='text-xs text-muted font-mono'>{key.keyPrefix}...</span>
                                 </div>
                             </td>
-                            <td className={cn(CELL_CLASS, 'text-muted')}>{key.roleName}</td>
+                            <td className={cn(CELL_CLASS, 'text-muted')}>{teamRoleLabel(key.role)}</td>
                             <td className={cn(CELL_CLASS, 'tabular-nums text-foreground')}>{key.totalRequests.toLocaleString()}</td>
                             <td className={cn(CELL_CLASS, 'tabular-nums text-muted')}>{Math.round(key.avgResponseTime)} ms</td>
                             <td className={cn(CELL_CLASS, 'text-muted')}>

@@ -3,6 +3,7 @@ import type { DataSource } from 'typeorm';
 import { createDataSource } from '@core/config/database';
 import { getEntities } from '@core/bootstrap/entities';
 import { dropRetiredTables } from '@core/bootstrap/drop-retired-tables';
+import { retireTeamRoles } from '@core/bootstrap/retire-team-roles';
 import { serializeSqliteTransactions } from '@shared/persistence/sqlite-transactions';
 import logger from '@shared/logger';
 
@@ -18,6 +19,8 @@ export const connectDatabase = async (): Promise<void> => {
         serializeSqliteTransactions(dataSource);
     }
     BaseEntity.useDataSource(dataSource);
+    await retireTeamRoles(dataSource);
+    await dataSource.synchronize();
     await dropRetiredTables(dataSource);
 
     logger.info(`Connected to the database (${dataSource.options.type})!`);

@@ -26,7 +26,6 @@ import Team from '@modules/team/models/Team';
 import TeamAIIntegration from '@modules/team/models/TeamAIIntegration';
 import TeamInvitation from '@modules/team/models/TeamInvitation';
 import TeamMember from '@modules/team/models/TeamMember';
-import TeamRole from '@modules/team/models/TeamRole';
 import SceneArtifact from '@modules/trajectory/models/SceneArtifact';
 import Trajectory from '@modules/trajectory/models/Trajectory';
 import TrajectoryCloneJob from '@modules/trajectory/models/TrajectoryCloneJob';
@@ -37,7 +36,6 @@ import Whiteboard from '@modules/whiteboards/models/Whiteboard';
 const ENTITIES: readonly Function[] = [
     User,
     Team,
-    TeamRole,
     TeamMember,
     TeamInvitation,
     SecretKey,

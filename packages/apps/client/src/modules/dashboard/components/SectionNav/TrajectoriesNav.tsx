@@ -1,5 +1,5 @@
 import SectionNav from '@/modules/dashboard/components/SectionNav';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import {
     SIMULATION_CELLS_PATH,
     TRAJECTORIES_LIST_PATH,
@@ -9,6 +9,7 @@ import {
 import { Box, Cuboid, Package, Table } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import type { SectionNavLink } from '@/modules/dashboard/components/SectionNav';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 interface TrajectoriesNavProps {
     active: boolean;
@@ -17,9 +18,9 @@ interface TrajectoriesNavProps {
 
 const TrajectoriesNav = ({ active, collapsed }: TrajectoriesNavProps) => {
     const { pathname, search } = useLocation();
-    const { canAccess } = useTeamPermissions();
-    const trajectoriesDenied = canAccess(['trajectory:read']) ? undefined : 'You do not have permission to view trajectories.';
-    const cellsDenied = canAccess(['simulation-cell:read']) ? undefined : 'You do not have permission to view simulation cells.';
+    const { can } = useTeamAccess();
+    const trajectoriesDenied = can(TeamArea.Trajectory, TeamAccess.Read) ? undefined : 'You do not have permission to view trajectories.';
+    const cellsDenied = can(TeamArea.SimulationCell, TeamAccess.Read) ? undefined : 'You do not have permission to view simulation cells.';
 
     const links: SectionNavLink[] = [
         {

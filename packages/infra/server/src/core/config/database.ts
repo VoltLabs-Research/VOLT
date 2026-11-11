@@ -18,16 +18,15 @@ const buildOptions = (url: string, entities: DatabaseEntities): DataSourceOption
         return {
             type: 'better-sqlite3',
             database: url.slice(SQLITE_URL_SCHEME.length),
-            synchronize: true,
             entities
         };
     }
 
     // There are no migrations: the entities are the schema, in production too, as on the daemon.
+    // connectDatabase synchronizes it once the data it needs to rewrite first has been rewritten.
     return {
         type: 'postgres',
         url,
-        synchronize: true,
         entities,
         applicationName: 'volt',
         poolSize: 100

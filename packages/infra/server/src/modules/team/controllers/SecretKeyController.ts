@@ -1,11 +1,11 @@
 import typia from 'typia';
 import Controller, { Middleware } from '@shared/http/Controller';
 import { Route, Status } from '@shared/http/route';
-import { Body, schemaBody, Param, Query, CurrentUser, Req } from '@shared/http/params';
+import { Body, schemaBody, Param, Query, CurrentUser, CurrentTeamRole, Req } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
 import type { AuthenticatedRequest } from '@shared/contracts/types/AuthenticatedRequest';
-import { Resource } from '@core/constants/resources';
+import { TeamArea, type TeamRole } from '@volt/contracts/modules/team/access';
 import secretKeyService from '@modules/team/services/SecretKeyService';
 import { secretKeyRoutes } from '@volt/contracts/modules/team/routes';
 import type { CreateSecretKeyInput } from '@volt/contracts/modules/team/http';
@@ -18,7 +18,7 @@ export default class SecretKeyController extends Controller {
     }
 
     @Route(secretKeyRoutes.teamMetrics)
-    @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
+    @Middleware(teamScoped(TeamArea.TeamSecretKey))
     teamMetrics(
         @Param('teamId') teamId: string,
         @Query('days') days?: string
@@ -27,7 +27,7 @@ export default class SecretKeyController extends Controller {
     }
 
     @Route(secretKeyRoutes.keyUsage)
-    @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
+    @Middleware(teamScoped(TeamArea.TeamSecretKey))
     keyUsage(
         @Param('teamId') teamId: string,
         @Param('secretKeyId') secretKeyId: string,
@@ -37,7 +37,7 @@ export default class SecretKeyController extends Controller {
     }
 
     @Route(secretKeyRoutes.list)
-    @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
+    @Middleware(teamScoped(TeamArea.TeamSecretKey))
     listByTeamId(
         @Param('teamId') teamId: string,
         @Query('page') page?: string,
@@ -48,17 +48,18 @@ export default class SecretKeyController extends Controller {
 
     @Route(secretKeyRoutes.create)
     @Status(201)
-    @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
+    @Middleware(teamScoped(TeamArea.TeamSecretKey))
     create(
         @Param('teamId') teamId: string,
         @CurrentUser() userId: string,
+        @CurrentTeamRole() actorRole: TeamRole | undefined,
         @Body(schemaBody(typia.createValidate<CreateSecretKeyInput>())) body: CreateSecretKeyInput
     ){
-        return secretKeyService.create(teamId, userId, body);
+        return secretKeyService.create(teamId, userId, actorRole, body);
     }
 
     @Route(secretKeyRoutes.revokeById)
-    @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
+    @Middleware(teamScoped(TeamArea.TeamSecretKey))
     revokeById(
         @Param('teamId') teamId: string,
         @Param('secretKeyId') secretKeyId: string
@@ -67,7 +68,7 @@ export default class SecretKeyController extends Controller {
     }
 
     @Route(secretKeyRoutes.deleteById)
-    @Middleware(teamScoped(Resource.TEAM_SECRET_KEY))
+    @Middleware(teamScoped(TeamArea.TeamSecretKey))
     async deleteById(
         @Param('teamId') teamId: string,
         @Param('secretKeyId') secretKeyId: string,

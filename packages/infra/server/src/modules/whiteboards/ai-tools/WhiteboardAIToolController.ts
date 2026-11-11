@@ -16,6 +16,7 @@ import type {
     UpdateWhiteboardInput,
     WhiteboardRefInput
 } from '@volt/contracts/modules/whiteboards/ai-tools';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 type StoredScene = WhiteboardScene & { files?: Record<string, unknown> };
 
@@ -26,7 +27,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<CreateWhiteboardInput>(),
         validate: typia.createValidate<CreateWhiteboardInput>(),
         access: AIToolAccess.Write,
-        permission: 'whiteboard:create',
+        area: TeamArea.Whiteboard,
         approval: false
     })
     createWhiteboard(input: CreateWhiteboardInput & AIToolScope) {
@@ -39,7 +40,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListWhiteboardsInput>(),
         validate: typia.createValidate<ListWhiteboardsInput>(),
         access: AIToolAccess.Read,
-        permission: 'whiteboard:read'
+        area: TeamArea.Whiteboard
     })
     async listWhiteboards(input: ListWhiteboardsInput & AIToolScope) {
         const { total, data } = await whiteboardService.listWhiteboards(input.teamId, {
@@ -59,7 +60,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<WhiteboardRefInput>(),
         validate: typia.createValidate<WhiteboardRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'whiteboard:read'
+        area: TeamArea.Whiteboard
     })
     async getWhiteboard(input: WhiteboardRefInput & AIToolScope) {
         const whiteboard = await whiteboardService.getWhiteboard(input.teamId, input.whiteboardId);
@@ -75,7 +76,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<WhiteboardRefInput>(),
         validate: typia.createValidate<WhiteboardRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'whiteboard:read'
+        area: TeamArea.Whiteboard
     })
     async getWhiteboardState(input: WhiteboardRefInput & AIToolScope) {
         const raw = await text(await whiteboardService.getWhiteboardState(input.teamId, input.whiteboardId));
@@ -104,7 +105,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<UpdateWhiteboardInput>(),
         validate: typia.createValidate<UpdateWhiteboardInput>(),
         access: AIToolAccess.Write,
-        permission: 'whiteboard:update'
+        area: TeamArea.Whiteboard
     })
     updateWhiteboard(input: UpdateWhiteboardInput & AIToolScope) {
         return whiteboardService.updateWhiteboard(input.teamId, input.whiteboardId, input.userId, input);
@@ -116,7 +117,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<MoveWhiteboardInput>(),
         validate: typia.createValidate<MoveWhiteboardInput>(),
         access: AIToolAccess.Write,
-        permission: 'whiteboard:update'
+        area: TeamArea.Whiteboard
     })
     async moveWhiteboard(input: MoveWhiteboardInput & AIToolScope) {
         await whiteboardService.moveWhiteboard(input.teamId, input.whiteboardId, input.folderId);
@@ -132,7 +133,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<WhiteboardRefInput>(),
         validate: typia.createValidate<WhiteboardRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'whiteboard:delete'
+        area: TeamArea.Whiteboard
     })
     async deleteWhiteboard(input: WhiteboardRefInput & AIToolScope) {
         await whiteboardService.deleteWhiteboard(input.teamId, input.whiteboardId, input.userId);
@@ -148,7 +149,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<DeleteWhiteboardFolderInput>(),
         validate: typia.createValidate<DeleteWhiteboardFolderInput>(),
         access: AIToolAccess.Write,
-        permission: 'whiteboard:delete'
+        area: TeamArea.Whiteboard
     })
     async deleteWhiteboardFolder(input: DeleteWhiteboardFolderInput & AIToolScope) {
         await whiteboardFolderService.deleteFolder(input.teamId, input.folderId, input.userId);
@@ -168,7 +169,7 @@ export default class WhiteboardAIToolController extends AIToolController {
         parameters: typia.llm.parameters<DrawOnWhiteboardInput>(),
         validate: typia.createValidate<DrawOnWhiteboardInput>(),
         access: AIToolAccess.Write,
-        permission: 'whiteboard:update',
+        area: TeamArea.Whiteboard,
         approval: false
     })
     drawOnWhiteboard(): void {}

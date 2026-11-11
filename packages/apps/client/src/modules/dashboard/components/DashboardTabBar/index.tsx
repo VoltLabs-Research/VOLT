@@ -1,12 +1,13 @@
 import { sidebarPanelFor, TRAJECTORIES_LIST_PATH } from '@/modules/dashboard/utils/sidebar-panels';
 import useDefaultSettingsPath from '@/modules/dashboard/hooks/use-default-settings-path';
-import useTeamPermissions from '@/modules/team/hooks/team/use-team-permissions';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import useFolderSearchParam from '@/shared/ui/hooks/use-folder-search-param';
 import { cn } from '@heroui/react';
 import { Box, LayoutGrid, Plus, Settings, Sparkles } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
+import { TeamAccess, TeamArea } from '@volt/contracts/modules/team/access';
 
 const WELL_CLASS = 'flex size-10 items-center justify-center rounded-full transition-colors duration-150';
 
@@ -40,12 +41,12 @@ const DashboardTabBar = () => {
     const { pathname } = useLocation();
     const panel = sidebarPanelFor(pathname);
     const settingsPath = useDefaultSettingsPath();
-    const { canAccess } = useTeamPermissions();
+    const { can } = useTeamAccess();
     const { currentFolderId } = useFolderSearchParam();
     const uploadFolderId = TRAJECTORY_FOLDER_PATHS.has(pathname) ? currentFolderId : null;
     const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(undefined, uploadFolderId);
 
-    const canUpload = canAccess(['trajectory:create']);
+    const canUpload = can(TeamArea.Trajectory, TeamAccess.Write);
 
     return (
         <nav
@@ -55,7 +56,7 @@ const DashboardTabBar = () => {
             <ul className='flex h-14 items-stretch'>
                 <Tab label='Dashboard' icon={LayoutGrid} to='/dashboard' isActive={pathname === '/dashboard'} />
 
-                {canAccess(['trajectory:read']) && (
+                {can(TeamArea.Trajectory, TeamAccess.Read) && (
                     <Tab label='Trajectories' icon={Box} to={TRAJECTORIES_LIST_PATH} isActive={panel === 'trajectories'} />
                 )}
 
@@ -76,7 +77,7 @@ const DashboardTabBar = () => {
                     </li>
                 )}
 
-                {canAccess(['ai-conversation:read']) && (
+                {can(TeamArea.AIConversation, TeamAccess.Read) && (
                     <Tab label='VOLT AI' icon={Sparkles} to='/dashboard/ai' isActive={panel === 'ai'} />
                 )}
 

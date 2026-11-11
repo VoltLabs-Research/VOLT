@@ -3,7 +3,8 @@ import BaseModel from '@shared/persistence/BaseModel';
 import { ReferenceColumn } from '@shared/persistence/ReferenceColumn';
 import User from '@modules/auth/models/User';
 import Team from '@modules/team/models/Team';
-import TeamRole from '@modules/team/models/TeamRole';
+import { TeamRoleColumn } from '@modules/team/models/team-role-column';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 @Entity('team_members')
 @Index(['team', 'user'], { unique: true })
@@ -24,12 +25,8 @@ export default class TeamMember extends BaseModel{
     @ReferenceColumn()
     user!: string;
 
-    @ManyToOne(() => TeamRole, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'role' })
-    roleRef?: TeamRole;
-
-    @ReferenceColumn()
-    role!: string;
+    @TeamRoleColumn()
+    role!: TeamRole;
 
     @Column({
         type: Date,

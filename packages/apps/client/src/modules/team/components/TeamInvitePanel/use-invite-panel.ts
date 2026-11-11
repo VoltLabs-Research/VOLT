@@ -91,8 +91,7 @@ export default function useInvitePanel() {
             await runAction({
                 action: () => sendInvitation.mutateAsync({
                     teamId,
-                    email,
-                    roleId: undefined
+                    email
                 }),
                 afterSuccess: () => {
                     sileo.success({

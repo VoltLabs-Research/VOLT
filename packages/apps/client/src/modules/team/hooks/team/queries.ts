@@ -12,6 +12,7 @@ import type { JoinTeamByCodeInput } from '@volt/contracts/modules/team/http';
 import type { JoinTeamResponse, PreviewJoinTeamResponse } from '@volt/contracts/modules/team/domain';
 import type { TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateTeamInput } from '@volt/contracts/modules/team/http';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 const TEAM_BOOT_STALE_TIME = 5 * 60 * 1000;
 
@@ -19,23 +20,22 @@ const teamKeys = buildKeys<{
     teams: void;
 }>('teams');
 
-const permissionKeys = buildKeys<{
-    permissions: void;
-    teamPermissions: string;
-}>('team-permissions');
+const roleKeys = buildKeys<{
+    role: void;
+    teamRole: string;
+}>('team-role');
 
 export const TEAM_QUERY_KEYS = {
     teams: teamKeys.teams,
-    permissions: permissionKeys.permissions,
-    teamPermissions: permissionKeys.teamPermissions,
+    role: roleKeys.role,
+    teamRole: roleKeys.teamRole,
     joinByCodePreview: (code: string) => ['team-join-by-code-preview', code] as const
 };
 
 registerPreservedQueryKey(TEAM_QUERY_KEYS.teams()[0] as string);
 
 const TEAM_SCOPED_QUERY_ROOTS = new Set<string>([
-    'team-permissions',
-    'team-roles',
+    'team-role',
     'team-members',
     'team-invitations',
     'secret-keys',
@@ -94,13 +94,13 @@ export const useTeamsQuery = (_params?: void, options?: QueryOptions<Team[]>) =>
     });
 };
 
-const useTeamPermissionsQueryBase = createQuery<string, string[]>(
-    TEAM_QUERY_KEYS.teamPermissions,
-    (teamId: string) => teamService.getMyPermissions({ teamId })
+const useTeamRoleQueryBase = createQuery<string, TeamRole>(
+    TEAM_QUERY_KEYS.teamRole,
+    (teamId: string) => teamService.getMyRole({ teamId })
 );
 
-export const useTeamPermissionsQuery = (teamId: string, options?: QueryOptions<string[]>) => {
-    return useTeamPermissionsQueryBase(teamId, {
+export const useTeamRoleQuery = (teamId: string, options?: QueryOptions<TeamRole>) => {
+    return useTeamRoleQueryBase(teamId, {
         staleTime: TEAM_BOOT_STALE_TIME,
         ...options
     });

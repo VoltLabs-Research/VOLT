@@ -29,6 +29,7 @@ import workflowValidatorService from '@modules/plugin/services/plugin/WorkflowVa
 import pluginListingQueryService from '@modules/plugin/services/listing-row/PluginListingQueryService';
 import analysisListingExportCatalogService from '@modules/plugin/services/listing-row/AnalysisListingExportCatalogService';
 import type { IWorkflow } from '@volt/contracts/modules/plugin/workflow';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 
 interface PluginTopology {
     name: string;
@@ -70,7 +71,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<InstallPluginInput>(),
         validate: typia.createValidate<InstallPluginInput>(),
         access: AIToolAccess.Write,
-        permission: 'plugin:create'
+        area: TeamArea.Plugin
     })
     async installPlugin(input: InstallPluginInput & AIToolScope) {
         return pluginArchiveService.installFromRegistry(input);
@@ -82,7 +83,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<PluginRefInput>(),
         validate: typia.createValidate<PluginRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'plugin:create',
+        area: TeamArea.Plugin,
         approval: false
     })
     async clonePlugin(input: PluginRefInput & AIToolScope) {
@@ -95,7 +96,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SearchRegistryPluginsInput>(),
         validate: typia.createValidate<SearchRegistryPluginsInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async searchRegistryPlugins(input: SearchRegistryPluginsInput & AIToolScope) {
         const { total, items } = await registryGateway.search(input.q, input.page, input.limit);
@@ -111,7 +112,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListPluginsInput>(),
         validate: typia.createValidate<ListPluginsInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async listPlugins(input: ListPluginsInput & AIToolScope) {
         const { total, data } = await pluginCrudService.listPlugins({
@@ -131,7 +132,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<PluginRefInput>(),
         validate: typia.createValidate<PluginRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async getPluginById(input: PluginRefInput) {
         const plugin = await pluginCrudService.getPluginById(input.pluginId);
@@ -147,7 +148,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<PluginRefInput>(),
         validate: typia.createValidate<PluginRefInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async describePluginArguments(input: PluginRefInput) {
         const described = await pluginArgumentDescriber.describePluginArguments(input);
@@ -163,7 +164,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ComparePluginsInput>(),
         validate: typia.createValidate<ComparePluginsInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async comparePlugins(input: ComparePluginsInput) {
         const [pluginA, pluginB] = await Promise.all([
@@ -197,7 +198,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ValidateWorkflowInput>(),
         validate: typia.createValidate<ValidateWorkflowInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async validateWorkflow(input: ValidateWorkflowInput) {
         const validation = await workflowValidatorService.validateWorkflow({
@@ -220,7 +221,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<PluginRefInput>(),
         validate: typia.createValidate<PluginRefInput>(),
         access: AIToolAccess.Write,
-        permission: 'plugin:update'
+        area: TeamArea.Plugin
     })
     async publishPlugin(input: PluginRefInput) {
         const plugin = await pluginCrudService.updatePluginById({
@@ -240,7 +241,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<UninstallPluginInput>(),
         validate: typia.createValidate<UninstallPluginInput>(),
         access: AIToolAccess.Write,
-        permission: 'plugin:delete'
+        area: TeamArea.Plugin
     })
     async uninstallPlugin(input: UninstallPluginInput) {
         return pluginCrudService.deletePluginById(input.pluginId);
@@ -252,7 +253,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ExecutePipelineInput>(),
         validate: typia.createValidate<ExecutePipelineInput>(),
         access: AIToolAccess.Write,
-        permission: 'plugin:create'
+        area: TeamArea.Plugin
     })
     async executePipeline(input: ExecutePipelineInput & AIToolScope) {
         const { runId, stages } = await pipelineExecutionPlanner.executePipeline({
@@ -287,7 +288,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListPluginListingDocumentsInput>(),
         validate: typia.createValidate<ListPluginListingDocumentsInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async listPluginListingDocuments(input: ListPluginListingDocumentsInput & AIToolScope) {
         const { total, data } = await pluginListingQueryService.getPluginListingDocuments(input);
@@ -303,7 +304,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ListAnalysisResultOptionsInput>(),
         validate: typia.createValidate<ListAnalysisResultOptionsInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async listAnalysisResultOptions(input: ListAnalysisResultOptionsInput & AIToolScope) {
         const options = await analysisListingExportCatalogService.getExportOptions(input.analysisId);
@@ -320,7 +321,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<ReadAnalysisResultRowsInput>(),
         validate: typia.createValidate<ReadAnalysisResultRowsInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async readAnalysisResultRows(input: ReadAnalysisResultRowsInput & AIToolScope) {
         const rows = await pluginListingQueryService.getListingRowsByAnalysisId(input);
@@ -337,7 +338,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<GetSubListingInput>(),
         validate: typia.createValidate<GetSubListingInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async getSubListing(input: GetSubListingInput & AIToolScope) {
         const subListing = await pluginListingQueryService.getSubListing(input);
@@ -354,7 +355,7 @@ export default class PluginAIToolController extends AIToolController {
         parameters: typia.llm.parameters<SummarizeAnalysisResultInput>(),
         validate: typia.createValidate<SummarizeAnalysisResultInput>(),
         access: AIToolAccess.Read,
-        permission: 'plugin:read'
+        area: TeamArea.Plugin
     })
     async summarizeAnalysisResult(input: SummarizeAnalysisResultInput & AIToolScope) {
         const summarized = await analysisResultSummarizer.summarizeAnalysisResult(input);

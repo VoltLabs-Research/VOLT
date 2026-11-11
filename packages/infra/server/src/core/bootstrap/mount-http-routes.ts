@@ -8,7 +8,6 @@ import NotificationController from '@modules/notification/controllers/Notificati
 import SystemController from '@modules/system/controllers/SystemController';
 import TeamController from '@modules/team/controllers/TeamController';
 import TeamMemberController from '@modules/team/controllers/TeamMemberController';
-import TeamRoleController from '@modules/team/controllers/TeamRoleController';
 import TeamInvitationController from '@modules/team/controllers/TeamInvitationController';
 import SecretKeyController from '@modules/team/controllers/SecretKeyController';
 import TeamAIIntegrationController from '@modules/team/controllers/TeamAIIntegrationController';
@@ -40,7 +39,6 @@ const CONTROLLERS: Readonly<Record<string, readonly RouterProviderClass[]>> = {
     team: [
         TeamController,
         TeamMemberController,
-        TeamRoleController,
         TeamInvitationController,
         SecretKeyController,
         TeamAIIntegrationController

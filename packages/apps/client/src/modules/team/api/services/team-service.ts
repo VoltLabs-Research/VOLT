@@ -6,13 +6,14 @@ import type { Team } from '@volt/contracts/modules/team/domain';
 import type { TeamScopedParams } from '@/shared/api/request-params';
 import type { CreateTeamInput, JoinTeamByCodeInput, UpdateTeamInput } from '@volt/contracts/modules/team/http';
 import type { JoinTeamResponse, PreviewJoinTeamResponse } from '@volt/contracts/modules/team/domain';
+import type { TeamRole } from '@volt/contracts/modules/team/access';
 
 
 
 
 export type UpdateTeamParams = TeamScopedParams & UpdateTeamInput;
 
-const TEAM_PERMISSIONS_UNWRAP: UnwrapMode = { field: 'permissions' };
+const TEAM_ROLE_UNWRAP: UnwrapMode = { field: 'role' };
 
 const routes = serviceRoutes('/teams');
 
@@ -26,9 +27,9 @@ const endpoints = {
     previewJoinByCode: routes.route<JoinTeamByCodeInput, PreviewJoinTeamResponse>(teamRoutes.previewJoinByCode),
     joinByCode: routes.route<JoinTeamByCodeInput, JoinTeamResponse>(teamRoutes.joinByCode),
     leave: routes.route<TeamScopedParams, void>(teamRoutes.leave, { unwrap: 'void' }),
-    getMyPermissions: routes.route<TeamScopedParams, string[]>(
-        teamRoutes.getMyPermissions, {
-            unwrap: TEAM_PERMISSIONS_UNWRAP
+    getMyRole: routes.route<TeamScopedParams, TeamRole>(
+        teamRoutes.getMyRole, {
+            unwrap: TEAM_ROLE_UNWRAP
         }
     )
 };

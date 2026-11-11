@@ -8,6 +8,8 @@ import { createPromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { LogOut, UserMinus } from 'lucide-react';
 import { useCallback } from 'react';
 import type { Team, TeamMemberStats } from '@volt/contracts/modules/team/domain';
+import { TeamArea, hasTeamRole, type TeamRole } from '@volt/contracts/modules/team/access';
+import { writeAccess } from '@/modules/team/utils/team/team-access';
 
 const LEAVE_TEAM_LABEL = 'Leave team';
 
@@ -32,13 +34,15 @@ const getRemoveMemberToastOptions = (member: TeamMemberStats) => createPromiseTo
 interface UseTeamMemberListingActionsOptions {
     selectedTeam: Team;
     currentUserId?: string;
-    canInvite: boolean;
+    actorRole: TeamRole | null;
+    canManageMembers: boolean;
 }
 
 export default function useTeamMemberListingActions({
     selectedTeam,
     currentUserId,
-    canInvite
+    actorRole,
+    canManageMembers
 }: UseTeamMemberListingActionsOptions) {
     const updateTeamMutation = useUpdateTeamMutation();
     const updateTeamMemberMutation = useUpdateTeamMemberMutation();
@@ -55,12 +59,12 @@ export default function useTeamMemberListingActions({
         });
     }, [selectedTeam._id, updateTeamMutation]);
 
-    const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
+    const handleRoleChange = useCallback(async (memberId: string, role: TeamRole) => {
         await runAction({
             action: () => updateTeamMemberMutation.mutateAsync({
                 teamId: selectedTeam._id,
                 teamMemberId: memberId,
-                role: roleId
+                role
             }),
             toast: updateRoleToastOptions
         });
@@ -101,7 +105,7 @@ export default function useTeamMemberListingActions({
                     const targets = selectedItems.length > 1 ? selectedItems : [item];
                     return handleRemoveMembers(targets);
                 },
-                requiredPermission: canInvite ? undefined : 'team-invitation:create'
+                requiredAccess: writeAccess(TeamArea.TeamMember)
             },
             leave: {
                 label: LEAVE_TEAM_LABEL,
@@ -114,20 +118,24 @@ export default function useTeamMemberListingActions({
     });
 
     const getTeamMemberMenuOptions = useCallback((member: TeamMemberStats, selectedMembers: TeamMemberStats[]) => {
-        if (!canInvite && selectedMembers.length > 1) {
+        if (!canManageMembers && selectedMembers.length > 1) {
             return [];
         }
 
+        // Nobody removes a member who ranks above them.
         if (selectedMembers.length > 1) {
+            if (selectedMembers.some((selected) => !hasTeamRole(actorRole, selected.role))) return [];
+
             return getSelectionActionOptions(member, selectedMembers)
                 .filter((option) => option.label !== LEAVE_TEAM_LABEL);
         }
 
         const options = getMenuOptions(member, selectedMembers);
         const isSelf = currentUserId === member.user._id;
+        if (!isSelf && !hasTeamRole(actorRole, member.role)) return [];
 
         return options.filter((option) => (option.label === LEAVE_TEAM_LABEL) === isSelf);
-    }, [canInvite, currentUserId, getMenuOptions, getSelectionActionOptions]);
+    }, [actorRole, canManageMembers, currentUserId, getMenuOptions, getSelectionActionOptions]);
 
     return {
         handleSaveTeamName,

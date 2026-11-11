@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { TeamAccessRequirement } from '@/modules/team/utils/team/team-access';
 
 export type RouteLoader = () => Promise<{ default: ComponentType }>;
 
@@ -13,7 +14,6 @@ export enum DashboardNavigationIconKey {
     Dashboard = 'dashboard',
     MyTeam = 'my-team',
     Notebooks = 'notebooks',
-    ManageRoles = 'manage-roles',
     Whiteboards = 'whiteboards',
 
     SettingsGeneral = 'settings-general',
@@ -21,11 +21,6 @@ export enum DashboardNavigationIconKey {
     SettingsIntegrations = 'settings-integrations',
     SettingsSessions = 'settings-sessions',
     SecretKeys = 'secret-keys'
-};
-
-export enum RoutePermissionMode {
-    Any = 'any',
-    All = 'all'
 };
 
 export interface RouteNavigationConfig {
@@ -43,8 +38,8 @@ export interface RouteConfig {
     loader?: RouteLoader;
     index?: boolean;
     children?: RouteConfig[];
-    requiredPermissions?: string[];
-    permissionMode?: RoutePermissionMode;
+    // Every one of these must be met to open the page.
+    requiredAccess?: TeamAccessRequirement[];
     // What the page needs is on a machine: clusters that reach their server. A backend running in
     // this browser's tab has none, so the page is not offered there.
     requiresMachine?: boolean;

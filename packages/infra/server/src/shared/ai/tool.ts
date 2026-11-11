@@ -1,6 +1,5 @@
 import type { IValidation } from 'typia';
-import type { Action } from '@core/constants/permissions';
-import type { Resource } from '@core/constants/resources';
+import type { TeamArea } from '@volt/contracts/modules/team/access';
 import type { AIToolScope } from '@shared/contracts/types/AiToolScope';
 
 export enum AIToolAccess {
@@ -12,8 +11,6 @@ export enum AIToolRunner {
     Server = 'server',
     Browser = 'browser'
 }
-
-export type AIToolPermission = `${Resource}:${Action}`;
 
 export type AIToolApproval<TInput> = boolean | ((input: TInput) => boolean);
 
@@ -33,9 +30,9 @@ interface AIToolMetadata<TInput> {
     parameters: AIToolParameters;
     validate: AIToolValidator<TInput>;
     access: AIToolAccess;
-    // The team permission its HTTP twin requires, or null when it touches only the caller's own
-    // account or screen. Tools the caller lacks the permission for are never offered to the model.
-    permission: AIToolPermission | null;
+    // The team area its HTTP twin guards, or null when it touches only the caller's own account or
+    // screen. With access it picks the lowest role offered the tool; others never see it.
+    area: TeamArea | null;
     // Writes ask the user first unless this says otherwise.
     approval?: AIToolApproval<TInput>;
 }
@@ -46,7 +43,7 @@ export interface AIToolDefinition {
     parameters: AIToolParameters;
     validate: AIToolValidator<unknown>;
     access: AIToolAccess;
-    permission: AIToolPermission | null;
+    area: TeamArea | null;
     approval: AIToolApproval<unknown>;
     runner: AIToolRunner;
     handlerName: string | symbol;
@@ -70,7 +67,7 @@ const register = <TInput>(
         parameters: metadata.parameters,
         validate: metadata.validate as AIToolValidator<unknown>,
         access: metadata.access,
-        permission: metadata.permission,
+        area: metadata.area,
         approval: (metadata.approval ?? metadata.access === AIToolAccess.Write) as AIToolApproval<unknown>,
         runner,
         handlerName

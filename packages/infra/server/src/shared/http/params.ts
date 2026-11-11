@@ -42,6 +42,10 @@ export const Query = (name?: string): ParameterDecorator =>
 export const CurrentUser = (): ParameterDecorator =>
     createParamDecorator((req) => req.userId);
 
+// The caller's role in the request's team; set only behind checkTeamMembership or teamScoped.
+export const CurrentTeamRole = (): ParameterDecorator =>
+    createParamDecorator((req) => req.teamRole);
+
 export const Ip = (): ParameterDecorator =>
     createParamDecorator((req) => req.ip ?? '');
 

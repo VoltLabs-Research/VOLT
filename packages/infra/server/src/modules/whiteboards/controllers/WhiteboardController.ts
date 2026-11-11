@@ -4,7 +4,7 @@ import { Route, Status } from '@shared/http/route';
 import { Body, schemaBody, Param, Query, CurrentUser, Res } from '@shared/http/params';
 import { teamScoped } from '@modules/team/controllers/middleware/team-scoped';
 import { protect } from '@modules/auth/controllers/middleware/authentication';
-import { Resource } from '@core/constants/resources';
+import { TeamArea } from '@volt/contracts/modules/team/access';
 import { pipeStreamToResponse } from '@shared/http/responses/pipe-stream';
 import whiteboardService from '@modules/whiteboards/services/WhiteboardService';
 import whiteboardFolderService from '@modules/whiteboards/services/WhiteboardFolderService';
@@ -28,7 +28,7 @@ const readPage = (query: Record<string, string>) => ({
     limit: query.limit !== undefined ? Number(query.limit) : undefined
 });
 
-@Middleware(protect, teamScoped(Resource.WHITEBOARD))
+@Middleware(protect, teamScoped(TeamArea.Whiteboard))
 export default class WhiteboardController extends Controller {
     @Route(whiteboardRoutes.create)
     @Status(201)
