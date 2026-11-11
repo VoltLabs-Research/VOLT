@@ -11,6 +11,7 @@ interface ModifierEditorFormValues {
     version: string;
     homepage: string;
     description: string;
+    category: string;
 }
 
 const MODIFIER_EDITOR_DEFAULT_VALUES = {
@@ -20,7 +21,8 @@ const MODIFIER_EDITOR_DEFAULT_VALUES = {
     license: '',
     version: '',
     homepage: '',
-    description: ''
+    description: '',
+    category: ''
 } satisfies ModifierEditorFormValues;
 
 const ModifierEditor = ({ node }: EditorProps) => {
@@ -60,6 +62,14 @@ const ModifierEditor = ({ node }: EditorProps) => {
                     name='description'
                     control={form.control}
                     placeholder='Plugin description…'
+                />
+                <FormFieldRHF<ModifierEditorFormValues>
+                    variant='inline'
+                    label='Category'
+                    fieldType='input'
+                    name='category'
+                    control={form.control}
+                    placeholder='Structure identification'
                 />
             </FormSection>
 
