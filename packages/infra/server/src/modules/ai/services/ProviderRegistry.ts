@@ -23,8 +23,15 @@ interface SdkOptions{
 
 type SdkFactory = (options: SdkOptions) => (modelId: string) => LanguageModel;
 
+// The SDK sends OpenAI models to the Responses API (/responses). A custom endpoint is an
+// OpenAI-compatible server, and those implement Chat Completions (/chat/completions) only.
+const createOpenAIModel: SdkFactory = (options) => {
+    const provider = createOpenAI(options);
+    return options.baseURL ? provider.chat : provider;
+};
+
 const SDK_FACTORIES: Record<AIProvider, SdkFactory> = {
-    [AIProvider.OpenAI]: createOpenAI,
+    [AIProvider.OpenAI]: createOpenAIModel,
     [AIProvider.Anthropic]: createAnthropic,
     [AIProvider.Google]: createGoogleGenerativeAI,
     [AIProvider.Groq]: createGroq,
