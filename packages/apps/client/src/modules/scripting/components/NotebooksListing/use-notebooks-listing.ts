@@ -11,6 +11,7 @@ import { isAccessDeniedError } from '@/shared/errors/core/report-error';
 import { SOCKET_NOTEBOOK_EVENTS } from '@/modules/socket/events/scripting';
 import { ScriptingNotebookScope } from '@volt/contracts/modules/scripting/domain';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
+import { useTeamClustersQuery } from '@/modules/cluster/hooks/team-cluster/queries';
 import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import { createCrudToastOptions } from '@/shared/ui/utils/toast-options';
@@ -91,6 +92,10 @@ const useNotebooksListing = () => {
     const { mutateAsync: deleteNotebook } = useDeleteScriptingNotebookMutation();
     const { mutateAsync: updateNotebook } = useUpdateScriptingNotebookMutation();
     const [deploymentModalRequest, setDeploymentModalRequest] = useState<ScriptingNotebookDeploymentModalRequest | null>(null);
+    const { data: teamClustersResponse } = useTeamClustersQuery(opensInBrowser ? '' : (teamId ?? ''));
+    // A team with a single cluster has nothing to choose, so its notebooks go there without asking.
+    const teamClusters = teamClustersResponse?.data;
+    const onlyTeamClusterId = teamClusters?.length === 1 ? teamClusters[0]._id : null;
 
     const fetchData = useCallback(async (
         params: PaginationParams & NotebooksListingContext
@@ -125,7 +130,8 @@ const useNotebooksListing = () => {
         openModal(SCRIPTING_NOTEBOOK_DEPLOYMENT_MODAL_ID);
     }, []);
 
-    const launchNotebookInNewTab = useCallback(async (notebook: ScriptingNotebook) => {
+    // With teamClusterId, the notebook is moved to that cluster first, after its tab is open so the tab isn't blocked as a popup.
+    const launchNotebookInNewTab = useCallback(async (notebook: ScriptingNotebook, teamClusterId?: string) => {
         if (!teamId) {
             return;
         }
@@ -146,6 +152,13 @@ const useNotebooksListing = () => {
         });
 
         try {
+            if (teamClusterId) {
+                await updateNotebook({
+                    notebookId: notebook._id,
+                    teamClusterId
+                });
+            }
+
             const result = await startAndWaitForReadyScriptingSession({
                 createSession: () => createScriptingSession({
                     notebookId: notebook._id
@@ -184,7 +197,7 @@ const useNotebooksListing = () => {
                 description: getJupyterStartErrorMessage(error)
             });
         }
-    }, [createScriptingSession, teamId]);
+    }, [createScriptingSession, teamId, updateNotebook]);
 
     const handleCreate = useCallback(async () => {
         if (!teamId) {
@@ -195,6 +208,17 @@ const useNotebooksListing = () => {
         if (opensInBrowser) {
             const notebook = await showPromise(createNotebook({ teamId }), CREATE_NOTEBOOK_TOAST);
             navigate(notebookEditorPath(notebook._id));
+            return;
+        }
+
+        if (onlyTeamClusterId) {
+            await showPromise(
+                createNotebook({
+                    teamId,
+                    teamClusterId: onlyTeamClusterId
+                }),
+                CREATE_NOTEBOOK_TOAST
+            );
             return;
         }
 
@@ -213,7 +237,7 @@ const useNotebooksListing = () => {
                 );
             }
         });
-    }, [teamId, createNotebook, navigate, openDeploymentModal]);
+    }, [teamId, createNotebook, navigate, onlyTeamClusterId, openDeploymentModal]);
 
     const {
         renamingEntity: renamingNotebook,
@@ -248,6 +272,11 @@ const useNotebooksListing = () => {
         }
 
         if (!getNotebookTeamClusterId(notebook)) {
+            if (onlyTeamClusterId) {
+                await launchNotebookInNewTab(notebook, onlyTeamClusterId);
+                return;
+            }
+
             openDeploymentModal({
                 teamId,
                 notebook,
@@ -269,7 +298,7 @@ const useNotebooksListing = () => {
         }
 
         await launchNotebookInNewTab(notebook);
-    }, [launchNotebookInNewTab, navigate, openDeploymentModal, teamId, updateNotebook]);
+    }, [launchNotebookInNewTab, navigate, onlyTeamClusterId, openDeploymentModal, teamId, updateNotebook]);
 
     const { getMenuOptions } = useListingActions<ScriptingNotebook>({
         actions: {
