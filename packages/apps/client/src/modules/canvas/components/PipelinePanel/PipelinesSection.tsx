@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Label, ListBox, Select, cn } from '@heroui/react';
 import { TONE_CLASS } from './PanelRow';
 import { MaybeContextMenu } from '../CanvasTree';
@@ -49,6 +49,14 @@ const STATUS_LABEL: Partial<Record<CanvasAnalysisStatus, string>> = {
     [CanvasAnalysisStatusEnum.Failed]: 'Failed'
 };
 
+const DOUBLE_PRESS_MS = 400;
+
+const isOver = (element: Element | null, event: MouseEvent): boolean => {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+};
+
 // The trigger reads as the panel's title: transparent until hovered, a pill while open.
 const TRIGGER_CLASS = 'flex h-8 min-h-8 w-full min-w-0 items-center gap-2 rounded-full border-0 bg-transparent py-0 ps-2.5 text-xs font-medium text-foreground shadow-none';
 
@@ -72,6 +80,8 @@ const PipelinesSection = ({
     onClearDraft
 }: PipelinesSectionProps) => {
     const [isRenaming, setIsRenaming] = useState(false);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const lastPressAtRef = useRef(0);
 
     const options: PipelineOption[] = [
         {
@@ -96,6 +106,33 @@ const PipelinesSection = ({
     ];
     const selected = options.find((option) => option.id === selectedId) ?? options[0];
     const { run } = selected;
+    const canRename = Boolean(run && onRename);
+
+    // Double-clicking the title renames the pipeline. The Select opens on the first press and makes the rest of the page inert,
+    // so the second lands on <body>, outside React's tree, and no dblclick reaches the trigger: both presses are read on the window.
+    useEffect(() => {
+        if (!canRename || isRenaming) return;
+
+        const handlePointerDown = (event: PointerEvent): void => {
+            if (event.pointerType !== 'mouse' || event.button !== 0 || !isOver(triggerRef.current, event)) {
+                lastPressAtRef.current = 0;
+                return;
+            }
+
+            if (event.timeStamp - lastPressAtRef.current > DOUBLE_PRESS_MS) {
+                lastPressAtRef.current = event.timeStamp;
+                return;
+            }
+
+            lastPressAtRef.current = 0;
+            event.preventDefault();
+            event.stopPropagation();
+            setIsRenaming(true);
+        };
+
+        window.addEventListener('pointerdown', handlePointerDown, true);
+        return () => window.removeEventListener('pointerdown', handlePointerDown, true);
+    }, [canRename, isRenaming]);
 
     // Right-clicking the selector acts on the pipeline it shows.
     const menuOptions: MenuOption[] = [];
@@ -136,6 +173,7 @@ const PipelinesSection = ({
                     className='min-w-0'
                 >
                     <Select.Trigger
+                        ref={triggerRef}
                         className={cn(
                             TRIGGER_CLASS,
                             'transition-colors duration-[140ms] hover:bg-foreground/5 aria-expanded:bg-foreground/[0.08]'
