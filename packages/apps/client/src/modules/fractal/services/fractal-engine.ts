@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import type { Pos3D, ModelLoadingState } from '@/modules/fractal/contracts/model';
 import { MaterialPipeline } from '@/modules/fractal/services/material-pipeline';
 import type { SurfaceShadingModel } from '@/modules/fractal/services/material-pipeline';
-import { MortonSortScheduler } from '@/modules/fractal/services/morton-sort-scheduler';
 import { disposeObject3DResources } from '@/modules/fractal/utils/resource-disposal';
 import { debugFractal, warnFractal } from '@/modules/fractal/utils/debug-log';
 import { ModelTransform } from '@/modules/fractal/utils/model-transform';
@@ -108,11 +107,9 @@ const isAbortLikeError = (error: unknown): boolean => {
 export class FractalEngine {
     private materialPipeline = new MaterialPipeline();
     private modelTransform = new ModelTransform();
-    private mortonSorter = new MortonSortScheduler();
 
     private model: THREE.Group | null = null;
     private traversalCache: TraversalCache = createEmptyTraversalCache();
-    private mortonPermutation: Uint32Array | null = null;
     private lastLoadedResourceKey: string | null = null;
     private isLoading = false;
 
@@ -238,14 +235,6 @@ export class FractalEngine {
             this.traversalCache = nextTraversalCache;
             this.consecutiveLoadFailures = 0;
 
-            const [primaryPointCloud] = nextTraversalCache.pointClouds;
-            if (primaryPointCloud) {
-                this.mortonSorter.schedule(primaryPointCloud, (permutation) => {
-                    this.mortonPermutation = permutation;
-                    this.surface.invalidate();
-                });
-            }
-
             debugFractal('engine.load-success', {
                 url,
                 resourceKey,
@@ -267,7 +256,6 @@ export class FractalEngine {
             this.lastLineWidth = undefined;
             this.lastEdgesSceneKey = undefined;
             this.lastEdgesEnabled = false;
-            this.mortonPermutation = null;
 
             this.updatePointCloudSettings(this.params.pointCloudSettings, this.params.pointCloudSettings?.pointSizeMultiplier ?? 1);
             this.syncLineWidth(this.params.lineSettings);
@@ -386,13 +374,13 @@ export class FractalEngine {
 
     setVisibilityMask(mask: Uint8Array | null) {
         if (this.traversalCache.pointClouds.length === 0) return;
-        applyPointCloudVisibilityMask(this.traversalCache.pointClouds, mask, this.mortonPermutation);
+        applyPointCloudVisibilityMask(this.traversalCache.pointClouds, mask);
         this.surface.invalidate();
     }
 
     setSelectionHighlight(mask: Uint8Array | null, color: string | null) {
         if (this.traversalCache.pointClouds.length === 0) return;
-        applyPointCloudSelectionHighlight(this.traversalCache.pointClouds, mask, color, this.mortonPermutation);
+        applyPointCloudSelectionHighlight(this.traversalCache.pointClouds, mask, color);
         this.surface.invalidate();
     }
 
@@ -421,7 +409,6 @@ export class FractalEngine {
         this.callbacks.onModelAvailable?.(null);
         this.disposeModel();
         this.materialPipeline.dispose();
-        this.mortonSorter.dispose();
     }
 
     private syncLineWidth(settings?: LineSceneSettings) {

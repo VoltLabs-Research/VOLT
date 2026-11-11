@@ -13,10 +13,12 @@ varying float vVisible;
  * Vertex shader for point sprite rendering. The GLB streamed from the server
  * already carries baked vertex colors (default / color-coding / particle-filter
  * endpoints all produce a fully coloured point cloud), so the shader forwards
- * `color` to the fragment stage as `vColor`.
+ * `color` to the fragment stage as `vColor`. VOLT models store it as RGBA8, which three
+ * declares as `vec4 color` (USE_COLOR_ALPHA); other glTFs and the fallback use `vec3`.
+ * Points take their opacity from a uniform, so only `.rgb` is read either way.
  */
 void main(){
-    vColor = color;
+    vColor = color.rgb;
     vVisible = aVisible;
 
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);

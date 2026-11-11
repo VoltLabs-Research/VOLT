@@ -7,7 +7,6 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { geometryPool } from '@/modules/fractal/services/geometry-pool';
-import { decompress } from 'fzstd';
 import type IFractalAssetLoader from '@/modules/fractal/contracts/asset-loader';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
@@ -35,13 +34,72 @@ const summarizeRenderableContent = (root: THREE.Object3D) => {
 
 const ZSTD_MAGIC = [0x28, 0xb5, 0x2f, 0xfd] as const;
 
-const isZstdFrame = (arrayBuffer: ArrayBuffer): boolean => {
-    if (arrayBuffer.byteLength < ZSTD_MAGIC.length) return false;
+// Servers released before models were stored quantized and gzipped send zstd frames instead.
+const assertCurrentModelEncoding = (arrayBuffer: ArrayBuffer): void => {
+    if (arrayBuffer.byteLength < ZSTD_MAGIC.length) return;
     const bytes = new Uint8Array(arrayBuffer, 0, ZSTD_MAGIC.length);
-    return ZSTD_MAGIC.every((value, index) => bytes[index] === value);
+    if (ZSTD_MAGIC.every((value, index) => bytes[index] === value)) {
+        throw new Error('This VOLT server stores models in an older format. Update the server to view them.');
+    }
 };
 
-const toExactArrayBuffer = (bytes: Uint8Array): ArrayBuffer => bytes.slice().buffer;
+const IDENTITY_ROTATION = new THREE.Quaternion();
+
+/**
+ * KHR_mesh_quantization keeps positions as integers that the node's translation and scale turn
+ * into coordinates. The viewer works in coordinates (bounds, framing, clipping, point sizes), so
+ * they are expanded into floats once, here, and the node transform is folded into them.
+ */
+const expandQuantizedPositions = (root: THREE.Object3D): void => {
+    root.traverse((child) => {
+        if (!(child instanceof THREE.Points) && !(child instanceof THREE.Mesh)) return;
+        const geometry: THREE.BufferGeometry = child.geometry;
+        const position = geometry.getAttribute('position');
+        if (!position || position.array instanceof Float32Array) return;
+
+        const count = position.count;
+        const expanded = new Float32Array(count * 3);
+        const isPlainGrid = !position.normalized
+            && child.quaternion.equals(IDENTITY_ROTATION)
+            && child.scale.x === child.scale.y
+            && child.scale.y === child.scale.z;
+
+        if (isPlainGrid) {
+            const source = position.array;
+            const stride = position instanceof THREE.InterleavedBufferAttribute ? position.data.stride : position.itemSize;
+            const offset = position instanceof THREE.InterleavedBufferAttribute ? position.offset : 0;
+            const step = child.scale.x;
+            const { x: originX, y: originY, z: originZ } = child.position;
+            for (let index = 0; index < count; index += 1) {
+                const read = index * stride + offset;
+                expanded[index * 3] = source[read] * step + originX;
+                expanded[index * 3 + 1] = source[read + 1] * step + originY;
+                expanded[index * 3 + 2] = source[read + 2] * step + originZ;
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(expanded, 3));
+        } else {
+            for (let index = 0; index < count; index += 1) {
+                expanded[index * 3] = position.getX(index);
+                expanded[index * 3 + 1] = position.getY(index);
+                expanded[index * 3 + 2] = position.getZ(index);
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(expanded, 3));
+            child.updateMatrix();
+            geometry.applyMatrix4(child.matrix);
+        }
+
+        child.position.set(0, 0, 0);
+        child.quaternion.identity();
+        child.scale.set(1, 1, 1);
+        child.updateMatrix();
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+    });
+};
+
+// Decoding runs off the main thread; a 3.8M-atom frame decodes in tens of milliseconds.
+// eslint-disable-next-line react-hooks/rules-of-hooks -- meshoptimizer's API, not a React hook.
+MeshoptDecoder.useWorkers(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1)));
 
 export class FractalAssetLoader implements IFractalAssetLoader {
     private static sharedDracoLoader: DRACOLoader | null = null;
@@ -97,15 +155,6 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         });
     }
 
-    private static normalizeGlbArrayBuffer(arrayBuffer: ArrayBuffer): ArrayBuffer {
-        if (!isZstdFrame(arrayBuffer)) {
-            return arrayBuffer;
-        }
-
-        const decompressed = decompress(new Uint8Array(arrayBuffer));
-        return toExactArrayBuffer(decompressed);
-    }
-
     private static getDracoLoader(): DRACOLoader {
         if (!FractalAssetLoader.sharedDracoLoader) {
             FractalAssetLoader.sharedDracoLoader = new DRACOLoader();
@@ -128,17 +177,14 @@ export class FractalAssetLoader implements IFractalAssetLoader {
         geometryPool.clear();
     }
 
+    /**
+     * Fetches a model ahead of time. Models are served immutable, so the response stays in the
+     * browser's HTTP cache and a later load reads it from there.
+     */
     static async preload(url: string, signal?: AbortSignal, resourceKeyOverride?: string): Promise<void> {
         const resourceKey = resourceKeyOverride || url;
-        if (geometryPool.get(resourceKey)) return;
-        // blob:/data: URLs are unique to this page; persisting them would only leave orphaned OPFS files.
-        const persist = !FractalAssetLoader.isDirectBrowserAssetUrl(url);
-        const existing = persist ? await geometryPool.readFromOpfs(resourceKey) : null;
-        if (existing) return;
-        const fetched = await FractalAssetLoader.requestArrayBuffer(url, signal);
-        if (signal?.aborted) return;
-        const arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(fetched);
-        if (persist) await geometryPool.writeToOpfs(resourceKey, arrayBuffer);
+        if (geometryPool.get(resourceKey) || FractalAssetLoader.isDirectBrowserAssetUrl(url)) return;
+        await FractalAssetLoader.requestArrayBuffer(url, signal);
     }
 
     async load(
@@ -160,28 +206,18 @@ export class FractalAssetLoader implements IFractalAssetLoader {
             return this.wrapGeometry(cached);
         }
 
-        const persist = !FractalAssetLoader.isDirectBrowserAssetUrl(url);
-        let arrayBuffer = persist ? await geometryPool.readFromOpfs(resourceKey) : null;
-        if (!arrayBuffer) {
-            const fetched = await FractalAssetLoader.requestArrayBuffer(url, signal);
-            if (signal?.aborted) throw FractalAssetLoader.createAbortError();
-            arrayBuffer = FractalAssetLoader.normalizeGlbArrayBuffer(fetched);
-            debugFractal('asset-loader.fetch-complete', {
-                url,
-                resourceKey,
-                bytes: arrayBuffer.byteLength
-            });
-            if (persist) void geometryPool.writeToOpfs(resourceKey, arrayBuffer);
-        } else {
-            debugFractal('asset-loader.opfs-hit', {
-                url,
-                resourceKey,
-                bytes: arrayBuffer.byteLength
-            });
-        }
+        const arrayBuffer = await FractalAssetLoader.requestArrayBuffer(url, signal);
+        if (signal?.aborted) throw FractalAssetLoader.createAbortError();
+        assertCurrentModelEncoding(arrayBuffer);
+        debugFractal('asset-loader.fetch-complete', {
+            url,
+            resourceKey,
+            bytes: arrayBuffer.byteLength
+        });
         onProgress?.(1);
 
         const group = await this.parse(arrayBuffer, signal);
+        expandQuantizedPositions(group);
         const geometry = this.extractRenderableGeometry(group);
         if (geometry) {
             geometryPool.insert(resourceKey, geometry);
