@@ -6,7 +6,7 @@ import type { MenuOption } from '@/shared/contracts/menu';
 
 export type PanelRowTone = 'queued' | 'running' | 'completed' | 'failed';
 
-export const TONE_CLASS: Record<PanelRowTone, string> = {
+const TONE_CLASS: Record<PanelRowTone, string> = {
     queued: 'text-warning-soft-foreground',
     running: 'text-info-soft-foreground',
     completed: 'text-success-soft-foreground',
@@ -42,6 +42,7 @@ interface PanelRowProps {
     // Rows without a checkbox keep its width so labels line up.
     alignWithCheckboxes?: boolean;
     onSelect?: () => void;
+    onDoubleClick?: () => void;
     menuOptions?: MenuOption[];
     tourTargetId?: string;
     // Set on rows that can be dragged into another place in their list.
@@ -60,6 +61,7 @@ const PanelRow = ({
     checkbox,
     alignWithCheckboxes = true,
     onSelect,
+    onDoubleClick,
     menuOptions,
     tourTargetId,
     drag
@@ -71,6 +73,7 @@ const PanelRow = ({
             aria-selected={isSelected}
             data-tour-id={tourTargetId}
             onClick={onSelect}
+            onDoubleClick={onDoubleClick}
             draggable={Boolean(drag)}
             onDragStart={drag?.onDragStart}
             onDragOver={drag?.onDragOver}
