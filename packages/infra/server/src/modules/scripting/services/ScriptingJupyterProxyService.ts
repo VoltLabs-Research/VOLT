@@ -10,10 +10,11 @@ import {
 import teamClusterExposureRegistryService from '@modules/cluster/services/team-cluster/TeamClusterExposureRegistryService';
 import reverseWsHttpRelay from '@modules/cluster/services/reverse-channel/ReverseWsHttpRelay';
 import ApplicationError from '@shared/errors/ApplicationError';
+import { errorResponseBody, normalizeError } from '@shared/http/middleware/error';
 import logger from '@shared/logger';
 import { writeUpgradeError } from '@shared/utilities/proxy-relay';
 import { buildWebSocketProtocolList } from '@shared/utilities/websocket-protocols';
-import type { IncomingMessage } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { TeamClusterServiceExposure } from '@voltstack/daemon-cluster-client';
 
@@ -67,20 +68,55 @@ const requireNotebookRuntime = (context: AuthorizedProxyContext): TeamClusterSer
     return match.exposure;
 };
 
-const buildUpstreamWebSocketUrl = (requestUrl: string, exposure: TeamClusterServiceExposure): string => {
+// JupyterLab runs under the proxy's own path (its base_url), so a request goes upstream with that
+// path; only VOLT's access token is swapped for Jupyter's.
+const toUpstreamPath = (requestUrl: string): string => {
     const url = new URL(requestUrl, PROXY_URL_ORIGIN);
 
     url.searchParams.delete(JUPYTER_PROXY_ACCESS_TOKEN_QUERY_PARAM);
     url.searchParams.set(JUPYTER_NATIVE_TOKEN_QUERY_PARAM, jupyterNativeToken);
 
-    const search = url.searchParams.toString();
-    return `ws://${exposure.targetHost}:${exposure.targetPort}${url.pathname}${search ? `?${search}` : ''}`;
+    return `${url.pathname}?${url.searchParams.toString()}`;
+};
+
+const writeHttpError = (response: ServerResponse, error: unknown): void => {
+    if (response.headersSent) {
+        response.destroy();
+        return;
+    }
+
+    const normalizedError = normalizeError(mapNotebookProxyError(error));
+    response.writeHead(normalizedError.statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify(errorResponseBody(normalizedError)));
 };
 
 class ScriptingJupyterProxyService {
-    isJupyterUpgradeRequest(request: IncomingMessage): boolean {
-        return (request.url || '').startsWith(JUPYTER_PROXY_BASE_PATH);
+    isJupyterRequest(request: IncomingMessage): boolean {
+        return (request.url || '').startsWith(`${JUPYTER_PROXY_BASE_PATH}/`);
     }
+
+    // Requests bypass Express, so bodies (notebook saves, uploads) stream through unparsed.
+    public handleHttp = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
+        const requestUrl = request.url || '';
+
+        try {
+            const context = await scriptingJupyterProxyAuthorizer.authorize(requestUrl, request.headers.cookie);
+
+            await reverseWsHttpRelay.proxyHttp({
+                teamClusterId: context.teamClusterId,
+                exposure: requireNotebookRuntime(context),
+                req: request,
+                res: response,
+                rewrittenUrl: toUpstreamPath(requestUrl),
+                onError: (error: Error) => {
+                    logger.warn(`Jupyter proxy request failed requestUrl=${requestUrl} error=${error.message}`);
+                    writeHttpError(response, error);
+                }
+            });
+        } catch (error: unknown) {
+            writeHttpError(response, error);
+        }
+    };
 
     public handleUpgrade = async (request: IncomingMessage, socket: Duplex, head: Buffer): Promise<void> => {
         const requestUrl = request.url || '';
@@ -89,7 +125,7 @@ class ScriptingJupyterProxyService {
             const context = await scriptingJupyterProxyAuthorizer.authorize(requestUrl, request.headers.cookie);
             const exposure = requireNotebookRuntime(context);
             const requestedProtocols = buildWebSocketProtocolList(request.headers['sec-websocket-protocol']);
-            const upstreamWebSocketUrl = buildUpstreamWebSocketUrl(requestUrl, exposure);
+            const upstreamWebSocketUrl = `ws://${exposure.targetHost}:${exposure.targetPort}${toUpstreamPath(requestUrl)}`;
 
             logger.info({
                 requestUrl,
