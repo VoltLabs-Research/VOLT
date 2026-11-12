@@ -168,7 +168,7 @@ const LocalGlbViewer = ({ url, boxBounds, onContentTypeDetected }: LocalGlbViewe
 
                 const pointClouds = materialPipelineRef.current.detectPointClouds(model);
                 pointClouds.forEach((points) => {
-                    materialPipelineRef.current.configurePointCloud(points);
+                    materialPipelineRef.current.configurePointCloud(points, invalidate);
                 });
                 const hasPointClouds = pointClouds.length > 0;
                 onContentTypeDetected?.({ hasPointClouds });

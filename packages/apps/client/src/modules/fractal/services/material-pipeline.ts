@@ -6,8 +6,16 @@ import ovitoSurfaceFragmentSource from '@/modules/fractal/assets/shaders/ovito-s
 import { debugFractal } from '@/modules/fractal/utils/debug-log';
 import { disposeMaterialResources } from '@/modules/fractal/utils/resource-disposal';
 import { sharedShaderRegistry } from '@/modules/fractal/services/shader-registry';
+import {
+    enablePointCloudBlocks,
+    selectVisiblePointCloudBlocks,
+    skipPointCloudDraw
+} from '@/modules/fractal/services/point-cloud-block-drawing';
+import { PointCloudAtomPass } from '@/modules/fractal/services/point-cloud-atom-pass';
 
 const DEFAULT_MIN_POINT_SIZE = 2.0;
+// point-cloud.vert draws an atom pointScale × modelScale × POINT_SIZE_DEPTH_FACTOR / depth pixels wide.
+const POINT_SIZE_DEPTH_FACTOR = 300;
 
 interface PointCloudColorInfo {
     hasColorAttribute: boolean;
@@ -106,6 +114,39 @@ const ensurePointCloudColorAttribute = (geometry: THREE.BufferGeometry): PointCl
     };
 };
 
+const drawingBufferSize = new THREE.Vector2();
+
+const modelAxis = new THREE.Vector3();
+
+// Right before the points draw: either their atoms go through their own pass (see
+// PointCloudAtomPass), which draws them from inside it, or this is that draw, or they draw directly.
+// A draw picks the blocks of atoms whose sprites can reach its target.
+const preparePointCloudDraw = (
+    points: THREE.Points,
+    pass: PointCloudAtomPass,
+    renderer: THREE.WebGLRenderer,
+    camera: THREE.Camera,
+    drawMaterial: THREE.Material
+): void => {
+    const material = points.material;
+    if (!(material instanceof THREE.ShaderMaterial) || !material.uniforms.pointScale) return;
+    const targetHeight = renderer.getRenderTarget()?.height ?? renderer.getDrawingBufferSize(drawingBufferSize).y;
+    const modelScale = modelAxis.setFromMatrixColumn(points.matrixWorld, 0).length();
+    const size = {
+        pixelsAtUnitDepth: (material.uniforms.pointScale.value as number) * modelScale * POINT_SIZE_DEPTH_FACTOR,
+        minPixels: material.uniforms.uMinPointSize.value as number,
+        pixelsPerUnit: camera.projectionMatrix.elements[5] * targetHeight * 0.5,
+        perspective: camera.projectionMatrix.elements[15] === 0
+    };
+
+    if (!pass.drawingAtoms && !pass.drawsDirectly(drawMaterial)) {
+        pass.render(renderer, camera, size);
+        skipPointCloudDraw(points);
+        return;
+    }
+    selectVisiblePointCloudBlocks(points, renderer, camera, material, size);
+};
+
 const raycastSphere = new THREE.Sphere();
 const raycastHitPoint = new THREE.Vector3();
 
@@ -135,7 +176,7 @@ export class MaterialPipeline {
     private cache = new Map<string, THREE.Material>();
     private pointCloudMaterials = new Set<THREE.ShaderMaterial>();
 
-    configurePointCloud(points: THREE.Points): THREE.Points {
+    configurePointCloud(points: THREE.Points, onBlocksReady?: () => void): THREE.Points {
         const colorInfo = ensurePointCloudColorAttribute(points.geometry);
         ensurePointCloudVisibilityAttribute(points.geometry);
 
@@ -195,7 +236,12 @@ export class MaterialPipeline {
         });
 
         points.material = mat;
-        points.frustumCulled = false;
+        const atomPass = new PointCloudAtomPass(points);
+        mat.addEventListener('dispose', () => atomPass.dispose());
+        points.onBeforeRender = (renderer, _scene, camera, _geometry, material) => {
+            preparePointCloudDraw(points, atomPass, renderer, camera, material);
+        };
+        enablePointCloudBlocks(points, onBlocksReady);
         attachBoundedRaycast(points);
         return points;
     }

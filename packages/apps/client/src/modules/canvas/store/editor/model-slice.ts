@@ -7,7 +7,6 @@ import type { EditorStore } from './types';
 import type { ModelLoadingState } from '@/modules/fractal/contracts/model';
 import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import {
-    PointCloudDetailLevel,
     PointCloudStyleMode
 } from '@/modules/fractal/contracts/editor/scene-types';
 
@@ -46,7 +45,6 @@ const syncFocusedPane = (
 
 const POINT_CLOUD_SETTINGS_INITIAL: PointCloudSettingsState = {
     overridesEnabled: false,
-    detailLevel: PointCloudDetailLevel.Auto,
     useSceneOpacity: true,
     style: PointCloudStyleMode.Softened
 };

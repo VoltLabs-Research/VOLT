@@ -1,19 +1,6 @@
 import * as THREE from 'three';
-import {
-    PointCloudDetailLevel,
-    PointCloudStyleMode
-} from '@/modules/fractal/contracts/editor/scene-types';
+import { PointCloudStyleMode } from '@/modules/fractal/contracts/editor/scene-types';
 import type { PointCloudSceneSettings } from '@/modules/fractal/contracts/scene-config';
-
-const getDetailRatio = (detailLevel: PointCloudDetailLevel, pointCount: number): number => {
-    if (detailLevel === PointCloudDetailLevel.Quality) return 1;
-    if (detailLevel === PointCloudDetailLevel.Balanced) return 0.7;
-    if (detailLevel === PointCloudDetailLevel.Performance) return 0.45;
-    if (pointCount > 2_000_000) return 0.35;
-    if (pointCount > 1_000_000) return 0.5;
-    if (pointCount > 500_000) return 0.7;
-    return 1;
-};
 
 const getStyleUniforms = (settings: PointCloudSceneSettings | undefined) => {
     if (!settings?.overridesEnabled) {
@@ -49,14 +36,6 @@ const getShaderMaterial = (pointCloud: THREE.Points): THREE.ShaderMaterial | nul
     pointCloud.material instanceof THREE.ShaderMaterial ? pointCloud.material : null
 );
 
-const applyDrawRange = (pointCloud: THREE.Points, settings: PointCloudSceneSettings | undefined): void => {
-    const pointCount = pointCloud.geometry.getAttribute('position')?.count ?? 0;
-    const detailRatio = settings?.overridesEnabled
-        ? getDetailRatio(settings.detailLevel, pointCount)
-        : 1;
-    pointCloud.geometry.setDrawRange(0, Math.max(1, Math.floor(pointCount * detailRatio)));
-};
-
 export const applyPointCloudStyle = (
     pointClouds: ReadonlyArray<THREE.Points>,
     settings: PointCloudSceneSettings | undefined,
@@ -81,14 +60,12 @@ export const applyPointCloudStyle = (
         }
 
         syncBlendingMode(material);
-        applyDrawRange(pointCloud, settings);
     });
 };
 
 export const applyPointCloudOpacity = (
     pointClouds: ReadonlyArray<THREE.Points>,
-    opacity: number,
-    settings: PointCloudSceneSettings | undefined
+    opacity: number
 ): void => {
     pointClouds.forEach((pointCloud) => {
         const material = getShaderMaterial(pointCloud);
@@ -101,8 +78,6 @@ export const applyPointCloudOpacity = (
         material.alphaTest = opacity < 1 ? Math.max(0.01, 0.5 * opacity) : 0.5;
         material.needsUpdate = true;
         syncBlendingMode(material);
-
-        applyDrawRange(pointCloud, settings);
     });
 };
 

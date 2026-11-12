@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { warnFractal } from '@/modules/fractal/utils/debug-log';
+import { refreshHiddenPointCloudBlocks } from '@/modules/fractal/services/point-cloud-block-drawing';
 
 type ColorArray = Float32Array | Uint8Array;
 
@@ -32,6 +33,7 @@ export const applyPointCloudVisibilityMask = (
         if (mask === null) {
             target.fill(255);
             attribute.needsUpdate = true;
+            refreshHiddenPointCloudBlocks(pointCloud);
             return;
         }
         if (target.length !== mask.length) {
@@ -48,6 +50,7 @@ export const applyPointCloudVisibilityMask = (
             target[index] = mask[index] ? 255 : 0;
         }
         attribute.needsUpdate = true;
+        refreshHiddenPointCloudBlocks(pointCloud);
     });
 };
 
