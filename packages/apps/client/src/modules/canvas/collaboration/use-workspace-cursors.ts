@@ -2,7 +2,7 @@ import useSocketEvent from '@/modules/socket/hooks/use-socket-event';
 import useThrottledSocketEmit from '@/modules/socket/hooks/use-throttled-socket-emit';
 import { SOCKET_CANVAS_WORKSPACE_EVENTS } from '@/modules/socket/events/canvas';
 import { useCurrentUser } from '@/modules/auth/hooks/use-current-user';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export interface WorkspaceCursor {
     userId: string;
@@ -159,8 +159,11 @@ const useWorkspaceCursors = ({
         };
     }, [containerRef]);
 
+    // The same array until a cursor changes: the overlay derives its own state from it.
+    const cursorList = useMemo(() => Object.values(cursors), [cursors]);
+
     return {
-        cursors: Object.values(cursors),
+        cursors: cursorList,
         resolveCursorPosition
     };
 };

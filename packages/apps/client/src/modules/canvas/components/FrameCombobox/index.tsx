@@ -1,5 +1,5 @@
 import { ComboBox, Input, ListBox, cn } from '@heroui/react';
-import { useMemo, useCallback } from 'react';
+import { memo, useMemo, useCallback } from 'react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 
 import type { SelectOption } from '@/shared/contracts/form-field';
@@ -59,4 +59,4 @@ const FrameCombobox = ({ value, options, onChange, title, groupClassName }: Fram
     );
 };
 
-export default FrameCombobox;
+export default memo(FrameCombobox);

@@ -2,9 +2,12 @@ import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
 import { SkipBack, ChevronLeft, Play, ChevronRight, SkipForward, Pause, Square } from 'lucide-react';
-import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Button, Tooltip } from '@heroui/react';
+
+import type { LucideIcon } from 'lucide-react';
+import type { RefObject } from 'react';
 
 interface TransportControlsProps {
     trajectoryId?: string;
@@ -15,6 +18,33 @@ interface TransportControlsProps {
 const ICON_STYLE = { width: 13, height: 13 };
 const GLYPH_POP: Keyframe[] = [{ opacity: 0, transform: 'scale(0.5)' }, { opacity: 1, transform: 'none' }];
 const GLYPH_POP_TIMING: KeyframeAnimationOptions = { duration: 300, easing: 'cubic-bezier(0.34, 1.36, 0.64, 1)' };
+
+interface TransportButtonProps {
+    action: string;
+    Icon: LucideIcon;
+    label: string;
+    onPress: () => void;
+    glyphRef?: RefObject<SVGSVGElement | null>;
+}
+
+// Memoized with stable handlers, so playback, which changes the timestep every frame, leaves the buttons alone.
+// A press gives more than HeroUI's 0.97.
+const TransportButton = memo(({ action, Icon, label, onPress, glyphRef }: TransportButtonProps) => (
+    <Tooltip>
+        <Button
+            variant='ghost'
+            size='sm'
+            isIconOnly
+            aria-label={label}
+            data-transport-action={action}
+            className='data-[pressed=true]:scale-[0.88]'
+            onPress={onPress}
+        >
+            <Icon ref={glyphRef} style={ICON_STYLE} />
+        </Button>
+        <Tooltip.Content placement='top'>{label}</Tooltip.Content>
+    </Tooltip>
+));
 
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
@@ -37,6 +67,11 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
         return resolveRangedTimesteps(availableTimesteps, rangeStart, rangeEnd);
     }, [availableTimesteps, rangeStart, rangeEnd]);
     const currentIndex = currentTimestep !== undefined ? timesteps.indexOf(currentTimestep) : -1;
+    // Read when a step is pressed rather than captured, so the step handlers stay the same across frames.
+    const currentIndexRef = useRef(currentIndex);
+    useLayoutEffect(() => {
+        currentIndexRef.current = currentIndex;
+    }, [currentIndex]);
 
     const jumpToStart = useCallback(() => {
         if (timesteps.length === 0) return;
@@ -50,15 +85,17 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
 
     const prevTimestep = useCallback(() => {
         if (timesteps.length === 0) return;
+        const currentIndex = currentIndexRef.current;
         const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
         setCurrentTimestep(timesteps[nextIndex]);
-    }, [timesteps, currentIndex, setCurrentTimestep]);
+    }, [timesteps, setCurrentTimestep]);
 
     const nextTimestep = useCallback(() => {
         if (timesteps.length === 0) return;
+        const currentIndex = currentIndexRef.current;
         const nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, timesteps.length - 1);
         setCurrentTimestep(timesteps[nextIndex]);
-    }, [timesteps, currentIndex, setCurrentTimestep]);
+    }, [timesteps, setCurrentTimestep]);
 
     const handleTogglePlay = useCallback(() => {
         togglePlay({
@@ -102,22 +139,15 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
         }
     ]), [isPlaying, isPreloading, handleTogglePlay, jumpToStart, prevTimestep, nextTimestep, jumpToEnd]);
 
-    // A press gives more than HeroUI's 0.97.
     const renderButton = (btn: typeof buttons[number]) => (
-        <Tooltip key={btn.action}>
-            <Button
-                variant='ghost'
-                size='sm'
-                isIconOnly
-                aria-label={btn.label}
-                data-transport-action={btn.action}
-                className='data-[pressed=true]:scale-[0.88]'
-                onPress={btn.onPress}
-            >
-                <btn.Icon ref={btn.action === 'play' ? playGlyphRef : undefined} style={ICON_STYLE} />
-            </Button>
-            <Tooltip.Content placement='top'>{btn.label}</Tooltip.Content>
-        </Tooltip>
+        <TransportButton
+            key={btn.action}
+            action={btn.action}
+            Icon={btn.Icon}
+            label={btn.label}
+            onPress={btn.onPress}
+            glyphRef={btn.action === 'play' ? playGlyphRef : undefined}
+        />
     );
 
     // Play, Pause and Stop pop in as they swap. Web Animations, not a CSS animation: in the canvas dock, Chrome
@@ -154,4 +184,4 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
     );
 };
 
-export default TransportControls;
+export default memo(TransportControls);

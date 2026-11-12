@@ -5,7 +5,7 @@ import type { SceneKeyConfig } from '@/modules/fractal/utils/scene-utils';
 import useCanvasUrlState from '../../hooks/use-canvas-url-state';
 import useSceneInteraction from '../../hooks/use-scene-interaction';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import FormFieldRHF from '@/shared/ui/components/FormFieldRHF';
 
@@ -63,4 +63,4 @@ const ExposureSettingsWidget = () => {
     );
 };
 
-export default ExposureSettingsWidget;
+export default memo(ExposureSettingsWidget);

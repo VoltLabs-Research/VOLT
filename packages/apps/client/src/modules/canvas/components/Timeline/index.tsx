@@ -11,13 +11,12 @@ import { resolveFrameDelayMs } from '@/modules/canvas/store/editor/playback-slic
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { toAnalysisFrameActivityStatus } from '@/modules/canvas/utils/analysis-status-selectors';
 
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { ReactNode } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-const SCENE_ZOOM_SUBSCRIBE_RETRY_MS = 120;
 const PANEL_ID = 'canvas-timeline-panel';
 
 interface TimelineProps {
@@ -112,31 +111,11 @@ const Timeline = ({
         ? toAnalysisFrameActivityStatus(getAnalysisFrameStatus(logAnalysisId, logTimestep))
         : undefined;
 
-    const [zoomPercent, setZoomPercent] = useState(100);
-
-    useEffect(() => {
-        let cancelled = false;
-        let unsubscribe: (() => void) | undefined;
-        let retryTimeoutId: number | undefined;
-
-        const trySubscribe = () => {
-            if (cancelled) return;
-            const scene = sceneRef.current;
-            if (scene) {
-                unsubscribe = scene.subscribeZoom(setZoomPercent);
-                return;
-            }
-            retryTimeoutId = window.setTimeout(trySubscribe, SCENE_ZOOM_SUBSCRIBE_RETRY_MS);
-        };
-
-        trySubscribe();
-
-        return () => {
-            cancelled = true;
-            if (retryTimeoutId !== undefined) window.clearTimeout(retryTimeoutId);
-            unsubscribe?.();
-        };
-    }, [sceneRef]);
+    const downloadContext = useMemo(() => ({
+        pluginId,
+        analysisId,
+        trajectoryId: trajectory?._id
+    }), [pluginId, analysisId, trajectory?._id]);
 
     return (
         <div className='flex min-h-0 flex-col overflow-hidden max-h-[calc(100dvh-2rem)] max-md:gap-2 max-md:items-stretch max-md:overflow-visible max-md:pointer-events-none'>
@@ -148,11 +127,7 @@ const Timeline = ({
                 onTabSelect={openTab}
                 onTogglePanel={togglePanel}
                 panelId={PANEL_ID}
-                downloadContext={{
-                    pluginId,
-                    analysisId,
-                    trajectoryId: trajectory?._id
-                }}
+                downloadContext={downloadContext}
                 outputsTitle={pluginDisplayName}
             />
 
@@ -203,8 +178,7 @@ const Timeline = ({
                     onRangeEndChange={setRangeEnd}
                     playSpeed={playSpeed}
                     onPlaySpeedChange={setPlaySpeed}
-                    zoomPercent={zoomPercent}
-                    onZoomPreset={(preset) => sceneRef.current?.zoomTo(preset)}
+                    sceneRef={sceneRef}
                 />
             </div>
         </div>

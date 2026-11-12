@@ -1,5 +1,5 @@
 import { getCategoricalColor } from '@/shared/ui/utils/categorical-palette';
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState, memo } from 'react';
 import type { WorkspaceCursor } from '@/modules/canvas/collaboration/use-workspace-cursors';
 
 interface WorkspaceCursorsOverlayProps {
@@ -85,4 +85,4 @@ const WorkspaceCursorsOverlay = ({ cursors, containerRef }: WorkspaceCursorsOver
     );
 };
 
-export default WorkspaceCursorsOverlay;
+export default memo(WorkspaceCursorsOverlay);

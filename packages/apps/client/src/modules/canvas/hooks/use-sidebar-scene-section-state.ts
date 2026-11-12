@@ -51,10 +51,10 @@ const useSidebarSceneSectionState = () => {
         });
     }, []);
 
-    const snapshot = (): SidebarSceneSectionSnapshot => ({
+    const snapshot = useCallback((): SidebarSceneSectionSnapshot => ({
         expandedSections: new Set(expandedSections),
         headerPopoverStates: new Map(headerPopoverStates)
-    });
+    }), [expandedSections, headerPopoverStates]);
 
     const restore = useCallback((previous: SidebarSceneSectionSnapshot) => {
         setExpandedSections(new Set(previous.expandedSections));
