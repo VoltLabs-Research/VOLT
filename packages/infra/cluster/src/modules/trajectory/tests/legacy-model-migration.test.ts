@@ -6,7 +6,7 @@ import path from 'node:path';
 import { buffer } from 'node:stream/consumers';
 import spatialAssembler from '@voltstack/spatial-assembler';
 import { getFilesystemObjectStore, type FilesystemObjectStore } from '@shared/storage/FilesystemObjectStore';
-import { decompressModel, MODEL_BUCKET } from '@shared/storage/model-objects';
+import { decompressModel, encodeEmptyModel, MODEL_BUCKET, toModelFormat } from '@shared/storage/model-objects';
 import type { TrajectoryFrameLookupInput } from '@shared/contracts/types/trajectory-frame-store';
 import { LegacyModelMigration } from '@modules/trajectory/services/glb/LegacyModelMigration';
 
@@ -139,4 +139,32 @@ test('the startup sweep converts every legacy model', async () => {
         'trajectory-e/timestep-3.glb.gz'
     ]);
     assert.deepEqual((await objectStore.listObjects(MODEL_BUCKET, '')).filter((key) => key.endsWith('.zst')), []);
+});
+
+// The empty mesh export VOLT wrote before this format, as found on a cluster: three accessors that
+// count 0 over zero-length buffer views, and an empty BIN chunk.
+const LEGACY_EMPTY_EXPORT_JSON = '{"asset":{"version":"2.0","generator":"Volt Native"},"scene":0,"scenes":[{"nodes":[0]}],"nodes":[{"mesh":0,"name":"Mesh"}],"materials":[{"pbrMetallicRoughness":{"baseColorFactor":[1.0000,0.5000,0.0000,1.0000],"metallicFactor":0.0000,"roughnessFactor":0.8000},"emissiveFactor":[0.0000,0.0000,0.0000],"doubleSided":true}],"meshes":[{"primitives":[{"attributes":{"POSITION":0,"NORMAL":1},"indices":2,"material":0,"mode":4}],"name":"MeshGeometry"}],"accessors":[{"bufferView":0,"componentType":5126,"count":0,"type":"VEC3","min":[0.000000,0.000000,0.000000],"max":[0.000000,0.000000,0.000000]},{"bufferView":1,"componentType":5126,"count":0,"type":"VEC3"},{"bufferView":2,"componentType":5125,"count":0,"type":"SCALAR"}],"bufferViews":[{"buffer":0,"byteOffset":0,"byteLength":0,"target":34962},{"buffer":0,"byteOffset":0,"byteLength":0,"target":34962},{"buffer":0,"byteOffset":0,"byteLength":0,"target":34963}],"buffers":[{"byteLength":0}]}';
+
+const legacyEmptyExport = (): Buffer => {
+    const json = Buffer.from(LEGACY_EMPTY_EXPORT_JSON);
+    const jsonChunk = Buffer.concat([json, Buffer.alloc((4 - (json.length % 4)) % 4, 0x20)]);
+    const header = Buffer.alloc(20);
+    header.writeUInt32LE(0x46546c67, 0);
+    header.writeUInt32LE(2, 4);
+    header.writeUInt32LE(20 + jsonChunk.length + 8, 8);
+    header.writeUInt32LE(jsonChunk.length, 12);
+    header.writeUInt32LE(0x4e4f534a, 16);
+    const binHeader = Buffer.alloc(8);
+    binHeader.writeUInt32LE(0x004e4942, 4);
+    return Buffer.concat([header, jsonChunk, binHeader]);
+};
+
+test('a legacy export with no geometry becomes an empty model', () => {
+    const legacy = legacyEmptyExport();
+    assert.throws(() => spatialAssembler.decodeGLB(legacy));
+
+    const converted = toModelFormat(legacy);
+
+    assert.deepEqual(converted, encodeEmptyModel());
+    assert.deepEqual(spatialAssembler.decodeGLB(converted), []);
 });
