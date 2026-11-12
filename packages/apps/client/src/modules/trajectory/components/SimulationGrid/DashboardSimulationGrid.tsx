@@ -14,7 +14,7 @@ import useSelectionParams from '@/shared/ui/hooks/use-selection-params';
 import { discardFolderDraft, useFolderDraftId } from '@/shared/ui/hooks/use-folder-draft-store';
 import { Atom, Upload } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
+import type { TrajectoryFolderRow, TrajectoryListingRow } from '@/modules/trajectory/contracts/listing';
 
 const DELETE_SHORTCUT_KEYS = ['Backspace', 'Delete'];
 
@@ -28,9 +28,14 @@ const DashboardSimulationGrid = () => {
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
     const { downloadAllSamples, isDownloading } = useDownloadSamples();
     const [hasDownloadedSamples, setHasDownloadedSamples] = useState(false);
-    const listing = useTrajectoriesListing();
+    // The folder whose card title is being edited: its menu's Rename edits the title in place, as a
+    // double click on it does, rather than in a modal.
+    const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+    const startFolderRename = useCallback((folder: TrajectoryFolderRow) => setRenamingFolderId(folder._id), []);
+    const listing = useTrajectoriesListing({ onRenameFolder: startFolderRename });
     const {
         breadcrumbs,
+        canManageFolders,
         context,
         currentFolderId,
         fetchData,
@@ -44,6 +49,7 @@ const DashboardSimulationGrid = () => {
         navigateToFolder,
         openFolder,
         queryKey,
+        renameFolder,
         dragAndDrop,
         socketInvalidation
     } = listing;
@@ -75,6 +81,18 @@ const DashboardSimulationGrid = () => {
         openFolder(folderId);
     }, [clearSelection, openFolder]);
 
+    const handleFolderRename = useCallback((folderId: string, title: string) => {
+        // The toast reports a failure.
+        renameFolder(folderId, title).catch(() => undefined);
+    }, [renameFolder]);
+
+    const handleFolderRenamingChange = useCallback((folderId: string, isRenaming: boolean) => {
+        setRenamingFolderId((current) => {
+            if (isRenaming) return folderId;
+            return current === folderId ? null : current;
+        });
+    }, []);
+
     const renderGridItem = useCallback((item: TrajectoryListingRow) => {
         if (isTrajectoryFolderRow(item)) {
             return (
@@ -82,6 +100,9 @@ const DashboardSimulationGrid = () => {
                     folder={item}
                     onOpen={handleFolderOpen}
                     menuOptions={getMenuOptions?.(item, [])}
+                    onRename={canManageFolders ? handleFolderRename : undefined}
+                    isRenaming={renamingFolderId === item._id}
+                    onRenamingChange={handleFolderRenamingChange}
                 />
             );
         }
@@ -93,7 +114,7 @@ const DashboardSimulationGrid = () => {
                 onMoveToFolder={handleMoveOpen}
             />
         );
-    }, [getMenuOptions, handleFolderOpen, handleMoveOpen, isSelected]);
+    }, [canManageFolders, getMenuOptions, handleFolderOpen, handleFolderRename, handleFolderRenamingChange, handleMoveOpen, isSelected, renamingFolderId]);
 
     const handleDownloadSamples = async () => {
         await downloadAllSamples();

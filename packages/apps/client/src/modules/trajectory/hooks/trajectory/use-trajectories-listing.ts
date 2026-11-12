@@ -9,7 +9,7 @@ import {
     isTrajectoryItemRow,
     resolveTrajectoryListingDroppableFolderId
 } from '@/modules/trajectory/utils/listing';
-import type { TrajectoryItemRow } from '@/modules/trajectory/contracts/listing';
+import type { TrajectoryFolderRow, TrajectoryItemRow } from '@/modules/trajectory/contracts/listing';
 import { buildAtomsViewerPath } from '@/modules/trajectory/utils/build-atoms-viewer-path';
 import { isTrajectoryNavigable } from '@/modules/trajectory/utils/trajectory-status';
 import { SOCKET_TRAJECTORY_EVENTS } from '@/modules/socket/events/trajectory';
@@ -79,7 +79,11 @@ const buildDeleteTrajectoryMenuOption = (
     };
 };
 
-const useTrajectoriesListing = () => {
+interface UseTrajectoriesListingOptions {
+    onRenameFolder?: (folder: TrajectoryFolderRow) => void;
+}
+
+const useTrajectoriesListing = ({ onRenameFolder }: UseTrajectoriesListingOptions = {}) => {
     const navigate = useNavigate();
     const teamId = useSelectedTeamId();
     const { can } = useTeamAccess();
@@ -205,7 +209,8 @@ const useTrajectoriesListing = () => {
         getMoveFolderIdFromDroppableId: resolveTrajectoryListingDroppableFolderId,
         getItemActions: getTrajectoryActions,
         mapItemMenuOptions: appendTrajectoryDeleteOption,
-        onOpenItem: openTrajectory
+        onOpenItem: openTrajectory,
+        onRenameFolder
     });
 
     const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker(

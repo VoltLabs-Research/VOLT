@@ -1,7 +1,9 @@
 import type { TrajectoryFolderRow } from '@/modules/trajectory/contracts/listing';
 import useTrajectoryPreview from '../SimulationCard/use-trajectory-preview';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import EditableTag from '@/shared/ui/components/EditableTag';
 import type { MenuOption } from '@/shared/contracts/menu';
+import { cn } from '@heroui/react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { MoreHorizontal } from 'lucide-react';
 import { useCallback, useRef } from 'react';
@@ -40,9 +42,19 @@ interface SimulationFolderCardProps {
     folder: TrajectoryFolderRow;
     onOpen: (folderId: string) => void;
     menuOptions?: MenuOption[];
+    onRename?: (folderId: string, title: string) => void;
+    isRenaming?: boolean;
+    onRenamingChange?: (folderId: string, isRenaming: boolean) => void;
 }
 
-export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] }: SimulationFolderCardProps) {
+export default function SimulationFolderCard({
+    folder,
+    onOpen,
+    menuOptions = [],
+    onRename,
+    isRenaming = false,
+    onRenamingChange
+}: SimulationFolderCardProps) {
     const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
     const didDragRef = useRef(false);
     const previewIds = folder.previewTrajectoryIds ?? [];
@@ -56,6 +68,14 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
     const openFolder = useCallback(() => {
         onOpen(folder._id);
     }, [folder._id, onOpen]);
+
+    const handleRename = useCallback((title: string) => {
+        onRename?.(folder._id, title);
+    }, [folder._id, onRename]);
+
+    const handleRenamingChange = useCallback((nextValue: boolean) => {
+        onRenamingChange?.(folder._id, nextValue);
+    }, [folder._id, onRenamingChange]);
 
     const handlePointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
         if (!event.isPrimary || event.button !== 0) {
@@ -160,9 +180,23 @@ export default function SimulationFolderCard({ folder, onOpen, menuOptions = [] 
                 ))}
             </div>
             <div className='flex min-w-0 flex-col gap-1 px-2 pt-3 pb-1.5'>
-                <h3 className='truncate text-sm font-medium text-foreground'>
-                    {folder.title}
-                </h3>
+                {onRename ? (
+                    <EditableTag
+                        as='h3'
+                        className={cn('-mx-1 max-w-full px-1 text-sm font-medium text-foreground', !isRenaming && 'truncate')}
+                        editing={isRenaming}
+                        onEditingChange={handleRenamingChange}
+                        onSave={handleRename}
+                        onSingleClick={openFolder}
+                        title={folder.title}
+                    >
+                        {folder.title}
+                    </EditableTag>
+                ) : (
+                    <h3 className='truncate text-sm font-medium text-foreground'>
+                        {folder.title}
+                    </h3>
+                )}
                 {folder.updatedAt ? (
                     <p className='truncate text-xs text-muted'>
                         Edited {formatDistanceToNowStrict(new Date(folder.updatedAt), { addSuffix: true })}
