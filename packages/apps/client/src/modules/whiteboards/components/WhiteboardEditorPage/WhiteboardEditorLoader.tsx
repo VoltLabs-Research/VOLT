@@ -1,8 +1,9 @@
+import WindowControls from '@/shared/ui/components/WindowControls';
 import { Skeleton } from '@heroui/react';
 
 // The board as it opens, framed as WhiteboardCanvas frames Excalidraw: its islands where Excalidraw puts
-// them (the main menu top-left, the tools top-center, the collaborators and library top-right, zoom and
-// undo bottom-left) over an empty canvas.
+// them (the main menu top-left, the tools top-center, the collaborators, library and the desktop window's
+// controls top-right, zoom and undo bottom-left) over an empty canvas.
 const WhiteboardEditorLoader = () => (
     <div
         className='relative h-full w-full overflow-hidden rounded-2xl bg-background'
@@ -12,7 +13,10 @@ const WhiteboardEditorLoader = () => (
     >
         <Skeleton className='absolute left-4 top-4 size-9 rounded-lg' />
         <Skeleton className='absolute left-1/2 top-4 h-11 w-[min(26rem,calc(100%-8rem))] -translate-x-1/2 rounded-xl max-md:hidden' />
-        <Skeleton className='absolute right-4 top-4 h-9 w-28 rounded-lg' />
+        <div className='absolute right-4 top-4 flex h-9 flex-row items-center gap-3'>
+            <Skeleton className='h-9 w-28 rounded-lg' />
+            <WindowControls />
+        </div>
         <div className='absolute bottom-4 left-4 flex flex-row gap-2'>
             <Skeleton className='h-9 w-28 rounded-lg' />
             <Skeleton className='h-9 w-20 rounded-lg' />
