@@ -29,6 +29,8 @@ export const labelledIndices = (timesteps: number[], width: number, minSpacing: 
     if (timesteps.length === 1) return [0];
 
     const framesApart = minSpacing / (width / (timesteps.length - 1));
+    // Frames a label apart, or further, all get one.
+    if (framesApart <= 1 + Number.EPSILON * 8) return timesteps.map((_, index) => index);
     const unit = uniformSpacing(timesteps);
     const valueStep = unit !== undefined ? niceMultipleOf(unit, framesApart * unit) : undefined;
     const roundIndices = valueStep === undefined ? [] : timesteps.flatMap((timestep, index) => (timestep % valueStep === 0 ? [index] : []));

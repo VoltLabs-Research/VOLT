@@ -16,7 +16,8 @@ export interface TimelineRulerTick {
 
 // Unlabelled while the trajectory loads, so the ruler never shows timesteps it does not have.
 const PLACEHOLDER_TICKS: TimelineRulerTick[] = Array.from({ length: 50 }, (_, index) => ({ frame: index }));
-// A text-2xs digit is about 7px; labels keep 28px between them.
+// A text-2xs digit is about 7px; labels keep 28px between them. A frame is never further from the next than one
+// label, so a short trajectory sits at the start like the ruler before it, instead of stretched across the dock.
 const LABEL_DIGIT_WIDTH = 7;
 const LABEL_GAP = 28;
 // Closer than this many px, only labelled frames keep a tick: a phone's ruler fits 105 frames 2.7px apart.
@@ -38,17 +39,18 @@ const MARK_TONE_CLASS = {
     completed: 'bg-success'
 } as const;
 
-const fractionOf = (index: number, count: number) => (count > 1 ? index / (count - 1) : 0.5);
-const percentOf = (index: number, count: number) => `${fractionOf(index, count) * 100}%`;
+// frameStep is one frame's share of the track's width.
+const percentAt = (index: number, frameStep: number) => `${index * frameStep * 100}%`;
 
 interface RulerMarksProps {
     ticks: TimelineRulerTick[];
     labelled: number[];
     showMinor: boolean;
+    frameStep: number;
 }
 
-const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
-    const count = ticks.length;
+const RulerMarks = memo(({ ticks, labelled, showMinor, frameStep }: RulerMarksProps) => {
+    const end = (ticks.length - 1) * frameStep;
     const labelledSet = new Set(labelled);
 
     return (
@@ -65,8 +67,8 @@ const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
                         tick.cached && !ticks[index + 1]?.cached && 'rounded-r-full'
                     )}
                     style={{
-                        left: `${Math.max(0, fractionOf(index - 0.5, count)) * 100}%`,
-                        right: `${Math.max(0, 1 - fractionOf(index + 0.5, count)) * 100}%`
+                        left: `${Math.max(0, (index - 0.5) * frameStep) * 100}%`,
+                        right: `${Math.max(1 - end, 1 - (index + 0.5) * frameStep) * 100}%`
                     }}
                     aria-hidden='true'
                 />
@@ -85,7 +87,7 @@ const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
                             tick.tone && cn('-ml-px h-2.5 w-0.5 rounded-full', MARK_TONE_CLASS[tick.tone]),
                             tick.dimmed && 'opacity-35'
                         )}
-                        style={{ left: percentOf(index, count), '--tick-at': fractionOf(index, count) } as CSSProperties}
+                        style={{ left: percentAt(index, frameStep), '--tick-at': index * frameStep } as CSSProperties}
                         aria-hidden='true'
                     />
                 );
@@ -101,7 +103,7 @@ const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
                             tick.tone && LABEL_TONE_CLASS[tick.tone],
                             tick.dimmed && 'opacity-35'
                         )}
-                        style={{ left: percentOf(index, count) }}
+                        style={{ left: percentAt(index, frameStep) }}
                     >
                         {tick.frame}
                     </span>
@@ -134,13 +136,16 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
     const currentIndex = currentFrame === undefined ? -1 : timesteps.indexOf(currentFrame);
     // A trajectory or range that shrinks under a resting pointer must not leave it past the last frame.
     const hoverIndex = pointerIndex !== null && pointerIndex < timesteps.length ? pointerIndex : null;
-    const { isDragging, rulerHandlers } = useTimelineScrubber({ trackRef, rangedTimesteps: timesteps, currentFrame });
+    const labelSpacing = String(timesteps[timesteps.length - 1] ?? '').length * LABEL_DIGIT_WIDTH + LABEL_GAP;
+    const frameStep = count > 1 ? Math.min(1 / (count - 1), width > 0 ? labelSpacing / width : Infinity) : 0;
+    const percentOf = (index: number) => percentAt(index, frameStep);
+    const { isDragging, rulerHandlers } = useTimelineScrubber({ trackRef, rangedTimesteps: timesteps, currentFrame, frameStep });
 
-    const labelled = useMemo(() => {
-        const widest = String(timesteps[timesteps.length - 1] ?? '').length;
-        return labelledIndices(timesteps, width, widest * LABEL_DIGIT_WIDTH + LABEL_GAP);
-    }, [timesteps, width]);
-    const showMinor = count < 2 || width / (count - 1) >= MIN_TICK_SPACING;
+    const labelled = useMemo(
+        () => labelledIndices(timesteps, (timesteps.length - 1) * frameStep * width, labelSpacing),
+        [frameStep, labelSpacing, timesteps, width]
+    );
+    const showMinor = count < 2 || frameStep * width >= MIN_TICK_SPACING;
 
     useLayoutEffect(() => {
         const track = trackRef.current;
@@ -161,16 +166,16 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
         if (!isPlaying || !playhead || currentIndex !== from + 1 || !Number.isFinite(frameDelayMs)) return;
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         playhead.animate(
-            [{ left: percentOf(from, count) }, { left: percentOf(currentIndex, count) }],
+            [{ left: percentAt(from, frameStep) }, { left: percentAt(currentIndex, frameStep) }],
             { duration: frameDelayMs, easing: 'linear' }
         );
-    }, [count, currentIndex, frameDelayMs, isPlaying]);
+    }, [currentIndex, frameDelayMs, frameStep, isPlaying]);
 
     // Labels step aside for the thumb and the hover capsule; the capsule steps aside for the thumb.
     useLayoutEffect(() => {
         const track = trackRef.current;
         if (!track) return;
-        const xOf = (index: number) => fractionOf(index, count) * track.clientWidth;
+        const xOf = (index: number) => index * frameStep * track.clientWidth;
         const covers: Array<[number, number]> = [];
         const thumb = thumbRef.current;
         const thumbHalf = thumb ? thumb.offsetWidth / 2 : 0;
@@ -189,7 +194,7 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
             const covered = covers.some(([start, end]) => label.offsetLeft + half > start - LABEL_CLEARANCE && label.offsetLeft - half < end + LABEL_CLEARANCE);
             label.toggleAttribute('data-covered', covered);
         });
-    }, [count, currentIndex, currentFrame, hoverIndex, isDragging, labelled]);
+    }, [currentIndex, currentFrame, frameStep, hoverIndex, isDragging, labelled]);
 
     // Ticks swell around a mouse: the track carries the pointer's share of its width for the CSS.
     const trackHover = (event: PointerEvent<HTMLDivElement>) => {
@@ -197,7 +202,7 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
         if (!track || event.pointerType === 'touch' || timesteps.length === 0) return;
         const box = track.getBoundingClientRect();
         track.style.setProperty('--timeline-ruler-hover', String((event.clientX - box.left) / Math.max(1, box.width)));
-        setPointerIndex(indexAtClientX(track, event.clientX, timesteps.length));
+        setPointerIndex(indexAtClientX(track, event.clientX, timesteps.length, frameStep));
     };
 
     const hasThumb = currentIndex >= 0;
@@ -224,13 +229,13 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
             onPointerLeave={() => setPointerIndex(null)}
         >
             <div ref={trackRef} className='absolute inset-y-0 inset-x-10 max-md:inset-x-8' style={{ '--timeline-ruler-width': width } as CSSProperties}>
-                <RulerMarks ticks={shownTicks} labelled={labelled} showMinor={showMinor} />
+                <RulerMarks ticks={shownTicks} labelled={labelled} showMinor={showMinor} frameStep={frameStep} />
 
                 {hoverIndex !== null && (
                     <span
                         ref={hoverRef}
                         className='timeline-ruler__hover pointer-events-none absolute top-0 z-[1] h-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/[0.06] px-2 text-2xs font-medium leading-5 tabular-nums text-muted'
-                        style={{ left: percentOf(hoverIndex, count) }}
+                        style={{ left: percentOf(hoverIndex) }}
                         aria-hidden='true'
                     >
                         {timesteps[hoverIndex]}
@@ -238,7 +243,7 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
                 )}
 
                 {hasThumb && (
-                    <div ref={playheadRef} className='pointer-events-none absolute inset-y-0 z-[2]' style={{ left: percentOf(currentIndex, count) }}>
+                    <div ref={playheadRef} className='pointer-events-none absolute inset-y-0 z-[2]' style={{ left: percentOf(currentIndex) }}>
                         <span
                             ref={thumbRef}
                             className={cn(
