@@ -64,6 +64,7 @@ interface UseFolderedListingReturn<TFolder extends FolderBreadcrumbEntity, TRow 
     listMoveFolders: (folderId: string | null) => Promise<TFolder[]>;
     navigateToFolder: (folderId: string | null) => void;
     openFolder: (folderId: string) => void;
+    renameFolder: (folderId: string, title: string) => Promise<void>;
     renamingFolder: TFolder | null;
 };
 
@@ -160,22 +161,26 @@ const useFolderedListing = <
         setRenamingFolder(null);
     }, []);
 
-    const handleRenameFolderSubmit = useCallback(async (title: string) => {
-        if (!renamingFolder) {
-            return;
-        }
-
+    const renameFolder = useCallback(async (folderId: string, title: string) => {
         await showPromise(
             updateFolder({
-                folderId: renamingFolder._id,
+                folderId,
                 title
             }),
             renameFolderToast
         );
 
         setFolderRefreshKey((previousValue) => previousValue + 1);
+    }, [renameFolderToast, updateFolder]);
+
+    const handleRenameFolderSubmit = useCallback(async (title: string) => {
+        if (!renamingFolder) {
+            return;
+        }
+
+        await renameFolder(renamingFolder._id, title);
         handleRenameFolderClose();
-    }, [handleRenameFolderClose, renameFolderToast, renamingFolder, updateFolder]);
+    }, [handleRenameFolderClose, renameFolder, renamingFolder]);
 
     const handleDeleteFolder = useCallback(async (folder: TFolder) => {
         const confirmConfig = getDeleteFolderConfirm(folder);
@@ -239,6 +244,7 @@ const useFolderedListing = <
         listMoveFolders,
         navigateToFolder,
         openFolder,
+        renameFolder,
         renamingFolder
     };
 };
