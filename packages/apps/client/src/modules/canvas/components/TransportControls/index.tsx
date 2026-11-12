@@ -1,8 +1,8 @@
 import { useEditorStore } from '@/modules/canvas/store/editor';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 
-import { SkipBack, Rewind, ChevronLeft, Play, ChevronRight, FastForward, SkipForward, Pause, Square } from 'lucide-react';
-import { useCallback, useMemo } from 'react';
+import { SkipBack, ChevronLeft, Play, ChevronRight, SkipForward, Pause, Square } from 'lucide-react';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Button, Tooltip } from '@heroui/react';
 
@@ -13,6 +13,8 @@ interface TransportControlsProps {
 }
 
 const ICON_STYLE = { width: 13, height: 13 };
+const GLYPH_POP: Keyframe[] = [{ opacity: 0, transform: 'scale(0.5)' }, { opacity: 1, transform: 'none' }];
+const GLYPH_POP_TIMING: KeyframeAnimationOptions = { duration: 300, easing: 'cubic-bezier(0.34, 1.36, 0.64, 1)' };
 
 const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }: TransportControlsProps) => {
     const {
@@ -46,20 +48,6 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
         setCurrentTimestep(timesteps[timesteps.length - 1]);
     }, [timesteps, setCurrentTimestep]);
 
-    const jumpBack10 = useCallback(() => {
-        if (timesteps.length === 0) return;
-        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
-        const nextIndex = Math.max(0, baseIndex - 10);
-        setCurrentTimestep(timesteps[nextIndex]);
-    }, [timesteps, currentIndex, setCurrentTimestep]);
-
-    const jumpForward10 = useCallback(() => {
-        if (timesteps.length === 0) return;
-        const baseIndex = currentIndex === -1 ? 0 : currentIndex;
-        const nextIndex = Math.min(timesteps.length - 1, baseIndex + 10);
-        setCurrentTimestep(timesteps[nextIndex]);
-    }, [timesteps, currentIndex, setCurrentTimestep]);
-
     const prevTimestep = useCallback(() => {
         if (timesteps.length === 0) return;
         const nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
@@ -87,12 +75,6 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             onPress: jumpToStart
         },
         {
-            action: 'back-10',
-            Icon: Rewind,
-            label: 'Back 10 timesteps',
-            onPress: jumpBack10
-        },
-        {
             action: 'previous',
             Icon: ChevronLeft,
             label: 'Previous timestep',
@@ -113,19 +95,14 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
             onPress: nextTimestep
         },
         {
-            action: 'forward-10',
-            Icon: FastForward,
-            label: 'Forward 10 timesteps',
-            onPress: jumpForward10
-        },
-        {
             action: 'end',
             Icon: SkipForward,
             label: 'Jump to end',
             onPress: jumpToEnd
         }
-    ]), [isPlaying, isPreloading, handleTogglePlay, jumpToStart, jumpBack10, prevTimestep, nextTimestep, jumpForward10, jumpToEnd]);
+    ]), [isPlaying, isPreloading, handleTogglePlay, jumpToStart, prevTimestep, nextTimestep, jumpToEnd]);
 
+    // A press gives more than HeroUI's 0.97.
     const renderButton = (btn: typeof buttons[number]) => (
         <Tooltip key={btn.action}>
             <Button
@@ -134,17 +111,30 @@ const TransportControls = ({ trajectoryId, currentTimestep, availableTimesteps }
                 isIconOnly
                 aria-label={btn.label}
                 data-transport-action={btn.action}
+                className='data-[pressed=true]:scale-[0.88]'
                 onPress={btn.onPress}
             >
-                <btn.Icon style={ICON_STYLE} />
+                <btn.Icon ref={btn.action === 'play' ? playGlyphRef : undefined} style={ICON_STYLE} />
             </Button>
             <Tooltip.Content placement='top'>{btn.label}</Tooltip.Content>
         </Tooltip>
     );
 
-    const previousButton = buttons[2];
-    const playButton = buttons[3];
-    const nextButton = buttons[4];
+    // Play, Pause and Stop pop in as they swap. Web Animations, not a CSS animation: in the canvas dock, Chrome
+    // (149) left a CSS animation on the freshly mounted glyph painted at its first frame, faded and half its size.
+    const playGlyphRef = useRef<SVGSVGElement>(null);
+    const playLabel = buttons[2].label;
+    const shownPlayLabelRef = useRef(playLabel);
+    useLayoutEffect(() => {
+        if (shownPlayLabelRef.current === playLabel) return;
+        shownPlayLabelRef.current = playLabel;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        playGlyphRef.current?.animate(GLYPH_POP, GLYPH_POP_TIMING);
+    }, [playLabel]);
+
+    const previousButton = buttons[1];
+    const playButton = buttons[2];
+    const nextButton = buttons[3];
 
     return (
         <>

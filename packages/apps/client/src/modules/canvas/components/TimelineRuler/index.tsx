@@ -1,101 +1,248 @@
-import { cn } from '@heroui/react';
-import { memo } from 'react';
-import type { TimelineTickTone } from '@/modules/canvas/utils/analysis-status-selectors';
-import type { RefObject } from 'react';
+import useTimelineScrubber, { indexAtClientX } from './use-timeline-scrubber';
+import { flaggedRuns, labelledIndices } from '@/modules/canvas/utils/timeline-ruler';
 
-interface TimelineRulerTick {
+import { cn } from '@heroui/react';
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { TimelineTickTone } from '@/modules/canvas/utils/analysis-status-selectors';
+import type { CSSProperties, PointerEvent } from 'react';
+
+export interface TimelineRulerTick {
     frame: number;
-    major: boolean;
     tone?: TimelineTickTone;
     dimmed?: boolean;
     // Cached by the preload Play runs; side by side, cached ticks read as one loaded range.
     cached?: boolean;
 }
 
-const TimelineRulerTicks = memo(({ ticks }: { ticks: TimelineRulerTick[] }) => {
-    const labelToneClass = {
-        queued: 'text-warning-soft-foreground',
-        running: 'text-info-soft-foreground',
-        completed: 'text-success-soft-foreground'
-    } as const;
+// Unlabelled while the trajectory loads, so the ruler never shows timesteps it does not have.
+const PLACEHOLDER_TICKS: TimelineRulerTick[] = Array.from({ length: 50 }, (_, index) => ({ frame: index }));
+// A text-2xs digit is about 7px; labels keep 28px between them.
+const LABEL_DIGIT_WIDTH = 7;
+const LABEL_GAP = 28;
+// Closer than this many px, only labelled frames keep a tick: a phone's ruler fits 105 frames 2.7px apart.
+const MIN_TICK_SPACING = 2;
+// The hover capsule hides while it would overlap the thumb, plus this margin.
+const HOVER_THUMB_MARGIN = 4;
+// A label hides while the thumb or the hover capsule is closer than this.
+const LABEL_CLEARANCE = 6;
 
-    const markToneClass = {
-        queued: 'bg-warning',
-        running: 'bg-info',
-        completed: 'bg-success'
-    } as const;
+const LABEL_TONE_CLASS = {
+    queued: 'text-warning-soft-foreground',
+    running: 'text-info-soft-foreground',
+    completed: 'text-success-soft-foreground'
+} as const;
+
+const MARK_TONE_CLASS = {
+    queued: 'bg-warning',
+    running: 'bg-info',
+    completed: 'bg-success'
+} as const;
+
+const fractionOf = (index: number, count: number) => (count > 1 ? index / (count - 1) : 0.5);
+const percentOf = (index: number, count: number) => `${fractionOf(index, count) * 100}%`;
+
+interface RulerMarksProps {
+    ticks: TimelineRulerTick[];
+    labelled: number[];
+    showMinor: boolean;
+}
+
+const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
+    const count = ticks.length;
+    const labelledSet = new Set(labelled);
+    const cachedRuns = flaggedRuns(ticks.map((tick) => Boolean(tick.cached)));
 
     return (
         <>
-            {ticks.map((tick, index) => (
-                <div key={tick.frame} className={cn('canvas-ruler-tick relative flex h-full shrink-0 cursor-pointer flex-col items-center px-3 max-md:px-2', tick.dimmed && 'opacity-35 transition-opacity duration-[180ms] ease-out')}>
-                    {/* A hairline-weight band, faint enough to stay out of the way, with round ends so a run
-                        reads as one range; it fades in tick by tick and out when caching ends. */}
+            {/* Half a frame past each end, so even one cached frame shows. */}
+            {cachedRuns.map((run) => (
+                <span
+                    key={`cached-${run.start}`}
+                    className='absolute bottom-0 h-0.5 rounded-full bg-foreground/15'
+                    style={{
+                        left: `${Math.max(0, fractionOf(run.start - 0.5, count)) * 100}%`,
+                        right: `${Math.max(0, 1 - fractionOf(run.end + 0.5, count)) * 100}%`
+                    }}
+                    aria-hidden='true'
+                />
+            ))}
+            {ticks.map((tick, index) => {
+                const major = labelledSet.has(index);
+                if (!major && !showMinor) return null;
+                return (
                     <span
+                        key={tick.frame}
                         className={cn(
-                            'absolute bottom-0 h-0.5 bg-foreground/15 transition-opacity duration-300 ease-out motion-reduce:transition-none',
-                            tick.cached ? 'opacity-100' : 'opacity-0',
-                            tick.cached && !ticks[index - 1]?.cached ? 'left-1.5 rounded-l-full' : 'left-0',
-                            tick.cached && !ticks[index + 1]?.cached ? 'right-1.5 rounded-r-full' : 'right-0'
+                            'timeline-ruler__tick absolute bottom-1 w-px',
+                            major ? 'h-2.5 bg-muted' : 'h-1.5 bg-border',
+                            tick.tone && MARK_TONE_CLASS[tick.tone],
+                            tick.dimmed && 'opacity-35'
                         )}
+                        style={{ left: percentOf(index, count), '--tick-at': fractionOf(index, count) } as CSSProperties}
                         aria-hidden='true'
                     />
-                    {tick.major && (
-                        <span className={cn('whitespace-nowrap text-xs leading-none text-muted transition-[color,text-shadow] duration-[180ms] max-md:text-2xs', tick.tone && labelToneClass[tick.tone])}>
-                            {tick.frame}
-                        </span>
-                    )}
-                    <div className={cn(
-                        'w-px bg-border transition-[background-color,box-shadow] duration-[180ms]',
-                        tick.major ? 'h-2.5 bg-muted max-md:h-[7px]' : 'h-1.5 max-md:h-1',
-                        tick.tone && markToneClass[tick.tone]
-                    )} />
-                </div>
-            ))}
+                );
+            })}
+            {labelled.map((index) => {
+                const tick = ticks[index];
+                return (
+                    <span
+                        key={`label-${tick.frame}`}
+                        data-ruler-label=''
+                        className={cn(
+                            'absolute top-1 -translate-x-1/2 whitespace-nowrap text-2xs leading-none tabular-nums text-muted transition-opacity duration-[160ms] data-covered:opacity-0',
+                            tick.tone && LABEL_TONE_CLASS[tick.tone],
+                            tick.dimmed && 'opacity-35'
+                        )}
+                        style={{ left: percentOf(index, count) }}
+                    >
+                        {tick.frame}
+                    </span>
+                );
+            })}
         </>
     );
 });
 
-TimelineRulerTicks.displayName = 'TimelineRulerTicks';
+RulerMarks.displayName = 'RulerMarks';
 
 interface TimelineRulerProps {
-    rulerRef: RefObject<HTMLDivElement | null>;
     ticks: TimelineRulerTick[];
-    playheadLeft: number;
-    startFrame: number;
-    endFrame: number;
-    currentFrame: number;
-    onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
-    onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
-    onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-    onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
-    onWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
-    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
+    currentFrame: number | undefined;
+    isPlaying: boolean;
+    frameDelayMs: number;
 }
 
-const TimelineRuler = ({
-    rulerRef,
-    ticks,
-    playheadLeft,
-    startFrame,
-    endFrame,
-    currentFrame,
-    onClick,
-    onPointerDown,
-    onPointerMove,
-    onPointerUp,
-    onWheel,
-    onKeyDown
-}: TimelineRulerProps) => (
-    <div className='relative h-full min-h-0 flex-auto'>
-        <div className='flex h-full min-h-[22px] touch-pan-y items-end select-none overflow-x-auto overflow-y-hidden border-b border-foreground/[0.08] outline-none focus-visible:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_15%,transparent)] max-md:touch-none max-md:border-b-0' ref={rulerRef} onClick={onClick} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown} role='slider' tabIndex={0} aria-label='Timeline playhead' aria-valuemin={startFrame} aria-valuemax={endFrame} aria-valuenow={currentFrame} aria-valuetext={`Frame ${currentFrame}`}>
-            <TimelineRulerTicks ticks={ticks} />
-        </div>
+const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: TimelineRulerProps) => {
+    const trackRef = useRef<HTMLDivElement>(null);
+    const playheadRef = useRef<HTMLDivElement>(null);
+    const thumbRef = useRef<HTMLSpanElement>(null);
+    const hoverRef = useRef<HTMLSpanElement>(null);
+    const [width, setWidth] = useState(0);
+    const [pointerIndex, setPointerIndex] = useState<number | null>(null);
 
-        <div className='pointer-events-none absolute bottom-0 top-4 z-[2] w-0.5 bg-foreground max-md:top-3' style={{ left: `${playheadLeft}px` }}>
-            <div className='absolute -top-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-foreground' />
+    const timesteps = useMemo(() => ticks.map((tick) => tick.frame), [ticks]);
+    const shownTicks = ticks.length > 0 ? ticks : PLACEHOLDER_TICKS;
+    const count = shownTicks.length;
+    const currentIndex = currentFrame === undefined ? -1 : timesteps.indexOf(currentFrame);
+    // A trajectory or range that shrinks under a resting pointer must not leave it past the last frame.
+    const hoverIndex = pointerIndex !== null && pointerIndex < timesteps.length ? pointerIndex : null;
+    const { isDragging, rulerHandlers } = useTimelineScrubber({ trackRef, rangedTimesteps: timesteps, currentFrame });
+
+    const labelled = useMemo(() => {
+        const widest = String(timesteps[timesteps.length - 1] ?? '').length;
+        return labelledIndices(timesteps, width, widest * LABEL_DIGIT_WIDTH + LABEL_GAP);
+    }, [timesteps, width]);
+    const showMinor = count < 2 || width / (count - 1) >= MIN_TICK_SPACING;
+
+    useLayoutEffect(() => {
+        const track = trackRef.current;
+        if (!track) return;
+        const measure = () => setWidth(track.clientWidth);
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(track);
+        return () => observer.disconnect();
+    }, []);
+
+    // Playback glides the playhead one frame to the next over the frame's own time; any other move lands at once.
+    const previousIndexRef = useRef(currentIndex);
+    useLayoutEffect(() => {
+        const from = previousIndexRef.current;
+        previousIndexRef.current = currentIndex;
+        const playhead = playheadRef.current;
+        if (!isPlaying || !playhead || currentIndex !== from + 1 || !Number.isFinite(frameDelayMs)) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        playhead.animate(
+            [{ left: percentOf(from, count) }, { left: percentOf(currentIndex, count) }],
+            { duration: frameDelayMs, easing: 'linear' }
+        );
+    }, [count, currentIndex, frameDelayMs, isPlaying]);
+
+    // Labels step aside for the thumb and the hover capsule; the capsule steps aside for the thumb.
+    useLayoutEffect(() => {
+        const track = trackRef.current;
+        if (!track) return;
+        const xOf = (index: number) => fractionOf(index, count) * track.clientWidth;
+        const covers: Array<[number, number]> = [];
+        const thumb = thumbRef.current;
+        const thumbHalf = thumb ? thumb.offsetWidth / 2 : 0;
+        if (thumb) covers.push([xOf(currentIndex) - thumbHalf, xOf(currentIndex) + thumbHalf]);
+
+        const hover = hoverRef.current;
+        if (hover && hoverIndex !== null) {
+            const hoverHalf = hover.offsetWidth / 2;
+            const nearThumb = thumb !== null && Math.abs(xOf(hoverIndex) - xOf(currentIndex)) < thumbHalf + hoverHalf + HOVER_THUMB_MARGIN;
+            hover.toggleAttribute('data-near', nearThumb);
+            if (!nearThumb && !isDragging) covers.push([xOf(hoverIndex) - hoverHalf, xOf(hoverIndex) + hoverHalf]);
+        }
+
+        track.querySelectorAll<HTMLElement>('[data-ruler-label]').forEach((label) => {
+            const half = label.offsetWidth / 2;
+            const covered = covers.some(([start, end]) => label.offsetLeft + half > start - LABEL_CLEARANCE && label.offsetLeft - half < end + LABEL_CLEARANCE);
+            label.toggleAttribute('data-covered', covered);
+        });
+    }, [count, currentIndex, currentFrame, hoverIndex, isDragging, labelled]);
+
+    // Ticks swell around a mouse: the track carries the pointer's share of its width for the CSS.
+    const trackHover = (event: PointerEvent<HTMLDivElement>) => {
+        const track = trackRef.current;
+        if (!track || event.pointerType === 'touch' || timesteps.length === 0) return;
+        const box = track.getBoundingClientRect();
+        track.style.setProperty('--timeline-ruler-hover', String((event.clientX - box.left) / Math.max(1, box.width)));
+        setPointerIndex(indexAtClientX(track, event.clientX, timesteps.length));
+    };
+
+    const hasThumb = currentIndex >= 0;
+
+    return (
+        <div
+            className='timeline-ruler relative h-10 min-w-0 flex-auto cursor-pointer touch-none select-none rounded-xl outline-none focus-visible:shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--foreground)_15%,transparent)]'
+            role='slider'
+            tabIndex={0}
+            aria-label='Timeline playhead'
+            aria-valuemin={timesteps[0]}
+            aria-valuemax={timesteps[timesteps.length - 1]}
+            aria-valuenow={currentFrame}
+            aria-valuetext={currentFrame === undefined ? undefined : `Timestep ${currentFrame}`}
+            data-dragging={isDragging || undefined}
+            data-hovering={hoverIndex !== null || undefined}
+            data-tour-id='canvas-timeline-ruler'
+            {...rulerHandlers}
+            onPointerMove={(event) => {
+                rulerHandlers.onPointerMove(event);
+                trackHover(event);
+            }}
+            onPointerLeave={() => setPointerIndex(null)}
+        >
+            <div ref={trackRef} className='absolute inset-y-0 inset-x-10 max-md:inset-x-8' style={{ '--timeline-ruler-width': width } as CSSProperties}>
+                <RulerMarks ticks={shownTicks} labelled={labelled} showMinor={showMinor} />
+
+                {hoverIndex !== null && (
+                    <span
+                        ref={hoverRef}
+                        className='timeline-ruler__hover pointer-events-none absolute top-0 z-[1] h-5 -translate-x-1/2 whitespace-nowrap rounded-full bg-foreground/[0.06] px-2 text-2xs font-medium leading-5 tabular-nums text-muted'
+                        style={{ left: percentOf(hoverIndex, count) }}
+                        aria-hidden='true'
+                    >
+                        {timesteps[hoverIndex]}
+                    </span>
+                )}
+
+                {hasThumb && (
+                    <div ref={playheadRef} className='pointer-events-none absolute inset-y-0 z-[2]' style={{ left: percentOf(currentIndex, count) }}>
+                        <span
+                            ref={thumbRef}
+                            className='timeline-ruler__thumb absolute left-0 top-0 h-5 -translate-x-1/2 whitespace-nowrap rounded-full px-2 text-2xs font-medium leading-5 tabular-nums text-foreground'
+                        >
+                            {currentFrame}
+                        </span>
+                        <span className='absolute bottom-1 left-0 top-5 -ml-px w-0.5 rounded-full bg-foreground' />
+                    </div>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default TimelineRuler;
