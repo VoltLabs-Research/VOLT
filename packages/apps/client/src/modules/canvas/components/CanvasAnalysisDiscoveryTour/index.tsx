@@ -7,7 +7,6 @@ import type { CSSProperties } from 'react';
 const TOUR_STORAGE_KEY_PREFIX = 'volt:tutorial:canvas-analysis-discovery:v1';
 
 const TOUR_SELECT_ANALYSIS_EVENT = 'canvas-analysis-tour:select-first-analysis';
-const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
 const TARGET_GAP = 12;
 const VIEWPORT_MARGIN = 12;
 const CARD_ESTIMATED_HEIGHT = 146;
@@ -29,7 +28,6 @@ interface TourStep {
     description: string;
     targetSelector: string;
     requiresAnalysisPanel?: boolean;
-    requiresTimelineTab?: boolean;
     optional?: boolean;
 }
 
@@ -83,8 +81,8 @@ const buildSteps = (isMobile: boolean): TourStep[] => {
         id: 'timeline-tabs',
         title: 'Timeline tabs',
         description: isMobile
-            ? 'Use this selector to switch between the timeline, particles, simulation cell, logs, and analysis result tables.'
-            : 'Use these tabs to switch between the timeline, particles, simulation cell, logs, and analysis result tables.',
+            ? 'Use this selector to open the particles, simulation cell, logs and analysis result tables above the timeline.'
+            : 'Use these tabs to open the particles, simulation cell, logs and analysis result tables above the timeline.',
         targetSelector: isMobile
             ? '[data-tour-id="canvas-timeline-tab-selector"]'
             : '[data-tour-id="canvas-timeline-tabs"]'
@@ -94,8 +92,7 @@ const buildSteps = (isMobile: boolean): TourStep[] => {
         description: isMobile
             ? 'Tap a timestep directly, or drag across the ruler to scrub through frames.'
             : 'Click or drag across the ruler to scrub through frames.',
-        targetSelector: '[data-tour-id="canvas-timeline-ruler"]',
-        requiresTimelineTab: true
+        targetSelector: '[data-tour-id="canvas-timeline-ruler"]'
     }];
 
     if (!isMobile) {
@@ -216,24 +213,6 @@ const CanvasAnalysisDiscoveryTour = ({
 
             return settled;
         });
-    }, [activeStep, isActive]);
-
-    useEffect(() => {
-        if (!isActive || !activeStep?.requiresTimelineTab) {
-            return;
-        }
-
-        let attempts = 0;
-        const stopPolling = pollUntilSettled(120, () => {
-            window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
-            attempts += 1;
-
-            return Boolean(document.querySelector(activeStep.targetSelector)) || attempts >= 16;
-        });
-
-        window.dispatchEvent(new CustomEvent(TOUR_SELECT_TIMELINE_TAB_EVENT));
-
-        return stopPolling;
     }, [activeStep, isActive]);
 
     useEffect(() => {

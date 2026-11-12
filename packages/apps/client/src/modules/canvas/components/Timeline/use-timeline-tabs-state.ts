@@ -7,11 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TimelineTabOption } from '../TimelineHeader';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
-const TOUR_SELECT_TIMELINE_TAB_EVENT = 'canvas-analysis-tour:select-timeline-tab';
 const EXPOSURE_TAB_PREFIX = 'exposure:';
 
-const exposureIdOfTab = (tabId: string): string | undefined => {
-    return tabId.startsWith(EXPOSURE_TAB_PREFIX) ? tabId.slice(EXPOSURE_TAB_PREFIX.length) : undefined;
+export const exposureIdOfTab = (tabId: string | null): string | undefined => {
+    return tabId?.startsWith(EXPOSURE_TAB_PREFIX) ? tabId.slice(EXPOSURE_TAB_PREFIX.length) : undefined;
 };
 
 interface UseTimelineTabsStateParams {
@@ -20,7 +19,9 @@ interface UseTimelineTabsStateParams {
 }
 
 const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStateParams) => {
-    const [activeTab, setActiveTab] = useState<string>(TimelineTab.Timeline);
+    // null while the panel is closed; the chevron reopens the tab that was open last.
+    const [activeTab, setActiveTab] = useState<string | null>(null);
+    const [lastTab, setLastTab] = useState<string>(TimelineTab.Particles);
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const { pluginId, pluginDisplayName, isPluginReady, listingExposures } = useCanvasTimelineTabs({
         trajectory,
@@ -44,8 +45,9 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
         }))
     ];
 
-    const handleTabChange = useCallback((tab: string) => {
+    const openTab = useCallback((tab: string) => {
         setActiveTab(tab);
+        setLastTab(tab);
 
         const exposureId = exposureIdOfTab(tab);
         if (exposureId !== undefined) {
@@ -55,28 +57,39 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
         }
     }, [setTimelineExposureId, timelineExposureId]);
 
+    const closePanel = useCallback(() => {
+        setActiveTab(null);
+        if (timelineExposureId) {
+            setTimelineExposureId(undefined, { replace: true });
+        }
+    }, [setTimelineExposureId, timelineExposureId]);
+
+    const pressTab = useCallback((tab: string) => {
+        if (tab === activeTab) closePanel();
+        else openTab(tab);
+    }, [activeTab, closePanel, openTab]);
+
+    const reopenableTab = tabs.some((tab) => tab.id === lastTab) ? lastTab : TimelineTab.Particles;
+    const togglePanel = useCallback(() => {
+        if (activeTab === null) openTab(reopenableTab);
+        else closePanel();
+    }, [activeTab, closePanel, openTab, reopenableTab]);
+
     const requestedTab = useTimelineTabRequestStore((state) => state.requestedTab);
     const clearTabRequest = useTimelineTabRequestStore((state) => state.clearRequest);
     const canOpenRequestedTab = requestedTab !== null && tabs.some((tab) => tab.id === requestedTab);
 
     useEffect(() => {
         if (!requestedTab || !canOpenRequestedTab) return;
-        handleTabChange(requestedTab);
+        openTab(requestedTab);
         clearTabRequest();
-    }, [canOpenRequestedTab, clearTabRequest, handleTabChange, requestedTab]);
-
-    useEffect(() => {
-        const selectTimelineTab = () => handleTabChange(TimelineTab.Timeline);
-
-        window.addEventListener(TOUR_SELECT_TIMELINE_TAB_EVENT, selectTimelineTab);
-        return () => {
-            window.removeEventListener(TOUR_SELECT_TIMELINE_TAB_EVENT, selectTimelineTab);
-        };
-    }, [handleTabChange]);
+    }, [canOpenRequestedTab, clearTabRequest, openTab, requestedTab]);
 
     useEffect(() => {
         if (timelineExposureId && exposureIds.has(timelineExposureId)) {
-            setActiveTab(`${EXPOSURE_TAB_PREFIX}${timelineExposureId}`);
+            const exposureTab = `${EXPOSURE_TAB_PREFIX}${timelineExposureId}`;
+            setActiveTab(exposureTab);
+            setLastTab(exposureTab);
             return;
         }
 
@@ -85,13 +98,13 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
         if (timelineExposureId && isPluginReady) {
             setTimelineExposureId(undefined, { replace: true });
             if (activeExposureId !== undefined) {
-                setActiveTab(TimelineTab.Timeline);
+                setActiveTab(null);
             }
             return;
         }
 
         if (activeExposureId !== undefined && !exposureIds.has(activeExposureId)) {
-            setActiveTab(TimelineTab.Timeline);
+            setActiveTab(null);
             if (timelineExposureId) {
                 setTimelineExposureId(undefined, { replace: true });
             }
@@ -103,19 +116,20 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
 
         if (timelineExposureId) {
             setTimelineExposureId(undefined, { replace: true });
-            setActiveTab(TimelineTab.Timeline);
+            setActiveTab(null);
         }
 
         if (activeTab === TimelineTab.Log) {
-            setActiveTab(TimelineTab.Timeline);
+            setActiveTab(null);
         }
     }, [activeTab, analysisId, timelineExposureId, setTimelineExposureId]);
 
     return {
         activeTab,
         tabs,
-        handleTabChange,
-        activeExposureId: exposureIdOfTab(activeTab),
+        openTab,
+        pressTab,
+        togglePanel,
         pluginId,
         pluginDisplayName
     };

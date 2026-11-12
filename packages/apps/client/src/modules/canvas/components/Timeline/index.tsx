@@ -1,21 +1,24 @@
 import { cn } from '@heroui/react';
-import TimelineHeader, { TimelineTab } from '../TimelineHeader';
+import TimelineControls from '../TimelineControls';
+import TimelineHeader from '../TimelineHeader';
 import TimelineRuler from '../TimelineRuler';
 import TimelineTabContent from './TimelineTabContent';
-import useTimelineScrubber from './use-timeline-scrubber';
-import useTimelineTabsState from './use-timeline-tabs-state';
+import useFoldingTab, { PANEL_FOLD_MS } from './use-folding-tab';
+import useTimelineTabsState, { exposureIdOfTab } from './use-timeline-tabs-state';
 import useTimelineJobActivity from './use-timeline-job-activity';
 import { useEditorStore } from '@/modules/canvas/store/editor';
+import { resolveFrameDelayMs } from '@/modules/canvas/store/editor/playback-slice';
 import { resolveRangedTimesteps } from '@/modules/canvas/utils/timeline-range';
 import { toAnalysisFrameActivityStatus } from '@/modules/canvas/utils/analysis-status-selectors';
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import type { ReactNode } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 const SCENE_ZOOM_SUBSCRIBE_RETRY_MS = 120;
-const PLACEHOLDER_TICK_COUNT = 50;
+const PANEL_ID = 'canvas-timeline-panel';
 
 interface TimelineProps {
     sceneRef: React.RefObject<FractalSceneRef | null>;
@@ -25,6 +28,8 @@ interface TimelineProps {
     availableTimesteps: number[];
     selectedAnalysisTimesteps?: number[];
     analysisId: string | undefined;
+    // Shown only while the panel is open: closed, the dock is the tabs, the ruler and the status bar.
+    resizeHandle?: ReactNode;
 }
 
 const Timeline = ({
@@ -34,12 +39,15 @@ const Timeline = ({
     currentTimestep,
     availableTimesteps,
     selectedAnalysisTimesteps,
-    analysisId
+    analysisId,
+    resizeHandle
 }: TimelineProps) => {
-    const { activeTab, tabs, handleTabChange, activeExposureId, pluginId, pluginDisplayName } = useTimelineTabsState({
+    const { activeTab, tabs, openTab, pressTab, togglePanel, pluginId, pluginDisplayName } = useTimelineTabsState({
         trajectory,
         analysisId
     });
+    const shownTab = useFoldingTab(activeTab);
+    const isPanelOpen = activeTab !== null;
     const { getTickTone, getAnalysisFrameStatus, getLiveLogTarget } = useTimelineJobActivity(trajectory?._id, analysisId);
 
     const {
@@ -49,7 +57,9 @@ const Timeline = ({
         rangeEnd,
         setRangeStart,
         setRangeEnd,
-        preloadedTimesteps
+        preloadedTimesteps,
+        isPlaying,
+        targetFps
     } = useEditorStore(useShallow((state) => ({
         playSpeed: state.playSpeed,
         setPlaySpeed: state.setPlaySpeed,
@@ -57,7 +67,9 @@ const Timeline = ({
         rangeEnd: state.rangeEnd,
         setRangeStart: state.setRangeStart,
         setRangeEnd: state.setRangeEnd,
-        preloadedTimesteps: state.preloadedTimesteps
+        preloadedTimesteps: state.preloadedTimesteps,
+        isPlaying: state.isPlaying,
+        targetFps: state.targetFps
     })));
 
     useEffect(() => {
@@ -79,20 +91,11 @@ const Timeline = ({
     }, [availableTimesteps, rangeStart, rangeEnd]);
 
     const ticks = useMemo(() => {
-        // Unlabelled while the trajectory loads, so the ruler never shows timesteps it does not have.
-        if (rangedTimesteps.length === 0) {
-            return Array.from({ length: PLACEHOLDER_TICK_COUNT }, (_, index) => ({
-                frame: index,
-                major: false
-            }));
-        }
-
         const scopedTimesteps = selectedAnalysisTimesteps ? new Set(selectedAnalysisTimesteps) : undefined;
         const cachedTimesteps = new Set(preloadedTimesteps);
 
         return rangedTimesteps.map((frame) => ({
             frame,
-            major: true,
             tone: getTickTone(frame),
             dimmed: scopedTimesteps ? !scopedTimesteps.has(frame) : false,
             cached: cachedTimesteps.has(frame)
@@ -108,12 +111,6 @@ const Timeline = ({
     const analysisFrameStatus = logAnalysisId
         ? toAnalysisFrameActivityStatus(getAnalysisFrameStatus(logAnalysisId, logTimestep))
         : undefined;
-
-    const { rulerRef, playheadLeft, rulerHandlers } = useTimelineScrubber({
-        rangedTimesteps,
-        currentTimestep,
-        currentFrame
-    });
 
     const [zoomPercent, setZoomPercent] = useState(100);
 
@@ -142,25 +139,15 @@ const Timeline = ({
     }, [sceneRef]);
 
     return (
-        <div className={cn(
-            'flex min-h-0 flex-col overflow-hidden max-h-[calc(100dvh-2rem)] max-md:gap-2 max-md:items-stretch max-md:overflow-visible max-md:pointer-events-none',
-            activeTab === TimelineTab.Timeline ? 'h-auto' : 'h-[var(--canvas-timeline-size,12rem)]'
-        )}>
+        <div className='flex min-h-0 flex-col overflow-hidden max-h-[calc(100dvh-2rem)] max-md:gap-2 max-md:items-stretch max-md:overflow-visible max-md:pointer-events-none'>
+            {isPanelOpen && resizeHandle}
             <TimelineHeader
                 activeTab={activeTab}
-                onTabChange={handleTabChange}
                 tabs={tabs}
-                trajectoryId={trajectoryId}
-                currentTimestep={currentTimestep}
-                startFrame={startFrame}
-                endFrame={endFrame}
-                availableTimesteps={availableTimesteps}
-                zoomPercent={zoomPercent}
-                onZoomPreset={(preset) => sceneRef.current?.zoomTo(preset)}
-                onRangeStartChange={setRangeStart}
-                onRangeEndChange={setRangeEnd}
-                playSpeed={playSpeed}
-                onPlaySpeedChange={setPlaySpeed}
+                onTabPress={pressTab}
+                onTabSelect={openTab}
+                onTogglePanel={togglePanel}
+                panelId={PANEL_ID}
                 downloadContext={{
                     pluginId,
                     analysisId,
@@ -169,33 +156,57 @@ const Timeline = ({
                 outputsTitle={pluginDisplayName}
             />
 
-            {/* The ruler stays compact at the dock's default size and grows with what it is dragged past it. */}
-            {activeTab === TimelineTab.Timeline && (
-                <div className='relative h-[max(25px,calc(var(--canvas-timeline-size,12rem)-12rem+25px))] min-h-[25px] flex-none max-md:pointer-events-auto max-md:order-2 max-md:h-8 max-md:min-h-8 max-md:min-w-0 max-md:self-stretch max-md:overflow-auto' data-tour-id='canvas-timeline-ruler'>
-                    <TimelineRuler
-                        rulerRef={rulerRef}
-                        ticks={ticks}
-                        playheadLeft={playheadLeft}
-                        startFrame={startFrame}
-                        endFrame={endFrame}
-                        currentFrame={currentFrame}
-                        {...rulerHandlers}
-                    />
+            {/* Unfolds from the tabs instead of popping in; the rows animate from 0fr, so its height can stay the dock's. */}
+            <div
+                id={PANEL_ID}
+                className={cn(
+                    'grid min-h-0 transition-[grid-template-rows] ease-[var(--ease-emphasized)] motion-reduce:transition-none max-md:order-2',
+                    isPanelOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                )}
+                style={{ transitionDuration: `${PANEL_FOLD_MS}ms` }}
+                inert={!isPanelOpen}
+            >
+                <div className='flex min-h-0 flex-col overflow-hidden'>
+                    <div className='flex h-[calc(var(--canvas-timeline-size,12rem)-2.25rem)] min-h-0 flex-none flex-col border-y border-foreground/[0.06] max-md:h-auto max-md:border-0'>
+                        <TimelineTabContent
+                            activeTab={shownTab}
+                            activeExposureId={exposureIdOfTab(shownTab)}
+                            trajectory={trajectory}
+                            analysisId={analysisId}
+                            pluginId={pluginId}
+                            currentTimestep={currentTimestep}
+                            currentFrame={currentFrame}
+                            logAnalysisId={logAnalysisId}
+                            logTimestep={logTimestep}
+                            analysisFrameStatus={analysisFrameStatus}
+                        />
+                    </div>
                 </div>
-            )}
+            </div>
 
-            <TimelineTabContent
-                activeTab={activeTab}
-                activeExposureId={activeExposureId}
-                trajectory={trajectory}
-                analysisId={analysisId}
-                pluginId={pluginId}
-                currentTimestep={currentTimestep}
-                currentFrame={currentFrame}
-                logAnalysisId={logAnalysisId}
-                logTimestep={logTimestep}
-                analysisFrameStatus={analysisFrameStatus}
-            />
+            {/* The ruler is always there, as OVITO's time slider, with the transport beside it. */}
+            <div className='flex flex-none flex-row items-center gap-4 pb-1 pl-2 pr-3 pt-1.5 max-md:pointer-events-auto max-md:order-3 max-md:flex-col max-md:items-stretch max-md:gap-1.5 max-md:p-0'>
+                <TimelineRuler
+                    ticks={ticks}
+                    currentFrame={currentFrame}
+                    isPlaying={isPlaying}
+                    frameDelayMs={resolveFrameDelayMs(playSpeed, targetFps)}
+                />
+                <TimelineControls
+                    trajectoryId={trajectoryId}
+                    currentTimestep={currentTimestep}
+                    rangedTimesteps={rangedTimesteps}
+                    availableTimesteps={availableTimesteps}
+                    startFrame={startFrame}
+                    endFrame={endFrame}
+                    onRangeStartChange={setRangeStart}
+                    onRangeEndChange={setRangeEnd}
+                    playSpeed={playSpeed}
+                    onPlaySpeedChange={setPlaySpeed}
+                    zoomPercent={zoomPercent}
+                    onZoomPreset={(preset) => sceneRef.current?.zoomTo(preset)}
+                />
+            </div>
         </div>
     );
 };

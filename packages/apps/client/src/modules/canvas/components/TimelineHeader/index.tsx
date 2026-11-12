@@ -1,12 +1,12 @@
 import CanvasOptionSelect from '../CanvasOptionSelect';
-import FrameCombobox from '../FrameCombobox';
-import PresetPopover from './PresetPopover';
-import TransportControls from '../TransportControls';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
+import Scrollable from '@/shared/ui/components/Scrollable';
 import useDownloadExposureListing from '../../hooks/use-download-exposure-listing';
+import useTabIndicator from './use-tab-indicator';
 
-import { ChevronDown, ZoomIn } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import {
+    Button,
     DropdownItem,
     DropdownItemIndicator,
     DropdownMenu,
@@ -15,15 +15,13 @@ import {
     DropdownSection,
     DropdownTrigger,
     Header,
-    Separator,
     cn
 } from '@heroui/react';
+import { useRef } from 'react';
 import type { SelectOption } from '@/shared/contracts/form-field';
 import type { ReactNode } from 'react';
-import Scrollable from '@/shared/ui/components/Scrollable';
 
 export enum TimelineTab {
-    Timeline = 'timeline',
     Particles = 'particles',
     SimulationCell = 'simulation-cell',
     Log = 'log'
@@ -42,35 +40,24 @@ export interface TimelineTabOption {
 }
 
 interface TimelineHeaderProps {
-    activeTab: string;
-    onTabChange: (tab: string) => void;
+    // The open tab; null while the panel is closed and only the ruler shows.
+    activeTab: string | null;
     tabs: TimelineTabOption[];
-    trajectoryId?: string;
-    currentTimestep: number | undefined;
-    startFrame: number | undefined;
-    endFrame: number | undefined;
-    availableTimesteps: number[];
-    zoomPercent: number;
-    onZoomPreset: (preset: number) => void;
-    onRangeStartChange: (value: number | undefined) => void;
-    onRangeEndChange: (value: number | undefined) => void;
-    playSpeed: number;
-    onPlaySpeedChange: (speed: number) => void;
+    // A tab opens the panel on itself, or closes it when it is the open one.
+    onTabPress: (tab: string) => void;
+    onTabSelect: (tab: string) => void;
+    onTogglePanel: () => void;
+    panelId: string;
     downloadContext: TimelineDownloadContext;
     // The plugin the outputs come from, as the outputs menu titles them.
     outputsTitle?: string;
 }
 
+// The open tab's fill is the sliding pill (useTabIndicator), so a tab itself only changes colour.
 const tabClassName = (isActive: boolean) => cn(
-    'inline-flex h-7 min-h-7 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border-0 px-2.5 text-xs font-medium leading-none select-none transition-colors duration-[140ms] ease-out',
-    isActive ? 'bg-foreground/[0.08] text-foreground' : 'bg-transparent text-muted hover:bg-foreground/5 hover:text-foreground'
+    'relative z-[1] inline-flex h-6 min-h-6 cursor-pointer items-center justify-center whitespace-nowrap rounded-full border-0 bg-transparent px-3 text-xs font-medium leading-none select-none transition-colors duration-200 ease-out',
+    isActive ? 'text-foreground' : 'text-muted hover:text-foreground'
 );
-
-// Wide enough on phones for a seven-digit timestep beside the list trigger.
-const MOBILE_FRAME_GROUP = 'max-md:w-[clamp(4.75rem,24vw,5.75rem)] max-md:[&_input]:pl-2.5';
-
-const ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 400];
-const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4, 8, 10];
 
 export const CORE_TABS: TimelineTabOption[] = [
     {
@@ -80,38 +67,29 @@ export const CORE_TABS: TimelineTabOption[] = [
     {
         id: TimelineTab.SimulationCell,
         label: 'Simulation Cell'
-    },
-    {
-        id: TimelineTab.Timeline,
-        label: 'Timeline'
     }
 ];
 
 const TimelineHeader = ({
     activeTab,
-    onTabChange,
     tabs,
-    trajectoryId,
-    currentTimestep,
-    startFrame,
-    endFrame,
-    availableTimesteps,
-    zoomPercent,
-    onZoomPreset,
-    onRangeStartChange,
-    onRangeEndChange,
-    playSpeed,
-    onPlaySpeedChange,
+    onTabPress,
+    onTabSelect,
+    onTogglePanel,
+    panelId,
     downloadContext,
     outputsTitle
 }: TimelineHeaderProps) => {
     const { download: downloadExposureListing } = useDownloadExposureListing();
+    const tablistRef = useRef<HTMLDivElement>(null);
+    const indicatorStyle = useTabIndicator(tablistRef, activeTab);
+    const isPanelOpen = activeTab !== null;
     const tabSelectOptions: SelectOption[] = tabs.map((tab) => ({
         value: tab.id,
         title: tab.label
     }));
 
-    // Particles, Simulation Cell, Timeline and Log stay tabs. A plugin's outputs share one tab with a menu,
+    // Particles, Simulation Cell and Log stay tabs. A plugin's outputs share one tab with a menu,
     // so a plugin with many listings no longer pushes the row past its column; a lone output stays a tab.
     const outputTabs = tabs.filter((tab) => tab.exposureId);
     const groupsOutputs = outputTabs.length > 1;
@@ -119,16 +97,13 @@ const TimelineHeader = ({
     const activeOutput = outputTabs.find((tab) => tab.id === activeTab);
 
     // Right-click downloads an output's listing.
-    const withDownload = (tab: TimelineTabOption | undefined, trigger: ReactNode, key: string) => {
+    const withDownload = (tab: TimelineTabOption | undefined, trigger: ReactNode) => {
         const exposureId = tab?.exposureId;
         const pluginId = downloadContext.pluginId;
-        if (!tab || !exposureId || !pluginId) {
-            return <span key={key} className='inline-flex'>{trigger}</span>;
-        }
+        if (!tab || !exposureId || !pluginId) return trigger;
 
         return (
             <ContextMenuPopover
-                key={`exposure-tab-popover-${tab.id}`}
                 id={`timeline-tab-download-${tab.id}`}
                 triggerAction='contextmenu'
                 ariaLabel={`${tab.label} actions`}
@@ -149,17 +124,25 @@ const TimelineHeader = ({
         );
     };
 
-    const renderTab = (tab: TimelineTabOption) => withDownload(tab.exposureId ? tab : undefined, (
+    // Each tab sits in a slot of the tab list, which draws the hairlines between slots and finds the open one.
+    const tabSlot = (key: string, isActive: boolean, content: ReactNode) => (
+        <span key={key} className='relative inline-flex' data-timeline-tab='' data-timeline-tab-active={isActive || undefined}>
+            {content}
+        </span>
+    );
+
+    const renderTab = (tab: TimelineTabOption) => tabSlot(tab.id, activeTab === tab.id, withDownload(tab.exposureId ? tab : undefined, (
         <button
             type='button'
             role='tab'
             aria-selected={activeTab === tab.id}
+            aria-controls={panelId}
             className={tabClassName(activeTab === tab.id)}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => onTabPress(tab.id)}
         >
             {tab.label}
         </button>
-    ), tab.id);
+    )));
 
     const renderOutputsTab = () => {
         if (!groupsOutputs) return null;
@@ -174,7 +157,7 @@ const TimelineHeader = ({
                     <span className='min-w-0 truncate'>{activeOutput?.label ?? 'Outputs'}</span>
                     <ChevronDown size={11} className='shrink-0 opacity-70' aria-hidden='true' />
                 </DropdownTrigger>
-                <DropdownPopover placement='bottom start'>
+                <DropdownPopover placement='top start'>
                     <DropdownMenu
                         aria-label={outputsTitle ?? 'Outputs'}
                         className='p-1.5 pt-1'
@@ -183,7 +166,7 @@ const TimelineHeader = ({
                         selectedKeys={activeOutput ? [activeOutput.id] : []}
                         onSelectionChange={(keys) => {
                             const key = keys === 'all' ? undefined : [...keys][0];
-                            if (key !== undefined) onTabChange(String(key));
+                            if (key !== undefined) onTabSelect(String(key));
                         }}
                     >
                         <DropdownSection id='timeline-outputs'>
@@ -206,77 +189,52 @@ const TimelineHeader = ({
         );
 
         // The open output downloads from here, as it did from its own tab.
-        return withDownload(activeOutput, menu, 'timeline-outputs');
+        return tabSlot('timeline-outputs', Boolean(activeOutput), withDownload(activeOutput, menu));
     };
 
     return (
-        // Laid out by its own width, not the window's: docked beside the right panel, it is narrower than the window.
-        <div className='@container w-full max-md:contents'>
-            <div className='grid h-10 w-full grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)] items-center gap-2 px-2 py-1 @max-[800px]:flex @max-[800px]:h-auto @max-[800px]:min-h-10 @max-[800px]:flex-wrap max-md:contents max-md:h-auto max-md:min-h-0 max-md:p-0'>
-                <div className='flex min-w-0 flex-row items-center @max-[800px]:flex-[1_1_100%] max-md:pointer-events-none max-md:order-1 max-md:w-full max-md:flex-none max-md:self-stretch'>
-                    <Scrollable orientation='horizontal' className='timeline-tabs flex flex-[0_1_auto] flex-row flex-nowrap items-center overflow-y-hidden whitespace-nowrap max-md:hidden [&>*]:shrink-0' role='tablist' aria-label='Timeline tabs' data-tour-id='canvas-timeline-tabs'>
-                        {plainTabs.map(renderTab)}
-                        {renderOutputsTab()}
-                    </Scrollable>
-                    <div className='hidden max-md:pointer-events-auto max-md:block max-md:w-full max-md:overflow-hidden max-md:rounded-full max-md:bg-foreground/[0.06]' data-tour-id='canvas-timeline-tab-selector'>
-                        <CanvasOptionSelect
-                            ariaLabel='Timeline tab'
-                            options={tabSelectOptions}
-                            value={activeTab}
-                            onChange={onTabChange}
-                            placeholder='Tab'
-                            triggerClassName='max-md:pointer-events-auto max-md:h-8 max-md:min-h-8 max-md:w-full max-md:rounded-full max-md:border-transparent max-md:bg-transparent max-md:py-0 max-md:pl-3'
-                        />
-                    </div>
-                </div>
-                <div className='contents max-md:order-3 max-md:flex max-md:w-full max-md:flex-none max-md:items-center max-md:justify-between max-md:gap-2 max-md:self-stretch max-md:pointer-events-none max-md:[&_button]:pointer-events-auto max-md:[&_input]:pointer-events-auto max-md:[&_select]:pointer-events-auto max-md:[&_[role=button]]:pointer-events-auto max-md:[&_[data-popover-trigger]]:pointer-events-auto'>
-                    <div className='pointer-events-none flex flex-row items-center justify-center px-1.5 @max-[800px]:order-3 @max-[800px]:w-full @max-[800px]:p-0 max-md:order-3 max-md:w-auto max-md:flex-none max-md:justify-start max-md:p-0'>
-                        <div className='pointer-events-auto flex w-max flex-row items-center justify-center @max-[800px]:w-full max-md:contents max-md:w-auto'>
-                            <TransportControls
-                                trajectoryId={trajectoryId}
-                                currentTimestep={currentTimestep}
-                                availableTimesteps={availableTimesteps}
-                            />
-                        </div>
-                    </div>
-                    <div className='flex min-w-0 flex-row items-center justify-end @max-[800px]:flex-[1_1_100%] @max-[800px]:justify-start max-md:pointer-events-none max-md:w-auto max-md:flex-none max-md:justify-start'>
-                        <div className='flex min-w-0 flex-[0_1_auto] flex-row items-center justify-end gap-2 @max-[800px]:flex-wrap @max-[800px]:justify-start max-md:pointer-events-none max-md:flex-nowrap max-md:justify-start max-md:gap-1 max-md:overflow-hidden'>
-                            <FrameCombobox
-                                value={startFrame}
-                                options={availableTimesteps}
-                                onChange={onRangeStartChange}
-                                title='Start timestep'
-                                groupClassName={MOBILE_FRAME_GROUP}
-                            />
-                            <FrameCombobox
-                                value={endFrame}
-                                options={availableTimesteps}
-                                onChange={onRangeEndChange}
-                                title='End timestep'
-                                groupClassName={MOBILE_FRAME_GROUP}
-                            />
-                            <Separator orientation='vertical' className='h-4 shrink-0 max-md:hidden' />
-                            {/* No icon: FastForward is the Forward 10 timesteps button's. */}
-                            <PresetPopover
-                                id='timeline-speed'
-                                presets={SPEED_PRESETS}
-                                value={playSpeed}
-                                suffix='x'
-                                onSelect={onPlaySpeedChange}
-                            />
-                            <PresetPopover
-                                id='timeline-zoom'
-                                icon={<ZoomIn size={12} />}
-                                presets={ZOOM_PRESETS}
-                                value={zoomPercent}
-                                suffix='%'
-                                onSelect={onZoomPreset}
-                                hideOnMobile
-                            />
-                        </div>
-                    </div>
-                </div>
+        // As OVITO: the tabs centred on the dock's top edge, and beside them the chevron that folds the panel away.
+        <div className='grid h-9 w-full flex-none grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-1 px-2 max-md:pointer-events-auto max-md:order-1 max-md:h-auto max-md:grid-cols-[minmax(0,1fr)_2rem] max-md:p-0'>
+            <span aria-hidden='true' className='max-md:hidden' />
+            <Scrollable
+                ref={tablistRef}
+                orientation='horizontal'
+                className='timeline-tabs relative flex max-w-full flex-row flex-nowrap items-center justify-self-center whitespace-nowrap max-md:hidden'
+                role='tablist'
+                aria-label='Timeline tabs'
+                data-tour-id='canvas-timeline-tabs'
+            >
+                <span
+                    aria-hidden='true'
+                    className='pointer-events-none absolute inset-y-0 left-0 rounded-full bg-foreground/[0.08] transition-[transform,width,opacity] duration-[420ms] ease-[var(--ease-spring)] motion-reduce:transition-none'
+                    style={indicatorStyle}
+                />
+                {plainTabs.map(renderTab)}
+                {renderOutputsTab()}
+            </Scrollable>
+            <div className='hidden max-md:block max-md:min-w-0 max-md:overflow-hidden max-md:rounded-full max-md:bg-foreground/[0.06]' data-tour-id='canvas-timeline-tab-selector'>
+                <CanvasOptionSelect
+                    ariaLabel='Timeline tab'
+                    options={tabSelectOptions}
+                    value={activeTab}
+                    onChange={onTabSelect}
+                    placeholder='Open a tab'
+                    triggerClassName='max-md:h-8 max-md:min-h-8 max-md:w-full max-md:items-center max-md:rounded-full max-md:border-transparent max-md:bg-transparent max-md:py-0 max-md:pl-3'
+                />
             </div>
+            <Button
+                variant='ghost'
+                size='sm'
+                isIconOnly
+                aria-label={isPanelOpen ? 'Hide panel' : 'Show panel'}
+                aria-expanded={isPanelOpen}
+                aria-controls={panelId}
+                className='size-7 min-h-7 min-w-7 justify-self-end text-muted hover:text-foreground'
+                onPress={onTogglePanel}
+            >
+                {/* Points down to fold the panel away and turns up, on a spring, to bring it back. */}
+                <ChevronDown size={13} className={cn('transition-transform duration-[420ms] ease-[var(--ease-spring)] motion-reduce:transition-none', !isPanelOpen && 'rotate-180')} />
+            </Button>
         </div>
     );
 };
