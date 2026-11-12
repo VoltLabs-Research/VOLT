@@ -9,7 +9,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
 interface TimelineTabContentProps {
-    activeTab: string;
+    activeTab: string | null;
     activeExposureId?: string;
     trajectory: Trajectory | null | undefined;
     analysisId: string | undefined;

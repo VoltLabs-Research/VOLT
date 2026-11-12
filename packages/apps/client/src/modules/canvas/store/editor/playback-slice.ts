@@ -67,7 +67,7 @@ const updateCurrentTimestep = (timestep: number, set: PlaybackSliceSet, get: Pla
     get().clearTimestepScopedScenes();
 };
 
-const resolveFrameDelayMs = (playSpeed: number, targetFps: number): number => {
+export const resolveFrameDelayMs = (playSpeed: number, targetFps: number): number => {
     const effectiveFps = playSpeed * targetFps;
     if (effectiveFps <= 0) {
         return Number.POSITIVE_INFINITY;
