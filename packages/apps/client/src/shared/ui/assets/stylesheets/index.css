@@ -312,6 +312,24 @@ html[data-volt-desktop][data-volt-maximized] #root {
     height: 3px;
 }
 
+/* A panel's resize grip that shows only while its edge is hovered, focused or dragged, so at rest it does
+   not sit on top of the content. */
+.volt-resize-handle--reveal .volt-resize-handle__grip::before {
+    opacity: 0;
+    transition: opacity 160ms ease;
+}
+
+.volt-resize-handle--reveal:hover .volt-resize-handle__grip::before,
+.volt-resize-handle--reveal:focus-visible .volt-resize-handle__grip::before,
+.volt-resize-handle--reveal.canvas-resize-handle--active .volt-resize-handle__grip::before {
+    opacity: 1;
+}
+
+/* The timeline's tab row clips what overflows it, so a tab's focus ring is drawn inside the pill. */
+.timeline-tabs :is(button, [role='button']):focus-visible {
+    outline-offset: -2px;
+}
+
 /* ---- Shell: the app chrome (DashboardLayout, its sidebar panels and the page motion) ---- */
 
 /* Pollium's motion tokens. */
