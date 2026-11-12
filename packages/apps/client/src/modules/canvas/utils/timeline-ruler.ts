@@ -39,20 +39,3 @@ export const labelledIndices = (timesteps: number[], width: number, minSpacing: 
     for (let index = 0; index < timesteps.length; index += indexStep) indices.push(index);
     return indices;
 };
-
-export interface RulerRun {
-    start: number;
-    end: number;
-}
-
-// Consecutive flagged frames as one run, so a cached range reads as a single band.
-export const flaggedRuns = (flags: boolean[]): RulerRun[] => {
-    const runs: RulerRun[] = [];
-    flags.forEach((flag, index) => {
-        if (!flag) return;
-        const last = runs[runs.length - 1];
-        if (last && last.end === index - 1) last.end = index;
-        else runs.push({ start: index, end: index });
-    });
-    return runs;
-};
