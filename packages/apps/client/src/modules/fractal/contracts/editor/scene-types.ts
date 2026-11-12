@@ -2,13 +2,6 @@ import type { ModelWorldBounds, ModelLoadingState } from '@/modules/fractal/cont
 import type { SceneObjectType, SceneVisualOverride, SceneVisualOverrides } from '@/modules/fractal/contracts/scene';
 import type { BoundsInfo } from '@/modules/fractal/utils/model-transform';
 
-export enum PointCloudDetailLevel {
-    Auto = 'auto',
-    Performance = 'performance',
-    Balanced = 'balanced',
-    Quality = 'quality'
-}
-
 export enum PointCloudStyleMode {
     Flat = 'flat',
     Softened = 'softened'
@@ -16,7 +9,6 @@ export enum PointCloudStyleMode {
 
 export interface PointCloudSettingsState {
     overridesEnabled: boolean;
-    detailLevel: PointCloudDetailLevel;
     useSceneOpacity: boolean;
     style: PointCloudStyleMode;
 }
