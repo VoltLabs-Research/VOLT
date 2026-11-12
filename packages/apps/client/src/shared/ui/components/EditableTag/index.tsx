@@ -8,11 +8,15 @@ interface EditableTagProps {
     children: React.ReactNode;
     className?: string;
     title?: string;
-    allowSingleClickPropagation?: boolean;
+    // Called for a click that no second click follows, so the click can still open whatever holds
+    // the tag while a double click edits it.
+    onSingleClick?: () => void;
     allowEmpty?: boolean;
     editing?: boolean;
     onEditingChange?: (isEditing: boolean) => void;
 };
+
+const DOUBLE_CLICK_WINDOW_MS = 300;
 
 const getTextValue = (children: React.ReactNode): string => {
     if (typeof children === 'string' || typeof children === 'number') {
@@ -22,9 +26,10 @@ const getTextValue = (children: React.ReactNode): string => {
     return '';
 };
 
-const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, allowSingleClickPropagation = false, allowEmpty = false, editing, onEditingChange }, ref) => {
+const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: Tag, onSave, children, className, title, onSingleClick, allowEmpty = false, editing, onEditingChange }, ref) => {
     const [internalEditing, setInternalEditing] = useState(false);
     const elementRef = useRef<HTMLElement>(null);
+    const singleClickTimer = useRef<number | undefined>(undefined);
     const textValue = getTextValue(children);
     const accessibleLabel = textValue
         ? `${textValue}. Press Enter or F2 to edit.`
@@ -62,20 +67,45 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         }
     }, [isEditing]);
 
+    const cancelSingleClick = (): void => {
+        window.clearTimeout(singleClickTimer.current);
+        singleClickTimer.current = undefined;
+    };
+
+    useEffect(() => cancelSingleClick, []);
+
     const enableEditing = (): void => {
         setEditingState(true);
     };
 
-    const handleClick = (event: React.MouseEvent<HTMLElement>): void => {
-        if (allowSingleClickPropagation && !isEditing) {
+    const handleMouseDown = (event: React.MouseEvent<HTMLElement>): void => {
+        if (onSingleClick && !isEditing) {
             return;
         }
 
         event.stopPropagation();
     };
 
+    // The click itself never reaches the holder: a single click there would act before the second
+    // click of a double click arrives. `detail` counts the clicks in a row, so the second one only
+    // cancels the first.
+    const handleClick = (event: React.MouseEvent<HTMLElement>): void => {
+        event.stopPropagation();
+        cancelSingleClick();
+
+        if (!onSingleClick || isEditing || event.detail > 1) {
+            return;
+        }
+
+        singleClickTimer.current = window.setTimeout(() => {
+            singleClickTimer.current = undefined;
+            onSingleClick();
+        }, DOUBLE_CLICK_WINDOW_MS);
+    };
+
     const handleDoubleClick = (event: React.MouseEvent<HTMLElement>): void => {
         event.stopPropagation();
+        cancelSingleClick();
         enableEditing();
     };
 
@@ -132,11 +162,13 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
         {
             ref: combinedRef,
             // The mockup's inline rename: a 4% tint on hover, 6% with a soft ring while editing.
-            className: cn('cursor-text rounded-md', isEditing ? 'w-fit min-w-[2ch] bg-foreground/6 outline-none ring-2 ring-foreground/15' : 'transition-[background-color,box-shadow] duration-150 hover:bg-foreground/4 focus-visible:bg-foreground/4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus', className),
+            // volt-no-drag: in the desktop window's draggable headers, a double click here would
+            // otherwise maximize the window instead of editing.
+            className: cn('volt-no-drag cursor-text rounded-md', isEditing ? 'w-fit min-w-[2ch] bg-foreground/6 outline-none ring-2 ring-foreground/15' : 'transition-[background-color,box-shadow] duration-150 hover:bg-foreground/4 focus-visible:bg-foreground/4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus', className),
             contentEditable: isEditing,
             tabIndex: isEditing ? -1 : 0,
             onClick: handleClick,
-            onMouseDown: handleClick,
+            onMouseDown: handleMouseDown,
             onDoubleClick: handleDoubleClick,
             onBlur: handleSave,
             onKeyDown: handleKeyDown,
@@ -144,7 +176,7 @@ const EditableTag = React.memo(forwardRef<HTMLElement, EditableTagProps>(({ as: 
             title: combinedTitle,
             'aria-label': accessibleLabel,
             'aria-keyshortcuts': 'Enter F2',
-            'data-interactive-card-control': allowSingleClickPropagation ? undefined : 'true'
+            'data-interactive-card-control': onSingleClick ? undefined : 'true'
         },
         children
     );

@@ -7,7 +7,7 @@ interface EditableTrajectoryNameProps {
     trajectoryId: string;
     name: string;
     className?: string;
-    allowSingleClickPropagation?: boolean;
+    onSingleClick?: () => void;
     readOnly?: boolean;
 }
 
@@ -15,7 +15,7 @@ export default function EditableTrajectoryName({
     trajectoryId,
     name,
     className = '',
-    allowSingleClickPropagation = false,
+    onSingleClick,
     readOnly = false
 }: EditableTrajectoryNameProps) {
     const user = useCurrentUser();
@@ -41,7 +41,7 @@ export default function EditableTrajectoryName({
             onSave={handleSave}
             className={className}
             title={name}
-            allowSingleClickPropagation={allowSingleClickPropagation}
+            onSingleClick={onSingleClick}
         >
             {name}
         </EditableTag>
