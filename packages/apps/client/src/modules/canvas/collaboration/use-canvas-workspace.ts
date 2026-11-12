@@ -13,7 +13,7 @@ import {
     selectSharedCanvasState
 } from './shared-state';
 import { create } from 'zustand';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { SharedCanvasState } from './shared-state';
 import { useNavigate } from 'react-router-dom';
 export interface WorkspacePresenceUser {
@@ -220,7 +220,10 @@ const useCanvasWorkspace = ({
         navigate(`/canvas/${trajectoryId}/workspace/${peerId}`);
     }, [trajectoryId, currentUserId, navigate]);
 
-    const peersInLobby = lobbyUsers.filter((user) => user.id !== currentUserId);
+    const peersInLobby = useMemo(
+        () => lobbyUsers.filter((user) => user.id !== currentUserId),
+        [lobbyUsers, currentUserId]
+    );
     const collaborationOwner = !isOwner && effectiveOwnerId
         ? lobbyUsers.find((user) => user.id === effectiveOwnerId)
         : undefined;

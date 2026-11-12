@@ -32,7 +32,7 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
         return new Set(listingExposures.map((exposure) => exposure.exposureId));
     }, [listingExposures]);
 
-    const tabs: TimelineTabOption[] = [
+    const tabs: TimelineTabOption[] = useMemo(() => [
         ...CORE_TABS,
         ...(analysisId ? [{
             id: TimelineTab.Log,
@@ -43,7 +43,7 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
             label: exposure.name,
             exposureId: exposure.exposureId
         }))
-    ];
+    ], [analysisId, listingExposures]);
 
     const openTab = useCallback((tab: string) => {
         setActiveTab(tab);

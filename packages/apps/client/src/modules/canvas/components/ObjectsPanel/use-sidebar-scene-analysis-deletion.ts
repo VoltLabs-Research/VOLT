@@ -112,16 +112,17 @@ const useSidebarSceneAnalysisDeletion = ({
         }
     });
 
-    const deleteAnalysis = async (analysisId: string) => {
+    const { mutateAsync: deleteAnalysisAsync } = deleteAnalysisMutation;
+    const deleteAnalysis = useCallback(async (analysisId: string) => {
         await showPromise(
-            deleteAnalysisMutation.mutateAsync(analysisId),
+            deleteAnalysisAsync(analysisId),
             {
                 loading: { title: 'Deleting analysis...' },
                 success: { title: 'Analysis deleted successfully' },
                 error: { title: 'Failed to delete analysis' }
             }
         );
-    };
+    }, [deleteAnalysisAsync]);
 
     return {
         applyDeletedAnalysisLocally,

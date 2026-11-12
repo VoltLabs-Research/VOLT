@@ -102,6 +102,10 @@ export const removeSceneArtifactsForAnalysisFromCache = (analysisId: string): vo
 
 export const buildSceneArtifactsQueryOptions = sceneArtifactsQuery.buildOptions;
 
+// Without a combine, useQueries returns a new array every render; with one, the same array until a
+// result changes, so what is derived from it is not rebuilt on every render of the caller.
+const keepResults = <TResults,>(results: TResults): TResults => results;
+
 export const useSceneArtifactsQueries = (paramsList: ListSceneArtifactsInput[]) => {
     return useQueries({
         queries: paramsList.map((params) => ({
@@ -109,7 +113,8 @@ export const useSceneArtifactsQueries = (paramsList: ListSceneArtifactsInput[]) 
             staleTime: 5 * 60 * 1000,
             enabled: Boolean(params.trajectoryId),
             retry: false
-        }))
+        })),
+        combine: keepResults
     });
 };
 

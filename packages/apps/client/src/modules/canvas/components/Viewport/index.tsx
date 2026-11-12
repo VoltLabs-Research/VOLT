@@ -63,6 +63,8 @@ const TIMESTEP_VIEWER_DEFAULTS = {
     }
 } as const;
 
+const clearScreenshotRequest = () => useScreenshotStore.getState().clearPendingRequest();
+
 const Viewport = ({
     trajectory,
     currentTimestep,
@@ -212,7 +214,7 @@ const Viewport = ({
                             modelWorldBounds={effectiveModelWorldBounds}
                             screenshotRequest={screenshotRequest}
                             screenshotComposition={screenshotComposition}
-                            onScreenshotCaptureHandled={() => useScreenshotStore.getState().clearPendingRequest()}
+                            onScreenshotCaptureHandled={clearScreenshotRequest}
                         >
                             {playbackEnabled && <PlaybackTicker />}
                             {localGlbMode && forcedGlbUrl && (

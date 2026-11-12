@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Label, ProgressBar, cn } from '@heroui/react';
 
 interface PreloadingOverlayProps {
@@ -26,4 +27,11 @@ const PreloadingOverlay = ({ active, title, detail }: PreloadingOverlayProps) =>
     </div>
 );
 
-export default PreloadingOverlay;
+// Hidden, it only fades out, so it keeps what it said: playback renames the frame every tick and
+// would otherwise re-render an overlay nobody sees.
+const arePropsEqual = (previous: PreloadingOverlayProps, next: PreloadingOverlayProps) => (
+    (!previous.active && !next.active)
+    || (previous.active === next.active && previous.title === next.title && previous.detail === next.detail)
+);
+
+export default memo(PreloadingOverlay, arePropsEqual);

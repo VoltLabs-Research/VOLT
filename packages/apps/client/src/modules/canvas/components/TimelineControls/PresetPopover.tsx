@@ -1,5 +1,5 @@
 import { Button, Popover, cn } from '@heroui/react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import type { ReactNode } from 'react';
 
@@ -50,4 +50,4 @@ const PresetPopover = ({ id, icon, presets, value, suffix, onSelect, hideOnMobil
     );
 };
 
-export default PresetPopover;
+export default memo(PresetPopover);

@@ -2,6 +2,7 @@ import CanvasOptionSelect from '../CanvasOptionSelect';
 import FrameCombobox from '../FrameCombobox';
 
 import { Button, Popover } from '@heroui/react';
+import { memo } from 'react';
 import type { SelectOption } from '@/shared/contracts/form-field';
 
 const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4, 8, 10];
@@ -51,4 +52,4 @@ const PlaybackPopover = ({
     </Popover>
 );
 
-export default PlaybackPopover;
+export default memo(PlaybackPopover);

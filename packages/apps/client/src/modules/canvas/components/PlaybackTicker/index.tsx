@@ -10,9 +10,11 @@ const PlaybackTicker = () => {
         if (!isPlaying) return;
 
         let rafId: number | null = null;
+        // Draws when the timestep moves, not on every display frame: between steps the scene is the same.
         const loop = (now: number) => {
+            const previousTimestep = useEditorStore.getState().currentTimestep;
             useEditorStore.getState().tick(now);
-            invalidate();
+            if (useEditorStore.getState().currentTimestep !== previousTimestep) invalidate();
             rafId = requestAnimationFrame(loop);
         };
         rafId = requestAnimationFrame(loop);

@@ -1,20 +1,18 @@
 import PlaybackPopover from './PlaybackPopover';
-import PresetPopover from './PresetPopover';
+import ZoomPresetPopover from './ZoomPresetPopover';
 import TimestepField from './TimestepField';
 import TransportControls from '../TransportControls';
 import { useEditorStore } from '@/modules/canvas/store/editor';
 
-import { ZoomIn } from 'lucide-react';
+import { memo } from 'react';
 import type { ComponentProps } from 'react';
-
-const ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 400];
+import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
 
 interface TimelineControlsProps extends ComponentProps<typeof PlaybackPopover> {
     trajectoryId?: string;
     currentTimestep: number | undefined;
     rangedTimesteps: number[];
-    zoomPercent: number;
-    onZoomPreset: (preset: number) => void;
+    sceneRef: React.RefObject<FractalSceneRef | null>;
 }
 
 // Beside the ruler, as in OVITO: the transport, and under it the timestep, playback and zoom.
@@ -22,8 +20,7 @@ const TimelineControls = ({
     trajectoryId,
     currentTimestep,
     rangedTimesteps,
-    zoomPercent,
-    onZoomPreset,
+    sceneRef,
     ...playback
 }: TimelineControlsProps) => {
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
@@ -40,18 +37,10 @@ const TimelineControls = ({
             <div className='flex flex-row items-center gap-1'>
                 <TimestepField value={currentTimestep} timesteps={rangedTimesteps} onChange={setCurrentTimestep} />
                 <PlaybackPopover {...playback} />
-                <PresetPopover
-                    id='timeline-zoom'
-                    icon={<ZoomIn size={12} />}
-                    presets={ZOOM_PRESETS}
-                    value={zoomPercent}
-                    suffix='%'
-                    onSelect={onZoomPreset}
-                    hideOnMobile
-                />
+                <ZoomPresetPopover sceneRef={sceneRef} />
             </div>
         </div>
     );
 };
 
-export default TimelineControls;
+export default memo(TimelineControls);

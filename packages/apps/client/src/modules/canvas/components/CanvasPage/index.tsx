@@ -40,7 +40,6 @@ import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import useTrajectoryFilePicker from '@/modules/trajectory/hooks/trajectory/use-trajectory-file-picker';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useShallow } from 'zustand/react/shallow';
 
 import type { RefObject } from 'react';
 import type { FractalSceneRef } from '@/modules/fractal/contracts/scene-ref';
@@ -115,11 +114,9 @@ const CanvasPage = () => {
         }
     }, [currentScope, setCurrentScope]);
 
-    const { isModelLoading, didPreload, isPlaying } = useEditorStore(useShallow((s) => ({
-        isModelLoading: s.isModelLoading,
-        didPreload: s.didPreload,
-        isPlaying: s.isPlaying
-    })));
+    // One boolean, so the page renders again only when the loading overlay should change, not on
+    // every frame playback loads.
+    const isModelLoadingInView = useEditorStore((s) => s.isModelLoading && !(s.didPreload && s.isPlaying));
 
     const sceneConfig = useFractalSceneConfig();
     const sceneRef = useRef<FractalSceneRef>(null);
@@ -191,7 +188,7 @@ const CanvasPage = () => {
     const showsTrajectoryScene = !isLocalGlbViewer && !showNoFramesState;
     const isTrajectoryLoading = trajectoryLoading
         || !trajectory
-        || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined));
+        || (hasFrames && (isModelLoadingInView || currentTimestep === undefined));
     // Caching frames for playback no longer covers the viewport; the transport and the timeline show it.
     const overlayActive = Boolean(
         !isLocalGlbViewer
@@ -242,6 +239,15 @@ const CanvasPage = () => {
             share={shareInfo}
         />
     ), [analysisId, canDownloadAnalysisListing, shareInfo]);
+
+    const statusBar = useMemo(() => (
+        showStatusBar ? <StatusBar trajectory={trajectory} /> : undefined
+    ), [showStatusBar, trajectory]);
+
+    const completeGuidedTour = useCallback(() => {
+        setIsGuidedTourRequested(false);
+        closeRightDrawer();
+    }, [closeRightDrawer]);
 
     const viewportBodyContent = useViewportBodyContent({
         trajectory,
@@ -348,9 +354,7 @@ const CanvasPage = () => {
                         <CanvasTimelineDock
                             panel={timelinePanel}
                             isNarrowViewport={isNarrowViewport}
-                            statusBar={showStatusBar ? (
-                                <StatusBar trajectory={trajectory} />
-                            ) : undefined}
+                            statusBar={statusBar}
                             sceneRef={sceneRef}
                             trajectory={trajectory}
                             trajectoryId={trajectoryId}
@@ -394,10 +398,7 @@ const CanvasPage = () => {
                 rightDrawerOpen={rightDrawerOpen}
                 onRightDrawerOpenChange={setRightDrawerOpen}
                 onActiveChange={setAnalysisDiscoveryTourActive}
-                onComplete={() => {
-                    setIsGuidedTourRequested(false);
-                    closeRightDrawer();
-                }}
+                onComplete={completeGuidedTour}
             />
         </div>
     );

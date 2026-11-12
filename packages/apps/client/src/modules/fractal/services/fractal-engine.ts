@@ -208,7 +208,9 @@ export class FractalEngine {
             this.callbacks.onContentTypeDetected?.({ hasPointClouds });
             if (hasPointClouds) {
                 nextTraversalCache.pointClouds.forEach((pointCloud) => {
-                    this.materialPipeline.configurePointCloud(pointCloud);
+                    this.materialPipeline.configurePointCloud(pointCloud, () => {
+                        if (!this.isDisposed) this.surface.invalidate();
+                    });
                 });
             } else {
                 this.materialPipeline.configureGeometry(
@@ -327,7 +329,7 @@ export class FractalEngine {
         this.lastOpacityValue = opacity;
         this.lastPointOpacityValue = pointOpacity;
 
-        applyPointCloudOpacity(this.traversalCache.pointClouds, pointOpacity, pointCloudSettings);
+        applyPointCloudOpacity(this.traversalCache.pointClouds, pointOpacity);
         applyMeshOpacity(this.traversalCache.meshes, opacity);
         this.surface.invalidate();
     }
