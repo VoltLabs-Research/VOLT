@@ -1,31 +1,15 @@
-import { Separator } from '@heroui/react';
 import { formatSize } from '@/shared/utils/format';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
-import type { ReactNode } from 'react';
 import Scrollable from '@/shared/ui/components/Scrollable';
-
-interface StatusItem {
-    key: string;
-    label: string;
-    value: ReactNode;
-}
 
 interface StatusBarProps {
     trajectory: Trajectory | null | undefined;
 }
 
-const StatusGroup = ({ items }: { items: StatusItem[] }) => (
-    <div className='flex flex-row items-center gap-2'>
-        {items.map(({ key, label, value }, i) => (
-            <div className='flex flex-row items-center gap-2' key={key}>
-                {i > 0 && <Separator orientation='vertical' className='h-3 w-px bg-foreground/10' />}
-                <span className='whitespace-nowrap text-xs tabular-nums text-muted'>
-                    {label}{label && ': '}{value}
-                </span>
-            </div>
-        ))}
-    </div>
-);
+const countFormat = new Intl.NumberFormat('en-US');
+
+// "36,624 atoms", "1 frame": the count in full, with its unit after it.
+const formatCount = (count: number, unit: string) => `${countFormat.format(count)} ${unit}${count === 1 ? '' : 's'}`;
 
 const StatusBar = ({ trajectory }: StatusBarProps) => {
     const atoms = trajectory?.frames?.[0]?.natoms ?? 0;
@@ -34,27 +18,11 @@ const StatusBar = ({ trajectory }: StatusBarProps) => {
 
     // Until the trajectory arrives there is nothing to count, so the bar stays empty instead of reading 0.
     // Caching for playback is shown by PlaybackCachingIsland, not here.
-    const items: StatusItem[] = trajectory ? [
-        {
-            key: 'atoms',
-            label: 'Atoms',
-            value: atoms
-        },
-        {
-            key: 'frames',
-            label: 'Frames',
-            value: frames
-        },
-        {
-            key: 'size',
-            label: 'Size',
-            value: size
-        }
-    ] : [];
+    const text = trajectory ? [formatCount(atoms, 'atom'), formatCount(frames, 'frame'), size].join(' · ') : '';
 
     return (
         <Scrollable orientation='horizontal' className='flex h-7 w-full flex-row items-center gap-3 px-3 max-md:pointer-events-auto max-md:order-4 max-md:h-5 max-md:px-1.5'>
-            <StatusGroup items={items} />
+            <span className='whitespace-nowrap text-xs tabular-nums text-muted'>{text}</span>
         </Scrollable>
     );
 };

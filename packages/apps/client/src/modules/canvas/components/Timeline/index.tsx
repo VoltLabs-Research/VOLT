@@ -36,7 +36,7 @@ const Timeline = ({
     selectedAnalysisTimesteps,
     analysisId
 }: TimelineProps) => {
-    const { activeTab, tabs, handleTabChange, activeExposureId, pluginId } = useTimelineTabsState({
+    const { activeTab, tabs, handleTabChange, activeExposureId, pluginId, pluginDisplayName } = useTimelineTabsState({
         trajectory,
         analysisId
     });
@@ -166,6 +166,7 @@ const Timeline = ({
                     analysisId,
                     trajectoryId: trajectory?._id
                 }}
+                outputsTitle={pluginDisplayName}
             />
 
             {/* The ruler stays compact at the dock's default size and grows with what it is dragged past it. */}
