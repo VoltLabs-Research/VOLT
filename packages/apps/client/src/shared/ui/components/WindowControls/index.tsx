@@ -26,8 +26,8 @@ const subscribeToHosts = (listener: () => void): (() => void) => {
 
 const isHosted = (): boolean => hostCount > 0;
 
-const TrafficLights = ({ win }: { win: VoltWindow }) => (
-    <div className='volt-window-controls group/traffic flex items-center gap-2.5 [-webkit-app-region:no-drag]'>
+const TrafficLights = ({ win, className }: { win: VoltWindow; className?: string }) => (
+    <div className={cn('volt-window-controls group/traffic flex items-center gap-2.5 [-webkit-app-region:no-drag]', className)}>
         <span className='flex items-center gap-2'>
             <button className={cn('relative size-3 cursor-pointer rounded-full border-[0.5px] border-black/12 p-0 before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-[9px] before:font-bold before:leading-none before:text-black/55 before:opacity-0 before:transition-opacity before:duration-[120ms] before:content-[""] group-hover/traffic:before:opacity-100', 'bg-[#ff5f57]', "group-hover/traffic:before:content-['×']")} aria-label='Close' onClick={() => win.close()} />
             <button className={cn('relative size-3 cursor-pointer rounded-full border-[0.5px] border-black/12 p-0 before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-[9px] before:font-bold before:leading-none before:text-black/55 before:opacity-0 before:transition-opacity before:duration-[120ms] before:content-[""] group-hover/traffic:before:opacity-100', 'bg-[#febc2e]', "group-hover/traffic:before:content-['–']")} aria-label='Minimize' onClick={() => win.minimize()} />
@@ -36,7 +36,7 @@ const TrafficLights = ({ win }: { win: VoltWindow }) => (
     </div>
 );
 
-const WindowControls = () => {
+const WindowControls = ({ className }: { className?: string }) => {
     const win = volt()?.window;
 
     useLayoutEffect(() => {
@@ -47,7 +47,7 @@ const WindowControls = () => {
 
     if (!win) return null;
 
-    return <TrafficLights win={win} />;
+    return <TrafficLights win={win} className={className} />;
 };
 
 export const CornerWindowControls = () => {

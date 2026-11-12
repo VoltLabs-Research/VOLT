@@ -11,6 +11,7 @@ import type { NotebookCellType } from '@/modules/scripting/utils/notebook-docume
 import RecoveryState from '@/shared/ui/components/RecoveryState';
 import Scrollable from '@/shared/ui/components/Scrollable';
 import StatusPill from '@/shared/ui/components/StatusPill';
+import WindowControls from '@/shared/ui/components/WindowControls';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { applyMonacoTheme, getMonacoThemeName } from '@/shared/ui/utils/ensure-monaco';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
@@ -158,7 +159,8 @@ const NotebookEditorPage = () => {
 
     return (
         <div className='flex h-full w-full min-w-0 flex-col'>
-            <header className='flex items-center gap-2 px-3 py-2.5'>
+            {/* The dashboard's header is hidden here, so this one drags the desktop window and holds its controls. */}
+            <header className='volt-drag-region flex items-center gap-2 px-3 py-2.5'>
                 <HeaderButton label='Back to notebooks' onPress={() => navigate('/dashboard/notebooks')}>
                     <ArrowLeft size={16} />
                 </HeaderButton>
@@ -178,6 +180,7 @@ const NotebookEditorPage = () => {
                 <HeaderButton label='Restart the kernel' onPress={editor.restart} isDisabled={!kernelsEnabled}>
                     <RotateCcw size={16} />
                 </HeaderButton>
+                <WindowControls />
             </header>
 
             {editor.kernelStatus === 'preparing' && (

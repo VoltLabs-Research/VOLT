@@ -5,6 +5,7 @@ import useWhiteboardImageInsertion from './use-whiteboard-image-insertion';
 import useWhiteboardPresence from './use-whiteboard-presence';
 import useDashboardWorkspaceChrome from '@/modules/dashboard/hooks/use-dashboard-workspace-chrome';
 import { useSingleTenant } from '@/modules/system/hooks/use-single-tenant';
+import WindowControls from '@/shared/ui/components/WindowControls';
 import { usePageTitle } from '@/shared/ui/hooks/use-page-title';
 import { requestIdleCallbackHandle } from '@/shared/ui/utils/idle-callback';
 import useTip from '@/shared/tips/use-tip';
@@ -111,16 +112,21 @@ const WhiteboardEditorPage = () => {
             </Button>
         );
 
+        // The dashboard's header is hidden here, so the board's top-right row holds the desktop window's
+        // controls, ordered past the Library button that Excalidraw appends to it.
         return (
-            <div className='flex flex-row items-center gap-2 px-2 text-xs text-muted'>
-                {!singleTenant && users.length > 0 && (
-                    <div className='max-w-[16rem] truncate' aria-label={collaboratorsLabel}>
-                        {collaboratorsLabel}
-                    </div>
-                )}
-                {insertImageControl}
-                {aiAssistantControl}
-            </div>
+            <>
+                <div className='flex flex-row items-center gap-2 px-2 text-xs text-muted'>
+                    {!singleTenant && users.length > 0 && (
+                        <div className='max-w-[16rem] truncate' aria-label={collaboratorsLabel}>
+                            {collaboratorsLabel}
+                        </div>
+                    )}
+                    {insertImageControl}
+                    {aiAssistantControl}
+                </div>
+                <WindowControls className='order-last' />
+            </>
         );
     }, [aiAssistantControl, handleOpenImagePicker, users, singleTenant]);
 

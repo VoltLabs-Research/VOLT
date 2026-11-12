@@ -1,3 +1,4 @@
+import WindowControls from '@/shared/ui/components/WindowControls';
 import { Skeleton } from '@heroui/react';
 
 // Code cells of a few lines each, as their editors draw them (13px font on 18px lines, 10px padding).
@@ -8,10 +9,10 @@ const CELL_SKELETON_LINES = [
 ];
 
 // The notebook as it opens: the header (back, title over save state, kernel status, run, interrupt,
-// restart), then its code cells, each with the run button in the gutter.
+// restart, the desktop window's controls), then its code cells, each with the run button in the gutter.
 const NotebookEditorSkeleton = () => (
     <div className='flex h-full w-full min-w-0 flex-col' role='status' aria-label='Opening the notebook'>
-        <div className='flex items-center gap-2 px-3 py-2.5'>
+        <div className='volt-drag-region flex items-center gap-2 px-3 py-2.5'>
             <Skeleton className='size-9 shrink-0 rounded-full' />
             <div className='flex min-w-0 flex-1 flex-col'>
                 <span className='flex h-6 items-center'>
@@ -25,6 +26,7 @@ const NotebookEditorSkeleton = () => (
             <Skeleton className='size-9 shrink-0 rounded-full' />
             <Skeleton className='size-9 shrink-0 rounded-full' />
             <Skeleton className='size-9 shrink-0 rounded-full' />
+            <WindowControls />
         </div>
         <div className='mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-6'>
             {CELL_SKELETON_LINES.map((lines, cellIndex) => (
