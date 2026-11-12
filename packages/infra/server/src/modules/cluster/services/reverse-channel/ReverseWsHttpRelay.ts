@@ -9,18 +9,16 @@ import {
 import httpProxy from 'http-proxy';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import http from 'node:http';
-import { type Duplex, Readable } from 'node:stream';
+import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
+import { TEAM_CLUSTER_SERVICE_EXPOSURE, type TeamClusterServiceExposure } from '@voltstack/daemon-cluster-client';
 
 interface ReverseWsHttpProxyOptions {
+    teamClusterId: string;
+    exposure: TeamClusterServiceExposure;
     req: IncomingMessage;
     res: ServerResponse;
-    agent: http.Agent;
-    upstreamOrigin: string;
     rewrittenUrl: string;
-    requestBody?: Buffer;
-    onProxyRes?: (proxyRes: IncomingMessage) => void;
-    onSettled?: () => void;
     onError: (error: Error) => void;
 }
 
@@ -34,17 +32,18 @@ interface ReverseWsWebSocketUpgradeOptions {
 }
 
 class ReverseWsHttpRelay {
-    createSingleUseTunnelHttpAgent(tunnel: Duplex): http.Agent {
+    // Each request gets its own tunnel to the exposure, closed once the response ends.
+    async proxyHttp(options: ReverseWsHttpProxyOptions): Promise<void> {
+        const tunnel = await teamClusterReverseChannelService.openTunnel(options.teamClusterId, {
+            exposureId: options.exposure.id,
+            accessMode: TEAM_CLUSTER_SERVICE_EXPOSURE.AccessMode.Http
+        });
         const agent = new http.Agent({
             keepAlive: false,
             maxSockets: 1
         });
-
         agent.createConnection = (): Duplex => tunnel;
-        return agent;
-    }
 
-    proxyHttp(options: ReverseWsHttpProxyOptions): void {
         const proxy = httpProxy.createProxyServer();
         const originalUrl = options.req.url;
         let settled = false;
@@ -57,17 +56,10 @@ class ReverseWsHttpRelay {
             settled = true;
             proxy.removeAllListeners();
             options.req.url = originalUrl;
-            options.onSettled?.();
+            tunnel.destroy();
         };
 
-        proxy.once('proxyReq', (proxyRequest) => {
-            if (options.requestBody) {
-                proxyRequest.setHeader('content-length', String(options.requestBody.length));
-            }
-        });
-
         proxy.once('proxyRes', (proxyResponse) => {
-            options.onProxyRes?.(proxyResponse);
             proxyResponse.once('end', settle);
             proxyResponse.once('close', settle);
         });
@@ -82,11 +74,10 @@ class ReverseWsHttpRelay {
 
         options.req.url = options.rewrittenUrl;
         proxy.web(options.req, options.res, {
-            target: options.upstreamOrigin,
-            agent: options.agent,
+            target: `http://${options.exposure.targetHost}:${options.exposure.targetPort}`,
+            agent,
             changeOrigin: true,
-            xfwd: true,
-            buffer: options.requestBody ? Readable.from(options.requestBody) : undefined
+            xfwd: true
         });
     }
 

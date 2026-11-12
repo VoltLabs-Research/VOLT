@@ -124,7 +124,15 @@ const startServer = async () => {
 
     const { default: mountHttpRoutes } = await import('./core/bootstrap/mount-http-routes');
 
-    const server = http.createServer(app);
+    // JupyterLab's requests skip Express, as its WebSocket upgrades below do.
+    const server = http.createServer((request, response) => {
+        if (scriptingJupyterProxyService.isJupyterRequest(request)) {
+            void scriptingJupyterProxyService.handleHttp(request, response);
+            return;
+        }
+
+        app(request, response);
+    });
     activeTerminator = createHttpTerminator({
         server,
         gracefulTerminationTimeout: SERVER_SHUTDOWN_GRACE_PERIOD
@@ -148,7 +156,7 @@ const startServer = async () => {
             return;
         }
 
-        if (!scriptingJupyterProxyService.isJupyterUpgradeRequest(request)) {
+        if (!scriptingJupyterProxyService.isJupyterRequest(request)) {
             socket.destroy();
             return;
         }
