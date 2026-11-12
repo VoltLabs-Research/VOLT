@@ -1,12 +1,10 @@
 import { trajectoryQuery } from '@/modules/trajectory/hooks/trajectory/queries';
 import useDownloadTrajectory from '@/modules/trajectory/hooks/trajectory/use-download-trajectory';
 import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
-import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import { useJobsDrawerStore } from '@/modules/dashboard/store/use-jobs-drawer-store';
-import { Crosshair, Download, EllipsisVertical, FolderInput, ListChecks, Trash2 } from 'lucide-react';
+import { Crosshair, Download, EllipsisVertical, FolderInput, Trash2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { useNavigate } from 'react-router-dom';
@@ -33,8 +31,6 @@ export default function SimulationCardMenu({
     const navigate = useNavigate();
     const deleteTrajectoryMutation = trajectoryQuery.useDeleteMutation();
     const { downloadTrajectory, isDownloading: isExporting } = useDownloadTrajectory();
-    const setJobsScope = useJobsDrawerStore((state) => state.setScope);
-    const openSidePanel = useDashboardSidePanelStore((state) => state.open);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleViewScene = useCallback(() => {
@@ -43,14 +39,6 @@ export default function SimulationCardMenu({
         }
         navigate(`/canvas/${trajectoryId}`);
     }, [isNavigable, navigate, trajectoryId]);
-
-    const handleOpenComputeJobs = useCallback(() => {
-        setJobsScope({
-            trajectoryId,
-            trajectoryName: name
-        });
-        openSidePanel('jobs');
-    }, [setJobsScope, openSidePanel, trajectoryId, name]);
 
     const handleExport = useCallback(() => {
         void downloadTrajectory({
@@ -90,10 +78,6 @@ export default function SimulationCardMenu({
         label: 'View scene',
         icon: Crosshair,
         disabled: !isNavigable
-    }, {
-        onClick: handleOpenComputeJobs,
-        label: 'Compute jobs',
-        icon: ListChecks
     }, {
         onClick: handleExport,
         label: 'Export',
