@@ -19,27 +19,23 @@ const CanvasTimelineDock = ({ panel, isNarrowViewport, statusBar, ...timelinePro
         data-tour-id='canvas-timeline'
         style={!isNarrowViewport ? { '--canvas-timeline-size': `${panel.size}px` } as CSSProperties : undefined}
     >
-        {!isNarrowViewport && (
-            <div className='pointer-events-none absolute z-[3] h-[15px] -translate-y-1/2'
-                style={{
-                    top: 0,
-                    left: 0,
-                    right: 0
-                }}
-            >
-                <ResizeHandle
-                    direction={ResizeDirection.Vertical}
-                    isDragging={panel.isDragging}
-                    label='Resize timeline'
-                    controls='canvas-center-timeline'
-                    className='volt-resize-handle--reveal pointer-events-auto my-0 h-[15px] w-full'
-                    {...panel.handleProps}
-                />
-            </div>
-        )}
         {/* Above the dock, centred over the viewport, while Play caches frames. */}
         <PlaybackCachingIsland />
-        <Timeline {...timelineProps} />
+        <Timeline
+            {...timelineProps}
+            resizeHandle={!isNarrowViewport && (
+                <div className='pointer-events-none absolute inset-x-0 top-0 z-[3] h-[15px] -translate-y-1/2'>
+                    <ResizeHandle
+                        direction={ResizeDirection.Vertical}
+                        isDragging={panel.isDragging}
+                        label='Resize timeline'
+                        controls='canvas-center-timeline'
+                        className='volt-resize-handle--reveal pointer-events-auto my-0 h-[15px] w-full'
+                        {...panel.handleProps}
+                    />
+                </div>
+            )}
+        />
         {statusBar}
     </div>
 );

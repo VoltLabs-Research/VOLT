@@ -788,6 +788,85 @@ html [data-sileo-viewport][data-theme='light'] [data-sileo-description] {
     }
 }
 
+/* Timeline dock. The open tab's pill slides (useTabIndicator) between hairlines that part around it; the
+   ruler's thumb is raised like a slider knob and lifts while grabbed; ticks swell under a mouse like the
+   Dock. */
+:root,
+.light,
+[data-theme='light'] {
+    --timeline-thumb: #ffffff;
+    --timeline-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+    --timeline-thumb-lift: 0 0 0 0.5px rgba(0, 0, 0, 0.06), 0 10px 22px -8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.dark,
+[data-theme='dark'] {
+    --timeline-thumb: #3a3a3f;
+    --timeline-thumb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+    --timeline-thumb-lift: inset 0 0.5px 0 rgba(255, 255, 255, 0.16), 0 12px 26px -8px rgba(0, 0, 0, 0.75);
+}
+
+@layer components {
+    .timeline-tabs > [data-timeline-tab] + [data-timeline-tab]::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: -0.5px;
+        width: 1px;
+        height: 0.75rem;
+        background: color-mix(in oklab, var(--foreground) 10%, transparent);
+        translate: 0 -50%;
+        transition: opacity var(--duration-fast) ease;
+    }
+
+    .timeline-tabs > [data-timeline-tab-active]::before,
+    .timeline-tabs > [data-timeline-tab-active] + [data-timeline-tab]::before {
+        opacity: 0;
+    }
+
+    .timeline-ruler__thumb {
+        background: var(--timeline-thumb);
+        box-shadow: var(--timeline-thumb-shadow);
+        transition:
+            scale var(--duration-base) var(--ease-spring),
+            box-shadow var(--duration-base) ease;
+    }
+
+    .timeline-ruler[data-dragging] .timeline-ruler__thumb {
+        scale: 1.1;
+        box-shadow: var(--timeline-thumb-lift);
+    }
+
+    /* The track holds the pointer's share of its width (--timeline-ruler-hover) and its width in px; each
+       tick holds its own share (--tick-at). Ticks within 30px of the pointer grow, up to 1.9x under it. */
+    .timeline-ruler__tick {
+        transform-origin: bottom;
+        transition: scale 180ms var(--ease-emphasized);
+    }
+
+    .timeline-ruler[data-hovering] .timeline-ruler__tick {
+        --tick-offset: calc((var(--tick-at) - var(--timeline-ruler-hover, -1)) * var(--timeline-ruler-width, 0) / 30);
+        scale: 1 calc(1 + 0.9 * max(0, 1 - var(--tick-offset) * var(--tick-offset)));
+    }
+
+    .timeline-ruler__hover {
+        animation: timeline-pop-in var(--duration-fast) var(--ease-spring);
+        transition: opacity var(--duration-quick) ease;
+    }
+
+    .timeline-ruler__hover[data-near],
+    .timeline-ruler[data-dragging] .timeline-ruler__hover {
+        opacity: 0;
+    }
+}
+
+@keyframes timeline-pop-in {
+    from {
+        opacity: 0;
+        scale: 0.9;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
