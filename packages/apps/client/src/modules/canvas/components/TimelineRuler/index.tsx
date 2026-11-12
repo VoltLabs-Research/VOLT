@@ -1,5 +1,5 @@
 import useTimelineScrubber, { indexAtClientX } from './use-timeline-scrubber';
-import { flaggedRuns, labelledIndices } from '@/modules/canvas/utils/timeline-ruler';
+import { labelledIndices } from '@/modules/canvas/utils/timeline-ruler';
 
 import { cn } from '@heroui/react';
 import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -10,7 +10,7 @@ export interface TimelineRulerTick {
     frame: number;
     tone?: TimelineTickTone;
     dimmed?: boolean;
-    // Cached by the preload Play runs; side by side, cached ticks read as one loaded range.
+    // Cached by the preload Play runs; side by side, cached frames read as one loaded range.
     cached?: boolean;
 }
 
@@ -50,32 +50,39 @@ interface RulerMarksProps {
 const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
     const count = ticks.length;
     const labelledSet = new Set(labelled);
-    const cachedRuns = flaggedRuns(ticks.map((tick) => Boolean(tick.cached)));
 
     return (
         <>
-            {/* Half a frame past each end, so even one cached frame shows. */}
-            {cachedRuns.map((run) => (
+            {/* One segment per frame, a frame wide: side by side they read as one band with round ends, and each
+                fades in as its frame is cached and out when caching ends. */}
+            {ticks.map((tick, index) => (
                 <span
-                    key={`cached-${run.start}`}
-                    className='absolute bottom-0 h-0.5 rounded-full bg-foreground/15'
+                    key={`cached-${tick.frame}`}
+                    className={cn(
+                        'absolute bottom-0 h-0.5 bg-foreground/15 transition-opacity duration-300 ease-out',
+                        tick.cached ? 'opacity-100' : 'opacity-0',
+                        tick.cached && !ticks[index - 1]?.cached && 'rounded-l-full',
+                        tick.cached && !ticks[index + 1]?.cached && 'rounded-r-full'
+                    )}
                     style={{
-                        left: `${Math.max(0, fractionOf(run.start - 0.5, count)) * 100}%`,
-                        right: `${Math.max(0, 1 - fractionOf(run.end + 0.5, count)) * 100}%`
+                        left: `${Math.max(0, fractionOf(index - 0.5, count)) * 100}%`,
+                        right: `${Math.max(0, 1 - fractionOf(index + 0.5, count)) * 100}%`
                     }}
                     aria-hidden='true'
                 />
             ))}
             {ticks.map((tick, index) => {
                 const major = labelledSet.has(index);
-                if (!major && !showMinor) return null;
+                // A frame a plugin is queued or running on keeps its mark however dense the ruler, taller and
+                // twice as wide, so its colour reads without a label.
+                if (!major && !showMinor && !tick.tone) return null;
                 return (
                     <span
                         key={tick.frame}
                         className={cn(
                             'timeline-ruler__tick absolute bottom-1 w-px',
                             major ? 'h-2.5 bg-muted' : 'h-1.5 bg-border',
-                            tick.tone && MARK_TONE_CLASS[tick.tone],
+                            tick.tone && cn('-ml-px h-2.5 w-0.5 rounded-full', MARK_TONE_CLASS[tick.tone]),
                             tick.dimmed && 'opacity-35'
                         )}
                         style={{ left: percentOf(index, count), '--tick-at': fractionOf(index, count) } as CSSProperties}
@@ -90,7 +97,7 @@ const RulerMarks = memo(({ ticks, labelled, showMinor }: RulerMarksProps) => {
                         key={`label-${tick.frame}`}
                         data-ruler-label=''
                         className={cn(
-                            'absolute top-1 -translate-x-1/2 whitespace-nowrap text-2xs leading-none tabular-nums text-muted transition-opacity duration-[160ms] data-covered:opacity-0',
+                            'absolute top-1 -translate-x-1/2 whitespace-nowrap text-2xs leading-none tabular-nums text-muted transition-[opacity,color] duration-[180ms] data-covered:opacity-0',
                             tick.tone && LABEL_TONE_CLASS[tick.tone],
                             tick.dimmed && 'opacity-35'
                         )}
@@ -194,6 +201,7 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
     };
 
     const hasThumb = currentIndex >= 0;
+    const currentTone = hasThumb ? ticks[currentIndex]?.tone : undefined;
 
     return (
         <div
@@ -233,7 +241,10 @@ const TimelineRuler = ({ ticks, currentFrame, isPlaying, frameDelayMs }: Timelin
                     <div ref={playheadRef} className='pointer-events-none absolute inset-y-0 z-[2]' style={{ left: percentOf(currentIndex, count) }}>
                         <span
                             ref={thumbRef}
-                            className='timeline-ruler__thumb absolute left-0 top-0 h-5 -translate-x-1/2 whitespace-nowrap rounded-full px-2 text-2xs font-medium leading-5 tabular-nums text-foreground'
+                            className={cn(
+                                'timeline-ruler__thumb absolute left-0 top-0 h-5 -translate-x-1/2 whitespace-nowrap rounded-full px-2 text-2xs font-medium leading-5 tabular-nums text-foreground',
+                                currentTone && LABEL_TONE_CLASS[currentTone]
+                            )}
                         >
                             {currentFrame}
                         </span>
