@@ -22,7 +22,7 @@ interface UseTimelineTabsStateParams {
 const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStateParams) => {
     const [activeTab, setActiveTab] = useState<string>(TimelineTab.Timeline);
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
-    const { pluginId, isPluginReady, listingExposures } = useCanvasTimelineTabs({
+    const { pluginId, pluginDisplayName, isPluginReady, listingExposures } = useCanvasTimelineTabs({
         trajectory,
         analysisId
     });
@@ -116,7 +116,8 @@ const useTimelineTabsState = ({ trajectory, analysisId }: UseTimelineTabsStatePa
         tabs,
         handleTabChange,
         activeExposureId: exposureIdOfTab(activeTab),
-        pluginId
+        pluginId,
+        pluginDisplayName
     };
 };
 

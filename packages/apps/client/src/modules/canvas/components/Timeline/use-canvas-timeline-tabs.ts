@@ -147,6 +147,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
 
     return {
         pluginId: resolvedPluginId,
+        pluginDisplayName: selectedAnalysis?.pluginDisplayName,
         isPluginReady: Boolean(plugin ?? resolvedPluginId),
         listingExposures
     };

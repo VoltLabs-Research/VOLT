@@ -32,7 +32,7 @@ const CanvasTimelineDock = ({ panel, isNarrowViewport, statusBar, ...timelinePro
                     isDragging={panel.isDragging}
                     label='Resize timeline'
                     controls='canvas-center-timeline'
-                    className='pointer-events-auto my-0 h-[15px] w-full'
+                    className='volt-resize-handle--reveal pointer-events-auto my-0 h-[15px] w-full'
                     {...panel.handleProps}
                 />
             </div>
