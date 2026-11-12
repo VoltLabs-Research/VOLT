@@ -59,6 +59,15 @@ const isCurrentFormat = (glb: Buffer): boolean => {
     return glb.subarray(20, 20 + jsonLength).includes('"EXT_meshopt_compression"');
 };
 
+// VOLT once wrote an export with no geometry as a mesh whose accessors count 0 over zero-length
+// buffer views, which glTF does not allow, so the decoder rejects it although it holds nothing.
+const hasNoGeometry = (glb: Buffer): boolean => {
+    if (glb.length < 20 || glb.readUInt32LE(0) !== GLB_MAGIC) return false;
+    const jsonLength = glb.readUInt32LE(12);
+    const document: { accessors?: { count: number }[] } = JSON.parse(glb.subarray(20, 20 + jsonLength).toString('utf8'));
+    return (document.accessors ?? []).every((accessor) => accessor.count === 0);
+};
+
 /**
  * A glTF binary written elsewhere (a plugin, an older SDK, a model stored before this format),
  * re-encoded into the current format. Points keep their order and triangles theirs, so masks and
@@ -67,6 +76,7 @@ const isCurrentFormat = (glb: Buffer): boolean => {
  */
 export const toModelFormat = (glb: Buffer): Buffer => {
     if (isCurrentFormat(glb)) return glb;
+    if (hasNoGeometry(glb)) return encodeEmptyModel();
 
     const primitives = spatialAssembler.decodeGLB(glb);
     if (primitives.length !== 1) return glb;
