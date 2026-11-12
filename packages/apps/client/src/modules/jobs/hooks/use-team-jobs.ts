@@ -39,10 +39,8 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     const pendingJobUpdatesRef = useRef<Job[]>([]);
     const jobUpdateFlushTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-    const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
     const latestAppliedRevision = useTeamJobsStore((state) => state.latestAppliedRevision);
-    const setConnected = useTeamJobsStore((state) => state.setConnected);
     const setLoading = useTeamJobsStore((state) => state.setLoading);
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
     const setLatestAppliedRevision = useTeamJobsStore((state) => state.setLatestAppliedRevision);
@@ -63,13 +61,11 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
     }, [clearJobsLoadingTimeout, setLoading]);
 
     const handleConnect = useCallback((connected: boolean) => {
-        setConnected(connected);
-
         if (!connected) {
             clearJobsLoadingTimeout();
             setLoading(false);
         }
-    }, [clearJobsLoadingTimeout, setConnected, setLoading]);
+    }, [clearJobsLoadingTimeout, setLoading]);
 
     const handleTeamJobs = useCallback((incomingGroups: TrajectoryJobGroup[], revision?: number) => {
         clearJobsLoadingTimeout();
@@ -247,7 +243,6 @@ const useTeamJobs = ({ subscribe = true }: UseTeamJobsOptions = {}) => {
 
     return {
         groups,
-        isConnected,
         isLoading
     };
 };
