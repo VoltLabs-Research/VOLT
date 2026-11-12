@@ -17,7 +17,7 @@ import {
     Header,
     cn
 } from '@heroui/react';
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import type { SelectOption } from '@/shared/contracts/form-field';
 import type { ReactNode } from 'react';
 
@@ -239,4 +239,4 @@ const TimelineHeader = ({
     );
 };
 
-export default TimelineHeader;
+export default memo(TimelineHeader);

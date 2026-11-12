@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Button } from '@heroui/react';
 import type { WorkspacePresenceUser } from '@/modules/canvas/collaboration/use-canvas-workspace';
 
@@ -49,4 +50,4 @@ const CanvasBanners = ({
     );
 };
 
-export default CanvasBanners;
+export default memo(CanvasBanners);

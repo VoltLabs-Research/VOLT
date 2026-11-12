@@ -46,8 +46,9 @@ const usePipelineRuns = ({
     const mode = useCanvasAccessMode();
     const isRbac = mode !== 'public';
     const replaceStages = useCanvasPipelineStore((state) => state.replaceStages);
-    const renameMutation = useUpdatePipelineRunMutation();
-    const deleteMutation = useDeletePipelineRunMutation();
+    // The handlers take mutateAsync, which keeps its identity, not the result object, which does not.
+    const { mutateAsync: renamePipelineRun } = useUpdatePipelineRunMutation();
+    const { mutateAsync: deletePipelineRun } = useDeletePipelineRunMutation();
 
     const { data } = usePipelineRunsQuery(
         {
@@ -104,7 +105,7 @@ const usePipelineRuns = ({
         if (!trajectoryId) return;
 
         try {
-            await renameMutation.mutateAsync({
+            await renamePipelineRun({
                 trajectoryId,
                 pipelineRunId: run._id,
                 name
@@ -115,7 +116,7 @@ const usePipelineRuns = ({
                 fallbackTitle: 'Failed to rename run'
             });
         }
-    }, [renameMutation, trajectoryId]);
+    }, [renamePipelineRun, trajectoryId]);
 
     const deleteRun = useCallback(async (run: PipelineRun) => {
         if (!trajectoryId) return;
@@ -123,7 +124,7 @@ const usePipelineRuns = ({
         const ownedAnalysisIds = collectOwnedAnalysisIds(run);
 
         await showPromise(
-            deleteMutation.mutateAsync({
+            deletePipelineRun({
                 trajectoryId,
                 pipelineRunId: run._id
             }).then(async () => {
@@ -147,7 +148,7 @@ const usePipelineRuns = ({
                 error: { title: 'Failed to delete run' }
             }
         );
-    }, [applyDeletedAnalysisLocally, deleteMutation, trajectoryId]);
+    }, [applyDeletedAnalysisLocally, deletePipelineRun, trajectoryId]);
 
     return {
         runSections,

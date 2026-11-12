@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import PanelRow, { PanelGroupLabel } from './PanelRow';
 import EditableTag from '@/shared/ui/components/EditableTag';
 import Scrollable from '@/shared/ui/components/Scrollable';
@@ -142,4 +142,4 @@ const PipelinesSection = ({
     );
 };
 
-export default PipelinesSection;
+export default memo(PipelinesSection);

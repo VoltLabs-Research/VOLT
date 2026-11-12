@@ -1,5 +1,5 @@
 import { readStoredString, writeStoredString } from '@/shared/utils/local-storage';
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 
 export enum ResizeDirection {
     Horizontal = 'horizontal',
@@ -163,7 +163,8 @@ const useResizable = ({
         };
     }, [applySize, growPositive, isDragging, isHorizontal]);
 
-    return {
+    // One object per size and drag state, so the panels that take it can skip unrelated renders.
+    return useMemo(() => ({
         size,
         isDragging,
         handleProps: {
@@ -174,7 +175,7 @@ const useResizable = ({
             valueMax: maxSize,
             valueNow: size
         }
-    };
+    }), [size, isDragging, onPointerDown, onKeyDown, onDoubleClick, minSize, maxSize]);
 };
 
 export default useResizable;

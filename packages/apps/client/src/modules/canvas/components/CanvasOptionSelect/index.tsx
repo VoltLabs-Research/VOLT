@@ -1,4 +1,5 @@
 import { ListBox, Select, cn } from '@heroui/react';
+import { memo } from 'react';
 import OptionListBoxItem from '@/shared/ui/components/OptionListBoxItem';
 import { COMPACT_FIELD_TRIGGER, COMPACT_FIELD_VALUE } from '@/shared/ui/utils/field-density';
 
@@ -64,4 +65,4 @@ const CanvasOptionSelect = ({
     </Select>
 );
 
-export default CanvasOptionSelect;
+export default memo(CanvasOptionSelect);

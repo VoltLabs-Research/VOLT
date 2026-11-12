@@ -5,6 +5,7 @@ import PluginAtomsTable from '@/modules/plugin/components/listing/PluginAtomsTab
 import PluginExposureTable from '@/modules/plugin/components/listing/PluginExposureTable';
 import { useSelectedTeamId } from '@/modules/team/hooks/team/use-selected-team';
 
+import { memo } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 
@@ -95,4 +96,4 @@ const TimelineTabContent = ({
     return null;
 };
 
-export default TimelineTabContent;
+export default memo(TimelineTabContent);
