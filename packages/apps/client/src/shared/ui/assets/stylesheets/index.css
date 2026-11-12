@@ -829,7 +829,8 @@ html [data-sileo-viewport][data-theme='light'] [data-sileo-description] {
         box-shadow: var(--timeline-thumb-shadow);
         transition:
             scale var(--duration-base) var(--ease-spring),
-            box-shadow var(--duration-base) ease;
+            box-shadow var(--duration-base) ease,
+            color 180ms ease;
     }
 
     .timeline-ruler[data-dragging] .timeline-ruler__thumb {
@@ -841,7 +842,10 @@ html [data-sileo-viewport][data-theme='light'] [data-sileo-description] {
        tick holds its own share (--tick-at). Ticks within 30px of the pointer grow, up to 1.9x under it. */
     .timeline-ruler__tick {
         transform-origin: bottom;
-        transition: scale 180ms var(--ease-emphasized);
+        transition:
+            scale 180ms var(--ease-emphasized),
+            background-color 180ms ease,
+            opacity 180ms ease;
     }
 
     .timeline-ruler[data-hovering] .timeline-ruler__tick {
