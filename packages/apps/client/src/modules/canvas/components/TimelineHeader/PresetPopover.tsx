@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 
 interface PresetPopoverProps {
     id: string;
-    icon: ReactNode;
+    icon?: ReactNode;
     presets: number[];
     value: number;
     suffix: string;
