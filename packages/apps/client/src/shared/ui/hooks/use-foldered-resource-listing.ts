@@ -12,6 +12,7 @@ import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import type { TeamAccessRequirement } from '@/modules/team/utils/team/team-access';
+import useTeamAccess from '@/modules/team/hooks/team/use-team-access';
 
 
 interface FolderedMoveEntity extends Identifiable {
@@ -49,6 +50,8 @@ interface UseFolderedResourceListingOptions<
     moveToast: PromiseToastOptions<unknown>;
     // What renaming or deleting a folder needs.
     folderAccess: TeamAccessRequirement;
+    // Given, the folder menu's Rename hands the folder here to rename in place, and the modal stays shut.
+    onRenameFolder?: (folder: TFolderRow) => void;
     getItemActions: (helpers: FolderedItemActionHelpers<TItemRow>) => Record<string, ActionConfig<TItemRow>>;
     mapItemMenuOptions?: (options: MenuOption[], payload: FolderedItemMenuPayload<TItemRow>) => MenuOption[];
     onOpenItem: (item: TItemRow) => void;
@@ -75,6 +78,7 @@ const useFolderedResourceListing = <
     getMoveFolderIdFromDroppableId,
     moveToast,
     folderAccess,
+    onRenameFolder,
     getItemActions,
     mapItemMenuOptions,
     onOpenItem,
@@ -82,6 +86,8 @@ const useFolderedResourceListing = <
 }: UseFolderedResourceListingOptions<TItem, TFolder, TRow, TItemRow, TFolderRow, TMoveTarget>) => {
     const listing = useFolderedListing<TItem, TFolder, TRow>(listingOptions);
     const [movingItem, setMovingItem] = useState<TMoveTarget | null>(null);
+    const { can } = useTeamAccess();
+    const canManageFolders = can(folderAccess.area, folderAccess.access);
 
     const handleRenameFolderOpen = useCallback((folder: TFolder) => {
         listing.handleRenameFolderOpen(folder);
@@ -167,7 +173,7 @@ const useFolderedResourceListing = <
             rename: {
                 label: 'Rename Folder',
                 icon: Pencil,
-                handler: ({ item }) => handleRenameFolderOpen(item as unknown as TFolder),
+                handler: ({ item }) => onRenameFolder ? onRenameFolder(item) : handleRenameFolderOpen(item as unknown as TFolder),
                 requiredAccess: folderAccess
             },
             delete: {
@@ -226,6 +232,7 @@ const useFolderedResourceListing = <
 
     return {
         ...listing,
+        canManageFolders,
         dragAndDrop,
         getMenuOptions,
         handleItemClick,

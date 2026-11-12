@@ -4,7 +4,7 @@ import ContextMenuPopover from '@/shared/ui/components/ContextMenuPopover';
 import { showPromise } from '@/shared/ui/hooks/toast';
 import type { PromiseToastOptions } from '@/shared/ui/utils/toast-options';
 import { confirm, ConfirmActionTone } from '@/shared/ui/hooks/use-confirm';
-import { Crosshair, Download, EllipsisVertical, FolderInput, Trash2 } from 'lucide-react';
+import { Crosshair, Download, EllipsisVertical, FolderInput, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import type { MenuOption } from '@/shared/contracts/menu';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,7 @@ interface SimulationCardMenuProps {
     trajectoryId: string;
     name: string;
     isNavigable: boolean;
+    onRename: () => void;
     onMoveToFolder?: () => void;
 }
 
@@ -26,6 +27,7 @@ export default function SimulationCardMenu({
     trajectoryId,
     name,
     isNavigable,
+    onRename,
     onMoveToFolder
 }: SimulationCardMenuProps) {
     const navigate = useNavigate();
@@ -83,6 +85,10 @@ export default function SimulationCardMenu({
         label: 'Export',
         icon: Download,
         disabled: isExporting
+    }, {
+        onClick: onRename,
+        label: 'Rename',
+        icon: Pencil
     }, ...(onMoveToFolder ? [{
         onClick: onMoveToFolder,
         label: 'Move to folder',
