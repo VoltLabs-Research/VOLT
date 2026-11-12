@@ -114,13 +114,15 @@ const getErrorMessage = (error: NormalizedError): string => {
     return error.message ?? error.code ?? 'Internal Server Error';
 };
 
+export const errorResponseBody = (error: NormalizedError) => ({
+    status: 'error',
+    ...(error.code ? { code: error.code } : {}),
+    message: getErrorMessage(error),
+    statusCode: error.statusCode
+});
+
 export const sendNormalizedError = (res: Response, error: NormalizedError): void => {
-    res.status(error.statusCode).json({
-        status: 'error',
-        ...(error.code ? { code: error.code } : {}),
-        message: getErrorMessage(error),
-        statusCode: error.statusCode
-    });
+    res.status(error.statusCode).json(errorResponseBody(error));
 };
 
 export const httpErrorMiddleware: ErrorRequestHandler = (error, _request, response, _next) => {
