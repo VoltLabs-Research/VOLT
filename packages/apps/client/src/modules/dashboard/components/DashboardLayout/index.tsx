@@ -10,8 +10,6 @@ import DashboardTabBar from '@/modules/dashboard/components/DashboardTabBar';
 import SettingsNav from '@/modules/dashboard/components/SettingsNav';
 import TrajectoriesNav from '@/modules/dashboard/components/SectionNav/TrajectoriesNav';
 import SecretKeysNav from '@/modules/dashboard/components/SectionNav/SecretKeysNav';
-import DashboardSidePanel from '@/modules/dashboard/components/DashboardSidePanel';
-import { useDashboardSidePanelStore } from '@/modules/dashboard/store/use-side-panel-store';
 import { dashboardPageKey } from '@/modules/dashboard/utils/page-key';
 import { sidebarPanelFor } from '@/modules/dashboard/utils/sidebar-panels';
 import UserMenuPopover from '@/modules/auth/components/UserMenuPopover';
@@ -69,19 +67,15 @@ const DashboardLayout = () => {
     const collapseRequested = sidebarCollapsedOverride || sidebarCollapsedPreference;
     const collapsed = collapseRequested && isRailViewport;
 
-    const sidePanelOpen = useDashboardSidePanelStore((state) => state.openPanel !== null);
-
-    const railHidden = headerHidden || (sidePanelOpen && isRailViewport);
-
     let rail: SidebarRailState = 'expanded';
-    if (railHidden) {
+    if (headerHidden) {
         rail = 'hidden';
     } else if (collapsed) {
         rail = 'collapsed';
     }
 
     useTip('dashboard-sidebar-collapse', {
-        enabled: !railHidden
+        enabled: !headerHidden
     });
 
     // What the reader chooses wins over a page's own request (the AI page collapses the rail).
@@ -146,7 +140,7 @@ const DashboardLayout = () => {
 
                     <aside
                         data-rail={rail}
-                        inert={railHidden || (!isRailViewport && !sidebarOpen)}
+                        inert={headerHidden || (!isRailViewport && !sidebarOpen)}
                         className={cn(
                             'app-sidebar relative z-[100] flex h-full shrink-0 flex-col overflow-hidden pt-5 transition-[width] duration-[420ms] ease-out-fluid',
                             'max-lg:fixed max-lg:top-0 max-lg:left-0 max-lg:h-dvh max-lg:w-68 max-lg:max-w-[85vw] max-lg:bg-dashboard-surface max-lg:pt-3 max-lg:transition-transform max-lg:[backdrop-filter:var(--glass-backdrop)]',
@@ -224,9 +218,6 @@ const DashboardLayout = () => {
                             {!headerHidden && <DashboardTabBar />}
                         </div>
                     </div>
-
-                    <DashboardSidePanel />
-
                 </main>
             </div>
         </>
