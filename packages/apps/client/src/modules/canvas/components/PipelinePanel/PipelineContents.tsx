@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { Button, Separator } from '@heroui/react';
 import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
@@ -451,4 +451,4 @@ const PipelineContents = ({
     );
 };
 
-export default PipelineContents;
+export default memo(PipelineContents);

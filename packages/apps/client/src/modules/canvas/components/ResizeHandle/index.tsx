@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cn } from '@heroui/react';
 
 import type { ResizeDirectionValue } from '../../hooks/use-resizable';
@@ -49,4 +50,4 @@ const ResizeHandle = ({ direction, isDragging, onPointerDown, onKeyDown, onDoubl
     </div>
 );
 
-export default ResizeHandle;
+export default memo(ResizeHandle);

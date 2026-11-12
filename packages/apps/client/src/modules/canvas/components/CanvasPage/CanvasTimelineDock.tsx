@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import PlaybackCachingIsland from '../PlaybackCachingIsland';
 import ResizeHandle from '../ResizeHandle';
 import Timeline from '../Timeline';
@@ -40,4 +41,4 @@ const CanvasTimelineDock = ({ panel, isNarrowViewport, statusBar, ...timelinePro
     </div>
 );
 
-export default CanvasTimelineDock;
+export default memo(CanvasTimelineDock);

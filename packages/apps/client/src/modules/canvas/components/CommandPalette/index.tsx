@@ -6,7 +6,7 @@ import { Kbd } from '@heroui/react';
 
 import Scrollable from '@/shared/ui/components/Scrollable';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, memo } from 'react';
 import { SearchField } from '@heroui/react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { closeModal, openModal } from '@/shared/ui/modal/use-modal-store';
@@ -186,4 +186,4 @@ const CommandPalette = () => {
     );
 };
 
-export default CommandPalette;
+export default memo(CommandPalette);

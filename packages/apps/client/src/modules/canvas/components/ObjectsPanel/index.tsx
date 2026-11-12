@@ -290,6 +290,14 @@ const ObjectsPanel = ({
         setSelectedKey(neighbour && neighbour.id !== stageId ? panelItemKey.stage(neighbour.id) : defaultItemKey(selectedSection));
     }, [defaultItemKey, editableStages, pipelineKey, removeStage, selectedSection]);
 
+    const selectStage = useCallback((stageId: string) => setSelectedKey(panelItemKey.stage(stageId)), []);
+    const toggleSimulationCell = useCallback(() => setShowSimulationCell(!showSimulationCell), [setShowSimulationCell, showSimulationCell]);
+    const toggleStage = useCallback((stageId: string) => toggleStageEnabled(stageId, pipelineKey), [pipelineKey, toggleStageEnabled]);
+    const reorderStageTo = useCallback((stageId: string, index: number) => reorderStage(stageId, index, pipelineKey), [pipelineKey, reorderStage]);
+    const clearDraft = useMemo(() => (canMutateCanvas && resolvedTrajectoryId
+        ? () => clearStages(resolvedTrajectoryId)
+        : undefined), [canMutateCanvas, clearStages, resolvedTrajectoryId]);
+
     const resolvedAnalysisId = analysisId ?? selectedSection?.analysisSections[0]?.analysis._id;
 
     // List height, remembered per viewer like the panel width.
@@ -333,10 +341,10 @@ const ObjectsPanel = ({
             addScene={addSceneInPlace}
             removeScene={removeScene}
             showSimulationCell={showSimulationCell}
-            onToggleSimulationCell={() => setShowSimulationCell(!showSimulationCell)}
-            onToggleStage={(stageId) => toggleStageEnabled(stageId, pipelineKey)}
+            onToggleSimulationCell={toggleSimulationCell}
+            onToggleStage={toggleStage}
             onMoveStage={moveStage}
-            onReorderStage={(stageId, index) => reorderStage(stageId, index, pipelineKey)}
+            onReorderStage={reorderStageTo}
             stageEdits={stageEdits}
             onRemoveStage={deleteStage}
             onDeleteAnalysis={onDeleteAnalysis}
@@ -381,7 +389,7 @@ const ObjectsPanel = ({
                 onDuplicate={onRestoreRun ? duplicateRun : undefined}
                 onRename={onRenameRun}
                 onDelete={onDeleteRun ? deleteRun : undefined}
-                onClearDraft={canMutateCanvas && resolvedTrajectoryId ? () => clearStages(resolvedTrajectoryId) : undefined}
+                onClearDraft={clearDraft}
             />
             {pipelineKey && (
                 <PipelineActions
@@ -394,7 +402,7 @@ const ObjectsPanel = ({
                     unavailableReason={selectedSection?.isUngrouped ? UNGROUPED_REASON : undefined}
                     currentTimestep={currentTimestep}
                     canMutateCanvas={canMutateCanvas}
-                    onStageAdded={(stageId) => setSelectedKey(panelItemKey.stage(stageId))}
+                    onStageAdded={selectStage}
                 />
             )}
         </>

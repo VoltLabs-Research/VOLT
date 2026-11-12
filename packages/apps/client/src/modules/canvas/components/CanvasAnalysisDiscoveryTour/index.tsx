@@ -1,7 +1,7 @@
 import { readStoredString, writeStoredString } from '@/shared/utils/local-storage';
 import { Button } from '@heroui/react';
 import { Check, ChevronRight, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react';
 import type { CSSProperties } from 'react';
 
 const TOUR_STORAGE_KEY_PREFIX = 'volt:tutorial:canvas-analysis-discovery:v1';
@@ -330,4 +330,4 @@ const CanvasAnalysisDiscoveryTour = ({
     );
 };
 
-export default CanvasAnalysisDiscoveryTour;
+export default memo(CanvasAnalysisDiscoveryTour);

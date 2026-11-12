@@ -15,7 +15,7 @@ import { useMedia } from '@/shared/ui/hooks/use-media';
 import { getActiveAppTheme, subscribeToAppTheme } from '@/shared/ui/utils/app-theme';
 import { DprMode } from '@/shared/rendering/performance';
 import { AdaptiveDpr, Bvh, GizmoHelper, GizmoViewport, OrbitControls, Preload } from '@react-three/drei';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { ModelWorldBounds } from '@/modules/fractal/contracts/model';
 import type { ScreenshotRequest } from '@/modules/canvas/utils/screenshot';
@@ -45,21 +45,23 @@ interface FractalScenePipelineProps {
     children?: ReactNode;
 }
 
-const FractalScenePipeline = ({
+const NOOP = () => undefined;
+
+type FractalSceneStageProps = Pick<FractalScenePipelineProps,
+    'config' | 'orbitRef' | 'orbitProps' | 'showGizmo' | 'showGrid' | 'modelWorldBounds' | 'onControlsRef' | 'markInteracting'>;
+
+// Renderer, camera, controls, lights, effects, grid and gizmo: memoized apart from the models, so a new
+// frame in playback re-renders the models alone and the controls keep their listeners.
+const FractalSceneStage = memo(({
     config,
     orbitRef,
     orbitProps,
     showGizmo,
     showGrid,
     modelWorldBounds,
-    screenshotRequest,
-    screenshotComposition,
-    onScreenshotCaptureHandled,
-    onScreenshotStatusChange,
     onControlsRef,
-    markInteracting,
-    children
-}: FractalScenePipelineProps) => {
+    markInteracting
+}: FractalSceneStageProps) => {
     const isDefectScene = config.activeScene?.sceneType === 'defect'
         || isMeshScene(config.activeScene);
     const gridEnabled = showGrid ?? config.grid.enabled;
@@ -71,6 +73,13 @@ const FractalScenePipeline = ({
     }, []);
 
     const darkTheme = theme === Theme.Dark;
+
+    const setOrbitRef = useCallback((controls: OrbitControlsHandle | null) => {
+        orbitRef.current = controls;
+        onControlsRef?.(controls);
+    }, [onControlsRef, orbitRef]);
+    const startInteracting = useCallback(() => markInteracting(true), [markInteracting]);
+    const endInteracting = useCallback(() => markInteracting(false), [markInteracting]);
 
     const gizmoColors = useMemo<GizmoColors>(() => {
         if (theme === Theme.Light) {
@@ -94,13 +103,10 @@ const FractalScenePipeline = ({
             {config.dpr.mode === DprMode.Adaptive && <AdaptiveDpr pixelated={config.dpr.pixelated} />}
             <OrbitControls
                 makeDefault
-                ref={(r) => {
-                    orbitRef.current = r;
-                    onControlsRef?.(r);
-                }}
+                ref={setOrbitRef}
                 {...orbitProps}
-                onStart={() => markInteracting(true)}
-                onEnd={() => markInteracting(false)}
+                onStart={startInteracting}
+                onEnd={endInteracting}
             />
             <DynamicEffects settings={config.effects} darkTheme={darkTheme} />
             <DynamicLights
@@ -130,20 +136,72 @@ const FractalScenePipeline = ({
                 }} darkTheme={darkTheme} />
             )}
             <PipelineSlicePlaneHelpers modelWorldBounds={modelWorldBounds} />
-            <Bvh firstHitOnly>
-                {children}
-            </Bvh>
-            <InitialCameraPose orbitRef={orbitRef} modelWorldBounds={modelWorldBounds} />
-            <ScreenshotCapture
-                captureRequest={screenshotRequest}
-                onCaptureHandled={onScreenshotCaptureHandled ?? (() => undefined)}
-                onStatusChange={onScreenshotStatusChange}
-                orbitRef={orbitRef}
-                modelWorldBounds={modelWorldBounds}
-                screenshotComposition={screenshotComposition}
-            />
         </>
     );
-};
+});
+
+type FractalSceneOverlayProps = Pick<FractalScenePipelineProps,
+    'orbitRef' | 'modelWorldBounds' | 'screenshotRequest' | 'screenshotComposition' | 'onScreenshotCaptureHandled' | 'onScreenshotStatusChange'>;
+
+const FractalSceneOverlay = memo(({
+    orbitRef,
+    modelWorldBounds,
+    screenshotRequest,
+    screenshotComposition,
+    onScreenshotCaptureHandled,
+    onScreenshotStatusChange
+}: FractalSceneOverlayProps) => (
+    <>
+        <InitialCameraPose orbitRef={orbitRef} modelWorldBounds={modelWorldBounds} />
+        <ScreenshotCapture
+            captureRequest={screenshotRequest}
+            onCaptureHandled={onScreenshotCaptureHandled ?? NOOP}
+            onStatusChange={onScreenshotStatusChange}
+            orbitRef={orbitRef}
+            modelWorldBounds={modelWorldBounds}
+            screenshotComposition={screenshotComposition}
+        />
+    </>
+));
+
+const FractalScenePipeline = ({
+    config,
+    orbitRef,
+    orbitProps,
+    showGizmo,
+    showGrid,
+    modelWorldBounds,
+    screenshotRequest,
+    screenshotComposition,
+    onScreenshotCaptureHandled,
+    onScreenshotStatusChange,
+    onControlsRef,
+    markInteracting,
+    children
+}: FractalScenePipelineProps) => (
+    <>
+        <FractalSceneStage
+            config={config}
+            orbitRef={orbitRef}
+            orbitProps={orbitProps}
+            showGizmo={showGizmo}
+            showGrid={showGrid}
+            modelWorldBounds={modelWorldBounds}
+            onControlsRef={onControlsRef}
+            markInteracting={markInteracting}
+        />
+        <Bvh firstHitOnly>
+            {children}
+        </Bvh>
+        <FractalSceneOverlay
+            orbitRef={orbitRef}
+            modelWorldBounds={modelWorldBounds}
+            screenshotRequest={screenshotRequest}
+            screenshotComposition={screenshotComposition}
+            onScreenshotCaptureHandled={onScreenshotCaptureHandled}
+            onScreenshotStatusChange={onScreenshotStatusChange}
+        />
+    </>
+);
 
 export default FractalScenePipeline;

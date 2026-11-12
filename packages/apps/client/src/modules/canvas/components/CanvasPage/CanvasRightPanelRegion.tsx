@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import ObjectsPanel from '../ObjectsPanel';
 import ResizeHandle from '../ResizeHandle';
 import { ResizeDirection } from '../../hooks/use-resizable';
@@ -85,4 +86,4 @@ const CanvasRightPanelRegion = ({
     );
 };
 
-export default CanvasRightPanelRegion;
+export default memo(CanvasRightPanelRegion);

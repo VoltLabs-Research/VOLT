@@ -284,9 +284,18 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         );
     }, [resolvedAnalyses, exposureEntries, analysisConfigId, searchQuery, getAnalysisStatus]);
 
-    const sceneCollectionSections = useMemo(() => {
-        return filterSectionsByTimestep(filteredSections, analysisConfigId, currentTimestep, trajectoryTimesteps);
+    // Keyed by which sections are listed, so playback, which moves the timestep every frame, keeps the
+    // same list until a section actually comes or goes.
+    const listedSectionIds = useMemo(() => {
+        return filterSectionsByTimestep(filteredSections, analysisConfigId, currentTimestep, trajectoryTimesteps)
+            .map((section) => section.analysis._id)
+            .join(' ');
     }, [filteredSections, analysisConfigId, currentTimestep, trajectoryTimesteps]);
+
+    const sceneCollectionSections = useMemo(() => {
+        const listed = new Set(listedSectionIds.split(' '));
+        return filteredSections.filter((section) => listed.has(section.analysis._id));
+    }, [filteredSections, listedSectionIds]);
 
     const isSceneInActiveScenes = useCallback((scene: SceneObjectType) => {
         return activeScenes.some((candidate) => isSameScene(candidate, scene));
@@ -328,6 +337,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         }
 
         if (analysis?._id) {
+            // Read here rather than captured, so the handler stays the same across playback frames.
+            const { currentTimestep } = useEditorStore.getState();
             const selectedAnalysisTimesteps = getSelectedTimestepsForAnalysis(analysis, trajectoryTimesteps);
             const currentTimestepHasData = selectedAnalysisTimesteps === undefined
                 || (currentTimestep !== undefined && selectedAnalysisTimesteps.includes(currentTimestep));
@@ -342,7 +353,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
         setActiveScene(scene);
         setAnalysisId(analysis?._id, { replace: true });
-    }, [clearAutoSelectChain, currentTimestep, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
+    }, [clearAutoSelectChain, setActiveScene, setAnalysisId, setCurrentTimestep, trajectoryTimesteps]);
 
     // The timestep effect above moves to one the analysis has data for once it is current.
     const onSelectAnalysis = useCallback((analysis: Analysis) => {
