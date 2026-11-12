@@ -7,16 +7,18 @@ interface UseTimelineScrubberParams {
     trackRef: RefObject<HTMLDivElement | null>;
     rangedTimesteps: number[];
     currentFrame: number | undefined;
+    // One frame's share of the track's width; past the last frame the pointer stays on it.
+    frameStep: number;
 }
 
-// The ruler spans the whole range, so a pointer's share of the track's width is its share of the frames.
-export const indexAtClientX = (track: HTMLElement, clientX: number, count: number): number => {
+export const indexAtClientX = (track: HTMLElement, clientX: number, count: number, frameStep: number): number => {
     const box = track.getBoundingClientRect();
-    const fraction = box.width > 0 ? Math.min(1, Math.max(0, (clientX - box.left) / box.width)) : 0;
-    return Math.round(fraction * (count - 1));
+    if (box.width <= 0 || frameStep <= 0) return 0;
+    const index = Math.round((clientX - box.left) / box.width / frameStep);
+    return Math.min(count - 1, Math.max(0, index));
 };
 
-const useTimelineScrubber = ({ trackRef, rangedTimesteps, currentFrame }: UseTimelineScrubberParams) => {
+const useTimelineScrubber = ({ trackRef, rangedTimesteps, currentFrame, frameStep }: UseTimelineScrubberParams) => {
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
 
     const isDraggingRef = useRef(false);
@@ -33,7 +35,7 @@ const useTimelineScrubber = ({ trackRef, rangedTimesteps, currentFrame }: UseTim
     const scrubAtClientX = (clientX: number) => {
         const track = trackRef.current;
         if (!track || rangedTimesteps.length === 0) return;
-        setCurrentTimestep(rangedTimesteps[indexAtClientX(track, clientX, rangedTimesteps.length)]);
+        setCurrentTimestep(rangedTimesteps[indexAtClientX(track, clientX, rangedTimesteps.length, frameStep)]);
     };
 
     const scheduleScrub = (clientX: number) => {
