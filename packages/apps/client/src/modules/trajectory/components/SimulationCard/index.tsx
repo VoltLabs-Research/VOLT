@@ -119,6 +119,7 @@ export default function SimulationCard({
                     isProcessing={isProcessing}
                     processingMessage={getStageMessage(trajectory.status)}
                     readOnly={readOnly}
+                    onOpen={canOpen ? openCanvas : undefined}
                 />
             </div>
 

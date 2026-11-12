@@ -11,6 +11,7 @@ interface SimulationCardFooterProps {
     isProcessing: boolean;
     processingMessage?: string;
     readOnly?: boolean;
+    onOpen?: () => void;
 }
 
 const buildCaption = (updatedAt: string, atoms: number | undefined, framesCount: number): string => {
@@ -36,7 +37,8 @@ export default function SimulationCardFooter({
     framesCount,
     isProcessing,
     processingMessage,
-    readOnly = false
+    readOnly = false,
+    onOpen
 }: SimulationCardFooterProps) {
     const caption = isProcessing ? processingMessage : buildCaption(updatedAt, atoms, framesCount);
 
@@ -49,7 +51,7 @@ export default function SimulationCardFooter({
                     'line-clamp-2 w-fit max-w-full rounded-lg bg-transparent text-base font-medium leading-snug text-foreground',
                     !readOnly && 'hover:bg-foreground/6 focus-visible:bg-foreground/6'
                 )}
-                allowSingleClickPropagation
+                onSingleClick={onOpen}
                 readOnly={readOnly}
             />
             <p className={cn('truncate text-sm text-muted', isProcessing && 'animate-pulse')} title={caption}>
