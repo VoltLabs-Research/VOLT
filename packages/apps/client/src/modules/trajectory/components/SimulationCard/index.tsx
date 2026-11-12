@@ -6,7 +6,7 @@ import SimulationCardFooter from '../SimulationCardFooter';
 import SimulationCardMenu from '../SimulationCardMenu';
 import { cn } from '@heroui/react';
 import { Atom } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { Trajectory } from '@volt/contracts/modules/trajectory/domain';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,7 @@ export default function SimulationCard({
     discoverTeamId
 }: SimulationCardProps) {
     const navigate = useNavigate();
+    const [isRenaming, setIsRenaming] = useState(false);
     const { data: jobGroups = [] } = teamJobsGroups();
     const hasRasterPreviewReadySignal = useMemo(() => {
         for (const group of jobGroups) {
@@ -120,6 +121,8 @@ export default function SimulationCard({
                     processingMessage={getStageMessage(trajectory.status)}
                     readOnly={readOnly}
                     onOpen={canOpen ? openCanvas : undefined}
+                    isRenaming={isRenaming}
+                    onRenamingChange={setIsRenaming}
                 />
             </div>
 
@@ -129,6 +132,7 @@ export default function SimulationCard({
                         trajectoryId={trajectory._id}
                         name={trajectory.name}
                         isNavigable={canOpen}
+                        onRename={() => setIsRenaming(true)}
                         onMoveToFolder={onMoveToFolder ? () => onMoveToFolder(trajectory) : undefined}
                     />
                 </div>

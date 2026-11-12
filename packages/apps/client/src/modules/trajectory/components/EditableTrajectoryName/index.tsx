@@ -9,6 +9,8 @@ interface EditableTrajectoryNameProps {
     className?: string;
     onSingleClick?: () => void;
     readOnly?: boolean;
+    editing?: boolean;
+    onEditingChange?: (isEditing: boolean) => void;
 }
 
 export default function EditableTrajectoryName({
@@ -16,7 +18,9 @@ export default function EditableTrajectoryName({
     name,
     className = '',
     onSingleClick,
-    readOnly = false
+    readOnly = false,
+    editing,
+    onEditingChange
 }: EditableTrajectoryNameProps) {
     const user = useCurrentUser();
     const updateTrajectory = useUpdateTrajectory();
@@ -42,6 +46,8 @@ export default function EditableTrajectoryName({
             className={className}
             title={name}
             onSingleClick={onSingleClick}
+            editing={editing}
+            onEditingChange={onEditingChange}
         >
             {name}
         </EditableTag>
